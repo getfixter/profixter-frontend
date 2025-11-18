@@ -4,7 +4,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '../components/Header';
 
 export default function SignInPage() {
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
@@ -36,8 +35,12 @@ export default function SignInPage() {
         />
       </div>
 
-      {/* Header */}
-      <Header />
+      {/* Logo */}
+      <div className="absolute top-6 left-6 sm:top-8 sm:left-8 lg:top-12 lg:left-12 z-20">
+        <Link href="/">
+          <Image src="/images/logo.svg" alt="ProFixter" width={80} height={32} />
+        </Link>
+      </div>
 
       {/* Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4 pt-20">
@@ -88,24 +91,19 @@ export default function SignInPage() {
 
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-white text-base mb-3">
-                Email
-              </label>
               <input
                 type="text"
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pb-3 bg-transparent border-b border-white text-white placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
-                placeholder=""
+                placeholder="Email"
+                aria-label="Email"
               />
             </div>
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-white text-base mb-3">
-                Password
-              </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -113,7 +111,8 @@ export default function SignInPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pb-3 bg-transparent border-b border-white text-white placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors pr-10"
-                  placeholder=""
+                  placeholder="Password"
+                  aria-label="Password"
                 />
                 <button
                   type="button"

@@ -13,7 +13,7 @@ export default function Header() {
         {/* Logo */}
         <Link href="/" className="flex items-center relative z-50">
           <Image 
-            src="/logo.svg" 
+            src="/images/logo.svg" 
             alt="Profixter Long Island" 
             width={80} 
             height={32}
@@ -42,7 +42,7 @@ export default function Header() {
             className="text-[#eef2ff] hover:text-white transition-colors text-base font-normal relative group pb-2"
           >
             Pick day
-            <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-[#306eec] scale-x-100"></span>
+            <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-[#306eec] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
           </Link>
           <Link 
             href="#projects" 

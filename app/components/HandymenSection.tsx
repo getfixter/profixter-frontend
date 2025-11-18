@@ -51,50 +51,84 @@ export default function HandymenSection() {
         {/* Title */}
         {/* Mobile/Tablet - Centered */}
         <div className="lg:hidden text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <h2 className="text-3xl sm:text-4xl font-bold leading-tight text-[#eef2ff] uppercase">MEET OUR</h2>
+          <div className="flex items-center justify-center gap-3 sm:gap-4 mb-2 sm:mb-3">
+            <h2 className="text-4xl sm:text-5xl font-bold leading-[89%] tracking-[-0.05em] text-[#eef2ff] uppercase">MEET OUR</h2>
             <Image
               src="/images/title-handymen.png"
               alt="Handymen"
               width={80}
               height={60}
-              className="object-contain"
+              className="object-contain hidden sm:block"
             />
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold leading-tight text-[#306eec] uppercase">HANDYMEN</h2>
+          <h2 className="text-5xl sm:text-6xl font-bold leading-[89%] tracking-[-0.05em] -mt-1 sm:-mt-2 text-[#306eec] uppercase">HANDYMEN</h2>
           <p className="mt-4 text-sm sm:text-base text-[#c5cbd8] max-w-md mx-auto">
             Skilled professionals who bring comfort and quality to every home.
             Reliable, friendly, and ready to tackle any task — big or small.
           </p>
         </div>
+      </div>
 
-        {/* Desktop - Original Layout */}
-        <div className="hidden lg:flex items-start justify-between">
-          <div className="h-[1px] flex-1" />
-          <div className="max-w-[502px]">
-            <div className="flex items-center gap-4 mb-2">
-              <div className="text-[64px] font-bold leading-[57px] text-[#eef2ff] uppercase tracking-tight">MEET OUR</div>
-              <Image
-                src="/images/title-handymen.png"
-                alt="Handymen small"
-                width={120}
-                height={80}
-                className="object-contain"
-              />
+      {/* Desktop Layout: Thumbnails on left (cut), Title on right edge */}
+      <div className="hidden lg:block mt-6 sm:mt-8 lg:mt-10">
+        {/* Thumbnails - cut on left, show 2.5 cards - absolute positioned */}
+        <div className="overflow-hidden -ml-[390px]" style={{ width: 'calc(100% + 390px)' }}>
+          <div 
+            className="flex gap-6"
+            style={{ 
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch'
+            }}
+          >
+            <style jsx>{`
+              div::-webkit-scrollbar {
+                display: none;
+              }
+            `}</style>
+            {TEAM.map((m, i) => (
+              <button
+                key={m.id}
+                onClick={() => setIdx(i)}
+                className={`relative shrink-0 w-[260px] h-[160px] rounded-[14px] overflow-hidden border-2 ${
+                  i === idx ? "border-white" : "border-transparent"
+                }`}
+                aria-label={`Show ${m.name}`}
+              >
+                <Image src={m.thumb} alt={m.name} fill className="object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Title on the right */}
+        <div className="container mx-auto px-[20px] max-w-[1240px] -mt-[160px]">
+          <div className="flex justify-end">
+            <div className="max-w-[502px]">
+              <div className="flex items-center gap-4 mb-0">
+                <div className="text-[64px] font-bold leading-[89%] text-[#eef2ff] uppercase tracking-[-0.05em]">MEET OUR</div>
+                <Image
+                  src="/images/title-handymen.png"
+                  alt="Handymen small"
+                  width={120}
+                  height={80}
+                  className="object-contain"
+                />
+              </div>
+              <div className="text-[64px] font-bold leading-[89%] text-[#306eec] text-right uppercase tracking-[-0.05em] -mt-2">HANDYMEN</div>
+              <p className=" text-[14px] text-[#c5cbd8] text-right ml-8">
+                Skilled professionals who bring comfort and quality to every home.
+                Reliable, friendly, and ready to tackle any task — big or small.
+              </p>
             </div>
-            <div className="text-[64px] font-bold leading-[57px] text-[#306eec] text-right uppercase tracking-tight">HANDYMEN</div>
-            <p className="mt-4 text-[14px] text-[#c5cbd8] text-right ml-8">
-              Skilled professionals who bring comfort and quality to every home.
-              Reliable, friendly, and ready to tackle any task — big or small.
-            </p>
           </div>
         </div>
       </div>
 
-      {/* Thumbnails - cut on left, show 2.5 cards */}
-      <div className="mt-6 sm:mt-8 lg:mt-10 overflow-hidden lg:-ml-[390px]" style={{ width: '100%', maxWidth: 'calc(100% + 390px)' }}>
+      {/* Mobile Thumbnails */}
+      <div className="lg:hidden mt-6 sm:mt-8 overflow-hidden">
         <div 
-          className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 px-[20px] lg:px-0"
+          className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 px-[20px]"
           style={{ 
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -110,7 +144,7 @@ export default function HandymenSection() {
             <button
               key={m.id}
               onClick={() => setIdx(i)}
-              className={`relative shrink-0 w-[200px] sm:w-[240px] lg:w-[260px] h-[120px] sm:h-[140px] lg:h-[160px] rounded-[14px] overflow-hidden border-2 ${
+              className={`relative shrink-0 w-[200px] sm:w-[240px] h-[120px] sm:h-[140px] rounded-[14px] overflow-hidden border-2 ${
                 i === idx ? "border-white" : "border-transparent"
               }`}
               aria-label={`Show ${m.name}`}
@@ -121,7 +155,7 @@ export default function HandymenSection() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 max-w-[1440px]">
+      <div className="container mx-auto px-[20px] max-w-[1240px] pt-[20px]">
         {/* Gallery + Bio */}
         <div className="mt-6 sm:mt-8 lg:mt-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
           {/* Big photo */}
@@ -131,9 +165,9 @@ export default function HandymenSection() {
             </div>
           </div>
 
-          <div className="lg:col-span-5 flex flex-col">
+          <div className="lg:col-span-5 flex flex-col pl-[50px]">
             <h3 className="text-xl sm:text-2xl lg:text-[24px] font-semibold text-[#eef2ff] leading-tight lg:leading-[21px]">{person.name}</h3>
-            <p className="mt-4 text-base sm:text-lg lg:text-[20px] leading-relaxed lg:leading-[24px] text-[#c5cbd8] max-w-[420px]">
+            <p className="mt-4  text-base sm:text-lg lg:text-[20px] leading-relaxed lg:leading-[24px] text-[#c5cbd8] max-w-[320px]">
               {person.blurb}
             </p>
 
@@ -157,9 +191,9 @@ export default function HandymenSection() {
               </div>
 
               {/* Quote */}
-              <div className="sm:text-right">
+              <div className="sm:text-right md:max-w-[200px]">
                 <div className="text-sm sm:text-base text-[#eef2ff]">The Profixter Team:</div>
-                <div className="text-sm sm:text-base text-[#c5cbd8]">We fix homes but mostly, we bring comfort</div>
+                <div className="text-sm sm:text-[14px] text-[#c5cbd8]">We fix homes but mostly, we bring comfort</div>
               </div>
             </div>
           </div>

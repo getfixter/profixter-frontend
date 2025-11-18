@@ -27,7 +27,7 @@ export default function HeroSection() {
             {/* Main Heading */}
             <h1 className="w-full flex flex-col pt-6" >
               {/* First line - centered */}
-              <div className="text-[32px] sm:text-[48px] font-bold leading-[88.9%] text-white uppercase tracking-tight text-center mb-1 sm:mb-2">
+              <div className="text-[32px] sm:text-[48px] font-bold leading-[88.9%] text-white uppercase tracking-tight text-center">
                 Effortless Home Maintenance
               </div>
               
@@ -40,7 +40,7 @@ export default function HeroSection() {
               </div>
               
               {/* Third line */}
-              <div className="text-[32px] sm:text-[48px] font-bold leading-[88.9%] mt-1 sm:mt-2 uppercase tracking-tight text-center">
+              <div className="text-[32px] sm:text-[48px] font-bold leading-[88.9%]  uppercase tracking-tight text-center">
                 <span className="text-white">Price </span>
                 <span className="text-[#5E8BFF]">Honest</span>
               </div>
@@ -50,15 +50,15 @@ export default function HeroSection() {
           {/* Desktop Heading */}
           <div className="hidden lg:block w-full max-w-[1200px] relative mx-auto lg:pt-12">
             {/* Main Heading */}
-            <h1 className="mb-4 sm:mb-6 w-full flex flex-col" >
+            <h1 className="mb-4 sm:mb-6 w-full flex flex-col -gap-2" >
               {/* First line - centered */}
-              <div className="text-[64px] font-bold leading-[88.9%] text-white uppercase tracking-tight text-center lg:ml-[60px]">
+              <div className="text-[64px] font-bold leading-[89%] text-white uppercase tracking-[-0.05em] text-center lg:ml-[60px]">
                 Effortless Home Maintenance
               </div>
               
               {/* Second line - responsive layout */}
-              <div className="relative flex flex-row items-center justify-start gap-4">
-                <div className="text-[64px] font-bold leading-[88.9%] uppercase tracking-tight text-left">
+              <div className="relative flex flex-row items-center justify-start gap-4 -mt-2">
+                <div className="text-[64px] font-bold leading-[89%] uppercase tracking-[-0.05em] text-left">
                   <span className="text-[#5E8BFF]">Luxury</span>{' '}
                   <span className="text-white">Service AND</span>
                 </div>
@@ -74,7 +74,7 @@ export default function HeroSection() {
               </div>
               
               {/* Third line */}
-              <div className="text-[64px] font-bold leading-[88.9%] mt-2 uppercase tracking-tight text-left">
+              <div className="text-[64px] font-bold leading-[89%] uppercase tracking-[-0.05em] text-left -mt-2">
                 <span className="text-white">Price </span>
                 <span className="text-[#5E8BFF]">Honest</span>
               </div>
@@ -152,20 +152,7 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* Chat Widget Icon */}
-        <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-50">
-          <button 
-            className="w-[60px] h-[60px] sm:w-[72px] sm:h-[72px] bg-[#306eec] hover:bg-[#2558c9] transition-all duration-300 rounded-full shadow-xl flex items-center justify-center hover:scale-110"
-            aria-label="Open chat"
-          >
-            <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:w-[40px] sm:h-[40px]">
-              <path d="M32 20C32 26.627 26.627 32 20 32C18.2 32 16.49 31.61 14.96 30.92L8 33L10.08 26.04C9.39 24.51 9 22.8 9 21C9 14.373 14.373 9 21 9C27.627 9 33 14.373 33 21Z" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-              <circle cx="15" cy="20" r="1.5" fill="white"/>
-              <circle cx="20" cy="20" r="1.5" fill="white"/>
-              <circle cx="25" cy="20" r="1.5" fill="white"/>
-            </svg>
-          </button>
-        </div>
+        
       </div>
     </section>
 

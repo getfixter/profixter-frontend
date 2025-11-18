@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
-import Header from '../components/Header';
 
 type Step = 'email' | 'otp' | 'newPassword' | 'success';
 type OtpError = 'invalid' | 'expired' | null;
@@ -106,8 +105,12 @@ export default function ForgotPasswordPage() {
         />
       </div>
 
-      {/* Header */}
-      <Header />
+      {/* Logo */}
+      <div className="absolute top-6 left-6 sm:top-8 sm:left-8 lg:top-12 lg:left-12 z-20">
+        <Link href="/">
+          <Image src="/images/logo.svg" alt="ProFixter" width={80} height={32} />
+        </Link>
+      </div>
 
       {/* Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4 pt-20 pb-12">
@@ -138,16 +141,14 @@ export default function ForgotPasswordPage() {
 
               <form onSubmit={handleEmailSubmit} className="space-y-8">
                 <div>
-                  <label htmlFor="email" className="block text-white text-base mb-3 text-left">
-                    Email
-                  </label>
                   <input
                     type="email"
                     id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full pb-3 bg-transparent border-b border-white text-white placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
-                    placeholder=""
+                    placeholder="Email"
+                    aria-label="Email"
                     required
                   />
                 </div>
@@ -269,9 +270,6 @@ export default function ForgotPasswordPage() {
               <form onSubmit={handleNewPasswordSubmit} className="space-y-8">
                 {/* Create Password */}
                 <div>
-                  <label htmlFor="new-password" className="block text-white text-base mb-3 text-left">
-                    Create password
-                  </label>
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -279,7 +277,8 @@ export default function ForgotPasswordPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full pb-3 bg-transparent border-b border-white text-white placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors pr-10"
-                      placeholder=""
+                      placeholder="Create password"
+                      aria-label="Create password"
                       required
                     />
                     <button
@@ -306,9 +305,6 @@ export default function ForgotPasswordPage() {
 
                 {/* Repeat Password */}
                 <div>
-                  <label htmlFor="repeat-password" className="block text-white text-base mb-3 text-left">
-                    Repeat password
-                  </label>
                   <div className="relative">
                     <input
                       type={showRepeatPassword ? 'text' : 'password'}
@@ -316,7 +312,8 @@ export default function ForgotPasswordPage() {
                       value={repeatPassword}
                       onChange={(e) => setRepeatPassword(e.target.value)}
                       className="w-full pb-3 bg-transparent border-b border-white text-white placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors pr-10"
-                      placeholder=""
+                      placeholder="Repeat password"
+                      aria-label="Repeat password"
                       required
                     />
                     <button

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 
 const plans = [
   {
@@ -52,23 +53,20 @@ export default function PlansSection() {
   };
 
   return (
-    <section className="w-full bg-[#313234] py-12 sm:py-16 lg:py-20 relative overflow-hidden">
+    <section className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden">
       <div className="lg:max-w-[1240px] lg:mx-auto lg:px-[20px]">
         {/* Mobile/Tablet Header - Centered */}
         <div className="lg:hidden text-center mb-8 sm:mb-12 px-[20px]">
           {/* Logo */}
-          <div className="text-white mb-6">
-            <div className="text-xl sm:text-2xl font-semibold leading-tight">Profixter</div>
-            <div className="text-xs leading-tight">Long Island</div>
+          <div className="mb-6 flex justify-center">
+            <Image src="/images/logo.svg" alt="Profixter" width={80} height={32} />
           </div>
 
           {/* Main Heading */}
-          <h2 className="text-5xl sm:text-6xl font-bold leading-[88.9%] mb-8 uppercase">
+          <h2 className="text-5xl sm:text-6xl font-bold leading-[89%] mb-8 uppercase tracking-[-0.05em] flex flex-col gap-0">
             <span className="text-white">Choose</span>
-            <br />
-            <span className="text-[#306EEC]">Your</span>
-            <br />
-            <span className="text-white">Plan</span>
+            <span className="text-[#306EEC] -mt-2">Your</span>
+            <span className="text-white -mt-2">Plan</span>
           </h2>
 
           {/* Trial Info */}
@@ -88,18 +86,15 @@ export default function PlansSection() {
           <div className="hidden lg:flex flex-shrink-0 w-[340px] pt-4 flex-col justify-between h-[522px]">
             <div>
               {/* Logo */}
-              <div className="text-white mb-16">
-                <div className="text-xl font-semibold leading-tight">Profixter</div>
-                <div className="text-xs leading-tight">Long Island</div>
+              <div className="mb-16">
+                <Image src="/images/logo.svg" alt="Profixter" width={80} height={32} />
               </div>
 
               {/* Main Heading */}
-              <h2 className="text-[64px] font-bold leading-[88.9%] mb-12 uppercase ml-[100px]">
+              <h2 className="text-[64px] font-bold leading-[89%] mb-12 uppercase ml-[100px] tracking-[-0.05em] flex flex-col gap-0">
                 <span className="text-white">Choose</span>
-                <br />
-                <span className="text-[#306EEC] -ml-[100px]">Your</span>
-                <br />
-                <span className="text-white">Plan</span>
+                <span className="text-[#306EEC] -ml-[100px] -mt-2">Your</span>
+                <span className="text-white -mt-2">Plan</span>
               </h2>
 
               {/* Trial Info */}
@@ -140,14 +135,14 @@ export default function PlansSection() {
                       className="w-full flex-shrink-0 px-5"
                     >
                       <div 
-                        className="w-full max-w-[420px] mx-auto bg-[#3A3C3E] rounded-[24px] border-2 border-[#4A4C4E] p-6 sm:p-8 flex flex-col"
+                        className="w-full max-w-[420px] mx-auto bg-[#EEF2FF] rounded-[24px] border border-[#C5CBD8] p-6 sm:p-8 flex flex-col"
                         style={{ minHeight: '500px' }}
                       >
                         <div className="text-center mb-4 sm:mb-5">
-                          <h3 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">
+                          <h3 className="text-2xl sm:text-3xl font-bold text-[#313234] leading-tight mb-2">
                             {plan.name}
                           </h3>
-                          <p className="text-sm sm:text-base text-[#C5CBD8] leading-relaxed">
+                          <p className="text-sm sm:text-base text-[#6A6D71] leading-relaxed">
                             {plan.description}
                           </p>
                         </div>
@@ -155,10 +150,10 @@ export default function PlansSection() {
                         {/* Price */}
                         <div className="mb-5 sm:mb-6 text-center">
                           <div className="flex items-end gap-2 justify-center">
-                            <span className="text-5xl sm:text-6xl font-bold text-white leading-none">
+                            <span className="text-5xl sm:text-6xl font-bold text-[#313234] leading-none">
                               ${plan.price}
                             </span>
-                            <span className="text-base sm:text-lg text-[#C5CBD8] leading-tight pb-1">
+                            <span className="text-base sm:text-lg text-[#6A6D71] leading-tight pb-1">
                               /month
                             </span>
                           </div>
@@ -169,11 +164,11 @@ export default function PlansSection() {
                           {plan.features.map((feature, featureIdx) => (
                             <div 
                               key={featureIdx} 
-                              className="flex items-center gap-2.5 bg-[#C5CBD8] rounded-xl p-3"
+                              className="flex items-center gap-2.5"
                             >
-                              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#43A047] flex items-center justify-center flex-shrink-0">
+                              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#43A047] flex items-center justify-center flex-shrink-0">
                                 <svg width="14" height="11" viewBox="0 0 16 13" fill="none">
-                                  <path d="M1 6.5L5.5 11L15 1.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <path d="M1 6.5L5.5 11L15 1.5" stroke="#43A047" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                                 </svg>
                               </div>
                               <span className="text-base sm:text-lg font-semibold text-[#313234] leading-tight">
@@ -184,7 +179,7 @@ export default function PlansSection() {
                         </div>
 
                         {/* CTA Button */}
-                        <button className="w-full h-[56px] sm:h-[60px] bg-[#306EEC] hover:bg-[#2558c9] rounded-2xl text-lg sm:text-xl font-bold text-white leading-none transition-all duration-300 shadow-lg mt-6">
+                        <button className="w-full h-[56px] sm:h-[60px] bg-[#306EEC] hover:bg-[#2558c9] rounded-2xl text-lg sm:text-xl font-bold text-[#EEF2FF] leading-none transition-all duration-300 shadow-lg mt-6">
                           {plan.buttonText}
                         </button>
                       </div>
@@ -327,7 +322,7 @@ export default function PlansSection() {
                       </button>
                     </div>
                   </div>
-                  <div className="absolute inset-0 bg-[#313234]/30 backdrop-blur-[3px] rounded-[20px] pointer-events-none" />
+                  <div className="absolute inset-0 bg-[#313234]/30 backdrop-blur-[3px] rounded-[16px] pointer-events-none" />
                 </div>
               );
             })}
@@ -335,7 +330,7 @@ export default function PlansSection() {
         </div>
         
         {/* Navigation Buttons - positioned at the level of bottom of big card, under small cards */}
-        <div className="flex gap-4 absolute bottom-0 left-[506px]">
+        <div className="flex gap-4 absolute bottom-0 left-[480px]">
           <button
             onClick={prevSlide}
             className="bg-white hover:bg-gray-100 text-gray-800 w-12 h-12 rounded-lg flex items-center justify-center transition-colors shadow-md border border-gray-200"

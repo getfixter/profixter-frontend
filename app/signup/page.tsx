@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
-import Header from '../components/Header';
 
 export default function SignUpPage() {
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signup');
@@ -24,8 +23,12 @@ export default function SignUpPage() {
         />
       </div>
 
-      {/* Header */}
-      <Header />
+      {/* Logo */}
+      <div className="absolute top-6 left-6 sm:top-8 sm:left-8 lg:top-12 lg:left-12 z-20">
+        <Link href="/">
+          <Image src="/images/logo.svg" alt="ProFixter" width={80} height={32} />
+        </Link>
+      </div>
 
       {/* Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-24 sm:py-32">
@@ -78,41 +81,35 @@ export default function SignUpPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-x-12 sm:gap-y-8">
               {/* Name Field */}
               <div>
-                <label htmlFor="name" className="block text-white text-sm sm:text-base mb-2 sm:mb-3">
-                  Name
-                </label>
                 <input
                   type="text"
                   id="name"
                   className="w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
-                  placeholder=""
+                  placeholder="Name"
+                  aria-label="Name"
                 />
               </div>
 
               {/* Email Field */}
               <div>
-                <label htmlFor="email" className="block text-white text-sm sm:text-base mb-2 sm:mb-3">
-                  Email
-                </label>
                 <input
                   type="email"
                   id="email"
                   className="w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
-                  placeholder=""
+                  placeholder="Email"
+                  aria-label="Email"
                 />
               </div>
 
               {/* Create Password Field */}
               <div>
-                <label htmlFor="password" className="block text-white text-sm sm:text-base mb-2 sm:mb-3">
-                  Create password
-                </label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     id="password"
                     className="w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors pr-10"
-                    placeholder=""
+                    placeholder="Create password"
+                    aria-label="Create password"
                   />
                   <button
                     type="button"
@@ -138,28 +135,24 @@ export default function SignUpPage() {
 
               {/* Phone Number Field */}
               <div>
-                <label htmlFor="phone" className="block text-white text-sm sm:text-base mb-2 sm:mb-3">
-                  Phone number
-                </label>
                 <input
                   type="tel"
                   id="phone"
                   className="w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
-                  placeholder=""
+                  placeholder="Phone number"
+                  aria-label="Phone number"
                 />
               </div>
 
               {/* Repeat Password Field */}
               <div>
-                <label htmlFor="repeat-password" className="block text-white text-sm sm:text-base mb-2 sm:mb-3">
-                  Repeat password
-                </label>
                 <div className="relative">
                   <input
                     type={showRepeatPassword ? 'text' : 'password'}
                     id="repeat-password"
                     className="w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors pr-10"
-                    placeholder=""
+                    placeholder="Repeat password"
+                    aria-label="Repeat password"
                   />
                   <button
                     type="button"
@@ -185,40 +178,34 @@ export default function SignUpPage() {
 
               {/* Zip Code Field */}
               <div>
-                <label htmlFor="zip" className="block text-white text-sm sm:text-base mb-2 sm:mb-3">
-                  Zip code
-                </label>
                 <input
                   type="text"
                   id="zip"
                   className="w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
-                  placeholder=""
+                  placeholder="Zip code"
+                  aria-label="Zip code"
                 />
               </div>
 
               {/* State Field */}
               <div>
-                <label htmlFor="state" className="block text-white text-sm sm:text-base mb-2 sm:mb-3">
-                  State
-                </label>
                 <input
                   type="text"
                   id="state"
                   className="w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
-                  placeholder=""
+                  placeholder="State"
+                  aria-label="State"
                 />
               </div>
 
               {/* Full Address Field */}
               <div>
-                <label htmlFor="address" className="block text-white text-sm sm:text-base mb-2 sm:mb-3">
-                  Full addres
-                </label>
                 <input
                   type="text"
                   id="address"
                   className="w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
-                  placeholder=""
+                  placeholder="Full address"
+                  aria-label="Full address"
                 />
               </div>
             </div>

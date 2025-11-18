@@ -68,8 +68,8 @@ export default function AccountPage() {
   return (
     <div className="min-h-screen bg-[#EEF2FF]">
       {/* Header */}
-      <header className="w-full py-4 sm:py-5 px-4 sm:px-8">
-        <div className="max-w-[1440px] mx-auto flex items-center justify-between">
+      <header className="w-full py-4 px-[20px] max-w-[1240px] mx-auto">
+        <div className="max-w-[1240px] mx-auto flex items-center justify-between">
           {/* Logo */}
           <Link href="/">
             <div className="cursor-pointer">
@@ -164,7 +164,7 @@ export default function AccountPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+      <main className="max-w-[1240px] mx-auto px-[20px]  py-6 sm:py-10">
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
           {/* Left Sidebar */}
           <div className="w-full lg:w-[358px] bg-[#EEF2FF] border border-[#C5CBD8] rounded-[11px] p-4 sm:p-6 lg:p-8" style={{ boxShadow: '0px 0px 200px 0px rgba(0, 0, 0, 0.1)' }}>
@@ -235,9 +235,9 @@ export default function AccountPage() {
           <div className="flex-1 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[11px] p-6 sm:p-8 lg:p-12" style={{ boxShadow: '0px 0px 200px 0px rgba(0, 0, 0, 0.1)' }}>
             {activeTab === 'personal' && (
               <div>
-                <h2 className="text-xl sm:text-2xl font-semibold text-[#313234] mb-8 sm:mb-12">Personal information</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold text-[#313234] mb-8 sm:mb-10">Personal information</h2>
 
-                <form className="space-y-6 sm:space-y-10">
+                <form className="space-y-6 sm:space-y-6">
                   {/* Name */}
                   <div>
                     <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">Name</label>
@@ -245,7 +245,7 @@ export default function AccountPage() {
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-transparent border-b border-[#C5CBD8] text-[#313234] text-base sm:text-xl font-medium focus:outline-none focus:border-[#306EEC] transition-colors"
+                      className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] text-[#313234] text-base sm:text-xl font-medium focus:outline-none focus:border-[#306EEC] focus:ring-2 focus:ring-[#306EEC]/20 transition-colors"
                     />
                   </div>
 
@@ -256,7 +256,7 @@ export default function AccountPage() {
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-transparent border-b border-[#C5CBD8] text-[#313234] text-base sm:text-xl font-medium focus:outline-none focus:border-[#306EEC] transition-colors"
+                      className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] text-[#313234] text-base sm:text-xl font-medium focus:outline-none focus:border-[#306EEC] focus:ring-2 focus:ring-[#306EEC]/20 transition-colors"
                     />
                   </div>
 
@@ -267,7 +267,7 @@ export default function AccountPage() {
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-transparent border-b border-[#C5CBD8] text-[#313234] text-base sm:text-xl font-medium focus:outline-none focus:border-[#306EEC] transition-colors"
+                      className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] text-[#313234] text-base sm:text-xl font-medium focus:outline-none focus:border-[#306EEC] focus:ring-2 focus:ring-[#306EEC]/20 transition-colors"
                       placeholder=""
                     />
                   </div>
@@ -279,7 +279,7 @@ export default function AccountPage() {
                       type="text"
                       value={formData.address1}
                       onChange={(e) => handleInputChange('address1', e.target.value)}
-                      className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-transparent border-b border-[#C5CBD8] text-[#313234] text-base sm:text-xl font-medium focus:outline-none focus:border-[#306EEC] transition-colors"
+                      className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] text-[#313234] text-base sm:text-xl font-medium focus:outline-none focus:border-[#306EEC] focus:ring-2 focus:ring-[#306EEC]/20 transition-colors"
                     />
                   </div>
 
@@ -290,7 +290,7 @@ export default function AccountPage() {
                       type="text"
                       value={formData.address2}
                       onChange={(e) => handleInputChange('address2', e.target.value)}
-                      className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-transparent border-b border-[#C5CBD8] text-[#313234] text-base sm:text-xl font-medium focus:outline-none focus:border-[#306EEC] transition-colors"
+                      className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] text-[#313234] text-base sm:text-xl font-medium focus:outline-none focus:border-[#306EEC] focus:ring-2 focus:ring-[#306EEC]/20 transition-colors"
                       placeholder=""
                     />
                   </div>
@@ -350,25 +350,27 @@ export default function AccountPage() {
                 {/* Invoices Section */}
                 <div>
                   <h3 className="text-lg sm:text-xl font-medium text-[#6A6D71] mb-4 sm:mb-6">Invoices</h3>
-                  
-                  <div className="space-y-0">
-                    {/* Invoice Item */}
-                    {[1, 2, 3, 4, 5].map((item) => (
-                      <div key={item} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 sm:py-4 border-b border-[#C5CBD8] gap-2 sm:gap-4">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                          {/* PDF Icon */}
-                          <svg width="14" height="18" viewBox="0 0 16 22" fill="none" className="sm:w-4 sm:h-[22px] flex-shrink-0">
-                            <path d="M10 0H2C0.9 0 0.0100002 0.9 0.0100002 2L0 20C0 21.1 0.89 22 1.99 22H14C15.1 22 16 21.1 16 20V6L10 0ZM12 18H4V16H12V18ZM12 14H4V12H12V14ZM9 7V1.5L14.5 7H9Z" fill="#313234"/>
-                          </svg>
-                          <span className="text-sm sm:text-base text-[#313234]">invoice_2025/10.pdf</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 sm:gap-4 ml-9 sm:ml-0">
-                          <span className="text-xs sm:text-base text-[#6A6D71]">Date of invoice</span>
-                          <span className="text-sm sm:text-base text-[#313234]">Nov 02, 2020</span>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="flex flex-col gap-3 sm:gap-4">
+                        {/* Invoice Item */}
+                        {[1, 2, 3, 4, 5].map((item) => (
+                          <div
+                            key={item}
+                            className="w-full h-[54px] flex items-center justify-between rounded-[14px] border border-[#C5CBD8] bg-[#EEF2FF] px-4 sm:px-6"
+                          >
+                            <div className="flex items-center gap-3">
+                              {/* PDF Icon */}
+                              <svg width="16" height="22" viewBox="0 0 16 22" fill="none" className="flex-shrink-0">
+                                <path d="M10 0H2C0.9 0 0.01 0.9 0.01 2L0 20C0 21.1 0.89 22 1.99 22H14C15.1 22 16 21.1 16 20V6L10 0ZM12 18H4V16H12V18ZM12 14H4V12H12V14ZM9 7V1.5L14.5 7H9Z" fill="#313234"/>
+                              </svg>
+                              <span className="text-[16px] leading-[120%] text-[#313234]">invoice_2025/10.pdf</span>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <span className="text-[16px] leading-[120%] text-[#6A6D71]">Date of invoice</span>
+                              <span className="text-[16px] leading-[120%] text-[#313234]">Nov 02, 2020</span>
+                            </div>
+                          </div>
+                        ))}
                   </div>
                 </div>
               </div>
@@ -401,7 +403,7 @@ export default function AccountPage() {
                     {/* Booking Items */}
                     <div className="space-y-0">
                       {bookings.map((booking) => (
-                        <div key={booking.id} className="border-b border-[#C5CBD8] py-4 px-4 sm:px-6">
+                        <div key={booking.id} className=" border-[#C5CBD8] py-4 px-4 sm:px-6">
                           {/* Mobile Layout */}
                           <div className="sm:hidden space-y-3">
                             <div>
@@ -428,16 +430,18 @@ export default function AccountPage() {
 
                           {/* Desktop Layout */}
                           <div className="hidden sm:block">
-                            <div className="grid grid-cols-[2fr_1fr_1fr] gap-4 lg:gap-8 items-start mb-3">
-                              <div className="text-sm sm:text-base text-[#313234] leading-[120%]">
-                                25 42nd Street Lindenhurst,<br />
-                                NY, 11757 • Nassau
+                            <div className="w-full h-[54px] rounded-[14px] border border-[#C5CBD8] bg-[#EEF2FF] flex items-center px-4 sm:px-6">
+                              <div className="grid grid-cols-[2fr_1fr_1fr] gap-4 lg:gap-8 w-full items-center">
+                                <div className="text-[16px] leading-[120%] text-[#313234]">
+                                  25 42nd Street Lindenhurst,<br />
+                                  NY, 11757 • Nassau
+                                </div>
+                                <div className="text-[16px] leading-[120%] text-[#313234]">Nov 7, 2025</div>
+                                <div className="text-[16px] leading-[120%] text-[#313234]">6:00 PM</div>
                               </div>
-                              <div className="text-sm sm:text-base text-[#313234]">Nov 7, 2025</div>
-                              <div className="text-sm sm:text-base text-[#313234]">6:00 PM</div>
                             </div>
-                            <div className="flex justify-end">
-                              <button className="text-sm sm:text-base text-[#6A6D71] hover:underline">
+                            <div className="flex justify-end mt-3">
+                              <button className="text-[16px] leading-[120%] text-[#6A6D71] hover:underline">
                                 Cancel booking
                               </button>
                             </div>
@@ -506,6 +510,8 @@ export default function AccountPage() {
           </div>
         </div>
       </main>
+      
     </div>
   );
 }
+

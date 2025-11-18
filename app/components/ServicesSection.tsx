@@ -35,7 +35,7 @@ function ServiceCard({ service, customSize }: { service: typeof services[0], cus
   
   return (
     <div 
-      className={`${bgColor} ${width} ${height} w-full h-[220px] sm:h-[240px] rounded-[20px] ${padding} flex flex-col justify-between shadow-[0_10px_80px_rgba(0,0,0,0.25)] transition-transform hover:scale-105`}
+      className={`${bgColor} ${width} ${height} w-full h-[220px] sm:h-[240px] rounded-[20px] ${padding} flex flex-col justify-between shadow-none sm:shadow-[0_10px_80px_rgba(0,0,0,0.25)] transition-transform hover:scale-105 border border-[#C5CBD8]`}
       style={{ marginTop: `${service.offset}px` }}
     >
       <div>
@@ -57,16 +57,36 @@ function ServiceCard({ service, customSize }: { service: typeof services[0], cus
 
 export default function ServicesSection() {
   return (
-    <section className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden">
+    <section className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative -mb-32 sm:-mb-40 lg:-mb-48 overflow-visible  ">
+      {/* Light effect from lamp */}
+      <div className="hidden lg:block absolute -top-20 left-1/2 -translate-x-1/2 pointer-events-none z-0 opacity-90 scale-150">
+        <svg width="1394" height="1698" viewBox="0 0 1394 1698" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g filter="url(#filter0_f_208_636)">
+            <path d="M1189.61 1108.83C1083.88 1166.25 965.592 1196.63 845.28 1197.3C724.968 1197.96 606.357 1168.87 500 1112.63L823.875 500.193C829.295 503.06 835.34 504.542 841.471 504.508C847.602 504.474 853.63 502.926 859.019 500L1189.61 1108.83Z" fill="url(#paint0_radial_208_636)" />
+          </g>
+          <defs>
+            <filter id="filter0_f_208_636" x="-3.05176e-05" y="0" width="1689.61" height="1697.31" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+              <feFlood floodOpacity="0" result="BackgroundImageFix" />
+              <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
+              <feGaussianBlur stdDeviation="250" result="effect1_foregroundBlur_208_636" />
+            </filter>
+            <radialGradient id="paint0_radial_208_636" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(841.266 467.306) rotate(90) scale(730)">
+              <stop offset="0.403846" stopColor="#F6D28C" />
+              <stop offset="1" stopColor="#2B2417" stopOpacity="0.6" />
+            </radialGradient>
+          </defs>
+        </svg>
+      </div>
+
       {/* Decorative Background Circle */}
       <div 
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[1460px] h-[1460px] rounded-full"
+        className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-[1460px] h-[1460px] rounded-full z-0"
         style={{
           background: 'radial-gradient(circle, rgba(48, 110, 236, 0.1) 0%, transparent 70%)',
         }}
       ></div>
 
-      <div className="container mx-auto px-4 max-w-[1440px] relative z-10">
+      <div className="container mx-auto px-[20px] max-w-[1240px] relative z-10">
         {/* Header - Hidden on desktop, shown on mobile */}
         <div className="text-center mb-8 sm:mb-12 lg:hidden relative">
           <h2 className="text-3xl sm:text-5xl lg:text-[64px] font-bold leading-tight sm:leading-[48px] lg:leading-[57px] uppercase">

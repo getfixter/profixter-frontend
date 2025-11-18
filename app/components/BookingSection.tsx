@@ -29,14 +29,16 @@ export default function BookingSection() {
   };
 
   return (
-    <section id="pick-day" className="relative w-full py-12 sm:py-16 lg:py-24 bg-white">
-      <div className="container mx-auto px-4 max-w-[1440px]">
+    <section id="pick-day" className="relative w-full pt-32 sm:pt-40 lg:pt-48 pb-12 sm:pb-16 lg:pb-24 bg-white">
+      <div className="container mx-auto px-[20px] max-w-[1240px]">
         {/* Header with edge labels and centered title */}
         <div className="mb-8 sm:mb-10 lg:mb-12">
           {/* Edge labels - Desktop only */}
-          <div className="hidden lg:flex items-start justify-between text-[14px] font-medium text-[#313234] uppercase tracking-wide mb-8">
-            <span>PICK YOUR</span>
-            <span className="text-right">DATE AND TIME</span>
+          <div className="hidden lg:flex items-center justify-between text-[12px] font-bold text-[#313234] leading-[89%] font-montserrat uppercase">
+            <span className="w-[66px] text-center whitespace-nowrap">Pick your</span>
+            <span className="w-[94px] text-center whitespace-nowrap text-[#306EEC]">
+              date<span className="text-[#313234]">&nbsp;and&nbsp;</span>time
+            </span>
           </div>
 
           {/* Mobile/Tablet - Simple centered title */}
@@ -56,16 +58,16 @@ export default function BookingSection() {
 
           {/* Desktop - Centered Title */}
           <div className="hidden lg:block relative max-w-[1000px] mx-auto">
-            <div className="flex items-center justify-center gap-8">
-              <h2 className="text-[64px] font-bold leading-[88.9%] uppercase">
+            <div className="flex items-center justify-center gap-2">
+              <h2 className="text-[64px] font-bold leading-[89%] uppercase tracking-[-0.05em]">
                 <span className="text-[#313234]">PICK YOUR</span>
               </h2>
               <p className="text-[#6A6D71] text-[15px] font-medium max-w-[289px] text-left">
                 Choose the most convenient time and tell us what needs fixing.
               </p>
             </div>
-            <div className="flex justify-end mt-2" style={{ paddingRight: 'calc((100% - 289px - 64px * 4.5) / 2)' }}>
-              <h2 className="text-[64px] font-bold leading-[88.9%] uppercase">
+            <div className="flex justify-end " style={{ paddingRight: 'calc((100% - 289px - 64px * 4.5) / 2)' }}>
+              <h2 className="text-[64px] font-bold leading-[89%] uppercase tracking-[-0.05em]">
                 <span className="text-[#306EEC]">DATE</span>
                 <span className="text-[#313234]"> AND </span>
                 <span className="text-[#306EEC]">TIME</span>
@@ -78,7 +80,7 @@ export default function BookingSection() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
           {/* Calendar card */}
           <div className="lg:col-span-5">
-            <div className="rounded-[14px] border border-[#c5cbd8] bg-[#eef2ff] shadow-[0_0_200px_rgba(0,0,0,0.09)] p-4 sm:p-6">
+            <div className="rounded-[14px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.09)] p-4 sm:p-6">
               {/* Month header */}
               <div className="flex items-center justify-between">
                 <button aria-label="Prev month" className="w-8 h-8 sm:w-10 sm:h-10 rounded-[12px] border border-[#c5cbd8] bg-white/60 grid place-items-center text-[#313234]">
@@ -132,7 +134,7 @@ export default function BookingSection() {
           <div className="lg:col-span-7">
             {/* Time + length */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-              <div className="w-full sm:w-[160px] h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#eef2ff] shadow-[0_0_200px_rgba(0,0,0,0.09)] flex items-center px-4 sm:px-6 text-[#313234] text-lg sm:text-[20px]">
+              <div className="w-full sm:w-[160px] h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.09)] flex items-center px-4 sm:px-6 text-[#313234] text-lg sm:text-[20px]">
                 14:00
                 <span className="ml-auto"><ChevronDown /></span>
               </div>
@@ -140,11 +142,11 @@ export default function BookingSection() {
             </div>
 
             {/* Issue description block with buttons on the right */}
-            <div className="relative mt-6 rounded-[14px] border border-[#c5cbd8] bg-[#eef2ff] shadow-[0_0_200px_rgba(0,0,0,0.10)] p-4 sm:p-5 min-h-[200px] sm:min-h-[141px]">
+            <div className="relative mt-6 rounded-[14px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.10)] p-4 sm:p-5 min-h-[200px] sm:min-h-[141px]">
               <p className="text-sm sm:text-base text-[#6a6c71] mb-16 sm:mb-0">Briefly describe your issue (e.g. leaking faucet, light switch not working)...</p>
               <div className="absolute left-4 right-4 bottom-4 sm:left-auto sm:right-5 sm:bottom-5 flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <button className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#eef2ff] text-[#313234] text-sm sm:text-base whitespace-nowrap">Select a service</button>
-                <label className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#eef2ff] text-[#313234] text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer hover:bg-white/50 transition-colors whitespace-nowrap">
+                <button className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base whitespace-nowrap">Select a service</button>
+                <label className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer hover:bg-white/50 transition-colors whitespace-nowrap">
                   <Paperclip />
                   Add photo {uploadedPhotos.length > 0 && `(${uploadedPhotos.length})`}
                   <input 
@@ -159,7 +161,7 @@ export default function BookingSection() {
             </div>
 
             {/* Address */}
-            <div className="mt-6 w-full h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#eef2ff] shadow-[0_0_200px_rgba(0,0,0,0.10)] flex items-center px-4 sm:px-6">
+            <div className="mt-6 w-full h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.10)] flex items-center px-4 sm:px-6">
               <span className="text-sm sm:text-base text-[#6a6c71]">Select address</span>
             </div>
 
