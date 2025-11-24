@@ -25,7 +25,8 @@ export default function Footer() {
           <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 lg:gap-8 w-full lg:w-auto">
             {/* Logo */}
             <div className="flex flex-col">
-              <Image src="/images/logo.svg" alt="Profixter" width={160} height={64} />
+              <Image src="/images/logo-footer.svg" alt="Profixter" width={360} height={76} />
+             
             </div>
             
             {/* Description */}
@@ -69,10 +70,10 @@ export default function Footer() {
         <div className="mt-8 w-full sm:w-auto">
           <div className="relative w-full sm:w-[300px]">
             {/* Soft blurred backdrop rectangle (hide on mobile to avoid overlap) */}
-            <div className="hidden sm:block absolute -left-6 -top-6 w-[320px] h-[245px] rounded-[14px] bg-[rgba(46,41,27,0.13)] backdrop-blur-[4px]" />
+            {/* <div className="hidden sm:block absolute -left-6 -top-6 w-[320px] h-[245px] rounded-[14px] bg-[rgba(46,41,27,0.13)] backdrop-blur-[4px]" /> */}
 
             {/* Foreground contact card */}
-            <div className="relative w-full rounded-[14px] bg-white/5 border border-white/10 backdrop-blur-md shadow-none sm:shadow-[0_10px_80px_rgba(0,0,0,0.25)] p-5 sm:p-6">
+            <div className="relative w-full rounded-[14px] bg-white/1 backdrop-blur-sm shadow-none sm:shadow-[0_10px_80px_rgba(0,0,0,0.25)] p-5 sm:p-6">
               <h3 className="text-[22px] sm:text-[24px] font-semibold text-[#306EEC] leading-[89%] mb-4">Get in Touch</h3>
               <div className="space-y-3">
                 <Link href="https://instagram.com/mrfixter.ny" target="_blank" className="flex items-center gap-3 text-[#C5CBD8] text-[16px] leading-[120%] hover:text-[#306EEC] transition-colors">
@@ -86,9 +87,8 @@ export default function Footer() {
                 </Link>
                 <Link href="mailto:my@profixter.com" className="flex items-center gap-3 text-[#C5CBD8] text-[16px] leading-[120%] hover:text-[#306EEC] transition-colors">
                   {/* Mail icon */}
-                  <svg width="20" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M22 8l-10 7L2 8" stroke="currentColor" strokeWidth="2"/>
+                  <svg width="20" height="16" viewBox="0 0 20 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 14H16V5.25L10 9L4 5.25V14H2V2H3.2L10 6.25L16.8 2H18M18 0H2C0.89 0 0 0.89 0 2V14C0 14.5304 0.210714 15.0391 0.585786 15.4142C0.960859 15.7893 1.46957 16 2 16H18C18.5304 16 19.0391 15.7893 19.4142 15.4142C19.7893 15.0391 20 14.5304 20 14V2C20 1.46957 19.7893 0.960859 19.4142 0.585786C19.0391 0.210714 18.5304 0 18 0Z" fill="currentColor" />
                   </svg>
                   my@profixter.com
                 </Link>

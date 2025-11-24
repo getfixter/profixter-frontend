@@ -2,7 +2,7 @@ import Image from 'next/image';
 
 export default function StepsSection() {
   return (
-    <section className="w-full bg-white h-full py-12 sm:py-16 lg:py-20 flex items-center justify-center mb-16 sm:mb-32 lg:mb-75">
+    <section className="w-full  h-full py-12 sm:py-16 lg:py-20 flex items-center justify-center mb-16 sm:mb-32 lg:mb-75">
       <div className="container mx-auto px-[20px] max-w-[1240px]">
         <div className="relative w-full lg:w-[1240px] mx-auto">
           {/* Decorative text - left */}
@@ -38,9 +38,10 @@ export default function StepsSection() {
                 height: '250px',
               }}
             >
-              <img
+              <Image
                 src="/images/icons/line.svg"
                 alt=""
+                fill
                 className="w-full min-h-full"
                 style={{ filter: 'drop-shadow(0px 29px 20px rgba(0, 0, 0, 0.25))' }}
               />
@@ -100,7 +101,7 @@ export default function StepsSection() {
             {/* Desktop: Original Absolute Positioning */}
             <div className="hidden lg:block">
               {/* Step 01 */}
-              <div className="absolute top-9 -left-8 w-[295px]">
+              <div className="absolute top-5 left-0 w-[295px]">
                 <div className="relative ">
                   <h3 className="text-2xl font-semibold text-[#313234] leading-[21px] mb-4">
                     Choose your<br />perfect plan
@@ -138,7 +139,7 @@ export default function StepsSection() {
               </div>
 
               {/* Step 03 */}
-              <div className="absolute top-4 right-1 w-[221px] text-right">
+              <div className="absolute top-0 right-11 w-[221px] text-right">
                 <div className="relative">
                   <h3 className="text-2xl font-semibold text-[#313234] leading-[21px] mb-4">
                     Get confirmation<br />and relax

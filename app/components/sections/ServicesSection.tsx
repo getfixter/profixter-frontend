@@ -1,21 +1,9 @@
 'use client';
 
 import Image from 'next/image';
+import { services } from '@/app/data/content';
 
-const services = [
-  { id: '01', title: 'Unlimited requests', description: 'One active job at a time; finish one — book the next.', color: 'blue', size: 'normal', offset: 0 },
-  { id: '02', title: 'Basic improvements', description: 'Mount TVs/shelves, replace faucets/locks, hang fixtures, assemble furniture.', color: 'light', size: 'normal', offset: 0 },
-  { id: '03', title: 'Quick fixes', description: 'Outlets, leaks, cabinet hinges, caulk, drywall touch-ups.', color: 'dark', size: 'small', offset: 0 },
-  { id: '04', title: 'Standard materials included', description: 'We bring repair supplies. Specialty finishes billed at cost if needed.', color: 'blue', size: 'normal', offset: -50 },
-  { id: '05', title: 'Consultation', description: 'Practical DIY & planning advice on-site or virtual.', color: 'dark', size: 'large', offset: -20 },
-  { id: '06', title: 'Get 2 pros when needed', description: 'Safe lifting or added complexity.', color: 'dark', size: 'small', offset: -100 },
-  { id: '07', title: 'Renovation consultation', description: 'Scope, estimate ranges, timelines, materials guidance.', color: 'dark', size: 'normal', offset: 10 },
-  { id: '08', title: '24/7 emergency help', description: 'Scope, estimate ranges, timelines, materials guidance.', color: 'light', size: 'normal', offset: -20 },
-  { id: '09', title: 'Seasonal property inspection', description: 'Regular seasonal assessments to spot maintenance needs early.', color: 'dark', size: 'large', offset: -30 },
-  { id: '10', title: 'Exclusive discount', description: 'Best rates on bigger projects.', color: 'blue', size: 'large', offset: -60 },
-];
-
-function ServiceCard({ service, customSize }: { service: typeof services[0], customSize?: { width?: string, height?: string } }) {
+function ServiceCard({ service, customSize }: { service: (typeof services)[number], customSize?: { width?: string, height?: string } }) {
   const bgColor = service.color === 'blue' ? 'bg-gradient-to-b from-[#306EEC] to-[#1B3E86]' : 
                  service.color === 'light' ? 'bg-[#EEF2FF]' : 'bg-[#3A3C3E]';
   const textColor = service.color === 'light' ? 'text-[#313234]' : 'text-white';

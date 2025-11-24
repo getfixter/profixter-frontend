@@ -2,44 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-
-const plans = [
-  {
-    name: 'Basic',
-    description: 'Great for steady small jobs',
-    price: 149,
-    features: [
-      'Unlimited requests',
-      'Basic improvements',
-      'Quick fixes'
-    ],
-    buttonText: 'Get started Free'
-  },
-  {
-    name: 'Plus',
-    description: 'More momentum each month',
-    price: 249,
-    subtitle: 'Everything in Basic, plus',
-    features: [
-      'Standard materials included',
-      'Consultation'
-    ],
-    buttonText: 'Get started Free'
-  },
-  {
-    name: 'Premium',
-    description: 'Everything you need',
-    price: 349,
-    subtitle: 'Everything in Plus, plus',
-    features: [
-      'Get 3 appointments per month',
-      'Premium materials',
-      'Special requests',
-      '24/7 emergency support'
-    ],
-    buttonText: 'Get started Free'
-  }
-];
+import { plans } from '@/app/data/content';
 
 export default function PlansSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -179,9 +142,14 @@ export default function PlansSection() {
                         </div>
 
                         {/* CTA Button */}
-                        <button className="w-full h-[56px] sm:h-[60px] bg-[#306EEC] hover:bg-[#2558c9] rounded-2xl text-lg sm:text-xl font-bold text-[#EEF2FF] leading-none transition-all duration-300 shadow-lg mt-6">
+                        <a 
+                          href={plan.stripeLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full h-[56px] sm:h-[60px] bg-[#306EEC] hover:bg-[#2558c9] rounded-2xl text-lg sm:text-xl font-bold text-[#EEF2FF] leading-none transition-all duration-300 shadow-lg mt-6 flex items-center justify-center"
+                        >
                           {plan.buttonText}
-                        </button>
+                        </a>
                       </div>
                     </div>
                   ))}
@@ -233,8 +201,17 @@ export default function PlansSection() {
             {/* Desktop: Original Carousel Layout */}
             <div className="hidden lg:flex relative items-center gap-6 ml-16">
               {/* Main Card (Active) */}
-              <div className="w-[390px] h-[522px] bg-[#EEF2FF] rounded-[20px] border border-[#C5CBD8] p-8 shadow-[0_10px_80px_rgba(0,0,0,0.25)] flex-shrink-0">
-            <div className="flex flex-col h-full">
+              <div className="relative w-[390px] h-[522px] bg-[#EEF2FF] rounded-[20px] border-2 border-transparent shadow-[0_10px_80px_rgba(0,0,0,0.25)] flex-shrink-0"
+               >
+                {/* Popular Badge */}
+                {plans[currentSlide].isPopular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                    <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-10 py-2 rounded-[5px] border border-[#EEF2FF]">
+                      <span className="text-[20px] font-medium text-[#EEF2FF] leading-[120%]">Popular</span>
+                    </div>
+                  </div>
+                )}
+            <div className="flex flex-col h-full p-8">
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-semibold text-[#313234] leading-[88.9%] mb-2">
                   {plans[currentSlide].name}
@@ -253,6 +230,11 @@ export default function PlansSection() {
                   </span>
                 </div>
               </div>
+              {plans[currentSlide].subtitle && (
+                <p className="text-[20px] font-medium text-[#306EEC] leading-[120%] mb-4">
+                  {plans[currentSlide].subtitle}
+                </p>
+              )}
               <div className="space-y-3 mb-auto">
                 {plans[currentSlide].features.map((feature, idx) => (
                   <div key={idx} className="flex items-center gap-2">
@@ -267,11 +249,16 @@ export default function PlansSection() {
                   </div>
                 ))}
               </div>
-              <button className="w-full h-[60px] bg-[#306EEC] hover:bg-[#2558c9] rounded-[10px] text-xl font-medium text-[#EEF2FF] leading-[120%] transition-colors mt-6">
+              <a 
+                href={plans[currentSlide].stripeLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full h-[60px] bg-[#306EEC] hover:bg-[#2558c9] rounded-[10px] text-xl font-medium text-[#EEF2FF] leading-[120%] transition-colors mt-6 flex items-center justify-center"
+              >
                 {plans[currentSlide].buttonText}
-              </button>
+              </a>
             </div>
-          </div>
+            </div>
           <div className="flex gap-6">
             {[1, 2].map((offset) => {
               const index = (currentSlide + offset) % plans.length;
@@ -317,9 +304,14 @@ export default function PlansSection() {
                           </div>
                         ))}
                       </div>
-                      <button className="w-full h-[46px] bg-[#306EEC] hover:bg-[#2558c9] rounded-[8px] text-[15px] font-medium text-[#EEF2FF] leading-[120%] transition-colors mt-4">
+                      <a 
+                        href={plan.stripeLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full h-[46px] bg-[#306EEC] hover:bg-[#2558c9] rounded-[8px] text-[15px] font-medium text-[#EEF2FF] leading-[120%] transition-colors mt-4 flex items-center justify-center"
+                      >
                         {plan.buttonText}
-                      </button>
+                      </a>
                     </div>
                   </div>
                   <div className="absolute inset-0 bg-[#313234]/30 backdrop-blur-[3px] rounded-[16px] pointer-events-none" />

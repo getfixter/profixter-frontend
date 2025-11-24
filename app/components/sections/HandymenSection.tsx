@@ -2,41 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-
-const TEAM = [
-  {
-    id: 1,
-    name: "Taras Bandura",
-    photo: "/images/handymen.png",
-    thumb: "/images/handymen.png",
-    blurb:
-      "Friendly, experienced, and always ready to help. Makes every home project stress-free. Always focused on quality and customer satisfaction. Favorite projects: lighting setups and quick home improvements.",
-  },
-  {
-    id: 2,
-    name: "Nazar Kovalenko",
-    photo: "/images/handymen2.png",
-    thumb: "/images/handymen2.png",
-    blurb:
-      "Detail-driven electrician and installer. Loves smart-home setups and clean finishes. Reliable and fast.",
-  },
-  {
-    id: 3,
-    name: "Iryna Melnyk",
-    photo: "/images/handymen3.png",
-    thumb: "/images/handymen3.png",
-    blurb:
-      "Painter and finisher with a designer's eye. Passionate about refreshing spaces with precision.",
-  },
-  {
-    id: 4,
-    name: "Oleksii Chernyk",
-    photo: "/images/handymen.png",
-    thumb: "/images/handymen.png",
-    blurb:
-      "Multiskill handyman: carpentry, drywall, and hardware fixes. Focused on tidy, durable results.",
-  },
-];
+import { team as TEAM } from "@/app/data/content";
 
 export default function HandymenSection() {
   const [idx, setIdx] = useState(0);
@@ -157,15 +123,15 @@ export default function HandymenSection() {
 
       <div className="container mx-auto px-[20px] max-w-[1240px] pt-[20px]">
         {/* Gallery + Bio */}
-        <div className="mt-6 sm:mt-8 lg:mt-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+        <div className="mt-6 sm:mt-8 lg:mt-10 grid grid-cols-1 lg:grid-cols-13 gap-6 lg:gap-8">
           {/* Big photo */}
           <div className="lg:col-span-7">
-            <div className="relative w-full h-[300px] sm:h-[400px] lg:h-[460px] rounded-[14px] overflow-hidden">
-              <Image src={person.photo} alt={person.name} fill className="object-cover" />
+            <div className="relative w-full h-[300px] sm:h-[400px] lg:h-[406px] rounded-[14px] overflow-hidden max-w-[622px]">
+              <Image src={person.photo} alt={person.name} fill className="object-cover  max-w-[622px]" />
             </div>
           </div>
 
-          <div className="lg:col-span-5 flex flex-col pl-[50px]">
+          <div className="lg:col-span-6 flex flex-col pl-[40px]">
             <h3 className="text-xl sm:text-2xl lg:text-[24px] font-semibold text-[#eef2ff] leading-tight lg:leading-[21px]">{person.name}</h3>
             <p className="mt-4  text-base sm:text-lg lg:text-[20px] leading-relaxed lg:leading-[24px] text-[#c5cbd8] max-w-[320px]">
               {person.blurb}
@@ -178,12 +144,12 @@ export default function HandymenSection() {
             <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 sm:gap-0 mt-6">
               {/* Arrows */}
               <div className="flex gap-3">
-                <button onClick={prev} className="w-[52px] h-[40px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors" aria-label="Previous">
+                <button onClick={prev} className="w-[40px] h-[40px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors" aria-label="Previous">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
-                <button onClick={next} className="w-[52px] h-[40px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors" aria-label="Next">
+                <button onClick={next} className="w-[40px] h-[40px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors" aria-label="Next">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>

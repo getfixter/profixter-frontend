@@ -66,7 +66,7 @@ export default function HeroSection() {
                 {/* Review Badge */}
                 <div>
                   <div className="flex items-center gap-2 px-3 py-2 bg-[#313234]/30 backdrop-blur-[8px] rounded-full h-[38px]">
-                    <img src="/images/icons/icon-google.svg" alt="" className="w-4 h-4" />
+                    <Image src="/images/icons/icon-google.svg" alt="" width={16} height={16} className="w-4 h-4" />
                     <span className="text-base font-semibold text-[#EEF2FF] leading-[88.9%]">5.0 stars</span>
                     <span className="text-base text-[#C5CBD8] leading-[88.9%]">548 reviews</span>
                   </div>
@@ -81,7 +81,7 @@ export default function HeroSection() {
             </h1>
 
             {/* Subheading with responsive margin */}
-            <div className="lg:ml-[70px] text-left">
+            <div className="lg:ml-[90px] text-left">
               <p className="text-[20px] font-medium text-[#C5CBD8] leading-[120%] max-w-[362px] mb-6">
                 Book professional help for your home in seconds. Choose a plan, pick a date — we handle the rest.
               </p>
@@ -102,7 +102,7 @@ export default function HeroSection() {
             {/* Review Badge - Mobile only */}
             <div className="flex justify-center mb-6">
               <div className="flex items-center gap-2 px-3 py-2 bg-[#313234]/30 backdrop-blur-[8px] rounded-full h-[38px]">
-                <img src="/images/icons/icon-google.svg" alt="" className="w-4 h-4" />
+                <Image src="/images/icons/icon-google.svg" alt="" width={16} height={16} className="w-4 h-4" />
                 <span className="text-sm font-semibold text-[#EEF2FF] leading-[88.9%]">5.0 stars</span>
                 <span className="text-sm text-[#C5CBD8] leading-[88.9%]">548 reviews</span>
               </div>

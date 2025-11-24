@@ -74,7 +74,7 @@ export default function ProjectsSection() {
             <div className="flex gap-3 justify-center mt-6">
               <button
                 onClick={prevSlide}
-                className="bg-[#EEF2FF] hover:bg-white text-[#313234] w-[52px] h-[52px] rounded-[12px] flex items-center justify-center transition-colors shadow-md"
+                className="bg-[#EEF2FF] hover:bg:white text-[#313234] w-[52px] h-[52px] rounded-[12px] flex items-center justify-center transition-colors shadow-md"
                 aria-label="Previous project"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -83,7 +83,7 @@ export default function ProjectsSection() {
               </button>
               <button
                 onClick={nextSlide}
-                className="bg-[#EEF2FF] hover:bg-white text-[#313234] w-[52px] h-[52px] rounded-[12px] flex items-center justify-center transition-colors shadow-md"
+                className="bg-[#EEF2FF] hover:bg:white text-[#313234] w-[52px] h-[52px] rounded-[12px] flex items-center justify-center transition-colors shadow-md"
                 aria-label="Next project"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -118,19 +118,19 @@ export default function ProjectsSection() {
           {/* Left Content */}
           <div className="flex-shrink-0 w-[390px] pt-4 flex flex-col justify-between ">
             <div className="w-full">
-              <h2 className="text-[64px] font-bold leading-[89%] uppercase w-full flex gap-2 tracking-[-0.05em]">
+              <h2 className="text-[64px] font-bold leading-[69%] uppercase w-full flex gap-2 tracking-[-0.05em]">
                 <span className="text-[#EEF2FF]">OUR </span>
                 <span className="text-[#306EEC]">LATEST</span>
               </h2>
-              <h2 className="text-[64px] font-bold leading-[89%] uppercase mb-8 text-[#EEF2FF] tracking-[-0.05em]">
+              <h2 className="text-[64px] font-bold leading-[89%] uppercase mb-[8px] text-[#EEF2FF] tracking-[-0.05em]">
                 PROJECT
               </h2>
               
-              <p className="text-[#C5CBD8] text-base leading-[120%] mb-8 max-w-[291px]">
+              <p className="text-[#C5CBD8] text-base leading-[120%] mb-[20px] max-w-[291px]">
                 Recent home improvements crafted with precision and care.
               </p>
               
-              <button className="w-[362px] h-[60px] bg-[#306EEC] hover:bg-[#2558c7] text-[#EEF2FF] rounded-[14px] text-[20px] font-semibold transition-colors mb-32">
+              <button className="w-[362px] h-[60px] bg-[#306EEC] hover:bg-[#2558c7] text-[#EEF2FF] rounded-[14px] text-[20px] font-semibold transition-colors mb-44">
                 Fix it today
               </button>
             </div>
