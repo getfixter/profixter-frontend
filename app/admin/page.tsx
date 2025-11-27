@@ -8,8 +8,10 @@ import AdminTabs from '@/app/components/admin/AdminTabs';
 import QuickStats from '@/app/components/admin/QuickStats';
 import UsersTable from '@/app/components/admin/UsersTable';
 import BookingsTable from '@/app/components/admin/BookingsTable';
+import BookingsCalendar from '@/app/components/admin/BookingsCalendar';
 import BlacklistTable from '@/app/components/admin/BlacklistTable';
 import EmailComposer from '@/app/components/admin/EmailComposer';
+import { toYMDNY } from '@/lib/utils/timezone-helpers';
 import {
   getAllUsers,
   getAllBookings,
@@ -34,6 +36,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState(''); // search query
   const [statusFilter, setStatusFilter] = useState('');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null); // YYYY-MM-DD format
 
   const isAdmin = user?.email === ADMIN_EMAIL;
 
@@ -156,10 +159,15 @@ export default function AdminPage() {
       );
     }
 
+    // Date filter
+    if (selectedDate) {
+      list = list.filter((b) => toYMDNY(new Date(b.date)) === selectedDate);
+    }
+
     return list.sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
-  }, [bookings, qlc, statusFilter]);
+  }, [bookings, qlc, statusFilter, selectedDate]);
 
   const subscribedUsers = useMemo(() => {
     return users.filter((u) => {
@@ -189,62 +197,65 @@ export default function AdminPage() {
       <AdminHeader />
 
       {/* Sticky toolbar */}
-      <div className="sticky top-[64px] z-40 bg-white border-b border-gray-200 px-4 md:px-8 py-4 shadow-sm">
-        <AdminTabs active={active} onChange={setActive} />
+      <div className="sticky top-[60px] md:top-[64px] z-40 bg-white border-b border-gray-200 shadow-sm">
+        <div className="px-3 md:px-8 py-3 md:py-4">
+          <AdminTabs active={active} onChange={setActive} />
 
-        <div className="grid gap-3 grid-cols-1 md:grid-cols-3 mt-4">
-          <div className="relative">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          <div className="grid gap-2 md:gap-3 grid-cols-1 md:grid-cols-3 mt-3 md:mt-4">
+            <div className="relative">
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                className="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="Search..."
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
               />
-            </svg>
-            <input
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              placeholder="Search name / ID / email / service"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
+            </div>
+
+            {active === 'bookings' && (
+              <>
+                <select
+                  className="px-3 md:px-4 py-2 md:py-2.5 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="">All statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="completed">Completed</option>
+                  <option value="canceled">Canceled</option>
+                </select>
+
+                <button
+                  className="px-4 md:px-6 py-2 md:py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm md:text-base font-medium hover:shadow-lg active:scale-95 md:hover:scale-105 transition-all flex items-center justify-center gap-2"
+                  onClick={fetchAll}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span className="hidden sm:inline">Refresh</span>
+                  <span className="sm:hidden">↻</span>
+                </button>
+              </>
+            )}
           </div>
-
-          {active === 'bookings' && (
-            <>
-              <select
-                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="">All statuses</option>
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="completed">Completed</option>
-                <option value="canceled">Canceled</option>
-              </select>
-
-              <button
-                className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-105 transition-all flex items-center justify-center gap-2"
-                onClick={fetchAll}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Refresh
-              </button>
-            </>
-          )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6">
+      <div className="max-w-[1400px] mx-auto px-3 md:px-8 py-3 md:py-6">
         {loading ? (
           <div className="bg-white rounded-xl shadow-lg p-12 text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
@@ -280,11 +291,21 @@ export default function AdminPage() {
             )}
 
             {active === 'bookings' && (
-              <BookingsTable
-                bookings={filteredBookings}
-                updateStatus={handleUpdateBookingStatus}
-                users={users}
-              />
+              <div className="space-y-6">
+                {/* Calendar on top - full width */}
+                <BookingsCalendar
+                  bookings={bookings}
+                  selectedDate={selectedDate}
+                  onChange={setSelectedDate}
+                />
+                
+                {/* Bookings below */}
+                <BookingsTable
+                  bookings={filteredBookings}
+                  updateStatus={handleUpdateBookingStatus}
+                  users={users}
+                />
+              </div>
             )}
 
             {active === 'emails' && <EmailComposer />}

@@ -24,24 +24,24 @@ interface AdminTabsProps {
 
 export default function AdminTabs({ active, onChange }: AdminTabsProps) {
   return (
-    <div className="flex gap-2 items-center flex-wrap">
+    <div className="flex gap-1.5 md:gap-2 items-center flex-wrap">
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
           className={`
-            relative px-6 py-3 rounded-xl font-bold text-sm transition-all duration-200
+            relative px-3 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl font-bold text-xs md:text-sm transition-all duration-200
             ${
               active === tab.id
-                ? `bg-gradient-to-r ${tab.color} text-white shadow-lg scale-105`
-                : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:shadow-md hover:scale-102'
+                ? `bg-gradient-to-r ${tab.color} text-white shadow-lg md:scale-105`
+                : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:shadow-md active:scale-95 md:hover:scale-102'
             }
           `}
         >
-          <span className="text-lg mr-2">{tab.icon}</span>
-          {tab.label}
+          <span className="text-base md:text-lg mr-1 md:mr-2">{tab.icon}</span>
+          <span className="hidden sm:inline">{tab.label}</span>
           {active === tab.id && (
-            <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${tab.color} rounded-b-xl`} />
+            <div className={`absolute bottom-0 left-0 right-0 h-0.5 md:h-1 bg-gradient-to-r ${tab.color} rounded-b-lg md:rounded-b-xl`} />
           )}
         </button>
       ))}

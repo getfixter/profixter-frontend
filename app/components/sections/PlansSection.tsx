@@ -3,9 +3,53 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { plans } from '@/app/data/content';
+import { useAuth } from '@/lib/useAuth';
+import { redirectToPayment } from '@/lib/payment-redirect';
+import type { PlanType } from '@/lib/stripe-links';
 
 export default function PlansSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const { user, isAuthenticated } = useAuth();
+
+  const handleSubscribe = (planName: string) => {
+    // Якщо не залогінений - редирект на логін
+    if (!isAuthenticated || !user) {
+      window.location.href = '/signin?redirect=/';
+      return;
+    }
+
+    // Отримуємо default address або першу адресу
+    const defaultAddress = user.addresses?.find(
+      (addr) => addr._id === user.defaultAddressId
+    ) || user.addresses?.[0];
+
+    if (!defaultAddress) {
+      alert('Please add an address to your account first');
+      window.location.href = '/account';
+      return;
+    }
+
+    // Мапимо назву плану на тип
+    const planTypeMap: Record<string, PlanType> = {
+      'Basic': 'basic',
+      'Plus': 'plus',
+      'Premium': 'premium',
+      'Elite': 'elite',
+    };
+
+    const planType = planTypeMap[planName];
+    if (!planType) {
+      console.error('Unknown plan:', planName);
+      return;
+    }
+
+    // Редирект на Stripe з addressId
+    redirectToPayment({
+      plan: planType,
+      addressId: defaultAddress._id,
+      userEmail: user.email,
+    });
+  };
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % plans.length);
@@ -142,14 +186,12 @@ export default function PlansSection() {
                         </div>
 
                         {/* CTA Button */}
-                        <a 
-                          href={plan.stripeLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button 
+                          onClick={() => handleSubscribe(plan.name)}
                           className="w-full h-[56px] sm:h-[60px] bg-[#306EEC] hover:bg-[#2558c9] rounded-2xl text-lg sm:text-xl font-bold text-[#EEF2FF] leading-none transition-all duration-300 shadow-lg mt-6 flex items-center justify-center"
                         >
                           {plan.buttonText}
-                        </a>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -249,14 +291,12 @@ export default function PlansSection() {
                   </div>
                 ))}
               </div>
-              <a 
-                href={plans[currentSlide].stripeLink}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button 
+                onClick={() => handleSubscribe(plans[currentSlide].name)}
                 className="w-full h-[60px] bg-[#306EEC] hover:bg-[#2558c9] rounded-[10px] text-xl font-medium text-[#EEF2FF] leading-[120%] transition-colors mt-6 flex items-center justify-center"
               >
                 {plans[currentSlide].buttonText}
-              </a>
+              </button>
             </div>
             </div>
           <div className="flex gap-6">
@@ -304,14 +344,12 @@ export default function PlansSection() {
                           </div>
                         ))}
                       </div>
-                      <a 
-                        href={plan.stripeLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button 
+                        onClick={() => handleSubscribe(plan.name)}
                         className="w-full h-[46px] bg-[#306EEC] hover:bg-[#2558c9] rounded-[8px] text-[15px] font-medium text-[#EEF2FF] leading-[120%] transition-colors mt-4 flex items-center justify-center"
                       >
                         {plan.buttonText}
-                      </a>
+                      </button>
                     </div>
                   </div>
                   <div className="absolute inset-0 bg-[#313234]/30 backdrop-blur-[3px] rounded-[16px] pointer-events-none" />

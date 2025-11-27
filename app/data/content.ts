@@ -33,6 +33,14 @@ export type Plan = {
 
 export const plans: Plan[] = [
   {
+    name: 'Basic',
+    description: 'Great for steady small jobs',
+    price: 149,
+    features: ['Unlimited requests', 'Basic improvements', 'Quick fixes'],
+    buttonText: 'Get started Free',
+    stripeLink: 'https://buy.stripe.com/eVqfZgeAN2pCgAxb3kawo02',
+  },
+  {
     name: 'Plus',
     description: 'More momentum each month',
     price: 249,
