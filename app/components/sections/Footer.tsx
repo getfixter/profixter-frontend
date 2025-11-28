@@ -1,9 +1,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
+
 export default function Footer() {
   return (
-    <footer className="relative min-h-[350px] sm:min-h-[400px] lg:h-[437px] overflow-hidden">
+    
+    <footer id="contact-us" className="relative min-h-[350px] sm:min-h-[400px] lg:h-[437px] overflow-hidden">
+
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image
@@ -31,7 +34,7 @@ export default function Footer() {
             
             {/* Description */}
             <p className="text-[#C5CBD8] text-sm sm:text-base leading-[120%] max-w-[500px] lg:pt-2">
-              Quick help, honest pricing, and professionals who care. Because every home deserves smooth comfort.
+              Our goal is to make home repairs and maintenance hassle-free, so you can focus on what matters most.
             </p>
           </div>
 

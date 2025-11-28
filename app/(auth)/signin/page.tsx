@@ -38,8 +38,8 @@ export default function SignInPage() {
       }
 
       // Redirect based on user role (admin -> /admin, user -> /account)
-      const redirectPath = getPostLoginRedirect(user.email);
-      window.location.href = redirectPath;
+      window.location.href = '/';
+
     } catch (err: any) {
       console.error('Login failed:', err);
       const message = err.response?.data?.message || 'Invalid email or password';
@@ -82,7 +82,7 @@ export default function SignInPage() {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pb-3 bg-transparent border-b border-white text-white placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
+                className="glass-input w-full pb-3 bg-transparent border-b border-white text-white placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
                 placeholder="Email"
                 aria-label="Email"
               />

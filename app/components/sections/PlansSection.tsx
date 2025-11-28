@@ -60,7 +60,10 @@ export default function PlansSection() {
   };
 
   return (
-    <section className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden">
+    <section
+  id="plans"
+  className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden"
+>
       <div className="lg:max-w-[1240px] lg:mx-auto lg:px-[20px]">
         {/* Mobile/Tablet Header - Centered */}
         <div className="lg:hidden text-center mb-8 sm:mb-12 px-[20px]">
@@ -79,11 +82,10 @@ export default function PlansSection() {
           {/* Trial Info */}
           <div className="mb-6">
             <p className="text-white text-2xl sm:text-3xl font-normal leading-tight mb-2">
-              $0 today.
+              $0 today
             </p>
             <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed">
-              Free 7-day trial; cancel anytime<br />
-              in your account.
+              Free 7-day trial<br />cancel anytime
             </p>
           </div>
         </div>
@@ -107,12 +109,11 @@ export default function PlansSection() {
               {/* Trial Info */}
               <div className="mb-12 ml-[100px]">
                 <p className="text-white text-2xl font-normal leading-[21px] mb-2">
-                  $0 today.
+                  $0 today
                 </p>
                 <p className="text-[#C5CBD8] text-base leading-[19px]">
-                  Free 7-day trial;<br />
-                  cancel anytime<br />
-                  in your account.
+                  Free 7-day trial<br />
+                  cancel anytime
                 </p>
               </div>
             </div>

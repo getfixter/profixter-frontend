@@ -4,25 +4,18 @@ import { useState } from 'react';
 import Image from 'next/image';
 
 const projects = [
-  {
-    id: 1,
-    title: 'Lighting installation',
-    description: 'Elegant brass chandelier for a warm, inviting interior.',
-    image: '/images/project2.png',
-  },
-  {
-    id: 2,
-    title: 'Chandelier upgrade',
-    description: 'Modern chandelier installation for elegant living spaces.',
-    image: '/images/project2.png',
-  },
-  {
-    id: 3,
-    title: 'Kitchen renovation',
-    description: 'Complete kitchen transformation with modern fixtures.',
-    image: '/images/project2.png',
-  },
+  { id: 1, image: '/images/projects/p1.jpg' },
+  { id: 2, image: '/images/projects/p2.jpg' },
+  { id: 3, image: '/images/projects/p3.jpg' },
+  { id: 4, image: '/images/projects/p4.jpg' },
+  { id: 5, image: '/images/projects/p5.jpg' },
+  { id: 6, image: '/images/projects/p6.jpg' },
+  { id: 7, image: '/images/projects/p7.jpg' },
+  { id: 8, image: '/images/projects/p8.jpg' },
+  { id: 9, image: '/images/projects/p9.jpg' },
+  { id: 10, image: '/images/projects/p10.jpg' },
 ];
+
 
 export default function ProjectsSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -36,7 +29,7 @@ export default function ProjectsSection() {
   };
 
   return (
-    <section className="w-full bg-[#313234] py-12 sm:py-16 lg:py-20 overflow-hidden relative">
+<section id="projects" className="w-full bg-[#313234] py-12 sm:py-16 lg:py-20 overflow-hidden relative">
       <div className="max-w-[1240px] mx-auto px-[20px]">
         {/* Mobile/Tablet Layout */}
         <div className="lg:hidden">
@@ -51,7 +44,7 @@ export default function ProjectsSection() {
             </h2>
             
             <p className="text-[#C5CBD8] text-sm sm:text-base leading-relaxed mb-6 max-w-md mx-auto">
-              Recent home improvements crafted with precision and care.
+              Real examples of house maintenance work we do and more.
             </p>
             
             <button className="w-full sm:w-auto px-8 h-[56px] sm:h-[60px] bg-[#306EEC] hover:bg-[#2558c7] text-[#EEF2FF] rounded-[14px] text-lg sm:text-xl font-semibold transition-colors">
@@ -64,7 +57,7 @@ export default function ProjectsSection() {
             <div className="relative w-full aspect-square max-w-[450px] mx-auto rounded-[20px] overflow-hidden shadow-[0_10px_80px_rgba(0,0,0,0.25)]">
               <Image
                 src={projects[currentSlide].image}
-                alt={projects[currentSlide].title}
+                alt="Project Image"
                 fill
                 className="object-cover"
               />
@@ -127,7 +120,7 @@ export default function ProjectsSection() {
               </h2>
               
               <p className="text-[#C5CBD8] text-base leading-[120%] mb-[20px] max-w-[291px]">
-                Recent home improvements crafted with precision and care.
+                Real examples of house maintenance work we do and more.
               </p>
               
               <button className="w-[362px] h-[60px] bg-[#306EEC] hover:bg-[#2558c7] text-[#EEF2FF] rounded-[14px] text-[20px] font-semibold transition-colors mb-44">
@@ -147,7 +140,7 @@ export default function ProjectsSection() {
               <div className="relative w-[450px] h-[450px] rounded-[20px]  flex-shrink-0 shadow-[0_10px_80px_rgba(0,0,0,0.25)]">
                 <Image
                   src={projects[currentSlide].image}
-                  alt={projects[currentSlide].title}
+                  alt="Project Image"
                   width={450}
                   height={450}
                   priority
@@ -187,7 +180,7 @@ export default function ProjectsSection() {
                       <div className="absolute inset-0 rounded-[10px] overflow-hidden">
                         <Image
                           src={project.image}
-                          alt={project.title}
+                          alt="Project Preview"
                           width={300}
                           height={300}
                           className="w-full h-full object-cover"

@@ -528,7 +528,7 @@ export default function BookingSection() {
                 <div className="font-semibold mb-2">🔒 No Active Subscription</div>
                 <div className="mb-3">{subscriptionError}</div>
                 <a 
-                  href="/plans" 
+                  href="#plans" 
                   className="inline-block px-4 py-2 bg-[#306EEC] text-white rounded-lg hover:bg-[#2558c9] transition-colors text-sm font-medium"
                 >
                   View Subscription Plans

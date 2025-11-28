@@ -9,7 +9,8 @@ export default function HandymenSection() {
   const person = TEAM[idx];
 
   const prev = () => setIdx((i) => (i === 0 ? TEAM.length - 1 : i - 1));
-  const next = () => setIdx((i) => (i === TEAM.length ? 0 : (i + 1) % TEAM.length));
+  const next = () => setIdx((i) => (i + 1) % TEAM.length);
+
 
   return (
     <section className="relative w-full bg-[#313234] py-12 sm:py-16 lg:py-24">
@@ -38,7 +39,7 @@ export default function HandymenSection() {
       {/* Desktop Layout: Thumbnails on left (cut), Title on right edge */}
       <div className="hidden lg:block mt-6 sm:mt-8 lg:mt-10">
         {/* Thumbnails - cut on left, show 2.5 cards - absolute positioned */}
-        <div className="overflow-hidden -ml-[390px]" style={{ width: 'calc(100% + 390px)' }}>
+        <div className="overflow-hidden -ml-[-340px]" style={{ width: 'calc(100% + 390px)' }}>
           <div 
             className="flex gap-6"
             style={{ 
