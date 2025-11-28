@@ -37,8 +37,10 @@ export default function SignInPage() {
         localStorage.removeItem('rememberedEmail');
       }
 
-      // Redirect based on user role (admin -> /admin, user -> /account)
-      window.location.href = '/';
+      // Redirect based on email (admin -> /admin, user -> /account)
+const redirectPath = getPostLoginRedirect(user.email);
+window.location.href = redirectPath;
+
 
     } catch (err: any) {
       console.error('Login failed:', err);
