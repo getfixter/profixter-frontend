@@ -10,12 +10,13 @@ import type { PlanType } from '@/lib/stripe-links';
 export default function PlansSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const { user, isAuthenticated } = useAuth();
-  const startPaymentLink = async (plan: string, addressId: string, email: string) => {
-  const res = await fetch("https://api.profixter.com/api/stripe/links/create-payment-link-session", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ plan, addressId, email }),
-  });
+  const startCheckout  = async (plan: string, addressId: string, email: string) => {
+  const res = await fetch("https://api.profixter.com/api/stripe/create-checkout-session", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ plan, addressId, email }),
+});
+
 
   const data = await res.json();
 
@@ -53,7 +54,7 @@ export default function PlansSection() {
 
   const planType = planTypeMap[planName];
 
-  startPaymentLink(planType, defaultAddress._id, user.email);
+  startCheckout(planType, defaultAddress._id, user.email);
 };
 
 
