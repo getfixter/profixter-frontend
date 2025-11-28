@@ -100,37 +100,82 @@ export const getMySubscriptions = async (): Promise<{ subscriptions: any[] }> =>
 };
 
 // =================== CHECK SUBSCRIPTION FOR ADDRESS ===================
-export const checkSubscription = async (addressId: string): Promise<SubscriptionResponse> => {
+export const checkSubscription = async (
+  addressId?: string | null
+): Promise<SubscriptionResponse> => {
   try {
     const data = await getMySubscriptions();
-    
-    const sub = data.subscriptions?.find((s: any) => 
-      String(s.addressId) === String(addressId)
-    );
-    
-    if (sub && ['active', 'trialing'].includes(sub.status)) {
-      return {
-        hasSubscription: true,
-        subscription: {
-          plan: sub.subscriptionType,
-          status: sub.status,
-          expiresAt: sub.currentPeriodEnd,
-        }
-      };
-    } else {
+    const allSubs = data.subscriptions || [];
+
+    if (!allSubs.length) {
       return {
         hasSubscription: false,
-        message: 'This address does not have an active subscription. Purchase a subscription for this address to book a visit.'
+        message: "You don't have any active subscriptions yet.",
       };
     }
+
+    // Only active / trialing subscriptions
+    const activeSubs = allSubs.filter((s: any) =>
+      ["active", "trialing"].includes(s.status)
+    );
+
+    if (!activeSubs.length) {
+      return {
+        hasSubscription: false,
+        message:
+          "You don't have an active subscription at the moment. Please purchase a plan to book a visit.",
+      };
+    }
+
+    let matched: any | undefined;
+
+    // 1️⃣ If we have an addressId → try to match by it
+    if (addressId) {
+      matched = activeSubs.find(
+        (s: any) => String(s.addressId) === String(addressId)
+      );
+    }
+
+    // 2️⃣ If no match by addressId:
+    //    - If there is exactly ONE active subscription, use it as a fallback
+    if (!matched && activeSubs.length === 1) {
+      matched = activeSubs[0];
+      console.warn(
+        "[checkSubscription] No subscription matched addressId, but one active subscription found. Using it as fallback.",
+        { addressId, subId: matched._id }
+      );
+    }
+
+    // 3️⃣ If still no match → treat as no subscription for this address
+    if (!matched) {
+      return {
+        hasSubscription: false,
+        message:
+          "This address does not have an active subscription. Purchase a subscription for this address to book a visit.",
+      };
+    }
+
+    return {
+      hasSubscription: true,
+      subscription: {
+        plan: matched.subscriptionType || matched.plan,
+        status: matched.status,
+        expiresAt:
+          matched.currentPeriodEnd ||
+          matched.nextPaymentDate ||
+          matched.expiresAt ||
+          "",
+      },
+    };
   } catch (err) {
-    console.error('Failed to check subscription:', err);
+    console.error("Failed to check subscription:", err);
     return {
       hasSubscription: false,
-      message: 'Unable to verify subscription status.'
+      message: "Unable to verify subscription status.",
     };
   }
 };
+
 
 // =================== CREATE BOOKING ===================
 export const createBooking = async (data: BookingData): Promise<BookingResponse> => {
