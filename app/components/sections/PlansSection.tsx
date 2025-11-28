@@ -10,46 +10,51 @@ import type { PlanType } from '@/lib/stripe-links';
 export default function PlansSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const { user, isAuthenticated } = useAuth();
+  const startPaymentLink = async (plan: string, addressId: string, email: string) => {
+  const res = await fetch("/api/stripe/create-payment-link-session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ plan, addressId, email }),
+  });
 
-  const handleSubscribe = (planName: string) => {
-    // Якщо не залогінений - редирект на логін
-    if (!isAuthenticated || !user) {
-      window.location.href = '/signin?redirect=/';
-      return;
-    }
+  const data = await res.json();
 
-    // Отримуємо default address або першу адресу
-    const defaultAddress = user.addresses?.find(
-      (addr) => addr._id === user.defaultAddressId
-    ) || user.addresses?.[0];
+  if (data?.url) {
+    window.location.href = data.url;
+  } else {
+    alert("Unable to start subscription. Please try again.");
+  }
+};
 
-    if (!defaultAddress) {
-      alert('Please add an address to your account first');
-      window.location.href = '/account';
-      return;
-    }
 
-    // Мапимо назву плану на тип
-    const planTypeMap: Record<string, PlanType> = {
-      'Basic': 'basic',
-      'Plus': 'plus',
-      'Premium': 'premium',
-      'Elite': 'elite',
-    };
+ const handleSubscribe = (planName: string) => {
+  if (!isAuthenticated || !user) {
+    window.location.href = '/signin?redirect=/';
+    return;
+  }
 
-    const planType = planTypeMap[planName];
-    if (!planType) {
-      console.error('Unknown plan:', planName);
-      return;
-    }
+  const defaultAddress =
+    user.addresses?.find((a) => a._id === user.defaultAddressId) ||
+    user.addresses?.[0];
 
-    // Редирект на Stripe з addressId
-    redirectToPayment({
-      plan: planType,
-      addressId: defaultAddress._id,
-      userEmail: user.email,
-    });
+  if (!defaultAddress) {
+    alert("Please add an address to your account first");
+    window.location.href = "/account";
+    return;
+  }
+
+  const planTypeMap: Record<string, PlanType> = {
+    Basic: "basic",
+    Plus: "plus",
+    Premium: "premium",
+    Elite: "elite",
   };
+
+  const planType = planTypeMap[planName];
+
+  startPaymentLink(planType, defaultAddress._id, user.email);
+};
+
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % plans.length);
