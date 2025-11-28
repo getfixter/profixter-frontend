@@ -18,6 +18,7 @@ export default function PlansSection() {
 });
 
 
+
   const data = await res.json();
 
   if (data?.url) {

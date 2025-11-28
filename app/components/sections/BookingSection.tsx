@@ -551,7 +551,7 @@ export default function BookingSection() {
                   })}
                 </div>
                 <div className="text-xs mt-2">
-                  You can book another visit, but note that you have a pending appointment.
+                  You cant book another visit until this one is completed. 
                 </div>
               </div>
             )}
@@ -567,7 +567,12 @@ export default function BookingSection() {
             <div className="mt-6">
               <button 
                 onClick={handleBookNow}
-                disabled={loading || checkingSubscription || (!hasSubscription && isAuthenticated)}
+                disabled={
+  loading ||
+  checkingSubscription ||
+  (!hasSubscription && isAuthenticated) ||
+  hasActiveBooking
+}
                 className="w-full sm:w-[259px] h-[57px] rounded-[14px] bg-[#306eec] border border-[#306eec] text-[#eef2ff] text-lg sm:text-[20px] font-semibold hover:bg-[#2558c9] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {checkingSubscription ? 'Checking...' : loading ? 'Booking...' : 'Book now'}
