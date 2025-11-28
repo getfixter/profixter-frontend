@@ -11,11 +11,12 @@ export default function PlansSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const { user, isAuthenticated } = useAuth();
   const startPaymentLink = async (plan: string, addressId: string, email: string) => {
-  const res = await fetch("/api/stripe/create-payment-link-session", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ plan, addressId, email }),
-  });
+  const res = await fetch("/api/stripe/links/create-payment-link-session", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ plan, addressId, email }),
+});
+
 
   const data = await res.json();
 
