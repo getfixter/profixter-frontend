@@ -38,8 +38,23 @@ export default function SignInPage() {
       }
 
       // Redirect based on email (admin -> /admin, user -> /account)
+// Determine redirect path
 const redirectPath = getPostLoginRedirect(user.email);
-window.location.href = redirectPath;
+
+// Admin → follow admin redirect
+if (redirectPath === '/admin') {
+  router.push('/admin');
+  window.location.reload();
+  return;
+}
+
+// Regular user → MAIN dashboard
+router.push('/');
+window.location.reload();
+return;
+
+
+
 
 
     } catch (err: any) {
@@ -91,12 +106,13 @@ window.location.href = redirectPath;
             </div>
             <div>
               <PasswordField
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                inputClassName="w-full pb-3"
-              />
+  id="password"
+  value={password}
+  onChange={(e) => setPassword(e.target.value)}
+  placeholder="Password"
+  inputClassName="glass-input w-full pb-3"
+/>
+
             </div>
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 cursor-pointer">
