@@ -71,15 +71,22 @@ body {
   background-color: transparent;
 }
 
-/* Autofill fix for ALL inputs (email, password, name, etc.) */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
-  box-shadow: 0 0 0 1000px transparent inset !important;
+/* Chrome / Edge / Safari autofill — fully transparent */
+.glass-input:-webkit-autofill,
+.glass-input:-webkit-autofill:hover,
+.glass-input:-webkit-autofill:focus,
+.glass-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+  box-shadow: 0 0 0px 1000px transparent inset !important;
+
   background-color: transparent !important;
   background: transparent !important;
+
   -webkit-text-fill-color: #ffffff !important;
   caret-color: #ffffff !important;
+
+  transition: background-color 9999s ease-out, color 9999s ease-out;
+}
+html {
+  scroll-behavior: smooth;
 }

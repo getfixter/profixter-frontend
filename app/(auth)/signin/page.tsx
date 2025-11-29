@@ -44,12 +44,15 @@ const redirectPath = getPostLoginRedirect(user.email);
 // Admin → follow admin redirect
 if (redirectPath === '/admin') {
   router.push('/admin');
+  window.location.reload();
   return;
 }
 
 // Regular user → MAIN dashboard
 router.push('/');
+window.location.reload();
 return;
+
 
 
 

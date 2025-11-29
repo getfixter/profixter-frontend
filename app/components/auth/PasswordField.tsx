@@ -28,7 +28,10 @@ export function PasswordField({
         type={show ? 'text' : 'password'}
         placeholder={placeholder}
         aria-label={ariaLabel || placeholder}
-        className={`bg-transparent border-b border-white text-white placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors pr-10 ${inputClassName}`}
+        className={`bg-transparent border-b border-white text-white placeholder-white/40 
+focus:outline-none focus:border-[#306EEC] transition-colors pr-10 
+autofill:bg-transparent autofill:shadow-[0_0_0_1000px_transparent_inset] 
+${inputClassName}`}
         {...rest}
       />
       <button
