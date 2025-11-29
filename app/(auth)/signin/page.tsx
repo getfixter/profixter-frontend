@@ -24,7 +24,7 @@ export default function SignInPage() {
     setLoading(true);
 
     try {
-      const { token, user } = await login({ email, password });
+      const { token, user } = await login({ email: email.toLowerCase().trim(), password });
 
       // Save token and user data
       localStorage.setItem('token', token);
@@ -39,19 +39,19 @@ export default function SignInPage() {
 
       // Redirect based on email (admin -> /admin, user -> /account)
 // Determine redirect path
-const redirectPath = getPostLoginRedirect(user.email);
+const redirectPath = getPostLoginRedirect(user.email.toLowerCase());
 
 // Admin → follow admin redirect
 if (redirectPath === '/admin') {
   router.push('/admin');
-  window.location.reload();
-  return;
+return;
+
 }
 
 // Regular user → MAIN dashboard
 router.push('/');
-window.location.reload();
 return;
+
 
 
 
