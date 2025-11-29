@@ -1,11 +1,20 @@
 export type ActiveTab = 'personal' | 'plan' | 'bookings' | 'password';
 
 export interface AccountFormData {
+  userId: string;
   name: string;
   email: string;
   phone: string;
-  address1: string;
-  address2: string;
+
+  // Legacy address fields
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  county: string;
+
+  // New multi-address system
+  addresses: any[];
 }
 
 export interface BookingItem {

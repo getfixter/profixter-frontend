@@ -11,7 +11,6 @@ export function AccountSidebar({ activeTab, setActiveTab, onLogout, userName }: 
   const menuItems: { key: ActiveTab; label: string }[] = [
     { key: 'personal', label: 'Personal information' },
     { key: 'plan', label: 'My plan' },
-    { key: 'bookings', label: 'My bookings' },
     { key: 'password', label: 'Password' },
   ];
   return (

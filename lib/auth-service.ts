@@ -1,8 +1,9 @@
 import API from './api';
 
 export interface User {
-  _id: string;
-  userId: string; // 8-digit public ID
+  _id?: string;       // mongo internal
+  id?: string;        // frontend ID (public)
+  userId?: string;    // backend userId
   name: string;
   email: string;
   phone: string;
@@ -18,6 +19,7 @@ export interface User {
   createdAt?: string;
   updatedAt?: string;
 }
+
 
 export interface Address {
   _id: string;

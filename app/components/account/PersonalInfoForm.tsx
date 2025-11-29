@@ -1,15 +1,15 @@
 // FINAL VERSION — Static personal info pulled from DB
 // Shows User ID, Name, Email, Phone, Address
-// Removes Address 2 (County)
+// No duplicates
 
 import { AccountFormData } from './types';
 
 interface PersonalInfoFormProps {
-  formData: any; // DB object
+  formData: any;
 }
 
 export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
-  // 1. NEW multi-address system
+  // New multi-address system
   const newAddr = formData?.addresses?.[0];
 
   const finalAddress =
@@ -29,7 +29,9 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
 
         {/* USER ID */}
         <div>
-          <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">Your ID</label>
+          <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
+            Your ID
+          </label>
           <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8]
                           rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
             {formData?.userId || '—'}
@@ -63,7 +65,7 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
           </div>
         </div>
 
-        {/* ADDRESS (ONE FIELD ONLY) */}
+        {/* ADDRESS */}
         <div>
           <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">Address</label>
           <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8]

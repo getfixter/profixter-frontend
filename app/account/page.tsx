@@ -8,7 +8,6 @@ import { AccountHeader } from '../components/account/AccountHeader';
 import { AccountSidebar } from '../components/account/AccountSidebar';
 import { PersonalInfoForm } from '../components/account/PersonalInfoForm';
 import { PlanSection } from '../components/account/PlanSection';
-import { BookingsSection } from '../components/account/BookingsSection';
 import { PasswordForm } from '../components/account/PasswordForm';
 import { useAuth } from '@/lib/useAuth';
 
@@ -27,21 +26,33 @@ export default function AccountPage() {
 
   // Load user data when authenticated
   useEffect(() => {
-    if (user) {
-      setFormData({
-        name: user.name || '',
-        email: user.email || '',
-        phone: user.phone || '',
-        address1: user.address || '',
-        address2: '',
-      });
-    }
-  }, [user]);
+  if (user) {
+    setFormData({
+      userId: user.userId || user.id || '', 
+      name: user.name || '',
+      email: user.email || '', 
+      phone: user.phone || '',
 
-  const handleLogout = () => {
-    logout();
-    router.push('/signin');
-  };
+      // Legacy address
+      address: user.address || '',
+      city: user.city || '',
+      state: user.state || '',
+      zip: user.zip || '',
+      county: user.county || '',
+
+      // New multi-address support
+      addresses: user.addresses || [],
+    });
+  }
+}, [user]);
+
+
+ const handleLogout = () => {
+  logout();                // Clears token + user (react state updates)
+  router.replace('/signin');
+};
+
+
 
   if (isLoading) {
     return (
@@ -86,7 +97,6 @@ export default function AccountPage() {
 
             {activeTab === 'plan' && (<PlanSection />)}
 
-            {activeTab === 'bookings' && (<BookingsSection />)}
 
             {activeTab === 'password' && (<PasswordForm />)}
           </div>
