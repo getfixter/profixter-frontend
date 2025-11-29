@@ -80,13 +80,9 @@ export default function AccountPage() {
           {/* Right Content */}
           <div className="flex-1 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[11px] p-6 sm:p-8 lg:p-12" style={{ boxShadow: '0px 0px 200px 0px rgba(0, 0, 0, 0.1)' }}>
             {activeTab === 'personal' && (
-              <PersonalInfoForm
-                formData={formData}
-                onChange={handleInputChange}
-                onDiscard={handleDiscardChanges}
-                onSave={handleSaveChanges}
-              />
-            )}
+  <PersonalInfoForm formData={formData} />
+)}
+
 
             {activeTab === 'plan' && (<PlanSection />)}
 
