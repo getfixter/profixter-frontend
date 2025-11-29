@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';   // ⬅️ ADD useEffect
 import Header from "./components/sections/Header";
 import HeroSection from "./components/sections/HeroSection";
 import StepsSection from "./components/sections/StepsSection";
@@ -16,6 +16,15 @@ import Image from 'next/image';
 export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
+  // ⬅️ ADD THIS BLOCK
+  useEffect(() => {
+    const justLoggedIn = sessionStorage.getItem('justLoggedIn');
+    if (justLoggedIn) {
+      sessionStorage.removeItem('justLoggedIn');
+      window.location.reload();
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-background overflow-x-hidden ">
       <div className="absolute top-0 left-0 w-full z-20">
@@ -25,10 +34,9 @@ export default function Home() {
       <StepsSection />
       <PlansSection />
       <ServicesSection />
-     
       <BookingSection />
       <HandymenSection />
-       <ProjectsSection />
+      <ProjectsSection />
       <Footer />
 
       {/* Global Chat Widget Icon - aligned to right edge of container */}
@@ -45,7 +53,6 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Chat Widget */}
       <ChatWidget isOpen={isChatOpen} onToggle={() => setIsChatOpen(!isChatOpen)} />
     </div>
   );
