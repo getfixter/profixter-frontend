@@ -44,8 +44,8 @@ const redirectPath = getPostLoginRedirect(user.email.toLowerCase());
 // Admin → follow admin redirect
 if (redirectPath === '/admin') {
   router.push('/admin');
-return;
-
+  window.location.reload();
+  return;
 }
 
 // Regular user → MAIN dashboard
