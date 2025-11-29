@@ -47,9 +47,10 @@ if (redirectPath === '/admin') {
   return;
 }
 
-// User → mail page
-router.push('/mail');
+// Regular user → MAIN dashboard
+router.push('/');
 return;
+
 
 
 

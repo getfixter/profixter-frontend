@@ -71,11 +71,11 @@ body {
   background-color: transparent;
 }
 
-/* Chrome / Edge / Safari autofill — fully transparent */
-.glass-input:-webkit-autofill,
-.glass-input:-webkit-autofill:hover,
-.glass-input:-webkit-autofill:focus,
-.glass-input:-webkit-autofill:active {
+/* Full autofill reset for ALL inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
   box-shadow: 0 0 0px 1000px transparent inset !important;
 
@@ -84,18 +84,4 @@ body {
 
   -webkit-text-fill-color: #ffffff !important;
   caret-color: #ffffff !important;
-
-  transition: background-color 9999s ease-out, color 9999s ease-out;
-}
-html {
-  scroll-behavior: smooth;
-}
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-  background: transparent !important;
-  -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
-  box-shadow: 0 0 0px 1000px transparent inset !important;
-  -webkit-text-fill-color: white !important;
 }
