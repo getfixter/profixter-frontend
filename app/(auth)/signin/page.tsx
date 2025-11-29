@@ -38,8 +38,19 @@ export default function SignInPage() {
       }
 
       // Redirect based on email (admin -> /admin, user -> /account)
+// Determine redirect path
 const redirectPath = getPostLoginRedirect(user.email);
-window.location.href = redirectPath;
+
+// Admin → follow admin redirect
+if (redirectPath === '/admin') {
+  router.push('/admin');
+  return;
+}
+
+// User → mail page
+router.push('/mail');
+return;
+
 
 
     } catch (err: any) {
