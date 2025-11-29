@@ -13,6 +13,72 @@ const SERVICES = [
 ];
 
 const TIMES = ['09:00', '10:30', '12:00', '14:00', '15:30', '17:00'];
+function TimeDropdown({
+  times,
+  takenCounts,
+  capacity,
+  selectedTime,
+  onSelect,
+}: {
+  times: string[];
+  takenCounts: Record<string, number>;
+  capacity: number;
+  selectedTime: string;
+  onSelect: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative w-full sm:w-[160px]">
+      {/* Button */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] px-4 sm:px-6 text-[#313234] text-[18px] sm:text-[20px] flex items-center justify-between shadow-[0_0_200px_rgba(0,0,0,0.09)]"
+      >
+        {selectedTime || "Select time"}
+
+        <svg width="20" height="20" viewBox="0 0 24 24">
+          <path
+            d="M6 9L12 15L18 9"
+            stroke="#313234"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
+      {/* Dropdown list */}
+      {open && (
+        <div className="absolute mt-2 w-full bg-white border border-[#c5cbd8] rounded-[11px] shadow-lg z-20 py-1 sm:py-2">
+          {times.map((time) => {
+            const used = takenCounts[time] || 0;
+            const isFull = used >= capacity;
+
+            return (
+              <div
+                key={time}
+                onClick={() => {
+                  if (!isFull) {
+                    onSelect(time);
+                    setOpen(false);
+                  }
+                }}
+                className={`px-3 py-2 text-[18px] sm:text-[20px] flex items-center 
+                  ${isFull ? "text-gray-400 cursor-not-allowed" : "cursor-pointer hover:bg-[#EEF2FF]"}`}
+              >
+                <span className={`${isFull ? "line-through text-gray-400" : "text-[#313234]"}`}>
+                  {time}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 // Lightweight, presentational booking block matching the provided spec
 export default function BookingSection() {
@@ -26,8 +92,11 @@ export default function BookingSection() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
-  const [takenCounts, setTakenCounts] = useState<Record<string, number>>({});
-  const [capacity, setCapacity] = useState(1);
+  const [dayCapacityMap, setDayCapacityMap] = useState<Record<string, {
+  taken: Record<string, number>,
+  capacity: number
+}>>({});
+
   
   const [service, setService] = useState<string>('');
   const [note, setNote] = useState<string>('');
@@ -48,6 +117,11 @@ export default function BookingSection() {
   // Existing booking check
   const [hasActiveBooking, setHasActiveBooking] = useState(false);
   const [existingBookingDate, setExistingBookingDate] = useState<Date | null>(null);
+  // Rebook data
+const [existingBookingService, setExistingBookingService] = useState('');
+const [existingBookingTime, setExistingBookingTime] = useState('');
+const [existingBookingId, setExistingBookingId] = useState<string | null>(null);
+
   
   // Subscription check
   const [hasSubscription, setHasSubscription] = useState(false);
@@ -87,29 +161,50 @@ export default function BookingSection() {
   
   // Check for existing booking when user changes
   useEffect(() => {
-    const checkExistingBooking = async () => {
-      if (!user?.defaultAddressId || !isAuthenticated) {
+  const checkExistingBooking = async () => {
+    if (!user?.defaultAddressId || !isAuthenticated) {
+      setHasActiveBooking(false);
+      return;
+    }
+
+    try {
+      const data = await getNextBooking(user.defaultAddressId);
+
+      if (data.future) {
+        const dt = new Date(data.future.date);
+
+        setHasActiveBooking(true);
+        setExistingBookingDate(dt);
+        setExistingBookingId(data.future._id);
+
+        // Store service
+setExistingBookingService((data?.future as any)?.service || '');
+
+        // Extract HH:mm (24h)
+        const hhmm = dt.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+        setExistingBookingTime(hhmm);
+      } else {
+        // No booking
         setHasActiveBooking(false);
-        return;
+        setExistingBookingDate(null);
+        setExistingBookingId(null);
+        setExistingBookingService('');
+        setExistingBookingTime('');
       }
-      
-      try {
-        const data = await getNextBooking(user.defaultAddressId);
-        if (data.future) {
-          setHasActiveBooking(true);
-          setExistingBookingDate(new Date(data.future.date));
-        } else {
-          setHasActiveBooking(false);
-          setExistingBookingDate(null);
-        }
-      } catch (err) {
-        console.error('Failed to check existing booking:', err);
-        setHasActiveBooking(false);
-      }
-    };
-    
-    checkExistingBooking();
-  }, [user, isAuthenticated]);
+          } catch (err) {
+      console.error('Failed to check existing booking:', err);
+      setHasActiveBooking(false);
+    }
+  };
+
+  checkExistingBooking();
+}, [user, isAuthenticated]);
+
+
   
   // Load calendar config
   useEffect(() => {
@@ -147,8 +242,14 @@ export default function BookingSection() {
         const dateStr = formatDateYMD(selectedDate);
         const data = await getTimeSlots(dateStr);
         setAvailableTimes(data.slots);
-        setTakenCounts(data.taken);
-        setCapacity(data.capacityPerSlot);
+        setDayCapacityMap(prev => ({
+  ...prev,
+  [dateStr]: {
+    taken: data.taken,
+    capacity: data.capacityPerSlot
+  }
+}));
+
       } catch (err) {
         console.error('Failed to load time slots:', err);
         setAvailableTimes([]);
@@ -166,31 +267,47 @@ export default function BookingSection() {
   };
 
   const isDayDisabled = (date: Date): boolean => {
-    if (!config) return true;
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    date.setHours(0, 0, 0, 0);
-    
-    // Past dates
-    if (date < today) return true;
-    
-    // Within lead time
-    const diffDays = Math.floor((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays < config.minLeadDays) return true;
-    
-    // Closed weekdays
-    if (config.closedWeekdays.includes(date.getDay())) return true;
-    
-    // Holidays
-    const ymd = formatDateYMD(date);
-    if (config.holidays.includes(ymd)) return true;
-    
-    // Override: empty array = closed
-    if (config.overrides[ymd] !== undefined && config.overrides[ymd].length === 0) return true;
-    
-    return false;
-  };
+  if (!config) return true;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+
+  const ymd = formatDateYMD(d);
+
+  // 1. Past days
+  if (d < today) return true;
+
+  // 2. Lead time
+  const diffDays = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays < config.minLeadDays) return true;
+
+  // 3. Closed weekdays
+  if (config.closedWeekdays.includes(d.getDay())) return true;
+
+  // 4. Admin holiday
+  if (config.holidays.includes(ymd)) return true;
+
+  // 5. Admin override = closed (empty array)
+  if (config.overrides[ymd] !== undefined && config.overrides[ymd].length === 0) {
+    return true;
+  }
+
+  // 6. Fully booked day
+  const info = dayCapacityMap[ymd];
+
+if (info) {
+  const hours = config.defaultHours;
+  const allFull = hours.every(h => (info.taken[h] || 0) >= info.capacity);
+  if (allFull) return true;
+}
+
+
+  return false;
+};
+
 
   const generateCalendarDays = () => {
     const year = currentMonth.getFullYear();
@@ -312,6 +429,40 @@ export default function BookingSection() {
       setLoading(false);
     }
   };
+const rebook = async () => {
+  if (!existingBookingId) return;
+
+  try {
+    const token = localStorage.getItem("token");
+
+    // Cancel current booking
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/cancel/${existingBookingId}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    // remove active booking
+    setHasActiveBooking(false);
+
+    // prefill service/date/time
+    if (existingBookingService) setService(existingBookingService);
+    if (existingBookingDate) setSelectedDate(new Date(existingBookingDate));
+    if (existingBookingTime) setSelectedTime(existingBookingTime);
+
+    // scroll user to booking section
+    setTimeout(() => {
+      document.getElementById("pick-day")?.scrollIntoView({ behavior: "smooth" });
+    }, 150);
+
+    alert("Visit canceled. You may now rebook.");
+
+  } catch (err) {
+    console.error("Rebook failed:", err);
+    alert("Error canceling the visit.");
+  }
+};
 
   const days = generateCalendarDays();
 
@@ -408,6 +559,15 @@ export default function BookingSection() {
                     day.date.getMonth() === selectedDate.getMonth() &&
                     day.date.getFullYear() === selectedDate.getFullYear();
                   const disabled = !day.muted && isDayDisabled(new Date(day.date));
+                  const isToday = (() => {
+  const t = new Date();
+  return (
+    t.getDate() === day.date.getDate() &&
+    t.getMonth() === day.date.getMonth() &&
+    t.getFullYear() === day.date.getFullYear()
+  );
+})();
+
                   
                   return (
                     <button
@@ -415,10 +575,20 @@ export default function BookingSection() {
                       onClick={() => !day.muted && !disabled && setSelectedDate(new Date(day.date))}
                       disabled={disabled}
                       className={[
-                        "mx-auto my-1 w-8 h-8 sm:w-10 sm:h-10 grid place-items-center rounded-[12px] text-sm sm:text-base lg:text-[18px]",
-                        day.muted ? "text-[#b7bdc8] cursor-not-allowed" : disabled ? "text-[#b7bdc8] opacity-50 cursor-not-allowed" : "text-[#313234]",
-                        isSelected ? "bg-[#306eec] text-white ring-4 ring-[#306eec]/15" : "bg-transparent hover:bg-white/80"
-                      ].join(" ")}
+  "mx-auto my-1 w-8 h-8 sm:w-10 sm:h-10 grid place-items-center rounded-[12px] text-sm sm:text-base lg:text-[18px]",
+  day.muted
+    ? "text-[#b7bdc8] cursor-not-allowed"
+    : disabled
+      ? "bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed"
+      : "text-[#313234] hover:bg-white/80",
+  isSelected
+    ? "bg-[#306eec] text-white ring-4 ring-[#306eec]/15"
+    : "bg-transparent",
+  isToday && !disabled && !isSelected
+    ? "ring-2 ring-[#306EEC]/40"
+    : ""
+].join(" ")}
+
                     >
                       {day.date.getDate()}
                     </button>
@@ -435,33 +605,29 @@ export default function BookingSection() {
 
           {/* Right column */}
           <div className="lg:col-span-7">
-            {/* Time + length */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-              {selectedDate && availableTimes.length > 0 ? (
-                <select
-                  value={selectedTime}
-                  onChange={(e) => setSelectedTime(e.target.value)}
-                  className="w-full sm:w-[160px] h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.09)] px-4 sm:px-6 text-[#313234] text-lg sm:text-[20px] appearance-none"
-                  style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M6 9L12 15L18 9\' stroke=\'%23313234\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.5rem' }}
-                >
-                  <option value="">Select time</option>
-                  {availableTimes.map(time => {
-                    const used = takenCounts[time] || 0;
-                    const spotsLeft = capacity - used;
-                    return (
-                      <option key={time} value={time}>
-                        {time} {capacity > 1 && `(${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left)`}
-                      </option>
-                    );
-                  })}
-                </select>
-              ) : (
-                <div className="w-full sm:w-[160px] h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.09)] flex items-center px-4 sm:px-6 text-[#6a6c71] text-sm">
-                  Select date first
-                </div>
-              )}
-              <div className="text-sm sm:text-base text-[#6a6c71]">Visit length: up to 90 minutes</div>
-            </div>
+            
+              {/* Time + length */}
+<div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+  {selectedDate && availableTimes.length > 0 ? (
+    <TimeDropdown
+  times={config?.defaultHours || TIMES}
+  takenCounts={dayCapacityMap[formatDateYMD(selectedDate)]?.taken || {}}
+  capacity={dayCapacityMap[formatDateYMD(selectedDate)]?.capacity || 999}
+  selectedTime={selectedTime}
+  onSelect={(t) => setSelectedTime(t)}
+/>
+
+  ) : (
+    <div className="w-full sm:w-[160px] h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.09)] flex items-center px-4 sm:px-6 text-[#6a6c71] text-sm">
+      Select date first
+    </div>
+  )}
+
+  <div className="text-sm sm:text-base text-[#6a6c71]">
+    Visit length: up to 90 minutes
+  </div>
+</div>
+
 
             {/* Issue description block with buttons on the right */}
             <div className="relative mt-6 rounded-[14px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.10)] p-4 sm:p-5 min-h-[200px] sm:min-h-[141px]">
@@ -538,23 +704,32 @@ export default function BookingSection() {
 
             {/* Active booking warning */}
             {hasActiveBooking && existingBookingDate && (
-              <div className="mt-4 text-orange-700 text-sm bg-orange-50 border border-orange-300 rounded-lg p-4">
-                <div className="font-semibold mb-1">⚠️ You have an active booking</div>
-                <div>
-                  Scheduled for {existingBookingDate.toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    month: 'long', 
-                    day: 'numeric', 
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </div>
-                <div className="text-xs mt-2">
-                  You cant book another visit until this one is completed. 
-                </div>
-              </div>
-            )}
+  <div className="mt-4 text-orange-700 text-sm bg-orange-50 border border-orange-300 rounded-lg p-4">
+    <div className="font-semibold mb-1">⚠️ You have an active booking</div>
+    <div>
+      Scheduled for {existingBookingDate.toLocaleString('en-US', {
+  weekday: 'long',
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
+})}
+    </div>
+
+    <div className="text-xs mt-2 mb-3">
+      You can't book another visit until this one is completed.
+    </div>
+
+    <button
+      onClick={rebook}
+      className="px-4 py-2 bg-[#306EEC] text-white rounded-lg text-xs font-semibold hover:bg-[#2558c9]"
+    >
+      Rebook
+    </button>
+  </div>
+)}
+
 
             {/* Error message */}
             {error && (
@@ -639,7 +814,11 @@ export default function BookingSection() {
               </div>
               
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+  setShowModal(false);
+  window.location.reload();
+}}
+
                 className="w-full h-[57px] rounded-[14px] bg-[#306EEC] text-white text-[20px] font-semibold hover:bg-[#2558c9] transition-colors"
               >
                 OK

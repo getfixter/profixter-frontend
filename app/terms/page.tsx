@@ -259,7 +259,7 @@ export default function TermsPage() {
           </section>
 
           <p className="text-xs text-white/50 mt-8 text-center">
-            Last Updated: Oct 4, 2025
+            Last Updated: September 4, 2025
           </p>
 
           <div className="mt-6 text-center">
