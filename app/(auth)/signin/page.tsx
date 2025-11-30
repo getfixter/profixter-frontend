@@ -7,6 +7,12 @@ import { GoogleButton } from '../../components/auth/GoogleButton';
 import { PasswordField } from '../../components/auth/PasswordField';
 import { login } from '@/lib/auth-service';
 import { getPostLoginRedirect } from '@/lib/auth-helpers';
+import { useAuth } from '@/lib/useAuth';
+
+
+
+
+
 
 // NOTE: Structure moved into (auth) route group. Visual styles intentionally unchanged.
 export default function SignInPage() {
@@ -17,6 +23,9 @@ export default function SignInPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { login: authLogin } = useAuth();
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,8 +36,9 @@ export default function SignInPage() {
       const { token, user } = await login({ email: email.toLowerCase().trim(), password });
 
       // Save token and user data
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      // Save via AuthContext (prevents refresh bug)
+authLogin(token, user);
+
 
       // Remember email if checked
       if (keepSignedIn) {
@@ -38,20 +48,13 @@ export default function SignInPage() {
       }
 
       // Redirect based on email (admin -> /admin, user -> /account)
-// Determine redirect path
-const redirectPath = getPostLoginRedirect(user.email.toLowerCase());
-
-// Admin → follow admin redirect
-if (redirectPath === '/admin') {
-  router.push('/admin');
-  return;
+// Redirect based on email:
+if (user.email.toLowerCase() === "getfixter@gmail.com") {
+  router.push("/admin");            // ADMIN → /admin
+} else {
+  router.push("/account");          // USERS → /account (NOT /)
 }
-
-
-// Regular user → MAIN dashboard
-router.push('/');
 return;
-
 
 
 

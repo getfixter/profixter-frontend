@@ -38,7 +38,8 @@ export default function AdminPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedDate, setSelectedDate] = useState<string | null>(null); // YYYY-MM-DD format
 
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
 
   const fetchAll = useCallback(async () => {
     setLoading(true);

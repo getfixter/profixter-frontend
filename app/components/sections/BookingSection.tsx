@@ -576,18 +576,25 @@ const rebook = async () => {
                       disabled={disabled}
                       className={[
   "mx-auto my-1 w-8 h-8 sm:w-10 sm:h-10 grid place-items-center rounded-[12px] text-sm sm:text-base lg:text-[18px]",
+
+  // Muted (previous/next month)
   day.muted
     ? "text-[#b7bdc8] cursor-not-allowed"
     : disabled
-      ? "bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed"
-      : "text-[#313234] hover:bg-white/80",
+      ? "bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed rounded-[12px]"
+      : "text-[#313234]",
+
+  // Selected day
   isSelected
     ? "bg-[#306eec] text-white ring-4 ring-[#306eec]/15"
-    : "bg-transparent",
+    : "bg-transparent hover:bg-white/80",
+
+  // Today (only if not disabled and not selected)
   isToday && !disabled && !isSelected
     ? "ring-2 ring-[#306EEC]/40"
     : ""
 ].join(" ")}
+
 
                     >
                       {day.date.getDate()}
