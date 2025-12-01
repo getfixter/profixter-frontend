@@ -22,6 +22,8 @@ import {
   removeFromBlacklist,
 } from '@/lib/admin-service';
 import type { User, Booking, BlacklistEntry } from '@/lib/admin-service';
+import AdminCalendarSettings from '@/app/components/admin/AdminCalendarSettings';
+
 
 const ADMIN_EMAIL = 'getfixter@gmail.com';
 
@@ -317,6 +319,10 @@ export default function AdminPage() {
                 onUnblacklist={handleUnblacklist}
               />
             )}
+
+            {active === 'calendar' && <AdminCalendarSettings />}
+
+
           </>
         )}
       </div>

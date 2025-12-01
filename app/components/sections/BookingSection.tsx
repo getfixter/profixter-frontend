@@ -394,12 +394,13 @@ if (info) {
       bookingDate.setHours(hours, minutes, 0, 0);
       
       const result = await createBooking({
-        service,
-        date: bookingDate.toISOString(),
-        note: note.trim(),
-        addressId: user.defaultAddressId,
-        images: uploadedPhotos,
-      });
+  service,
+  date: bookingDate.toISOString(),
+  note: note.trim(),
+  addressId: user.defaultAddressId,
+  images: uploadedPhotos,
+});
+
       
       // Save data for modal display BEFORE resetting form
       setBookingNumber(result.booking.bookingNumber);
@@ -678,12 +679,14 @@ const rebook = async () => {
                   <Paperclip />
                   Add photo {uploadedPhotos.length > 0 && `(${uploadedPhotos.length})`}
                   <input 
-                    type="file" 
-                    accept="image/*" 
-                    multiple 
-                    onChange={handlePhotoUpload}
-                    className="hidden"
-                  />
+  type="file"
+  accept="image/*"
+  capture="environment"     // <— enables TAKING PHOTOS with the phone camera
+  multiple
+  onChange={handlePhotoUpload}
+  className="hidden"
+/>
+
                 </label>
               </div>
             </div>

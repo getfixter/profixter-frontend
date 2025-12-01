@@ -15,6 +15,9 @@ const tabs: Tab[] = [
   { id: 'subscribed', label: 'Subscribed', icon: '✅', color: 'from-green-500 to-green-600' },
   { id: 'emails', label: 'Emails', icon: '✉️', color: 'from-orange-500 to-orange-600' },
   { id: 'blacklist', label: 'Blacklist', icon: '⛔', color: 'from-red-500 to-red-600' },
+
+  // ⭐ ADD THIS:
+  { id: 'calendar', label: 'Calendar', icon: '🗓️', color: 'from-indigo-500 to-indigo-600' },
 ];
 
 interface AdminTabsProps {
@@ -40,8 +43,11 @@ export default function AdminTabs({ active, onChange }: AdminTabsProps) {
         >
           <span className="text-base md:text-lg mr-1 md:mr-2">{tab.icon}</span>
           <span className="hidden sm:inline">{tab.label}</span>
+
           {active === tab.id && (
-            <div className={`absolute bottom-0 left-0 right-0 h-0.5 md:h-1 bg-gradient-to-r ${tab.color} rounded-b-lg md:rounded-b-xl`} />
+            <div
+              className={`absolute bottom-0 left-0 right-0 h-0.5 md:h-1 bg-gradient-to-r ${tab.color} rounded-b-lg md:rounded-b-xl`}
+            />
           )}
         </button>
       ))}

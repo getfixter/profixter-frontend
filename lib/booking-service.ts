@@ -189,14 +189,26 @@ export const createBooking = async (data: BookingData): Promise<BookingResponse>
     formData.append('images', image);
   });
 
-  const response = await API.post<BookingResponse>('/api/bookings', formData, {
+  const token = localStorage.getItem("token") || "";
+
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings`, {
+    method: "POST",
+    body: formData,
     headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+      Authorization: `Bearer ${token}`,
+      // ❗ VERY IMPORTANT:
+      // Do NOT include Content-Type for FormData
+    }
   });
 
-  return response.data;
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to create booking");
+  }
+
+  return response.json();
 };
+
 
 // =================== CANCEL BOOKING ===================
 export const cancelBooking = async (bookingId: string): Promise<{ ok: boolean; action: string; message: string }> => {
