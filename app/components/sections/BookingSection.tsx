@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { getCalendarConfig, getTimeSlots, createBooking, getNextBooking, checkSubscription, CalendarConfig } from "@/lib/booking-service";
+import { compressImage } from "@/lib/compressImage";
 
 const SERVICES = [
   'Basic Improvement',
@@ -342,12 +343,20 @@ if (info) {
     return days;
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newPhotos = Array.from(e.target.files).slice(0, 10 - uploadedPhotos.length);
-      setUploadedPhotos([...uploadedPhotos, ...newPhotos]);
-    }
-  };
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (!e.target.files) return;
+
+  const compressed: File[] = [];
+
+  for (const file of Array.from(e.target.files)) {
+    const c = await compressImage(file);
+    compressed.push(c);
+  }
+
+  setUploadedPhotos((prev) =>
+    [...prev, ...compressed].slice(0, 10) // max 10 images
+  );
+};
 
   const handleBookNow = async () => {
     if (!isAuthenticated) {
@@ -400,6 +409,7 @@ if (info) {
   addressId: user.defaultAddressId,
   images: uploadedPhotos,
 });
+
 
       
       // Save data for modal display BEFORE resetting form
