@@ -180,14 +180,12 @@ export const checkSubscription = async (
 // =================== CREATE BOOKING ===================
 export const createBooking = async (data: BookingData): Promise<BookingResponse> => {
   const formData = new FormData();
-  formData.append('service', data.service);
-  formData.append('date', data.date);
-  formData.append('note', data.note);
-  formData.append('addressId', data.addressId);
+  formData.append("service", data.service);
+  formData.append("date", data.date);
+  formData.append("note", data.note);
+  formData.append("addressId", data.addressId);
 
-  data.images.forEach((image) => {
-    formData.append('images', image);
-  });
+  data.images.forEach(img => formData.append("images", img));
 
   const token = localStorage.getItem("token") || "";
 
@@ -195,9 +193,9 @@ export const createBooking = async (data: BookingData): Promise<BookingResponse>
     method: "POST",
     body: formData,
     headers: {
-      Authorization: `Bearer ${token}`,
-      // ❗ VERY IMPORTANT:
-      // Do NOT include Content-Type for FormData
+      Authorization: `Bearer ${token}`,  // ✔ OK
+      // DO NOT ADD ANY CONTENT-TYPE
+      // DO NOT MERGE DEFAULT HEADERS
     }
   });
 
@@ -208,6 +206,7 @@ export const createBooking = async (data: BookingData): Promise<BookingResponse>
 
   return response.json();
 };
+
 
 
 // =================== CANCEL BOOKING ===================
