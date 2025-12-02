@@ -5,11 +5,12 @@ export interface CalendarConfig {
   slotMinutes: number;
   minLeadDays: number;
   closedWeekdays: number[];
-  maxConcurrent: number;
+  handymanCapacity: number;     // 👈 source of truth
   defaultHours: string[];
   overrides: Record<string, string[]>;
   holidays: string[];
 }
+
 
 export interface TimeSlot {
   date: string;

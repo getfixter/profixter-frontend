@@ -2,18 +2,37 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/useAuth";
-import { getCalendarConfig, getTimeSlots, createBooking, getNextBooking, checkSubscription, CalendarConfig } from "@/lib/booking-service";
+import {
+  getCalendarConfig,
+  getTimeSlots,
+  createBooking,
+  getNextBooking,
+  checkSubscription,
+  CalendarConfig,
+} from "@/lib/booking-service";
 import { compressImage } from "@/lib/compressImage";
 
 const SERVICES = [
-  'Basic Improvement',
-  'Quick Fix',
-  'Get 2 Pros',
-  'Renovation Consultation',
-  'Property Inspection'
+  "Basic Improvement",
+  "Quick Fix",
+  "Get 2 Pros",
+  "Renovation Consultation",
+  "Property Inspection",
 ];
 
-const TIMES = ['09:00', '10:30', '12:00', '14:00', '15:30', '17:00'];
+// Fallback 9–17 every 30 min
+const FALLBACK_HOURS: string[] = (() => {
+  const list: string[] = [];
+  for (let h = 9; h < 17; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      list.push(
+        `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+      );
+    }
+  }
+  return list;
+})();
+
 function TimeDropdown({
   times,
   takenCounts,
@@ -66,9 +85,19 @@ function TimeDropdown({
                   }
                 }}
                 className={`px-3 py-2 text-[18px] sm:text-[20px] flex items-center 
-                  ${isFull ? "text-gray-400 cursor-not-allowed" : "cursor-pointer hover:bg-[#EEF2FF]"}`}
+                  ${
+                    isFull
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "cursor-pointer hover:bg-[#EEF2FF]"
+                  }`}
               >
-                <span className={`${isFull ? "line-through text-gray-400" : "text-[#313234]"}`}>
+                <span
+                  className={`${
+                    isFull
+                      ? "line-through text-gray-400"
+                      : "text-[#313234]"
+                  }`}
+                >
                   {time}
                 </span>
               </div>
@@ -80,133 +109,142 @@ function TimeDropdown({
   );
 }
 
-
-// Lightweight, presentational booking block matching the provided spec
+// Booking block
 export default function BookingSection() {
   const { user, isAuthenticated } = useAuth();
-  
+
   // Calendar config
   const [config, setConfig] = useState<CalendarConfig | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  
+
   // Form state
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedTime, setSelectedTime] = useState<string>('');
+  const [selectedTime, setSelectedTime] = useState<string>("");
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
-  const [dayCapacityMap, setDayCapacityMap] = useState<Record<string, {
-  taken: Record<string, number>,
-  capacity: number
-}>>({});
+  const [dayCapacityMap, setDayCapacityMap] = useState<
+    Record<
+      string,
+      {
+        taken: Record<string, number>;
+        capacity: number;
+      }
+    >
+  >({});
 
-  
-  const [service, setService] = useState<string>('');
-  const [note, setNote] = useState<string>('');
+  const [service, setService] = useState<string>("");
+  const [note, setNote] = useState<string>("");
   const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
   const [showServiceMenu, setShowServiceMenu] = useState(false);
-  
-  // UI state
+
+  // UI
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [bookingNumber, setBookingNumber] = useState('');
-  
-  // Modal display data
-  const [confirmedService, setConfirmedService] = useState('');
-  const [confirmedDate, setConfirmedDate] = useState<Date | null>(null);
-  const [confirmedTime, setConfirmedTime] = useState('');
-  
-  // Existing booking check
-  const [hasActiveBooking, setHasActiveBooking] = useState(false);
-  const [existingBookingDate, setExistingBookingDate] = useState<Date | null>(null);
-  // Rebook data
-const [existingBookingService, setExistingBookingService] = useState('');
-const [existingBookingTime, setExistingBookingTime] = useState('');
-const [existingBookingId, setExistingBookingId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [bookingNumber, setBookingNumber] = useState("");
 
-  
-  // Subscription check
+  // Modal display data
+  const [confirmedService, setConfirmedService] = useState("");
+  const [confirmedDate, setConfirmedDate] = useState<Date | null>(null);
+  const [confirmedTime, setConfirmedTime] = useState("");
+
+  // Existing booking
+  const [hasActiveBooking, setHasActiveBooking] = useState(false);
+  const [existingBookingDate, setExistingBookingDate] =
+    useState<Date | null>(null);
+  const [existingBookingService, setExistingBookingService] =
+    useState("");
+  const [existingBookingTime, setExistingBookingTime] =
+    useState("");
+  const [existingBookingId, setExistingBookingId] = useState<
+    string | null
+  >(null);
+
+  // Subscription
   const [hasSubscription, setHasSubscription] = useState(false);
-  const [subscriptionError, setSubscriptionError] = useState('');
-  const [checkingSubscription, setCheckingSubscription] = useState(false);
-  
+  const [subscriptionError, setSubscriptionError] = useState("");
+  const [checkingSubscription, setCheckingSubscription] =
+    useState(false);
+
   // Check subscription for address
   useEffect(() => {
     const checkAddressSubscription = async () => {
       if (!user?.defaultAddressId || !isAuthenticated) {
         setHasSubscription(false);
-        setSubscriptionError('');
+        setSubscriptionError("");
         return;
       }
-      
+
       setCheckingSubscription(true);
       try {
         const data = await checkSubscription(user.defaultAddressId);
-        
+
         setHasSubscription(data.hasSubscription);
         if (!data.hasSubscription) {
-          setSubscriptionError(data.message || 'This address does not have an active subscription.');
+          setSubscriptionError(
+            data.message ||
+              "This address does not have an active subscription."
+          );
         } else {
-          setSubscriptionError('');
+          setSubscriptionError("");
         }
       } catch (err: any) {
-        console.error('❌ Failed to check subscription:', err);
+        console.error("❌ Failed to check subscription:", err);
         setHasSubscription(false);
-        setSubscriptionError('Unable to verify subscription status.');
+        setSubscriptionError(
+          "Unable to verify subscription status."
+        );
       } finally {
         setCheckingSubscription(false);
       }
     };
-    
+
     checkAddressSubscription();
   }, [user?.defaultAddressId, isAuthenticated]);
-  
-  // Check for existing booking when user changes
+
+  // Check for existing booking
   useEffect(() => {
-  const checkExistingBooking = async () => {
-    if (!user?.defaultAddressId || !isAuthenticated) {
-      setHasActiveBooking(false);
-      return;
-    }
-
-    try {
-      const data = await getNextBooking(user.defaultAddressId);
-
-      if (data.future) {
-        const dt = new Date(data.future.date);
-
-        setHasActiveBooking(true);
-        setExistingBookingDate(dt);
-        setExistingBookingId(data.future._id);
-
-        // Store service
-setExistingBookingService((data?.future as any)?.service || '');
-
-        // Extract HH:mm (24h)
-        const hhmm = dt.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        });
-        setExistingBookingTime(hhmm);
-      } else {
-        // No booking
+    const checkExistingBooking = async () => {
+      if (!user?.defaultAddressId || !isAuthenticated) {
         setHasActiveBooking(false);
-        setExistingBookingDate(null);
-        setExistingBookingId(null);
-        setExistingBookingService('');
-        setExistingBookingTime('');
+        return;
       }
-          } catch (err) {
-      console.error('Failed to check existing booking:', err);
-      setHasActiveBooking(false);
-    }
-  };
 
-  checkExistingBooking();
-}, [user, isAuthenticated]);
+      try {
+        const data = await getNextBooking(user.defaultAddressId);
 
+        if (data.future) {
+          const dt = new Date(data.future.date);
 
-  
+          setHasActiveBooking(true);
+          setExistingBookingDate(dt);
+          setExistingBookingId(data.future._id);
+
+          setExistingBookingService(
+            (data.future as any)?.service || ""
+          );
+
+          const hhmm = dt.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+          setExistingBookingTime(hhmm);
+        } else {
+          setHasActiveBooking(false);
+          setExistingBookingDate(null);
+          setExistingBookingId(null);
+          setExistingBookingService("");
+          setExistingBookingTime("");
+        }
+      } catch (err) {
+        console.error("Failed to check existing booking:", err);
+        setHasActiveBooking(false);
+      }
+    };
+
+    checkExistingBooking();
+  }, [user, isAuthenticated]);
+
   // Load calendar config
   useEffect(() => {
     const loadConfig = async () => {
@@ -214,269 +252,283 @@ setExistingBookingService((data?.future as any)?.service || '');
         const data = await getCalendarConfig();
         setConfig(data);
       } catch (err) {
-        console.error('Failed to load calendar config:', err);
+        console.error("Failed to load calendar config:", err);
         // Fallback
         setConfig({
-          timezone: 'America/New_York',
+          timezone: "America/New_York",
           slotMinutes: 60,
           minLeadDays: 2,
           closedWeekdays: [0],
-          maxConcurrent: 3,
-          defaultHours: TIMES,
+          handymanCapacity: 1,
+          defaultHours: FALLBACK_HOURS,
           overrides: {},
-          holidays: []
-        });
+          holidays: [],
+        } as CalendarConfig);
       }
     };
     loadConfig();
   }, []);
-  
+
   // Load time slots when date is selected
   useEffect(() => {
     if (!selectedDate) {
       setAvailableTimes([]);
       return;
     }
-    
+
     const loadSlots = async () => {
       try {
         const dateStr = formatDateYMD(selectedDate);
         const data = await getTimeSlots(dateStr);
-        setAvailableTimes(data.slots);
-        setDayCapacityMap(prev => ({
-  ...prev,
-  [dateStr]: {
-    taken: data.taken,
-    capacity: data.capacityPerSlot
-  }
-}));
 
+        setAvailableTimes(data.slots);
+
+        setDayCapacityMap((prev) => ({
+          ...prev,
+          [dateStr]: {
+            taken: data.taken,
+            capacity: data.capacityPerSlot,
+          },
+        }));
       } catch (err) {
-        console.error('Failed to load time slots:', err);
+        console.error("Failed to load time slots:", err);
         setAvailableTimes([]);
       }
     };
-    
+
     loadSlots();
   }, [selectedDate]);
 
   const formatDateYMD = (date: Date): string => {
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
 
   const isDayDisabled = (date: Date): boolean => {
-  if (!config) return true;
+    if (!config) return true;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
 
-  const ymd = formatDateYMD(d);
+    const ymd = formatDateYMD(d);
 
-  // 1. Past days
-  if (d < today) return true;
+    // 1. Past days
+    if (d < today) return true;
 
-  // 2. Lead time
-  const diffDays = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays < config.minLeadDays) return true;
+    // 2. Lead time
+    const diffDays = Math.floor(
+      (d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (diffDays < config.minLeadDays) return true;
 
-  // 3. Closed weekdays
-  if (config.closedWeekdays.includes(d.getDay())) return true;
+    // 3. Closed weekdays
+    if (config.closedWeekdays.includes(d.getDay())) return true;
 
-  // 4. Admin holiday
-  if (config.holidays.includes(ymd)) return true;
+    // 4. Admin holiday
+    if (config.holidays.includes(ymd)) return true;
 
-  // 5. Admin override = closed (empty array)
-  if (config.overrides[ymd] !== undefined && config.overrides[ymd].length === 0) {
-    return true;
-  }
+    // 5. Admin override = closed (empty array)
+    if (
+      config.overrides[ymd] !== undefined &&
+      config.overrides[ymd].length === 0
+    ) {
+      return true;
+    }
 
-  // 6. Fully booked day
-  const info = dayCapacityMap[ymd];
+    // 6. Fully booked day
+    const info = dayCapacityMap[ymd];
 
-if (info) {
-  const hours = config.defaultHours;
-  const allFull = hours.every(h => (info.taken[h] || 0) >= info.capacity);
-  if (allFull) return true;
-}
+    if (info) {
+      const hours = config.overrides[ymd]?.length
+        ? config.overrides[ymd]
+        : config.defaultHours;
 
+      if (hours.length > 0) {
+        const allFull = hours.every(
+          (h) => (info.taken[h] || 0) >= info.capacity
+        );
+        if (allFull) return true;
+      }
+    }
 
-  return false;
-};
-
+    return false;
+  };
 
   const generateCalendarDays = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    
+
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    
+
     const startPadding = firstDay.getDay();
     const endPadding = 6 - lastDay.getDay();
-    
+
     const days: { date: Date; muted: boolean }[] = [];
-    
+
     // Previous month days
     for (let i = startPadding - 1; i >= 0; i--) {
       const date = new Date(year, month, -i);
       days.push({ date, muted: true });
     }
-    
+
     // Current month days
     for (let d = 1; d <= lastDay.getDate(); d++) {
       const date = new Date(year, month, d);
       days.push({ date, muted: false });
     }
-    
+
     // Next month days
     for (let i = 1; i <= endPadding; i++) {
       const date = new Date(year, month + 1, i);
       days.push({ date, muted: true });
     }
-    
+
     return days;
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  if (!e.target.files) return;
+  const handlePhotoUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (!e.target.files) return;
 
-  const compressed: File[] = [];
+    const compressed: File[] = [];
 
-  for (const file of Array.from(e.target.files)) {
-    const c = await compressImage(file);
-    compressed.push(c);
-  }
+    for (const file of Array.from(e.target.files)) {
+      const c = await compressImage(file);
+      compressed.push(c);
+    }
 
-  setUploadedPhotos((prev) =>
-    [...prev, ...compressed].slice(0, 10) // max 10 images
-  );
-};
+    setUploadedPhotos((prev) =>
+      [...prev, ...compressed].slice(0, 10)
+    );
+  };
 
   const handleBookNow = async () => {
     if (!isAuthenticated) {
-      alert('Please sign in to book a visit');
-      window.location.href = '/signin';
+      alert("Please sign in to book a visit");
+      window.location.href = "/signin";
       return;
     }
-    
+
     if (!user?.defaultAddressId) {
-      alert('Please add an address to your account first');
+      alert("Please add an address to your account first");
       return;
     }
-    
+
     if (!hasSubscription) {
-      setError('This address does not have an active subscription. Purchase a subscription to book a visit.');
+      setError(
+        "This address does not have an active subscription. Purchase a subscription to book a visit."
+      );
       return;
     }
-    
+
     // Validation
     if (!service) {
-      setError('Please select a service');
+      setError("Please select a service");
       return;
     }
     if (!selectedDate || !selectedTime) {
-      setError('Please select date and time');
+      setError("Please select date and time");
       return;
     }
     if (note.trim().split(/\s+/).length < 3) {
-      setError('Please describe your issue (at least 3 words)');
+      setError("Please describe your issue (at least 3 words)");
       return;
     }
     if (uploadedPhotos.length === 0) {
-      setError('Please upload at least one photo');
+      setError("Please upload at least one photo");
       return;
     }
-    
+
     setLoading(true);
-    setError('');
-    
+    setError("");
+
     try {
-      // Construct booking date/time
-      const [hours, minutes] = selectedTime.split(':').map(Number);
+      const [hours, minutes] = selectedTime
+        .split(":")
+        .map(Number);
       const bookingDate = new Date(selectedDate);
       bookingDate.setHours(hours, minutes, 0, 0);
-      
+
       const result = await createBooking({
-  service,
-  date: bookingDate.toISOString(),
-  note: note.trim(),
-  addressId: user.defaultAddressId,
-  images: uploadedPhotos,
-});
+        service,
+        date: bookingDate.toISOString(),
+        note: note.trim(),
+        addressId: user.defaultAddressId,
+        images: uploadedPhotos,
+      });
 
-
-      
-      // Save data for modal display BEFORE resetting form
       setBookingNumber(result.booking.bookingNumber);
       setConfirmedService(service);
       setConfirmedDate(new Date(selectedDate));
       setConfirmedTime(selectedTime);
-      
-      // Update existing booking state
+
       setHasActiveBooking(true);
       setExistingBookingDate(bookingDate);
-      
-      // Reset form
-      setService('');
+
+      setService("");
       setSelectedDate(null);
-      setSelectedTime('');
-      setNote('');
+      setSelectedTime("");
+      setNote("");
       setUploadedPhotos([]);
-      
-      // Show modal after saving data
+
       setShowModal(true);
-      
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Failed to create booking. Please try again.';
+      const message =
+        err.response?.data?.message ||
+        "Failed to create booking. Please try again.";
       setError(message);
       alert(message);
     } finally {
       setLoading(false);
     }
   };
-const rebook = async () => {
-  if (!existingBookingId) return;
 
-  try {
-    const token = localStorage.getItem("token");
+  const rebook = async () => {
+    if (!existingBookingId) return;
 
-    // Cancel current booking
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/cancel/${existingBookingId}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+    try {
+      const token = localStorage.getItem("token");
 
-    // remove active booking
-    setHasActiveBooking(false);
+      await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/cancel/${existingBookingId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    // prefill service/date/time
-    if (existingBookingService) setService(existingBookingService);
-    if (existingBookingDate) setSelectedDate(new Date(existingBookingDate));
-    if (existingBookingTime) setSelectedTime(existingBookingTime);
+      setHasActiveBooking(false);
 
-    // scroll user to booking section
-    setTimeout(() => {
-      document.getElementById("pick-day")?.scrollIntoView({ behavior: "smooth" });
-    }, 150);
+      if (existingBookingService)
+        setService(existingBookingService);
+      if (existingBookingDate)
+        setSelectedDate(new Date(existingBookingDate));
+      if (existingBookingTime)
+        setSelectedTime(existingBookingTime);
 
-    alert("Visit canceled. You may now rebook.");
+      setTimeout(() => {
+        document
+          .getElementById("pick-day")
+          ?.scrollIntoView({ behavior: "smooth" });
+      }, 150);
 
-  } catch (err) {
-    console.error("Rebook failed:", err);
-    alert("Error canceling the visit.");
-  }
-};
+      alert("Visit canceled. You may now rebook.");
+    } catch (err) {
+      console.error("Rebook failed:", err);
+      alert("Error canceling the visit.");
+    }
+  };
 
   const days = generateCalendarDays();
-
   return (
     <section id="pick-day" className="relative w-full pt-32 sm:pt-40 lg:pt-48 pb-12 sm:pb-16 lg:pb-24 bg-[#eaedfa]">
       <div className="container mx-auto px-[20px] max-w-[1240px]">
@@ -626,20 +678,40 @@ const rebook = async () => {
             
               {/* Time + length */}
 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-  {selectedDate && availableTimes.length > 0 ? (
-    <TimeDropdown
-  times={config?.defaultHours || TIMES}
-  takenCounts={dayCapacityMap[formatDateYMD(selectedDate)]?.taken || {}}
-  capacity={dayCapacityMap[formatDateYMD(selectedDate)]?.capacity || 999}
-  selectedTime={selectedTime}
-  onSelect={(t) => setSelectedTime(t)}
-/>
+  {selectedDate && config ? (() => {
+  const ymd = formatDateYMD(selectedDate);
+  const baseTimes =
+    config.overrides?.[ymd]?.length
+      ? config.overrides[ymd]
+      : config.defaultHours || [];
 
+  // intersect with backend-available slots, if provided
+  const finalTimes =
+    availableTimes.length > 0
+      ? baseTimes.filter((t) => availableTimes.includes(t))
+      : baseTimes;
+
+  return finalTimes.length > 0 ? (
+    <TimeDropdown
+      times={finalTimes}
+      takenCounts={
+        dayCapacityMap[ymd]?.taken || {}
+      }
+      capacity={dayCapacityMap[ymd]?.capacity || 999}
+      selectedTime={selectedTime}
+      onSelect={(t) => setSelectedTime(t)}
+    />
   ) : (
     <div className="w-full sm:w-[160px] h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.09)] flex items-center px-4 sm:px-6 text-[#6a6c71] text-sm">
-      Select date first
+      No available times for this day
     </div>
-  )}
+  );
+})() : (
+  <div className="w-full sm:w-[160px] h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.09)] flex items-center px-4 sm:px-6 text-[#6a6c71] text-sm">
+    Select date first
+  </div>
+)}
+
 
   <div className="text-sm sm:text-base text-[#6a6c71]">
     Visit length: up to 90 minutes
