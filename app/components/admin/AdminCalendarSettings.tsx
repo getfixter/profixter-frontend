@@ -28,18 +28,17 @@ export default function AdminCalendarSettings() {
   const [log, setLog] = useState("");
   const [selectedDate, setSelectedDate] = useState<string>("");
 
-  // 24h × 30-minute grid
-  const HOURS = useMemo(() => {
-    const list: string[] = [];
-    for (let h = 0; h < 24; h++) {
-      for (let m = 0; m < 60; m += 30) {
-        list.push(
-          `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
-        );
-      }
+
+ // 30-minute increments from 07:00 to 22:00
+const HOURS = useMemo(() => {
+  const list: string[] = [];
+  for (let h = 7; h <= 22; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      list.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
     }
-    return list;
-  }, []);
+  }
+  return list;
+}, []);
 
   // Helpers
   const toYMD = (d: Date, tz = "America/New_York") => {
@@ -82,9 +81,11 @@ export default function AdminCalendarSettings() {
       setLoading(true);
       setLog("");
 
-      const res = await fetch(`${api}/api/admin/calendar`, {
-        headers: authHeader(),
-      });
+      const res = await fetch(
+  `${process.env.NEXT_PUBLIC_API_URL}/api/admin/calendar`,
+  { headers: authHeader() }
+);
+
 
       const data = await res.json();
       if (!res.ok) {
@@ -139,11 +140,12 @@ export default function AdminCalendarSettings() {
         handymanCapacity: cfg.handymanCapacity,
       };
 
-      const res = await fetch(`${api}/api/admin/calendar`, {
-        method: "PUT",
-        headers: authHeader(),
-        body: JSON.stringify(body),
-      });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/calendar`, {
+   method: "PUT",
+   headers: authHeader(),
+   body: JSON.stringify(body),
+});
+
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.message || "Save failed");
