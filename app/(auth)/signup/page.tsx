@@ -357,7 +357,7 @@ if (hasError) return;
         href="/communication-consent"
         className="underline text-white hover:text-[#93c5fd]"
       >
-        Privacy Policy
+        I agree to receive SMS messages
       </Link>
     </span>
   </label>
