@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from "next/link";
 
 export default function TermsPage() {
   return (
@@ -7,8 +7,8 @@ export default function TermsPage() {
         className="max-w-4xl mx-auto rounded-[20px] p-6 sm:p-8 lg:p-10 backdrop-blur-[10px]"
         style={{
           background:
-            'linear-gradient(180deg, rgba(49,50,52,0.6) 0%, rgba(49,50,52,0.5) 50%, rgba(49,50,52,0.5) 100%), rgba(15,23,42,0.9)',
-          boxShadow: '0px 0px 80px 0px rgba(0,0,0,0.45)',
+            "linear-gradient(180deg, rgba(49,50,52,0.6) 0%, rgba(49,50,52,0.5) 50%, rgba(49,50,52,0.5) 100%), rgba(15,23,42,0.9)",
+          boxShadow: "0px 0px 80px 0px rgba(0,0,0,0.45)",
         }}
       >
         <h1 className="text-2xl sm:text-3xl font-semibold mb-6 text-center">
@@ -163,7 +163,10 @@ export default function TermsPage() {
               </li>
               <li>
                 If you do not want your property featured in our marketing, you may email
-                us at <a href="mailto:my@profixter.com" className="text-[#93c5fd]">my@profixter.com</a>{' '}
+                us at{" "}
+                <a href="mailto:my@profixter.com" className="text-[#93c5fd]">
+                  my@profixter.com
+                </a>{" "}
                 and we will honor your request on a going-forward basis.
               </li>
             </ul>
@@ -179,26 +182,19 @@ export default function TermsPage() {
             </p>
             <p className="mt-2">
               We do <span className="font-semibold">not</span> sell your personal
-              information to third parties. We may share your information only with:
+              information to third parties.
             </p>
-            <ul className="list-disc list-inside space-y-1 mt-2">
-              <li>
-                Internal companies under common ownership and control with Premium Island
-                Homes Corp., solely to provide or improve services.
-              </li>
-              <li>
-                Service providers who help us operate (for example, payment processors,
-                scheduling tools, communication tools, cloud hosting), under appropriate
-                confidentiality obligations.
-              </li>
-              <li>
-                Licensed contractors or specialists you approve to perform additional work.
-              </li>
-              <li>
-                Government authorities or parties to a dispute when required by law or
-                court order.
-              </li>
-            </ul>
+            <p className="mt-2">
+              We may share your information only as necessary to provide services (for
+              example, with payment processors, scheduling tools, communication providers,
+              cloud hosting, or licensed contractors you approve), under appropriate
+              confidentiality and security obligations.
+            </p>
+            <p className="mt-2">
+              For SMS purposes, we do not transfer consumer data to external organizations
+              except as necessary to deliver messages through our messaging providers, and
+              we do not share mobile opt-in data for marketing by third parties.
+            </p>
           </section>
 
           <section>
@@ -213,6 +209,49 @@ export default function TermsPage() {
               legitimate business records, comply with our legal obligations, resolve
               disputes, and enforce our agreements. We may anonymize or aggregate data for
               analytics, which we may keep indefinitely.
+            </p>
+          </section>
+
+          {/* ✅ This section is for Grasshopper/TCR SMS compliance */}
+          <section>
+            <h2 className="text-lg font-semibold mb-2">SMS Messaging Terms &amp; Consent</h2>
+
+            <p>
+              By providing your phone number and checking the SMS consent box, you consent
+              to receive text messages from{" "}
+              <span className="font-semibold">Premium Island Homes Corp.</span> (doing
+              business as <span className="font-semibold">Profixter</span>) regarding
+              customer care (including appointment and service updates) and
+              promotional/marketing messages.
+            </p>
+
+            <ul className="list-disc list-inside space-y-1 mt-2">
+              <li>Message frequency varies.</li>
+              <li>Message and data rates may apply.</li>
+              <li>
+                Reply <span className="font-semibold">STOP</span> or{" "}
+                <span className="font-semibold">CANCEL</span> to unsubscribe at any time.
+              </li>
+              <li>
+                Reply <span className="font-semibold">HELP</span> for assistance.
+              </li>
+              <li>
+                Consent is not a condition of purchase.
+              </li>
+              <li>
+                You can also contact us at{" "}
+                <span className="font-semibold">(516) 363-3823</span>,{" "}
+                <span className="font-semibold">(516) 540-5855</span>, or{" "}
+                <span className="font-semibold">(516) 908-8922</span>, or email{" "}
+                <a href="mailto:my@profixter.com" className="text-[#93c5fd]">
+                  my@profixter.com
+                </a>
+                .
+              </li>
+            </ul>
+
+            <p className="mt-2">
+              Mobile opt-in information is never shared with third parties.
             </p>
           </section>
 
@@ -245,13 +284,14 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-lg font-semibold mb-2">12. Contact</h2>
-            <p>
-              For questions about these Terms or our Privacy Notice, you can contact us:
-            </p>
+            <p>For questions about these Terms or our Privacy Notice, you can contact us:</p>
             <p className="mt-2">
-              Phone: <span className="font-semibold">631-599-1363</span>
+              Phone:{" "}
+              <span className="font-semibold">
+                (516) 363-3823, (516) 540-5855, (516) 908-8922
+              </span>
               <br />
-              Email:{' '}
+              Email:{" "}
               <a href="mailto:my@profixter.com" className="text-[#93c5fd]">
                 my@profixter.com
               </a>
