@@ -16,7 +16,7 @@ export default function TermsPage() {
         </h1>
 
         <p className="text-xs sm:text-sm text-white/60 text-center mb-8">
-          Effective Date: Oct 4, 2025 &middot; Company: Premium Island Construction Inc.,
+          Effective Date: Oct 4, 2025 &middot; Company: Premium Island Homes Corp.,
           doing business as &quot;Profixter&quot; (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;).
         </p>
 
@@ -27,7 +27,7 @@ export default function TermsPage() {
               By creating an account, booking a visit, or subscribing to any plan, you
               (&quot;Client&quot;, &quot;Customer&quot;, or &quot;Subscriber&quot;) agree to
               these Terms &amp; Conditions and acknowledge our Privacy Notice. These Terms
-              form a binding agreement between you and Premium Island Construction Inc.
+              form a binding agreement between you and Premium Island Homes Corp.
               (collectively, &quot;Profixter&quot;, &quot;we&quot;, &quot;us&quot;).
             </p>
             <p className="mt-2">
@@ -156,7 +156,7 @@ export default function TermsPage() {
                 before external use.
               </li>
               <li>
-                By using our services, you grant Premium Island Construction Inc. a
+                By using our services, you grant Premium Island Homes Corp. a
                 non-exclusive, worldwide, royalty-free license to use such photos or
                 videos for internal training, quality control, and external marketing,
                 including on our website, social media, and advertising materials.
@@ -184,7 +184,7 @@ export default function TermsPage() {
             <ul className="list-disc list-inside space-y-1 mt-2">
               <li>
                 Internal companies under common ownership and control with Premium Island
-                Construction Inc., solely to provide or improve services.
+                Homes Corp., solely to provide or improve services.
               </li>
               <li>
                 Service providers who help us operate (for example, payment processors,
