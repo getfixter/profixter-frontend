@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/useAuth";
 import {
   getCalendarConfig,
@@ -130,6 +130,10 @@ export default function BookingSection() {
       }
     >
   >({});
+
+const cameraInputRef = useRef<HTMLInputElement | null>(null);
+const galleryInputRef = useRef<HTMLInputElement | null>(null);
+
 
   const [service, setService] = useState<string>("");
   const [note, setNote] = useState<string>("");
@@ -358,6 +362,18 @@ export default function BookingSection() {
 
     return false;
   };
+
+  const handleDayClick = (dayDate: Date, muted: boolean) => {
+  if (muted) return;
+
+  const d = new Date(dayDate);
+  d.setHours(0, 0, 0, 0);
+
+  if (isDayDisabled(d)) return;
+
+  setSelectedDate(d);
+};
+
 
   const generateCalendarDays = () => {
     const year = currentMonth.getFullYear();
@@ -621,7 +637,7 @@ export default function BookingSection() {
                     day.date.getDate() === selectedDate.getDate() &&
                     day.date.getMonth() === selectedDate.getMonth() &&
                     day.date.getFullYear() === selectedDate.getFullYear();
-                  const disabled = !day.muted && isDayDisabled(new Date(day.date));
+                  const disabled = day.muted || isDayDisabled(new Date(day.date));
                   const isToday = (() => {
   const t = new Date();
   return (
@@ -635,16 +651,16 @@ export default function BookingSection() {
                   return (
                     <button
                       key={i}
-                      onClick={() => !day.muted && !disabled && setSelectedDate(new Date(day.date))}
+onClick={() => handleDayClick(day.date, day.muted)}
                       disabled={disabled}
                       className={[
   "mx-auto my-1 w-8 h-8 sm:w-10 sm:h-10 grid place-items-center rounded-[12px] text-sm sm:text-base lg:text-[18px]",
 
   // Muted (previous/next month)
   day.muted
-    ? "text-[#b7bdc8] cursor-not-allowed"
+    ? "text-[#b7bdc8] cursor-not-allowed pointer-events-none"
     : disabled
-      ? "bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed rounded-[12px]"
+      ? "bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed rounded-[12px] pointer-events-none"
       : "text-[#313234]",
 
   // Selected day
@@ -730,46 +746,47 @@ export default function BookingSection() {
               <div className="text-xs text-[#6a6c71] mt-1">
                 {note.trim().split(/\s+/).filter(w => w).length} words (minimum 3)
               </div>
-              <div className="absolute left-4 right-4 bottom-4 sm:left-auto sm:right-5 sm:bottom-5 flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <div className="relative">
-                  <button 
-                    type="button"
-                    onClick={() => setShowServiceMenu(!showServiceMenu)}
-                    className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base whitespace-nowrap"
-                  >
-                    {service || 'Select a service'}
-                  </button>
-                  {showServiceMenu && (
-                    <div className="absolute bottom-full mb-2 left-0 w-full min-w-[200px] bg-white border border-[#c5cbd8] rounded-[11px] shadow-lg z-10">
-                      {SERVICES.map(s => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => {
-                            setService(s);
-                            setShowServiceMenu(false);
-                          }}
-                          className="block w-full text-left px-4 py-2 text-sm hover:bg-[#EEF2FF] text-[#313234]"
-                        >
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <label className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer hover:bg-white/50 transition-colors whitespace-nowrap">
-                  <Paperclip />
-                  Add photo {uploadedPhotos.length > 0 && `(${uploadedPhotos.length})`}
-                  <input 
-  type="file"
-  accept="image/*"
-  capture="environment"     // <— enables TAKING PHOTOS with the phone camera
-  multiple
-  onChange={handlePhotoUpload}
-  className="hidden"
-/>
+<div className="absolute left-4 right-4 bottom-4 sm:left-auto sm:right-5 sm:bottom-5">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+  {/* TAKE A PICTURE */}
+  <button
+    type="button"
+    onClick={() => cameraInputRef.current?.click()}
+    className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer hover:bg-white/50 transition-colors whitespace-nowrap"
+  >
+    📷 Take a picture
+  </button>
 
-                </label>
+  {/* ADD PHOTOS */}
+  <button
+    type="button"
+    onClick={() => galleryInputRef.current?.click()}
+    className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer hover:bg-white/50 transition-colors whitespace-nowrap"
+  >
+    🖼️ Add photos {uploadedPhotos.length > 0 && `(${uploadedPhotos.length})`}
+  </button>
+
+  {/* Hidden inputs */}
+  <input
+    ref={cameraInputRef}
+    type="file"
+    accept="image/*"
+    capture="environment"
+    onChange={handlePhotoUpload}
+    className="hidden"
+  />
+
+  <input
+    ref={galleryInputRef}
+    type="file"
+    accept="image/*"
+    multiple
+    onChange={handlePhotoUpload}
+    className="hidden"
+  />
+</div>
+
+
               </div>
             </div>
 
