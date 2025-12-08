@@ -427,6 +427,8 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
     setUploadedPhotos((prev) =>
       [...prev, ...compressed].slice(0, 10)
     );
+     // ✅ important: allow selecting the same file again
+  e.target.value = "";
   };
 
   const handleBookNow = async () => {
