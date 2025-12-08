@@ -1,5 +1,7 @@
 "use client";
 
+import type React from "react";
+
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/useAuth";
 import {
@@ -372,6 +374,8 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
   if (isDayDisabled(d)) return;
 
   setSelectedDate(d);
+  setSelectedTime("");
+
 };
 
 
@@ -748,6 +752,35 @@ onClick={() => handleDayClick(day.date, day.muted)}
               </div>
 <div className="absolute left-4 right-4 bottom-4 sm:left-auto sm:right-5 sm:bottom-5">
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+  {/* SERVICE DROPDOWN */}
+  <div className="relative">
+    <button
+      type="button"
+      onClick={() => setShowServiceMenu((v) => !v)}
+      className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base whitespace-nowrap hover:bg-white/50 transition-colors"
+    >
+      {service || "Select a service"}
+    </button>
+
+    {showServiceMenu && (
+      <div className="absolute bottom-full mb-2 left-0 w-full min-w-[220px] bg-white border border-[#c5cbd8] rounded-[11px] shadow-lg z-10 overflow-hidden">
+        {SERVICES.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => {
+              setService(s);
+              setShowServiceMenu(false);
+            }}
+            className="block w-full text-left px-4 py-2 text-sm hover:bg-[#EEF2FF] text-[#313234]"
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+    )}
+  </div>
+
   {/* TAKE A PICTURE */}
   <button
     type="button"
@@ -771,9 +804,9 @@ onClick={() => handleDayClick(day.date, day.muted)}
     ref={cameraInputRef}
     type="file"
     accept="image/*"
-    capture="environment"
     onChange={handlePhotoUpload}
     className="hidden"
+    {...({ capture: "environment" } as any)}
   />
 
   <input
@@ -785,6 +818,7 @@ onClick={() => handleDayClick(day.date, day.muted)}
     className="hidden"
   />
 </div>
+
 
 
               </div>
