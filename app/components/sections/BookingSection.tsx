@@ -742,89 +742,97 @@ onClick={() => handleDayClick(day.date, day.muted)}
 
 
             {/* Issue description block with buttons on the right */}
-            <div className="relative mt-6 rounded-[14px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.10)] p-4 sm:p-5 min-h-[200px] sm:min-h-[141px]">
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Briefly describe your issue (e.g. leaking faucet, light switch not working)..."
-                className="w-full h-20 bg-transparent text-sm sm:text-base text-[#313234] placeholder-[#6a6c71] resize-none focus:outline-none"
-              />
-              <div className="text-xs text-[#6a6c71] mt-1">
-                {note.trim().split(/\s+/).filter(w => w).length} words (minimum 3)
-              </div>
-<div className="absolute left-4 right-4 bottom-4 sm:left-auto sm:right-5 sm:bottom-5">
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-  {/* SERVICE DROPDOWN */}
-  <div className="relative">
-    <button
-      type="button"
-      onClick={() => setShowServiceMenu((v) => !v)}
-      className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base whitespace-nowrap hover:bg-white/50 transition-colors"
-    >
-      {service || "Select a service"}
-    </button>
+<div className="mt-6 rounded-[14px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.10)] p-4 sm:p-5">
+  <textarea
+  value={note}
+  onChange={(e) => setNote(e.target.value)}
+  onInput={(e) => {
+    const el = e.currentTarget;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }}
+  onFocus={(e) => {
+    const el = e.currentTarget;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }}
+  placeholder="Briefly describe your issue (e.g. leaking faucet, light switch not working)..."
+  className="w-full min-h-[120px] max-h-[320px] overflow-y-auto bg-transparent text-sm sm:text-base text-[#313234] placeholder-[#6a6c71] resize-none focus:outline-none"
+/>
 
-    {showServiceMenu && (
-      <div className="absolute bottom-full mb-2 left-0 w-full min-w-[220px] bg-white border border-[#c5cbd8] rounded-[11px] shadow-lg z-10 overflow-hidden">
-        {SERVICES.map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => {
-              setService(s);
-              setShowServiceMenu(false);
-            }}
-            className="block w-full text-left px-4 py-2 text-sm hover:bg-[#EEF2FF] text-[#313234]"
-          >
-            {s}
-          </button>
-        ))}
-      </div>
-    )}
+
+  <div className="text-xs text-[#6a6c71] mt-1">
+    {note.trim().split(/\s+/).filter((w) => w).length} words (minimum 3)
   </div>
 
-  {/* TAKE A PICTURE */}
-  <button
-    type="button"
-    onClick={() => cameraInputRef.current?.click()}
-    className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer hover:bg-white/50 transition-colors whitespace-nowrap"
-  >
-    📷 Take a picture
-  </button>
+  <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
+    {/* SERVICE DROPDOWN */}
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setShowServiceMenu((v) => !v)}
+        className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base whitespace-nowrap hover:bg-white/50 transition-colors"
+      >
+        {service || "Select a service"}
+      </button>
 
-  {/* ADD PHOTOS */}
-  <button
-    type="button"
-    onClick={() => galleryInputRef.current?.click()}
-    className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer hover:bg-white/50 transition-colors whitespace-nowrap"
-  >
-    🖼️ Add photos {uploadedPhotos.length > 0 && `(${uploadedPhotos.length})`}
-  </button>
+      {showServiceMenu && (
+        <div className="absolute bottom-full mb-2 left-0 w-full min-w-[220px] bg-white border border-[#c5cbd8] rounded-[11px] shadow-lg z-10 overflow-hidden">
+          {SERVICES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => {
+                setService(s);
+                setShowServiceMenu(false);
+              }}
+              className="block w-full text-left px-4 py-2 text-sm hover:bg-[#EEF2FF] text-[#313234]"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
 
-  {/* Hidden inputs */}
-  <input
-    ref={cameraInputRef}
-    type="file"
-    accept="image/*"
-    onChange={handlePhotoUpload}
-    className="hidden"
-    {...({ capture: "environment" } as any)}
-  />
+    {/* TAKE A PICTURE */}
+    <button
+      type="button"
+      onClick={() => cameraInputRef.current?.click()}
+      className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer hover:bg-white/50 transition-colors whitespace-nowrap"
+    >
+      📷 Take a picture
+    </button>
 
-  <input
-    ref={galleryInputRef}
-    type="file"
-    accept="image/*"
-    multiple
-    onChange={handlePhotoUpload}
-    className="hidden"
-  />
+    {/* ADD PHOTOS */}
+    <button
+      type="button"
+      onClick={() => galleryInputRef.current?.click()}
+      className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer hover:bg-white/50 transition-colors whitespace-nowrap"
+    >
+      🖼️ Add photos {uploadedPhotos.length > 0 && `(${uploadedPhotos.length})`}
+    </button>
+
+    {/* Hidden inputs */}
+    <input
+      ref={cameraInputRef}
+      type="file"
+      accept="image/*"
+      onChange={handlePhotoUpload}
+      className="hidden"
+      {...({ capture: "environment" } as any)}
+    />
+    <input
+      ref={galleryInputRef}
+      type="file"
+      accept="image/*"
+      multiple
+      onChange={handlePhotoUpload}
+      className="hidden"
+    />
+  </div>
 </div>
 
-
-
-              </div>
-            </div>
 
             {/* Address */}
             <div className="mt-6 w-full h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.10)] flex items-center px-4 sm:px-6">
