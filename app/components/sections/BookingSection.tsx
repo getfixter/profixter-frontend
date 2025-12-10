@@ -567,15 +567,15 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
           {/* Mobile/Tablet - Simple centered title */}
           <div className="lg:hidden text-center mb-8">
             <h2 className="text-3xl sm:text-4xl font-bold leading-tight uppercase mb-4">
-              <span className="text-[#313234]">PICK YOUR </span>
-              <span className="text-[#306EEC]">DATE</span>
+              <span className="text-[#313234]">MAKE IT DONE </span>
+              <span className="text-[#306EEC]">WHEN </span>
             </h2>
             <h2 className="text-3xl sm:text-4xl font-bold leading-tight uppercase">
-              <span className="text-[#313234]">AND </span>
-              <span className="text-[#306EEC]">TIME</span>
+              <span className="text-[#313234]">YOU </span>
+              <span className="text-[#306EEC]">WANT</span>
             </h2>
             <p className="text-[#6A6D71] text-sm sm:text-base mt-4 max-w-md mx-auto">
-              Choose the most convenient time and tell us what needs fixing.
+              Control your Schedule by yourself.
             </p>
           </div>
 
@@ -583,17 +583,17 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
           <div className="hidden lg:block relative max-w-[1000px] mx-auto">
             <div className="flex items-center justify-center gap-1">
               <h2 className="text-[64px] font-bold leading-[89%] uppercase tracking-[-0.05em]">
-                <span className="text-[#313234]">PICK YOUR</span>
+                <span className="text-[#313234]">MAKE IT DONE</span>
               </h2>
               <p className="text-[#6A6D71] text-[15px] font-medium max-w-[289px] text-left">
-                Choose the most convenient time and tell us what needs fixing.
+                Control your Schedule by yourself.
               </p>
             </div>
             <div className="flex justify-end " style={{ paddingRight: 'calc((100% - 289px - 64px * 4.5) / 2)' }}>
               <h2 className="text-[64px] font-bold leading-[89%] uppercase tracking-[-0.05em]">
-                <span className="text-[#306EEC]">DATE</span>
-                <span className="text-[#313234]"> AND </span>
-                <span className="text-[#306EEC]">TIME</span>
+                <span className="text-[#306EEC]">WHEN</span>
+                <span className="text-[#313234]"> YOU </span>
+                <span className="text-[#306EEC]">WANT</span>
               </h2>
             </div>
           </div>
@@ -691,7 +691,7 @@ onClick={() => handleDayClick(day.date, day.muted)}
             
             {/* Note below calendar - centered */}
             <p className="mt-[12px] sm:mt-[12px] text-sm sm:text-base text-[#6a6c71] text-center leading-[120%] tracking-[-0.05em]">
-              Same-day or next-day visits? Please call us directly.
+              Emergency? Please call us directly 6315991363
             </p>
           </div>
 
@@ -736,7 +736,7 @@ onClick={() => handleDayClick(day.date, day.muted)}
 
 
   <div className="text-sm sm:text-base text-[#6a6c71]">
-    Visit length: up to 90 minutes
+    Visit length: up to 90 minutes. Make sure you take detailed pictures!
   </div>
 </div>
 
@@ -762,7 +762,7 @@ onClick={() => handleDayClick(day.date, day.muted)}
 
 
   <div className="text-xs text-[#6a6c71] mt-1">
-    {note.trim().split(/\s+/).filter((w) => w).length} words (minimum 3)
+    {note.trim().split(/\s+/).filter((w) => w).length} (minimum 3)
   </div>
 
   <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
@@ -837,7 +837,7 @@ onClick={() => handleDayClick(day.date, day.muted)}
             {/* Address */}
             <div className="mt-6 w-full h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.10)] flex items-center px-4 sm:px-6">
               <span className="text-sm sm:text-base text-[#313234]">
-                {user?.address || 'Default address will be used'}
+                {user?.address || 'Your default address will be used'}
               </span>
             </div>
 
