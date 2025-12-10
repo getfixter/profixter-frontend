@@ -66,21 +66,21 @@ export default function HeroSection() {
             <h1 className="w-full flex flex-col pt-6" >
               {/* First line - centered */}
               <div className="text-[32px] sm:text-[48px] font-bold leading-[88.9%] text-white uppercase tracking-tight text-center">
-                Regular House Maintenance
+                Your Hangyman Subscription
               </div>
               
               {/* Second line - responsive layout */}
               <div className="relative flex flex-col items-center justify-center gap-2">
                 <div className="text-[32px] sm:text-[48px] font-bold leading-[88.9%] uppercase tracking-tight text-center">
-                  <span className="text-[#5E8BFF]">Service</span>{' '}
-                  <span className="text-white">Luxury</span>
+                  <span className="text-[#5E8BFF]">Best</span>{' '}
+                  <span className="text-white"> - Service</span>
                 </div>
               </div>
               
               {/* Third line */}
               <div className="text-[32px] sm:text-[48px] font-bold leading-[88.9%]  uppercase tracking-tight text-center">
-                <span className="text-white">Price </span>
-                <span className="text-[#5E8BFF]">Honest</span>
+                <span className="text-white">Honest - </span>
+                <span className="text-[#5E8BFF]">Price</span>
               </div>
             </h1>
           </div>
@@ -91,14 +91,14 @@ export default function HeroSection() {
             <h1 className="mb-4 sm:mb-6 w-full flex flex-col -gap-2" >
               {/* First line - centered */}
               <div className="text-[64px] font-bold leading-[89%] text-white uppercase tracking-[-0.05em] text-center lg:ml-[0px]">
-                Regular House Maintenance
+                Your Hangyman Subscription
               </div>
               
               {/* Second line - responsive layout */}
               <div className="relative flex flex-row items-center justify-start gap-4 -mt-2">
                 <div className="text-[64px] font-bold leading-[89%] uppercase tracking-[-0.05em] text-left">
-                  <span className="text-[#5E8BFF]">Service</span>{' '}
-                  <span className="text-white"> - Luxury</span>
+                  <span className="text-[#5E8BFF]">Best</span>{' '}
+                  <span className="text-white"> - Service</span>
                 </div>
                 
                 {/* Review Badge */}
@@ -120,8 +120,8 @@ export default function HeroSection() {
               
               {/* Third line */}
               <div className="text-[64px] font-bold leading-[89%] uppercase tracking-[-0.05em] text-left -mt-2">
-                <span className="text-white">Price - </span>
-                <span className="text-[#5E8BFF]">Honest</span>
+                <span className="text-white">Honest - </span>
+                <span className="text-[#5E8BFF]">Price</span>
               </div>
             </h1>
 
