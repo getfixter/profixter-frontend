@@ -31,10 +31,11 @@ export default function Home() {
         <Header />
       </div>
       <BookingSection />
+      <HeroSection />
       <StepsSection />
       <PlansSection />
       <ServicesSection />
-      <HeroSection />
+      
       
       <HandymenSection />
       <ProjectsSection />
