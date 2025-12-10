@@ -691,7 +691,7 @@ onClick={() => handleDayClick(day.date, day.muted)}
             
             {/* Note below calendar - centered */}
             <p className="mt-[12px] sm:mt-[12px] text-sm sm:text-base text-[#6a6c71] text-center leading-[120%] tracking-[-0.05em]">
-              Emergency? Please call us directly 6315991363
+              Emergency? Please call us directly 631-599-1363
             </p>
           </div>
 
