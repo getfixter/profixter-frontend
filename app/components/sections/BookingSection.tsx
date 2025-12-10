@@ -567,7 +567,7 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
           {/* Mobile/Tablet - Simple centered title */}
           <div className="lg:hidden text-center mb-8">
             <h2 className="text-3xl sm:text-4xl font-bold leading-tight uppercase mb-4">
-              <span className="text-[#313234]">CHOOSE YOUR OWN</span>
+              <span className="text-[#313234]">CHOOSE YOUR OWN </span>
               <span className="text-[#306EEC]">DAY </span>
             </h2>
             <h2 className="text-3xl sm:text-4xl font-bold leading-tight uppercase">
@@ -575,7 +575,7 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
               <span className="text-[#306EEC]">TIME</span>
             </h2>
             <p className="text-[#6A6D71] text-sm sm:text-base mt-4 max-w-md mx-auto">
-              Control your Schedule by yourself.
+              Select your Day First.
             </p>
           </div>
 
@@ -583,10 +583,10 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
           <div className="hidden lg:block relative max-w-[1000px] mx-auto">
             <div className="flex items-center justify-center gap-1">
               <h2 className="text-[64px] font-bold leading-[89%] uppercase tracking-[-0.05em]">
-                <span className="text-[#313234]">CHOOSE YOUR OWN</span>
+                <span className="text-[#313234]">CHOOSE YOUR OWN </span>
               </h2>
               <p className="text-[#6A6D71] text-[15px] font-medium max-w-[289px] text-left">
-                Control your Schedule by yourself.
+                Control your schedule by Yourself.
               </p>
             </div>
             <div className="flex justify-end " style={{ paddingRight: 'calc((100% - 289px - 64px * 4.5) / 2)' }}>

@@ -66,7 +66,7 @@ export default function HeroSection() {
             <h1 className="w-full flex flex-col pt-6" >
               {/* First line - centered */}
               <div className="text-[32px] sm:text-[48px] font-bold leading-[88.9%] text-white uppercase tracking-tight text-center">
-                Your Hangyman Subscription
+                Your Handyman Subscription
               </div>
               
               {/* Second line - responsive layout */}
@@ -91,7 +91,7 @@ export default function HeroSection() {
             <h1 className="mb-4 sm:mb-6 w-full flex flex-col -gap-2" >
               {/* First line - centered */}
               <div className="text-[64px] font-bold leading-[89%] text-white uppercase tracking-[-0.05em] text-center lg:ml-[0px]">
-                Your Hangyman Subscription
+                Subscription for your Handyman
               </div>
               
               {/* Second line - responsive layout */}
@@ -128,7 +128,7 @@ export default function HeroSection() {
             {/* Subheading with responsive margin */}
             <div className="lg:ml-[90px] text-left">
               <p className="text-[20px] font-medium text-[#C5CBD8] leading-[120%] max-w-[362px] mb-6">
-                Book professional help for your home in seconds. Choose a plan, pick a date - we handle the rest.
+                Pay $0 in labor. One plan covers all your small handyman tasks-stop doing them yourself.
               </p>
 
               {/* CTA Button */}
@@ -144,7 +144,7 @@ export default function HeroSection() {
           {/* Bottom - Description, Review, CTA on Mobile */}
           <div className="lg:hidden w-full max-w-[1200px] relative mx-auto text-center">
             <p className="text-base sm:text-lg font-medium text-[#C5CBD8] leading-[120%] max-w-[362px] mx-auto mb-6">
-              Book professional help for your home in seconds. Choose a plan, pick a date - we handle the rest.
+              Pay $0 in labor. One plan covers all your small handyman tasks-stop doing them yourself.
             </p>
 
             {/* Review Badge - Mobile only */}
