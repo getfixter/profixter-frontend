@@ -31,28 +31,32 @@ export default function UsersTable({
 
   return (
     <>
+    
       {/* Desktop Table */}
       <div className="hidden lg:block bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
-                <th className="px-4 py-4 text-left text-sm font-semibold">#</th>
-                <th className="px-4 py-4 text-left text-sm font-semibold">Name</th>
-                <th className="px-4 py-4 text-left text-sm font-semibold">Email</th>
-                <th className="px-4 py-4 text-left text-sm font-semibold">Phone</th>
-                <th className="px-4 py-4 text-left text-sm font-semibold">Address</th>
-                <th className="px-4 py-4 text-left text-sm font-semibold">Plan</th>
-                <th className="px-4 py-4 text-left text-sm font-semibold">Actions</th>
-              </tr>
-            </thead>
+              
+  <tr className="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
+    <th className="px-4 py-4 text-left text-sm font-semibold">#</th>
+    <th className="px-4 py-4 text-left text-sm font-semibold">Name</th>
+    <th className="px-4 py-4 text-left text-sm font-semibold">Email</th>
+    <th className="px-4 py-4 text-left text-sm font-semibold">Phone</th>
+    <th className="px-4 py-4 text-left text-sm font-semibold">Address</th>
+    <th className="px-4 py-4 text-left text-sm font-semibold">Plan</th>
+    <th className="px-4 py-4 text-left text-sm font-semibold">Created</th> {/* ✅ ADD */}
+    <th className="px-4 py-4 text-left text-sm font-semibold">Actions</th>
+  </tr>
+</thead>
+
         <tbody>
           {rows.map(({ user, address }) => {
             const isBL = blacklistIds.has(user._id);
             const addressText = address
               ? `${address.line1}, ${address.city}, ${address.state} ${address.zip}`
               : 'No address';
-            const plan = address?.plan || 'None';
+const planValue = address?.plan ? String(address.plan).toLowerCase() : "cancel";
 
             return (
               <tr
@@ -113,21 +117,26 @@ export default function UsersTable({
                   {address ? (
                     <select
                       className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      value={plan === 'None' ? 'Cancel' : plan}
+                      value={planValue}
                       onChange={(e) =>
                         onSetAddressPlan(user._id, address._id, e.target.value)
                       }
                     >
-                      <option>Basic</option>
-                      <option>Plus</option>
-                      <option>Premium</option>
-                      <option>Elite</option>
-                      <option>Cancel</option>
+                      <option value="basic">Basic</option>
+<option value="plus">Plus</option>
+<option value="premium">Premium</option>
+<option value="elite">Elite</option>
+<option value="cancel">Cancel</option>
+
                     </select>
                   ) : (
                     <em className="text-gray-400 text-sm">—</em>
                   )}
                 </td>
+                <td className="px-4 py-4 text-sm text-gray-700 whitespace-nowrap">
+  {user.createdAt ? new Date(user.createdAt).toLocaleString() : "—"}
+</td>
+
                 <td className="px-4 py-4">
                   {!isBL ? (
                     <button
@@ -162,7 +171,7 @@ export default function UsersTable({
           const addressText = address
             ? `${address.line1}, ${address.city}, ${address.state} ${address.zip}`
             : 'No address';
-          const plan = address?.plan || 'None';
+          const planValue = address?.plan ? String(address.plan).toLowerCase() : "cancel";
 
           return (
             <div
@@ -182,6 +191,10 @@ export default function UsersTable({
                       )}
                     </div>
                     <p className="text-xs text-gray-500 font-mono">ID: {user.userId}</p>
+                    <p className="text-xs text-gray-500">
+  Created: {user.createdAt ? new Date(user.createdAt).toLocaleString() : "—"}
+</p>
+
                   </div>
                 </div>
               </div>
@@ -248,19 +261,22 @@ export default function UsersTable({
                     <div className="text-xs font-semibold text-amber-600 uppercase mb-2">Plan</div>
                     <select
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                      value={plan === 'None' ? 'Cancel' : plan}
+                      value={planValue}
+
                       onChange={(e) =>
                         onSetAddressPlan(user._id, address._id, e.target.value)
                       }
                     >
-                      <option>Basic</option>
-                      <option>Plus</option>
-                      <option>Premium</option>
-                      <option>Elite</option>
-                      <option>Cancel</option>
+                      <option value="basic">Basic</option>
+<option value="plus">Plus</option>
+<option value="premium">Premium</option>
+<option value="elite">Elite</option>
+<option value="cancel">Cancel</option>
+
                     </select>
                   </div>
                 )}
+
 
                 {/* Actions */}
                 <div className="pt-2">

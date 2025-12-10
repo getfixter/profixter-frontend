@@ -35,8 +35,8 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      {/* GTM script (loads early, safe) */}
-      <Script id="gtm" strategy="afterInteractive">
+      {/* Google Tag Manager */}
+      <Script id="gtm" strategy="beforeInteractive">
         {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -47,7 +47,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} antialiased`}
       >
-        {/* GTM noscript (must be immediately after <body>) */}
+        {/* GTM (noscript) — must be immediately after <body> */}
         <noscript>
           <iframe
             src="https://www.googletagmanager.com/ns.html?id=GTM-KFPSD2P6"

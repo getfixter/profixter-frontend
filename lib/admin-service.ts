@@ -10,7 +10,8 @@ export interface User {
   subscription?: string;
   defaultAddressId?: string;
   addresses: Address[];
-  addressesDetailed: AddressDetailed[];
+addressesDetailed?: AddressDetailed[];
+createdAt?: string; // ✅ add this
 }
 
 export interface Address {
@@ -25,8 +26,9 @@ export interface Address {
 
 export interface AddressDetailed extends Address {
   isDefault: boolean;
-  plan?: string;
+  plan?: "basic" | "plus" | "premium" | "elite" | null;
 }
+
 
 export interface Booking {
   _id: string;
