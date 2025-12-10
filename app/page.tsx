@@ -35,8 +35,6 @@ export default function Home() {
       <StepsSection />
       <PlansSection />
       <ServicesSection />
-      
-      
       <HandymenSection />
       <ProjectsSection />
       <Footer />
