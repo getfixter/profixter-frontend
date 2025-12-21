@@ -94,18 +94,6 @@ export const team: TeamMember[] = [
     thumb: '/images/handymen2.png',
     blurb: 'Detail-driven electrician and installer. Loves smart-home setups and clean finishes. Reliable and Proffetional.',
   },
-  {
-    id: 3,
-    name: 'Jason Statham',
-    photo: '/images/Jason.png',
-    thumb: '/images/Jason.png',
-    blurb: "Painter and finisher with a designer's eye. Passionate about refreshing spaces with precision, Temporarily on different job",
-  },
-  {
-    id: 4,
-    name: 'Ben Affleck',
-    photo: '/images/Ben.png',
-    thumb: '/images/Ben.png',
-    blurb: "Hardworking and versatile handyman. Skilled in carpentry and general repairs. Always puts customer needs first. Temporarily Acting",
-  },
+  
+  
 ];
