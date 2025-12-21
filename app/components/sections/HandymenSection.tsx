@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { team as TEAM } from "@/app/data/content";
 
 export default function HandymenSection() {
@@ -10,6 +10,24 @@ export default function HandymenSection() {
 
   const prev = () => setIdx((i) => (i === 0 ? TEAM.length - 1 : i - 1));
   const next = () => setIdx((i) => (i + 1) % TEAM.length);
+
+  // Desktop thumbnails strip refs (future-proof for many techs)
+  const stripRef = useRef<HTMLDivElement | null>(null);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Keep active thumbnail visible when idx changes (thumb click OR next/prev)
+  useEffect(() => {
+    const el = itemRefs.current[idx];
+    if (!el) return;
+    el.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [idx]);
+
+  // Safety (in case TEAM is empty while you load content later)
+  if (!TEAM?.length) return null;
 
   return (
     <section className="relative w-full bg-[#313234] py-12 sm:py-16 lg:py-24">
@@ -38,48 +56,92 @@ export default function HandymenSection() {
         </div>
       </div>
 
-      {/* ================= DESKTOP THUMBNAILS ================= */}
+      {/* ================= DESKTOP THUMBNAILS + TITLE ================= */}
       <div className="hidden lg:block mt-6 sm:mt-8 lg:mt-10">
+        {/* Desktop Thumbnails Strip (clean + obvious navigation) */}
         <div className="container mx-auto px-[20px] max-w-[1240px]">
-          <div
-            className="overflow-hidden overflow-x-auto"
-            style={{
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-              WebkitOverflowScrolling: "touch",
-            }}
-          >
-            <style jsx>{`
-              div::-webkit-scrollbar {
-                display: none;
+          <div className="flex items-center gap-3">
+            {/* Left arrow */}
+            <button
+              type="button"
+              onClick={() =>
+                stripRef.current?.scrollBy({ left: -320, behavior: "smooth" })
               }
-            `}</style>
+              className="w-[44px] h-[44px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors shrink-0 shadow-md"
+              aria-label="Scroll thumbnails left"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M15 18L9 12L15 6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
 
-            {/* Track: fixed left cut + scrollable */}
-            <div className="flex gap-6 w-max translate-x-[-340px] py-1">
-              {TEAM.map((m, i) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setIdx(i)}
-                  className={`relative shrink-0 w-[260px] h-[160px] rounded-[14px] overflow-hidden border-2 ${
-                    i === idx ? "border-white" : "border-transparent"
-                  }`}
-                  aria-label={`Show ${m.name}`}
-                >
-                  <Image
-                    src={m.thumb}
-                    alt={m.name}
-                    fill
-                    className="object-cover"
-                  />
-                </button>
-              ))}
+            {/* Scroll strip */}
+            <div
+              ref={stripRef}
+              className="flex-1 overflow-x-auto"
+              style={{
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+                WebkitOverflowScrolling: "touch",
+              }}
+            >
+              <style jsx>{`
+                div::-webkit-scrollbar {
+                  display: none;
+                }
+              `}</style>
+
+              <div className="flex gap-6 py-1 pr-6">
+                {TEAM.map((m, i) => (
+                  <button
+                    key={m.id}
+                    ref={(el) => {
+                      itemRefs.current[i] = el;
+                    }}
+                    type="button"
+                    onClick={() => setIdx(i)}
+                    className={`relative shrink-0 w-[260px] h-[160px] rounded-[14px] overflow-hidden border-2 transition-colors ${
+                      i === idx ? "border-white" : "border-transparent"
+                    }`}
+                    aria-label={`Show ${m.name}`}
+                  >
+                    <Image src={m.thumb} alt={m.name} fill className="object-cover" />
+                    {/* subtle overlay so border reads clean */}
+                    <div className="absolute inset-0 bg-black/10" />
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* Right arrow */}
+            <button
+              type="button"
+              onClick={() =>
+                stripRef.current?.scrollBy({ left: 320, behavior: "smooth" })
+              }
+              className="w-[44px] h-[44px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors shrink-0 shadow-md"
+              aria-label="Scroll thumbnails right"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M9 6L15 12L9 18"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
           </div>
         </div>
 
-        {/* ================= DESKTOP TITLE (RIGHT) ================= */}
+        {/* Desktop Title on the right */}
         <div className="container mx-auto px-[20px] max-w-[1240px] -mt-[160px]">
           <div className="flex justify-end">
             <div className="max-w-[502px]">
@@ -145,51 +207,67 @@ export default function HandymenSection() {
           {/* Big photo */}
           <div className="lg:col-span-7">
             <div className="relative w-full h-[300px] sm:h-[400px] lg:h-[406px] rounded-[14px] overflow-hidden max-w-[622px]">
-              <Image
-                src={person.photo}
-                alt={person.name}
-                fill
-                className="object-cover"
-              />
+              <Image src={person.photo} alt={person.name} fill className="object-cover" />
             </div>
           </div>
 
           {/* Text */}
           <div className="lg:col-span-6 flex flex-col pl-[40px]">
-            <h3 className="text-xl sm:text-2xl lg:text-[24px] font-semibold text-[#eef2ff]">
+            <h3 className="text-xl sm:text-2xl lg:text-[24px] font-semibold text-[#eef2ff] leading-tight lg:leading-[21px]">
               {person.name}
             </h3>
-            <p className="mt-4 text-base sm:text-lg lg:text-[20px] text-[#c5cbd8] max-w-[320px]">
+
+            <p className="mt-4 text-base sm:text-lg lg:text-[20px] leading-relaxed lg:leading-[24px] text-[#c5cbd8] max-w-[320px]">
               {person.blurb}
             </p>
 
+            {/* Spacer */}
             <div className="flex-1 min-h-[20px]" />
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mt-6">
+            {/* Bottom section with arrows on left and quote on right */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 sm:gap-0 mt-6">
               {/* Arrows */}
               <div className="flex gap-3">
                 <button
                   onClick={prev}
                   type="button"
-                  className="w-[40px] h-[40px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white"
+                  className="w-[40px] h-[40px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors"
+                  aria-label="Previous"
                 >
-                  ‹
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M15 18L9 12L15 6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
                 <button
                   onClick={next}
                   type="button"
-                  className="w-[40px] h-[40px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white"
+                  className="w-[40px] h-[40px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors"
+                  aria-label="Next"
                 >
-                  ›
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M9 6L15 12L9 18"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
               </div>
 
               {/* Quote */}
               <div className="sm:text-right md:max-w-[200px]">
-                <div className="text-sm text-[#eef2ff]">
+                <div className="text-sm sm:text-base text-[#eef2ff]">
                   The Profixter Team:
                 </div>
-                <div className="text-sm text-[#c5cbd8]">
+                <div className="text-sm sm:text-[14px] text-[#c5cbd8]">
                   We fix homes but mostly, we bring comfort
                 </div>
               </div>
