@@ -88,6 +88,7 @@ function FaqCard({
 }
 
 export default function ServicesSection() {
+  // open first item by default (nice for conversions)
   const [openId, setOpenId] = useState<string | null>('01');
 
   const items = useMemo(() => faqs, []);
@@ -103,29 +104,10 @@ export default function ServicesSection() {
       />
 
       <div className="container mx-auto px-[20px] max-w-[1240px] relative z-10">
-        {/* Desktop layout: left = grid, right = header + lamp */}
+        {/* Mobile: header first; Desktop: cards first */}
         <div className="grid lg:grid-cols-12 gap-8 lg:gap-10 items-start">
-          {/* Cards */}
-          <div className="lg:col-span-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
-              {items.map((faq) => (
-                <FaqCard
-                  key={faq.id}
-                  faq={faq}
-                  isOpen={openId === faq.id}
-                  onToggle={() => setOpenId((prev) => (prev === faq.id ? null : faq.id))}
-                />
-              ))}
-            </div>
-
-            {/* Mobile hint */}
-            <div className="lg:hidden mt-6 text-center">
-              <p className="text-[#C5CBD8] text-sm">Tap a card to expand the answer.</p>
-            </div>
-          </div>
-
-          {/* Header / Lamp */}
-          <div className="lg:col-span-4">
+          {/* Header / Lamp — MOBILE FIRST */}
+          <div className="lg:col-span-4 order-1 lg:order-2">
             <div className="relative rounded-[24px] border border-white/10 bg-white/5 p-6 sm:p-7">
               <h2 className="text-3xl sm:text-5xl lg:text-[54px] font-bold uppercase leading-tight">
                 <span className="text-white">FAQ</span>
@@ -145,6 +127,24 @@ export default function ServicesSection() {
                   className="object-contain drop-shadow-[0_40px_70px_rgba(42,30,15,0.25)]"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* FAQ Cards */}
+          <div className="lg:col-span-8 order-2 lg:order-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+              {items.map((faq) => (
+                <FaqCard
+                  key={faq.id}
+                  faq={faq}
+                  isOpen={openId === faq.id}
+                  onToggle={() => setOpenId((prev) => (prev === faq.id ? null : faq.id))}
+                />
+              ))}
+            </div>
+
+            <div className="lg:hidden mt-6 text-center">
+              <p className="text-[#C5CBD8] text-sm">Tap a card to expand the answer.</p>
             </div>
           </div>
         </div>
