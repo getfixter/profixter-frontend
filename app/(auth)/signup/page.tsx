@@ -323,9 +323,7 @@ export default function SignUpPage() {
                 >
                   SMS/phone/email communications
                 </Link>{" "}
-                (reply STOP to opt out of texts). I understand Profixter may
-                contact me from different numbers, and the main number is{" "}
-                <span className="font-semibold">631-599-1363</span>.
+                
               </span>
             </label>
 
