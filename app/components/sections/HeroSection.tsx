@@ -71,6 +71,31 @@ export default function HeroSection() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/15 to-black/65" />
         </div>
 
+        {/* ✅ TROPHY OVERLAY (different placement desktop vs mobile) */}
+        <div className="absolute inset-0 z-[5] pointer-events-none">
+          {/* Desktop trophy: right side (your red box on desktop) */}
+          <div className="hidden lg:block absolute right-[70px] top-[160px]">
+            <Image
+              src="/images/trophy.png"
+              alt="Award trophy"
+              width={320}
+              height={520}
+              className="opacity-95 drop-shadow-[0_25px_80px_rgba(0,0,0,0.45)]"
+            />
+          </div>
+
+          {/* Mobile trophy: center area (your red box on phone) */}
+          <div className="lg:hidden absolute left-1/2 top-[260px] -translate-x-1/2">
+            <Image
+              src="/images/trophy.png"
+              alt="Award trophy"
+              width={180}
+              height={300}
+              className="opacity-95 drop-shadow-[0_25px_80px_rgba(0,0,0,0.45)]"
+            />
+          </div>
+        </div>
+
         {/* Content */}
         <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-[20px] max-w-[1240px] h-full flex flex-col justify-between pt-28 sm:pt-20 lg:pt-24 pb-8 sm:pb-12 lg:pb-16">
           <div className="flex-1 flex flex-col justify-between lg:block">
@@ -145,9 +170,6 @@ export default function HeroSection() {
                 </ul>
 
                 {/* Primary */}
-                
-
-                {/* Secondary */}
                 <button
                   type="button"
                   onClick={handleFixTodayClick}
@@ -156,7 +178,7 @@ export default function HeroSection() {
                   <span className="text-[18px] font-semibold text-[#EEF2FF]">Book Now</span>
                 </button>
 
-                {/* NEW: included page button */}
+                {/* Secondary */}
                 <Link
                   href="/included"
                   className="mt-3 w-[362px] h-[54px] inline-flex items-center justify-center bg-transparent hover:bg-white/10 transition-colors rounded-[14px] border border-white/25"
@@ -204,8 +226,6 @@ export default function HeroSection() {
                 <div>• Materials extra if needed</div>
               </div>
 
-              
-
               <button
                 type="button"
                 onClick={handleFixTodayClick}
@@ -214,7 +234,6 @@ export default function HeroSection() {
                 <span className="text-lg sm:text-xl font-semibold text-[#EEF2FF]">Book Now</span>
               </button>
 
-              {/* NEW: included page button */}
               <Link
                 href="/included"
                 className="mt-3 w-full sm:w-[300px] h-[52px] sm:h-[56px] inline-flex items-center justify-center bg-transparent hover:bg-white/10 transition-colors rounded-[14px] border border-white/25"
