@@ -72,13 +72,13 @@ export default function HeroSection() {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-[20px] max-w-[1240px] h-full flex flex-col justify-between pt-16 sm:pt-20 lg:pt-24 pb-8 sm:pb-12 lg:pb-16">
+        <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-[20px] max-w-[1240px] h-full flex flex-col justify-between pt-28 sm:pt-20 lg:pt-24 pb-8 sm:pb-12 lg:pb-16">
           <div className="flex-1 flex flex-col justify-between lg:block">
             {/* Headline */}
             <div className="w-full max-w-[1200px] relative mx-auto">
               {/* Mobile */}
               <div className="lg:hidden">
-                <h1 className="pt-6 text-center">
+                <h1 className="pt-2 text-center">
                   <div className="text-[34px] sm:text-[48px] font-bold leading-[92%] text-white uppercase tracking-tight">
                     Small home fixes
                   </div>
