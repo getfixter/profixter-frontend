@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { GoogleButton } from "../../components/auth/GoogleButton";
 import { PasswordField } from "../../components/auth/PasswordField";
 import { register } from "@/lib/auth-service";
 
@@ -151,8 +150,6 @@ export default function SignUpPage() {
         </div>
 
         <form className="space-y-6 sm:space-y-8" onSubmit={handleSubmit}>
-          <GoogleButton className="w-full max-w-[318px]" spanClassName="text-base" />
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-x-12 sm:gap-y-8">
             <div>
               <input
@@ -201,7 +198,9 @@ export default function SignUpPage() {
                 iconSize={20}
               />
               {passwordsDoNotMatch && (
-                <p className="text-red-400 text-xs mt-1">Passwords do not match.</p>
+                <p className="text-red-400 text-xs mt-1">
+                  Passwords do not match.
+                </p>
               )}
             </div>
 
@@ -299,7 +298,11 @@ export default function SignUpPage() {
                 >
                   {agreeToAll && (
                     <svg width="12" height="10" viewBox="0 0 14 11" fill="none">
-                      <path d="M1 5.5L5 9.5L13 1.5" stroke="white" strokeWidth="2" />
+                      <path
+                        d="M1 5.5L5 9.5L13 1.5"
+                        stroke="white"
+                        strokeWidth="2"
+                      />
                     </svg>
                   )}
                 </div>
@@ -307,7 +310,10 @@ export default function SignUpPage() {
 
               <span className="text-white text-sm sm:text-base leading-relaxed">
                 I agree to the{" "}
-                <Link href="/terms" className="underline text-white hover:text-[#93c5fd]">
+                <Link
+                  href="/terms"
+                  className="underline text-white hover:text-[#93c5fd]"
+                >
                   Terms &amp; Privacy Notice
                 </Link>{" "}
                 and I consent to receive{" "}
@@ -317,14 +323,16 @@ export default function SignUpPage() {
                 >
                   SMS/phone/email communications
                 </Link>{" "}
-                (reply STOP to opt out of texts). I understand Profixter may contact me from
-                different numbers, and the main number is{" "}
+                (reply STOP to opt out of texts). I understand Profixter may
+                contact me from different numbers, and the main number is{" "}
                 <span className="font-semibold">631-599-1363</span>.
               </span>
             </label>
 
             {consentError && (
-              <p className="text-red-400 text-xs mt-1">Please check this box to continue.</p>
+              <p className="text-red-400 text-xs mt-1">
+                Please check this box to continue.
+              </p>
             )}
           </div>
 
