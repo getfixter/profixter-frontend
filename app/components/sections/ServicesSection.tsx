@@ -1,14 +1,36 @@
 'use client';
 
 import Image from 'next/image';
+import { useMemo, useState } from 'react';
 import { faqs } from '@/app/data/content';
+
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`w-5 h-5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M6 9l6 6 6-6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 function FaqCard({
   faq,
-  customSize,
+  isOpen,
+  onToggle,
 }: {
   faq: (typeof faqs)[number];
-  customSize?: { width?: string; height?: string };
+  isOpen: boolean;
+  onToggle: () => void;
 }) {
   const bgColor =
     faq.color === 'blue'
@@ -21,172 +43,109 @@ function FaqCard({
   const descColor = faq.color === 'light' ? 'text-[#6A6D71]' : 'text-[#C5CBD8]';
   const numberColor = faq.color === 'light' ? 'text-[#313234]' : 'text-white';
 
-  const defaultWidth =
-    faq.size === 'small'
-      ? 'lg:w-[220px]'
-      : faq.size === 'large'
-      ? 'lg:w-[260px]'
-      : 'lg:w-[240px]';
-
-  const defaultHeight =
-    faq.size === 'small'
-      ? 'lg:h-[200px]'
-      : faq.size === 'large'
-      ? 'lg:h-[280px]'
-      : 'lg:h-[240px]';
-
-  const width = customSize?.width || defaultWidth;
-  const height = customSize?.height || defaultHeight;
-
-  // Special padding for card 04 with longer title
-  const padding = faq.id === '04' ? 'p-5 sm:p-6 lg:px-6 lg:py-6' : 'p-5 sm:p-6';
-
   return (
-    <div
-      className={`${bgColor} ${width} ${height} w-full h-[220px] sm:h-[240px] rounded-[20px] ${padding} flex flex-col justify-between shadow-none sm:shadow-[0_10px_80px_rgba(0,0,0,0.25)] transition-transform hover:scale-105 border border-[#C5CBD8]`}
-      style={{ marginTop: `${faq.offset}px` }}
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`${bgColor} w-full rounded-[20px] p-5 sm:p-6 border border-[#C5CBD8] text-left
+        shadow-none sm:shadow-[0_10px_60px_rgba(0,0,0,0.20)]
+        transition-transform hover:scale-[1.02] active:scale-[0.99]
+        focus:outline-none focus:ring-2 focus:ring-[#306EEC]/60`}
+      aria-expanded={isOpen}
     >
-      <div>
-        <h3
-          className={`text-lg sm:text-xl lg:text-2xl font-semibold ${textColor} mb-2 sm:mb-3 leading-[89%] font-montserrat`}
-        >
+      {/* top row: question + chevron */}
+      <div className="flex items-start justify-between gap-4">
+        <h3 className={`text-lg sm:text-xl font-semibold ${textColor} leading-tight font-montserrat`}>
           {faq.question}
         </h3>
-        <p
-          className={`text-sm sm:text-base lg:text-xl font-medium ${descColor} leading-[120%] font-montserrat`}
-        >
-          {faq.answer}
-        </p>
+
+        <div className={`${textColor} mt-1 shrink-0`}>
+          <Chevron open={isOpen} />
+        </div>
       </div>
 
-      <div className="text-right">
-        <span
-          className={`text-5xl sm:text-6xl lg:text-[64px] font-bold leading-[89%] ${numberColor} font-montserrat`}
-        >
+      {/* expandable answer */}
+      <div
+        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out mt-3 ${
+          isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-90'
+        }`}
+      >
+        <div className="overflow-hidden">
+          <p className={`text-sm sm:text-base font-medium ${descColor} leading-[140%] font-montserrat`}>
+            {faq.answer}
+          </p>
+        </div>
+      </div>
+
+      {/* bottom row: number */}
+      <div className="flex justify-end mt-4">
+        <span className={`text-5xl sm:text-6xl font-bold leading-none ${numberColor} font-montserrat`}>
           {faq.id}
         </span>
       </div>
-    </div>
+    </button>
   );
 }
 
 export default function ServicesSection() {
-  return (
-    <section className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative -mb-32 sm:-mb-40 lg:-mb-48 overflow-visible  ">
-      {/* Light effect from lamp */}
-      <div className="hidden lg:block absolute -top-20 left-1/2 -translate-x-1/2 pointer-events-none z-0 opacity-90 scale-150">
-        <svg width="1394" height="1698" viewBox="0 0 1394 1698" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <g filter="url(#filter0_f_208_636)">
-            <path
-              d="M1189.61 1108.83C1083.88 1166.25 965.592 1196.63 845.28 1197.3C724.968 1197.96 606.357 1168.87 500 1112.63L823.875 500.193C829.295 503.06 835.34 504.542 841.471 504.508C847.602 504.474 853.63 502.926 859.019 500L1189.61 1108.83Z"
-              fill="url(#paint0_radial_208_636)"
-            />
-          </g>
-          <defs>
-            <filter
-              id="filter0_f_208_636"
-              x="-3.05176e-05"
-              y="0"
-              width="1689.61"
-              height="1697.31"
-              filterUnits="userSpaceOnUse"
-              colorInterpolationFilters="sRGB"
-            >
-              <feFlood floodOpacity="0" result="BackgroundImageFix" />
-              <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-              <feGaussianBlur stdDeviation="250" result="effect1_foregroundBlur_208_636" />
-            </filter>
-            <radialGradient
-              id="paint0_radial_208_636"
-              cx="0"
-              cy="0"
-              r="1"
-              gradientUnits="userSpaceOnUse"
-              gradientTransform="translate(841.266 467.306) rotate(90) scale(730)"
-            >
-              <stop offset="0.403846" stopColor="#F6D28C" />
-              <stop offset="1" stopColor="#2B2417" stopOpacity="0.6" />
-            </radialGradient>
-          </defs>
-        </svg>
-      </div>
+  const [openId, setOpenId] = useState<string | null>('01');
 
+  const items = useMemo(() => faqs, []);
+
+  return (
+    <section className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden">
       {/* Decorative Background Circle */}
       <div
-        className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-[1460px] h-[1460px] rounded-full z-0"
+        className="hidden lg:block absolute -top-40 left-1/2 -translate-x-1/2 w-[1460px] h-[1460px] rounded-full z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(48, 110, 236, 0.1) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(48, 110, 236, 0.12) 0%, transparent 70%)',
         }}
-      ></div>
+      />
 
       <div className="container mx-auto px-[20px] max-w-[1240px] relative z-10">
-        {/* Header - Hidden on desktop, shown on mobile */}
-        <div className="text-center mb-8 sm:mb-12 lg:hidden relative">
-          <h2 className="text-3xl sm:text-5xl lg:text-[64px] font-bold leading-tight sm:leading-[48px] lg:leading-[57px] uppercase">
-            <span className="text-white">FAQ</span>
-            <br />
-            <span className="text-[#306eec]">Questions</span>
-          </h2>
-          <p className="text-[#c5cbd8] text-base sm:text-lg lg:text-xl font-medium mt-3 sm:mt-4">
-            Quick answers before you book.
-          </p>
-        </div>
-
-        {/* Mobile/Tablet: Horizontal Scroll */}
-        <div className="lg:hidden">
-          <div className="overflow-x-auto pb-4 -mx-4 px-4">
-            <div className="flex gap-4 sm:gap-5" style={{ width: 'max-content' }}>
-              {faqs.map((faq) => (
-                <div key={faq.id} className="flex-shrink-0" style={{ width: '280px' }}>
-                  <FaqCard faq={{ ...faq, offset: 0 }} />
-                </div>
+        {/* Desktop layout: left = grid, right = header + lamp */}
+        <div className="grid lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+          {/* Cards */}
+          <div className="lg:col-span-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+              {items.map((faq) => (
+                <FaqCard
+                  key={faq.id}
+                  faq={faq}
+                  isOpen={openId === faq.id}
+                  onToggle={() => setOpenId((prev) => (prev === faq.id ? null : faq.id))}
+                />
               ))}
+            </div>
+
+            {/* Mobile hint */}
+            <div className="lg:hidden mt-6 text-center">
+              <p className="text-[#C5CBD8] text-sm">Tap a card to expand the answer.</p>
             </div>
           </div>
 
-          {/* Scroll indicator */}
-          <div className="flex justify-center gap-2 mt-4">
-            <svg className="w-6 h-6 text-[#306EEC] animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-            <span className="text-[#C5CBD8] text-sm">Swipe to see more</span>
-          </div>
-        </div>
+          {/* Header / Lamp */}
+          <div className="lg:col-span-4">
+            <div className="relative rounded-[24px] border border-white/10 bg-white/5 p-6 sm:p-7">
+              <h2 className="text-3xl sm:text-5xl lg:text-[54px] font-bold uppercase leading-tight">
+                <span className="text-white">FAQ</span>
+                <br />
+                <span className="text-[#306eec]">Questions</span>
+              </h2>
+              <p className="text-[#c5cbd8] text-base sm:text-lg font-medium mt-3">
+                Simple answers before you book.
+              </p>
 
-        {/* Desktop: Original Layout */}
-        <div className="hidden lg:block max-w-[1320px] mx-auto">
-          {/* First Row */}
-          <div className="flex gap-6 mb-6 items-start">
-            <FaqCard faq={faqs[0]} customSize={{ width: 'lg:w-[282px]', height: 'lg:h-[282px]' }} />
-            <FaqCard faq={faqs[1]} customSize={{ width: 'lg:w-[351px]', height: 'lg:h-[235px]' }} />
-
-            <div className="lg:w-[550px] lg:h-[270px] flex items-center justify-center" style={{ marginTop: '0px' }}>
-              <div className="relative w-[550px] h-[270px]">
+              <div className="mt-6 flex justify-center">
                 <Image
                   src="/images/lampa.png"
                   alt="Light bulb"
-                  width={550}
-                  height={270}
-                  className="object-contain drop-shadow-[0_40px_70px_rgba(42,30,15,0.2)]"
+                  width={420}
+                  height={220}
+                  className="object-contain drop-shadow-[0_40px_70px_rgba(42,30,15,0.25)]"
                 />
               </div>
             </div>
-          </div>
-
-          {/* Second Row */}
-          <div className="flex gap-6 mb-6 items-start">
-            <FaqCard faq={faqs[2]} customSize={{ width: 'lg:w-[267px]', height: 'lg:h-[244px]' }} />
-            <FaqCard faq={faqs[3]} customSize={{ width: 'lg:w-[264px]', height: 'lg:h-[264px]' }} />
-            <FaqCard faq={faqs[4]} customSize={{ width: 'lg:w-[341px]', height: 'lg:h-[245px]' }} />
-            <FaqCard faq={faqs[5]} customSize={{ width: 'lg:w-[279px]', height: 'lg:h-[289px]' }} />
-          </div>
-
-          {/* Third Row */}
-          <div className="flex gap-6 items-start">
-            <FaqCard faq={faqs[6]} customSize={{ width: 'lg:w-[296px]', height: 'lg:h-[278px]' }} />
-            <FaqCard faq={faqs[7]} customSize={{ width: 'lg:w-[300px]', height: 'lg:h-[248px]' }} />
-            <FaqCard faq={faqs[8]} customSize={{ width: 'lg:w-[282px]', height: 'lg:h-[308px]' }} />
-            <FaqCard faq={faqs[9]} customSize={{ width: 'lg:w-[273px]', height: 'lg:h-[298px]' }} />
           </div>
         </div>
       </div>
