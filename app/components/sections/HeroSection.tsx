@@ -90,7 +90,7 @@ export default function HeroSection() {
               src="/images/trophy.png"
               alt="Award trophy"
               width={180}
-              height={300}
+              height={400}
               className="opacity-95 drop-shadow-[0_25px_80px_rgba(0,0,0,0.45)]"
             />
           </div>
