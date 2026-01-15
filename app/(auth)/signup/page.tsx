@@ -10,9 +10,13 @@ import { register } from "@/lib/auth-service";
 export default function SignUpPage() {
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signup");
 
-  // ✅ Single combined consent checkbox
-  const [agreeToAll, setAgreeToAll] = useState(false);
+  // ✅ Terms acceptance (required)
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const [consentError, setConsentError] = useState(false);
+
+  // ✅ SMS consents (optional, not pre-checked)
+  const [smsMarketingOptIn, setSmsMarketingOptIn] = useState(false);
+  const [smsServiceOptIn, setSmsServiceOptIn] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -70,11 +74,11 @@ export default function SignUpPage() {
       return;
     }
 
-    // ✅ Single checkbox validation
+    // ✅ Terms must be accepted (SMS is optional)
     setConsentError(false);
-    if (!agreeToAll) {
+    if (!agreeTerms) {
       setConsentError(true);
-      setError("You must agree before continuing.");
+      setError("You must agree to the Terms of Service & Privacy Policy before continuing.");
       return;
     }
 
@@ -92,6 +96,7 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
+      // ✅ send opt-in flags too (backend can store them if you want)
       const { token, user } = await register({
         name: formData.name,
         email: formData.email,
@@ -102,7 +107,14 @@ export default function SignUpPage() {
         state: formData.state,
         zip: formData.zip,
         county: formData.county,
-      });
+
+        // Consent metadata (recommended)
+        termsAccepted: agreeTerms,
+        smsMarketingOptIn,
+        smsServiceOptIn,
+        consentSource: "website_signup",
+        consentAt: new Date().toISOString(),
+      } as any);
 
       // Save token and user data
       localStorage.setItem("token", token);
@@ -278,15 +290,16 @@ export default function SignUpPage() {
             </div>
           </div>
 
-          {/* ✅ ONE CHECKBOX FOR BOTH TERMS + SMS */}
-          <div className="flex flex-col gap-1 pt-4">
+          {/* ✅ REQUIRED TERMS + OPTIONAL SMS CONSENTS */}
+          <div className="flex flex-col gap-4 pt-4">
+            {/* Terms (required) */}
             <label className="flex items-start gap-3 cursor-pointer">
               <div className="relative mt-0.5">
                 <input
                   type="checkbox"
-                  checked={agreeToAll}
+                  checked={agreeTerms}
                   onChange={(e) => {
-                    setAgreeToAll(e.target.checked);
+                    setAgreeTerms(e.target.checked);
                     setConsentError(false);
                   }}
                   className="sr-only peer"
@@ -296,13 +309,9 @@ export default function SignUpPage() {
                   ${consentError ? "border-red-500" : "border-white"}
                   peer-checked:bg-transparent peer-checked:border-white`}
                 >
-                  {agreeToAll && (
+                  {agreeTerms && (
                     <svg width="12" height="10" viewBox="0 0 14 11" fill="none">
-                      <path
-                        d="M1 5.5L5 9.5L13 1.5"
-                        stroke="white"
-                        strokeWidth="2"
-                      />
+                      <path d="M1 5.5L5 9.5L13 1.5" stroke="white" strokeWidth="2" />
                     </svg>
                   )}
                 </div>
@@ -310,26 +319,59 @@ export default function SignUpPage() {
 
               <span className="text-white text-sm sm:text-base leading-relaxed">
                 I agree to the{" "}
-                <Link
-                  href="/terms"
-                  className="underline text-white hover:text-[#93c5fd]"
-                >
-                  Terms &amp; Privacy Notice
+                <Link href="/terms" className="underline text-white hover:text-[#93c5fd]">
+                  Terms of Service
                 </Link>{" "}
-                and I consent to receive{" "}
-                <Link
-                  href="/communication-consent"
-                  className="underline text-white hover:text-[#93c5fd]"
-                >
-                  SMS/phone/email communications
-                </Link>{" "}
-                
+                and{" "}
+                <Link href="/privacy" className="underline text-white hover:text-[#93c5fd]">
+                  Privacy Policy
+                </Link>
+                .
               </span>
             </label>
 
+            {/* SMS Marketing (optional) */}
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={smsMarketingOptIn}
+                onChange={(e) => setSmsMarketingOptIn(e.target.checked)}
+                className="mt-1"
+              />
+              <span className="text-white text-sm sm:text-base leading-relaxed">
+                I consent to receive <span className="font-semibold">marketing</span> text messages from{" "}
+                <span className="font-semibold">Mr. Fixter</span> at the number provided. Message frequency varies.
+                Message &amp; data rates may apply. Text <span className="font-semibold">HELP</span> to{" "}
+                <span className="font-semibold">631-599-1363</span> for assistance. Reply{" "}
+                <span className="font-semibold">STOP</span> to opt out.
+              </span>
+            </label>
+
+            {/* SMS Service/Transactional (optional) */}
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={smsServiceOptIn}
+                onChange={(e) => setSmsServiceOptIn(e.target.checked)}
+                className="mt-1"
+              />
+              <span className="text-white text-sm sm:text-base leading-relaxed">
+                I consent to receive <span className="font-semibold">non-marketing</span> texts from{" "}
+                <span className="font-semibold">Mr. Fixter</span> about my account, bookings, and service updates.
+                Message frequency varies. Message &amp; data rates may apply. Text{" "}
+                <span className="font-semibold">HELP</span> to{" "}
+                <span className="font-semibold">631-599-1363</span> for assistance. Reply{" "}
+                <span className="font-semibold">STOP</span> to opt out.
+              </span>
+            </label>
+
+            <p className="text-white/60 text-xs">
+              Consent is optional and not a condition of purchase. You can opt out anytime by replying STOP.
+            </p>
+
             {consentError && (
-              <p className="text-red-400 text-xs mt-1">
-                Please check this box to continue.
+              <p className="text-red-400 text-xs -mt-2">
+                Please check Terms of Service & Privacy Policy to continue.
               </p>
             )}
           </div>

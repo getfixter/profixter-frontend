@@ -1,3 +1,4 @@
+// app/terms/page.tsx
 import Link from "next/link";
 
 export default function TermsPage() {
@@ -12,7 +13,7 @@ export default function TermsPage() {
         }}
       >
         <h1 className="text-3xl sm:text-4xl font-semibold mb-3 text-center tracking-tight">
-          Terms &amp; Conditions + Privacy Notice
+          Terms of Service
         </h1>
 
         <p className="text-sm sm:text-base text-white/65 text-center mb-8 leading-relaxed">
@@ -34,8 +35,8 @@ export default function TermsPage() {
               By creating an account, booking a visit, requesting service, purchasing a membership plan, or using any part of our
               website, software, SMS/email communications, or services (collectively, the{" "}
               <span className="font-semibold">“Service”</span>), you (“Client”, “Customer”, or “Subscriber”) agree to these Terms
-              &amp; Conditions (the <span className="font-semibold">“Terms”</span>) and acknowledge this Privacy Notice. These
-              Terms form a binding agreement between you and Premium Island Homes Inc. (d/b/a Profixter / Mr. Fixter).
+              of Service (the <span className="font-semibold">“Terms”</span>). These Terms form a binding agreement between you and
+              Premium Island Homes Inc. (d/b/a Profixter / Mr. Fixter).
             </p>
             <p className="mt-3">
               If you do not agree, do not use the Service. If you are using the Service on behalf of another person or entity,
@@ -67,8 +68,8 @@ export default function TermsPage() {
                 during a standard visit time window and that are not excluded by these Terms or your Plan.
               </li>
               <li>
-                <span className="font-semibold">“Service Address”</span> means the property address registered to your account. Coverage
-                is tied to a specific address and is not transferable without our written approval.
+                <span className="font-semibold">“Service Address”</span> means the property address registered to your account.
+                Coverage is tied to a specific address and is not transferable without our written approval.
               </li>
               <li>
                 <span className="font-semibold">“Normal Use / Fair Use”</span> means reasonable household use and not using the
@@ -146,7 +147,9 @@ export default function TermsPage() {
               <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
                 <h3 className="text-lg font-semibold mb-2">3.5 Promotions / Promo Codes</h3>
                 <ul className="list-disc list-inside space-y-2">
-                  <li>Promo codes (when offered) typically provide a fixed discount (e.g., $50 off) and may have limits or expiration.</li>
+                  <li>
+                    Promo codes (when offered) typically provide a fixed discount (e.g., $50 off) and may have limits or expiration.
+                  </li>
                   <li>Promo codes cannot be combined unless we explicitly state otherwise in writing.</li>
                   <li>We may cancel or modify promotions if we detect misuse, fraud, chargebacks, or unauthorized distribution.</li>
                 </ul>
@@ -196,7 +199,10 @@ export default function TermsPage() {
                   <li>Emergency/after-hours service or guaranteed response times unless explicitly purchased.</li>
                   <li>Work in unsafe conditions, extreme heights, unstable structures, or unreasonable risk environments.</li>
                   <li>Commercial properties, multi-unit buildings, or investment/turnover maintenance unless agreed in writing.</li>
-                  <li>Internal appliance repairs (basic install/connection may be covered; internal diagnostics often require specialists).</li>
+                  <li>
+                    Internal appliance repairs (basic install/connection may be covered; internal diagnostics often require
+                    specialists).
+                  </li>
                 </ul>
                 <p className="mt-3">
                   We decide in our reasonable discretion whether a request is in-scope under your membership, requires a separate
@@ -228,7 +234,8 @@ export default function TermsPage() {
               </li>
               <li>
                 <span className="font-semibold">24-hour notice:</span> Please cancel/reschedule at least 24 hours in advance. Repeated
-                last-minute cancellations/no-shows/no-access may result in reduced availability, fees where permitted, or account review.
+                last-minute cancellations/no-shows/no-access may result in reduced availability, fees where permitted, or account
+                review.
               </li>
               <li>
                 <span className="font-semibold">No-access:</span> If we arrive and cannot gain access, we may treat the Visit as used
@@ -293,9 +300,7 @@ export default function TermsPage() {
                 Unless we explicitly agree otherwise in writing, third parties are independent and may have their own contracts,
                 warranties, insurance, and limitations.
               </li>
-              <li>
-                We are not responsible for third-party performance, delays, pricing, or warranties unless required by law.
-              </li>
+              <li>We are not responsible for third-party performance, delays, pricing, or warranties unless required by law.</li>
             </ul>
           </section>
 
@@ -361,24 +366,67 @@ export default function TermsPage() {
               small claims where eligible).
             </p>
             <p className="mt-3">
-              <span className="font-semibold">Class action waiver:</span> To the extent permitted by law, you agree to bring claims only in
-              your individual capacity and not as part of any class, collective, or representative action.
+              <span className="font-semibold">Class action waiver:</span> To the extent permitted by law, you agree to bring claims only
+              in your individual capacity and not as part of any class, collective, or representative action.
             </p>
           </section>
 
           {/* 13 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">13. SMS, Email, Electronic Communications</h2>
+            <h2 className="text-xl sm:text-2xl font-semibold mb-3">13. Electronic Communications (Email, SMS, Phone)</h2>
             <p>
               By providing your phone number/email, you consent to receive service-related communications (scheduling, reminders,
-              receipts, account notices) via email, SMS, and/or phone. Reply <span className="font-semibold">STOP</span> to opt out of
-              SMS. Message/data rates may apply. We are not responsible for carrier delays, spam filtering, or inaccurate contact info.
+              receipts, account notices) via email, SMS, and/or phone. Message frequency varies. Message/data rates may apply. We are
+              not responsible for carrier delays, spam filtering, or inaccurate contact info.
             </p>
           </section>
 
           {/* 14 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">14. Photos/Video + Marketing Use</h2>
+            <h2 className="text-xl sm:text-2xl font-semibold mb-3">14. SMS Program Terms</h2>
+
+            <div className="rounded-2xl bg-white/5 border border-white/10 p-5 space-y-3">
+              <p className="font-semibold">Program Name: Mr. Fixter Alerts &amp; Updates</p>
+              <p>
+                Program Description: By opting in, you may receive appointment confirmations, service reminders, account updates, and
+                (if you separately opt in) occasional marketing messages from Mr. Fixter.
+              </p>
+
+              <ul className="list-disc list-inside space-y-2">
+                <li>
+                  You can cancel the SMS service at any time. Simply text <span className="font-semibold">"STOP"</span> to the number
+                  that texted you. Upon sending "STOP," we will confirm your unsubscribe status via SMS. Following this confirmation,
+                  you will no longer receive SMS messages from us. To rejoin, sign up as you did initially, and we will resume sending
+                  SMS messages to you.
+                </li>
+                <li>
+                  If you experience issues with the messaging program, reply with the keyword{" "}
+                  <span className="font-semibold">HELP</span> for more assistance, or reach out directly to{" "}
+                  <span className="font-semibold">631-599-1363</span> or{" "}
+                  <a href="mailto:my@profixter.com" className="text-[#93c5fd] underline underline-offset-2">
+                    my@profixter.com
+                  </a>
+                  .
+                </li>
+                <li>Carriers are not liable for delayed or undelivered messages.</li>
+                <li>
+                  Message and data rates may apply for messages sent to you from us and to us from you. Message frequency varies. For
+                  questions about your text plan or data plan, contact your wireless provider.
+                </li>
+                <li>
+                  For privacy-related inquiries, please refer to our Privacy Policy:{" "}
+                  <Link href="/privacy" className="text-[#93c5fd] underline underline-offset-2">
+                    https://www.profixter.com/privacy
+                  </Link>
+                  .
+                </li>
+              </ul>
+            </div>
+          </section>
+
+          {/* 15 */}
+          <section>
+            <h2 className="text-xl sm:text-2xl font-semibold mb-3">15. Photos/Video + Marketing Use</h2>
             <p>
               We may take reasonable before/after photos or short clips of work areas for documentation, training, and marketing. We try
               to avoid faces/identifying information and may blur/crop. If you want to opt out of marketing use, email{" "}
@@ -386,25 +434,6 @@ export default function TermsPage() {
                 my@profixter.com
               </a>{" "}
               and we will honor it going forward.
-            </p>
-          </section>
-
-          {/* 15 */}
-          <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">15. Privacy Notice</h2>
-            <p>
-              We collect information you provide (name, contact details, address, service history, communications) to operate the business,
-              schedule visits, process payments, prevent fraud, and support customers. We do not sell your personal information.
-            </p>
-            <p className="mt-3">We may share information with:</p>
-            <ul className="list-disc list-inside space-y-2 mt-2">
-              <li>Service providers (payments, scheduling, communications, hosting) under confidentiality obligations.</li>
-              <li>Licensed contractors/specialists you approve for additional work.</li>
-              <li>Authorities when required by law or to protect rights and safety.</li>
-            </ul>
-            <p className="mt-3">
-              We use reasonable safeguards, but no system is 100% secure. We retain data as needed for operations, legal compliance, dispute
-              resolution, and enforcement, and may anonymize/aggregate analytics.
             </p>
           </section>
 
@@ -432,10 +461,18 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">18. Miscellaneous</h2>
             <ul className="list-disc list-inside space-y-2">
-              <li><span className="font-semibold">Severability:</span> If any part is unenforceable, the rest remains effective.</li>
-              <li><span className="font-semibold">No waiver:</span> Not enforcing a term is not a waiver.</li>
-              <li><span className="font-semibold">Assignment:</span> We may assign these Terms in a merger, acquisition, or asset sale.</li>
-              <li><span className="font-semibold">Entire agreement:</span> These Terms + your Plan description are the entire agreement.</li>
+              <li>
+                <span className="font-semibold">Severability:</span> If any part is unenforceable, the rest remains effective.
+              </li>
+              <li>
+                <span className="font-semibold">No waiver:</span> Not enforcing a term is not a waiver.
+              </li>
+              <li>
+                <span className="font-semibold">Assignment:</span> We may assign these Terms in a merger, acquisition, or asset sale.
+              </li>
+              <li>
+                <span className="font-semibold">Entire agreement:</span> These Terms + your Plan description are the entire agreement.
+              </li>
             </ul>
           </section>
 
@@ -453,9 +490,7 @@ export default function TermsPage() {
           </section>
 
           <div className="pt-2">
-            <p className="text-xs sm:text-sm text-white/55 mt-6 text-center">
-              Last Updated: January 9, 2026
-            </p>
+            <p className="text-xs sm:text-sm text-white/55 mt-6 text-center">Last Updated: January 9, 2026</p>
 
             <div className="mt-7 text-center">
               <Link
