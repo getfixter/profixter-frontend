@@ -105,14 +105,14 @@ export default function HeroSection() {
               <div className="lg:hidden">
                 <h1 className="pt-2 text-center">
                   <div className="text-[34px] sm:text-[48px] font-bold leading-[92%] text-white uppercase tracking-tight">
-                    Small home fixes
+                    Handyman Subscription
                   </div>
                   <div className="text-[34px] sm:text-[48px] font-bold leading-[92%] uppercase tracking-tight">
-                    <span className="text-[#5E8BFF]">without</span>{" "}
+                    <span className="text-[#5E8BFF]">Your Warranty</span>{" "}
                     <span className="text-white"></span>
                   </div>
                   <div className="text-[34px] sm:text-[48px] font-bold leading-[92%] uppercase tracking-tight text-white">
-                    surprise bills
+                    For all fixes
                   </div>
                 </h1>
               </div>
@@ -121,14 +121,14 @@ export default function HeroSection() {
               <div className="hidden lg:block lg:pt-12">
                 <h1 className="mb-4 sm:mb-6">
                   <div className="text-[64px] font-bold leading-[90%] text-white uppercase tracking-[-0.05em]">
-                    Small home fixes
+                    Handyman Subscription
                   </div>
                   <div className="text-[64px] font-bold leading-[90%] uppercase tracking-[-0.05em]">
-                    <span className="text-[#5E8BFF]">without</span>{" "}
+                    <span className="text-[#5E8BFF]">Your Warranty</span>{" "}
                     <span className="text-white"></span>
                   </div>
                   <div className="text-[64px] font-bold leading-[90%] uppercase tracking-[-0.05em] text-white">
-                    surprise bills
+                    For all fixes
                   </div>
                 </h1>
               </div>
