@@ -1,12 +1,52 @@
-import Image from 'next/image';
-import Link from 'next/link';
+"use client";
 
+import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
 
 export default function Footer() {
-  return (
-    
-    <footer id="contact-us" className="relative min-h-[350px] sm:min-h-[400px] lg:h-[437px] overflow-hidden">
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+  });
 
+  const [showPopup, setShowPopup] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Here later you can connect real API
+    console.log("Contact request:", formData);
+
+    setShowPopup(true);
+
+    // Reset form
+    setFormData({
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+    });
+
+    setTimeout(() => {
+      setShowPopup(false);
+    }, 5000);
+  };
+
+  return (
+    <footer
+      id="contact-us"
+      className="relative min-h-[350px] sm:min-h-[400px] lg:h-[437px] overflow-hidden"
+    >
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image
@@ -14,9 +54,7 @@ export default function Footer() {
           alt="Footer background"
           fill
           className="object-cover"
-          priority={false}
         />
-        {/* Dark Overlay */}
         <div className="absolute inset-0 bg-black/50" />
       </div>
 
@@ -26,73 +64,119 @@ export default function Footer() {
         <div className="flex flex-col lg:flex-row justify-between items-start gap-6 sm:gap-8 lg:gap-2">
           {/* Left - Logo and Description */}
           <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 lg:gap-8 w-full lg:w-auto">
-            {/* Logo */}
             <div className="flex flex-col">
-              <Image src="/images/logo-footer.svg" alt="Profixter" width={360} height={76} />
-             
+              <Image
+                src="/images/logo-footer.svg"
+                alt="Profixter"
+                width={360}
+                height={76}
+              />
             </div>
-            
-            {/* Description */}
+
             <p className="text-[#C5CBD8] text-sm sm:text-base leading-[120%] max-w-[500px] lg:pt-2">
-              Our goal is to make home repairs and maintenance hassle-free, so you can focus on what matters most.
+              Our goal is to make home repairs and maintenance hassle-free, so
+              you can focus on what matters most.
             </p>
           </div>
 
           {/* Right - Navigation */}
           <div className="flex-shrink-0 w-full sm:w-auto">
             <nav className="flex flex-row sm:flex-col gap-4 sm:gap-4 flex-wrap sm:flex-nowrap sm:text-right">
-              <Link 
-                href="#how-it-works" 
-                className="text-[#EEF2FF] text-sm sm:text-base leading-[120%] hover:text-[#306EEC] transition-colors"
-              >
+              <Link href="#how-it-works" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
                 How it works
               </Link>
-              <Link 
-                href="#plans" 
-                className="text-[#EEF2FF] text-sm sm:text-base leading-[120%] hover:text-[#306EEC] transition-colors"
-              >
+              <Link href="#plans" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
                 Plans
               </Link>
-              <Link 
-                href="#pick-day" 
-                className="text-[#EEF2FF] text-sm sm:text-base leading-[120%] hover:text-[#306EEC] transition-colors"
-              >
+              <Link href="#pick-day" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
                 Pick day
               </Link>
-              <Link 
-                href="#projects" 
-                className="text-[#EEF2FF] text-sm sm:text-base leading-[120%] hover:text-[#306EEC] transition-colors"
-              >
+              <Link href="#projects" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
                 Projects
               </Link>
             </nav>
           </div>
         </div>
 
-        {/* Get in Touch Card */}
-        <div className="mt-8 w-full sm:w-auto">
-          <div className="relative w-full sm:w-[300px]">
-            {/* Soft blurred backdrop rectangle (hide on mobile to avoid overlap) */}
-            {/* <div className="hidden sm:block absolute -left-6 -top-6 w-[320px] h-[245px] rounded-[14px] bg-[rgba(46,41,27,0.13)] backdrop-blur-[4px]" /> */}
+        {/* NEW CONTACT FORM SECTION */}
+        <div className="mt-8 w-full max-w-[600px] bg-white/10 backdrop-blur-md rounded-[14px] p-6">
+          <h3 className="text-[22px] font-semibold text-[#306EEC] mb-4">
+            Contact Us
+          </h3>
 
-            {/* Foreground contact card */}
-            <div className="relative w-full rounded-[14px] bg-white/1 backdrop-blur-sm shadow-none sm:shadow-[0_10px_80px_rgba(0,0,0,0.25)] p-5 sm:p-6">
-              <h3 className="text-[22px] sm:text-[24px] font-semibold text-[#306EEC] leading-[89%] mb-4">Get in Touch</h3>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input
+                required
+                type="text"
+                name="firstName"
+                placeholder="First Name"
+                value={formData.firstName}
+                onChange={handleChange}
+                className="w-full p-2 rounded bg-white/20 text-white placeholder-gray-300"
+              />
+
+              <input
+                required
+                type="text"
+                name="lastName"
+                placeholder="Last Name"
+                value={formData.lastName}
+                onChange={handleChange}
+                className="w-full p-2 rounded bg-white/20 text-white placeholder-gray-300"
+              />
+            </div>
+
+            <input
+              required
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full p-2 rounded bg-white/20 text-white placeholder-gray-300"
+            />
+
+            <input
+              required
+              type="tel"
+              name="phone"
+              placeholder="Phone Number"
+              value={formData.phone}
+              onChange={handleChange}
+              className="w-full p-2 rounded bg-white/20 text-white placeholder-gray-300"
+            />
+
+            <button
+              type="submit"
+              className="w-full bg-[#306EEC] text-white py-2 rounded hover:bg-[#2456b8] transition"
+            >
+              Submit Request
+            </button>
+          </form>
+        </div>
+
+        {/* Existing Get in Touch Card */}
+        <div className="mt-6 w-full sm:w-auto">
+          <div className="relative w-full sm:w-[300px]">
+            <div className="relative w-full rounded-[14px] bg-white/1 backdrop-blur-sm p-5 sm:p-6">
+              <h3 className="text-[22px] sm:text-[24px] font-semibold text-[#306EEC] mb-4">
+                Get in Touch
+              </h3>
+
               <div className="space-y-3">
-                <Link href="https://instagram.com/mrfixter.ny" target="_blank" className="flex items-center gap-3 text-[#C5CBD8] text-[16px] leading-[120%] hover:text-[#306EEC] transition-colors">
-                  {/* Instagram icon */}
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5z" stroke="currentColor" strokeWidth="2"/>
-                    <circle cx="12" cy="12" r="3.5" stroke="currentColor" strokeWidth="2"/>
-                    <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"/>
-                  </svg>
-                  mrfixter.ny
+                <Link
+                  href="https://instagram.com/mrfixter.ny"
+                  target="_blank"
+                  className="flex items-center gap-3 text-[#C5CBD8] hover:text-[#306EEC]"
+                >
+                  Instagram: mrfixter.ny
                 </Link>
-                <Link href="mailto:my@profixter.com" className="flex items-center gap-3 text-[#C5CBD8] text-[16px] leading-[120%] hover:text-[#306EEC] transition-colors">
-                  {/* Mail icon */}
-                  <svg width="20" height="16" viewBox="0 0 20 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 14H16V5.25L10 9L4 5.25V14H2V2H3.2L10 6.25L16.8 2H18M18 0H2C0.89 0 0 0.89 0 2V14C0 14.5304 0.210714 15.0391 0.585786 15.4142C0.960859 15.7893 1.46957 16 2 16H18C18.5304 16 19.0391 15.7893 19.4142 15.4142C19.7893 15.0391 20 14.5304 20 14V2C20 1.46957 19.7893 0.960859 19.4142 0.585786C19.0391 0.210714 18.5304 0 18 0Z" fill="currentColor" />
-                  </svg>
+
+                <Link
+                  href="mailto:my@profixter.com"
+                  className="flex items-center gap-3 text-[#C5CBD8] hover:text-[#306EEC]"
+                >
                   my@profixter.com
                 </Link>
               </div>
@@ -101,15 +185,24 @@ export default function Footer() {
         </div>
 
         {/* Bottom Section */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0 mt-6 sm:mt-0">
-          <p className="text-[#6A6D71] text-sm sm:text-base leading-[120%] text-center sm:text-left">
-            © 2025 All rights reserved.
-          </p>
-          <p className="text-[#6A6D71] text-sm sm:text-base leading-[120%] text-center sm:text-right">
-            License HI-71484 Insured
-          </p>
+        <div className="flex flex-col sm:flex-row justify-between items-center mt-6">
+          <p className="text-[#6A6D71]">© 2025 All rights reserved.</p>
+          <p className="text-[#6A6D71]">License HI-71484 Insured</p>
         </div>
       </div>
+
+      {/* POPUP CONFIRMATION */}
+      {showPopup && (
+        <div className="fixed bottom-6 right-6 bg-white text-black p-4 rounded shadow-lg">
+          <p className="font-semibold">
+            Thank you for contacting ProFixter!
+          </p>
+          <p className="text-sm">
+            We have received your request. Our team will call you shortly from  
+            <strong> 631-599-1363</strong>.
+          </p>
+        </div>
+      )}
     </footer>
   );
 }
