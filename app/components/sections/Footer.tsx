@@ -55,7 +55,7 @@ export default function Footer() {
           fill
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-black/65" />
+        <div className="absolute inset-0 bg-black/50" />
       </div>
 
       {/* Content */}
@@ -98,69 +98,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* NEW CONTACT FORM SECTION */}
-<div className="mt-8 w-full">
-  <div className="w-full max-w-[680px] rounded-[16px] bg-black/55 border border-white/10 backdrop-blur-xl shadow-[0_20px_90px_rgba(0,0,0,0.55)] p-6 sm:p-7">
-    <h3 className="text-[22px] sm:text-[24px] font-semibold text-[#306EEC] mb-4">
-      Contact Us
-    </h3>
-
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <input
-          required
-          type="text"
-          name="firstName"
-          placeholder="First Name"
-          value={formData.firstName}
-          onChange={handleChange}
-          className="w-full h-[44px] px-3 rounded-[10px] bg-[#0B1220]/80 border border-white/15 text-white placeholder-white/50 outline-none focus:border-[#306EEC] focus:ring-2 focus:ring-[#306EEC]/25"
-        />
-        <input
-          required
-          type="text"
-          name="lastName"
-          placeholder="Last Name"
-          value={formData.lastName}
-          onChange={handleChange}
-          className="w-full h-[44px] px-3 rounded-[10px] bg-[#0B1220]/80 border border-white/15 text-white placeholder-white/50 outline-none focus:border-[#306EEC] focus:ring-2 focus:ring-[#306EEC]/25"
-        />
-      </div>
-
-      <input
-        required
-        type="email"
-        name="email"
-        placeholder="Email"
-        value={formData.email}
-        onChange={handleChange}
-        className="w-full h-[44px] px-3 rounded-[10px] bg-[#0B1220]/80 border border-white/15 text-white placeholder-white/50 outline-none focus:border-[#306EEC] focus:ring-2 focus:ring-[#306EEC]/25"
-      />
-
-      <input
-        required
-        type="tel"
-        name="phone"
-        placeholder="Phone Number"
-        value={formData.phone}
-        onChange={handleChange}
-        className="w-full h-[44px] px-3 rounded-[10px] bg-[#0B1220]/80 border border-white/15 text-white placeholder-white/50 outline-none focus:border-[#306EEC] focus:ring-2 focus:ring-[#306EEC]/25"
-      />
-
-      <button
-        type="submit"
-        className="w-full h-[46px] rounded-[12px] bg-[#306EEC] text-white font-semibold hover:brightness-110 transition shadow-[0_10px_30px_rgba(48,110,236,0.25)]"
-      >
-        Submit Request
-      </button>
-
-      <p className="text-xs text-white/55 pt-1">
-        We typically respond quickly. Calls come from <span className="text-white/80 font-medium">631-599-1363</span>.
-      </p>
-    </form>
-  </div>
-</div>
-
+        
 
         {/* Existing Get in Touch Card */}
         <div className="mt-6 w-full sm:w-auto">

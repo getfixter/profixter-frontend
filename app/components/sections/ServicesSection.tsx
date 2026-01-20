@@ -90,8 +90,36 @@ function FaqCard({
 export default function ServicesSection() {
   // open first item by default (nice for conversions)
   const [openId, setOpenId] = useState<string | null>('01');
-
   const items = useMemo(() => faqs, []);
+
+  // ✅ Contact form state
+  const [contact, setContact] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+  });
+  const [showPopup, setShowPopup] = useState(false);
+
+  const onContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setContact((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const onContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Later you can connect API here
+    console.log('Contact request:', contact);
+
+    setShowPopup(true);
+
+    // reset
+    setContact({ firstName: '', lastName: '', email: '', phone: '' });
+
+    // auto hide popup
+    window.setTimeout(() => setShowPopup(false), 4500);
+  };
 
   return (
     <section className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden">
@@ -148,7 +176,93 @@ export default function ServicesSection() {
             </div>
           </div>
         </div>
+
+        {/* ✅ CONTACT US SECTION (added below FAQs) */}
+        <div id="contact-us" className="mt-10 sm:mt-12 lg:mt-16">
+          <div className="rounded-[24px] border border-white/10 bg-white/5 p-6 sm:p-8">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+              <div>
+                <h3 className="text-2xl sm:text-3xl font-bold text-white font-montserrat">
+                  Contact Us
+                </h3>
+                <p className="text-[#C5CBD8] text-sm sm:text-base font-medium mt-2 font-montserrat max-w-[520px]">
+                  Leave your info and we’ll reach out shortly to help you pick the right plan and book your first visit.
+                </p>
+              </div>
+
+              <div className="text-[#C5CBD8] text-sm sm:text-base font-montserrat">
+                Or call/text:&nbsp;
+                <span className="text-white font-semibold">631-599-1363</span>
+              </div>
+            </div>
+
+            <form onSubmit={onContactSubmit} className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <input
+                required
+                name="firstName"
+                value={contact.firstName}
+                onChange={onContactChange}
+                placeholder="First Name"
+                className="lg:col-span-3 h-[48px] rounded-[14px] px-4 bg-[#3A3C3E] text-white placeholder-[#C5CBD8]
+                  border border-white/10 outline-none focus:ring-2 focus:ring-[#306EEC]/60"
+              />
+              <input
+                required
+                name="lastName"
+                value={contact.lastName}
+                onChange={onContactChange}
+                placeholder="Last Name"
+                className="lg:col-span-3 h-[48px] rounded-[14px] px-4 bg-[#3A3C3E] text-white placeholder-[#C5CBD8]
+                  border border-white/10 outline-none focus:ring-2 focus:ring-[#306EEC]/60"
+              />
+              <input
+                required
+                type="email"
+                name="email"
+                value={contact.email}
+                onChange={onContactChange}
+                placeholder="Email"
+                className="lg:col-span-3 h-[48px] rounded-[14px] px-4 bg-[#3A3C3E] text-white placeholder-[#C5CBD8]
+                  border border-white/10 outline-none focus:ring-2 focus:ring-[#306EEC]/60"
+              />
+              <input
+                required
+                type="tel"
+                name="phone"
+                value={contact.phone}
+                onChange={onContactChange}
+                placeholder="Phone Number"
+                className="lg:col-span-3 h-[48px] rounded-[14px] px-4 bg-[#3A3C3E] text-white placeholder-[#C5CBD8]
+                  border border-white/10 outline-none focus:ring-2 focus:ring-[#306EEC]/60"
+              />
+
+              <button
+                type="submit"
+                className="lg:col-span-12 h-[50px] rounded-[16px] bg-[#306EEC] text-white font-semibold font-montserrat
+                  hover:brightness-110 transition shadow-[0_10px_40px_rgba(48,110,236,0.20)]"
+              >
+                Submit Request
+              </button>
+
+              <p className="lg:col-span-12 text-xs text-[#C5CBD8]/80 font-montserrat">
+                By submitting, you agree we may contact you by phone or text regarding your request.
+              </p>
+            </form>
+          </div>
+        </div>
       </div>
+
+      {/* ✅ Professional popup */}
+      {showPopup && (
+        <div className="fixed bottom-6 right-6 z-[9999] max-w-[340px] rounded-[16px] bg-[#0B1220] text-white border border-white/10 shadow-[0_20px_80px_rgba(0,0,0,0.55)] p-4">
+          <p className="font-semibold font-montserrat text-white">
+            Thank you — we received your request.
+          </p>
+          <p className="text-sm text-[#C5CBD8] font-montserrat mt-1 leading-[140%]">
+            We’ll contact you shortly from <span className="text-white font-semibold">631-599-1363</span>.
+          </p>
+        </div>
+      )}
     </section>
   );
 }
