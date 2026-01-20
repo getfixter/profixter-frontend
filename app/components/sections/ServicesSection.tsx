@@ -99,6 +99,10 @@ export default function ServicesSection() {
     email: '',
     phone: '',
   });
+
+  // ✅ SMS consent (required for compliance)
+  const [smsConsent, setSmsConsent] = useState(false);
+
   const [showPopup, setShowPopup] = useState(false);
 
   const onContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,13 +113,17 @@ export default function ServicesSection() {
   const onContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Hard stop if user didn't consent (shouldn't happen because button disabled)
+    if (!smsConsent) return;
+
     // Later you can connect API here
-    console.log('Contact request:', contact);
+    console.log('Contact request:', { ...contact, smsConsent });
 
     setShowPopup(true);
 
     // reset
     setContact({ firstName: '', lastName: '', email: '', phone: '' });
+    setSmsConsent(false);
 
     // auto hide popup
     window.setTimeout(() => setShowPopup(false), 4500);
@@ -236,16 +244,37 @@ export default function ServicesSection() {
                   border border-white/10 outline-none focus:ring-2 focus:ring-[#306EEC]/60"
               />
 
+              {/* ✅ REQUIRED SMS CONSENT */}
+              <div className="lg:col-span-12 mt-1">
+                <label className="flex items-start gap-3 text-xs sm:text-sm text-[#C5CBD8] font-montserrat">
+                  <input
+                    type="checkbox"
+                    checked={smsConsent}
+                    onChange={(e) => setSmsConsent(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#306EEC]"
+                    required
+                  />
+                  <span className="leading-[140%]">
+                    By checking this box, you agree to receive SMS messages from ProFixter (Mr. Fixter) including responses
+                    to your request, service updates, appointment reminders, and occasional promotional offers. Message
+                    frequency varies. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.
+                  </span>
+                </label>
+              </div>
+
               <button
                 type="submit"
                 className="lg:col-span-12 h-[50px] rounded-[16px] bg-[#306EEC] text-white font-semibold font-montserrat
-                  hover:brightness-110 transition shadow-[0_10px_40px_rgba(48,110,236,0.20)]"
+                  hover:brightness-110 transition shadow-[0_10px_40px_rgba(48,110,236,0.20)] disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={!smsConsent}
+                aria-disabled={!smsConsent}
               >
                 Submit Request
               </button>
 
-              <p className="lg:col-span-12 text-xs text-[#C5CBD8]/80 font-montserrat">
-                By submitting, you agree we may contact you by phone or text regarding your request.
+              {/* Optional: small helper line */}
+              <p className="lg:col-span-12 text-[11px] text-[#C5CBD8]/70 font-montserrat">
+                Prefer not to receive texts? Uncheck the box and call us at 631-599-1363.
               </p>
             </form>
           </div>
@@ -254,7 +283,7 @@ export default function ServicesSection() {
 
       {/* ✅ Professional popup */}
       {showPopup && (
-        <div className="fixed bottom-6 right-6 z-[9999] max-w-[340px] rounded-[16px] bg-[#0B1220] text-white border border-white/10 shadow-[0_20px_80px_rgba(0,0,0,0.55)] p-4">
+        <div className="fixed bottom-6 right-6 z-[9999] max-w-[360px] rounded-[16px] bg-[#0B1220] text-white border border-white/10 shadow-[0_20px_80px_rgba(0,0,0,0.55)] p-4">
           <p className="font-semibold font-montserrat text-white">
             Thank you — we received your request.
           </p>
