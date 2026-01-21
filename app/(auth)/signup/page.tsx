@@ -340,7 +340,8 @@ export default function SignUpPage() {
               />
               <span className="text-white text-sm sm:text-base leading-relaxed">
                 I consent to receive <span className="font-semibold">marketing</span> text messages from{" "}
-                <span className="font-semibold">Mr. Fixter</span> at the number provided. Message frequency varies.
+                <span className="font-semibold">Premium Island Homes INC. DBA Mr. Fixter
+</span> at the number provided. Message frequency varies.
                 Message &amp; data rates may apply. Text <span className="font-semibold">HELP</span> to{" "}
                 <span className="font-semibold">631-599-1363</span> for assistance. Reply{" "}
                 <span className="font-semibold">STOP</span> to opt out.
@@ -357,7 +358,8 @@ export default function SignUpPage() {
               />
               <span className="text-white text-sm sm:text-base leading-relaxed">
                 I consent to receive <span className="font-semibold">non-marketing</span> texts from{" "}
-                <span className="font-semibold">Mr. Fixter</span> about my account, bookings, and service updates.
+                <span className="font-semibold">Premium Island Homes INC. DBA Mr. Fixter
+</span> about my account, bookings, and service updates.
                 Message frequency varies. Message &amp; data rates may apply. Text{" "}
                 <span className="font-semibold">HELP</span> to{" "}
                 <span className="font-semibold">631-599-1363</span> for assistance. Reply{" "}
@@ -366,7 +368,7 @@ export default function SignUpPage() {
             </label>
 
             <p className="text-white/60 text-xs">
-              Consent is optional and not a condition of purchase. You can opt out anytime by replying STOP.
+Consent is optional and not a condition of purchase. You may opt out at any time by replying STOP.
             </p>
 
             {consentError && (
