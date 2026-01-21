@@ -55,10 +55,16 @@ export interface BookingResponse {
 }
 
 export interface NextBookingResponse {
+  plan?: string;
+  bookingLimit?: number;
+  activeCount?: number;
   future: {
     _id: string;
     date: string;
     status: string;
+    service?: string;
+    bookingNumber?: string;
+    addressId?: string;
   } | null;
 }
 

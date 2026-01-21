@@ -155,6 +155,8 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
 
   // Existing booking
   const [hasActiveBooking, setHasActiveBooking] = useState(false);
+  const [activeBookingCount, setActiveBookingCount] = useState<number>(0);
+  const [activeBookingLimit, setActiveBookingLimit] = useState<number>(1);
   const [existingBookingDate, setExistingBookingDate] =
     useState<Date | null>(null);
   const [existingBookingService, setExistingBookingService] =
@@ -212,22 +214,29 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
     const checkExistingBooking = async () => {
       if (!user?.defaultAddressId || !isAuthenticated) {
         setHasActiveBooking(false);
+        setActiveBookingCount(0);
+        setActiveBookingLimit(1);
         return;
       }
 
       try {
         const data = await getNextBooking(user.defaultAddressId);
 
+        const limit = Number((data as any)?.bookingLimit ?? 1);
+        const count = Number((data as any)?.activeCount ?? (data.future ? 1 : 0));
+
+        setActiveBookingLimit(Number.isFinite(limit) && limit > 0 ? limit : 1);
+        setActiveBookingCount(Number.isFinite(count) && count >= 0 ? count : 0);
+
+        // Only block booking when user reached their allowed concurrent active bookings
+        const reachedLimit = (Number.isFinite(limit) ? count >= limit : !!data.future);
+        setHasActiveBooking(reachedLimit);
+
         if (data.future) {
           const dt = new Date(data.future.date);
-
-          setHasActiveBooking(true);
           setExistingBookingDate(dt);
           setExistingBookingId(data.future._id);
-
-          setExistingBookingService(
-            (data.future as any)?.service || ""
-          );
+          setExistingBookingService((data.future as any)?.service || "");
 
           const hhmm = dt.toLocaleTimeString("en-US", {
             hour: "2-digit",
@@ -236,7 +245,6 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
           });
           setExistingBookingTime(hhmm);
         } else {
-          setHasActiveBooking(false);
           setExistingBookingDate(null);
           setExistingBookingId(null);
           setExistingBookingService("");
@@ -245,6 +253,8 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
       } catch (err) {
         console.error("Failed to check existing booking:", err);
         setHasActiveBooking(false);
+        setActiveBookingCount(0);
+        setActiveBookingLimit(1);
       }
     };
 
@@ -855,23 +865,31 @@ onClick={() => handleDayClick(day.date, day.muted)}
               </div>
             )}
 
-            {/* Active booking warning */}
-            {hasActiveBooking && existingBookingDate && (
+            {/* Active booking limit warning */}
+            {hasActiveBooking && (
   <div className="mt-4 text-orange-700 text-sm bg-orange-50 border border-orange-300 rounded-lg p-4">
-    <div className="font-semibold mb-1">⚠️ You have an active booking</div>
-    <div>
-      Scheduled for {existingBookingDate.toLocaleString('en-US', {
-  weekday: 'long',
-  month: 'long',
-  day: 'numeric',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit'
-})}
+    <div className="font-semibold mb-1">⚠️ Active booking limit reached</div>
+
+    <div className="text-xs mt-1">
+      You currently have <span className="font-semibold">{activeBookingCount}</span> active booking{activeBookingCount === 1 ? "" : "s"}.
+      Your plan allows <span className="font-semibold">{activeBookingLimit}</span> at a time.
     </div>
 
+    {existingBookingDate && (
+      <div className="mt-2">
+        Next booking: {existingBookingDate.toLocaleString('en-US', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })}
+      </div>
+    )}
+
     <div className="text-xs mt-2 mb-3">
-      You can't book another visit until this one is completed.
+      To schedule another visit, please complete or cancel an active booking.
     </div>
 
     <button

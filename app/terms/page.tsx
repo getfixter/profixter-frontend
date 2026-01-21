@@ -221,8 +221,9 @@ export default function TermsPage() {
                 density, weather, supply constraints, and operational capacity. We do not guarantee same-day or next-day service.
               </li>
               <li>
-                <span className="font-semibold">One active booking:</span> We may limit accounts/addresses to one active booking at a
-                time to keep scheduling fair.
+                <span className="font-semibold">Concurrent active bookings:</span> To keep scheduling fair, we limit how many
+                future bookings you can hold at the same time (Pending/Confirmed). Basic plans allow 1 active booking; Plus,
+                Premium, and Elite plans allow up to 2 active bookings.
               </li>
               <li>
                 <span className="font-semibold">Access:</span> You must provide safe, reasonable access to the work area at the
