@@ -153,7 +153,7 @@ export default function BookingsSection() {
         // 2) Get my bookings (customer endpoint)
         // ✅ EXPECTED BACKEND ROUTE: GET /api/bookings/my
         // If your backend uses a different route, change ONLY this URL.
-        const bRes = await axios.get(`${apiBase}/api/bookings/my`, { headers });
+        const bRes = await axios.get(`${apiBase}/api/bookings`, { headers });
         const list: Booking[] = Array.isArray(bRes.data) ? bRes.data : bRes.data?.bookings || [];
         setBookings(list);
       } catch (e: any) {
