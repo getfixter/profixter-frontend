@@ -229,8 +229,9 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
         setActiveBookingCount(Number.isFinite(count) && count >= 0 ? count : 0);
 
         // Only block booking when user reached their allowed concurrent active bookings
-        const reachedLimit = (Number.isFinite(limit) ? count >= limit : !!data.future);
-        setHasActiveBooking(reachedLimit);
+        const reachedLimit = count > 0 && count >= limit;
+setHasActiveBooking(reachedLimit);
+
 
         if (data.future) {
           const dt = new Date(data.future.date);
@@ -259,7 +260,8 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
     };
 
     checkExistingBooking();
-  }, [user, isAuthenticated]);
+}, [user, isAuthenticated]);
+
 
   // Load calendar config
   useEffect(() => {
@@ -501,7 +503,8 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
       setConfirmedDate(new Date(selectedDate));
       setConfirmedTime(selectedTime);
 
-      setHasActiveBooking(true);
+      setHasActiveBooking(activeBookingCount + 1 >= activeBookingLimit);
+setActiveBookingCount((c) => c + 1);
       setExistingBookingDate(bookingDate);
 
       setService("");
@@ -865,9 +868,10 @@ onClick={() => handleDayClick(day.date, day.muted)}
               </div>
             )}
 
-            {/* Active booking limit warning */}
-            {hasActiveBooking && (
+            {/* Active booking limit warning (only for subscribed members) */}
+{isAuthenticated && hasSubscription && hasActiveBooking && (
   <div className="mt-4 text-orange-700 text-sm bg-orange-50 border border-orange-300 rounded-lg p-4">
+
     <div className="font-semibold mb-1">⚠️ Active booking limit reached</div>
 
     <div className="text-xs mt-1">

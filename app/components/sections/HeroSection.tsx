@@ -4,15 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { checkSubscription } from "@/lib/booking-service";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import NeedItQuizModal from "@/app/components/NeedItQuizModal";
 
 type FixterUser = {
-  defaultAddressId: string;
+  defaultAddressId?: string | null;
 };
 
 type SubscriptionResponse = {
   hasSubscription: boolean;
+  message?: string;
 };
 
 export default function HeroSection() {
@@ -20,6 +21,18 @@ export default function HeroSection() {
   const typedUser = user as FixterUser;
 
   const [needItOpen, setNeedItOpen] = useState(false);
+
+  // CTA UX
+  const [ctaLoading, setCtaLoading] = useState(false);
+  const [ctaError, setCtaError] = useState("");
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const goToPlans = () => {
     const el = document.getElementById("plans");
@@ -34,6 +47,12 @@ export default function HeroSection() {
   };
 
   const handleFixTodayClick = async () => {
+    if (ctaLoading) return;
+
+    // reset any previous error
+    setCtaError("");
+
+    // If not signed in → go sign in (and return)
     if (!isAuthenticated) {
       window.location.href = "/signin?redirect=/";
       return;
@@ -41,19 +60,38 @@ export default function HeroSection() {
 
     const addressId = typedUser?.defaultAddressId;
 
+    // If no default address → send to plans
     if (!addressId) {
       goToPlans();
       return;
     }
 
-    const subscription = (await checkSubscription(addressId)) as SubscriptionResponse;
+    try {
+      setCtaLoading(true);
 
-    if (!subscription?.hasSubscription) {
+      const subscription = (await checkSubscription(
+        addressId
+      )) as SubscriptionResponse;
+
+      // If no active subscription → plans
+      if (!subscription?.hasSubscription) {
+        goToPlans();
+        return;
+      }
+
+      // Subscribed → booking
+      goToBooking();
+    } catch (e) {
+      // network/API issue: show message + fallback to plans
+      if (mountedRef.current) {
+        setCtaError("Couldn’t verify your plan right now. Please try again.");
+      }
       goToPlans();
-      return;
+    } finally {
+      if (mountedRef.current) {
+        setCtaLoading(false);
+      }
     }
-
-    goToBooking();
   };
 
   return (
@@ -73,7 +111,7 @@ export default function HeroSection() {
 
         {/* ✅ TROPHY OVERLAY (different placement desktop vs mobile) */}
         <div className="absolute inset-0 z-[5] pointer-events-none">
-          {/* Desktop trophy: right side (your red box on desktop) */}
+          {/* Desktop trophy */}
           <div className="hidden lg:block absolute right-[70px] top-[160px]">
             <Image
               src="/images/trophy.png"
@@ -84,7 +122,7 @@ export default function HeroSection() {
             />
           </div>
 
-          {/* Mobile trophy: center area (your red box on phone) */}
+          {/* Mobile trophy */}
           <div className="lg:hidden absolute left-1/2 top-[260px] -translate-x-1/2">
             <Image
               src="/images/trophy.png"
@@ -145,9 +183,19 @@ export default function HeroSection() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-3 py-2 bg-[#313234]/30 backdrop-blur-[8px] rounded-full border border-white/15 hover:border-white/25 transition"
                   >
-                    <Image src="/images/icons/icon-google.svg" alt="" width={16} height={16} className="w-4 h-4" />
-                    <span className="text-[14px] font-semibold text-[#EEF2FF]">5.0 stars</span>
-                    <span className="text-[14px] text-[#C5CBD8]">Across Long Island</span>
+                    <Image
+                      src="/images/icons/icon-google.svg"
+                      alt=""
+                      width={16}
+                      height={16}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-[14px] font-semibold text-[#EEF2FF]">
+                      5.0 stars
+                    </span>
+                    <span className="text-[14px] text-[#C5CBD8]">
+                      Across Long Island
+                    </span>
                   </a>
 
                   <div className="text-[13px] text-[#C5CBD8]">
@@ -160,7 +208,8 @@ export default function HeroSection() {
                   One simple plan for small repairs & installs.
                   <br />
                   <span className="text-white font-semibold">$0 labor</span> •{" "}
-                  <span className="text-white font-semibold">up to 90 minutes</span> per visit • cancel anytime.
+                  <span className="text-white font-semibold">up to 90 minutes</span>{" "}
+                  per visit • cancel anytime.
                 </p>
 
                 <ul className="mb-6 space-y-2 text-[14px] text-[#C5CBD8] max-w-[560px]">
@@ -173,9 +222,12 @@ export default function HeroSection() {
                 <button
                   type="button"
                   onClick={handleFixTodayClick}
-                  className="mt-3 w-[362px] h-[54px] bg-white/10 hover:bg-white/20 transition-colors rounded-[14px] border border-white/25"
+                  disabled={ctaLoading}
+                  className="mt-3 w-[362px] h-[54px] bg-white/10 hover:bg-white/20 transition-colors rounded-[14px] border border-white/25 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <span className="text-[18px] font-semibold text-[#EEF2FF]">Book Now</span>
+                  <span className="text-[18px] font-semibold text-[#EEF2FF]">
+                    {ctaLoading ? "Checking..." : "Book Now"}
+                  </span>
                 </button>
 
                 {/* Secondary */}
@@ -183,8 +235,16 @@ export default function HeroSection() {
                   href="/included"
                   className="mt-3 w-[362px] h-[54px] inline-flex items-center justify-center bg-transparent hover:bg-white/10 transition-colors rounded-[14px] border border-white/25"
                 >
-                  <span className="text-[18px] font-semibold text-[#EEF2FF]">What’s included?</span>
+                  <span className="text-[18px] font-semibold text-[#EEF2FF]">
+                    What’s included?
+                  </span>
                 </Link>
+
+                {ctaError && (
+                  <div className="mt-3 text-[13px] text-red-200">
+                    {ctaError}
+                  </div>
+                )}
 
                 <div className="mt-3 text-[12px] text-[#C5CBD8]">
                   No contracts • Cancel anytime • Friendly, professional service
@@ -209,15 +269,24 @@ export default function HeroSection() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-3 py-2 bg-[#313234]/30 backdrop-blur-[8px] rounded-full border border-white/15"
                 >
-                  <Image src="/images/icons/icon-google.svg" alt="" width={16} height={16} className="w-4 h-4" />
-                  <span className="text-sm font-semibold text-[#EEF2FF]">5.0 stars</span>
+                  <Image
+                    src="/images/icons/icon-google.svg"
+                    alt=""
+                    width={16}
+                    height={16}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm font-semibold text-[#EEF2FF]">
+                    5.0 stars
+                  </span>
                   <span className="text-sm text-[#C5CBD8]">Long Island</span>
                 </a>
               </div>
 
               <p className="mt-4 text-[15px] sm:text-[18px] font-medium text-[#C5CBD8] leading-[125%] max-w-[520px] mx-auto">
                 <span className="text-white font-semibold">$0 labor</span> • up to{" "}
-                <span className="text-white font-semibold">90 minutes</span> per visit • cancel anytime.
+                <span className="text-white font-semibold">90 minutes</span> per
+                visit • cancel anytime.
               </p>
 
               <div className="mt-4 space-y-2 text-[13px] text-[#C5CBD8]">
@@ -229,17 +298,28 @@ export default function HeroSection() {
               <button
                 type="button"
                 onClick={handleFixTodayClick}
-                className="mt-3 w-full sm:w-[300px] h-[52px] sm:h-[56px] bg-white/10 hover:bg-white/20 transition-colors rounded-[14px] border border-white/25"
+                disabled={ctaLoading}
+                className="mt-3 w-full sm:w-[300px] h-[52px] sm:h-[56px] bg-white/10 hover:bg-white/20 transition-colors rounded-[14px] border border-white/25 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <span className="text-lg sm:text-xl font-semibold text-[#EEF2FF]">Book Now</span>
+                <span className="text-lg sm:text-xl font-semibold text-[#EEF2FF]">
+                  {ctaLoading ? "Checking..." : "Book Now"}
+                </span>
               </button>
 
               <Link
                 href="/included"
                 className="mt-3 w-full sm:w-[300px] h-[52px] sm:h-[56px] inline-flex items-center justify-center bg-transparent hover:bg-white/10 transition-colors rounded-[14px] border border-white/25"
               >
-                <span className="text-lg sm:text-xl font-semibold text-[#EEF2FF]">What’s included?</span>
+                <span className="text-lg sm:text-xl font-semibold text-[#EEF2FF]">
+                  What’s included?
+                </span>
               </Link>
+
+              {ctaError && (
+                <div className="mt-3 text-[13px] text-red-200">
+                  {ctaError}
+                </div>
+              )}
 
               <button
                 type="button"
@@ -261,13 +341,21 @@ export default function HeroSection() {
 
             <div className="flex gap-3">
               <div className="w-[160px] h-[110px] bg-[#eef2ff] rounded-[14px] border border-[#c5cbd8] p-4 shadow-[0_10px_80px_rgba(0,0,0,0.25)]">
-                <div className="text-[22px] font-semibold text-[#313234]">$1,800+</div>
-                <div className="text-[13px] text-[#6a6c71] mt-2">saved yearly with Mr.Fixter plans</div>
+                <div className="text-[22px] font-semibold text-[#313234]">
+                  $1,800+
+                </div>
+                <div className="text-[13px] text-[#6a6c71] mt-2">
+                  saved yearly with Mr.Fixter plans
+                </div>
               </div>
 
               <div className="w-[160px] h-[110px] bg-[#eef2ff] rounded-[14px] border border-[#c5cbd8] p-4 shadow-[0_10px_80px_rgba(0,0,0,0.25)]">
-                <div className="text-[22px] font-semibold text-[#313234]">7 days</div>
-                <div className="text-[13px] text-[#6a6c71] mt-2">free trial on every plan</div>
+                <div className="text-[22px] font-semibold text-[#313234]">
+                  7 days
+                </div>
+                <div className="text-[13px] text-[#6a6c71] mt-2">
+                  free trial on every plan
+                </div>
               </div>
             </div>
           </div>

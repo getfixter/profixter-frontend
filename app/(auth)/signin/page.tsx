@@ -39,11 +39,11 @@ export default function SignInPage() {
         localStorage.removeItem("rememberedEmail");
       }
 
-      // Redirect based on email:
+      // Redirect:
       if (user.email.toLowerCase() === "getfixter@gmail.com") {
-        router.push("/admin"); // ADMIN → /admin
+        router.replace("/admin"); // ADMIN → /admin
       } else {
-        router.push("/account"); // USERS → /account
+        router.replace("/"); // USERS → /
       }
       return;
     } catch (err: any) {
