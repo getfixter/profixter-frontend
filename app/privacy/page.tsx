@@ -16,7 +16,7 @@ export default function PrivacyPage() {
         </h1>
 
         <p className="text-sm sm:text-base text-white/65 text-center mb-8 leading-relaxed">
-          Effective Date: January 9, 2026 · Company:{" "}
+          Effective Date: January 22, 2026 · Company:{" "}
           <span className="font-semibold">Premium Island Homes Inc.</span>, doing
           business as{" "}
           <span className="font-semibold">“Profixter”</span> and/or{" "}
