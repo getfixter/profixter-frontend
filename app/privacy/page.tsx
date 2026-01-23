@@ -242,7 +242,7 @@ export default function PrivacyPage() {
           </section>
 
           <p className="text-xs sm:text-sm text-white/55 mt-10 text-center">
-            Last Updated: January 9, 2026
+            Last Updated: January 22, 2026
           </p>
 
           <div className="mt-7 text-center">
