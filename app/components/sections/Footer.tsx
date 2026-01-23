@@ -24,12 +24,10 @@ export default function Footer() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Here later you can connect real API
     console.log("Contact request:", formData);
 
     setShowPopup(true);
 
-    // Reset form
     setFormData({
       firstName: "",
       lastName: "",
@@ -82,35 +80,31 @@ export default function Footer() {
           {/* Right - Navigation */}
           <div className="flex-shrink-0 w-full sm:w-auto">
             <nav className="flex flex-row sm:flex-col gap-4 sm:gap-4 flex-wrap sm:flex-nowrap sm:text-right">
-              <Link
-                href="#how-it-works"
-                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
-              >
+              <Link href="#how-it-works" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
                 How it works
               </Link>
-              <Link
-                href="#plans"
-                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
-              >
+              <Link href="#plans" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
                 Plans
               </Link>
-              <Link
-                href="#pick-day"
-                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
-              >
+              <Link href="#pick-day" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
                 Pick day
               </Link>
-              <Link
-                href="#projects"
-                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
-              >
+              <Link href="#projects" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
                 Projects
+              </Link>
+
+              {/* ✅ NEW */}
+              <Link href="/partnerships" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
+                Partnerships
+              </Link>
+              <Link href="/careers" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
+                Careers
               </Link>
             </nav>
           </div>
         </div>
 
-        {/* Existing Get in Touch Card */}
+        {/* Get in Touch Card */}
         <div className="mt-6 w-full sm:w-auto">
           <div className="relative w-full sm:w-[300px]">
             <div className="relative w-full rounded-[14px] bg-white/1 backdrop-blur-sm p-5 sm:p-6">
@@ -135,7 +129,7 @@ export default function Footer() {
                 </Link>
               </div>
 
-              {/* ✅ Added legal links (matches design, subtle, like screenshot style) */}
+              {/* Legal + Career/Partnerships */}
               <div className="mt-5 pt-4 border-t border-white/10">
                 <div className="flex flex-wrap gap-x-2 gap-y-2 text-sm">
                   <Link
@@ -144,12 +138,33 @@ export default function Footer() {
                   >
                     Privacy Policy
                   </Link>
+
                   <span className="text-white/30">|</span>
+
                   <Link
                     href="/terms"
                     className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition"
                   >
                     Terms of Service
+                  </Link>
+
+                  <span className="text-white/30">|</span>
+
+                  {/* ✅ NEW */}
+                  <Link
+                    href="/partnerships"
+                    className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition"
+                  >
+                    Partnerships
+                  </Link>
+
+                  <span className="text-white/30">|</span>
+
+                  <Link
+                    href="/careers"
+                    className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition"
+                  >
+                    Careers
                   </Link>
                 </div>
               </div>
