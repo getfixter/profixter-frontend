@@ -149,8 +149,7 @@ export default function Footer() {
                     Terms of Service
                   </Link>
 
-                  <span className="text-white/30">|</span>
-
+                  
                   
                 </div>
               </div>
