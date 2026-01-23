@@ -10,9 +10,8 @@ import { register } from "@/lib/auth-service";
 export default function SignUpPage() {
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signup");
 
-  // ✅ Terms acceptance (required)
+  // ✅ Terms (NOW OPTIONAL)
   const [agreeTerms, setAgreeTerms] = useState(false);
-  const [consentError, setConsentError] = useState(false);
 
   // ✅ SMS consents (optional, not pre-checked)
   const [smsMarketingOptIn, setSmsMarketingOptIn] = useState(false);
@@ -74,14 +73,6 @@ export default function SignUpPage() {
       return;
     }
 
-    // ✅ Terms must be accepted (SMS is optional)
-    setConsentError(false);
-    if (!agreeTerms) {
-      setConsentError(true);
-      setError("You must agree to the Terms of Service & Privacy Policy before continuing.");
-      return;
-    }
-
     const phoneDigits = formData.phone.replace(/\D/g, "");
     if (phoneDigits.length !== 10) {
       setError("Phone number must be 10 digits");
@@ -109,7 +100,7 @@ export default function SignUpPage() {
         county: formData.county,
 
         // Consent metadata (recommended)
-        termsAccepted: agreeTerms,
+        termsAccepted: agreeTerms, // now optional (can be false)
         smsMarketingOptIn,
         smsServiceOptIn,
         consentSource: "website_signup",
@@ -131,6 +122,46 @@ export default function SignUpPage() {
     }
   };
 
+  // Reusable checkbox UI (matches your Terms style)
+  const Checkbox = ({
+    checked,
+    onChange,
+    children,
+  }: {
+    checked: boolean;
+    onChange: (v: boolean) => void;
+    children: React.ReactNode;
+  }) => (
+    <label className="flex items-start gap-3 cursor-pointer">
+      <div className="relative mt-0.5">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="sr-only peer"
+        />
+        <div
+          className={`w-4 h-4 sm:w-5 sm:h-5 border-2 rounded flex items-center justify-center
+          border-white peer-checked:bg-transparent peer-checked:border-white`}
+        >
+          {checked && (
+            <svg width="12" height="10" viewBox="0 0 14 11" fill="none">
+              <path
+                d="M1 5.5L5 9.5L13 1.5"
+                stroke="white"
+                strokeWidth="2"
+              />
+            </svg>
+          )}
+        </div>
+      </div>
+
+      <span className="text-white text-sm sm:text-base leading-relaxed">
+        {children}
+      </span>
+    </label>
+  );
+
   return (
     <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-24 sm:py-32">
       <div
@@ -148,6 +179,7 @@ export default function SignUpPage() {
           >
             Sign in
           </Link>
+
           <button
             onClick={() => setActiveTab("signup")}
             className={`text-xl sm:text-2xl font-medium pb-2 transition-colors relative ${
@@ -290,92 +322,58 @@ export default function SignUpPage() {
             </div>
           </div>
 
-          {/* ✅ REQUIRED TERMS + OPTIONAL SMS CONSENTS */}
+          {/* ✅ OPTIONAL TERMS + OPTIONAL SMS CONSENTS (ALL MATCH STYLE) */}
           <div className="flex flex-col gap-4 pt-4">
-            {/* Terms (required) */}
-            <label className="flex items-start gap-3 cursor-pointer">
-              <div className="relative mt-0.5">
-                <input
-                  type="checkbox"
-                  checked={agreeTerms}
-                  onChange={(e) => {
-                    setAgreeTerms(e.target.checked);
-                    setConsentError(false);
-                  }}
-                  className="sr-only peer"
-                />
-                <div
-                  className={`w-4 h-4 sm:w-5 sm:h-5 border-2 rounded flex items-center justify-center
-                  ${consentError ? "border-red-500" : "border-white"}
-                  peer-checked:bg-transparent peer-checked:border-white`}
-                >
-                  {agreeTerms && (
-                    <svg width="12" height="10" viewBox="0 0 14 11" fill="none">
-                      <path d="M1 5.5L5 9.5L13 1.5" stroke="white" strokeWidth="2" />
-                    </svg>
-                  )}
-                </div>
-              </div>
-
-              <span className="text-white text-sm sm:text-base leading-relaxed">
-                I agree to the{" "}
-                <Link href="/terms" className="underline text-white hover:text-[#93c5fd]">
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link href="/privacy" className="underline text-white hover:text-[#93c5fd]">
-                  Privacy Policy
-                </Link>
-                .
-              </span>
-            </label>
+            {/* Terms (optional) */}
+            <Checkbox checked={agreeTerms} onChange={setAgreeTerms}>
+              I agree to the{" "}
+              <Link
+                href="/terms"
+                className="underline text-white hover:text-[#93c5fd]"
+              >
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link
+                href="/privacy"
+                className="underline text-white hover:text-[#93c5fd]"
+              >
+                Privacy Policy
+              </Link>
+              .
+            </Checkbox>
 
             {/* SMS Marketing (optional) */}
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={smsMarketingOptIn}
-                onChange={(e) => setSmsMarketingOptIn(e.target.checked)}
-                className="mt-1"
-              />
-              <span className="text-white text-sm sm:text-base leading-relaxed">
-                I consent to receive <span className="font-semibold">marketing</span> text messages from{" "}
-                <span className="font-semibold">Premium Island Homes INC. DBA Mr. Fixter
-</span> at the number provided. Message frequency varies.
-                Message &amp; data rates may apply. Text <span className="font-semibold">HELP</span> to{" "}
-                <span className="font-semibold">631-599-1363</span> for assistance. Reply{" "}
-                <span className="font-semibold">STOP</span> to opt out.
-              </span>
-            </label>
+            <Checkbox checked={smsMarketingOptIn} onChange={setSmsMarketingOptIn}>
+              I consent to receive <span className="font-semibold">marketing</span>{" "}
+              text messages from{" "}
+              <span className="font-semibold">
+                Premium Island Homes INC. DBA Mr. Fixter
+              </span>{" "}
+              at the number provided. Message frequency varies. Message &amp; data
+              rates may apply. Text <span className="font-semibold">HELP</span> to{" "}
+              <span className="font-semibold">631-599-1363</span> for assistance.
+              Reply <span className="font-semibold">STOP</span> to opt out.
+            </Checkbox>
 
             {/* SMS Service/Transactional (optional) */}
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={smsServiceOptIn}
-                onChange={(e) => setSmsServiceOptIn(e.target.checked)}
-                className="mt-1"
-              />
-              <span className="text-white text-sm sm:text-base leading-relaxed">
-                I consent to receive <span className="font-semibold">non-marketing</span> texts from{" "}
-                <span className="font-semibold">Premium Island Homes INC. DBA Mr. Fixter
-</span> about my account, bookings, and service updates.
-                Message frequency varies. Message &amp; data rates may apply. Text{" "}
-                <span className="font-semibold">HELP</span> to{" "}
-                <span className="font-semibold">631-599-1363</span> for assistance. Reply{" "}
-                <span className="font-semibold">STOP</span> to opt out.
-              </span>
-            </label>
+            <Checkbox checked={smsServiceOptIn} onChange={setSmsServiceOptIn}>
+              I consent to receive <span className="font-semibold">non-marketing</span>{" "}
+              texts from{" "}
+              <span className="font-semibold">
+                Premium Island Homes INC. DBA Mr. Fixter
+              </span>{" "}
+              about my account, bookings, and service updates. Message frequency
+              varies. Message &amp; data rates may apply. Text{" "}
+              <span className="font-semibold">HELP</span> to{" "}
+              <span className="font-semibold">631-599-1363</span> for assistance.
+              Reply <span className="font-semibold">STOP</span> to opt out.
+            </Checkbox>
 
             <p className="text-white/60 text-xs">
-Consent is optional and not a condition of purchase. You may opt out at any time by replying STOP.
+              Consent is optional and not a condition of purchase. You may opt out
+              at any time by replying STOP.
             </p>
-
-            {consentError && (
-              <p className="text-red-400 text-xs -mt-2">
-                Please check Terms of Service & Privacy Policy to continue.
-              </p>
-            )}
           </div>
 
           {error && (

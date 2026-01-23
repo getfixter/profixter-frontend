@@ -1,13 +1,14 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { useMemo, useState } from 'react';
-import { faqs } from '@/app/data/content';
+import Image from "next/image";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { faqs } from "@/app/data/content";
 
 function Chevron({ open }: { open: boolean }) {
   return (
     <svg
-      className={`w-5 h-5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+      className={`w-5 h-5 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
@@ -33,15 +34,15 @@ function FaqCard({
   onToggle: () => void;
 }) {
   const bgColor =
-    faq.color === 'blue'
-      ? 'bg-gradient-to-b from-[#306EEC] to-[#1B3E86]'
-      : faq.color === 'light'
-      ? 'bg-[#EEF2FF]'
-      : 'bg-[#3A3C3E]';
+    faq.color === "blue"
+      ? "bg-gradient-to-b from-[#306EEC] to-[#1B3E86]"
+      : faq.color === "light"
+      ? "bg-[#EEF2FF]"
+      : "bg-[#3A3C3E]";
 
-  const textColor = faq.color === 'light' ? 'text-[#313234]' : 'text-white';
-  const descColor = faq.color === 'light' ? 'text-[#6A6D71]' : 'text-[#C5CBD8]';
-  const numberColor = faq.color === 'light' ? 'text-[#313234]' : 'text-white';
+  const textColor = faq.color === "light" ? "text-[#313234]" : "text-white";
+  const descColor = faq.color === "light" ? "text-[#6A6D71]" : "text-[#C5CBD8]";
+  const numberColor = faq.color === "light" ? "text-[#313234]" : "text-white";
 
   return (
     <button
@@ -53,7 +54,6 @@ function FaqCard({
         focus:outline-none focus:ring-2 focus:ring-[#306EEC]/60`}
       aria-expanded={isOpen}
     >
-      {/* top row: question + chevron */}
       <div className="flex items-start justify-between gap-4">
         <h3 className={`text-lg sm:text-xl font-semibold ${textColor} leading-tight font-montserrat`}>
           {faq.question}
@@ -64,10 +64,9 @@ function FaqCard({
         </div>
       </div>
 
-      {/* expandable answer */}
       <div
         className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out mt-3 ${
-          isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-90'
+          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-90"
         }`}
       >
         <div className="overflow-hidden">
@@ -77,7 +76,6 @@ function FaqCard({
         </div>
       </div>
 
-      {/* bottom row: number */}
       <div className="flex justify-end mt-4">
         <span className={`text-5xl sm:text-6xl font-bold leading-none ${numberColor} font-montserrat`}>
           {faq.id}
@@ -88,20 +86,20 @@ function FaqCard({
 }
 
 export default function ServicesSection() {
-  // open first item by default (nice for conversions)
-  const [openId, setOpenId] = useState<string | null>('01');
+  const [openId, setOpenId] = useState<string | null>("01");
   const items = useMemo(() => faqs, []);
 
   // ✅ Contact form state
   const [contact, setContact] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
   });
 
-  // ✅ SMS consent (required for compliance)
-  const [smsConsent, setSmsConsent] = useState(false);
+  // ✅ Match “how it should look”: two separate consents
+  const [smsServiceOptIn, setSmsServiceOptIn] = useState(false); // non-marketing (service)
+  const [smsMarketingOptIn, setSmsMarketingOptIn] = useState(false); // marketing
 
   const [showPopup, setShowPopup] = useState(false);
 
@@ -113,36 +111,36 @@ export default function ServicesSection() {
   const onContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Hard stop if user didn't consent (shouldn't happen because button disabled)
-    if (!smsConsent) return;
-
     // Later you can connect API here
-    console.log('Contact request:', { ...contact, smsConsent });
+    console.log("Contact request:", {
+      ...contact,
+      smsServiceOptIn,
+      smsMarketingOptIn,
+      consentSource: "contact_form",
+      consentAt: new Date().toISOString(),
+    });
 
     setShowPopup(true);
 
     // reset
-    setContact({ firstName: '', lastName: '', email: '', phone: '' });
-    setSmsConsent(false);
+    setContact({ firstName: "", lastName: "", email: "", phone: "" });
+    setSmsServiceOptIn(false);
+    setSmsMarketingOptIn(false);
 
-    // auto hide popup
     window.setTimeout(() => setShowPopup(false), 4500);
   };
 
   return (
     <section className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden">
-      {/* Decorative Background Circle */}
       <div
         className="hidden lg:block absolute -top-40 left-1/2 -translate-x-1/2 w-[1460px] h-[1460px] rounded-full z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(48, 110, 236, 0.12) 0%, transparent 70%)',
+          background: "radial-gradient(circle, rgba(48, 110, 236, 0.12) 0%, transparent 70%)",
         }}
       />
 
       <div className="container mx-auto px-[20px] max-w-[1240px] relative z-10">
-        {/* Mobile: header first; Desktop: cards first */}
         <div className="grid lg:grid-cols-12 gap-8 lg:gap-10 items-start">
-          {/* Header / Lamp — MOBILE FIRST */}
           <div className="lg:col-span-4 order-1 lg:order-2">
             <div className="relative rounded-[24px] border border-white/10 bg-white/5 p-6 sm:p-7">
               <h2 className="text-3xl sm:text-5xl lg:text-[54px] font-bold uppercase leading-tight">
@@ -166,7 +164,6 @@ export default function ServicesSection() {
             </div>
           </div>
 
-          {/* FAQ Cards */}
           <div className="lg:col-span-8 order-2 lg:order-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
               {items.map((faq) => (
@@ -185,7 +182,7 @@ export default function ServicesSection() {
           </div>
         </div>
 
-        {/* ✅ CONTACT US SECTION (added below FAQs) */}
+        {/* ✅ CONTACT US SECTION (updated to match screenshot #2, keep your style) */}
         <div id="contact-us" className="mt-10 sm:mt-12 lg:mt-16">
           <div className="rounded-[24px] border border-white/10 bg-white/5 p-6 sm:p-8">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
@@ -193,7 +190,7 @@ export default function ServicesSection() {
                 <h3 className="text-2xl sm:text-3xl font-bold text-white font-montserrat">
                   Contact Us
                 </h3>
-                <p className="text-[#C5CBD8] text-sm sm:text-base font-medium mt-2 font-montserrat max-w-[520px]">
+                <p className="text-[#C5CBD8] text-sm sm:text-base font-medium mt-2 font-montserrat max-w-[560px]">
                   Leave your info and we’ll reach out shortly to help you pick the right plan and book your first visit.
                 </p>
               </div>
@@ -204,77 +201,115 @@ export default function ServicesSection() {
               </div>
             </div>
 
-            <form onSubmit={onContactSubmit} className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-4">
-              <input
-                required
-                name="firstName"
-                value={contact.firstName}
-                onChange={onContactChange}
-                placeholder="First Name"
-                className="lg:col-span-3 h-[48px] rounded-[14px] px-4 bg-[#3A3C3E] text-white placeholder-[#C5CBD8]
-                  border border-white/10 outline-none focus:ring-2 focus:ring-[#306EEC]/60"
-              />
-              <input
-                required
-                name="lastName"
-                value={contact.lastName}
-                onChange={onContactChange}
-                placeholder="Last Name"
-                className="lg:col-span-3 h-[48px] rounded-[14px] px-4 bg-[#3A3C3E] text-white placeholder-[#C5CBD8]
-                  border border-white/10 outline-none focus:ring-2 focus:ring-[#306EEC]/60"
-              />
-              <input
-                required
-                type="email"
-                name="email"
-                value={contact.email}
-                onChange={onContactChange}
-                placeholder="Email"
-                className="lg:col-span-3 h-[48px] rounded-[14px] px-4 bg-[#3A3C3E] text-white placeholder-[#C5CBD8]
-                  border border-white/10 outline-none focus:ring-2 focus:ring-[#306EEC]/60"
-              />
-              <input
-                required
-                type="tel"
-                name="phone"
-                value={contact.phone}
-                onChange={onContactChange}
-                placeholder="Phone Number"
-                className="lg:col-span-3 h-[48px] rounded-[14px] px-4 bg-[#3A3C3E] text-white placeholder-[#C5CBD8]
-                  border border-white/10 outline-none focus:ring-2 focus:ring-[#306EEC]/60"
-              />
+            <form onSubmit={onContactSubmit} className="mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <input
+                  required
+                  name="firstName"
+                  value={contact.firstName}
+                  onChange={onContactChange}
+                  placeholder="First Name"
+                  className="lg:col-span-3 h-[48px] rounded-[14px] px-4 bg-[#3A3C3E] text-white placeholder-[#C5CBD8]
+                    border border-white/10 outline-none focus:ring-2 focus:ring-[#306EEC]/60"
+                />
+                <input
+                  required
+                  name="lastName"
+                  value={contact.lastName}
+                  onChange={onContactChange}
+                  placeholder="Last Name"
+                  className="lg:col-span-3 h-[48px] rounded-[14px] px-4 bg-[#3A3C3E] text-white placeholder-[#C5CBD8]
+                    border border-white/10 outline-none focus:ring-2 focus:ring-[#306EEC]/60"
+                />
+                <input
+                  required
+                  type="email"
+                  name="email"
+                  value={contact.email}
+                  onChange={onContactChange}
+                  placeholder="Email"
+                  className="lg:col-span-3 h-[48px] rounded-[14px] px-4 bg-[#3A3C3E] text-white placeholder-[#C5CBD8]
+                    border border-white/10 outline-none focus:ring-2 focus:ring-[#306EEC]/60"
+                />
+                <input
+                  required
+                  type="tel"
+                  name="phone"
+                  value={contact.phone}
+                  onChange={onContactChange}
+                  placeholder="Phone Number"
+                  className="lg:col-span-3 h-[48px] rounded-[14px] px-4 bg-[#3A3C3E] text-white placeholder-[#C5CBD8]
+                    border border-white/10 outline-none focus:ring-2 focus:ring-[#306EEC]/60"
+                />
+              </div>
 
-              {/* ✅ REQUIRED SMS CONSENT */}
-              <div className="lg:col-span-12 mt-1">
+              {/* ✅ Two consent checkboxes (match screenshot #2, keep your theme) */}
+              <div className="mt-5 space-y-3">
                 <label className="flex items-start gap-3 text-xs sm:text-sm text-[#C5CBD8] font-montserrat">
                   <input
                     type="checkbox"
-                    checked={smsConsent}
-                    onChange={(e) => setSmsConsent(e.target.checked)}
+                    checked={smsServiceOptIn}
+                    onChange={(e) => setSmsServiceOptIn(e.target.checked)}
                     className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#306EEC]"
-                    required
                   />
                   <span className="leading-[140%]">
-                    By checking this box, you agree to receive SMS messages from ProFixter (Mr. Fixter) including responses
-                    to your request, service updates, appointment reminders, and occasional promotional offers. Message
-                    frequency varies. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.
+                    I Consent to Receive{" "}
+                    <span className="font-semibold text-white/90">non-marketing</span>{" "}
+                    text messages from{" "}
+                    <span className="font-semibold text-white/90">Profixter (Mr. Fixter)</span>{" "}
+                    about responses to my request, service updates, appointment reminders, and important updates.
+                    Message frequency varies. Msg &amp; data rates may apply. Text{" "}
+                    <span className="font-semibold text-white/90">HELP</span>{" "}
+                    for assistance. Reply{" "}
+                    <span className="font-semibold text-white/90">STOP</span>{" "}
+                    to opt out.
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 text-xs sm:text-sm text-[#C5CBD8] font-montserrat">
+                  <input
+                    type="checkbox"
+                    checked={smsMarketingOptIn}
+                    onChange={(e) => setSmsMarketingOptIn(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#306EEC]"
+                  />
+                  <span className="leading-[140%]">
+                    I Consent to receive{" "}
+                    <span className="font-semibold text-white/90">marketing</span>{" "}
+                    text messages from{" "}
+                    <span className="font-semibold text-white/90">Profixter (Mr. Fixter)</span>{" "}
+                    at the number provided. Message frequency varies. Msg &amp; data rates may apply.
+                    Text{" "}
+                    <span className="font-semibold text-white/90">HELP</span>{" "}
+                    for assistance. Reply{" "}
+                    <span className="font-semibold text-white/90">STOP</span>{" "}
+                    to opt out.
                   </span>
                 </label>
               </div>
 
               <button
                 type="submit"
-                className="lg:col-span-12 h-[50px] rounded-[16px] bg-[#306EEC] text-white font-semibold font-montserrat
-                  hover:brightness-110 transition shadow-[0_10px_40px_rgba(48,110,236,0.20)] disabled:opacity-60 disabled:cursor-not-allowed"
-                disabled={!smsConsent}
-                aria-disabled={!smsConsent}
+                className="mt-5 w-full h-[50px] rounded-[16px] bg-[#306EEC] text-white font-semibold font-montserrat
+                  hover:brightness-110 transition shadow-[0_10px_40px_rgba(48,110,236,0.20)]"
               >
                 Submit Request
               </button>
 
-              {/* Optional: small helper line */}
-              <p className="lg:col-span-12 text-[11px] text-[#C5CBD8]/70 font-montserrat">
-                Prefer not to receive texts? Uncheck the box and call us at 631-599-1363.
+              {/* ✅ Links like screenshot #2 */}
+              <div className="mt-4 text-center text-sm font-montserrat">
+                <Link href="/privacy" className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition">
+                  Privacy Policy
+                </Link>
+                <span className="text-white/30 mx-2">|</span>
+                <Link href="/terms" className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition">
+                  Terms of Service
+                </Link>
+              </div>
+
+              {/* Optional helper line (keep yours) */}
+              <p className="mt-3 text-[11px] text-[#C5CBD8]/70 font-montserrat">
+                Prefer not to receive texts? Leave both boxes unchecked and call us at 631-599-1363.
               </p>
             </form>
           </div>
@@ -284,9 +319,7 @@ export default function ServicesSection() {
       {/* ✅ Professional popup */}
       {showPopup && (
         <div className="fixed bottom-6 right-6 z-[9999] max-w-[360px] rounded-[16px] bg-[#0B1220] text-white border border-white/10 shadow-[0_20px_80px_rgba(0,0,0,0.55)] p-4">
-          <p className="font-semibold font-montserrat text-white">
-            Thank you — we received your request.
-          </p>
+          <p className="font-semibold font-montserrat text-white">Thank you — we received your request.</p>
           <p className="text-sm text-[#C5CBD8] font-montserrat mt-1 leading-[140%]">
             We’ll contact you shortly from <span className="text-white font-semibold">631-599-1363</span>.
           </p>

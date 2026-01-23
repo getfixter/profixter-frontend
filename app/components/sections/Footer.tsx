@@ -82,23 +82,33 @@ export default function Footer() {
           {/* Right - Navigation */}
           <div className="flex-shrink-0 w-full sm:w-auto">
             <nav className="flex flex-row sm:flex-col gap-4 sm:gap-4 flex-wrap sm:flex-nowrap sm:text-right">
-              <Link href="#how-it-works" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
+              <Link
+                href="#how-it-works"
+                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
+              >
                 How it works
               </Link>
-              <Link href="#plans" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
+              <Link
+                href="#plans"
+                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
+              >
                 Plans
               </Link>
-              <Link href="#pick-day" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
+              <Link
+                href="#pick-day"
+                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
+              >
                 Pick day
               </Link>
-              <Link href="#projects" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
+              <Link
+                href="#projects"
+                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
+              >
                 Projects
               </Link>
             </nav>
           </div>
         </div>
-
-        
 
         {/* Existing Get in Touch Card */}
         <div className="mt-6 w-full sm:w-auto">
@@ -124,6 +134,25 @@ export default function Footer() {
                   my@profixter.com
                 </Link>
               </div>
+
+              {/* ✅ Added legal links (matches design, subtle, like screenshot style) */}
+              <div className="mt-5 pt-4 border-t border-white/10">
+                <div className="flex flex-wrap gap-x-2 gap-y-2 text-sm">
+                  <Link
+                    href="/privacy"
+                    className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition"
+                  >
+                    Privacy Policy
+                  </Link>
+                  <span className="text-white/30">|</span>
+                  <Link
+                    href="/terms"
+                    className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition"
+                  >
+                    Terms of Service
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -138,11 +167,9 @@ export default function Footer() {
       {/* POPUP CONFIRMATION */}
       {showPopup && (
         <div className="fixed bottom-6 right-6 bg-white text-black p-4 rounded shadow-lg">
-          <p className="font-semibold">
-            Thank you for contacting ProFixter!
-          </p>
+          <p className="font-semibold">Thank you for contacting ProFixter!</p>
           <p className="text-sm">
-            We have received your request. Our team will call you shortly from  
+            We have received your request. Our team will call you shortly from
             <strong> 631-599-1363</strong>.
           </p>
         </div>
