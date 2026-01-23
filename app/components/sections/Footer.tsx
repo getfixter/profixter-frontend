@@ -151,22 +151,7 @@ export default function Footer() {
 
                   <span className="text-white/30">|</span>
 
-                  {/* ✅ NEW */}
-                  <Link
-                    href="/partnerships"
-                    className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition"
-                  >
-                    Partnerships
-                  </Link>
-
-                  <span className="text-white/30">|</span>
-
-                  <Link
-                    href="/careers"
-                    className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition"
-                  >
-                    Careers
-                  </Link>
+                  
                 </div>
               </div>
             </div>
