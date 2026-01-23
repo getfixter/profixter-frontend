@@ -42,9 +42,10 @@ export default function Footer() {
 
   return (
     <footer
-      id="contact-us"
-      className="relative min-h-[350px] sm:min-h-[400px] lg:h-[437px] overflow-hidden"
-    >
+  id="contact-us"
+  className="relative min-h-[350px] sm:min-h-[400px] overflow-hidden"
+>
+
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image
