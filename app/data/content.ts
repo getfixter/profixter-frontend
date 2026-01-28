@@ -170,7 +170,7 @@ export const faqs: Faq[] = [
     id: "07",
     question: "What tasks are NOT covered?",
     answer:
-      "Big remodels, structural work, large electrical/plumbing projects, and specialty trades are not included.",
+      "Big remodels, structural work, large electrical/plumbing projects, and appliances fixes are not included.",
     color: "dark",
     size: "small",
     offset: -100,
@@ -188,16 +188,16 @@ export const faqs: Faq[] = [
     id: "09",
     question: "Can I reschedule?",
     answer:
-      "Yes—please reschedule early so we can offer the slot to another customer.",
+      "Yes-please reschedule early so we can offer the slot to another customer.",
     color: "light",
     size: "normal",
     offset: -20,
   },
   {
     id: "10",
-    question: "Is this insurance?",
+    question: "Are you Licensed and Insured?",
     answer:
-      "No. It’s a handyman protection membership (not insurance).",
+      "Yes we are fully Licensed and Insured, here is our Licensed #HI-71484.",
     color: "dark",
     size: "large",
     offset: -30,
