@@ -60,7 +60,7 @@ export default function HandymenSection() {
       <div className="hidden lg:block mt-6 sm:mt-8 lg:mt-10">
         {/* Desktop Thumbnails Strip (clean + obvious navigation) */}
         <div className="container mx-auto px-[20px] max-w-[1240px]">
-<div className="flex items-center justify-center">
+          <div className="flex items-center gap-3">
             
             
 
