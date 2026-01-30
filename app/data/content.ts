@@ -293,7 +293,7 @@ export type TeamMember = {
 export const team: TeamMember[] = [
   {
     id: 1,
-    name: "Taras Bandura — General Manager",
+    name: "Taras Bandura - General Manager",
     photo: "/images/Taras.png",
     thumb: "/images/Taras.png",
     blurb:
@@ -301,7 +301,7 @@ export const team: TeamMember[] = [
   },
   {
     id: 2,
-    name: "Roman Hecha — Lead Handyman",
+    name: "Roman Hecha - Lead Handyman",
     photo: "/images/Roman.png",
     thumb: "/images/Roman.png",
     blurb:
