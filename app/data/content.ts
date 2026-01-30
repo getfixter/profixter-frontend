@@ -293,18 +293,18 @@ export type TeamMember = {
 export const team: TeamMember[] = [
   {
     id: 1,
-    name: "Taras Bandura",
+    name: "Taras Bandura — General Manager",
     photo: "/images/Taras.png",
     thumb: "/images/Taras.png",
     blurb:
-      "Friendly, experienced, and always ready to help. Makes every home project stress-free. Always focused on quality and customer satisfaction. Favorite projects: bringing treats for your pets.",
+      "I founded Mr. Fixter to fix what’s broken in the handyman industry - unreliable scheduling, unclear pricing, and inconsistent quality. With 9+ years in construction and home services, I personally oversee customer support, approve bookings, and make sure every visit meets our standard. My goal is simple: make home service more affordable, more professional, and completely stress-free. If you ever have questions or need help, you can reach me directly 24/7 - you’re in good hands here.",
   },
   {
     id: 2,
-    name: "Roman Hecha",
+    name: "Roman Hecha — Lead Handyman",
     photo: "/images/Roman.png",
     thumb: "/images/Roman.png",
     blurb:
-      "Detail-driven electrician and installer. Loves smart-home setups and clean finishes. Reliable and professional.",
+      "Roman is our lead handyman and the standard-setter for quality at Mr. Fixter. He’s skilled across electrical, mounting, installations, and everyday home repairs — with a sharp eye for clean finishes and long-lasting results. Homeowners love him because he’s punctual, respectful, and explains the plan before he starts. He works fast, keeps the workspace clean, and treats every home like it’s his own.",
   },
 ];
