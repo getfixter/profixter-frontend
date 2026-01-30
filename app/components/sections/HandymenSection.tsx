@@ -60,26 +60,9 @@ export default function HandymenSection() {
       <div className="hidden lg:block mt-6 sm:mt-8 lg:mt-10">
         {/* Desktop Thumbnails Strip (clean + obvious navigation) */}
         <div className="container mx-auto px-[20px] max-w-[1240px]">
-          <div className="flex items-center gap-3">
-            {/* Left arrow */}
-            <button
-              type="button"
-              onClick={() =>
-                stripRef.current?.scrollBy({ left: -320, behavior: "smooth" })
-              }
-              className="w-[44px] h-[44px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors shrink-0 shadow-md"
-              aria-label="Scroll thumbnails left"
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M15 18L9 12L15 6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
+<div className="flex items-center justify-center">
+            
+            
 
             {/* Scroll strip */}
             <div
@@ -125,25 +108,7 @@ export default function HandymenSection() {
               </div>
             </div>
 
-            {/* Right arrow */}
-            <button
-              type="button"
-              onClick={() =>
-                stripRef.current?.scrollBy({ left: 320, behavior: "smooth" })
-              }
-              className="w-[44px] h-[44px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors shrink-0 shadow-md"
-              aria-label="Scroll thumbnails right"
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M9 6L15 12L9 18"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
+            
           </div>
         </div>
 
