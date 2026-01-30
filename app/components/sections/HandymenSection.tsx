@@ -111,9 +111,14 @@ export default function HandymenSection() {
                     }`}
                     aria-label={`Show ${m.name}`}
                   >
-                    <Image src={m.thumb} alt={m.name} fill className="object-cover" />
+                    <Image
+  src={m.thumb}
+  alt={m.name}
+  fill
+  className="object-contain bg-[#242526]"
+  sizes="260px"
+/>
                     {/* subtle overlay so border reads clean */}
-                    <div className="absolute inset-0 bg-black/10" />
                   </button>
                 ))}
               </div>
@@ -195,7 +200,13 @@ export default function HandymenSection() {
               }`}
               aria-label={`Show ${m.name}`}
             >
-              <Image src={m.thumb} alt={m.name} fill className="object-cover" />
+              <Image
+  src={m.thumb}
+  alt={m.name}
+  fill
+  className="object-contain bg-[#242526]"
+  sizes="240px"
+/>
             </button>
           ))}
         </div>
@@ -206,10 +217,20 @@ export default function HandymenSection() {
         <div className="mt-6 sm:mt-8 lg:mt-10 grid grid-cols-1 lg:grid-cols-13 gap-6 lg:gap-8">
           {/* Big photo */}
           <div className="lg:col-span-7">
-            <div className="relative w-full h-[300px] sm:h-[400px] lg:h-[406px] rounded-[14px] overflow-hidden max-w-[622px]">
-              <Image src={person.photo} alt={person.name} fill className="object-cover" />
-            </div>
-          </div>
+  <div className="relative w-full rounded-[14px] overflow-hidden max-w-[622px] bg-[#242526]">
+    <div className="relative w-full aspect-[622/406]">
+      <Image
+        src={person.photo}
+        alt={person.name}
+        fill
+        className="object-contain"
+        sizes="(max-width: 1024px) 100vw, 622px"
+        priority
+      />
+    </div>
+  </div>
+</div>
+
 
           {/* Text */}
           <div className="lg:col-span-6 flex flex-col pl-[40px]">
