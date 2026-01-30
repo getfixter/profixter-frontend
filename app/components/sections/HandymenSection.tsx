@@ -218,23 +218,68 @@ export default function HandymenSection() {
       {/* ================= BIO SECTION ================= */}
       <div className="container mx-auto px-[20px] max-w-[1240px] pt-[20px]">
         <div className="mt-6 sm:mt-8 lg:mt-10 grid grid-cols-1 lg:grid-cols-13 gap-6 lg:gap-8">
-          {/* Big photo */}
-          <div className="lg:col-span-7">
+          {/* Big photo + DESKTOP arrows under photo */}
+<div className="lg:col-span-7">
   <div className="relative w-full rounded-[14px] overflow-hidden max-w-[520px] mx-auto bg-[#242526]">
-  <div className="relative w-full aspect-[2/3]">
-    <Image
-  src={person.photo}
-  alt={person.name}
-  fill
-  className="object-cover object-center"
-  sizes="(max-width: 1024px) 100vw, 520px"
-  priority
-/>
+    <div className="relative w-full aspect-[2/3]">
+      <Image
+        src={person.photo}
+        alt={person.name}
+        fill
+        className="object-cover object-center"
+        sizes="(max-width: 1024px) 100vw, 520px"
+        priority
+      />
+    </div>
+  </div>
 
+  {/* DESKTOP ONLY: arrows aligned with the photo */}
+  <div className="hidden lg:flex max-w-[520px] mx-auto items-center justify-between mt-4">
+    <div className="flex gap-3">
+      <button
+        onClick={prev}
+        type="button"
+        className="w-[44px] h-[44px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors shadow-md"
+        aria-label="Previous"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M15 18L9 12L15 6"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
+      <button
+        onClick={next}
+        type="button"
+        className="w-[44px] h-[44px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors shadow-md"
+        aria-label="Next"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M9 6L15 12L9 18"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <div className="text-right">
+      <div className="text-sm text-[#eef2ff]">The Profixter Team:</div>
+      <div className="text-sm text-[#c5cbd8]">
+        We fix homes but mostly, we bring comfort
+      </div>
+    </div>
   </div>
 </div>
 
-</div>
 
 
           {/* Text */}
@@ -251,7 +296,7 @@ export default function HandymenSection() {
             <div className="flex-1 min-h-[20px]" />
 
             {/* Bottom section with arrows on left and quote on right */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 sm:gap-0 mt-6">
+            <div className="lg:hidden flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 sm:gap-0 mt-6">
               {/* Arrows */}
               <div className="flex gap-3">
                 <button
