@@ -221,15 +221,16 @@ export default function HandymenSection() {
           {/* Big photo */}
           <div className="lg:col-span-7">
   <div className="relative w-full rounded-[14px] overflow-hidden max-w-[520px] mx-auto bg-[#242526]">
-  <div className="relative w-full aspect-[3/4]">
+  <div className="relative w-full aspect-[2/3]">
     <Image
-      src={person.photo}
-      alt={person.name}
-      fill
-      className="object-cover object-top"
-      sizes="(max-width: 1024px) 100vw, 520px"
-      priority
-    />
+  src={person.photo}
+  alt={person.name}
+  fill
+  className="object-cover object-center"
+  sizes="(max-width: 1024px) 100vw, 520px"
+  priority
+/>
+
   </div>
 </div>
 
