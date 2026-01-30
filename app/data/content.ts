@@ -294,7 +294,7 @@ export const team: TeamMember[] = [
   {
     id: 1,
     name: "Taras Bandura",
-    photo: "/images/ttaras.png",
+    photo: "/images/Taras.png",
     thumb: "/images/ttaras.png",
     blurb:
       "Friendly, experienced, and always ready to help. Makes every home project stress-free. Always focused on quality and customer satisfaction. Favorite projects: bringing treats for your pets.",
@@ -302,7 +302,7 @@ export const team: TeamMember[] = [
   {
     id: 2,
     name: "Roman Hecha",
-    photo: "/images/handymen2.png",
+    photo: "/images/Roman.png",
     thumb: "/images/handymen2.png",
     blurb:
       "Detail-driven electrician and installer. Loves smart-home setups and clean finishes. Reliable and professional.",
