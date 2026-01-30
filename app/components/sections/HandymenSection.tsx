@@ -106,16 +106,17 @@ export default function HandymenSection() {
                     }}
                     type="button"
                     onClick={() => setIdx(i)}
-                    className={`relative shrink-0 w-[260px] h-[160px] rounded-[14px] overflow-hidden border-2 transition-colors ${
-                      i === idx ? "border-white" : "border-transparent"
-                    }`}
+                    className={`relative shrink-0 w-[150px] h-[190px] rounded-[14px] overflow-hidden border-2 transition-colors ${
+  i === idx ? "border-white" : "border-transparent"
+}`}
+
                     aria-label={`Show ${m.name}`}
                   >
                     <Image
   src={m.thumb}
   alt={m.name}
   fill
-  className="object-contain bg-[#242526]"
+  className="object-cover object-top"
   sizes="260px"
 />
                     {/* subtle overlay so border reads clean */}
@@ -195,18 +196,20 @@ export default function HandymenSection() {
               key={m.id}
               type="button"
               onClick={() => setIdx(i)}
-              className={`relative shrink-0 w-[200px] sm:w-[240px] h-[120px] sm:h-[140px] rounded-[14px] overflow-hidden border-2 ${
-                i === idx ? "border-white" : "border-transparent"
-              }`}
+              className={`relative shrink-0 w-[140px] sm:w-[160px] h-[180px] sm:h-[210px] rounded-[14px] overflow-hidden border-2 ${
+  i === idx ? "border-white" : "border-transparent"
+}`}
+
               aria-label={`Show ${m.name}`}
             >
               <Image
   src={m.thumb}
   alt={m.name}
   fill
-  className="object-contain bg-[#242526]"
-  sizes="240px"
+  className="object-cover object-top"
+  sizes="160px"
 />
+
             </button>
           ))}
         </div>
@@ -217,18 +220,19 @@ export default function HandymenSection() {
         <div className="mt-6 sm:mt-8 lg:mt-10 grid grid-cols-1 lg:grid-cols-13 gap-6 lg:gap-8">
           {/* Big photo */}
           <div className="lg:col-span-7">
-  <div className="relative w-full rounded-[14px] overflow-hidden max-w-[622px] bg-[#242526]">
-    <div className="relative w-full aspect-[622/406]">
-      <Image
-        src={person.photo}
-        alt={person.name}
-        fill
-        className="object-contain"
-        sizes="(max-width: 1024px) 100vw, 622px"
-        priority
-      />
-    </div>
+  <div className="relative w-full rounded-[14px] overflow-hidden max-w-[520px] mx-auto bg-[#242526]">
+  <div className="relative w-full aspect-[3/4]">
+    <Image
+      src={person.photo}
+      alt={person.name}
+      fill
+      className="object-cover object-top"
+      sizes="(max-width: 1024px) 100vw, 520px"
+      priority
+    />
   </div>
+</div>
+
 </div>
 
 
