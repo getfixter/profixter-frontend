@@ -16,12 +16,14 @@ import { compressImage } from "@/lib/compressImage";
 
 
 const SERVICES = [
-  "Basic Improvement",
-  "Quick Fix",
-  "Get 2 Pros",
-  "Renovation Consultation",
-  "Property Inspection",
-];
+  { key: "labor_only", label: "Labor Only", minRank: 1 },                 // Basic+
+  { key: "labor_materials", label: "Labor with Materials Needed", minRank: 2 }, // Plus+
+  { key: "get_2_pros", label: "Get 2 Pros", minRank: 3 },                // Premium+
+  { key: "general_contractor", label: "General Contractor", minRank: 4 }, // Elite
+] as const;
+
+type ServiceKey = (typeof SERVICES)[number]["key"];
+
 
 // Fallback 9–17 every 30 min
 const FALLBACK_HOURS: string[] = (() => {
@@ -140,7 +142,7 @@ const cameraInputRef = useRef<HTMLInputElement | null>(null);
 const galleryInputRef = useRef<HTMLInputElement | null>(null);
 
 
-  const [service, setService] = useState<string>("");
+  const [service, setService] = useState<ServiceKey | "">("");
   const [note, setNote] = useState<string>("");
   const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
   const [showServiceMenu, setShowServiceMenu] = useState(false);
@@ -175,6 +177,22 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const [subscriptionError, setSubscriptionError] = useState("");
   const [checkingSubscription, setCheckingSubscription] =
     useState(false);
+
+      // Plan (from backend /bookings/next) — used to lock services by plan
+  const [plan, setPlan] = useState<string>(""); // "basic" | "plus" | "premium" | "elite"
+
+  const planRank = (p?: string) => {
+    const x = String(p || "").toLowerCase();
+    if (x === "basic") return 1;
+    if (x === "plus") return 2;
+    if (x === "premium") return 3;
+    if (x === "elite") return 4;
+    return 0;
+  };
+
+  const currentRank = planRank(plan);
+  const isServiceAllowed = (minRank: number) => currentRank >= minRank;
+
 
   // Check subscription for address
   // ✅ Pick default address automatically
@@ -237,14 +255,18 @@ if (!addressId || !isAuthenticated) {
       const addressId = selectedAddressId || user?.defaultAddressId;
 
 if (!addressId || !isAuthenticated) {
-        setHasActiveBooking(false);
-        setActiveBookingCount(0);
-        setActiveBookingLimit(1);
-        return;
-      }
+  setHasActiveBooking(false);
+  setActiveBookingCount(0);
+  setActiveBookingLimit(1);
+  setPlan("");
+  return;
+}
+
 
       try {
         const data = await getNextBooking(addressId);
+        setPlan(String((data as any)?.plan || "").toLowerCase());
+
 
         const limit = Number((data as any)?.bookingLimit ?? 1);
         const count = Number((data as any)?.activeCount ?? (data.future ? 1 : 0));
@@ -280,6 +302,7 @@ setHasActiveBooking(reachedLimit);
         setHasActiveBooking(false);
         setActiveBookingCount(0);
         setActiveBookingLimit(1);
+        setPlan("");
       }
     };
 
@@ -516,16 +539,19 @@ if (!addressId) {
       const bookingDate = new Date(selectedDate);
       bookingDate.setHours(hours, minutes, 0, 0);
 
-      const result = await createBooking({
-        service,
-        date: bookingDate.toISOString(),
-        note: note.trim(),
-        addressId: addressId,
-        images: uploadedPhotos,
-      });
+      const serviceLabel = SERVICES.find((x) => x.key === service)?.label || "";
+
+const result = await createBooking({
+  service: serviceLabel,
+  date: bookingDate.toISOString(),
+  note: note.trim(),
+  addressId: addressId,
+  images: uploadedPhotos,
+});
+
 
       setBookingNumber(result.booking.bookingNumber);
-      setConfirmedService(service);
+      setConfirmedService(serviceLabel);
       setConfirmedDate(new Date(selectedDate));
       setConfirmedTime(selectedTime);
 
@@ -569,8 +595,12 @@ setActiveBookingCount((c) => c + 1);
 
       setHasActiveBooking(false);
 
-      if (existingBookingService)
-        setService(existingBookingService);
+      if (existingBookingService) {
+  const key =
+    SERVICES.find((s) => s.label === existingBookingService)?.key || "";
+  setService(key);
+}
+
       if (existingBookingDate)
         setSelectedDate(new Date(existingBookingDate));
       if (existingBookingTime)
@@ -812,24 +842,36 @@ onClick={() => handleDayClick(day.date, day.muted)}
         onClick={() => setShowServiceMenu((v) => !v)}
         className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base whitespace-nowrap hover:bg-white/50 transition-colors"
       >
-        {service || "Select a service"}
+        {service ? SERVICES.find((x) => x.key === service)?.label : "Select a service"}
       </button>
 
       {showServiceMenu && (
         <div className="absolute bottom-full mb-2 left-0 w-full min-w-[220px] bg-white border border-[#c5cbd8] rounded-[11px] shadow-lg z-10 overflow-hidden">
-          {SERVICES.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => {
-                setService(s);
-                setShowServiceMenu(false);
-              }}
-              className="block w-full text-left px-4 py-2 text-sm hover:bg-[#EEF2FF] text-[#313234]"
-            >
-              {s}
-            </button>
-          ))}
+          {SERVICES.map((s) => {
+  const allowed = isServiceAllowed(s.minRank);
+
+  return (
+    <button
+      key={s.key}
+      type="button"
+      disabled={!allowed}
+      onClick={() => {
+        if (!allowed) return;
+        setService(s.key);
+        setShowServiceMenu(false);
+      }}
+      className={[
+        "block w-full text-left px-4 py-2 text-sm",
+        allowed
+          ? "hover:bg-[#EEF2FF] text-[#313234]"
+          : "text-gray-400 cursor-not-allowed line-through",
+      ].join(" ")}
+    >
+      {s.label}
+    </button>
+  );
+})}
+
         </div>
       )}
     </div>
