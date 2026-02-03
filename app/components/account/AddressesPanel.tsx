@@ -100,11 +100,12 @@ export function AddressesPanel({
   const addAddress = async () => {
     if (!token) return;
 
-    const missing: string[] = [];
-    if (!line1.trim()) missing.push("Street address");
-    if (!city.trim()) missing.push("City");
-    if (!state.trim()) missing.push("State");
-    if (!zip.trim()) missing.push("ZIP");
+const missing: string[] = [];
+if (!line1.trim()) missing.push("Street address");
+if (!city.trim()) missing.push("City");
+if (!state.trim()) missing.push("State");
+if (!zip.trim()) missing.push("ZIP");
+if (!county.trim()) missing.push("County");
 
     if (missing.length) {
       alert(`Please fill: ${missing.join(", ")}`);
@@ -171,12 +172,14 @@ export function AddressesPanel({
             </div>
 
             <div>
-              <label className="block text-[#6A6D71] text-sm mb-2">County (optional)</label>
+              <label className="block text-[#6A6D71] text-sm mb-2">County</label>
               <input
-                value={county}
-                onChange={(e) => setCounty(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-[#C5CBD8]"
-              />
+  value={county}
+  onChange={(e) => setCounty(e.target.value)}
+  required
+  className="w-full px-4 py-3 rounded-xl border border-[#C5CBD8]"
+/>
+
             </div>
 
             <div className="sm:col-span-2">
