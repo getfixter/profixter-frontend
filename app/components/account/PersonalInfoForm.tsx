@@ -1,22 +1,59 @@
 // FINAL VERSION — Static personal info pulled from DB
-// Shows User ID, Name, Email, Phone, Address
+// Shows User ID, Name, Email, Phone, Address (default address preferred)
 // No duplicates
 
-import { AccountFormData } from "./types";
+import type { AccountFormData } from "./types";
 
 interface PersonalInfoFormProps {
   formData: AccountFormData;
 }
 
-export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
-  const newAddr = formData?.addresses?.[0];
+function formatAddress(a?: {
+  line1?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+}): string {
+  if (!a) return "—";
+  const line1 = a.line1?.trim() || "";
+  const city = a.city?.trim() || "";
+  const state = a.state?.trim() || "";
+  const zip = a.zip?.trim() || "";
 
-  const finalAddress =
-    newAddr
-      ? `${newAddr.line1}${newAddr.city ? ", " + newAddr.city : ""}${newAddr.state ? ", " + newAddr.state : ""}${newAddr.zip ? " " + newAddr.zip : ""}`
-      : formData?.address || formData?.city || formData?.state || formData?.zip
-      ? `${formData.address || ""}${formData.city ? ", " + formData.city : ""}${formData.state ? ", " + formData.state : ""}${formData.zip ? " " + formData.zip : ""}`
-      : "—";
+  const parts: string[] = [];
+  if (line1) parts.push(line1);
+
+  const cityStateZip = [
+    city || "",
+    state || "",
+    zip || "",
+  ]
+    .filter(Boolean)
+    .join(state && city ? ", " : " ");
+
+  if (cityStateZip.trim()) parts.push(cityStateZip.trim());
+
+  return parts.length ? parts.join(", ") : "—";
+}
+
+export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
+  const addresses = formData?.addresses || [];
+
+  const defaultAddr =
+    (formData?.defaultAddressId
+      ? addresses.find((a) => String(a._id) === String(formData.defaultAddressId))
+      : null) || null;
+
+  const primaryAddr = defaultAddr || addresses[0] || null;
+
+  const finalAddress = primaryAddr
+    ? formatAddress(primaryAddr)
+    : formatAddress({
+        line1: formData?.address,
+        city: formData?.city,
+        state: formData?.state,
+        zip: formData?.zip,
+      });
 
   return (
     <div>
@@ -25,6 +62,7 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
       </h2>
 
       <div className="space-y-6 sm:space-y-6">
+        {/* USER ID */}
         <div>
           <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
             Your ID
@@ -34,6 +72,7 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
           </div>
         </div>
 
+        {/* NAME */}
         <div>
           <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
             Name
@@ -43,6 +82,7 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
           </div>
         </div>
 
+        {/* EMAIL */}
         <div>
           <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
             Email
@@ -52,6 +92,7 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
           </div>
         </div>
 
+        {/* PHONE */}
         <div>
           <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
             Phone
@@ -61,6 +102,7 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
           </div>
         </div>
 
+        {/* ADDRESS */}
         <div>
           <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
             Address

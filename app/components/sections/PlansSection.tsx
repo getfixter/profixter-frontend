@@ -1,14 +1,80 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { plans } from '@/app/data/content';
 import { useAuth } from '@/lib/useAuth';
 import type { PlanType } from '@/lib/stripe-links';
 
+type Address = {
+  _id: string;
+  label?: string;
+  line1: string;
+  city: string;
+  state: string;
+  zip: string;
+  county?: string;
+};
+
 export default function PlansSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, token } = useAuth();
+
+  const addresses: Address[] = (user?.addresses || []) as any;
+
+  const defaultAddress = useMemo(() => {
+    if (!user) return null;
+    return (
+      addresses.find((a) => String(a._id) === String((user as any).defaultAddressId)) ||
+      addresses[0] ||
+      null
+    );
+  }, [addresses, user]);
+
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const selectedAddress = useMemo(
+    () => addresses.find((a) => String(a._id) === String(selectedAddressId)) || null,
+    [addresses, selectedAddressId]
+  );
+
+  // per-address active status cache
+  const [addrActiveMap, setAddrActiveMap] = useState<Record<string, boolean>>({});
+  const [checkingAddr, setCheckingAddr] = useState(false);
+
+  useEffect(() => {
+    if (!selectedAddressId && defaultAddress?._id) {
+      setSelectedAddressId(String(defaultAddress._id));
+    }
+  }, [defaultAddress, selectedAddressId]);
+
+  const checkAddressActive = async (addressId: string) => {
+    if (!token) return;
+    setCheckingAddr(true);
+    try {
+      const res = await fetch(`https://api.profixter.com/api/subscriptions/check/address/${addressId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      const active = !!data?.active;
+      setAddrActiveMap((m) => ({ ...m, [addressId]: active }));
+    } catch (e) {
+      console.error('checkAddressActive failed:', e);
+    } finally {
+      setCheckingAddr(false);
+    }
+  };
+
+  useEffect(() => {
+    if (token && selectedAddressId) {
+      // only fetch if we haven't yet
+      if (addrActiveMap[selectedAddressId] === undefined) {
+        checkAddressActive(selectedAddressId);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, selectedAddressId]);
 
   const startCheckout = async (plan: PlanType, addressId: string, email: string) => {
     const res = await fetch(
@@ -21,6 +87,13 @@ export default function PlansSection() {
     );
 
     const data = await res.json();
+
+    if (res.status === 409 && data?.code === 'ADDRESS_ALREADY_SUBSCRIBED') {
+      alert('This address already has an active plan.');
+      // refresh status cache just in case
+      setAddrActiveMap((m) => ({ ...m, [addressId]: true }));
+      return;
+    }
 
     if (data?.url) {
       window.location.href = data.url;
@@ -35,12 +108,20 @@ export default function PlansSection() {
       return;
     }
 
-    const defaultAddress =
-      user.addresses?.find((a) => a._id === user.defaultAddressId) || user.addresses?.[0];
-
-    if (!defaultAddress) {
+    if (!addresses.length) {
       alert('Please add an address to your account first');
       window.location.href = '/account';
+      return;
+    }
+
+    if (!selectedAddressId || !selectedAddress) {
+      alert('Please select an address');
+      return;
+    }
+
+    const isActive = addrActiveMap[selectedAddressId] === true;
+    if (isActive) {
+      alert('This address already has an active plan.');
       return;
     }
 
@@ -57,16 +138,65 @@ export default function PlansSection() {
       return;
     }
 
-    startCheckout(planType, defaultAddress._id, user.email);
+    startCheckout(planType, selectedAddress._id, (user as any).email);
   };
 
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % plans.length);
-  };
+  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % plans.length);
+  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + plans.length) % plans.length);
 
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + plans.length) % plans.length);
-  };
+  const addressIsActive = selectedAddressId ? addrActiveMap[selectedAddressId] === true : false;
+
+  const AddressPicker = () => (
+    <div className="w-full mb-5 px-5 lg:px-0">
+      <div className="max-w-[420px] lg:max-w-none">
+        <div className="bg-white/10 border border-white/20 rounded-2xl p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex-1">
+              <p className="text-white text-sm font-semibold mb-2">Select address</p>
+
+              {addresses.length ? (
+                <select
+                  value={selectedAddressId || ''}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setSelectedAddressId(id);
+                    // fetch status if not cached
+                    if (token && addrActiveMap[id] === undefined) checkAddressActive(id);
+                  }}
+                  className="w-full h-[46px] rounded-xl px-3 bg-[#EEF2FF] text-[#313234] font-semibold"
+                >
+                  {addresses.map((a) => (
+                    <option key={a._id} value={a._id}>
+                      {(a.label ? `${a.label}: ` : '') + `${a.line1}, ${a.city}`}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="text-white/80">No addresses yet</div>
+              )}
+
+              <div className="mt-2 text-sm">
+                {checkingAddr ? (
+                  <span className="text-[#C5CBD8]">Checking plan for this address…</span>
+                ) : addressIsActive ? (
+                  <span className="text-[#FCA5A5] font-semibold">Already has a plan</span>
+                ) : (
+                  <span className="text-[#86EFAC] font-semibold">No active plan</span>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={() => (window.location.href = '/account')}
+              className="h-[46px] px-4 rounded-xl bg-white text-[#313234] font-bold hover:bg-gray-100 transition"
+            >
+              Add / Manage
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <section
@@ -74,21 +204,34 @@ export default function PlansSection() {
       className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden"
     >
       <div className="lg:max-w-[1240px] lg:mx-auto lg:px-[20px]">
-        {/* Mobile/Tablet Header - Centered */}
+        {/* Address picker above the carousel (mobile + desktop) */}
+        {isAuthenticated && user && addresses.length > 0 && <AddressPicker />}
+        {isAuthenticated && user && addresses.length === 0 && (
+          <div className="px-5 lg:px-0 mb-6">
+            <div className="bg-white/10 border border-white/20 rounded-2xl p-4">
+              <p className="text-white font-semibold mb-2">No address on file</p>
+              <button
+                onClick={() => (window.location.href = '/account')}
+                className="h-[46px] px-4 rounded-xl bg-white text-[#313234] font-bold hover:bg-gray-100 transition"
+              >
+                Add Address
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile/Tablet Header */}
         <div className="lg:hidden text-center mb-8 sm:mb-12 px-[20px]">
-          {/* Logo */}
           <div className="mb-6 flex justify-center">
             <Image src="/images/logo.svg" alt="Profixter" width={80} height={32} />
           </div>
 
-          {/* Main Heading */}
           <h2 className="text-5xl sm:text-6xl font-bold leading-[89%] mb-8 uppercase tracking-[-0.05em] flex flex-col gap-0">
             <span className="text-white">Choose</span>
             <span className="text-[#306EEC] -mt-2">Your</span>
             <span className="text-white -mt-2">Plan</span>
           </h2>
 
-          {/* Trial Info */}
           <div className="mb-6">
             <p className="text-white text-2xl sm:text-3xl font-normal leading-tight mb-2">$0 today</p>
             <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed">
@@ -100,22 +243,19 @@ export default function PlansSection() {
         </div>
 
         <div className="flex flex-col lg:flex-row items-start gap-8 sm:gap-10 lg:gap-12">
-          {/* Left Side - Text Content - Desktop Only */}
+          {/* Left Side - Desktop Only */}
           <div className="hidden lg:flex flex-shrink-0 w-[340px] pt-4 flex-col justify-between h-[522px]">
             <div>
-              {/* Logo */}
               <div className="mb-16">
                 <Image src="/images/logo.svg" alt="Profixter" width={80} height={32} />
               </div>
 
-              {/* Main Heading */}
               <h2 className="text-[64px] font-bold leading-[89%] mb-12 uppercase ml-[100px] tracking-[-0.05em] flex flex-col gap-0">
                 <span className="text-white">Choose</span>
                 <span className="text-[#306EEC] -ml-[100px] -mt-2">Your</span>
                 <span className="text-white -mt-2">Plan</span>
               </h2>
 
-              {/* Trial Info */}
               <div className="mb-12 ml-[100px]">
                 <p className="text-white text-2xl font-normal leading-[21px] mb-2">$0 today</p>
                 <p className="text-[#C5CBD8] text-base leading-[19px]">
@@ -126,7 +266,6 @@ export default function PlansSection() {
               </div>
             </div>
 
-            {/* Materials Info - at bottom aligned with big card */}
             <p className="text-[#C5CBD8] text-base leading-[19px]">
               Materials at cost. Only if needed,
               <br />
@@ -134,17 +273,14 @@ export default function PlansSection() {
             </p>
           </div>
 
-          {/* Right Side - Carousel - extends to edge of screen */}
+          {/* Right Side */}
           <div className="flex-1 relative lg:min-h-[522px] w-full lg:w-auto">
-            {/* Mobile/Tablet: Carousel slider */}
+            {/* Mobile/Tablet */}
             <div className="lg:hidden">
-              {/* Fixed height container to prevent jumping */}
               <div className="relative overflow-hidden">
                 <div
                   className="flex transition-transform duration-500 ease-out"
-                  style={{
-                    transform: `translateX(-${currentSlide * 100}%)`,
-                  }}
+                  style={{ transform: `translateX(-${currentSlide * 100}%)` }}
                 >
                   {plans.map((plan, idx) => (
                     <div key={idx} className="w-full flex-shrink-0 px-5">
@@ -161,7 +297,6 @@ export default function PlansSection() {
                           </p>
                         </div>
 
-                        {/* Price */}
                         <div className="mb-5 sm:mb-6 text-center">
                           <div className="flex items-end gap-2 justify-center">
                             <span className="text-5xl sm:text-6xl font-bold text-[#313234] leading-none">
@@ -173,14 +308,12 @@ export default function PlansSection() {
                           </div>
                         </div>
 
-                        {/* Subtitle */}
                         {plan.subtitle && (
                           <p className="text-[#306EEC] font-semibold text-base sm:text-lg text-center mb-3">
                             {plan.subtitle}
                           </p>
                         )}
 
-                        {/* Features */}
                         <div className="space-y-2.5 mb-auto">
                           {plan.features.map((feature, featureIdx) => (
                             <div key={featureIdx} className="flex items-center gap-2.5">
@@ -202,12 +335,18 @@ export default function PlansSection() {
                           ))}
                         </div>
 
-                        {/* CTA Button */}
                         <button
                           onClick={() => handleSubscribe(plan.name)}
-                          className="w-full h-[56px] sm:h-[60px] bg-[#306EEC] hover:bg-[#2558c9] rounded-2xl text-lg sm:text-xl font-bold text-[#EEF2FF] leading-none transition-all duration-300 shadow-lg mt-6 flex items-center justify-center"
+                          disabled={isAuthenticated && !!selectedAddressId && addressIsActive}
+                          className={`w-full h-[56px] sm:h-[60px] rounded-2xl text-lg sm:text-xl font-bold leading-none transition-all duration-300 shadow-lg mt-6 flex items-center justify-center ${
+                            isAuthenticated && !!selectedAddressId && addressIsActive
+                              ? 'bg-gray-400 text-white cursor-not-allowed'
+                              : 'bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF]'
+                          }`}
                         >
-                          {plan.buttonText}
+                          {isAuthenticated && !!selectedAddressId && addressIsActive
+                            ? 'Already has a plan'
+                            : plan.buttonText}
                         </button>
                       </div>
                     </div>
@@ -215,7 +354,6 @@ export default function PlansSection() {
                 </div>
               </div>
 
-              {/* Swipe Indicators */}
               <div className="flex gap-2 justify-center mt-6 mb-4">
                 {plans.map((_, idx) => (
                   <button
@@ -230,19 +368,12 @@ export default function PlansSection() {
                 ))}
               </div>
 
-              {/* Mobile Navigation Buttons */}
               <div className="flex gap-4 justify-center mt-4">
                 <button
                   onClick={prevSlide}
                   className="bg-white hover:bg-gray-50 text-[#313234] w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-lg border-2 border-[#E5E7EB] hover:scale-110 transform"
                 >
-                  <svg
-                    className="w-6 h-6 sm:w-7 sm:h-7"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth="3"
-                  >
+                  <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
@@ -250,19 +381,12 @@ export default function PlansSection() {
                   onClick={nextSlide}
                   className="bg-[#306EEC] hover:bg-[#2558c9] text-white w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-lg shadow-[#306EEC]/30 hover:scale-110 transform border-2 border-[#F97316]"
                 >
-                  <svg
-                    className="w-6 h-6 sm:w-7 sm:h-7"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth="3"
-                  >
+                  <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
               </div>
 
-              {/* Materials Info - Mobile */}
               <p className="text-[#C5CBD8] text-sm sm:text-base leading-relaxed text-center mt-6 px-4">
                 Materials at cost. Only if needed,
                 <br />
@@ -270,19 +394,13 @@ export default function PlansSection() {
               </p>
             </div>
 
-            {/* Desktop: Original Carousel Layout */}
+            {/* Desktop */}
             <div className="hidden lg:flex relative items-center gap-6 ml-16">
-              {/* Main Card (Active) */}
-              <div
-                className="relative w-[390px] h-[522px] bg-[#EEF2FF] rounded-[20px] border-2 border-transparent shadow-[0_10px_80px_rgba(0,0,0,0.25)] flex-shrink-0"
-              >
-                {/* Popular Badge */}
+              <div className="relative w-[390px] h-[522px] bg-[#EEF2FF] rounded-[20px] border-2 border-transparent shadow-[0_10px_80px_rgba(0,0,0,0.25)] flex-shrink-0">
                 {plans[currentSlide].isPopular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
                     <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-10 py-2 rounded-[5px] border border-[#EEF2FF]">
-                      <span className="text-[20px] font-medium text-[#EEF2FF] leading-[120%]">
-                        Popular
-                      </span>
+                      <span className="text-[20px] font-medium text-[#EEF2FF] leading-[120%]">Popular</span>
                     </div>
                   </div>
                 )}
@@ -337,13 +455,21 @@ export default function PlansSection() {
 
                   <button
                     onClick={() => handleSubscribe(plans[currentSlide].name)}
-                    className="w-full h-[60px] bg-[#306EEC] hover:bg-[#2558c9] rounded-[10px] text-xl font-medium text-[#EEF2FF] leading-[120%] transition-colors mt-6 flex items-center justify-center"
+                    disabled={isAuthenticated && !!selectedAddressId && addressIsActive}
+                    className={`w-full h-[60px] rounded-[10px] text-xl font-medium leading-[120%] transition-colors mt-6 flex items-center justify-center ${
+                      isAuthenticated && !!selectedAddressId && addressIsActive
+                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        : 'bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF]'
+                    }`}
                   >
-                    {plans[currentSlide].buttonText}
+                    {isAuthenticated && !!selectedAddressId && addressIsActive
+                      ? 'Already has a plan'
+                      : plans[currentSlide].buttonText}
                   </button>
                 </div>
               </div>
 
+              {/* small cards unchanged */}
               <div className="flex gap-6">
                 {[1, 2].map((offset) => {
                   const index = (currentSlide + offset) % plans.length;
@@ -401,9 +527,16 @@ export default function PlansSection() {
 
                           <button
                             onClick={() => handleSubscribe(plan.name)}
-                            className="w-full h-[46px] bg-[#306EEC] hover:bg-[#2558c9] rounded-[8px] text-[15px] font-medium text-[#EEF2FF] leading-[120%] transition-colors mt-4 flex items-center justify-center"
+                            disabled={isAuthenticated && !!selectedAddressId && addressIsActive}
+                            className={`w-full h-[46px] rounded-[8px] text-[15px] font-medium leading-[120%] transition-colors mt-4 flex items-center justify-center ${
+                              isAuthenticated && !!selectedAddressId && addressIsActive
+                                ? 'bg-gray-400 text-white cursor-not-allowed'
+                                : 'bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF]'
+                            }`}
                           >
-                            {plan.buttonText}
+                            {isAuthenticated && !!selectedAddressId && addressIsActive
+                              ? 'Already has a plan'
+                              : plan.buttonText}
                           </button>
                         </div>
                       </div>
@@ -414,19 +547,13 @@ export default function PlansSection() {
                 })}
               </div>
 
-              {/* Navigation Buttons - positioned at the level of bottom of big card, under small cards */}
               <div className="flex gap-4 absolute bottom-0 left-[480px]">
                 <button
                   onClick={prevSlide}
                   className="bg-white hover:bg-gray-100 text-gray-800 w-12 h-12 rounded-lg flex items-center justify-center transition-colors shadow-md border border-gray-200"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
                 <button
@@ -434,12 +561,7 @@ export default function PlansSection() {
                   className="bg-white hover:bg-gray-100 text-gray-800 w-12 h-12 rounded-lg flex items-center justify-center transition-colors shadow-md border border-gray-200"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
               </div>
