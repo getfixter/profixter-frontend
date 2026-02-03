@@ -1,19 +1,15 @@
 // FINAL VERSION — Static personal info pulled from DB
 // Shows User ID, Name, Email, Phone, Address (default address preferred)
-// No duplicates
+// + Addresses list + Add address inside Personal info
 
 import type { AccountFormData } from "./types";
+import { AddressesPanel } from "./AddressesPanel";
 
 interface PersonalInfoFormProps {
   formData: AccountFormData;
 }
 
-function formatAddress(a?: {
-  line1?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-}): string {
+function formatAddress(a?: { line1?: string; city?: string; state?: string; zip?: string }): string {
   if (!a) return "—";
   const line1 = a.line1?.trim() || "";
   const city = a.city?.trim() || "";
@@ -23,21 +19,16 @@ function formatAddress(a?: {
   const parts: string[] = [];
   if (line1) parts.push(line1);
 
-  const cityStateZip = [
-    city || "",
-    state || "",
-    zip || "",
-  ]
+  const cityStateZip = [city || "", state || "", zip || ""]
     .filter(Boolean)
     .join(state && city ? ", " : " ");
 
   if (cityStateZip.trim()) parts.push(cityStateZip.trim());
-
   return parts.length ? parts.join(", ") : "—";
 }
 
 export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
-  const addresses = formData?.addresses || [];
+  const addresses = (formData?.addresses || []) as any[];
 
   const defaultAddr =
     (formData?.defaultAddressId
@@ -62,7 +53,6 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
       </h2>
 
       <div className="space-y-6 sm:space-y-6">
-        {/* USER ID */}
         <div>
           <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
             Your ID
@@ -72,7 +62,6 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
           </div>
         </div>
 
-        {/* NAME */}
         <div>
           <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
             Name
@@ -82,7 +71,6 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
           </div>
         </div>
 
-        {/* EMAIL */}
         <div>
           <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
             Email
@@ -92,7 +80,6 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
           </div>
         </div>
 
-        {/* PHONE */}
         <div>
           <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
             Phone
@@ -102,7 +89,6 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
           </div>
         </div>
 
-        {/* ADDRESS */}
         <div>
           <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
             Address
@@ -116,6 +102,12 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
           This information is pulled directly from your stored account details.
         </p>
       </div>
+
+      {/* ✅ Addresses inside Personal info */}
+      <AddressesPanel
+        addresses={addresses as any}
+        defaultAddressId={formData?.defaultAddressId ? String(formData.defaultAddressId) : null}
+      />
     </div>
   );
 }
