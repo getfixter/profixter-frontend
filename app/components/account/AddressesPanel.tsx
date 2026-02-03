@@ -130,11 +130,15 @@ if (!county.trim()) missing.push("County");
         }),
       });
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        alert(data?.message || "Failed to add address.");
-        return;
-      }
+      const text = await res.text();
+let data: any = {};
+try { data = text ? JSON.parse(text) : {}; } catch {}
+
+if (!res.ok) {
+  alert(data?.message || `Failed to add address. (${res.status})\n${text || ""}`);
+  return;
+}
+
 
       await refreshUser();
       resetForm();
