@@ -1,20 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
 import { ActiveTab, AccountFormData } from "../components/account/types";
 import { initialAccountFormData } from "../data/account";
+
 import { AccountHeader } from "../components/account/AccountHeader";
 import { AccountSidebar } from "../components/account/AccountSidebar";
 import { PersonalInfoForm } from "../components/account/PersonalInfoForm";
 import { PlanSection } from "../components/account/PlanSection";
 import { PasswordForm } from "../components/account/PasswordForm";
 import BookingsSection from "../components/account/BookingsSection";
+
 import { useAuth } from "@/lib/useAuth";
 
 export default function AccountPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("personal");
   const [formData, setFormData] = useState<AccountFormData>(initialAccountFormData);
+
   const { user, isAuthenticated, isLoading, logout, refreshUser } = useAuth();
   const router = useRouter();
 
@@ -34,28 +38,27 @@ export default function AccountPage() {
 
   // Load user data when authenticated
   useEffect(() => {
-    if (user) {
-      setFormData({
-  userId: user.userId || user.id || "",
-  name: user.name || "",
-  email: user.email || "",
-  phone: user.phone || "",
+    if (!user) return;
 
-  // Legacy address
-  address: user.address || "",
-  city: user.city || "",
-  state: user.state || "",
-  zip: user.zip || "",
-  county: user.county || "",
+    setFormData({
+      userId: user.userId || user.id || "",
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
 
-  // New multi-address support
-  addresses: user.addresses || [],
+      // Legacy address
+      address: user.address || "",
+      city: user.city || "",
+      state: user.state || "",
+      zip: user.zip || "",
+      county: user.county || "",
 
-  // ✅ add this
-  defaultAddressId: user.defaultAddressId || null,
-});
+      // New multi-address support
+      addresses: user.addresses || [],
 
-    }
+      // ✅ Needed for picking day / booking pages
+      defaultAddressId: user.defaultAddressId || null,
+    });
   }, [user]);
 
   const handleLogout = () => {
@@ -72,7 +75,7 @@ export default function AccountPage() {
   }
 
   if (!isAuthenticated) {
-    return null; // Will redirect
+    return null; // will redirect
   }
 
   return (

@@ -133,13 +133,15 @@ export const checkSubscription = async (
       matched = activeSubs.find((s: any) => String(s.addressId) === String(addressId));
     }
 
-    if (!matched && activeSubs.length === 1) {
-      matched = activeSubs[0];
-      console.warn("[checkSubscription] No subscription matched addressId; using single active fallback.", {
-        addressId,
-        subId: matched._id,
-      });
-    }
+    // ❌ NO FALLBACK — subscription MUST belong to this address
+if (!matched) {
+  return {
+    hasSubscription: false,
+    message:
+      "This address does not have an active subscription. Purchase a subscription for this address to book a visit.",
+  };
+}
+
 
     if (!matched) {
       return {

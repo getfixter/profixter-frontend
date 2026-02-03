@@ -207,107 +207,105 @@ setSelectedAddressId((prev) => prev ?? user?.defaultAddressId ?? null);
 useEffect(() => {
   setSelectedDate(null);
   setSelectedTime("");
+  setService("");              // ✅ ADD
+  setShowServiceMenu(false);   // ✅ ADD
   setError("");
 }, [selectedAddressId]);
 
 
-  useEffect(() => {
-    const checkAddressSubscription = async () => {
-      const addressId = selectedAddressId || user?.defaultAddressId;
 
-if (!addressId || !isAuthenticated) {
-        setHasSubscription(false);
-        setSubscriptionError("");
-        return;
-      }
+useEffect(() => {
+  const checkAddressSubscription = async () => {
+    const addressId = selectedAddressId || user?.defaultAddressId;
 
-      setCheckingSubscription(true);
-      try {
-        const data = await checkSubscription(addressId);
+    if (!addressId || !isAuthenticated) {
+      setHasSubscription(false);
+      setSubscriptionError("");
+      setPlan(""); // ✅ ADD
+      return;
+    }
 
-        setHasSubscription(data.hasSubscription);
-        if (!data.hasSubscription) {
-          setSubscriptionError(
-            data.message ||
-              "This address does not have an active subscription."
-          );
-        } else {
-          setSubscriptionError("");
-        }
-      } catch (err: any) {
-        console.error("❌ Failed to check subscription:", err);
-        setHasSubscription(false);
+    setCheckingSubscription(true);
+    try {
+      const data = await checkSubscription(addressId);
+
+      setHasSubscription(data.hasSubscription);
+
+      // ✅ set plan from the subscription result
+      const p = String(data.subscription?.plan || "").toLowerCase();
+      setPlan(p);
+
+      if (!data.hasSubscription) {
         setSubscriptionError(
-          "Unable to verify subscription status."
+          data.message || "This address does not have an active subscription."
         );
-      } finally {
-        setCheckingSubscription(false);
+      } else {
+        setSubscriptionError("");
       }
-    };
+    } catch (err: any) {
+      console.error("❌ Failed to check subscription:", err);
+      setHasSubscription(false);
+      setPlan(""); // ✅ ADD
+      setSubscriptionError("Unable to verify subscription status.");
+    } finally {
+      setCheckingSubscription(false);
+    }
+  };
 
-    checkAddressSubscription();
-  }, [selectedAddressId, user?.defaultAddressId, isAuthenticated]);
-
-
-  // Check for existing booking
-  useEffect(() => {
-    const checkExistingBooking = async () => {
-      const addressId = selectedAddressId || user?.defaultAddressId;
-
-if (!addressId || !isAuthenticated) {
-  setHasActiveBooking(false);
-  setActiveBookingCount(0);
-  setActiveBookingLimit(1);
-  setPlan("");
-  return;
-}
-
-
-      try {
-        const data = await getNextBooking(addressId);
-        setPlan(String((data as any)?.plan || "").toLowerCase());
-
-
-        const limit = Number((data as any)?.bookingLimit ?? 1);
-        const count = Number((data as any)?.activeCount ?? (data.future ? 1 : 0));
-
-        setActiveBookingLimit(Number.isFinite(limit) && limit > 0 ? limit : 1);
-        setActiveBookingCount(Number.isFinite(count) && count >= 0 ? count : 0);
-
-        // Only block booking when user reached their allowed concurrent active bookings
-        const reachedLimit = count > 0 && count >= limit;
-setHasActiveBooking(reachedLimit);
-
-
-        if (data.future) {
-          const dt = new Date(data.future.date);
-          setExistingBookingDate(dt);
-          setExistingBookingId(data.future._id);
-          setExistingBookingService((data.future as any)?.service || "");
-
-          const hhmm = dt.toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          });
-          setExistingBookingTime(hhmm);
-        } else {
-          setExistingBookingDate(null);
-          setExistingBookingId(null);
-          setExistingBookingService("");
-          setExistingBookingTime("");
-        }
-      } catch (err) {
-        console.error("Failed to check existing booking:", err);
-        setHasActiveBooking(false);
-        setActiveBookingCount(0);
-        setActiveBookingLimit(1);
-        setPlan("");
-      }
-    };
-
-    checkExistingBooking();
+  checkAddressSubscription();
 }, [selectedAddressId, user?.defaultAddressId, isAuthenticated]);
+
+
+useEffect(() => {
+  const checkExistingBooking = async () => {
+    const addressId = selectedAddressId || user?.defaultAddressId;
+
+    if (!addressId || !isAuthenticated || !hasSubscription) {
+      setHasActiveBooking(false);
+      setActiveBookingCount(0);
+      setActiveBookingLimit(1);
+      return;
+    }
+
+    try {
+      const data = await getNextBooking(addressId);
+
+      const limit = Number((data as any)?.bookingLimit ?? 1);
+      const count = Number((data as any)?.activeCount ?? 0);
+
+      setActiveBookingLimit(Number.isFinite(limit) && limit > 0 ? limit : 1);
+      setActiveBookingCount(Number.isFinite(count) && count >= 0 ? count : 0);
+
+      const reachedLimit = count >= limit;
+      setHasActiveBooking(reachedLimit);
+
+      if (data.future) {
+        const dt = new Date(data.future.date);
+        setExistingBookingDate(dt);
+        setExistingBookingId(data.future._id);
+        setExistingBookingService((data.future as any)?.service || "");
+
+        const hhmm = dt.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+        setExistingBookingTime(hhmm);
+      } else {
+        setExistingBookingDate(null);
+        setExistingBookingId(null);
+        setExistingBookingService("");
+        setExistingBookingTime("");
+      }
+    } catch (err) {
+      setHasActiveBooking(false);
+      setActiveBookingCount(0);
+      setActiveBookingLimit(1);
+    }
+  };
+
+  checkExistingBooking();
+}, [selectedAddressId, hasSubscription, isAuthenticated]);
 
 
   // Load calendar config
@@ -838,9 +836,19 @@ onClick={() => handleDayClick(day.date, day.muted)}
     {/* SERVICE DROPDOWN */}
     <div className="relative">
       <button
-        type="button"
-        onClick={() => setShowServiceMenu((v) => !v)}
-        className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base whitespace-nowrap hover:bg-white/50 transition-colors"
+  type="button"
+  disabled={checkingSubscription || !hasSubscription}
+  onClick={() => {
+    if (checkingSubscription || !hasSubscription) return;
+    setShowServiceMenu((v) => !v);
+  }}
+
+className={[
+  "h-[43px] px-4 sm:px-5 rounded-[11px] border text-sm sm:text-base whitespace-nowrap transition-colors",
+  checkingSubscription || !hasSubscription
+    ? "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
+    : "border-[#313234] bg-[#EEF2FF] text-[#313234] hover:bg-white/50",
+].join(" ")}
       >
         {service ? SERVICES.find((x) => x.key === service)?.label : "Select a service"}
       </button>
