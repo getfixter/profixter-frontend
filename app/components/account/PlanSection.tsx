@@ -77,11 +77,10 @@ export function PlanSection() {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
-        const user = res.data;
+        const user = res.data; // ✅ flat
 
         let detectedPlan: string = user.subscription?.toLowerCase() || "";
 
-        // If addresses contain active subscription → use that
         if (Array.isArray(user.addresses)) {
           const active = user.addresses.find((a: any) => a?.hasActiveSubscription);
           if (active?.plan) detectedPlan = String(active.plan).toLowerCase();
@@ -130,7 +129,6 @@ export function PlanSection() {
           </Card>
         ) : plan === "none" ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* SELL PLUS */}
             <Card className="max-w-[560px]">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
@@ -175,7 +173,6 @@ export function PlanSection() {
               </div>
             </Card>
 
-            {/* WHY FIXTER */}
             <Card className="max-w-[560px]">
               <h3 className="text-lg sm:text-xl font-semibold text-[#313234] mb-3">
                 Why Mr. Fixter works
@@ -203,7 +200,6 @@ export function PlanSection() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* CURRENT PLAN */}
             <Card className="max-w-[560px]">
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <h3 className="text-lg sm:text-xl font-semibold text-[#313234] capitalize">
@@ -252,7 +248,6 @@ export function PlanSection() {
               </div>
             </Card>
 
-            {/* TRUST / NEXT STEPS */}
             <Card className="max-w-[560px]">
               <h3 className="text-lg sm:text-xl font-semibold text-[#313234] mb-3">
                 Next steps
@@ -282,7 +277,6 @@ export function PlanSection() {
         )}
       </div>
 
-      {/* CANCEL MODAL */}
       {showCancelModal && (
         <div
           className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"

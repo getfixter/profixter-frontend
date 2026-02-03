@@ -14,6 +14,7 @@ import {
 } from "@/lib/booking-service";
 import { compressImage } from "@/lib/compressImage";
 
+
 const SERVICES = [
   "Basic Improvement",
   "Quick Fix",
@@ -115,6 +116,8 @@ function TimeDropdown({
 export default function BookingSection() {
   const { user, isAuthenticated } = useAuth();
 
+    const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+
   // Calendar config
   const [config, setConfig] = useState<CalendarConfig | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -174,9 +177,27 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
     useState(false);
 
   // Check subscription for address
+  // ✅ Pick default address automatically
+useEffect(() => {
+  if (user?.defaultAddressId) {
+setSelectedAddressId((prev) => prev ?? user?.defaultAddressId ?? null);
+  }
+}, [user?.defaultAddressId]);
+
+
+// ✅ When address changes — reset selection (prevents booking confusion)
+useEffect(() => {
+  setSelectedDate(null);
+  setSelectedTime("");
+  setError("");
+}, [selectedAddressId]);
+
+
   useEffect(() => {
     const checkAddressSubscription = async () => {
-      if (!user?.defaultAddressId || !isAuthenticated) {
+      const addressId = selectedAddressId || user?.defaultAddressId;
+
+if (!addressId || !isAuthenticated) {
         setHasSubscription(false);
         setSubscriptionError("");
         return;
@@ -184,7 +205,7 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
 
       setCheckingSubscription(true);
       try {
-        const data = await checkSubscription(user.defaultAddressId);
+        const data = await checkSubscription(addressId);
 
         setHasSubscription(data.hasSubscription);
         if (!data.hasSubscription) {
@@ -207,12 +228,15 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
     };
 
     checkAddressSubscription();
-  }, [user?.defaultAddressId, isAuthenticated]);
+  }, [selectedAddressId, user?.defaultAddressId, isAuthenticated]);
+
 
   // Check for existing booking
   useEffect(() => {
     const checkExistingBooking = async () => {
-      if (!user?.defaultAddressId || !isAuthenticated) {
+      const addressId = selectedAddressId || user?.defaultAddressId;
+
+if (!addressId || !isAuthenticated) {
         setHasActiveBooking(false);
         setActiveBookingCount(0);
         setActiveBookingLimit(1);
@@ -220,7 +244,7 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
       }
 
       try {
-        const data = await getNextBooking(user.defaultAddressId);
+        const data = await getNextBooking(addressId);
 
         const limit = Number((data as any)?.bookingLimit ?? 1);
         const count = Number((data as any)?.activeCount ?? (data.future ? 1 : 0));
@@ -260,7 +284,7 @@ setHasActiveBooking(reachedLimit);
     };
 
     checkExistingBooking();
-}, [user, isAuthenticated]);
+}, [selectedAddressId, user?.defaultAddressId, isAuthenticated]);
 
 
   // Load calendar config
@@ -450,7 +474,9 @@ setHasActiveBooking(reachedLimit);
       return;
     }
 
-    if (!user?.defaultAddressId) {
+    const addressId = selectedAddressId || user?.defaultAddressId;
+
+if (!addressId) {
       alert("Please add an address to your account first");
       return;
     }
@@ -494,7 +520,7 @@ setHasActiveBooking(reachedLimit);
         service,
         date: bookingDate.toISOString(),
         note: note.trim(),
-        addressId: user.defaultAddressId,
+        addressId: addressId,
         images: uploadedPhotos,
       });
 
@@ -847,12 +873,29 @@ onClick={() => handleDayClick(day.date, day.muted)}
 </div>
 
 
-            {/* Address */}
-            <div className="mt-6 w-full h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.10)] flex items-center px-4 sm:px-6">
-              <span className="text-sm sm:text-base text-[#313234]">
-                {user?.address || 'Your default address will be used'}
-              </span>
-            </div>
+{/* ✅ Address selector (only show if user has 2+ addresses) */}
+{(user?.addresses?.length || 0) >= 2 && (
+  <div className="mt-6 w-full rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.10)] p-4 sm:p-5">
+    <div className="text-sm sm:text-base font-semibold text-[#313234] mb-2">
+      Booking address
+    </div>
+
+    <select
+      value={selectedAddressId ?? user?.defaultAddressId ?? ""}
+      onChange={(e) => setSelectedAddressId(e.target.value)}
+      className="w-full h-[48px] rounded-[11px] border border-[#c5cbd8] bg-white px-3 text-[#313234]"
+    >
+      {(user?.addresses || []).map((a: any) => (
+        <option key={a._id} value={a._id}>
+          {a.label ? `${a.label}: ` : ""}
+          {a.line1}, {a.city} {a.state} {a.zip}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
+
+
 
             {/* Subscription warning */}
             {isAuthenticated && !checkingSubscription && !hasSubscription && subscriptionError && (

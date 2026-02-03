@@ -9,13 +9,13 @@ import { AccountSidebar } from "../components/account/AccountSidebar";
 import { PersonalInfoForm } from "../components/account/PersonalInfoForm";
 import { PlanSection } from "../components/account/PlanSection";
 import { PasswordForm } from "../components/account/PasswordForm";
-import BookingsSection from "../components/account/BookingsSection"; // ✅ NEW
+import BookingsSection from "../components/account/BookingsSection";
 import { useAuth } from "@/lib/useAuth";
 
 export default function AccountPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("personal");
   const [formData, setFormData] = useState<AccountFormData>(initialAccountFormData);
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout, refreshUser } = useAuth();
   const router = useRouter();
 
   // Redirect to signin if not authenticated
@@ -25,25 +25,36 @@ export default function AccountPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
+  // Ensure we always have fresh user data (addresses/defaultAddressId)
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      refreshUser().catch(() => {});
+    }
+  }, [isLoading, isAuthenticated, refreshUser]);
+
   // Load user data when authenticated
   useEffect(() => {
     if (user) {
       setFormData({
-        userId: user.userId || user.id || "",
-        name: user.name || "",
-        email: user.email || "",
-        phone: user.phone || "",
+  userId: user.userId || user.id || "",
+  name: user.name || "",
+  email: user.email || "",
+  phone: user.phone || "",
 
-        // Legacy address
-        address: user.address || "",
-        city: user.city || "",
-        state: user.state || "",
-        zip: user.zip || "",
-        county: user.county || "",
+  // Legacy address
+  address: user.address || "",
+  city: user.city || "",
+  state: user.state || "",
+  zip: user.zip || "",
+  county: user.county || "",
 
-        // New multi-address support
-        addresses: user.addresses || [],
-      });
+  // New multi-address support
+  addresses: user.addresses || [],
+
+  // ✅ add this
+  defaultAddressId: user.defaultAddressId || null,
+});
+
     }
   }, [user]);
 
@@ -68,7 +79,6 @@ export default function AccountPage() {
     <div className="min-h-screen bg-[#EEF2FF]">
       <AccountHeader userName={formData.name} />
 
-      {/* Main Content */}
       <main className="max-w-[1240px] mx-auto px-[20px] py-6 sm:py-10">
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
           <AccountSidebar
@@ -78,17 +88,13 @@ export default function AccountPage() {
             onLogout={handleLogout}
           />
 
-          {/* Right Content */}
           <div
             className="flex-1 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[11px] p-6 sm:p-8 lg:p-12"
             style={{ boxShadow: "0px 0px 200px 0px rgba(0, 0, 0, 0.1)" }}
           >
             {activeTab === "personal" && <PersonalInfoForm formData={formData} />}
-
             {activeTab === "plan" && <PlanSection />}
-
             {activeTab === "bookings" && <BookingsSection />}
-
             {activeTab === "password" && <PasswordForm />}
           </div>
         </div>

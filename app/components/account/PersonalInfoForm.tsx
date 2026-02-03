@@ -2,22 +2,21 @@
 // Shows User ID, Name, Email, Phone, Address
 // No duplicates
 
-import { AccountFormData } from './types';
+import { AccountFormData } from "./types";
 
 interface PersonalInfoFormProps {
-  formData: any;
+  formData: AccountFormData;
 }
 
 export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
-  // New multi-address system
   const newAddr = formData?.addresses?.[0];
 
   const finalAddress =
     newAddr
-      ? `${newAddr.line1}${newAddr.city ? ', ' + newAddr.city : ''}${newAddr.state ? ', ' + newAddr.state : ''}${newAddr.zip ? ' ' + newAddr.zip : ''}`
+      ? `${newAddr.line1}${newAddr.city ? ", " + newAddr.city : ""}${newAddr.state ? ", " + newAddr.state : ""}${newAddr.zip ? " " + newAddr.zip : ""}`
       : formData?.address || formData?.city || formData?.state || formData?.zip
-      ? `${formData.address || ''}${formData.city ? ', ' + formData.city : ''}${formData.state ? ', ' + formData.state : ''}${formData.zip ? ' ' + formData.zip : ''}`
-      : '—';
+      ? `${formData.address || ""}${formData.city ? ", " + formData.city : ""}${formData.state ? ", " + formData.state : ""}${formData.zip ? " " + formData.zip : ""}`
+      : "—";
 
   return (
     <div>
@@ -26,50 +25,47 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
       </h2>
 
       <div className="space-y-6 sm:space-y-6">
-
-        {/* USER ID */}
         <div>
           <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
             Your ID
           </label>
-          <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8]
-                          rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
-            {formData?.userId || '—'}
+          <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
+            {formData?.userId || "—"}
           </div>
         </div>
 
-        {/* NAME */}
         <div>
-          <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">Name</label>
-          <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8]
-                          rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
-            {formData?.name || '—'}
+          <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
+            Name
+          </label>
+          <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
+            {formData?.name || "—"}
           </div>
         </div>
 
-        {/* EMAIL */}
         <div>
-          <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">Email</label>
-          <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8]
-                          rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
-            {formData?.email || '—'}
+          <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
+            Email
+          </label>
+          <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
+            {formData?.email || "—"}
           </div>
         </div>
 
-        {/* PHONE */}
         <div>
-          <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">Phone</label>
-          <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8]
-                          rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
-            {formData?.phone || '—'}
+          <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
+            Phone
+          </label>
+          <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
+            {formData?.phone || "—"}
           </div>
         </div>
 
-        {/* ADDRESS */}
         <div>
-          <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">Address</label>
-          <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8]
-                          rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
+          <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
+            Address
+          </label>
+          <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
             {finalAddress}
           </div>
         </div>

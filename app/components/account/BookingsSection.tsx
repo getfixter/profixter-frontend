@@ -28,7 +28,7 @@ type MeResponse = {
   name?: string;
   email?: string;
   phone?: string;
-  subscription?: string;
+  subscription?: string | null;
 };
 
 function normalizeStatus(status: string) {
@@ -73,11 +73,8 @@ function sanitizeTel(phone: string) {
   return String(phone || "").replace(/[^\d+]/g, "");
 }
 
-/** Mobile-first gallery with fallback for external images */
 function Gallery({ images = [] }: { images?: string[] }) {
   const [open, setOpen] = useState<string | null>(null);
-
-  // filter out local:// placeholders
   const safe = (images || []).filter((u) => u && !u.startsWith("local://"));
 
   if (!safe.length) return null;
@@ -93,7 +90,6 @@ function Gallery({ images = [] }: { images?: string[] }) {
             className="relative w-full aspect-square rounded-[12px] overflow-hidden border border-[#C5CBD8] bg-white active:scale-[0.98] transition"
             title="View photo"
           >
-            {/* Try Next/Image first */}
             <Image
               src={src}
               alt={`Photo ${i + 1}`}
@@ -115,7 +111,6 @@ function Gallery({ images = [] }: { images?: string[] }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative w-full h-[70vh] bg-black">
-              {/* Fallback to plain img (some CDNs + headers can break Next/Image) */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={open}
@@ -158,7 +153,9 @@ function BookingCard({
           <div className="font-semibold text-[#313234]">
             {title} #{booking.bookingNumber || booking._id.slice(-6)}
           </div>
-          <div className="text-sm text-[#6A6D71] mt-1">{formatNY(booking.date)}</div>
+          <div className="text-sm text-[#6A6D71] mt-1">
+            {formatNY(booking.date)}
+          </div>
         </div>
 
         <span
@@ -264,7 +261,7 @@ export default function BookingsSection() {
           ? bRes.data
           : bRes.data?.bookings || [];
         setBookings(list);
-      } catch (e: any) {
+      } catch (e) {
         console.error("Bookings load failed:", e);
         setError("Could not load your bookings. Please try again.");
       } finally {
@@ -297,7 +294,6 @@ export default function BookingsSection() {
         </h2>
       </div>
 
-      {/* Mobile-friendly help bar */}
       <div
         className="w-full bg-[#EEF2FF] border border-[#C5CBD8] rounded-[14px] p-4 sm:p-6 mb-6"
         style={{ boxShadow: "0px 0px 200px 0px rgba(0,0,0,0.08)" }}
@@ -315,7 +311,8 @@ export default function BookingsSection() {
               and we’ll help right away.
             </div>
             <div className="mt-2 text-xs text-[#6A6D71]">
-              Thank you for supporting your Fixter tech — tips and reviews help a lot.
+              Thank you for supporting your Fixter tech — tips and reviews help a
+              lot.
             </div>
           </div>
 
@@ -340,7 +337,9 @@ export default function BookingsSection() {
         </div>
       </div>
 
-      {loading && <div className="text-[#6A6D71] text-sm">Loading your bookings...</div>}
+      {loading && (
+        <div className="text-[#6A6D71] text-sm">Loading your bookings...</div>
+      )}
 
       {!loading && error && (
         <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg p-3">
@@ -350,7 +349,6 @@ export default function BookingsSection() {
 
       {!loading && !error && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
-          {/* ACTIVE */}
           <div
             className="bg-white border border-[#C5CBD8] rounded-[14px] p-4 sm:p-6"
             style={{ boxShadow: "0px 0px 200px 0px rgba(0,0,0,0.08)" }}
@@ -363,7 +361,9 @@ export default function BookingsSection() {
             </div>
 
             {active.length === 0 ? (
-              <div className="text-[#6A6D71] text-sm">No active bookings right now.</div>
+              <div className="text-[#6A6D71] text-sm">
+                No active bookings right now.
+              </div>
             ) : (
               <div className="space-y-4">
                 {active.map((b) => (
@@ -373,7 +373,6 @@ export default function BookingsSection() {
             )}
           </div>
 
-          {/* LAST COMPLETED */}
           <div
             className="bg-white border border-[#C5CBD8] rounded-[14px] p-4 sm:p-6"
             style={{ boxShadow: "0px 0px 200px 0px rgba(0,0,0,0.08)" }}
@@ -383,14 +382,20 @@ export default function BookingsSection() {
                 Last completed
               </h3>
               {lastCompleted && (
-                <span className={`px-3 py-1 rounded-[12px] text-xs font-semibold border ${statusBadge(lastCompleted.status)}`}>
+                <span
+                  className={`px-3 py-1 rounded-[12px] text-xs font-semibold border ${statusBadge(
+                    lastCompleted.status
+                  )}`}
+                >
                   {lastCompleted.status}
                 </span>
               )}
             </div>
 
             {!lastCompleted ? (
-              <div className="text-[#6A6D71] text-sm">No completed bookings yet.</div>
+              <div className="text-[#6A6D71] text-sm">
+                No completed bookings yet.
+              </div>
             ) : (
               <div className="space-y-3">
                 <BookingCard title="Booking" booking={lastCompleted} me={me} />
