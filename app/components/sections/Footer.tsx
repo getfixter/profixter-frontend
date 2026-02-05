@@ -59,7 +59,6 @@ export default function Footer() {
           priority={false}
         />
         <div className="absolute inset-0 bg-black/55" />
-        {/* subtle vignette */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/30" />
       </div>
 
@@ -84,55 +83,12 @@ export default function Footer() {
                 you can focus on what matters most.
               </p>
             </div>
-
-            {/* Optional contact form (kept your logic; hidden by default)
-                If you don't use it, you can delete this whole block safely. */}
-            {/* <form onSubmit={handleSubmit} className="mt-6 max-w-[520px]">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  placeholder="First name"
-                  className="h-11 rounded-xl px-4 bg-white/10 border border-white/15 text-white placeholder-white/50 outline-none focus:ring-4 focus:ring-[#306EEC]/20"
-                />
-                <input
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  placeholder="Last name"
-                  className="h-11 rounded-xl px-4 bg-white/10 border border-white/15 text-white placeholder-white/50 outline-none focus:ring-4 focus:ring-[#306EEC]/20"
-                />
-                <input
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Email"
-                  className="h-11 rounded-xl px-4 bg-white/10 border border-white/15 text-white placeholder-white/50 outline-none focus:ring-4 focus:ring-[#306EEC]/20"
-                />
-                <input
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="Phone"
-                  className="h-11 rounded-xl px-4 bg-white/10 border border-white/15 text-white placeholder-white/50 outline-none focus:ring-4 focus:ring-[#306EEC]/20"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="mt-3 h-11 px-5 rounded-xl bg-[#306EEC] text-white font-semibold hover:bg-[#2558c9] transition active:scale-[0.99]"
-              >
-                Send
-              </button>
-            </form> */}
           </div>
 
           {/* Middle: nav */}
           <div className="lg:col-span-3">
             <div className="text-white font-semibold mb-3">Explore</div>
 
-            {/* 2-column on mobile, single column on sm+, right aligned on lg */}
             <nav className="grid grid-cols-2 sm:grid-cols-1 gap-y-3 gap-x-6 lg:text-right">
               <Link href="#how-it-works" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
                 How it works
@@ -157,7 +113,7 @@ export default function Footer() {
 
           {/* Right: contact card */}
           <div className="lg:col-span-2">
-            <div className="rounded-[18px] border border-white/15 bg-white/10 backdrop-blur-md p-5 sm:p-6 shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
+            <div className="rounded-[18px] border border-white/15 bg-white/10 backdrop-blur-md p-5 sm:p-6 shadow-[0_20px_80px_rgba(0,0,0,0.35)] max-w-full overflow-hidden">
               <h3 className="text-[20px] sm:text-[22px] font-extrabold text-[#306EEC]">
                 Get in Touch
               </h3>
@@ -166,14 +122,14 @@ export default function Footer() {
                 <Link
                   href="https://instagram.com/mrfixter.ny"
                   target="_blank"
-                  className="block text-[#C5CBD8] hover:text-[#306EEC] transition-colors"
+                  className="block text-[#93c5fd] underline underline-offset-2 hover:text-white transition break-words"
                 >
                   Instagram: <span className="font-semibold">mrfixter.ny</span>
                 </Link>
 
                 <Link
                   href="mailto:my@profixter.com"
-                  className="block text-[#C5CBD8] hover:text-[#306EEC] transition-colors"
+                  className="block text-[#93c5fd] underline underline-offset-2 hover:text-white transition break-all"
                 >
                   <span className="font-semibold">my@profixter.com</span>
                 </Link>
