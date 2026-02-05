@@ -101,30 +101,31 @@ export default function HeroSection() {
         <div className="relative z-10 mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-5">
           {/* ✅ min heights that scale nicely */}
           <div className="relative min-h-[720px] sm:min-h-[760px] lg:min-h-[860px] pt-24 sm:pt-24 lg:pt-28 pb-10 sm:pb-12 lg:pb-16">
-            {/* ✅ Trophy overlay anchored responsively */}
-            <div className="pointer-events-none absolute inset-0 z-[5]">
-              {/* Desktop trophy */}
-              <div className="hidden lg:block absolute right-10 top-32">
-                <Image
-                  src="/images/trophy.png"
-                  alt="Award trophy"
-                  width={220}
-                  height={520}
-                  className="opacity-95 drop-shadow-[0_25px_80px_rgba(0,0,0,0.45)]"
-                />
-              </div>
+            {/* ✅ TROPHY OVERLAY (kept behind text on mobile) */}
+<div className="pointer-events-none absolute inset-0 z-[1]">
+  {/* Desktop trophy (still on top visually because it's far right and not overlapping) */}
+  <div className="hidden lg:block absolute right-10 top-32">
+    <Image
+      src="/images/trophy.png"
+      alt="Award trophy"
+      width={220}
+      height={520}
+      className="opacity-95 drop-shadow-[0_25px_80px_rgba(0,0,0,0.45)]"
+    />
+  </div>
 
-              {/* Mobile trophy */}
-              <div className="lg:hidden absolute left-1/2 top-56 -translate-x-1/2">
-                <Image
-                  src="/images/trophy.png"
-                  alt="Award trophy"
-                  width={170}
-                  height={380}
-                  className="opacity-95 drop-shadow-[0_25px_80px_rgba(0,0,0,0.45)]"
-                />
-              </div>
-            </div>
+  {/* Mobile trophy (behind text + softer) */}
+  <div className="lg:hidden absolute left-1/2 top-[280px] -translate-x-1/2">
+    <Image
+      src="/images/trophy.png"
+      alt="Award trophy"
+      width={170}
+      height={380}
+      className="opacity-40 drop-shadow-[0_25px_80px_rgba(0,0,0,0.35)]"
+    />
+  </div>
+</div>
+
 
             {/* Content */}
             <div className="relative z-10 h-full flex flex-col justify-between">
