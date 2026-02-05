@@ -5,27 +5,24 @@ const STEPS = [
     id: "01",
     title: "Create your Account",
     desc: "Sign up in just a few clicks. Provide basic info to get started and access your first booking.",
-    align: "left" as const,
   },
   {
     id: "02",
     title: "Pick your plan",
     desc: "Choose the plan that fits your needs best and unlock exclusive savings with every visit.",
-    align: "center" as const,
   },
   {
     id: "03",
     title: "Book first visit and relax",
     desc: "Create your first booking in a minute. Select date and time and enjoy the service.",
-    align: "right" as const,
   },
-];
+] as const;
 
 export default function StepsSection() {
   return (
     <section
       id="how-it-works"
-      className="w-full py-12 sm:py-16 lg:py-20 bg-transparent"
+      className="relative w-full py-12 sm:py-16 lg:py-20 bg-[#eaedfa]"
       aria-label="How it works"
     >
       <div className="mx-auto max-w-[1240px] px-5 sm:px-6 lg:px-5">
@@ -48,6 +45,11 @@ export default function StepsSection() {
             <h2 className="mt-1 text-3xl sm:text-5xl lg:text-[64px] font-bold tracking-[-0.05em] leading-tight lg:leading-[89%] text-[#313234]">
               TO BE <span className="text-[#306eec]">HAPPY</span>
             </h2>
+
+            {/* Mobile helper line */}
+            <p className="lg:hidden mt-4 text-sm sm:text-base text-[#6a6c71] max-w-[520px] mx-auto">
+              Sign up, choose a plan, and book your first visit.
+            </p>
           </div>
 
           {/* ===== Mobile/Tablet ===== */}
@@ -58,14 +60,17 @@ export default function StepsSection() {
                 className="rounded-[18px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_10px_60px_rgba(0,0,0,0.10)] p-6 sm:p-7"
               >
                 <div className="flex items-start gap-4">
+                  {/* number */}
                   <div className="relative shrink-0">
-                    <div className="text-6xl sm:text-7xl font-bold leading-none bg-gradient-to-b from-[#313234] to-transparent bg-clip-text text-transparent">
+                    <div className="text-5xl sm:text-6xl font-bold leading-none bg-gradient-to-b from-[#313234] to-transparent bg-clip-text text-transparent">
                       {s.id}
                     </div>
+                    {/* dot */}
                     <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#306eec] rounded-full shadow-[0_10px_30px_rgba(48,110,236,0.35)]" />
                   </div>
 
-                  <div className="pt-1">
+                  {/* text */}
+                  <div className="pt-0.5">
                     <h3 className="text-xl sm:text-2xl font-semibold text-[#313234] leading-tight">
                       {s.title}
                     </h3>
@@ -81,23 +86,21 @@ export default function StepsSection() {
           {/* ===== Desktop ===== */}
           <div className="hidden lg:block">
             <div className="relative">
-              {/* Wave line */}
-              <div className="absolute left-1/2 top-[88px] -translate-x-1/2 w-[1200px] h-[250px] pointer-events-none">
+              {/* Wave line (behind everything) */}
+              <div className="absolute left-1/2 top-[92px] -translate-x-1/2 w-[1200px] h-[250px] pointer-events-none z-0">
                 <Image
                   src="/images/icons/line.svg"
                   alt=""
                   fill
-                  className="object-contain"
+                  className="object-contain opacity-100"
                   style={{
-                    filter:
-                      "drop-shadow(0px 29px 20px rgba(0, 0, 0, 0.25))",
+                    filter: "drop-shadow(0px 29px 20px rgba(0, 0, 0, 0.18))",
                   }}
-                  priority={false}
                 />
               </div>
 
-              {/* Desktop steps in 3 columns (no absolute positioning = stable) */}
-              <div className="grid grid-cols-3 gap-10 items-start">
+              {/* Desktop steps in 3 columns */}
+              <div className="relative z-10 grid grid-cols-3 gap-10 items-start">
                 {/* Step 01 */}
                 <div className="pt-4">
                   <div className="max-w-[340px]">
@@ -110,7 +113,7 @@ export default function StepsSection() {
                     </p>
 
                     <div className="relative mt-10">
-                      <div className="text-[128px] font-bold leading-[114px] bg-gradient-to-b from-[#313234] to-transparent bg-clip-text text-transparent">
+                      <div className="text-[128px] font-bold leading-[114px] bg-gradient-to-b from-[#313234] to-transparent bg-clip-text text-transparent select-none">
                         01
                       </div>
                       {/* Dot aligned near wave */}
@@ -123,7 +126,7 @@ export default function StepsSection() {
                 <div className="pt-6 text-center">
                   <div className="mx-auto max-w-[360px]">
                     <div className="relative inline-block">
-                      <div className="text-[128px] font-bold leading-[114px] bg-gradient-to-b from-[#313234] to-transparent bg-clip-text text-transparent">
+                      <div className="text-[128px] font-bold leading-[114px] bg-gradient-to-b from-[#313234] to-transparent bg-clip-text text-transparent select-none">
                         02
                       </div>
                       <div className="absolute -top-[34px] left-1/2 -translate-x-1/2 w-5 h-5 bg-[#306eec] rounded-full shadow-[0_10px_30px_rgba(48,110,236,0.35)]" />
@@ -150,7 +153,7 @@ export default function StepsSection() {
                     </p>
 
                     <div className="relative mt-10 inline-block">
-                      <div className="text-[128px] font-bold leading-[114px] bg-gradient-to-b from-[#313234] to-transparent bg-clip-text text-transparent">
+                      <div className="text-[128px] font-bold leading-[114px] bg-gradient-to-b from-[#313234] to-transparent bg-clip-text text-transparent select-none">
                         03
                       </div>
                       <div className="absolute -top-[34px] left-[100px] w-5 h-5 bg-[#306eec] rounded-full shadow-[0_10px_30px_rgba(48,110,236,0.35)]" />
@@ -162,13 +165,13 @@ export default function StepsSection() {
               {/* subtle fade-in animation (safe, no libs) */}
               <style jsx>{`
                 @media (prefers-reduced-motion: no-preference) {
-                  .grid > div {
+                  .stepsFade > div {
                     animation: stepsFade 600ms ease both;
                   }
-                  .grid > div:nth-child(2) {
+                  .stepsFade > div:nth-child(2) {
                     animation-delay: 80ms;
                   }
-                  .grid > div:nth-child(3) {
+                  .stepsFade > div:nth-child(3) {
                     animation-delay: 160ms;
                   }
                 }
