@@ -1,10 +1,14 @@
 @import "tailwindcss";
 
+/* =========================
+   Theme tokens
+   ========================= */
 :root {
-  --background: #eaedfa;
-  --foreground: #171717;
+  --background: #eaedfa; /* site light background */
+  --foreground: #171717; /* default text */
 }
 
+/* Tailwind v4 theme bridge */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -12,37 +16,86 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #eaedfa;
-  }
-}
-
-/* ✅ Consistency resets (especially for iOS/iPad) */
+/* =========================
+   Base + rendering
+   ========================= */
 html {
   scroll-behavior: smooth;
-  -webkit-text-size-adjust: 100%; /* stops iOS font auto-zoom */
+  -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  overflow-x: hidden;
 }
 
-html,
 body {
-  height: 100%;
-  min-height: 100%;
-  overflow-x: hidden;
+  min-height: 100dvh; /* better than 100%/100vh on mobile */
   background: var(--background);
   color: var(--foreground);
-}
-
-body {
   font-family: var(--font-montserrat), Arial, Helvetica, sans-serif;
+
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: geometricPrecision;
 }
 
-/* Chat Widget Animations */
+/* Prevent any accidental sideways scroll from wide sections/images */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Smoother images on some browsers */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* =========================
+   Anchor offsets (header)
+   ========================= */
+section[id] {
+  scroll-margin-top: 110px;
+}
+
+/* =========================
+   iOS: prevent input zoom
+   (only on small screens)
+   ========================= */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* =========================
+   Utility: glass inputs
+   ========================= */
+.glass-input {
+  background-color: transparent;
+}
+
+/* Chrome / Edge / Safari autofill — keep glass look */
+.glass-input:-webkit-autofill,
+.glass-input:-webkit-autofill:hover,
+.glass-input:-webkit-autofill:focus,
+.glass-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+  box-shadow: 0 0 0px 1000px transparent inset !important;
+
+  background: transparent !important;
+  background-color: transparent !important;
+
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+
+  transition: background-color 9999s ease-out, color 9999s ease-out;
+}
+
+/* =========================
+   Chat widget animations
+   ========================= */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -88,32 +141,16 @@ body {
   animation: typing 1.4s infinite;
 }
 
-/* Dark glass inputs + autofill fix */
-.glass-input {
-  background-color: transparent;
+/* =========================
+   Respect reduced motion
+   ========================= */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-fadeIn,
+  .animate-blink,
+  .animate-typing {
+    animation: none !important;
+  }
 }
-
-/* Chrome / Edge / Safari autofill — fully transparent */
-.glass-input:-webkit-autofill,
-.glass-input:-webkit-autofill:hover,
-.glass-input:-webkit-autofill:focus,
-.glass-input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
-  box-shadow: 0 0 0px 1000px transparent inset !important;
-
-  background-color: transparent !important;
-  background: transparent !important;
-
-  -webkit-text-fill-color: #ffffff !important;
-  caret-color: #ffffff !important;
-
-  transition: background-color 9999s ease-out, color 9999s ease-out;
-}
-section[id] {
-  scroll-margin-top: 110px;
-}
-/* prevents anchor sections from hiding under your header */
-section[id] { scroll-margin-top: 110px; }
-
-/* makes mobile input zoom less annoying and keeps text consistent */
-input, select, textarea { font-size: 16px; }
