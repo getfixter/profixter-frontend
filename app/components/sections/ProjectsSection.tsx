@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 
 const projects = [
@@ -24,7 +24,7 @@ export default function ProjectsSection() {
   const prevSlide = () =>
     setCurrentSlide((prev) => (prev - 1 + projects.length) % projects.length);
 
-  // Smooth auto-advance (optional but makes it feel premium)
+  // Smooth auto-advance
   useEffect(() => {
     const t = setInterval(() => {
       setCurrentSlide((p) => (p + 1) % projects.length);
@@ -122,7 +122,6 @@ export default function ProjectsSection() {
                 sizes="(max-width: 768px) 92vw, 450px"
                 priority
               />
-              {/* subtle gradient for nicer look */}
               <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/25 pointer-events-none" />
             </div>
 
@@ -187,29 +186,52 @@ export default function ProjectsSection() {
           {/* Right Side */}
           <div className="col-span-8">
             <div className="relative">
-              {/* Main + previews */}
-              <div className="flex items-center gap-6">
-                {/* Main */}
-                <div className="relative w-[450px] h-[450px] rounded-[20px] overflow-hidden flex-shrink-0 shadow-[0_10px_80px_rgba(0,0,0,0.25)]">
-                  <Image
-                    src={active.image}
-                    alt="Project Image"
-                    fill
-                    className="object-cover"
-                    sizes="450px"
-                    priority
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/25 pointer-events-none" />
+              <div className="flex items-start gap-6">
+                {/* Main column = image + arrows underneath */}
+                <div className="w-[450px] flex-shrink-0">
+                  <div className="relative w-[450px] h-[450px] rounded-[20px] overflow-hidden shadow-[0_10px_80px_rgba(0,0,0,0.25)]">
+                    <Image
+                      src={active.image}
+                      alt="Project Image"
+                      fill
+                      className="object-cover"
+                      sizes="450px"
+                      priority
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/25 pointer-events-none" />
+                  </div>
 
-                  {/* Arrows anchored INSIDE the card (stable on all screens) */}
-                  <div className="absolute bottom-4 right-4 flex gap-3 z-10">
-                    <ArrowBtn dir="prev" onClick={prevSlide} />
-                    <ArrowBtn dir="next" onClick={nextSlide} />
+                  {/* ✅ arrows OUTSIDE image (never fights with BEFORE/AFTER text) */}
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="text-[#C5CBD8] text-sm">
+                      {currentSlide + 1} / {projects.length}
+                    </div>
+                    <div className="flex gap-3">
+                      <ArrowBtn dir="prev" onClick={prevSlide} />
+                      <ArrowBtn dir="next" onClick={nextSlide} />
+                    </div>
+                  </div>
+
+                  {/* Dots (desktop) */}
+                  <div className="flex gap-2 mt-4">
+                    {projects.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentSlide(idx)}
+                        className={[
+                          "h-2 rounded-full transition-all duration-300",
+                          idx === currentSlide
+                            ? "w-8 bg-[#306EEC]"
+                            : "w-2 bg-[#C5CBD8] hover:bg-[#306EEC]/50",
+                        ].join(" ")}
+                        aria-label={`Go to slide ${idx + 1}`}
+                      />
+                    ))}
                   </div>
                 </div>
 
                 {/* Previews */}
-                <div className="flex gap-6">
+                <div className="flex gap-6 pt-2">
                   {[next1, next2].map((p) => (
                     <div
                       key={p.id}
@@ -226,23 +248,6 @@ export default function ProjectsSection() {
                     </div>
                   ))}
                 </div>
-              </div>
-
-              {/* Dots (desktop) */}
-              <div className="flex gap-2 mt-6">
-                {projects.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCurrentSlide(idx)}
-                    className={[
-                      "h-2 rounded-full transition-all duration-300",
-                      idx === currentSlide
-                        ? "w-8 bg-[#306EEC]"
-                        : "w-2 bg-[#C5CBD8] hover:bg-[#306EEC]/50",
-                    ].join(" ")}
-                    aria-label={`Go to slide ${idx + 1}`}
-                  />
-                ))}
               </div>
             </div>
           </div>
