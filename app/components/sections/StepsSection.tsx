@@ -63,18 +63,7 @@ export default function StepsSection() {
             </p>
           </div>
 
-          {/* ✅ Wave line: ONLY on xl+ so iPad never sees it */}
-          <div className="hidden xl:block absolute left-1/2 top-[150px] -translate-x-1/2 w-[1200px] h-[240px] pointer-events-none opacity-95">
-            <Image
-              src="/images/icons/line.svg"
-              alt=""
-              fill
-              className="object-contain"
-              style={{
-                filter: "drop-shadow(0px 22px 18px rgba(0,0,0,0.18))",
-              }}
-            />
-          </div>
+          
 
           {/* ✅ Responsive layout:
               - Mobile/iPad: cards (always perfect)
