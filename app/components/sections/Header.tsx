@@ -2,9 +2,17 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
+
+const NAV = [
+  { href: "#how-it-works", label: "How it works" },
+  { href: "#plans", label: "Plans" },
+  { href: "#pick-day", label: "Pick day" },
+  { href: "#projects", label: "Projects" },
+  { href: "#contact-us", label: "Contact us" },
+];
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -24,39 +32,38 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Lock body scroll when mobile menu open (prevents iOS weirdness)
+  useEffect(() => {
+    if (isMenuOpen) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMenuOpen]);
+
   const handleLogout = () => {
     logout();
     setIsProfileMenuOpen(false);
+    setIsMenuOpen(false);
     router.push("/");
   };
 
   const firstName = user?.name?.split(" ")[0] || "User";
 
   return (
-    <header className="w-full py-[14px] max-w-[1240px] mx-auto relative z-50">
-      {/* ✅ Glass background wrapper so header is readable on ANY background */}
-      <div className="mx-[12px] sm:mx-[20px] rounded-[18px] border border-white/30 bg-white/75 backdrop-blur-md shadow-[0_10px_60px_rgba(0,0,0,0.18)]">
-        <div className="container mx-auto px-[14px] sm:px-[18px] py-[10px] flex items-center justify-between max-w-[1240px]">
+    <header className="w-full py-[14px] relative z-50">
+      {/* Glass wrapper */}
+      <div className="mx-3 sm:mx-5 rounded-[18px] border border-white/30 bg-white/75 backdrop-blur-md shadow-[0_10px_60px_rgba(0,0,0,0.18)]">
+        {/* ✅ ONE container only */}
+        <div className="mx-auto max-w-[1240px] px-[14px] sm:px-[18px] py-[10px] flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center relative z-50">
-            <Image
-              src="/images/logo3.png"
-              alt="Profixter Long Island"
-              width={80}
-              height={32}
-              priority
-            />
+            <Image src="/images/logo3.png" alt="Profixter Long Island" width={80} height={32} priority />
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-8">
-            {[
-              { href: "#how-it-works", label: "How it works" },
-              { href: "#plans", label: "Plans" },
-              { href: "#pick-day", label: "Pick day" },
-              { href: "#projects", label: "Projects" },
-              { href: "#contact-us", label: "Contact us" },
-            ].map((item) => (
+            {NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -68,12 +75,12 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* Desktop Auth Buttons / User Profile */}
+          {/* Desktop Auth / Profile */}
           <div className="hidden lg:flex items-center gap-4">
             {isAuthenticated ? (
               <div className="relative" ref={profileMenuRef}>
                 <button
-                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                  onClick={() => setIsProfileMenuOpen((v) => !v)}
                   className="flex items-center gap-3 cursor-pointer hover:opacity-90 transition-opacity"
                 >
                   <span className="text-[#111827] text-base">{firstName}</span>
@@ -130,8 +137,8 @@ export default function Header() {
 
           {/* Mobile Menu Button */}
           <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="lg:hidden relative z-50 w-10 h-10 flex flex-col items-center justify-center gap-1.5 group"
+            onClick={() => setIsMenuOpen((v) => !v)}
+            className="lg:hidden relative z-[60] w-10 h-10 flex flex-col items-center justify-center gap-1.5"
             aria-label="Toggle menu"
           >
             <span
@@ -153,20 +160,15 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Overlay */}
       <div
-        className={`lg:hidden fixed inset-0 bg-white transition-all duration-300 ${
+        className={`lg:hidden fixed inset-0 z-[55] bg-white transition-all duration-300 ${
           isMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"
         }`}
       >
-        <nav className="flex flex-col items-center justify-center h-full gap-8 px-8">
-          {[
-            { href: "#how-it-works", label: "How it works" },
-            { href: "#plans", label: "Plans" },
-            { href: "#pick-day", label: "Pick day" },
-            { href: "#projects", label: "Projects" },
-            { href: "#contact-us", label: "Contact us" },
-          ].map((item) => (
+        {/* ✅ extra top padding helps iOS/iPad look consistent */}
+        <nav className="flex flex-col items-center justify-center min-h-screen gap-8 px-8 pt-24">
+          {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -205,10 +207,7 @@ export default function Header() {
                 </Link>
 
                 <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    handleLogout();
-                  }}
+                  onClick={handleLogout}
                   className="w-full text-center px-8 py-3 bg-red-600 text-white rounded-[14px] text-base font-normal transition-colors hover:bg-red-700"
                 >
                   Log out

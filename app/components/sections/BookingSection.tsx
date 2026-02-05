@@ -1,8 +1,7 @@
 "use client";
 
 import type React from "react";
-
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import {
   getCalendarConfig,
@@ -14,30 +13,57 @@ import {
 } from "@/lib/booking-service";
 import { compressImage } from "@/lib/compressImage";
 
-
 const SERVICES = [
-  { key: "labor_only", label: "Labor Only", minRank: 1 },                 // Basic+
+  { key: "labor_only", label: "Labor Only", minRank: 1 }, // Basic+
   { key: "labor_materials", label: "Labor with Materials Needed", minRank: 2 }, // Plus+
-  { key: "get_2_pros", label: "Get 2 Pros", minRank: 3 },                // Premium+
+  { key: "get_2_pros", label: "Get 2 Pros", minRank: 3 }, // Premium+
   { key: "general_contractor", label: "General Contractor", minRank: 4 }, // Elite
 ] as const;
 
 type ServiceKey = (typeof SERVICES)[number]["key"];
-
 
 // Fallback 9–17 every 30 min
 const FALLBACK_HOURS: string[] = (() => {
   const list: string[] = [];
   for (let h = 9; h < 17; h++) {
     for (let m = 0; m < 60; m += 30) {
-      list.push(
-        `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
-      );
+      list.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
     }
   }
   return list;
 })();
 
+function formatDateYMD(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function sameDay(a: Date, b: Date) {
+  return (
+    a.getDate() === b.getDate() &&
+    a.getMonth() === b.getMonth() &&
+    a.getFullYear() === b.getFullYear()
+  );
+}
+
+function ChevronLeft() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M15 19L8 12L15 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function ChevronRight() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M9 5L16 12L9 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// ---------- Time Dropdown ----------
 function TimeDropdown({
   times,
   takenCounts,
@@ -52,60 +78,60 @@ function TimeDropdown({
   onSelect: (value: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (!wrapRef.current) return;
+      if (!wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
 
   return (
-    <div className="relative w-full sm:w-[160px]">
-      {/* Button */}
+    <div ref={wrapRef} className="relative w-full sm:w-[190px]">
       <button
-        onClick={() => setOpen(!open)}
-        className="w-full h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] px-4 sm:px-6 text-[#313234] text-[18px] sm:text-[20px] flex items-center justify-between shadow-[0_0_200px_rgba(0,0,0,0.09)]"
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full h-[54px] rounded-[12px] border border-[#c5cbd8] bg-[#EEF2FF] px-4 sm:px-5 text-[#313234] text-[16px] sm:text-[18px] flex items-center justify-between shadow-[0_0_200px_rgba(0,0,0,0.08)] hover:bg-white/60 transition"
       >
-        {selectedTime || "Select time"}
+        <span className={selectedTime ? "font-semibold" : "text-[#6a6c71]"}>
+          {selectedTime || "Select time"}
+        </span>
 
-        <svg width="20" height="20" viewBox="0 0 24 24">
-          <path
-            d="M6 9L12 15L18 9"
-            stroke="#313234"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+        <svg width="20" height="20" viewBox="0 0 24 24" className={`transition-transform ${open ? "rotate-180" : ""}`}>
+          <path d="M6 9L12 15L18 9" stroke="#313234" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
 
-      {/* Dropdown list */}
       {open && (
-        <div className="absolute mt-2 w-full bg-white border border-[#c5cbd8] rounded-[11px] shadow-lg z-20 py-1 sm:py-2">
+        <div className="absolute mt-2 w-full bg-white border border-[#c5cbd8] rounded-[12px] shadow-lg z-20 py-2 max-h-[260px] overflow-auto">
           {times.map((time) => {
             const used = takenCounts[time] || 0;
             const isFull = used >= capacity;
 
             return (
-              <div
+              <button
                 key={time}
+                type="button"
+                disabled={isFull}
                 onClick={() => {
-                  if (!isFull) {
-                    onSelect(time);
-                    setOpen(false);
-                  }
+                  if (isFull) return;
+                  onSelect(time);
+                  setOpen(false);
                 }}
-                className={`px-3 py-2 text-[18px] sm:text-[20px] flex items-center 
-                  ${
-                    isFull
-                      ? "text-gray-400 cursor-not-allowed"
-                      : "cursor-pointer hover:bg-[#EEF2FF]"
-                  }`}
+                className={[
+                  "w-full text-left px-4 py-2 text-[16px] sm:text-[18px] flex items-center",
+                  isFull ? "text-gray-400 cursor-not-allowed" : "hover:bg-[#EEF2FF] text-[#313234]",
+                ].join(" ")}
               >
-                <span
-                  className={`${
-                    isFull
-                      ? "line-through text-gray-400"
-                      : "text-[#313234]"
-                  }`}
-                >
-                  {time}
-                </span>
-              </div>
+                <span className={isFull ? "line-through" : ""}>{time}</span>
+                {!isFull && used > 0 && (
+                  <span className="ml-auto text-xs text-[#6a6c71]">{capacity - used} left</span>
+                )}
+                {isFull && <span className="ml-auto text-xs text-gray-400">Full</span>}
+              </button>
             );
           })}
         </div>
@@ -114,13 +140,16 @@ function TimeDropdown({
   );
 }
 
-// Booking block
+// ---------- Booking Section ----------
 export default function BookingSection() {
   const { user, isAuthenticated } = useAuth();
 
-    const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const addresses = ((user as any)?.addresses || []) as any[];
+  const defaultAddressId = (user as any)?.defaultAddressId as string | undefined;
 
-  // Calendar config
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+
+  // Calendar config + month
   const [config, setConfig] = useState<CalendarConfig | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -129,25 +158,29 @@ export default function BookingSection() {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [dayCapacityMap, setDayCapacityMap] = useState<
-    Record<
-      string,
-      {
-        taken: Record<string, number>;
-        capacity: number;
-      }
-    >
+    Record<string, { taken: Record<string, number>; capacity: number }>
   >({});
 
-const cameraInputRef = useRef<HTMLInputElement | null>(null);
-const galleryInputRef = useRef<HTMLInputElement | null>(null);
-
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
 
   const [service, setService] = useState<ServiceKey | "">("");
   const [note, setNote] = useState<string>("");
   const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
   const [showServiceMenu, setShowServiceMenu] = useState(false);
 
-  // UI
+  // close service dropdown on outside click
+  const serviceWrapRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (!serviceWrapRef.current) return;
+      if (!serviceWrapRef.current.contains(e.target as Node)) setShowServiceMenu(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  // UI state
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -158,28 +191,22 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const [confirmedDate, setConfirmedDate] = useState<Date | null>(null);
   const [confirmedTime, setConfirmedTime] = useState("");
 
-  // Existing booking
+  // Existing booking + limits
   const [hasActiveBooking, setHasActiveBooking] = useState(false);
   const [activeBookingCount, setActiveBookingCount] = useState<number>(0);
   const [activeBookingLimit, setActiveBookingLimit] = useState<number>(1);
-  const [existingBookingDate, setExistingBookingDate] =
-    useState<Date | null>(null);
-  const [existingBookingService, setExistingBookingService] =
-    useState("");
-  const [existingBookingTime, setExistingBookingTime] =
-    useState("");
-  const [existingBookingId, setExistingBookingId] = useState<
-    string | null
-  >(null);
+  const [existingBookingDate, setExistingBookingDate] = useState<Date | null>(null);
+  const [existingBookingService, setExistingBookingService] = useState("");
+  const [existingBookingTime, setExistingBookingTime] = useState("");
+  const [existingBookingId, setExistingBookingId] = useState<string | null>(null);
 
   // Subscription
   const [hasSubscription, setHasSubscription] = useState(false);
   const [subscriptionError, setSubscriptionError] = useState("");
-  const [checkingSubscription, setCheckingSubscription] =
-    useState(false);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
 
-      // Plan (from backend /bookings/next) — used to lock services by plan
-  const [plan, setPlan] = useState<string>(""); // "basic" | "plus" | "premium" | "elite"
+  // Plan used to lock services
+  const [plan, setPlan] = useState<string>(""); // basic | plus | premium | elite
 
   const planRank = (p?: string) => {
     const x = String(p || "").toLowerCase();
@@ -193,120 +220,23 @@ const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const currentRank = planRank(plan);
   const isServiceAllowed = (minRank: number) => currentRank >= minRank;
 
-
-  // Check subscription for address
-  // ✅ Pick default address automatically
-useEffect(() => {
-  if (user?.defaultAddressId) {
-setSelectedAddressId((prev) => prev ?? user?.defaultAddressId ?? null);
-  }
-}, [user?.defaultAddressId]);
-
-
-// ✅ When address changes — reset selection (prevents booking confusion)
-useEffect(() => {
-  setSelectedDate(null);
-  setSelectedTime("");
-  setService("");              // ✅ ADD
-  setShowServiceMenu(false);   // ✅ ADD
-  setError("");
-}, [selectedAddressId]);
-
-
-
-useEffect(() => {
-  const checkAddressSubscription = async () => {
-    const addressId = selectedAddressId || user?.defaultAddressId;
-
-    if (!addressId || !isAuthenticated) {
-      setHasSubscription(false);
-      setSubscriptionError("");
-      setPlan(""); // ✅ ADD
-      return;
+  // ✅ pick default address
+  useEffect(() => {
+    if (defaultAddressId) {
+      setSelectedAddressId((prev) => prev ?? String(defaultAddressId));
     }
+  }, [defaultAddressId]);
 
-    setCheckingSubscription(true);
-    try {
-      const data = await checkSubscription(addressId);
-
-      setHasSubscription(data.hasSubscription);
-
-      // ✅ set plan from the subscription result
-      const p = String(data.subscription?.plan || "").toLowerCase();
-      setPlan(p);
-
-      if (!data.hasSubscription) {
-        setSubscriptionError(
-          data.message || "This address does not have an active subscription."
-        );
-      } else {
-        setSubscriptionError("");
-      }
-    } catch (err: any) {
-      console.error("❌ Failed to check subscription:", err);
-      setHasSubscription(false);
-      setPlan(""); // ✅ ADD
-      setSubscriptionError("Unable to verify subscription status.");
-    } finally {
-      setCheckingSubscription(false);
-    }
-  };
-
-  checkAddressSubscription();
-}, [selectedAddressId, user?.defaultAddressId, isAuthenticated]);
-
-
-useEffect(() => {
-  const checkExistingBooking = async () => {
-    const addressId = selectedAddressId || user?.defaultAddressId;
-
-    if (!addressId || !isAuthenticated || !hasSubscription) {
-      setHasActiveBooking(false);
-      setActiveBookingCount(0);
-      setActiveBookingLimit(1);
-      return;
-    }
-
-    try {
-      const data = await getNextBooking(addressId);
-
-      const limit = Number((data as any)?.bookingLimit ?? 1);
-      const count = Number((data as any)?.activeCount ?? 0);
-
-      setActiveBookingLimit(Number.isFinite(limit) && limit > 0 ? limit : 1);
-      setActiveBookingCount(Number.isFinite(count) && count >= 0 ? count : 0);
-
-      const reachedLimit = count >= limit;
-      setHasActiveBooking(reachedLimit);
-
-      if (data.future) {
-        const dt = new Date(data.future.date);
-        setExistingBookingDate(dt);
-        setExistingBookingId(data.future._id);
-        setExistingBookingService((data.future as any)?.service || "");
-
-        const hhmm = dt.toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        });
-        setExistingBookingTime(hhmm);
-      } else {
-        setExistingBookingDate(null);
-        setExistingBookingId(null);
-        setExistingBookingService("");
-        setExistingBookingTime("");
-      }
-    } catch (err) {
-      setHasActiveBooking(false);
-      setActiveBookingCount(0);
-      setActiveBookingLimit(1);
-    }
-  };
-
-  checkExistingBooking();
-}, [selectedAddressId, hasSubscription, isAuthenticated]);
-
+  // ✅ reset when address changes
+  useEffect(() => {
+    setSelectedDate(null);
+    setSelectedTime("");
+    setService("");
+    setShowServiceMenu(false);
+    setError("");
+    setUploadedPhotos([]);
+    setNote("");
+  }, [selectedAddressId]);
 
   // Load calendar config
   useEffect(() => {
@@ -316,7 +246,6 @@ useEffect(() => {
         setConfig(data);
       } catch (err) {
         console.error("Failed to load calendar config:", err);
-        // Fallback
         setConfig({
           timezone: "America/New_York",
           slotMinutes: 60,
@@ -332,7 +261,105 @@ useEffect(() => {
     loadConfig();
   }, []);
 
-  // Load time slots when date is selected
+  // Check subscription per address
+  useEffect(() => {
+    const checkAddressSubscription = async () => {
+      const addressId = selectedAddressId || defaultAddressId;
+
+      if (!addressId || !isAuthenticated) {
+        setHasSubscription(false);
+        setSubscriptionError("");
+        setPlan("");
+        return;
+      }
+
+      setCheckingSubscription(true);
+      try {
+        const data = await checkSubscription(addressId);
+
+        setHasSubscription(!!data?.hasSubscription);
+
+        const p = String((data as any)?.subscription?.plan || "").toLowerCase();
+        setPlan(p);
+
+        if (!data?.hasSubscription) {
+          setSubscriptionError(
+            (data as any)?.message || "This address does not have an active subscription."
+          );
+        } else {
+          setSubscriptionError("");
+        }
+      } catch (err) {
+        console.error("❌ Failed to check subscription:", err);
+        setHasSubscription(false);
+        setPlan("");
+        setSubscriptionError("Unable to verify subscription status.");
+      } finally {
+        setCheckingSubscription(false);
+      }
+    };
+
+    checkAddressSubscription();
+  }, [selectedAddressId, defaultAddressId, isAuthenticated]);
+
+  // Check existing booking + booking limit
+  useEffect(() => {
+    const checkExistingBooking = async () => {
+      const addressId = selectedAddressId || defaultAddressId;
+
+      if (!addressId || !isAuthenticated || !hasSubscription) {
+        setHasActiveBooking(false);
+        setActiveBookingCount(0);
+        setActiveBookingLimit(1);
+        setExistingBookingDate(null);
+        setExistingBookingId(null);
+        setExistingBookingService("");
+        setExistingBookingTime("");
+        return;
+      }
+
+      try {
+        const data = await getNextBooking(addressId);
+
+        const limit = Number((data as any)?.bookingLimit ?? 1);
+        const count = Number((data as any)?.activeCount ?? 0);
+
+        const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 1;
+        const safeCount = Number.isFinite(count) && count >= 0 ? count : 0;
+
+        setActiveBookingLimit(safeLimit);
+        setActiveBookingCount(safeCount);
+        setHasActiveBooking(safeCount >= safeLimit);
+
+        if ((data as any)?.future) {
+          const dt = new Date((data as any).future.date);
+          setExistingBookingDate(dt);
+          setExistingBookingId((data as any).future._id);
+          setExistingBookingService((data as any).future.service || "");
+
+          const hhmm = dt.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+          setExistingBookingTime(hhmm);
+        } else {
+          setExistingBookingDate(null);
+          setExistingBookingId(null);
+          setExistingBookingService("");
+          setExistingBookingTime("");
+        }
+      } catch (err) {
+        setHasActiveBooking(false);
+        setActiveBookingCount(0);
+        setActiveBookingLimit(1);
+      }
+    };
+
+    checkExistingBooking();
+  }, [selectedAddressId, defaultAddressId, hasSubscription, isAuthenticated]);
+
+  // Load time slots when date selected
   useEffect(() => {
     if (!selectedDate) {
       setAvailableTimes([]);
@@ -344,13 +371,13 @@ useEffect(() => {
         const dateStr = formatDateYMD(selectedDate);
         const data = await getTimeSlots(dateStr);
 
-        setAvailableTimes(data.slots);
+        setAvailableTimes(data.slots || []);
 
         setDayCapacityMap((prev) => ({
           ...prev,
           [dateStr]: {
-            taken: data.taken,
-            capacity: data.capacityPerSlot,
+            taken: data.taken || {},
+            capacity: data.capacityPerSlot ?? 1,
           },
         }));
       } catch (err) {
@@ -361,13 +388,6 @@ useEffect(() => {
 
     loadSlots();
   }, [selectedDate]);
-
-  const formatDateYMD = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
 
   const isDayDisabled = (date: Date): boolean => {
     if (!config) return true;
@@ -380,41 +400,28 @@ useEffect(() => {
 
     const ymd = formatDateYMD(d);
 
-    // 1. Past days
+    // Past days
     if (d < today) return true;
 
-    // 2. Lead time
-    const diffDays = Math.floor(
-      (d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    // Lead time
+    const diffDays = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays < config.minLeadDays) return true;
 
-    // 3. Closed weekdays
+    // Closed weekdays
     if (config.closedWeekdays.includes(d.getDay())) return true;
 
-    // 4. Admin holiday
+    // Holiday
     if (config.holidays.includes(ymd)) return true;
 
-    // 5. Admin override = closed (empty array)
-    if (
-      config.overrides[ymd] !== undefined &&
-      config.overrides[ymd].length === 0
-    ) {
-      return true;
-    }
+    // Override closed
+    if (config.overrides[ymd] !== undefined && config.overrides[ymd].length === 0) return true;
 
-    // 6. Fully booked day
+    // Fully booked day (if we have capacity info)
     const info = dayCapacityMap[ymd];
-
     if (info) {
-      const hours = config.overrides[ymd]?.length
-        ? config.overrides[ymd]
-        : config.defaultHours;
-
+      const hours = config.overrides[ymd]?.length ? config.overrides[ymd] : config.defaultHours;
       if (hours.length > 0) {
-        const allFull = hours.every(
-          (h) => (info.taken[h] || 0) >= info.capacity
-        );
+        const allFull = hours.every((h) => (info.taken[h] || 0) >= info.capacity);
         if (allFull) return true;
       }
     }
@@ -423,18 +430,16 @@ useEffect(() => {
   };
 
   const handleDayClick = (dayDate: Date, muted: boolean) => {
-  if (muted) return;
+    if (muted) return;
 
-  const d = new Date(dayDate);
-  d.setHours(0, 0, 0, 0);
+    const d = new Date(dayDate);
+    d.setHours(0, 0, 0, 0);
 
-  if (isDayDisabled(d)) return;
+    if (isDayDisabled(d)) return;
 
-  setSelectedDate(d);
-  setSelectedTime("");
-
-};
-
+    setSelectedDate(d);
+    setSelectedTime("");
+  };
 
   const generateCalendarDays = () => {
     const year = currentMonth.getFullYear();
@@ -448,45 +453,46 @@ useEffect(() => {
 
     const days: { date: Date; muted: boolean }[] = [];
 
-    // Previous month days
     for (let i = startPadding - 1; i >= 0; i--) {
       const date = new Date(year, month, -i);
       days.push({ date, muted: true });
     }
-
-    // Current month days
     for (let d = 1; d <= lastDay.getDate(); d++) {
-      const date = new Date(year, month, d);
-      days.push({ date, muted: false });
+      days.push({ date: new Date(year, month, d), muted: false });
     }
-
-    // Next month days
     for (let i = 1; i <= endPadding; i++) {
-      const date = new Date(year, month + 1, i);
-      days.push({ date, muted: true });
+      days.push({ date: new Date(year, month + 1, i), muted: true });
     }
 
     return days;
   };
 
-  const handlePhotoUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
 
     const compressed: File[] = [];
-
     for (const file of Array.from(e.target.files)) {
       const c = await compressImage(file);
       compressed.push(c);
     }
 
-    setUploadedPhotos((prev) =>
-      [...prev, ...compressed].slice(0, 10)
-    );
-     // ✅ important: allow selecting the same file again
-  e.target.value = "";
+    setUploadedPhotos((prev) => [...prev, ...compressed].slice(0, 10));
+    e.target.value = ""; // allow re-select same file
   };
+
+  const removePhoto = (idx: number) => {
+    setUploadedPhotos((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const selectedDateLabel = useMemo(() => {
+    if (!selectedDate) return "";
+    return selectedDate.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, [selectedDate]);
 
   const handleBookNow = async () => {
     if (!isAuthenticated) {
@@ -495,21 +501,18 @@ useEffect(() => {
       return;
     }
 
-    const addressId = selectedAddressId || user?.defaultAddressId;
-
-if (!addressId) {
+    const addressId = selectedAddressId || defaultAddressId;
+    if (!addressId) {
       alert("Please add an address to your account first");
+      window.location.href = "/account";
       return;
     }
 
     if (!hasSubscription) {
-      setError(
-        "This address does not have an active subscription. Purchase a subscription to book a visit."
-      );
+      setError("This address does not have an active subscription. Purchase a subscription to book a visit.");
       return;
     }
 
-    // Validation
     if (!service) {
       setError("Please select a service");
       return;
@@ -518,7 +521,7 @@ if (!addressId) {
       setError("Please select date and time");
       return;
     }
-    if (note.trim().split(/\s+/).length < 3) {
+    if (note.trim().split(/\s+/).filter(Boolean).length < 3) {
       setError("Please describe your issue (at least 3 words)");
       return;
     }
@@ -531,22 +534,19 @@ if (!addressId) {
     setError("");
 
     try {
-      const [hours, minutes] = selectedTime
-        .split(":")
-        .map(Number);
+      const [hours, minutes] = selectedTime.split(":").map(Number);
       const bookingDate = new Date(selectedDate);
       bookingDate.setHours(hours, minutes, 0, 0);
 
       const serviceLabel = SERVICES.find((x) => x.key === service)?.label || "";
 
-const result = await createBooking({
-  service: serviceLabel,
-  date: bookingDate.toISOString(),
-  note: note.trim(),
-  addressId: addressId,
-  images: uploadedPhotos,
-});
-
+      const result = await createBooking({
+        service: serviceLabel,
+        date: bookingDate.toISOString(),
+        note: note.trim(),
+        addressId,
+        images: uploadedPhotos,
+      });
 
       setBookingNumber(result.booking.bookingNumber);
       setConfirmedService(serviceLabel);
@@ -554,7 +554,7 @@ const result = await createBooking({
       setConfirmedTime(selectedTime);
 
       setHasActiveBooking(activeBookingCount + 1 >= activeBookingLimit);
-setActiveBookingCount((c) => c + 1);
+      setActiveBookingCount((c) => c + 1);
       setExistingBookingDate(bookingDate);
 
       setService("");
@@ -565,9 +565,7 @@ setActiveBookingCount((c) => c + 1);
 
       setShowModal(true);
     } catch (err: any) {
-      const message =
-        err.response?.data?.message ||
-        "Failed to create booking. Please try again.";
+      const message = err?.response?.data?.message || "Failed to create booking. Please try again.";
       setError(message);
       alert(message);
     } finally {
@@ -581,33 +579,23 @@ setActiveBookingCount((c) => c + 1);
     try {
       const token = localStorage.getItem("token");
 
-      await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/cancel/${existingBookingId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/cancel/${existingBookingId}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       setHasActiveBooking(false);
 
       if (existingBookingService) {
-  const key =
-    SERVICES.find((s) => s.label === existingBookingService)?.key || "";
-  setService(key);
-}
+        const key = SERVICES.find((s) => s.label === existingBookingService)?.key || "";
+        setService(key as any);
+      }
 
-      if (existingBookingDate)
-        setSelectedDate(new Date(existingBookingDate));
-      if (existingBookingTime)
-        setSelectedTime(existingBookingTime);
+      if (existingBookingDate) setSelectedDate(new Date(existingBookingDate));
+      if (existingBookingTime) setSelectedTime(existingBookingTime);
 
       setTimeout(() => {
-        document
-          .getElementById("pick-day")
-          ?.scrollIntoView({ behavior: "smooth" });
+        document.getElementById("pick-day")?.scrollIntoView({ behavior: "smooth" });
       }, 150);
 
       alert("Visit canceled. You may now rebook.");
@@ -618,83 +606,98 @@ setActiveBookingCount((c) => c + 1);
   };
 
   const days = generateCalendarDays();
+
+  const canBook =
+    !loading &&
+    !checkingSubscription &&
+    (hasSubscription || !isAuthenticated) &&
+    !hasActiveBooking;
+
+  const wordsCount = note.trim().split(/\s+/).filter(Boolean).length;
+
+  // times shown = based on config + availableTimes intersection
+  const timesForSelectedDay = useMemo(() => {
+    if (!selectedDate || !config) return [];
+    const ymd = formatDateYMD(selectedDate);
+    const baseTimes = config.overrides?.[ymd]?.length ? config.overrides[ymd] : config.defaultHours || [];
+    const finalTimes = availableTimes.length > 0 ? baseTimes.filter((t) => availableTimes.includes(t)) : baseTimes;
+    return finalTimes;
+  }, [selectedDate, config, availableTimes]);
+
+  const ymdSelected = selectedDate ? formatDateYMD(selectedDate) : "";
+
   return (
-    <section id="pick-day" className="relative w-full pt-32 sm:pt-40 lg:pt-48 pb-12 sm:pb-16 lg:pb-24 bg-[#eaedfa]">
-      <div className="container mx-auto px-[20px] max-w-[1240px]">
-        {/* Header with edge labels and centered title */}
+    <section id="pick-day" className="relative w-full pt-28 sm:pt-36 lg:pt-44 pb-12 sm:pb-16 lg:pb-24 bg-[#eaedfa]">
+      <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
+        {/* Header */}
         <div className="mb-8 sm:mb-10 lg:mb-12">
-          {/* Edge labels - Desktop only */}
-          <div className="hidden lg:flex items-center justify-between text-[12px] font-bold text-[#313234] leading-[89%] font-montserrat uppercase">
-            <span className="w-[66px] text-center whitespace-nowrap">MAKE IT DONE</span>
-            <span className="w-[94px] text-center whitespace-nowrap text-[#306EEC]">
+          {/* Desktop edge labels */}
+          <div className="hidden lg:flex items-center justify-between text-[12px] font-bold text-[#313234] uppercase">
+            <span className="w-[110px] text-left whitespace-nowrap">MAKE IT DONE</span>
+            <span className="w-[200px] text-right whitespace-nowrap text-[#306EEC]">
               WHEN<span className="text-[#313234]">&nbsp;YOU&nbsp;</span>WANT
             </span>
           </div>
 
-          {/* Mobile/Tablet - Simple centered title */}
-          <div className="lg:hidden text-center mb-8">
-            <h2 className="text-3xl sm:text-4xl font-bold leading-tight uppercase mb-4">
-              <span className="text-[#313234]">CHOOSE YOUR OWN </span>
-              <span className="text-[#306EEC]">DAY </span>
+          {/* Mobile / Tablet */}
+          <div className="lg:hidden text-center">
+            <h2 className="text-3xl sm:text-4xl font-extrabold leading-tight uppercase">
+              <span className="text-[#313234]">Choose your </span>
+              <span className="text-[#306EEC]">day</span>
             </h2>
-            <h2 className="text-3xl sm:text-4xl font-bold leading-tight uppercase">
-              <span className="text-[#313234]">AND </span>
-              <span className="text-[#306EEC]">TIME</span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold leading-tight uppercase mt-1">
+              <span className="text-[#313234]">and </span>
+              <span className="text-[#306EEC]">time</span>
             </h2>
-            <p className="text-[#6A6D71] text-sm sm:text-base mt-4 max-w-md mx-auto">
-              Select your Day First.
+            <p className="text-[#6A6D71] text-sm sm:text-base mt-3 max-w-md mx-auto">
+              Select a day first, then pick an available time.
             </p>
           </div>
 
-          {/* Desktop - Centered Title */}
-          <div className="hidden lg:block relative max-w-[1000px] mx-auto">
-            <div className="flex items-center justify-center gap-1">
-              <h2 className="text-[64px] font-bold leading-[89%] uppercase tracking-[-0.05em]">
-                <span className="text-[#313234]">CHOOSE YOUR OWN </span>
-              </h2>
-              <p className="text-[#6A6D71] text-[15px] font-medium max-w-[289px] text-left">
-                Control your schedule by Yourself.
-              </p>
-            </div>
-            <div className="flex justify-end " style={{ paddingRight: 'calc((100% - 289px - 64px * 4.5) / 2)' }}>
-              <h2 className="text-[64px] font-bold leading-[89%] uppercase tracking-[-0.05em]">
-                <span className="text-[#306EEC]">DAY</span>
-                <span className="text-[#313234]"> AND </span>
-                <span className="text-[#306EEC]">TIME</span>
-              </h2>
-            </div>
+          {/* Desktop title (no calc hacks) */}
+          <div className="hidden lg:block mt-6">
+            <h2 className="text-[56px] leading-[0.95] font-extrabold uppercase tracking-[-0.04em]">
+              <span className="text-[#313234]">Choose your own </span>
+              <span className="text-[#306EEC]">day</span>
+              <span className="text-[#313234]"> and </span>
+              <span className="text-[#306EEC]">time</span>
+            </h2>
+            <p className="mt-3 text-[#6A6D71] text-[16px] font-medium max-w-[560px]">
+              Control your schedule yourself. Pick a day, then choose an available time slot.
+            </p>
           </div>
         </div>
 
-        {/* Content row */}
+        {/* Content */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-          {/* Calendar card */}
+          {/* Calendar */}
           <div className="lg:col-span-5">
-            <div className="rounded-[14px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.09)] p-4 sm:p-6">
-              {/* Month header */}
+            <div className="rounded-[18px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] p-4 sm:p-6">
               <div className="flex items-center justify-between">
-                <button 
-                  aria-label="Prev month" 
+                <button
+                  aria-label="Prev month"
                   onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
-                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-[12px] border border-[#c5cbd8] bg-white/60 grid place-items-center text-[#313234] hover:bg-white"
+                  className="w-10 h-10 rounded-[14px] border border-[#c5cbd8] bg-white/70 grid place-items-center text-[#313234] hover:bg-white transition active:scale-95"
                 >
                   <ChevronLeft />
                 </button>
-                <div className="text-xl sm:text-2xl lg:text-[28px] font-semibold text-[#313234]">
-                  {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+
+                <div className="text-lg sm:text-xl lg:text-[22px] font-extrabold text-[#313234]">
+                  {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 </div>
-                <button 
-                  aria-label="Next month" 
+
+                <button
+                  aria-label="Next month"
                   onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
-                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-[12px] border border-[#c5cbd8] bg-white/60 grid place-items-center text-[#313234] hover:bg-white"
+                  className="w-10 h-10 rounded-[14px] border border-[#c5cbd8] bg-white/70 grid place-items-center text-[#313234] hover:bg-white transition active:scale-95"
                 >
                   <ChevronRight />
                 </button>
               </div>
 
               {/* Week headers */}
-              <div className="mt-4 grid grid-cols-7 text-center text-sm sm:text-base lg:text-[18px] text-[#cf3f3f]">
-                <div>Su</div>
+              <div className="mt-5 grid grid-cols-7 text-center text-sm sm:text-base font-semibold">
+                <div className="text-[#cf3f3f]">Su</div>
                 <div className="text-[#6a6c71]">Mo</div>
                 <div className="text-[#6a6c71]">Tu</div>
                 <div className="text-[#6a6c71]">We</div>
@@ -704,340 +707,327 @@ setActiveBookingCount((c) => c + 1);
               </div>
 
               {/* Days */}
-              <div className="mt-2 grid grid-cols-7 gap-y-1 sm:gap-y-2">
+              <div className="mt-2 grid grid-cols-7 gap-y-2">
                 {days.map((day, i) => {
-                  const isSelected = selectedDate && 
-                    day.date.getDate() === selectedDate.getDate() &&
-                    day.date.getMonth() === selectedDate.getMonth() &&
-                    day.date.getFullYear() === selectedDate.getFullYear();
                   const disabled = day.muted || isDayDisabled(new Date(day.date));
-                  const isToday = (() => {
-  const t = new Date();
-  return (
-    t.getDate() === day.date.getDate() &&
-    t.getMonth() === day.date.getMonth() &&
-    t.getFullYear() === day.date.getFullYear()
-  );
-})();
+                  const isSelected = selectedDate ? sameDay(day.date, selectedDate) : false;
 
-                  
+                  const today = new Date();
+                  const isToday = sameDay(day.date, today);
+
                   return (
                     <button
                       key={i}
-onClick={() => handleDayClick(day.date, day.muted)}
+                      type="button"
+                      onClick={() => handleDayClick(day.date, day.muted)}
                       disabled={disabled}
                       className={[
-  "mx-auto my-1 w-8 h-8 sm:w-10 sm:h-10 grid place-items-center rounded-[12px] text-sm sm:text-base lg:text-[18px]",
-
-  // Muted (previous/next month)
-  day.muted
-    ? "text-[#b7bdc8] cursor-not-allowed pointer-events-none"
-    : disabled
-      ? "bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed rounded-[12px] pointer-events-none"
-      : "text-[#313234]",
-
-  // Selected day
-  isSelected
-    ? "bg-[#306eec] text-white ring-4 ring-[#306eec]/15"
-    : "bg-transparent hover:bg-white/80",
-
-  // Today (only if not disabled and not selected)
-  isToday && !disabled && !isSelected
-    ? "ring-2 ring-[#306EEC]/40"
-    : ""
-].join(" ")}
-
-
+                        "mx-auto w-9 h-9 sm:w-10 sm:h-10 grid place-items-center rounded-[14px] text-sm sm:text-base font-semibold transition",
+                        day.muted ? "text-[#b7bdc8] cursor-not-allowed" : "",
+                        disabled && !day.muted ? "bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed" : "",
+                        !disabled && !isSelected ? "hover:bg-white/80 text-[#313234]" : "",
+                        isSelected ? "bg-[#306eec] text-white ring-4 ring-[#306eec]/15" : "",
+                        isToday && !disabled && !isSelected ? "ring-2 ring-[#306EEC]/35" : "",
+                      ].join(" ")}
                     >
                       {day.date.getDate()}
                     </button>
                   );
                 })}
               </div>
+
+              <div className="mt-4 text-center text-sm text-[#6a6c71]">
+                Emergency? Call{" "}
+                <a href="tel:631-599-1363" className="text-[#306EEC] font-semibold hover:underline">
+                  631-599-1363
+                </a>
+              </div>
             </div>
-            
-            {/* Note below calendar - centered */}
-            <p className="mt-[12px] sm:mt-[12px] text-sm sm:text-base text-[#6a6c71] text-center leading-[120%] tracking-[-0.05em]">
-              Emergency? Please call us directly 631-599-1363
-            </p>
+
+            {selectedDate && (
+              <div className="mt-4 text-center text-sm sm:text-base text-[#313234] font-semibold">
+                Selected: <span className="text-[#306EEC]">{selectedDateLabel}</span>
+              </div>
+            )}
           </div>
 
           {/* Right column */}
           <div className="lg:col-span-7">
-            
-              {/* Time + length */}
-<div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-  {selectedDate && config ? (() => {
-  const ymd = formatDateYMD(selectedDate);
-  const baseTimes =
-    config.overrides?.[ymd]?.length
-      ? config.overrides[ymd]
-      : config.defaultHours || [];
+            {/* Time + info */}
+            <div className="rounded-[18px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+                {selectedDate && config ? (
+                  timesForSelectedDay.length > 0 ? (
+                    <TimeDropdown
+                      times={timesForSelectedDay}
+                      takenCounts={dayCapacityMap[ymdSelected]?.taken || {}}
+                      capacity={dayCapacityMap[ymdSelected]?.capacity || 999}
+                      selectedTime={selectedTime}
+                      onSelect={(t) => setSelectedTime(t)}
+                    />
+                  ) : (
+                    <div className="w-full sm:w-[190px] h-[54px] rounded-[12px] border border-[#c5cbd8] bg-white/60 flex items-center px-4 text-[#6a6c71] text-sm">
+                      No available times
+                    </div>
+                  )
+                ) : (
+                  <div className="w-full sm:w-[190px] h-[54px] rounded-[12px] border border-[#c5cbd8] bg-white/60 flex items-center px-4 text-[#6a6c71] text-sm">
+                    Select a date first
+                  </div>
+                )}
 
-  // intersect with backend-available slots, if provided
-  const finalTimes =
-    availableTimes.length > 0
-      ? baseTimes.filter((t) => availableTimes.includes(t))
-      : baseTimes;
+                <div className="text-sm sm:text-base text-[#6a6c71]">
+                  Visit length: <span className="font-semibold text-[#313234]">up to 90 minutes</span>. Please take clear photos.
+                </div>
+              </div>
 
-  return finalTimes.length > 0 ? (
-    <TimeDropdown
-      times={finalTimes}
-      takenCounts={
-        dayCapacityMap[ymd]?.taken || {}
-      }
-      capacity={dayCapacityMap[ymd]?.capacity || 999}
-      selectedTime={selectedTime}
-      onSelect={(t) => setSelectedTime(t)}
-    />
-  ) : (
-    <div className="w-full sm:w-[160px] h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.09)] flex items-center px-4 sm:px-6 text-[#6a6c71] text-sm">
-      No available times for this day
-    </div>
-  );
-})() : (
-  <div className="w-full sm:w-[160px] h-[54px] rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.09)] flex items-center px-4 sm:px-6 text-[#6a6c71] text-sm">
-    Select date first
-  </div>
-)}
+              {/* Address selector if 2+ */}
+              {(addresses?.length || 0) >= 2 && (
+                <div className="mt-5">
+                  <div className="text-sm font-semibold text-[#313234] mb-2">Booking address</div>
+                  <select
+                    value={selectedAddressId ?? defaultAddressId ?? ""}
+                    onChange={(e) => setSelectedAddressId(e.target.value)}
+                    className="w-full h-[48px] rounded-[12px] border border-[#c5cbd8] bg-white px-3 text-[#313234] font-semibold outline-none focus:ring-4 focus:ring-[#306EEC]/20"
+                  >
+                    {addresses.map((a: any) => (
+                      <option key={a._id} value={a._id}>
+                        {a.label ? `${a.label}: ` : ""}
+                        {a.line1}, {a.city} {a.state} {a.zip}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
 
+            {/* Issue + service + photos */}
+            <div className="mt-6 rounded-[18px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] p-4 sm:p-6">
+              <div className="text-sm font-semibold text-[#313234] mb-2">Describe the issue</div>
 
-  <div className="text-sm sm:text-base text-[#6a6c71]">
-    Visit length: up to 90 minutes. Make sure you take detailed pictures!
-  </div>
-</div>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Briefly describe your issue (e.g. leaking faucet, light switch not working)..."
+                className="w-full min-h-[120px] max-h-[320px] overflow-y-auto bg-white/40 rounded-[14px] border border-[#c5cbd8] p-4 text-sm sm:text-base text-[#313234] placeholder-[#6a6c71] resize-none focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15"
+              />
 
+              <div className="mt-2 text-xs text-[#6a6c71]">
+                Words: <span className={wordsCount >= 3 ? "text-green-700 font-semibold" : "text-red-700 font-semibold"}>{wordsCount}</span>{" "}
+                (minimum 3)
+              </div>
 
-            {/* Issue description block with buttons on the right */}
-<div className="mt-6 rounded-[14px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.10)] p-4 sm:p-5">
-  <textarea
-  value={note}
-  onChange={(e) => setNote(e.target.value)}
-  onInput={(e) => {
-    const el = e.currentTarget;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  }}
-  onFocus={(e) => {
-    const el = e.currentTarget;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  }}
-  placeholder="Briefly describe your issue (e.g. leaking faucet, light switch not working)..."
-  className="w-full min-h-[120px] max-h-[320px] overflow-y-auto bg-transparent text-sm sm:text-base text-[#313234] placeholder-[#6a6c71] resize-none focus:outline-none"
-/>
+              <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
+                {/* Service dropdown */}
+                <div ref={serviceWrapRef} className="relative">
+                  <button
+                    type="button"
+                    disabled={checkingSubscription || !hasSubscription}
+                    onClick={() => {
+                      if (checkingSubscription || !hasSubscription) return;
+                      setShowServiceMenu((v) => !v);
+                    }}
+                    className={[
+                      "h-[46px] px-4 sm:px-5 rounded-[12px] border text-sm sm:text-base whitespace-nowrap transition flex items-center justify-between gap-3 w-full sm:w-[260px]",
+                      checkingSubscription || !hasSubscription
+                        ? "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "border-[#313234] bg-white/50 text-[#313234] hover:bg-white",
+                    ].join(" ")}
+                  >
+                    <span className={service ? "font-semibold" : ""}>
+                      {service ? SERVICES.find((x) => x.key === service)?.label : "Select a service"}
+                    </span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" className={`transition-transform ${showServiceMenu ? "rotate-180" : ""}`}>
+                      <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
 
+                  {showServiceMenu && (
+                    <div className="absolute top-[52px] left-0 w-full sm:w-[300px] bg-white border border-[#c5cbd8] rounded-[12px] shadow-lg z-20 overflow-hidden">
+                      {SERVICES.map((s) => {
+                        const allowed = isServiceAllowed(s.minRank);
+                        return (
+                          <button
+                            key={s.key}
+                            type="button"
+                            disabled={!allowed}
+                            onClick={() => {
+                              if (!allowed) return;
+                              setService(s.key);
+                              setShowServiceMenu(false);
+                            }}
+                            className={[
+                              "block w-full text-left px-4 py-3 text-sm sm:text-base transition",
+                              allowed ? "hover:bg-[#EEF2FF] text-[#313234]" : "text-gray-400 cursor-not-allowed line-through bg-white",
+                            ].join(" ")}
+                          >
+                            {s.label}
+                            {!allowed && (
+                              <span className="ml-2 text-xs text-gray-400">(upgrade plan)</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
 
-  <div className="text-xs text-[#6a6c71] mt-1">
-    {note.trim().split(/\s+/).filter((w) => w).length} (minimum 3)
-  </div>
+                {/* Camera */}
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="h-[46px] px-4 sm:px-5 rounded-[12px] border border-[#313234] bg-white/50 text-[#313234] text-sm sm:text-base font-semibold flex items-center justify-center gap-2 hover:bg-white transition active:scale-[0.99]"
+                >
+                  📷 Take a picture
+                </button>
 
-  <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
-    {/* SERVICE DROPDOWN */}
-    <div className="relative">
-      <button
-  type="button"
-  disabled={checkingSubscription || !hasSubscription}
-  onClick={() => {
-    if (checkingSubscription || !hasSubscription) return;
-    setShowServiceMenu((v) => !v);
-  }}
+                {/* Gallery */}
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="h-[46px] px-4 sm:px-5 rounded-[12px] border border-[#313234] bg-white/50 text-[#313234] text-sm sm:text-base font-semibold flex items-center justify-center gap-2 hover:bg-white transition active:scale-[0.99]"
+                >
+                  🖼️ Add photos {uploadedPhotos.length > 0 ? `(${uploadedPhotos.length})` : ""}
+                </button>
 
-className={[
-  "h-[43px] px-4 sm:px-5 rounded-[11px] border text-sm sm:text-base whitespace-nowrap transition-colors",
-  checkingSubscription || !hasSubscription
-    ? "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
-    : "border-[#313234] bg-[#EEF2FF] text-[#313234] hover:bg-white/50",
-].join(" ")}
-      >
-        {service ? SERVICES.find((x) => x.key === service)?.label : "Select a service"}
-      </button>
+                {/* hidden inputs */}
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                  {...({ capture: "environment" } as any)}
+                />
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+              </div>
 
-      {showServiceMenu && (
-        <div className="absolute bottom-full mb-2 left-0 w-full min-w-[220px] bg-white border border-[#c5cbd8] rounded-[11px] shadow-lg z-10 overflow-hidden">
-          {SERVICES.map((s) => {
-  const allowed = isServiceAllowed(s.minRank);
-
-  return (
-    <button
-      key={s.key}
-      type="button"
-      disabled={!allowed}
-      onClick={() => {
-        if (!allowed) return;
-        setService(s.key);
-        setShowServiceMenu(false);
-      }}
-      className={[
-        "block w-full text-left px-4 py-2 text-sm",
-        allowed
-          ? "hover:bg-[#EEF2FF] text-[#313234]"
-          : "text-gray-400 cursor-not-allowed line-through",
-      ].join(" ")}
-    >
-      {s.label}
-    </button>
-  );
-})}
-
-        </div>
-      )}
-    </div>
-
-    {/* TAKE A PICTURE */}
-    <button
-      type="button"
-      onClick={() => cameraInputRef.current?.click()}
-      className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer hover:bg-white/50 transition-colors whitespace-nowrap"
-    >
-      📷 Take a picture
-    </button>
-
-    {/* ADD PHOTOS */}
-    <button
-      type="button"
-      onClick={() => galleryInputRef.current?.click()}
-      className="h-[43px] px-4 sm:px-5 rounded-[11px] border border-[#313234] bg-[#EEF2FF] text-[#313234] text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer hover:bg-white/50 transition-colors whitespace-nowrap"
-    >
-      🖼️ Add photos {uploadedPhotos.length > 0 && `(${uploadedPhotos.length})`}
-    </button>
-
-    {/* Hidden inputs */}
-    <input
-      ref={cameraInputRef}
-      type="file"
-      accept="image/*"
-      onChange={handlePhotoUpload}
-      className="hidden"
-      {...({ capture: "environment" } as any)}
-    />
-    <input
-      ref={galleryInputRef}
-      type="file"
-      accept="image/*"
-      multiple
-      onChange={handlePhotoUpload}
-      className="hidden"
-    />
-  </div>
-</div>
-
-
-{/* ✅ Address selector (only show if user has 2+ addresses) */}
-{(user?.addresses?.length || 0) >= 2 && (
-  <div className="mt-6 w-full rounded-[11px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.10)] p-4 sm:p-5">
-    <div className="text-sm sm:text-base font-semibold text-[#313234] mb-2">
-      Booking address
-    </div>
-
-    <select
-      value={selectedAddressId ?? user?.defaultAddressId ?? ""}
-      onChange={(e) => setSelectedAddressId(e.target.value)}
-      className="w-full h-[48px] rounded-[11px] border border-[#c5cbd8] bg-white px-3 text-[#313234]"
-    >
-      {(user?.addresses || []).map((a: any) => (
-        <option key={a._id} value={a._id}>
-          {a.label ? `${a.label}: ` : ""}
-          {a.line1}, {a.city} {a.state} {a.zip}
-        </option>
-      ))}
-    </select>
-  </div>
-)}
-
-
+              {/* Photo previews */}
+              {uploadedPhotos.length > 0 && (
+                <div className="mt-5">
+                  <div className="text-sm font-semibold text-[#313234] mb-2">Photos</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {uploadedPhotos.map((file, idx) => {
+                      const url = URL.createObjectURL(file);
+                      return (
+                        <div key={idx} className="relative rounded-[14px] overflow-hidden border border-[#c5cbd8] bg-white">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={url} alt={`Upload ${idx + 1}`} className="w-full h-[120px] object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removePhoto(idx)}
+                            className="absolute top-2 right-2 bg-black/60 text-white rounded-full w-8 h-8 grid place-items-center hover:bg-black/70 transition"
+                            aria-label="Remove photo"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Subscription warning */}
             {isAuthenticated && !checkingSubscription && !hasSubscription && subscriptionError && (
-              <div className="mt-4 text-red-700 text-sm bg-red-50 border border-red-300 rounded-lg p-4">
-                <div className="font-semibold mb-2">🔒 No Active Subscription</div>
+              <div className="mt-4 text-red-700 text-sm bg-red-50 border border-red-200 rounded-[14px] p-4">
+                <div className="font-extrabold mb-1">🔒 No Active Subscription</div>
                 <div className="mb-3">{subscriptionError}</div>
-                <a 
-                  href="#plans" 
-                  className="inline-block px-4 py-2 bg-[#306EEC] text-white rounded-lg hover:bg-[#2558c9] transition-colors text-sm font-medium"
+                <a
+                  href="#plans"
+                  className="inline-flex px-4 py-2 bg-[#306EEC] text-white rounded-xl hover:bg-[#2558c9] transition text-sm font-bold"
                 >
                   View Subscription Plans
                 </a>
               </div>
             )}
 
-            {/* Active booking limit warning (only for subscribed members) */}
-{isAuthenticated && hasSubscription && hasActiveBooking && (
-  <div className="mt-4 text-orange-700 text-sm bg-orange-50 border border-orange-300 rounded-lg p-4">
+            {/* Active booking limit warning */}
+            {isAuthenticated && hasSubscription && hasActiveBooking && (
+              <div className="mt-4 text-orange-800 text-sm bg-orange-50 border border-orange-200 rounded-[14px] p-4">
+                <div className="font-extrabold mb-1">⚠️ Active booking limit reached</div>
+                <div className="text-xs mt-1">
+                  You currently have <span className="font-semibold">{activeBookingCount}</span> active booking
+                  {activeBookingCount === 1 ? "" : "s"}. Your plan allows{" "}
+                  <span className="font-semibold">{activeBookingLimit}</span> at a time.
+                </div>
 
-    <div className="font-semibold mb-1">⚠️ Active booking limit reached</div>
+                {existingBookingDate && (
+                  <div className="mt-2 text-xs">
+                    Next booking:{" "}
+                    <span className="font-semibold">
+                      {existingBookingDate.toLocaleString("en-US", {
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                )}
 
-    <div className="text-xs mt-1">
-      You currently have <span className="font-semibold">{activeBookingCount}</span> active booking{activeBookingCount === 1 ? "" : "s"}.
-      Your plan allows <span className="font-semibold">{activeBookingLimit}</span> at a time.
-    </div>
+                <div className="text-xs mt-2 mb-3">To schedule another visit, please complete or cancel an active booking.</div>
 
-    {existingBookingDate && (
-      <div className="mt-2">
-        Next booking: {existingBookingDate.toLocaleString('en-US', {
-          weekday: 'long',
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        })}
-      </div>
-    )}
+                <button
+                  type="button"
+                  onClick={rebook}
+                  className="px-4 py-2 bg-[#306EEC] text-white rounded-xl text-xs font-extrabold hover:bg-[#2558c9] transition"
+                >
+                  Rebook
+                </button>
+              </div>
+            )}
 
-    <div className="text-xs mt-2 mb-3">
-      To schedule another visit, please complete or cancel an active booking.
-    </div>
-
-    <button
-      onClick={rebook}
-      className="px-4 py-2 bg-[#306EEC] text-white rounded-lg text-xs font-semibold hover:bg-[#2558c9]"
-    >
-      Rebook
-    </button>
-  </div>
-)}
-
-
-            {/* Error message */}
+            {/* Error */}
             {error && (
-              <div className="mt-4 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="mt-4 text-red-700 text-sm bg-red-50 border border-red-200 rounded-[14px] p-3">
                 {error}
               </div>
             )}
 
-            {/* Book now button */}
+            {/* Book button */}
             <div className="mt-6">
-              <button 
+              <button
                 onClick={handleBookNow}
-                disabled={
-  loading ||
-  checkingSubscription ||
-  (!hasSubscription && isAuthenticated) ||
-  hasActiveBooking
-}
-                className="w-full sm:w-[259px] h-[57px] rounded-[14px] bg-[#306eec] border border-[#306eec] text-[#eef2ff] text-lg sm:text-[20px] font-semibold hover:bg-[#2558c9] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!canBook}
+                className="w-full sm:w-[280px] h-[58px] rounded-[16px] bg-[#306eec] border border-[#306eec] text-[#eef2ff] text-lg sm:text-[20px] font-extrabold hover:bg-[#2558c9] transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99]"
               >
-                {checkingSubscription ? 'Checking...' : loading ? 'Booking...' : 'Book now'}
+                {checkingSubscription ? "Checking..." : loading ? "Booking..." : hasActiveBooking ? "Limit reached" : "Book now"}
               </button>
+
+              <div className="mt-2 text-xs text-[#6a6c71]">
+                By booking, you confirm the photos and description are accurate for faster service.
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Booking Confirmation Modal */}
+        {/* Confirmation Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowModal(false)}>
-            <div className="bg-white rounded-[20px] p-8 max-w-[500px] w-full mx-4" onClick={(e) => e.stopPropagation()}>
-              {/* Party Icon */}
-              <div className="text-center mb-6">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4" onClick={() => setShowModal(false)}>
+            <div
+              className="bg-white rounded-[22px] p-6 sm:p-8 max-w-[560px] w-full shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center mb-4">
                 <div className="text-6xl">🎉</div>
               </div>
-              
-              <h2 className="text-[32px] font-bold text-[#313234] text-center mb-6">
+
+              <h2 className="text-[28px] sm:text-[32px] font-extrabold text-[#313234] text-center mb-6">
                 Booking Confirmed
               </h2>
-              
-              <div className="space-y-3 mb-6">
+
+              <div className="space-y-2 mb-6 text-sm sm:text-base">
                 <div className="flex gap-2">
                   <span className="font-semibold text-[#313234]">Booking #:</span>
                   <span className="text-[#6A6D71]">{bookingNumber}</span>
@@ -1049,11 +1039,11 @@ className={[
                 <div className="flex gap-2">
                   <span className="font-semibold text-[#313234]">Date:</span>
                   <span className="text-[#6A6D71]">
-                    {confirmedDate?.toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      month: 'long', 
-                      day: 'numeric', 
-                      year: 'numeric' 
+                    {confirmedDate?.toLocaleDateString("en-US", {
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
                     })}
                   </span>
                 </div>
@@ -1062,32 +1052,42 @@ className={[
                   <span className="text-[#6A6D71]">{confirmedTime}</span>
                 </div>
               </div>
-              
-              <p className="text-[#6A6D71] text-[16px] mb-6">
-                Mr. Fixter will reach out to you shortly.<br />
+
+              <p className="text-[#6A6D71] text-[15px] mb-6">
+                Mr. Fixter will reach out to you shortly.
+                <br />
                 A confirmation email has been sent.
               </p>
-              
-              <div className="bg-[#EEF2FF] rounded-[12px] p-4 mb-6">
-                <h3 className="text-[#306EEC] font-semibold text-[18px] mb-3">Before your visit</h3>
+
+              <div className="bg-[#EEF2FF] rounded-[14px] p-4 mb-6 border border-[#c5cbd8]">
+                <h3 className="text-[#306EEC] font-extrabold text-[18px] mb-3">Before your visit</h3>
                 <p className="text-[#6A6D71] text-[14px] mb-2">
-                  Please have all <span className="text-[#306EEC]">materials/fixtures on-site and ready</span> (faucets, lights, shelves, hardware, etc.).
+                  Please have all <span className="text-[#306EEC] font-semibold">materials/fixtures on-site and ready</span>{" "}
+                  (faucets, lights, shelves, hardware, etc.).
                 </p>
                 <p className="text-[#6A6D71] text-[14px] mb-2">
-                  Your Fixter may arrive <span className="text-[#306EEC]">up to 30 minutes before or after</span> the booked time (traffic & job length).
+                  Your Fixter may arrive <span className="text-[#306EEC] font-semibold">up to 30 minutes before or after</span>{" "}
+                  the booked time (traffic & job length).
                 </p>
                 <p className="text-[#6A6D71] text-[14px]">
-                  Emergencies or questions? Call <a href="tel:631-599-1363" className="text-[#306EEC]">631-599-1363</a> or email <a href="mailto:my@profixter.com" className="text-[#306EEC]">my@profixter.com</a>.
+                  Emergencies or questions? Call{" "}
+                  <a href="tel:631-599-1363" className="text-[#306EEC] font-semibold hover:underline">
+                    631-599-1363
+                  </a>{" "}
+                  or email{" "}
+                  <a href="mailto:my@profixter.com" className="text-[#306EEC] font-semibold hover:underline">
+                    my@profixter.com
+                  </a>
+                  .
                 </p>
               </div>
-              
+
               <button
                 onClick={() => {
-  setShowModal(false);
-  window.location.reload();
-}}
-
-                className="w-full h-[57px] rounded-[14px] bg-[#306EEC] text-white text-[20px] font-semibold hover:bg-[#2558c9] transition-colors"
+                  setShowModal(false);
+                  window.location.reload();
+                }}
+                className="w-full h-[58px] rounded-[16px] bg-[#306EEC] text-white text-[18px] sm:text-[20px] font-extrabold hover:bg-[#2558c9] transition active:scale-[0.99]"
               >
                 OK
               </button>
@@ -1096,34 +1096,5 @@ className={[
         )}
       </div>
     </section>
-  );
-}
-
-function ChevronLeft() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M15 19L8 12L15 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-function ChevronRight() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M9 5L16 12L9 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-function ChevronDown() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-function Paperclip() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M21.44 11.05L12.49 20C10.32 22.17 6.8 22.17 4.63 20C2.46 17.83 2.46 14.31 4.63 12.14L13.58 3.19C15.13 1.64 17.64 1.64 19.19 3.19C20.74 4.74 20.74 7.25 19.19 8.8L10.24 17.75C9.47 18.52 8.22 18.52 7.45 17.75C6.68 16.98 6.68 15.73 7.45 14.96L15.69 6.72" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
   );
 }

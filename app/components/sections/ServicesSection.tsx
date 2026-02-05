@@ -1,14 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import { faqs } from "@/app/data/content";
 
 function Chevron({ open }: { open: boolean }) {
   return (
     <svg
-      className={`w-5 h-5 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+      className={`w-5 h-5 transition-transform duration-200 ${
+        open ? "rotate-180" : ""
+      }`}
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
@@ -48,14 +49,25 @@ function FaqCard({
     <button
       type="button"
       onClick={onToggle}
-      className={`${bgColor} w-full rounded-[20px] p-5 sm:p-6 border border-[#C5CBD8] text-left
-        shadow-none sm:shadow-[0_10px_60px_rgba(0,0,0,0.20)]
-        transition-transform hover:scale-[1.02] active:scale-[0.99]
-        focus:outline-none focus:ring-2 focus:ring-[#306EEC]/60`}
+      className={[
+        bgColor,
+        "w-full rounded-[20px] p-5 sm:p-6 border border-[#C5CBD8]/70 text-left",
+        "shadow-none sm:shadow-[0_10px_60px_rgba(0,0,0,0.18)]",
+        // avoid hover scaling that can jitter on iOS/Safari; use subtle lift instead
+        "transition-[transform,box-shadow] duration-200",
+        "hover:-translate-y-[2px] hover:shadow-[0_18px_70px_rgba(0,0,0,0.25)]",
+        "active:translate-y-0",
+        "focus:outline-none focus:ring-2 focus:ring-[#306EEC]/60",
+      ].join(" ")}
       aria-expanded={isOpen}
     >
       <div className="flex items-start justify-between gap-4">
-        <h3 className={`text-lg sm:text-xl font-semibold ${textColor} leading-tight font-montserrat`}>
+        <h3
+          className={[
+            "text-lg sm:text-xl font-semibold leading-tight font-montserrat",
+            textColor,
+          ].join(" ")}
+        >
           {faq.question}
         </h3>
 
@@ -64,20 +76,34 @@ function FaqCard({
         </div>
       </div>
 
+      {/* smoother + more consistent than grid-rows trick */}
       <div
-        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out mt-3 ${
-          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-90"
-        }`}
+        className={[
+          "transition-[max-height,opacity,transform] duration-300 ease-out",
+          isOpen
+            ? "max-h-[240px] opacity-100 translate-y-0 mt-3"
+            : "max-h-0 opacity-0 -translate-y-[2px] mt-0",
+        ].join(" ")}
       >
         <div className="overflow-hidden">
-          <p className={`text-sm sm:text-base font-medium ${descColor} leading-[140%] font-montserrat`}>
+          <p
+            className={[
+              "text-sm sm:text-base font-medium leading-[140%] font-montserrat",
+              descColor,
+            ].join(" ")}
+          >
             {faq.answer}
           </p>
         </div>
       </div>
 
       <div className="flex justify-end mt-4">
-        <span className={`text-5xl sm:text-6xl font-bold leading-none ${numberColor} font-montserrat`}>
+        <span
+          className={[
+            "text-5xl sm:text-6xl font-bold leading-none font-montserrat",
+            numberColor,
+          ].join(" ")}
+        >
           {faq.id}
         </span>
       </div>
@@ -86,10 +112,10 @@ function FaqCard({
 }
 
 export default function ServicesSection() {
-  const [openId, setOpenId] = useState<string | null>("01");
   const items = useMemo(() => faqs, []);
+  const [openId, setOpenId] = useState<string | null>("01");
 
-  // ✅ Contact form state
+  // ✅ Contact form state (kept for future API wiring)
   const [contact, setContact] = useState({
     firstName: "",
     lastName: "",
@@ -97,9 +123,9 @@ export default function ServicesSection() {
     phone: "",
   });
 
-  // ✅ Match “how it should look”: two separate consents
-  const [smsServiceOptIn, setSmsServiceOptIn] = useState(false); // non-marketing (service)
-  const [smsMarketingOptIn, setSmsMarketingOptIn] = useState(false); // marketing
+  // ✅ two separate consents
+  const [smsServiceOptIn, setSmsServiceOptIn] = useState(false);
+  const [smsMarketingOptIn, setSmsMarketingOptIn] = useState(false);
 
   const [showPopup, setShowPopup] = useState(false);
 
@@ -111,7 +137,6 @@ export default function ServicesSection() {
   const onContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Later you can connect API here
     console.log("Contact request:", {
       ...contact,
       smsServiceOptIn,
@@ -122,7 +147,6 @@ export default function ServicesSection() {
 
     setShowPopup(true);
 
-    // reset
     setContact({ firstName: "", lastName: "", email: "", phone: "" });
     setSmsServiceOptIn(false);
     setSmsMarketingOptIn(false);
@@ -132,15 +156,18 @@ export default function ServicesSection() {
 
   return (
     <section className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden">
+      {/* Background glow */}
       <div
         className="hidden lg:block absolute -top-40 left-1/2 -translate-x-1/2 w-[1460px] h-[1460px] rounded-full z-0"
         style={{
-          background: "radial-gradient(circle, rgba(48, 110, 236, 0.12) 0%, transparent 70%)",
+          background:
+            "radial-gradient(circle, rgba(48, 110, 236, 0.12) 0%, transparent 70%)",
         }}
       />
 
-      <div className="container mx-auto px-[20px] max-w-[1240px] relative z-10">
+      <div className="container mx-auto px-5 sm:px-6 lg:px-5 max-w-[1240px] relative z-10">
         <div className="grid lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+          {/* Right (desktop) / top (mobile): title block */}
           <div className="lg:col-span-4 order-1 lg:order-2">
             <div className="relative rounded-[24px] border border-white/10 bg-white/5 p-6 sm:p-7">
               <h2 className="text-3xl sm:text-5xl lg:text-[54px] font-bold uppercase leading-tight">
@@ -148,6 +175,7 @@ export default function ServicesSection() {
                 <br />
                 <span className="text-[#306eec]">Questions</span>
               </h2>
+
               <p className="text-[#c5cbd8] text-base sm:text-lg font-medium mt-3">
                 Simple answers before you book.
               </p>
@@ -159,11 +187,21 @@ export default function ServicesSection() {
                   width={420}
                   height={220}
                   className="object-contain drop-shadow-[0_40px_70px_rgba(42,30,15,0.25)]"
+                  priority={false}
                 />
               </div>
+
+              {/* Optional helper text on desktop */}
+              <div className="hidden lg:block mt-4 text-sm text-[#C5CBD8]">
+                Click a card to expand.
+              </div>
+
+              {/* NOTE: contact form kept wired (not rendered here).
+                  If you want it shown inside this section, tell me and I’ll place it. */}
             </div>
           </div>
 
+          {/* FAQ grid */}
           <div className="lg:col-span-8 order-2 lg:order-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
               {items.map((faq) => (
@@ -171,13 +209,17 @@ export default function ServicesSection() {
                   key={faq.id}
                   faq={faq}
                   isOpen={openId === faq.id}
-                  onToggle={() => setOpenId((prev) => (prev === faq.id ? null : faq.id))}
+                  onToggle={() =>
+                    setOpenId((prev) => (prev === faq.id ? null : faq.id))
+                  }
                 />
               ))}
             </div>
 
             <div className="lg:hidden mt-6 text-center">
-              <p className="text-[#C5CBD8] text-sm">Tap a card to expand the answer.</p>
+              <p className="text-[#C5CBD8] text-sm">
+                Tap a card to expand the answer.
+              </p>
             </div>
           </div>
         </div>
@@ -186,9 +228,12 @@ export default function ServicesSection() {
       {/* ✅ Professional popup */}
       {showPopup && (
         <div className="fixed bottom-6 right-6 z-[9999] max-w-[360px] rounded-[16px] bg-[#0B1220] text-white border border-white/10 shadow-[0_20px_80px_rgba(0,0,0,0.55)] p-4">
-          <p className="font-semibold font-montserrat text-white">Thank you — we received your request.</p>
+          <p className="font-semibold font-montserrat text-white">
+            Thank you — we received your request.
+          </p>
           <p className="text-sm text-[#C5CBD8] font-montserrat mt-1 leading-[140%]">
-            We’ll contact you shortly from <span className="text-white font-semibold">631-599-1363</span>.
+            We’ll contact you shortly from{" "}
+            <span className="text-white font-semibold">631-599-1363</span>.
           </p>
         </div>
       )}

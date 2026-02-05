@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';   // ⬅️ ADD useEffect
+import { useEffect, useState } from "react";
 import Header from "./components/sections/Header";
 import HeroSection from "./components/sections/HeroSection";
 import StepsSection from "./components/sections/StepsSection";
@@ -11,49 +11,55 @@ import HandymenSection from "./components/sections/HandymenSection";
 import ProjectsSection from "./components/sections/ProjectsSection";
 import Footer from "./components/sections/Footer";
 import { ChatWidget } from "./components/ChatWidget";
-import Image from 'next/image';
+import Image from "next/image";
 
 export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // ⬅️ ADD THIS BLOCK
   useEffect(() => {
-    const justLoggedIn = sessionStorage.getItem('justLoggedIn');
+    const justLoggedIn = sessionStorage.getItem("justLoggedIn");
     if (justLoggedIn) {
-      sessionStorage.removeItem('justLoggedIn');
+      sessionStorage.removeItem("justLoggedIn");
       window.location.reload();
     }
   }, []);
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden ">
-      <div className="absolute top-0 left-0 w-full z-20">
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      {/* ✅ Use sticky instead of absolute for consistent layout */}
+      <div className="sticky top-0 z-50">
         <Header />
       </div>
-      <HeroSection />
-      <BookingSection />
-      <StepsSection />
-      <PlansSection />
-      <ServicesSection />
-      <HandymenSection />
-      <ProjectsSection />
-      <Footer />
 
-      {/* Global Chat Widget Icon - aligned to right edge of container */}
-      <div
-        className="fixed bottom-16 sm:bottom-24 z-[999999]"
-        style={{ right: 'max(1.5rem, calc((100vw - 1240px)/2 + 20px))' }}
-      >
+      <main className="relative">
+        <HeroSection />
+        <BookingSection />
+        <StepsSection />
+        <PlansSection />
+        <ServicesSection />
+        <HandymenSection />
+        <ProjectsSection />
+        <Footer />
+      </main>
+
+      {/* ✅ Chat button: simpler + safe-area friendly */}
+      <div className="fixed bottom-16 sm:bottom-24 right-6 sm:right-8 z-[999999]">
         <button
-          onClick={() => setIsChatOpen(!isChatOpen)}
-          className="w-[60px] h-[60px] sm:w-[72px] sm:h-[72px] bg-[#306eec] hover:bg-[#2558c9] transition-all duration-300 rounded-full shadow-xl flex items-center justify-center hover:scale-110 pointer-events-auto"
+          onClick={() => setIsChatOpen((v) => !v)}
+          className="w-[60px] h-[60px] sm:w-[72px] sm:h-[72px] bg-[#306eec] hover:bg-[#2558c9] transition-all duration-300 rounded-full shadow-xl flex items-center justify-center hover:scale-110"
           aria-label="Open chat"
         >
-          <Image src="/images/icons/messages.svg" alt="Open chat" width={32} height={32} className="sm:w-[40px] sm:h-[40px]" />
+          <Image
+            src="/images/icons/messages.svg"
+            alt="Open chat"
+            width={32}
+            height={32}
+            className="sm:w-[40px] sm:h-[40px]"
+          />
         </button>
       </div>
 
-      <ChatWidget isOpen={isChatOpen} onToggle={() => setIsChatOpen(!isChatOpen)} />
+      <ChatWidget isOpen={isChatOpen} onToggle={() => setIsChatOpen((v) => !v)} />
     </div>
   );
 }

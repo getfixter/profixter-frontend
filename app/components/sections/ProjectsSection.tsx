@@ -1,50 +1,94 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Image from 'next/image';
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 
 const projects = [
-  { id: 1, image: '/images/projects/p1.jpg' },
-  { id: 2, image: '/images/projects/p2.jpg' },
-  { id: 3, image: '/images/projects/p3.jpg' },
-  { id: 4, image: '/images/projects/p4.jpg' },
-  { id: 5, image: '/images/projects/p5.jpg' },
-  { id: 6, image: '/images/projects/p6.jpg' },
-  { id: 7, image: '/images/projects/p7.jpg' },
-  { id: 8, image: '/images/projects/p8.jpg' },
-  { id: 9, image: '/images/projects/p9.jpg' },
-  { id: 10, image: '/images/projects/p10.jpg' },
+  { id: 1, image: "/images/projects/p1.jpg" },
+  { id: 2, image: "/images/projects/p2.jpg" },
+  { id: 3, image: "/images/projects/p3.jpg" },
+  { id: 4, image: "/images/projects/p4.jpg" },
+  { id: 5, image: "/images/projects/p5.jpg" },
+  { id: 6, image: "/images/projects/p6.jpg" },
+  { id: 7, image: "/images/projects/p7.jpg" },
+  { id: 8, image: "/images/projects/p8.jpg" },
+  { id: 9, image: "/images/projects/p9.jpg" },
+  { id: 10, image: "/images/projects/p10.jpg" },
 ];
 
 export default function ProjectsSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  const nextSlide = () => {
+  const nextSlide = () =>
     setCurrentSlide((prev) => (prev + 1) % projects.length);
-  };
-
-  const prevSlide = () => {
+  const prevSlide = () =>
     setCurrentSlide((prev) => (prev - 1 + projects.length) % projects.length);
-  };
 
-  // ✅ Only fix: scroll to BookingSection (#pick-day)
+  // Smooth auto-advance (optional but makes it feel premium)
+  useEffect(() => {
+    const t = setInterval(() => {
+      setCurrentSlide((p) => (p + 1) % projects.length);
+    }, 6500);
+    return () => clearInterval(t);
+  }, []);
+
+  // ✅ scroll to BookingSection (#pick-day)
   const goToBooking = () => {
-    const el = document.getElementById('pick-day');
+    const el = document.getElementById("pick-day");
     if (!el) return;
-
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    history.replaceState(null, '', '#pick-day');
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    history.replaceState(null, "", "#pick-day");
   };
+
+  const active = projects[currentSlide];
+  const next1 = projects[(currentSlide + 1) % projects.length];
+  const next2 = projects[(currentSlide + 2) % projects.length];
+
+  const ArrowBtn = ({
+    dir,
+    onClick,
+  }: {
+    dir: "prev" | "next";
+    onClick: () => void;
+  }) => (
+    <button
+      onClick={onClick}
+      type="button"
+      className="bg-[#EEF2FF] hover:bg-white text-[#313234] w-[52px] h-[52px] rounded-[12px] flex items-center justify-center transition-colors shadow-md active:scale-[0.99]"
+      aria-label={dir === "prev" ? "Previous project" : "Next project"}
+    >
+      {dir === "prev" ? (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M15 18L9 12L15 6"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M9 6L15 12L9 18"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
+    </button>
+  );
 
   return (
     <section
       id="projects"
       className="w-full bg-[#313234] py-12 sm:py-16 lg:py-20 overflow-hidden relative"
     >
-      <div className="max-w-[1240px] mx-auto px-[20px]">
-        {/* Mobile/Tablet Layout */}
+      <div className="max-w-[1240px] mx-auto px-5 sm:px-6 lg:px-5">
+        {/* ================= MOBILE / TABLET ================= */}
         <div className="lg:hidden">
-          {/* Header */}
           <div className="text-center mb-8 sm:mb-10">
             <h2 className="text-3xl sm:text-4xl font-bold leading-[89%] uppercase mb-2 tracking-[-0.05em]">
               <span className="text-[#EEF2FF]">OUR </span>
@@ -58,7 +102,6 @@ export default function ProjectsSection() {
               Real examples of house maintenance work we do and more.
             </p>
 
-            {/* ✅ fixed */}
             <button
               type="button"
               onClick={goToBooking}
@@ -68,202 +111,138 @@ export default function ProjectsSection() {
             </button>
           </div>
 
-          {/* Carousel */}
+          {/* Carousel card */}
           <div className="relative">
             <div className="relative w-full aspect-square max-w-[450px] mx-auto rounded-[20px] overflow-hidden shadow-[0_10px_80px_rgba(0,0,0,0.25)]">
               <Image
-                src={projects[currentSlide].image}
+                src={active.image}
                 alt="Project Image"
                 fill
                 className="object-cover"
+                sizes="(max-width: 768px) 92vw, 450px"
+                priority
               />
+              {/* subtle gradient for nicer look */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/25 pointer-events-none" />
             </div>
 
-            {/* Navigation Buttons */}
             <div className="flex gap-3 justify-center mt-6">
-              <button
-                onClick={prevSlide}
-                className="bg-[#EEF2FF] hover:bg:white text-[#313234] w-[52px] h-[52px] rounded-[12px] flex items-center justify-center transition-colors shadow-md"
-                aria-label="Previous project"
-              >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M15 18L9 12L15 6"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-              <button
-                onClick={nextSlide}
-                className="bg-[#EEF2FF] hover:bg:white text-[#313234] w-[52px] h-[52px] rounded-[12px] flex items-center justify-center transition-colors shadow-md"
-                aria-label="Next project"
-              >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M9 6L15 12L9 18"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
+              <ArrowBtn dir="prev" onClick={prevSlide} />
+              <ArrowBtn dir="next" onClick={nextSlide} />
             </div>
 
-            {/* Dots Indicator */}
             <div className="flex gap-2 justify-center mt-4">
               {projects.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentSlide(idx)}
-                  className={`h-2 rounded-full transition-all ${
+                  className={[
+                    "h-2 rounded-full transition-all duration-300",
                     idx === currentSlide
-                      ? 'w-8 bg-[#306EEC]'
-                      : 'w-2 bg-[#C5CBD8]'
-                  }`}
+                      ? "w-8 bg-[#306EEC]"
+                      : "w-2 bg-[#C5CBD8] hover:bg-[#306EEC]/50",
+                  ].join(" ")}
                   aria-label={`Go to slide ${idx + 1}`}
                 />
               ))}
             </div>
           </div>
 
-          {/* Bottom Text */}
           <p className="text-[#C5CBD8] text-sm sm:text-base leading-relaxed text-center mt-8 max-w-md mx-auto">
-            Every project we take on is built on trust, skill, and attention to detail.
+            Every project we take on is built on trust, skill, and attention to
+            detail.
           </p>
         </div>
 
-        {/* Desktop Layout - Original */}
-        <div className="hidden lg:flex items-start gap-12">
+        {/* ================= DESKTOP ================= */}
+        <div className="hidden lg:grid grid-cols-12 gap-10 items-start">
           {/* Left Content */}
-          <div className="flex-shrink-0 w-[390px] pt-4 flex flex-col justify-between ">
-            <div className="w-full">
-              <h2 className="text-[64px] font-bold leading-[69%] uppercase w-full flex gap-2 tracking-[-0.05em]">
-                <span className="text-[#EEF2FF]">OUR </span>
-                <span className="text-[#306EEC]">LATEST</span>
-              </h2>
-              <h2 className="text-[64px] font-bold leading-[89%] uppercase mb-[8px] text-[#EEF2FF] tracking-[-0.05em]">
-                PROJECT
-              </h2>
+          <div className="col-span-4 pt-3">
+            <h2 className="text-[64px] font-bold uppercase tracking-[-0.05em] leading-[0.9]">
+              <span className="text-[#EEF2FF]">OUR </span>
+              <span className="text-[#306EEC]">LATEST</span>
+            </h2>
+            <h2 className="text-[64px] font-bold uppercase tracking-[-0.05em] leading-[0.9] text-[#EEF2FF] mt-2">
+              PROJECT
+            </h2>
 
-              <p className="text-[#C5CBD8] text-base leading-[120%] mb-[20px] max-w-[291px]">
-                Real examples of house maintenance work we do and more.
-              </p>
+            <p className="text-[#C5CBD8] text-base leading-[120%] mt-5 max-w-[320px]">
+              Real examples of house maintenance work we do and more.
+            </p>
 
-              {/* ✅ fixed */}
-              <button
-                type="button"
-                onClick={goToBooking}
-                className="w-[362px] h-[60px] bg-[#306EEC] hover:bg-[#2558c7] text-[#EEF2FF] rounded-[14px] text-[20px] font-semibold transition-colors mb-44"
-              >
-                Fix it today
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={goToBooking}
+              className="mt-6 w-[362px] h-[60px] bg-[#306EEC] hover:bg-[#2558c7] text-[#EEF2FF] rounded-[14px] text-[20px] font-semibold transition-colors"
+            >
+              Fix it today
+            </button>
 
-            <p className="text-[#C5CBD8] text-[15px] leading-[120%] max-w-[272px]">
-              Every project we take on is built on trust, skill, and attention to detail.
+            <p className="text-[#C5CBD8] text-[15px] leading-[120%] max-w-[320px] mt-10">
+              Every project we take on is built on trust, skill, and attention to
+              detail.
             </p>
           </div>
 
-          {/* Right Side - Carousel */}
-          <div className="relative min-h-[506px]">
-            <div className="relative flex items-center gap-6 ml-16">
-              {/* Main Card (Active) - 450x450 */}
-              <div className="relative w-[450px] h-[450px] rounded-[20px]  flex-shrink-0 shadow-[0_10px_80px_rgba(0,0,0,0.25)]">
-                <Image
-                  src={projects[currentSlide].image}
-                  alt="Project Image"
-                  width={450}
-                  height={450}
-                  priority
-                  className="w-full h-full object-cover"
-                />
+          {/* Right Side */}
+          <div className="col-span-8">
+            <div className="relative">
+              {/* Main + previews */}
+              <div className="flex items-center gap-6">
+                {/* Main */}
+                <div className="relative w-[450px] h-[450px] rounded-[20px] overflow-hidden flex-shrink-0 shadow-[0_10px_80px_rgba(0,0,0,0.25)]">
+                  <Image
+                    src={active.image}
+                    alt="Project Image"
+                    fill
+                    className="object-cover"
+                    sizes="450px"
+                    priority
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/25 pointer-events-none" />
 
-                {/* Navigation Buttons - at the bottom right of big photo */}
-                <div className="flex gap-3 absolute bottom-0 -right-34 z-10">
-                  <button
-                    onClick={prevSlide}
-                    className="bg-[#EEF2FF] hover:bg-white text-[#313234] w-[52px] h-[52px] rounded-[12px] flex items-center justify-center transition-colors shadow-md"
-                    aria-label="Previous project"
-                  >
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
+                  {/* Arrows anchored INSIDE the card (stable on all screens) */}
+                  <div className="absolute bottom-4 right-4 flex gap-3 z-10">
+                    <ArrowBtn dir="prev" onClick={prevSlide} />
+                    <ArrowBtn dir="next" onClick={nextSlide} />
+                  </div>
+                </div>
+
+                {/* Previews */}
+                <div className="flex gap-6">
+                  {[next1, next2].map((p) => (
+                    <div
+                      key={p.id}
+                      className="relative w-[300px] h-[300px] rounded-[12px] overflow-hidden flex-shrink-0"
                     >
-                      <path
-                        d="M15 18L9 12L15 6"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                      <Image
+                        src={p.image}
+                        alt="Project Preview"
+                        fill
+                        className="object-cover"
+                        sizes="300px"
                       />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={nextSlide}
-                    className="bg-[#EEF2FF] hover:bg-white text-[#313234] w-[52px] h-[52px] rounded-[12px] flex items-center justify-center transition-colors shadow-md"
-                    aria-label="Next project"
-                  >
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M9 6L15 12L9 18"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
+                      <div className="absolute inset-0 bg-[#313234]/30 backdrop-blur-[3px] pointer-events-none" />
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Preview Cards - 300x300 with blur overlay */}
-              <div className="flex gap-6">
-                {[1, 2].map((offset) => {
-                  const index = (currentSlide + offset) % projects.length;
-                  const project = projects[index];
-                  return (
-                    <div
-                      key={offset}
-                      className="relative w-[300px] h-[300px] flex-shrink-0"
-                    >
-                      <div className="absolute inset-0 rounded-[10px] overflow-hidden">
-                        <Image
-                          src={project.image}
-                          alt="Project Preview"
-                          width={300}
-                          height={300}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="absolute inset-0 bg-[#313234]/30 backdrop-blur-[3px] rounded-[10px] pointer-events-none" />
-                    </div>
-                  );
-                })}
+              {/* Dots (desktop) */}
+              <div className="flex gap-2 mt-6">
+                {projects.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentSlide(idx)}
+                    className={[
+                      "h-2 rounded-full transition-all duration-300",
+                      idx === currentSlide
+                        ? "w-8 bg-[#306EEC]"
+                        : "w-2 bg-[#C5CBD8] hover:bg-[#306EEC]/50",
+                    ].join(" ")}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
               </div>
             </div>
           </div>
