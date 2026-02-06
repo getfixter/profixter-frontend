@@ -45,8 +45,9 @@ export default function StepsSection() {
             Easy steps for easy life.
           </div>
           <div className="hidden lg:block absolute right-0 top-2 text-sm text-[#6a6c71]">
-            Your first 7 days on us!
-          </div>
+  1 free first visit (Labor Only).
+</div>
+
 
           {/* Heading */}
           <div className="text-center mb-8 sm:mb-12 lg:mb-14">

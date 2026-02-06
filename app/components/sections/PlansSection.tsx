@@ -240,10 +240,11 @@ export default function PlansSection() {
         <div className="mb-6">
           <p className="text-white text-2xl sm:text-3xl font-normal leading-tight mb-2">$0 today</p>
           <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed">
-            Free 7-day trial
-            <br />
-            cancel anytime
-          </p>
+  No 7-day trial anymore.
+  <br />
+  Instead: <span className="text-white font-semibold">1 free first visit</span> (Labor Only).
+</p>
+
         </div>
 
         {!compact && (

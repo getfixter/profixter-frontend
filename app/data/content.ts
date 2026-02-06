@@ -211,6 +211,17 @@ export const faqs: Faq[] = [
     size: "large",
     offset: -60,
   },
+  {
+  id: "12",
+  question: "Do you still offer a 7-day free trial?",
+  answer:
+    "We no longer offer a 7-day free trial. Instead, you get one Free First Visit (up to 90 minutes of labor) per address. After that, an active plan is required to book more visits.",
+  color: "light", // same white style as others
+  size: "normal",
+  offset: 0,
+},
+
+
 ];
 
 export type Plan = {

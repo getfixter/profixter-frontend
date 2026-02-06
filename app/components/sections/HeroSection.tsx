@@ -13,8 +13,10 @@ type FixterUser = {
 
 type SubscriptionResponse = {
   hasSubscription: boolean;
+  freeFirstVisitAvailable?: boolean;
   message?: string;
 };
+
 
 export default function HeroSection() {
   const { user, isAuthenticated } = useAuth();
@@ -65,10 +67,11 @@ export default function HeroSection() {
 
       const subscription = (await checkSubscription(addressId)) as SubscriptionResponse;
 
-      if (!subscription?.hasSubscription) {
-        goToPlans();
-        return;
-      }
+      // allow booking if they either have a paid plan OR they still have a free first visit available
+if (!subscription?.hasSubscription && !subscription?.freeFirstVisitAvailable) {
+  goToPlans();
+  return;
+}
 
       goToBooking();
     } catch (e) {
@@ -299,8 +302,8 @@ export default function HeroSection() {
                   </div>
 
                   <div className="w-[160px] h-[110px] bg-[#eef2ff] rounded-[14px] border border-[#c5cbd8] p-4 shadow-[0_10px_80px_rgba(0,0,0,0.25)]">
-                    <div className="text-[22px] font-semibold text-[#313234]">7 days</div>
-                    <div className="text-[13px] text-[#6a6c71] mt-2">free trial on every plan</div>
+                    <div className="text-[22px] font-semibold text-[#313234]">Free Visit</div>
+                    <div className="text-[13px] text-[#6a6c71] mt-2">First 90 minutes visit on us</div>
                   </div>
                 </div>
               </div>
@@ -317,7 +320,8 @@ export default function HeroSection() {
           if (el) el.scrollIntoView({ behavior: "smooth" });
           else window.location.href = "/#plans";
         }}
-        ctaLabel="Start 7-day Free Trial"
+        ctaLabel="Get Plan"
+
       />
     </>
   );
