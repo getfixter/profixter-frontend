@@ -59,9 +59,11 @@ export interface BookingResponse {
 
 export interface NextBookingResponse {
   plan?: string;
+  hasSubscription?: boolean;
+  freeFirstVisitAvailable?: boolean;
   bookingLimit?: number;
   activeCount?: number;
-  future: {
+  future?: {
     _id: string;
     date: string;
     status: string;
@@ -142,14 +144,6 @@ if (!matched) {
   };
 }
 
-
-    if (!matched) {
-      return {
-        hasSubscription: false,
-        message:
-          "This address does not have an active subscription. Purchase a subscription for this address to book a visit.",
-      };
-    }
 
     return {
       hasSubscription: true,

@@ -1,6 +1,6 @@
 "use client";
 
-import type React from "react";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import {
@@ -8,7 +8,6 @@ import {
   getTimeSlots,
   createBooking,
   getNextBooking,
-  checkSubscription,
   CalendarConfig,
 } from "@/lib/booking-service";
 import { compressImage } from "@/lib/compressImage";
@@ -167,6 +166,7 @@ export default function BookingSection() {
   const [service, setService] = useState<ServiceKey | "">("");
   const [note, setNote] = useState<string>("");
   const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [showServiceMenu, setShowServiceMenu] = useState(false);
 
   // close service dropdown on outside click
@@ -200,16 +200,18 @@ export default function BookingSection() {
   const [existingBookingTime, setExistingBookingTime] = useState("");
   const [existingBookingId, setExistingBookingId] = useState<string | null>(null);
 
-  // Subscription
+  // Subscription / access (per address)
   const [hasSubscription, setHasSubscription] = useState(false);
+  const [freeFirstVisitAvailable, setFreeFirstVisitAvailable] = useState(false);
   const [subscriptionError, setSubscriptionError] = useState("");
-  const [checkingSubscription, setCheckingSubscription] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(false);
 
-  // Plan used to lock services
-  const [plan, setPlan] = useState<string>(""); // basic | plus | premium | elite
+  // Plan used to lock services (basic | plus | premium | elite | free)
+  const [plan, setPlan] = useState<string>("");
 
   const planRank = (p?: string) => {
     const x = String(p || "").toLowerCase();
+    if (x === "free") return 1; // ✅ allow Labor Only for free visit
     if (x === "basic") return 1;
     if (x === "plus") return 2;
     if (x === "premium") return 3;
@@ -235,6 +237,7 @@ export default function BookingSection() {
     setShowServiceMenu(false);
     setError("");
     setUploadedPhotos([]);
+    setPhotoUrls([]);
     setNote("");
   }, [selectedAddressId]);
 
@@ -261,103 +264,95 @@ export default function BookingSection() {
     loadConfig();
   }, []);
 
-  // Check subscription per address
   useEffect(() => {
-    const checkAddressSubscription = async () => {
-      const addressId = selectedAddressId || defaultAddressId;
+  const urls = uploadedPhotos.map((f) => URL.createObjectURL(f));
+  setPhotoUrls(urls);
 
-      if (!addressId || !isAuthenticated) {
-        setHasSubscription(false);
+  return () => {
+    urls.forEach((u) => URL.revokeObjectURL(u));
+  };
+}, [uploadedPhotos]);
+
+
+
+// ✅ Check access + limits + next booking (subscription OR free visit)
+useEffect(() => {
+  const run = async () => {
+    const addressId = selectedAddressId || defaultAddressId;
+
+    if (!addressId || !isAuthenticated) {
+      setHasSubscription(false);
+      setFreeFirstVisitAvailable(false);
+      setPlan("");
+      setHasActiveBooking(false);
+      setActiveBookingCount(0);
+      setActiveBookingLimit(1);
+      setExistingBookingDate(null);
+      setExistingBookingId(null);
+      setExistingBookingService("");
+      setExistingBookingTime("");
+      setSubscriptionError("");
+      return;
+    }
+
+    setCheckingAccess(true);
+    try {
+      const data = await getNextBooking(addressId);
+
+      const hasSub = !!data?.hasSubscription;
+      const freeOk = !!data?.freeFirstVisitAvailable;
+
+      setHasSubscription(hasSub);
+      setFreeFirstVisitAvailable(freeOk);
+      setPlan(String(data?.plan || ""));
+
+      // show message only if neither is allowed
+      if (!hasSub && !freeOk) {
+        setSubscriptionError("This address does not have an active subscription. Purchase a subscription to book a visit.");
+      } else {
         setSubscriptionError("");
-        setPlan("");
-        return;
       }
 
-      setCheckingSubscription(true);
-      try {
-        const data = await checkSubscription(addressId);
+      const limit = Number(data?.bookingLimit ?? 1);
+      const count = Number(data?.activeCount ?? 0);
 
-        setHasSubscription(!!data?.hasSubscription);
+      const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 1;
+      const safeCount = Number.isFinite(count) && count >= 0 ? count : 0;
 
-        const p = String((data as any)?.subscription?.plan || "").toLowerCase();
-        setPlan(p);
+      setActiveBookingLimit(safeLimit);
+      setActiveBookingCount(safeCount);
+      setHasActiveBooking(safeCount >= safeLimit);
 
-        if (!data?.hasSubscription) {
-          setSubscriptionError(
-            (data as any)?.message || "This address does not have an active subscription."
-          );
-        } else {
-          setSubscriptionError("");
-        }
-      } catch (err) {
-        console.error("❌ Failed to check subscription:", err);
-        setHasSubscription(false);
-        setPlan("");
-        setSubscriptionError("Unable to verify subscription status.");
-      } finally {
-        setCheckingSubscription(false);
-      }
-    };
+      if (data?.future?.date) {
+        const dt = new Date(data.future.date);
+        setExistingBookingDate(dt);
+        setExistingBookingId(data.future._id);
+        setExistingBookingService(data.future.service || "");
 
-    checkAddressSubscription();
-  }, [selectedAddressId, defaultAddressId, isAuthenticated]);
-
-  // Check existing booking + booking limit
-  useEffect(() => {
-    const checkExistingBooking = async () => {
-      const addressId = selectedAddressId || defaultAddressId;
-
-      if (!addressId || !isAuthenticated || !hasSubscription) {
-        setHasActiveBooking(false);
-        setActiveBookingCount(0);
-        setActiveBookingLimit(1);
+        const hhmm = dt.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+        setExistingBookingTime(hhmm);
+      } else {
         setExistingBookingDate(null);
         setExistingBookingId(null);
         setExistingBookingService("");
         setExistingBookingTime("");
-        return;
       }
+    } catch (e) {
+      setHasSubscription(false);
+      setFreeFirstVisitAvailable(false);
+      setPlan("");
+      setSubscriptionError("Unable to verify booking access.");
+    } finally {
+      setCheckingAccess(false);
+    }
+  };
 
-      try {
-        const data = await getNextBooking(addressId);
-
-        const limit = Number((data as any)?.bookingLimit ?? 1);
-        const count = Number((data as any)?.activeCount ?? 0);
-
-        const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 1;
-        const safeCount = Number.isFinite(count) && count >= 0 ? count : 0;
-
-        setActiveBookingLimit(safeLimit);
-        setActiveBookingCount(safeCount);
-        setHasActiveBooking(safeCount >= safeLimit);
-
-        if ((data as any)?.future) {
-          const dt = new Date((data as any).future.date);
-          setExistingBookingDate(dt);
-          setExistingBookingId((data as any).future._id);
-          setExistingBookingService((data as any).future.service || "");
-
-          const hhmm = dt.toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          });
-          setExistingBookingTime(hhmm);
-        } else {
-          setExistingBookingDate(null);
-          setExistingBookingId(null);
-          setExistingBookingService("");
-          setExistingBookingTime("");
-        }
-      } catch (err) {
-        setHasActiveBooking(false);
-        setActiveBookingCount(0);
-        setActiveBookingLimit(1);
-      }
-    };
-
-    checkExistingBooking();
-  }, [selectedAddressId, defaultAddressId, hasSubscription, isAuthenticated]);
+  run();
+}, [selectedAddressId, defaultAddressId, isAuthenticated]);
 
   // Load time slots when date selected
   useEffect(() => {
@@ -508,10 +503,11 @@ export default function BookingSection() {
       return;
     }
 
-    if (!hasSubscription) {
-      setError("This address does not have an active subscription. Purchase a subscription to book a visit.");
-      return;
-    }
+    if (!hasSubscription && !freeFirstVisitAvailable) {
+  setError("This address does not have an active subscription. Purchase a subscription to book a visit.");
+  return;
+}
+
 
     if (!service) {
       setError("Please select a service");
@@ -539,6 +535,13 @@ export default function BookingSection() {
       bookingDate.setHours(hours, minutes, 0, 0);
 
       const serviceLabel = SERVICES.find((x) => x.key === service)?.label || "";
+
+// ✅ If this is a free first visit, only allow Labor Only
+if (!hasSubscription && freeFirstVisitAvailable && serviceLabel !== "Labor Only") {
+  setError('Free visit is available for "Labor Only" only. Please select "Labor Only".');
+  setLoading(false);
+  return;
+}
 
       const result = await createBooking({
         service: serviceLabel,
@@ -607,11 +610,12 @@ export default function BookingSection() {
 
   const days = generateCalendarDays();
 
-  const canBook =
-    !loading &&
-    !checkingSubscription &&
-    (hasSubscription || !isAuthenticated) &&
-    !hasActiveBooking;
+const canBook =
+  !loading &&
+  !checkingAccess &&
+  (hasSubscription || freeFirstVisitAvailable || !isAuthenticated) &&
+  !hasActiveBooking;
+
 
   const wordsCount = note.trim().split(/\s+/).filter(Boolean).length;
 
@@ -822,16 +826,17 @@ export default function BookingSection() {
                 <div ref={serviceWrapRef} className="relative">
                   <button
                     type="button"
-                    disabled={checkingSubscription || !hasSubscription}
-                    onClick={() => {
-                      if (checkingSubscription || !hasSubscription) return;
-                      setShowServiceMenu((v) => !v);
-                    }}
+                    disabled={checkingAccess || (!hasSubscription && !freeFirstVisitAvailable)}
+onClick={() => {
+  if (checkingAccess || (!hasSubscription && !freeFirstVisitAvailable)) return;
+  setShowServiceMenu((v) => !v);
+}}
+
                     className={[
                       "h-[46px] px-4 sm:px-5 rounded-[12px] border text-sm sm:text-base whitespace-nowrap transition flex items-center justify-between gap-3 w-full sm:w-[260px]",
-                      checkingSubscription || !hasSubscription
-                        ? "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
-                        : "border-[#313234] bg-white/50 text-[#313234] hover:bg-white",
+checkingAccess || (!hasSubscription && !freeFirstVisitAvailable)
+  ? "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
+  : "border-[#313234] bg-white/50 text-[#313234] hover:bg-white"
                     ].join(" ")}
                   >
                     <span className={service ? "font-semibold" : ""}>
@@ -845,7 +850,10 @@ export default function BookingSection() {
                   {showServiceMenu && (
                     <div className="absolute top-[52px] left-0 w-full sm:w-[300px] bg-white border border-[#c5cbd8] rounded-[12px] shadow-lg z-20 overflow-hidden">
                       {SERVICES.map((s) => {
-                        const allowed = isServiceAllowed(s.minRank);
+                        const allowed =
+  (!hasSubscription && freeFirstVisitAvailable)
+    ? s.key === "labor_only"
+    : isServiceAllowed(s.minRank);
                         return (
                           <button
                             key={s.key}
@@ -914,12 +922,12 @@ export default function BookingSection() {
                 <div className="mt-5">
                   <div className="text-sm font-semibold text-[#313234] mb-2">Photos</div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {uploadedPhotos.map((file, idx) => {
-                      const url = URL.createObjectURL(file);
-                      return (
+{uploadedPhotos.map((file, idx) => {
+  const url = photoUrls[idx];
+  return (
                         <div key={idx} className="relative rounded-[14px] overflow-hidden border border-[#c5cbd8] bg-white">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={url} alt={`Upload ${idx + 1}`} className="w-full h-[120px] object-cover" />
+                          <img src={url || ""} alt={`Upload ${idx + 1}`} className="w-full h-[120px] object-cover" />
                           <button
                             type="button"
                             onClick={() => removePhoto(idx)}
@@ -937,7 +945,7 @@ export default function BookingSection() {
             </div>
 
             {/* Subscription warning */}
-            {isAuthenticated && !checkingSubscription && !hasSubscription && subscriptionError && (
+{isAuthenticated && !checkingAccess && !hasSubscription && !freeFirstVisitAvailable && subscriptionError && (
               <div className="mt-4 text-red-700 text-sm bg-red-50 border border-red-200 rounded-[14px] p-4">
                 <div className="font-extrabold mb-1">🔒 No Active Subscription</div>
                 <div className="mb-3">{subscriptionError}</div>
@@ -1002,7 +1010,7 @@ export default function BookingSection() {
                 disabled={!canBook}
                 className="w-full sm:w-[280px] h-[58px] rounded-[16px] bg-[#306eec] border border-[#306eec] text-[#eef2ff] text-lg sm:text-[20px] font-extrabold hover:bg-[#2558c9] transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99]"
               >
-                {checkingSubscription ? "Checking..." : loading ? "Booking..." : hasActiveBooking ? "Limit reached" : "Book now"}
+{checkingAccess ? "Checking..." : loading ? "Booking..." : hasActiveBooking ? "Limit reached" : "Book now"}
               </button>
 
               <div className="mt-2 text-xs text-[#6a6c71]">
