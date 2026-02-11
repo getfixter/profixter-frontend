@@ -1,0 +1,200 @@
+"use client";
+
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+type ApiReview = {
+  author_name: string;
+  rating: number;
+  text: string;
+  relative_time_description?: string;
+  time?: number;
+  profile_photo_url?: string;
+};
+
+type ApiPayload = {
+  ok: boolean;
+  placeName?: string;
+  rating?: number;
+  total?: number;
+  googleUrl?: string;
+  reviews?: ApiReview[];
+  error?: string;
+};
+
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}
+
+function Stars({ rating = 5 }: { rating?: number }) {
+  const r = clamp(Math.round(rating), 0, 5);
+  return (
+    <div className="flex items-center gap-0.5">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <span
+          key={i}
+          className={[
+            "text-[15px] leading-none",
+            i < r ? "text-yellow-300" : "text-white/30",
+          ].join(" ")}
+        >
+          ★
+        </span>
+      ))}
+    </div>
+  );
+}
+
+export default function GoogleReviewsLiveMini() {
+  const [data, setData] = useState<ApiPayload | null>(null);
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  // swipe
+  const touchX = useRef<number | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        // IMPORTANT: uses your backend URL from NEXT_PUBLIC_API_URL
+        const base = process.env.NEXT_PUBLIC_API_URL || "";
+        const resp = await fetch(`${base}/api/google/reviews`, { cache: "no-store" });
+        const json = (await resp.json()) as ApiPayload;
+        if (!alive) return;
+        setData(json);
+        setIdx(0);
+      } catch {
+        if (!alive) return;
+        setData({ ok: false, error: "Failed to load reviews" });
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const reviews = useMemo(() => {
+    const arr = data?.ok ? (data.reviews || []) : [];
+    return arr.length
+      ? arr
+      : [
+          {
+            author_name: "Google Reviews",
+            rating: 5,
+            text: "5-star local service across Long Island.",
+            relative_time_description: "",
+          },
+        ];
+  }, [data]);
+
+  const rating = data?.ok ? Number(data.rating || 0) : 5;
+  const total = data?.ok ? Number(data.total || 0) : 0;
+  const googleUrl = data?.ok ? String(data.googleUrl || "") : "";
+
+  const next = () => setIdx((i) => (i + 1) % reviews.length);
+  const prev = () => setIdx((i) => (i - 1 + reviews.length) % reviews.length);
+
+  useEffect(() => {
+    if (paused) return;
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => next(), 4200);
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, paused, reviews.length]);
+
+  const current = reviews[idx];
+
+  return (
+    <div
+      className="w-full max-w-[560px] mt-8 sm:mt-10"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onTouchStart={(e) => {
+        touchX.current = e.touches[0]?.clientX ?? null;
+        setPaused(true);
+      }}
+      onTouchEnd={(e) => {
+        const start = touchX.current;
+        const end = e.changedTouches[0]?.clientX ?? null;
+        touchX.current = null;
+
+        if (start !== null && end !== null) {
+          const dx = end - start;
+          if (Math.abs(dx) > 40) {
+            if (dx < 0) next();
+            else prev();
+          }
+        }
+        setPaused(false);
+      }}
+      aria-label="Google reviews slider"
+    >
+      <div className="relative rounded-[18px] border border-white/20 bg-white/10 backdrop-blur-md shadow-[0_20px_80px_rgba(0,0,0,0.35)] overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10" />
+
+        <div className="relative p-5 sm:p-6">
+          {/* Badge + link */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/20 px-3 py-2">
+              <Image src="/images/icons/icon-google.svg" alt="Google" width={16} height={16} className="w-4 h-4" />
+              <span className="text-white/90 text-[13px] font-semibold">5.0 on Google</span>
+              <span className="text-white/70 text-[13px]">{total > 0 ? `(${total})` : ""}</span>
+            </div>
+
+            {googleUrl ? (
+              <a
+                href={googleUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/80 text-[13px] font-semibold hover:text-white underline underline-offset-4"
+              >
+                Read all reviews
+              </a>
+            ) : (
+              <span className="text-white/60 text-[12px]">Swipe</span>
+            )}
+          </div>
+
+          {/* Stars */}
+          <div className="mt-3 flex items-center justify-between">
+            <Stars rating={rating || current.rating || 5} />
+            <div className="text-white/60 text-[12px]">
+              {current.relative_time_description || ""}
+            </div>
+          </div>
+
+          {/* Review */}
+          <div className="mt-4 min-h-[84px] flex items-center">
+            <p className="text-white text-[15px] sm:text-[16px] leading-snug">
+              “{current.text}”
+            </p>
+          </div>
+
+          {/* Author + dots */}
+          <div className="mt-3 flex items-center justify-between">
+            <div className="text-white/80 text-[13px] font-semibold">— {current.author_name}</div>
+
+            <div className="flex items-center gap-2">
+              {reviews.slice(0, 8).map((_, i) => (
+                <div
+                  key={i}
+                  className={[
+                    "w-2 h-2 rounded-full transition",
+                    i === idx ? "bg-white" : "bg-white/35",
+                  ].join(" ")}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-3 text-white/55 text-[11px]">Tip: swipe left/right</div>
+        </div>
+      </div>
+    </div>
+  );
+}
