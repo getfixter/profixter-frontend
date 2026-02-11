@@ -86,8 +86,8 @@ export default function HeroSection() {
     if (!isAuthenticated) {
       return {
         badge: "Serving Long Island • Suffolk & Nassau",
-        titleA: "Your home",
-        titleB: "Handled.",
+        titleA: "Your Home",
+        titleB: "Be better soon.",
         subtitle: "Finally, someone you can trust to take care of the little things - without stress.",
         cta: "Get Your First Fix Free",
       };
@@ -106,8 +106,8 @@ export default function HeroSection() {
     if (subState === "sub") {
       return {
         badge: "Member access active",
-        titleA: "You’re",
-        titleB: "covered.",
+        titleA: "We missed you",
+        titleB: "Need help?",
         subtitle: "Book your next visit in seconds. We’ll handle the rest.",
         cta: "Book My Next Visit",
       };
@@ -116,8 +116,8 @@ export default function HeroSection() {
     return {
       badge: "Serving Long Island • Suffolk & Nassau",
       titleA: "Let’s take care",
-      titleB: "of it.",
-      subtitle: "The easy way to keep your home feeling right - all year.",
+      titleB: "of your Home.",
+      subtitle: "The easy way to keep your home feeling right - every day.",
       cta: "See Plans",
     };
   }, [isAuthenticated, subState]);
