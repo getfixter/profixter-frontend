@@ -63,6 +63,10 @@ export interface NextBookingResponse {
   freeFirstVisitAvailable?: boolean;
   bookingLimit?: number;
   activeCount?: number;
+
+  // ✅ NEW: used for “new user gets 1 free visit”
+  hasAnyBookings?: boolean;
+
   future?: {
     _id: string;
     date: string;
@@ -72,6 +76,7 @@ export interface NextBookingResponse {
     addressId?: string;
   } | null;
 }
+
 
 export interface SubscriptionResponse {
   hasSubscription: boolean;
@@ -107,6 +112,12 @@ export const getMySubscriptions = async (): Promise<{ subscriptions: any[] }> =>
   return response.data;
 };
 
+/**
+ * NOTE:
+ * This function ONLY checks subscription records.
+ * It does NOT know about your "free visit if never booked" rule.
+ * Use getNextBooking() for UI state (free/sub/none).
+ */
 export const checkSubscription = async (
   addressId?: string | null
 ): Promise<SubscriptionResponse> => {
@@ -136,14 +147,13 @@ export const checkSubscription = async (
     }
 
     // ❌ NO FALLBACK — subscription MUST belong to this address
-if (!matched) {
-  return {
-    hasSubscription: false,
-    message:
-      "This address does not have an active subscription. Purchase a subscription for this address to book a visit.",
-  };
-}
-
+    if (!matched) {
+      return {
+        hasSubscription: false,
+        message:
+          "This address does not have an active subscription. Purchase a subscription for this address to book a visit.",
+      };
+    }
 
     return {
       hasSubscription: true,
