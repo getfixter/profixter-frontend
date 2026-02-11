@@ -12,6 +12,7 @@ import ProjectsSection from "./components/sections/ProjectsSection";
 import Footer from "./components/sections/Footer";
 import { ChatWidget } from "./components/ChatWidget";
 import Image from "next/image";
+import ServiceInfoSection from "./components/sections/ServiceInfoSection";
 
 export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -33,6 +34,7 @@ export default function Home() {
 
       <main className="relative">
         <HeroSection />
+        <ServiceInfoSection/>
         <BookingSection />
         <StepsSection />
         <PlansSection />
