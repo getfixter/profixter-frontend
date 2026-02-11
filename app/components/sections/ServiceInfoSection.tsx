@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
-import { checkSubscription } from "@/lib/booking-service";
+import { checkSubscription, getNextBooking } from "@/lib/booking-service";
 
 type FixterUser = {
   defaultAddressId?: string | null;
@@ -13,6 +13,14 @@ type SubscriptionResponse = {
   hasSubscription: boolean;
   freeFirstVisitAvailable?: boolean;
   plan?: string;
+};
+
+// from /api/bookings/next/:addressId (your existing endpoint)
+type NextBookingResponse = {
+  hasSubscription?: boolean;
+  freeFirstVisitAvailable?: boolean;
+  plan?: string;
+  hasAnyBookings?: boolean; // ✅ we will add this in backend
 };
 
 const TIP_URL = "https://buy.stripe.com/eVq8wO3W98O03NL3ASawo00";
@@ -36,6 +44,7 @@ export default function ServiceInfoSection() {
 
   const [state, setState] = useState<"guest" | "free" | "sub" | "none">("guest");
   const [plan, setPlan] = useState<string>("");
+  const [hasAnyBookings, setHasAnyBookings] = useState<boolean | null>(null); // null=unknown
 
   useEffect(() => {
     mountedRef.current = true;
@@ -49,40 +58,57 @@ export default function ServiceInfoSection() {
       if (!isAuthenticated) {
         setState("guest");
         setPlan("");
+        setHasAnyBookings(null);
         return;
       }
 
       const addressId = typedUser?.defaultAddressId;
       if (!addressId) {
-        // logged in but no address → treat as no access yet
         setState("none");
         setPlan("");
+        setHasAnyBookings(null);
         return;
       }
 
       try {
-        const sub = (await checkSubscription(addressId)) as SubscriptionResponse;
+        // ✅ Use "next booking" endpoint because it knows booking + free visit truth per address
+        const nb = (await getNextBooking(addressId)) as NextBookingResponse;
 
-        const hasSub = !!sub?.hasSubscription;
-        const freeOk = !!sub?.freeFirstVisitAvailable;
+        const hasSub = !!nb?.hasSubscription;
+        const freeOk = !!nb?.freeFirstVisitAvailable;
+
+        setPlan(String(nb?.plan || ""));
+        setHasAnyBookings(typeof nb?.hasAnyBookings === "boolean" ? nb.hasAnyBookings : null);
 
         if (hasSub) {
           setState("sub");
-          setPlan(String(sub?.plan || ""));
           return;
         }
 
         if (freeOk) {
           setState("free");
-          setPlan("free");
           return;
         }
 
         setState("none");
-        setPlan("");
       } catch {
-        setState("none");
-        setPlan("");
+        // fallback: try subscription check only
+        try {
+          const sub = (await checkSubscription(addressId)) as SubscriptionResponse;
+          const hasSub = !!sub?.hasSubscription;
+          const freeOk = !!sub?.freeFirstVisitAvailable;
+
+          setPlan(String(sub?.plan || ""));
+          setHasAnyBookings(null);
+
+          if (hasSub) setState("sub");
+          else if (freeOk) setState("free");
+          else setState("none");
+        } catch {
+          setState("none");
+          setPlan("");
+          setHasAnyBookings(null);
+        }
       }
     };
 
@@ -90,54 +116,64 @@ export default function ServiceInfoSection() {
   }, [isAuthenticated, typedUser?.defaultAddressId]);
 
   const cta = useMemo(() => {
+    // ✅ helper: if user is logged in and we detect no bookings ever → show 1 free
+    const shouldShowNewUserFree =
+      isAuthenticated && state === "none" && hasAnyBookings === false;
+
     if (state === "guest") {
       return {
-        title: "Get your home handled - the simple way.",
+        title: "Get your home handled — the simple way.",
         sub: "Create an account, claim your first visit, then book your date and time in the calendar below.",
         primaryLabel: "Create account",
         primaryHref: "/signup?redirect=/",
         secondaryLabel: "See what’s included",
         secondaryHref: "/included",
         badge: "Local • Long Island • 5-star service",
+        rightHint: "New here? Your first visit is on us.",
       };
     }
 
-    if (state === "free") {
+    if (state === "free" || shouldShowNewUserFree) {
       return {
-        title: "You have 1 remaining 100% free visit.",
-        sub: "Pick your date and time below - we’ll take care of that one task for you.",
+        title: "You have 1 free visit remaining.",
+        sub: "Pick your date and time below — we’ll handle one task for you, professionally and fast.",
         primaryLabel: "Book my free visit",
         primaryHref: "#pick-day",
         secondaryLabel: "See what’s included",
         secondaryHref: "/included",
         badge: "Free visit available",
+        rightHint: "Scroll down to the calendar to book.",
       };
     }
 
     if (state === "sub") {
       const name = prettyPlan(plan);
       return {
-        title: `Your plan is active${name ? ` - ${name}` : ""}. Want to see us again?`,
-        sub: "Book your next visit in the calendar below. One task per visit, done the right way.",
+        title: `Your plan is active${name ? ` — ${name}` : ""}.`,
+        sub: "Book your next visit in the calendar below — we’ll take it from there.",
         primaryLabel: "Book next visit",
         primaryHref: "#pick-day",
         secondaryLabel: "What’s included",
         secondaryHref: "/included",
-        badge: "Member access",
+        badge: name ? `${name} member` : "Member access",
+        rightHint: "Want another fix? Book your next slot below.",
       };
     }
 
-    // none
+    // none (used free already)
     return {
       title: "You have 0 free visits remaining.",
-      sub: "Get month-to-month coverage and book visits anytime using the calendar below.",
+      sub: "Get month-to-month coverage to book visits anytime using the calendar below.",
       primaryLabel: "Get coverage",
       primaryHref: "#plans",
       secondaryLabel: "See what’s included",
       secondaryHref: "/included",
       badge: "No free visits left",
+      rightHint: "Choose a plan, then book in the calendar.",
     };
-  }, [state, plan]);
+  }, [state, plan, isAuthenticated, hasAnyBookings]);
+
+  const showMemberCard = state === "sub";
 
   return (
     <section
@@ -165,7 +201,7 @@ export default function ServiceInfoSection() {
 
           <div className="p-5 sm:p-7">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8">
-              {/* LEFT: main message */}
+              {/* LEFT */}
               <div className="lg:col-span-7">
                 <h2 className="text-[26px] sm:text-[32px] lg:text-[36px] font-extrabold leading-tight text-[#313234]">
                   {cta.title}
@@ -175,20 +211,22 @@ export default function ServiceInfoSection() {
                   {cta.sub}
                 </p>
 
-                {/* Key rules - short and clear */}
+                {/* Key rules */}
                 <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
                     <div className="text-[#313234] font-bold">✅ One task per visit</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      We focus on completing <span className="font-semibold text-[#313234]">one job properly</span>.
-                      If it’s extremely small and time allows, we may do a second - but it’s not guaranteed.
+                      We focus on completing{" "}
+                      <span className="font-semibold text-[#313234]">one job properly</span>.
+                      If it’s extremely small and time allows, we may do a second — but it’s not guaranteed.
                     </div>
                   </div>
 
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
                     <div className="text-[#313234] font-bold">⏱️ Up to 90 minutes max</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      A visit can be <span className="font-semibold text-[#313234]">shorter</span> if the task is done.
+                      A visit can be{" "}
+                      <span className="font-semibold text-[#313234]">shorter</span> if the task is done.
                       We do <span className="font-semibold text-[#313234]">not</span> stay “just to hit 90.”
                     </div>
                   </div>
@@ -201,22 +239,32 @@ export default function ServiceInfoSection() {
                     </div>
                   </div>
 
-                  <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
-                    <div className="text-[#313234] font-bold">💵 Month-to-month</div>
-                    <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      No contracts. Cancel anytime. Use your plan to book visits directly in the calendar below.
+                  {/* ✅ CHANGE THIS CARD FOR SUBSCRIBERS */}
+                  {!showMemberCard ? (
+                    <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
+                      <div className="text-[#313234] font-bold">✨ Month-to-month coverage</div>
+                      <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
+                        Simple coverage that gives you access to book visits when you need help.
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
+                      <div className="text-[#313234] font-bold">⭐ Member priority</div>
+                      <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
+                        Your membership is active — book your next visit and we’ll confirm it fast.
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Referral + Tip */}
                 <div className="mt-5 rounded-[18px] border border-[#C5CBD8] bg-white p-4 sm:p-5">
                   <div className="text-[#313234] font-extrabold">Bonus perks</div>
                   <div className="mt-2 text-[#6A6D71] text-[13px] leading-relaxed">
-                    • Invite a friend or family member and get <span className="font-semibold text-[#313234]">$50 off</span>{" "}
-                    your next payment. <br />
-                    • Want to tip your Fixter? Tips go <span className="font-semibold text-[#313234]">100%</span> to the
-                    person who served you.
+                    • Invite a friend or family member and get{" "}
+                    <span className="font-semibold text-[#313234]">$50 off</span> your next payment. <br />
+                    • Want to tip your Fixter? Tips go{" "}
+                    <span className="font-semibold text-[#313234]">100%</span> to the person who served you.
                   </div>
 
                   <div className="mt-4 flex flex-col sm:flex-row gap-3">
@@ -239,7 +287,7 @@ export default function ServiceInfoSection() {
                 </div>
               </div>
 
-              {/* RIGHT: actions + “calendar below” */}
+              {/* RIGHT */}
               <div className="lg:col-span-5">
                 <div className="rounded-[18px] border border-[#C5CBD8] bg-white p-5 sm:p-6">
                   <div className="text-[12px] uppercase tracking-wider text-[#6A6D71] font-bold">
@@ -252,6 +300,10 @@ export default function ServiceInfoSection() {
 
                   <div className="mt-2 text-[#6A6D71] text-[13px] leading-relaxed">
                     Pick a date. Choose a time. Tell us the task. Upload photos. We’ll confirm and handle it.
+                  </div>
+
+                  <div className="mt-4 text-[12px] text-[#6A6D71] font-semibold">
+                    {cta.rightHint}
                   </div>
 
                   <div className="mt-5 flex flex-col gap-3">
@@ -290,11 +342,10 @@ export default function ServiceInfoSection() {
                   </div>
                 </div>
 
-                {/* extra note */}
                 <div className="mt-4 rounded-[18px] border border-[#E6E8EF] bg-[#F6F7FB] p-5">
                   <div className="text-[#313234] font-extrabold">Quick note</div>
                   <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                    We’re friendly and professional - and we appreciate the same back.
+                    We’re friendly and professional — and we appreciate the same back.
                     If we’re delayed from a previous job, we’ll still arrive and take care of you.
                   </div>
                 </div>
