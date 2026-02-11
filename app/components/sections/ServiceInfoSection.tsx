@@ -122,7 +122,7 @@ export default function ServiceInfoSection() {
 
     if (state === "guest") {
       return {
-        title: "Get your home handled — the simple way.",
+        title: "Get your home handled - the simple way.",
         sub: "Create an account, claim your first visit, then book your date and time in the calendar below.",
         primaryLabel: "Create account",
         primaryHref: "/signup?redirect=/",
@@ -136,7 +136,7 @@ export default function ServiceInfoSection() {
     if (state === "free" || shouldShowNewUserFree) {
       return {
         title: "You have 1 free visit remaining.",
-        sub: "Pick your date and time below — we’ll handle one task for you, professionally and fast.",
+        sub: "Pick your date and time below - we’ll handle one task for you, professionally and fast.",
         primaryLabel: "Book my free visit",
         primaryHref: "#pick-day",
         secondaryLabel: "See what’s included",
@@ -149,8 +149,8 @@ export default function ServiceInfoSection() {
     if (state === "sub") {
       const name = prettyPlan(plan);
       return {
-        title: `Your plan is active${name ? ` — ${name}` : ""}.`,
-        sub: "Book your next visit in the calendar below — we’ll take it from there.",
+        title: `Your plan is active${name ? ` - ${name}` : ""}.`,
+        sub: "Book your next visit in the calendar below - we’ll take it from there.",
         primaryLabel: "Book next visit",
         primaryHref: "#pick-day",
         secondaryLabel: "What’s included",
@@ -218,7 +218,7 @@ export default function ServiceInfoSection() {
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
                       We focus on completing{" "}
                       <span className="font-semibold text-[#313234]">one job properly</span>.
-                      If it’s extremely small and time allows, we may do a second — but it’s not guaranteed.
+                      If it’s extremely small and time allows, we may do a second - but it’s not guaranteed.
                     </div>
                   </div>
 
@@ -251,7 +251,7 @@ export default function ServiceInfoSection() {
                     <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
                       <div className="text-[#313234] font-bold">⭐ Member priority</div>
                       <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                        Your membership is active — book your next visit and we’ll confirm it fast.
+                        Your membership is active - book your next visit and we’ll confirm it fast.
                       </div>
                     </div>
                   )}
@@ -345,7 +345,7 @@ export default function ServiceInfoSection() {
                 <div className="mt-4 rounded-[18px] border border-[#E6E8EF] bg-[#F6F7FB] p-5">
                   <div className="text-[#313234] font-extrabold">Quick note</div>
                   <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                    We’re friendly and professional — and we appreciate the same back.
+                    We’re friendly and professional - and we appreciate the same back.
                     If we’re delayed from a previous job, we’ll still arrive and take care of you.
                   </div>
                 </div>
