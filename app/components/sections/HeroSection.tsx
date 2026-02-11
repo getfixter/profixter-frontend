@@ -6,6 +6,8 @@ import { checkSubscription } from "@/lib/booking-service";
 import { useEffect, useMemo, useRef, useState } from "react";
 import NeedItQuizModal from "@/app/components/NeedItQuizModal";
 import GoogleReviewsLiveMini from "@/app/components/GoogleReviewsLiveMini";
+const GOOGLE_REVIEW_WRITE_URL =
+  "https://search.google.com/local/writereview?placeid=ChIJjZtSCtd1XogR0kdxepnQJu8";
 
 type FixterUser = {
   defaultAddressId?: string | null;
@@ -84,16 +86,16 @@ export default function HeroSection() {
     if (!isAuthenticated) {
       return {
         badge: "Serving Long Island • Suffolk & Nassau",
-        titleA: "Your home.",
+        titleA: "Your home",
         titleB: "Handled.",
-        subtitle: "Finally, someone you can trust to take care of the little things — without stress.",
+        subtitle: "Finally, someone you can trust to take care of the little things - without stress.",
         cta: "Get Your First Fix Free",
       };
     }
 
     if (subState === "free") {
       return {
-        badge: "Welcome — your first visit is on us",
+        badge: "Welcome - your first visit is on us",
         titleA: "Your first fix",
         titleB: "is free.",
         subtitle: "Relax. We’ve got your home handled from here.",
@@ -115,7 +117,7 @@ export default function HeroSection() {
       badge: "Serving Long Island • Suffolk & Nassau",
       titleA: "Let’s take care",
       titleB: "of it.",
-      subtitle: "The easy way to keep your home feeling right — all year.",
+      subtitle: "The easy way to keep your home feeling right - all year.",
       cta: "See Plans",
     };
   }, [isAuthenticated, subState]);
@@ -146,8 +148,8 @@ export default function HeroSection() {
 
             {/* Headline */}
             <h1 className="max-w-[980px] text-white font-extrabold uppercase leading-[0.95] tracking-[-0.04em]">
-              <div className="text-[44px] sm:text-[64px] lg:text-[76px]">{heroCopy.titleA}</div>
-              <div className="text-[44px] sm:text-[64px] lg:text-[76px] text-[#5E8BFF]">{heroCopy.titleB}</div>
+<div className="text-[50px] sm:text-[72px] lg:text-[88px]">{heroCopy.titleA}</div>
+<div className="text-[50px] sm:text-[72px] lg:text-[88px] text-[#5E8BFF]">{heroCopy.titleB}</div>
             </h1>
 
             {/* Sub */}
@@ -157,22 +159,35 @@ export default function HeroSection() {
 
             {/* CTAs */}
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
-              <button
-                type="button"
-                onClick={handleMainCTA}
-                className="h-[56px] px-8 rounded-[16px] bg-[#5E8BFF] text-white text-lg font-bold hover:bg-[#4a76e0] transition active:scale-[0.99]"
-              >
-                {heroCopy.cta}
-              </button>
+  <button
+    type="button"
+    onClick={handleMainCTA}
+    className="h-[56px] px-8 rounded-[16px] bg-[#5E8BFF] text-white text-lg font-bold hover:bg-[#4a76e0] transition active:scale-[0.99]"
+  >
+    {heroCopy.cta}
+  </button>
 
-              <button
-                type="button"
-                onClick={() => setNeedItOpen(true)}
-                className="h-[56px] px-8 rounded-[16px] border border-white/30 text-white text-lg font-semibold hover:bg-white/10 transition"
-              >
-                Take 20-second quiz
-              </button>
-            </div>
+  <button
+    type="button"
+    onClick={() => setNeedItOpen(true)}
+    className="h-[56px] px-8 rounded-[16px] border border-white/30 text-white text-lg font-semibold hover:bg-white/10 transition"
+  >
+    Take 20-second quiz
+  </button>
+
+  {/* ✅ Leave review button: only for logged in + subscribed */}
+  {isAuthenticated && subState === "sub" && (
+    <a
+      href={GOOGLE_REVIEW_WRITE_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="h-[56px] px-8 rounded-[16px] border border-white/20 text-white/90 text-lg font-semibold hover:bg-white/10 transition flex items-center justify-center"
+    >
+      Leave a review
+    </a>
+  )}
+</div>
+
 
             {/* ✅ Live Google reviews */}
             <GoogleReviewsLiveMini />

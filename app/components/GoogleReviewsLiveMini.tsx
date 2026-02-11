@@ -45,67 +45,107 @@ function Stars({ rating = 5 }: { rating?: number }) {
   );
 }
 
+function IconChevronLeft() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path d="M15 19L8 12L15 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconChevronRight() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path d="M9 5L16 12L9 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export default function GoogleReviewsLiveMini() {
   const [data, setData] = useState<ApiPayload | null>(null);
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
-  const timerRef = useRef<number | null>(null);
 
-  // swipe
+  const timerRef = useRef<number | null>(null);
   const touchX = useRef<number | null>(null);
+
+  const DELAY_MS = 15000; // ✅ 15 seconds per review
+
+  const resetTimer = () => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => {
+      setIdx((i) => {
+        const len = Math.max(1, reviewsRef.current.length);
+        return (i + 1) % len;
+      });
+    }, DELAY_MS);
+  };
+
+  const reviewsRef = useRef<ApiReview[]>([]);
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        // IMPORTANT: uses your backend URL from NEXT_PUBLIC_API_URL
         const base = process.env.NEXT_PUBLIC_API_URL || "";
         const resp = await fetch(`${base}/api/google/reviews`, { cache: "no-store" });
         const json = (await resp.json()) as ApiPayload;
+
         if (!alive) return;
         setData(json);
         setIdx(0);
       } catch {
         if (!alive) return;
         setData({ ok: false, error: "Failed to load reviews" });
+        setIdx(0);
       }
     })();
 
     return () => {
       alive = false;
+      if (timerRef.current) window.clearTimeout(timerRef.current);
     };
   }, []);
 
   const reviews = useMemo(() => {
     const arr = data?.ok ? (data.reviews || []) : [];
-    return arr.length
-      ? arr
-      : [
-          {
-            author_name: "Google Reviews",
-            rating: 5,
-            text: "5-star local service across Long Island.",
-            relative_time_description: "",
-          },
-        ];
+    const fallback: ApiReview[] = [
+      {
+        author_name: "Google Reviews",
+        rating: 5,
+        text: "5-star local service across Long Island.",
+        relative_time_description: "",
+      },
+    ];
+    return arr.length ? arr : fallback;
   }, [data]);
+
+  // keep ref updated (used in resetTimer)
+  useEffect(() => {
+    reviewsRef.current = reviews;
+  }, [reviews]);
 
   const rating = data?.ok ? Number(data.rating || 0) : 5;
   const total = data?.ok ? Number(data.total || 0) : 0;
   const googleUrl = data?.ok ? String(data.googleUrl || "") : "";
 
-  const next = () => setIdx((i) => (i + 1) % reviews.length);
-  const prev = () => setIdx((i) => (i - 1 + reviews.length) % reviews.length);
+  const next = () => {
+    setIdx((i) => (i + 1) % reviews.length);
+    resetTimer();
+  };
+  const prev = () => {
+    setIdx((i) => (i - 1 + reviews.length) % reviews.length);
+    resetTimer();
+  };
 
+  // Auto timer
   useEffect(() => {
     if (paused) return;
-    if (timerRef.current) window.clearTimeout(timerRef.current);
-    timerRef.current = window.setTimeout(() => next(), 4200);
+    resetTimer();
     return () => {
       if (timerRef.current) window.clearTimeout(timerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idx, paused, reviews.length]);
+  }, [idx, paused]);
 
   const current = reviews[idx];
 
@@ -138,7 +178,7 @@ export default function GoogleReviewsLiveMini() {
         <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10" />
 
         <div className="relative p-5 sm:p-6">
-          {/* Badge + link */}
+          {/* Top row */}
           <div className="flex items-center justify-between gap-3">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/20 px-3 py-2">
               <Image src="/images/icons/icon-google.svg" alt="Google" width={16} height={16} className="w-4 h-4" />
@@ -160,24 +200,43 @@ export default function GoogleReviewsLiveMini() {
             )}
           </div>
 
-          {/* Stars */}
+          {/* Stars + controls */}
           <div className="mt-3 flex items-center justify-between">
             <Stars rating={rating || current.rating || 5} />
-            <div className="text-white/60 text-[12px]">
-              {current.relative_time_description || ""}
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={prev}
+                aria-label="Previous review"
+                className="w-8 h-8 rounded-full border border-white/20 bg-black/20 text-white/85 hover:bg-black/30 transition grid place-items-center"
+              >
+                <IconChevronLeft />
+              </button>
+
+              <button
+                type="button"
+                onClick={next}
+                aria-label="Next review"
+                className="w-8 h-8 rounded-full border border-white/20 bg-black/20 text-white/85 hover:bg-black/30 transition grid place-items-center"
+              >
+                <IconChevronRight />
+              </button>
             </div>
           </div>
 
-          {/* Review */}
-          <div className="mt-4 min-h-[84px] flex items-center">
-            <p className="text-white text-[15px] sm:text-[16px] leading-snug">
+          {/* Review text (✅ fixed height so Hero never jumps) */}
+          <div className="mt-4 min-h-[108px] sm:min-h-[108px] flex items-center">
+            <p className="text-white text-[15px] sm:text-[16px] leading-snug line-clamp-4">
               “{current.text}”
             </p>
           </div>
 
           {/* Author + dots */}
           <div className="mt-3 flex items-center justify-between">
-            <div className="text-white/80 text-[13px] font-semibold">— {current.author_name}</div>
+            <div className="text-white/80 text-[13px] font-semibold truncate">
+              — {current.author_name}
+            </div>
 
             <div className="flex items-center gap-2">
               {reviews.slice(0, 8).map((_, i) => (
@@ -192,7 +251,9 @@ export default function GoogleReviewsLiveMini() {
             </div>
           </div>
 
-          <div className="mt-3 text-white/55 text-[11px]">Tip: swipe left/right</div>
+          <div className="mt-2 text-white/55 text-[11px]">
+            {current.relative_time_description || " "}
+          </div>
         </div>
       </div>
     </div>
