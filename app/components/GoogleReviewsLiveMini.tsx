@@ -26,6 +26,36 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
+function seededHash(seed: string) {
+  // simple deterministic hash
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function seededShuffle<T>(arr: T[], seed: string) {
+  const a = [...arr];
+  let s = seededHash(seed) || 1;
+
+  // Fisher-Yates with seeded pseudo-random
+  for (let i = a.length - 1; i > 0; i--) {
+    // xorshift
+    s ^= s << 13;
+    s >>>= 0;
+    s ^= s >> 17;
+    s >>>= 0;
+    s ^= s << 5;
+    s >>>= 0;
+
+    const j = s % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 function Stars({ rating = 5 }: { rating?: number }) {
   const r = clamp(Math.round(rating), 0, 5);
   return (
@@ -81,6 +111,22 @@ export default function GoogleReviewsLiveMini() {
   const touchX = useRef<number | null>(null);
 
   const DELAY_MS = 15000; // ✅ 15 seconds per review
+  const REFRESH_MS = 24 * 60 * 60 * 1000; // ✅ refresh live reviews every 24 hours
+
+  // ✅ Stable random seed for THIS page session (so order doesn't change while sliding)
+  const sessionSeedRef = useRef<string>("");
+  const fetchNonceRef = useRef<number>(0); // changes when we refetch to reshuffle
+
+  useEffect(() => {
+    if (!sessionSeedRef.current) {
+      sessionSeedRef.current = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+  }, []);
+
+  const clearTimer = () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    timeoutRef.current = null;
+  };
 
   const reviews = useMemo(() => {
     const arr = data?.ok ? data.reviews || [] : [];
@@ -92,7 +138,16 @@ export default function GoogleReviewsLiveMini() {
         relative_time_description: "",
       },
     ];
-    return arr.length ? arr : fallback;
+
+    const base = arr.length ? arr : fallback;
+
+    // ✅ Live list from Google, but shuffled per session + re-fetch nonce
+    const seed = `${sessionSeedRef.current}-${fetchNonceRef.current}`;
+    const shuffled = seededShuffle(base, seed);
+
+    // ✅ rotate starting point so the first card differs
+    const start = base.length > 1 ? seededHash(seed) % base.length : 0;
+    return [...shuffled.slice(start), ...shuffled.slice(0, start)];
   }, [data]);
 
   const safeLen = Math.max(1, reviews.length);
@@ -100,11 +155,6 @@ export default function GoogleReviewsLiveMini() {
   const rating = data?.ok ? Number(data.rating || 0) : 5;
   const total = data?.ok ? Number(data.total || 0) : 0;
   const googleUrl = data?.ok ? String(data.googleUrl || "") : "";
-
-  const clearTimer = () => {
-    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-    timeoutRef.current = null;
-  };
 
   const resetTimer = () => {
     clearTimer();
@@ -127,29 +177,42 @@ export default function GoogleReviewsLiveMini() {
     resetTimer();
   };
 
+  // ✅ Fetch now + refresh every 24h (still "live", no DB)
   useEffect(() => {
     let alive = true;
 
-    (async () => {
+    const fetchReviews = async () => {
       try {
         const base = process.env.NEXT_PUBLIC_API_URL || "";
-        const resp = await fetch(`${base}/api/google/reviews`, { cache: "no-store" });
+        // add a cache-buster so CDNs/proxies don't serve stale
+        const url = `${base}/api/google/reviews?t=${Date.now()}`;
+        const resp = await fetch(url, { cache: "no-store" });
         const json = (await resp.json()) as ApiPayload;
+
         if (!alive) return;
 
         setData(json);
         setIdx(0);
+
+        // ✅ reshuffle after each successful refresh
+        fetchNonceRef.current += 1;
       } catch {
         if (!alive) return;
         setData({ ok: false, error: "Failed to load reviews" });
         setIdx(0);
       }
-    })();
+    };
+
+    fetchReviews();
+
+    const interval = window.setInterval(fetchReviews, REFRESH_MS);
 
     return () => {
       alive = false;
+      window.clearInterval(interval);
       clearTimer();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto slide
