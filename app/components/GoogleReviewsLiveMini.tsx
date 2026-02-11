@@ -48,14 +48,26 @@ function Stars({ rating = 5 }: { rating?: number }) {
 function IconChevronLeft() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <path d="M15 19L8 12L15 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M15 19L8 12L15 5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 function IconChevronRight() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <path d="M9 5L16 12L9 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M9 5L16 12L9 19"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -65,32 +77,66 @@ export default function GoogleReviewsLiveMini() {
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  const timerRef = useRef<number | null>(null);
+  const timeoutRef = useRef<number | null>(null);
   const touchX = useRef<number | null>(null);
 
   const DELAY_MS = 15000; // ✅ 15 seconds per review
 
+  const reviews = useMemo(() => {
+    const arr = data?.ok ? data.reviews || [] : [];
+    const fallback: ApiReview[] = [
+      {
+        author_name: "Google Reviews",
+        rating: 5,
+        text: "Trusted local service across Long Island.",
+        relative_time_description: "",
+      },
+    ];
+    return arr.length ? arr : fallback;
+  }, [data]);
+
+  const safeLen = Math.max(1, reviews.length);
+
+  const rating = data?.ok ? Number(data.rating || 0) : 5;
+  const total = data?.ok ? Number(data.total || 0) : 0;
+  const googleUrl = data?.ok ? String(data.googleUrl || "") : "";
+
+  const clearTimer = () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    timeoutRef.current = null;
+  };
+
   const resetTimer = () => {
-    if (timerRef.current) window.clearTimeout(timerRef.current);
-    timerRef.current = window.setTimeout(() => {
-      setIdx((i) => {
-        const len = Math.max(1, reviewsRef.current.length);
-        return (i + 1) % len;
-      });
+    clearTimer();
+    timeoutRef.current = window.setTimeout(() => {
+      setIdx((i) => (i + 1) % safeLen);
     }, DELAY_MS);
   };
 
-  const reviewsRef = useRef<ApiReview[]>([]);
+  const next = () => {
+    setIdx((i) => (i + 1) % safeLen);
+    resetTimer();
+  };
+  const prev = () => {
+    setIdx((i) => (i - 1 + safeLen) % safeLen);
+    resetTimer();
+  };
+
+  const goTo = (i: number) => {
+    setIdx(clamp(i, 0, safeLen - 1));
+    resetTimer();
+  };
 
   useEffect(() => {
     let alive = true;
+
     (async () => {
       try {
         const base = process.env.NEXT_PUBLIC_API_URL || "";
         const resp = await fetch(`${base}/api/google/reviews`, { cache: "no-store" });
         const json = (await resp.json()) as ApiPayload;
-
         if (!alive) return;
+
         setData(json);
         setIdx(0);
       } catch {
@@ -102,52 +148,22 @@ export default function GoogleReviewsLiveMini() {
 
     return () => {
       alive = false;
-      if (timerRef.current) window.clearTimeout(timerRef.current);
+      clearTimer();
     };
   }, []);
 
-  const reviews = useMemo(() => {
-    const arr = data?.ok ? (data.reviews || []) : [];
-    const fallback: ApiReview[] = [
-      {
-        author_name: "Google Reviews",
-        rating: 5,
-        text: "5-star local service across Long Island.",
-        relative_time_description: "",
-      },
-    ];
-    return arr.length ? arr : fallback;
-  }, [data]);
-
-  // keep ref updated (used in resetTimer)
-  useEffect(() => {
-    reviewsRef.current = reviews;
-  }, [reviews]);
-
-  const rating = data?.ok ? Number(data.rating || 0) : 5;
-  const total = data?.ok ? Number(data.total || 0) : 0;
-  const googleUrl = data?.ok ? String(data.googleUrl || "") : "";
-
-  const next = () => {
-    setIdx((i) => (i + 1) % reviews.length);
-    resetTimer();
-  };
-  const prev = () => {
-    setIdx((i) => (i - 1 + reviews.length) % reviews.length);
-    resetTimer();
-  };
-
-  // Auto timer
+  // Auto slide
   useEffect(() => {
     if (paused) return;
     resetTimer();
-    return () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current);
-    };
+    return () => clearTimer();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idx, paused]);
+  }, [idx, paused, safeLen]);
 
   const current = reviews[idx];
+
+  const ratingLabel =
+    rating && Number.isFinite(rating) ? rating.toFixed(1) : String(current?.rating || 5);
 
   return (
     <div
@@ -181,8 +197,16 @@ export default function GoogleReviewsLiveMini() {
           {/* Top row */}
           <div className="flex items-center justify-between gap-3">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/20 px-3 py-2">
-              <Image src="/images/icons/icon-google.svg" alt="Google" width={16} height={16} className="w-4 h-4" />
-              <span className="text-white/90 text-[13px] font-semibold">5.0 on Google</span>
+              <Image
+                src="/images/icons/icon-google.svg"
+                alt="Google"
+                width={16}
+                height={16}
+                className="w-4 h-4"
+              />
+              <span className="text-white/90 text-[13px] font-semibold">
+                {ratingLabel} on Google
+              </span>
               <span className="text-white/70 text-[13px]">{total > 0 ? `(${total})` : ""}</span>
             </div>
 
@@ -196,7 +220,7 @@ export default function GoogleReviewsLiveMini() {
                 Read all reviews
               </a>
             ) : (
-              <span className="text-white/60 text-[12px]">Swipe</span>
+              <span className="text-white/60 text-[12px]">Swipe or use arrows</span>
             )}
           </div>
 
@@ -233,18 +257,21 @@ export default function GoogleReviewsLiveMini() {
           </div>
 
           {/* Author + dots */}
-          <div className="mt-3 flex items-center justify-between">
+          <div className="mt-3 flex items-center justify-between gap-3">
             <div className="text-white/80 text-[13px] font-semibold truncate">
               — {current.author_name}
             </div>
 
             <div className="flex items-center gap-2">
               {reviews.slice(0, 8).map((_, i) => (
-                <div
+                <button
                   key={i}
+                  type="button"
+                  onClick={() => goTo(i)}
+                  aria-label={`Go to review ${i + 1}`}
                   className={[
                     "w-2 h-2 rounded-full transition",
-                    i === idx ? "bg-white" : "bg-white/35",
+                    i === idx ? "bg-white" : "bg-white/35 hover:bg-white/60",
                   ].join(" ")}
                 />
               ))}
