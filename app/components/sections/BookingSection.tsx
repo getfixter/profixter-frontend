@@ -429,17 +429,54 @@ if (info) {
     return false;
   };
 
-  const handleDayClick = (dayDate: Date, muted: boolean) => {
-    if (muted) return;
+  const handleDayClick = async (dayDate: Date, muted: boolean) => {
+  if (muted) return;
 
-    const d = new Date(dayDate);
-    d.setHours(0, 0, 0, 0);
+  const d = new Date(dayDate);
+  d.setHours(0, 0, 0, 0);
 
-    if (isDayDisabled(d)) return;
+  // If already known disabled, block immediately
+  if (isDayDisabled(d)) return;
 
+  const ymd = formatDateYMD(d);
+
+  try {
+    // 🔥 Check slots BEFORE allowing selection
+    const data = await getTimeSlots(ymd);
+    const slots = data.slots || [];
+
+    // If no available slots -> block selection
+    if (slots.length === 0) {
+      // Cache it as fully booked so UI disables it next render
+      setDayCapacityMap((prev) => ({
+        ...prev,
+        [ymd]: {
+          taken: data.taken || {},
+          capacity: data.capacityPerSlot ?? 1,
+        },
+      }));
+      return; // ❌ DO NOT select this day
+    }
+
+    // Cache capacity info
+    setDayCapacityMap((prev) => ({
+      ...prev,
+      [ymd]: {
+        taken: data.taken || {},
+        capacity: data.capacityPerSlot ?? 1,
+      },
+    }));
+
+    // ✅ Now it's safe to select
     setSelectedDate(d);
     setSelectedTime("");
-  };
+    setAvailableTimes(slots);
+  } catch (err) {
+    console.error("Failed to check slots for day:", err);
+    return; // fail safe: don't allow selection
+  }
+};
+
 
   const generateCalendarDays = () => {
     const year = currentMonth.getFullYear();
