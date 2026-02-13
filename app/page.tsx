@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/useAuth";
+
 import Header from "./components/sections/Header";
 import HeroSection from "./components/sections/HeroSection";
 import StepsSection from "./components/sections/StepsSection";
@@ -14,9 +17,25 @@ import { ChatWidget } from "./components/ChatWidget";
 import Image from "next/image";
 import ServiceInfoSection from "./components/sections/ServiceInfoSection";
 
+const ADMIN_EMAIL = "getfixter@gmail.com";
+
 export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
+  const router = useRouter();
+  const { user, isLoading } = useAuth();
+
+  // ✅ Redirect admin to admin panel on home load
+  useEffect(() => {
+    if (isLoading) return;
+
+    const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    if (isAdmin) {
+      router.replace("/admin?tab=bookings");
+    }
+  }, [isLoading, user, router]);
+
+  // Existing logic
   useEffect(() => {
     const justLoggedIn = sessionStorage.getItem("justLoggedIn");
     if (justLoggedIn) {
@@ -34,7 +53,7 @@ export default function Home() {
 
       <main className="relative">
         <HeroSection />
-        <ServiceInfoSection/>
+        <ServiceInfoSection />
         <BookingSection />
         <StepsSection />
         <PlansSection />
@@ -44,7 +63,7 @@ export default function Home() {
         <Footer />
       </main>
 
-      {/* ✅ Chat button: simpler + safe-area friendly */}
+      {/* ✅ Chat button */}
       <div className="fixed bottom-16 sm:bottom-24 right-6 sm:right-8 z-[999999]">
         <button
           onClick={() => setIsChatOpen((v) => !v)}
