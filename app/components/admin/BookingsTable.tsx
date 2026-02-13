@@ -30,6 +30,44 @@ function nyDateTimeLocalValue(iso: string) {
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
 }
 
+function nyLocalToISOString(local: string) {
+  // local is "YYYY-MM-DDTHH:mm" in NY time (from datetime-local)
+  if (!local) return "";
+
+  const [datePart, timePart] = local.split("T");
+  const [y, m, d] = datePart.split("-").map(Number);
+  const [hh, mm] = timePart.split(":").map(Number);
+
+  // Build a UTC date with the same components first
+  const pretendUTC = new Date(Date.UTC(y, m - 1, d, hh, mm, 0));
+
+  // Get NY offset at that moment (handles DST)
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    timeZoneName: "shortOffset",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(pretendUTC);
+
+  const off = parts.find((p) => p.type === "timeZoneName")?.value || "GMT-0"; // ex "GMT-5"
+  const m2 = off.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+  if (!m2) return pretendUTC.toISOString();
+
+  const sign = m2[1] === "-" ? -1 : 1;
+  const oh = Number(m2[2] || 0);
+  const om = Number(m2[3] || 0);
+  const offsetMinutes = sign * (oh * 60 + om);
+
+  // NY = UTC + offsetMinutes => UTC = NY - offsetMinutes
+  const realUTCms = pretendUTC.getTime() - offsetMinutes * 60_000;
+  return new Date(realUTCms).toISOString();
+}
+
+
 export default function BookingsTable({
   bookings,
   updateStatus,
@@ -96,7 +134,7 @@ export default function BookingsTable({
   const saveEdit = async (b: Booking) => {
     setSaving(true);
     try {
-      await onUpdateBooking(b._id, { note: draftNote, date: draftDT });
+      await onUpdateBooking(b._id, { note: draftNote, date: nyLocalToISOString(draftDT) });
       cancelEdit();
     } catch (e) {
       console.error("Save booking edit failed:", e);

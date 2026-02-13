@@ -7,7 +7,12 @@ export interface S3ImageObject {
   url?: string;
   key?: string;
   location?: string;
+
+  // ✅ support AWS common shapes too
+  Key?: string;
+  Location?: string;
 }
+
 
 /**
  * Розв'язує URL зображення з різних форматів AWS S3
@@ -34,6 +39,21 @@ export function resolveImageURL(imageData: string | S3ImageObject | null | undef
 
   // Якщо об'єкт з AWS S3
   if (typeof imageData === 'object') {
+        // ✅ Support AWS SDK shapes: { Key, Location }
+    const anyObj = imageData as any;
+
+    if (anyObj.Location) {
+      if (String(anyObj.Location).startsWith('http://') || String(anyObj.Location).startsWith('https://')) {
+        return String(anyObj.Location);
+      }
+    }
+
+    if (anyObj.Key) {
+      const bucket = process.env.NEXT_PUBLIC_AWS_S3_BUCKET || 'profixter-uploads';
+      const region = process.env.NEXT_PUBLIC_AWS_S3_REGION || 'us-east-1';
+      return `https://${bucket}.s3.${region}.amazonaws.com/${String(anyObj.Key).replace(/^\//, '')}`;
+    }
+
     // Спробувати location (повний S3 URL)
     if (imageData.location) {
       if (imageData.location.startsWith('http://') || imageData.location.startsWith('https://')) {
