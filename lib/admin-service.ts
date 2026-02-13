@@ -135,6 +135,17 @@ export const updateBookingStatus = async (
   return response.data.booking;
 };
 
+
+export const updateBookingAdmin = async (
+  bookingId: string,
+  patch: { note?: string; date?: string }
+): Promise<Booking> => {
+  const response = await API.put(`/api/admin/bookings/${bookingId}`, patch);
+  return response.data.booking;
+};
+
+
+
 // Blacklist
 export const getBlacklist = async (): Promise<BlacklistEntry[]> => {
   const response = await API.get('/api/admin/blacklist');
