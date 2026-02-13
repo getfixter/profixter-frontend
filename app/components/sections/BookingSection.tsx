@@ -411,15 +411,20 @@ useEffect(() => {
     // Override closed
     if (config.overrides[ymd] !== undefined && config.overrides[ymd].length === 0) return true;
 
-    // Fully booked day (if we have capacity info)
-    const info = dayCapacityMap[ymd];
-    if (info) {
-      const hours = config.overrides[ymd]?.length ? config.overrides[ymd] : config.defaultHours;
-      if (hours.length > 0) {
-        const allFull = hours.every((h) => (info.taken[h] || 0) >= info.capacity);
-        if (allFull) return true;
-      }
-    }
+    // Fully booked OR no available slots day
+const info = dayCapacityMap[ymd];
+const hours = config.overrides[ymd]?.length ? config.overrides[ymd] : config.defaultHours;
+
+// If no hours configured at all => disable
+if (!hours || hours.length === 0) return true;
+
+// If we have capacity info and all are full => disable
+if (info) {
+  const allFull = hours.every((h) => (info.taken[h] || 0) >= info.capacity);
+  if (allFull) return true;
+}
+
+
 
     return false;
   };
@@ -671,6 +676,18 @@ const canBook =
             </p>
           </div>
         </div>
+
+{/* ✅ Free first visit banner */}
+{(!isAuthenticated || (!hasSubscription && freeFirstVisitAvailable)) && (
+  <div className="mb-6 rounded-[16px] border border-green-300 bg-green-50 p-4 text-center">
+    <div className="font-extrabold text-green-800 text-lg">
+      🎁 Book your 1st visit FREE - No subscription required
+    </div>
+    <div className="text-sm text-green-700 mt-1">
+      Try our service risk-free. Labor Only visit included.
+    </div>
+  </div>
+)}
 
         {/* Content */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
