@@ -159,6 +159,8 @@ export default function BookingSection() {
   const [dayCapacityMap, setDayCapacityMap] = useState<
     Record<string, { taken: Record<string, number>; capacity: number }>
   >({});
+  const [preloadingMonth, setPreloadingMonth] = useState(false);
+
 
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
@@ -263,6 +265,47 @@ export default function BookingSection() {
     };
     loadConfig();
   }, []);
+
+// 🔥 Preload availability for the whole visible month
+useEffect(() => {
+  if (!config) return;
+
+  const preloadMonth = async () => {
+    setPreloadingMonth(true);
+
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+
+    const lastDay = new Date(year, month + 1, 0);
+
+    const updates: Record<string, { taken: Record<string, number>; capacity: number }> = {};
+
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const date = new Date(year, month, d);
+      date.setHours(0, 0, 0, 0);
+
+      const ymd = formatDateYMD(date);
+
+      try {
+        const data = await getTimeSlots(ymd);
+
+        updates[ymd] = {
+          taken: data.taken || {},
+          capacity: data.capacityPerSlot ?? 1,
+        };
+      } catch (e) {
+        console.error("Preload failed for", ymd, e);
+      }
+    }
+
+    setDayCapacityMap((prev) => ({ ...prev, ...updates }));
+    setPreloadingMonth(false);
+  };
+
+  preloadMonth();
+}, [config, currentMonth]);
+
+
 
   useEffect(() => {
   const urls = uploadedPhotos.map((f) => URL.createObjectURL(f));
@@ -384,8 +427,10 @@ useEffect(() => {
     loadSlots();
   }, [selectedDate]);
 
-  const isDayDisabled = (date: Date): boolean => {
-    if (!config) return true;
+const isDayDisabled = (date: Date): boolean => {
+  if (!config) return true;
+  if (preloadingMonth) return true;
+
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
