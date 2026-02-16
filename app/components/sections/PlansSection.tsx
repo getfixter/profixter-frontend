@@ -213,8 +213,12 @@ export default function PlansSection() {
             </div>
 
             {/* switch */}
-            <div className="flex items-center gap-3">
-  <span className={`text-sm font-semibold ${billing === "monthly" ? "text-white" : "text-white/60"}`}>
+            <div className="flex items-center gap-3 shrink-0">
+  <span
+    className={`text-sm font-semibold whitespace-nowrap ${
+      billing === "monthly" ? "text-white" : "text-white/60"
+    }`}
+  >
     Monthly
   </span>
 
@@ -222,26 +226,31 @@ export default function PlansSection() {
     type="button"
     onClick={() => setBilling((b) => (b === "monthly" ? "annual" : "monthly"))}
     aria-label="Toggle billing cycle"
-    className={`relative w-[70px] h-[38px] rounded-full border transition-all duration-300 ${
+    className={`relative w-[70px] h-[38px] rounded-full border transition-colors duration-300 shrink-0 ${
       billing === "annual" ? "bg-[#306EEC] border-[#306EEC]/60" : "bg-white/15 border-white/20"
     }`}
   >
     <span
-      className={`absolute top-[4px] w-[30px] h-[30px] rounded-full bg-white shadow-md transition-transform duration-300 ${
-        billing === "annual" ? "translate-x-[36px]" : "translate-x-[4px]"
+      className={`absolute top-[4px] left-[4px] w-[30px] h-[30px] rounded-full bg-white shadow-md transition-transform duration-300 ${
+        billing === "annual" ? "translate-x-[32px]" : "translate-x-0"
       }`}
     />
   </button>
 
-  <span className={`text-sm font-semibold ${billing === "annual" ? "text-white" : "text-white/60"}`}>
+  <span
+    className={`text-sm font-semibold whitespace-nowrap ${
+      billing === "annual" ? "text-white" : "text-white/60"
+    }`}
+  >
     Annually
   </span>
 </div>
 
+
           </div>
 
           {/* little promo badge */}
-          <div className="mt-3 flex items-center justify-between gap-3">
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2">
               <div className="px-3 py-1 rounded-full bg-[#86EFAC]/15 border border-[#86EFAC]/30">
                 <span className="text-[#86EFAC] font-extrabold text-xs sm:text-sm">
@@ -352,6 +361,29 @@ export default function PlansSection() {
 
   return (
     <section id="plans" className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden">
+      {/* 🔥 Annual promo banner */}
+<div className="mx-auto max-w-[1240px] px-5 lg:px-5 mb-6">
+  <div className="bg-[#86EFAC]/15 border border-[#86EFAC]/30 rounded-2xl p-4 sm:p-5 backdrop-blur-md shadow-[0_10px_40px_rgba(0,0,0,0.25)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="flex items-center gap-3">
+      <div className="w-9 h-9 rounded-full bg-[#86EFAC]/25 flex items-center justify-center">
+        <span className="text-[#1F7A2E] text-lg">🎁</span>
+      </div>
+      <div>
+        <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
+          Get 1 month FREE with the Annual Plan
+        </p>
+        <p className="text-[#C5CBD8] text-sm">
+          Pay for 11 months, get 12 months of handyman service
+        </p>
+      </div>
+    </div>
+
+    <div className="text-[#86EFAC] font-extrabold text-sm sm:text-base">
+      Limited-time offer
+    </div>
+  </div>
+</div>
+
       <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-[#306EEC]/10 blur-[120px]" />
 
       {isAuthenticated && user && addresses.length > 0 && <AddressPicker />}
