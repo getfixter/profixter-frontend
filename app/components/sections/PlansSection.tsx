@@ -213,7 +213,7 @@ export default function PlansSection() {
             </div>
 
             {/* switch */}
-            <div className="flex items-center gap-3 shrink-0">
+<div className="flex items-center gap-3 shrink-0 sm:pl-4 sm:justify-end">
   <span
     className={`text-sm font-semibold whitespace-nowrap ${
       billing === "monthly" ? "text-white" : "text-white/60"
@@ -379,8 +379,9 @@ export default function PlansSection() {
     </div>
 
     <div className="text-[#86EFAC] font-extrabold text-sm sm:text-base">
-      Limited-time offer
-    </div>
+  Pay 11 months • Get 12
+</div>
+
   </div>
 </div>
 
@@ -631,13 +632,14 @@ export default function PlansSection() {
                             </div>
 
                             {billing === "annual" && (
-                              <div className="mt-2 text-center text-sm text-[#6A6D71]">
-Pay for <span className="font-extrabold text-[#313234]">11</span>, get{" "}
-<span className="font-extrabold text-[#313234]">12</span> • Equivalent{" "}
-<span className="font-extrabold text-[#313234]">${formatMoney(annual / 12)}</span>/mo billed annually
-                                <span className="font-extrabold text-[#313234]">${formatMoney(annual / 12)}</span>/mo billed annually
-                              </div>
-                            )}
+  <div className="mt-2 text-center text-sm text-[#6A6D71]">
+    Pay for <span className="font-extrabold text-[#313234]">11</span>, get{" "}
+    <span className="font-extrabold text-[#313234]">12</span> • Equivalent{" "}
+    <span className="font-extrabold text-[#313234]">${formatMoney(annual / 12)}</span>
+    /mo billed annually
+  </div>
+)}
+
                           </div>
                         );
                       })()}
