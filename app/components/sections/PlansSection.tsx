@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { plans } from "@/app/data/content";
 import { useAuth } from "@/lib/useAuth";
@@ -16,8 +16,28 @@ type Address = {
   county?: string;
 };
 
+type BillingCycle = "monthly" | "annual";
+
+function toNumberPrice(v: any): number {
+  if (typeof v === "number") return v;
+  if (typeof v === "string") {
+    const cleaned = v.replace(/[^0-9.]/g, "");
+    const n = Number(cleaned);
+    return Number.isFinite(n) ? n : 0;
+  }
+  return 0;
+}
+
+function formatMoney(n: number): string {
+  // your prices look like whole dollars; keep it clean
+  const rounded = Math.round(n);
+  return String(rounded);
+}
+
 export default function PlansSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [billing, setBilling] = useState<BillingCycle>("monthly");
+
   const { user, isAuthenticated, token } = useAuth();
 
   const addresses: Address[] = ((user as any)?.addresses || []) as Address[];
@@ -48,18 +68,14 @@ export default function PlansSection() {
     if (!token) return;
     setCheckingAddr(true);
     try {
-      const res = await fetch(
-        `https://api.profixter.com/api/subscriptions/check/address/${addressId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await fetch(`https://api.profixter.com/api/subscriptions/check/address/${addressId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await res.json();
       const active = !!data?.active;
       setAddrActiveMap((m) => ({ ...m, [addressId]: active }));
     } catch (e) {
       console.error("checkAddressActive failed:", e);
-      // don't hard fail UI; just mark unknown as false
       setAddrActiveMap((m) => ({ ...m, [addressId]: false }));
     } finally {
       setCheckingAddr(false);
@@ -75,11 +91,11 @@ export default function PlansSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, selectedAddressId]);
 
-  const startCheckout = async (plan: PlanType, addressId: string, email: string) => {
+  const startCheckout = async (plan: PlanType, addressId: string, email: string, cycle: BillingCycle) => {
     const res = await fetch("https://api.profixter.com/api/stripe/checkout/create-checkout-session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan, addressId, email }),
+      body: JSON.stringify({ plan, addressId, email, billingCycle: cycle }),
     });
 
     const data = await res.json();
@@ -133,7 +149,7 @@ export default function PlansSection() {
       return;
     }
 
-    startCheckout(planType, selectedAddress._id, (user as any).email);
+    startCheckout(planType, selectedAddress._id, (user as any).email, billing);
   };
 
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % plans.length);
@@ -142,7 +158,6 @@ export default function PlansSection() {
   const addressIsActive = selectedAddressId ? addrActiveMap[selectedAddressId] === true : false;
 
   // ----- Mobile swipe support -----
-  const trackRef = useRef<HTMLDivElement | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchLastX = useRef<number | null>(null);
 
@@ -159,7 +174,6 @@ export default function PlansSection() {
     if (touchStartX.current == null || touchLastX.current == null) return;
     const dx = touchLastX.current - touchStartX.current;
 
-    // swipe threshold
     if (Math.abs(dx) > 55) {
       if (dx < 0) nextSlide();
       else prevSlide();
@@ -168,6 +182,83 @@ export default function PlansSection() {
     touchStartX.current = null;
     touchLastX.current = null;
   };
+
+  const disabledForAddress = isAuthenticated && !!selectedAddressId && addressIsActive;
+
+  // ---------- Pricing helpers ----------
+  const getMonthly = (plan: any) => toNumberPrice(plan.price);
+  const getAnnual = (plan: any) => getMonthly(plan) * 11; // ✅ pay 11 months
+
+  const BillingToggle = ({ compact }: { compact?: boolean }) => (
+    <div className={`${compact ? "mt-6" : "mt-8"} w-full`}>
+      <div className={`${compact ? "mx-auto max-w-[520px]" : ""}`}>
+        <div className="bg-white/10 border border-white/15 rounded-2xl px-3 py-3 sm:px-4 sm:py-4 backdrop-blur-md shadow-[0_10px_60px_rgba(0,0,0,0.20)]">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col">
+              <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
+                {billing === "annual" ? "Annual Plan" : "Monthly Plan"}
+              </p>
+              <p className="text-[#C5CBD8] text-xs sm:text-sm leading-snug mt-1">
+                {billing === "annual" ? (
+                  <>
+                    Pay for <span className="text-white font-semibold">11 months</span>, get{" "}
+                    <span className="text-white font-semibold">12</span> (1 month free)
+                  </>
+                ) : (
+                  <>
+                    Switch to <span className="text-white font-semibold">Annual</span> to get 1 month free
+                  </>
+                )}
+              </p>
+            </div>
+
+            {/* switch */}
+            <div className="flex items-center gap-2">
+              <span className={`text-xs sm:text-sm font-semibold ${billing === "monthly" ? "text-white" : "text-white/60"}`}>
+                Monthly
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setBilling((b) => (b === "monthly" ? "annual" : "monthly"))}
+                aria-label="Toggle billing cycle"
+                className={`relative w-[62px] h-[36px] rounded-full border transition-all duration-300 ${
+                  billing === "annual"
+                    ? "bg-[#306EEC] border-[#306EEC]/60"
+                    : "bg-white/15 border-white/20"
+                }`}
+              >
+                <span
+                  className={`absolute top-[4px] w-[28px] h-[28px] rounded-full bg-white shadow-md transition-transform duration-300 ${
+                    billing === "annual" ? "translate-x-[30px]" : "translate-x-[4px]"
+                  }`}
+                />
+              </button>
+
+              <span className={`text-xs sm:text-sm font-semibold ${billing === "annual" ? "text-white" : "text-white/60"}`}>
+                Annually
+              </span>
+            </div>
+          </div>
+
+          {/* little promo badge */}
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="px-3 py-1 rounded-full bg-[#86EFAC]/15 border border-[#86EFAC]/30">
+                <span className="text-[#86EFAC] font-extrabold text-xs sm:text-sm">
+                  ✅ 1 month free on Annual
+                </span>
+              </div>
+              <span className="hidden sm:inline text-[#C5CBD8] text-xs">
+                Cancel anytime • No contracts
+              </span>
+            </div>
+            <span className="sm:hidden text-[#C5CBD8] text-[11px]">Cancel anytime</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   const AddressPicker = () => (
     <div className="w-full mb-6">
@@ -240,11 +331,10 @@ export default function PlansSection() {
         <div className="mb-6">
           <p className="text-white text-2xl sm:text-3xl font-normal leading-tight mb-2">$0 today</p>
           <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed">
-  No 7-day trial anymore.
-  <br />
-  Instead: <span className="text-white font-semibold">1 free first visit</span> (Labor Only).
-</p>
-
+            No 7-day trial anymore.
+            <br />
+            Instead: <span className="text-white font-semibold">1 free first visit</span> (Labor Only).
+          </p>
         </div>
 
         {!compact && (
@@ -254,18 +344,17 @@ export default function PlansSection() {
             with your approval — no markups.
           </p>
         )}
+
+        {/* ✅ Billing toggle under header */}
+        <BillingToggle compact={compact} />
       </div>
     </div>
   );
 
-  const disabledForAddress = isAuthenticated && !!selectedAddressId && addressIsActive;
-
   return (
     <section id="plans" className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden">
-      {/* subtle background glow */}
       <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-[#306EEC]/10 blur-[120px]" />
 
-      {/* Address picker (if logged in) */}
       {isAuthenticated && user && addresses.length > 0 && <AddressPicker />}
 
       {isAuthenticated && user && addresses.length === 0 && (
@@ -303,80 +392,113 @@ export default function PlansSection() {
                 onTouchEnd={onTouchEnd}
               >
                 <div
-                  ref={trackRef}
                   className="flex transition-transform duration-500 ease-out"
                   style={{ transform: `translateX(-${currentSlide * 100}%)` }}
                 >
-                  {plans.map((plan, idx) => (
-                    <div key={idx} className="w-full flex-shrink-0 px-1">
-                      <div className="mx-auto max-w-[440px]">
-                        <div className="bg-[#EEF2FF] rounded-[26px] border border-[#C5CBD8] p-6 sm:p-8 flex flex-col shadow-[0_20px_80px_rgba(0,0,0,0.35)] transform transition duration-300 hover:-translate-y-1">
-                          <div className="text-center mb-4 sm:mb-5">
-                            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#313234] leading-tight mb-2">
-                              {plan.name}
-                            </h3>
-                            <p className="text-sm sm:text-base text-[#6A6D71] leading-relaxed">
-                              {plan.description}
-                            </p>
-                          </div>
+                  {plans.map((plan, idx) => {
+                    const monthly = getMonthly(plan);
+                    const annual = getAnnual(plan);
+                    const saving = Math.max(0, Math.round(monthly)); // 1 month free
 
-                          <div className="mb-5 sm:mb-6 text-center">
-                            <div className="flex items-end gap-2 justify-center">
-                              <span className="text-5xl sm:text-6xl font-extrabold text-[#313234] leading-none">
-                                ${plan.price}
-                              </span>
-                              <span className="text-base sm:text-lg text-[#6A6D71] leading-tight pb-1">
-                                /month
-                              </span>
+                    const showPrice = billing === "annual" ? annual : monthly;
+                    const big = formatMoney(showPrice);
+
+                    return (
+                      <div key={idx} className="w-full flex-shrink-0 px-1">
+                        <div className="mx-auto max-w-[440px]">
+                          <div className="bg-[#EEF2FF] rounded-[26px] border border-[#C5CBD8] p-6 sm:p-8 flex flex-col shadow-[0_20px_80px_rgba(0,0,0,0.35)] transform transition duration-300 hover:-translate-y-1">
+                            <div className="text-center mb-4 sm:mb-5">
+                              <h3 className="text-2xl sm:text-3xl font-extrabold text-[#313234] leading-tight mb-2">
+                                {plan.name}
+                              </h3>
+                              <p className="text-sm sm:text-base text-[#6A6D71] leading-relaxed">
+                                {plan.description}
+                              </p>
                             </div>
-                          </div>
 
-                          {plan.subtitle && (
-                            <p className="text-[#306EEC] font-bold text-base sm:text-lg text-center mb-3">
-                              {plan.subtitle}
-                            </p>
-                          )}
-
-                          <div className="space-y-2.5 mb-auto">
-                            {plan.features.map((feature, featureIdx) => (
-                              <div key={featureIdx} className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#43A047] flex items-center justify-center flex-shrink-0">
-                                  <svg width="14" height="11" viewBox="0 0 16 13" fill="none">
-                                    <path
-                                      d="M1 6.5L5.5 11L15 1.5"
-                                      stroke="#43A047"
-                                      strokeWidth="2.5"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
+                            {/* ✅ Annual badge */}
+                            {billing === "annual" && (
+                              <div className="mb-3 flex justify-center">
+                                <div className="px-3 py-1 rounded-full bg-[#86EFAC]/20 border border-[#43A047]/25">
+                                  <span className="text-[#1F7A2E] font-extrabold text-xs sm:text-sm">
+                                    1 month free • Save ${saving}
+                                  </span>
                                 </div>
-                                <span className="text-base sm:text-lg font-semibold text-[#313234] leading-tight">
-                                  {feature}
+                              </div>
+                            )}
+
+                            <div className="mb-5 sm:mb-6 text-center">
+                              <div className="flex items-end gap-2 justify-center">
+                                <span className="text-5xl sm:text-6xl font-extrabold text-[#313234] leading-none">
+                                  ${big}
+                                </span>
+                                <span className="text-base sm:text-lg text-[#6A6D71] leading-tight pb-1">
+                                  {billing === "annual" ? "/year" : "/month"}
                                 </span>
                               </div>
-                            ))}
-                          </div>
 
-                          <button
-                            onClick={() => handleSubscribe(plan.name)}
-                            disabled={disabledForAddress}
-                            className={`w-full h-[56px] sm:h-[60px] rounded-2xl text-lg sm:text-xl font-extrabold leading-none transition-all duration-300 mt-6 flex items-center justify-center ${
-                              disabledForAddress
-                                ? "bg-gray-400 text-white cursor-not-allowed"
-                                : "bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF] hover:scale-[1.01]"
-                            }`}
-                          >
-                            {disabledForAddress ? "Already has a plan" : plan.buttonText}
-                          </button>
+                              {billing === "annual" && (
+                                <div className="mt-2 text-sm sm:text-base text-[#6A6D71]">
+                                  Equivalent to{" "}
+                                  <span className="font-extrabold text-[#313234]">
+                                    ${formatMoney(annual / 12)}
+                                  </span>
+                                  /mo billed annually
+                                </div>
+                              )}
+                            </div>
 
-                          <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
-                            Cancel anytime • No contracts
+                            {plan.subtitle && (
+                              <p className="text-[#306EEC] font-bold text-base sm:text-lg text-center mb-3">
+                                {plan.subtitle}
+                              </p>
+                            )}
+
+                            <div className="space-y-2.5 mb-auto">
+                              {plan.features.map((feature: string, featureIdx: number) => (
+                                <div key={featureIdx} className="flex items-center gap-2.5">
+                                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#43A047] flex items-center justify-center flex-shrink-0">
+                                    <svg width="14" height="11" viewBox="0 0 16 13" fill="none">
+                                      <path
+                                        d="M1 6.5L5.5 11L15 1.5"
+                                        stroke="#43A047"
+                                        strokeWidth="2.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
+                                    </svg>
+                                  </div>
+                                  <span className="text-base sm:text-lg font-semibold text-[#313234] leading-tight">
+                                    {feature}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+
+                            <button
+                              onClick={() => handleSubscribe(plan.name)}
+                              disabled={disabledForAddress}
+                              className={`w-full h-[56px] sm:h-[60px] rounded-2xl text-lg sm:text-xl font-extrabold leading-none transition-all duration-300 mt-6 flex items-center justify-center ${
+                                disabledForAddress
+                                  ? "bg-gray-400 text-white cursor-not-allowed"
+                                  : "bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF] hover:scale-[1.01]"
+                              }`}
+                            >
+                              {disabledForAddress
+                                ? "Already has a plan"
+                                : billing === "annual"
+                                ? "Start Annual (1 month free)"
+                                : plan.buttonText}
+                            </button>
+
+                            <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
+                              Cancel anytime • No contracts
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -437,20 +559,53 @@ export default function PlansSection() {
                       </div>
                     )}
 
+                    {billing === "annual" && (
+                      <div className="absolute top-4 right-4 z-10">
+                        <div className="bg-[#86EFAC]/20 border border-[#43A047]/25 px-3 py-2 rounded-xl shadow-lg">
+                          <div className="text-[#1F7A2E] font-extrabold text-[12px] leading-tight">
+                            1 month free
+                          </div>
+                          <div className="text-[#313234] font-bold text-[12px] leading-tight">
+                            pay 11 months
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="p-8 flex flex-col h-full">
                       <div className="text-center mb-8">
                         <h3 className="text-3xl font-extrabold text-[#313234] mb-2">{plans[currentSlide].name}</h3>
                         <p className="text-base text-[#6A6D71] leading-relaxed">{plans[currentSlide].description}</p>
                       </div>
 
-                      <div className="mb-6">
-                        <div className="flex items-end gap-2 justify-center">
-                          <span className="text-[64px] font-extrabold text-[#313234] leading-[0.95]">
-                            ${plans[currentSlide].price}
-                          </span>
-                          <span className="text-base text-[#6A6D71] pb-2">/month</span>
-                        </div>
-                      </div>
+                      {/* price */}
+                      {(() => {
+                        const plan = plans[currentSlide];
+                        const monthly = getMonthly(plan);
+                        const annual = getAnnual(plan);
+                        const saving = Math.max(0, Math.round(monthly));
+                        const show = billing === "annual" ? annual : monthly;
+
+                        return (
+                          <div className="mb-6">
+                            <div className="flex items-end gap-2 justify-center">
+                              <span className="text-[64px] font-extrabold text-[#313234] leading-[0.95]">
+                                ${formatMoney(show)}
+                              </span>
+                              <span className="text-base text-[#6A6D71] pb-2">
+                                {billing === "annual" ? "/year" : "/month"}
+                              </span>
+                            </div>
+
+                            {billing === "annual" && (
+                              <div className="mt-2 text-center text-sm text-[#6A6D71]">
+                                Save <span className="font-extrabold text-[#313234]">${saving}</span> • Equivalent{" "}
+                                <span className="font-extrabold text-[#313234]">${formatMoney(annual / 12)}</span>/mo billed annually
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {plans[currentSlide].subtitle && (
                         <p className="text-[18px] font-bold text-[#306EEC] mb-4 text-center">
@@ -459,7 +614,7 @@ export default function PlansSection() {
                       )}
 
                       <div className="space-y-3 mb-auto">
-                        {plans[currentSlide].features.map((feature, idx) => (
+                        {plans[currentSlide].features.map((feature: string, idx: number) => (
                           <div key={idx} className="flex items-center gap-3">
                             <div className="w-[34px] h-[34px] rounded-full border-2 border-[#43A047] flex items-center justify-center flex-shrink-0">
                               <svg width="16" height="13" viewBox="0 0 16 13" fill="none">
@@ -472,9 +627,7 @@ export default function PlansSection() {
                                 />
                               </svg>
                             </div>
-                            <span className="text-[20px] font-semibold text-[#313234] leading-snug">
-                              {feature}
-                            </span>
+                            <span className="text-[20px] font-semibold text-[#313234] leading-snug">{feature}</span>
                           </div>
                         ))}
                       </div>
@@ -488,7 +641,11 @@ export default function PlansSection() {
                             : "bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF] hover:scale-[1.01]"
                         }`}
                       >
-                        {disabledForAddress ? "Already has a plan" : plans[currentSlide].buttonText}
+                        {disabledForAddress
+                          ? "Already has a plan"
+                          : billing === "annual"
+                          ? "Start Annual (1 month free)"
+                          : plans[currentSlide].buttonText}
                       </button>
 
                       <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
@@ -502,6 +659,10 @@ export default function PlansSection() {
                     {[1, 2].map((offset) => {
                       const index = (currentSlide + offset) % plans.length;
                       const plan = plans[index];
+
+                      const monthly = getMonthly(plan);
+                      const annual = getAnnual(plan);
+                      const show = billing === "annual" ? annual : monthly;
 
                       return (
                         <button
@@ -518,11 +679,30 @@ export default function PlansSection() {
                               <p className="text-sm text-[#6A6D71] leading-relaxed">{plan.description}</p>
                             </div>
 
+                            {billing === "annual" && (
+                              <div className="mb-3 flex justify-center">
+                                <div className="px-3 py-1 rounded-full bg-[#86EFAC]/20 border border-[#43A047]/25">
+                                  <span className="text-[#1F7A2E] font-extrabold text-[11px]">
+                                    1 month free
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
                             <div className="mb-6">
                               <div className="flex items-end gap-2 justify-center">
-                                <span className="text-5xl font-extrabold text-[#313234]">${plan.price}</span>
-                                <span className="text-sm text-[#6A6D71] pb-1">/month</span>
+                                <span className="text-5xl font-extrabold text-[#313234]">
+                                  ${formatMoney(show)}
+                                </span>
+                                <span className="text-sm text-[#6A6D71] pb-1">
+                                  {billing === "annual" ? "/year" : "/month"}
+                                </span>
                               </div>
+                              {billing === "annual" && (
+                                <div className="mt-2 text-center text-[12px] text-[#6A6D71]">
+                                  ${formatMoney(annual / 12)}/mo billed annually
+                                </div>
+                              )}
                             </div>
 
                             {plan.subtitle && (
@@ -532,8 +712,8 @@ export default function PlansSection() {
                             )}
 
                             <div className="space-y-2 mb-auto">
-                              {plan.features.slice(0, 3).map((feature, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
+                              {plan.features.slice(0, 3).map((feature: string, idx2: number) => (
+                                <div key={idx2} className="flex items-center gap-2">
                                   <div className="w-[26px] h-[26px] rounded-full border-2 border-[#43A047] flex items-center justify-center flex-shrink-0">
                                     <svg width="12" height="10" viewBox="0 0 11 9" fill="none">
                                       <path
@@ -566,7 +746,7 @@ export default function PlansSection() {
                   </div>
                 </div>
 
-                {/* Desktop controls (no absolute left magic numbers) */}
+                {/* Desktop controls */}
                 <div className="mt-8 flex items-center justify-center gap-4">
                   <button
                     onClick={prevSlide}
@@ -578,7 +758,6 @@ export default function PlansSection() {
                     </svg>
                   </button>
 
-                  {/* dots */}
                   <div className="flex gap-2">
                     {plans.map((_, idx) => (
                       <button
@@ -605,7 +784,6 @@ export default function PlansSection() {
               </div>
             </div>
 
-            {/* Little hint */}
             <div className="lg:hidden mt-4 text-center text-[12px] text-[#C5CBD8]">
               Tip: swipe left/right to see plans
             </div>
