@@ -578,7 +578,7 @@ export default function PlansSection() {
 
             {/* Desktop layout */}
             <div className="hidden lg:block">
-<div className="relative pb-16">
+<div className="relative pb-24">
   {/* pb-16 guarantees room for controls below cards */}
   <div className="flex items-end gap-6">
                   {/* Main card */}
@@ -724,21 +724,23 @@ Pay for <span className="font-extrabold text-[#313234]">11</span>, get{" "}
                               </div>
                             )}
 
-                            <div className="mb-6">
-                              <div className="flex items-end gap-2 justify-center">
-                                <span className="text-5xl font-extrabold text-[#313234]">
-                                  ${formatMoney(show)}
-                                </span>
-                                <span className="text-sm text-[#6A6D71] pb-1">
-                                  {billing === "annual" ? "/year" : "/month"}
-                                </span>
-                              </div>
-                              {billing === "annual" && (
-                                <div className="mt-2 text-center text-[12px] text-[#6A6D71]">
-                                  ${formatMoney(annual / 12)}/mo billed annually
-                                </div>
-                              )}
-                            </div>
+                            <div className="mb-6 text-center min-h-[86px]">
+  <div className="flex items-end gap-2 justify-center">
+    <span className="text-5xl font-extrabold text-[#313234]">
+      ${formatMoney(show)}
+    </span>
+    <span className="text-sm text-[#6A6D71] pb-1">
+      {billing === "annual" ? "/year" : "/month"}
+    </span>
+  </div>
+
+  <div className="mt-2 text-[12px] text-[#6A6D71]">
+    {billing === "annual"
+      ? `${formatMoney(annual / 12)}/mo billed annually`
+      : "\u00A0"}
+  </div>
+</div>
+
 
                             {plan.subtitle && (
                               <p className="text-[15px] font-bold text-[#306EEC] mb-4 text-center">
@@ -769,7 +771,8 @@ Pay for <span className="font-extrabold text-[#313234]">11</span>, get{" "}
 
                             <div className="mt-auto pt-4">
   <div className="w-full h-[40px] rounded-[10px] bg-[#306EEC] text-white text-[15px] font-extrabold flex items-center justify-center opacity-90 group-hover:opacity-100 transition">
-    View
+    {billing === "annual" ? "View Annual" : "View"}
+
   </div>
 </div>
 
@@ -783,7 +786,7 @@ Pay for <span className="font-extrabold text-[#313234]">11</span>, get{" "}
                 </div>
 
                 {/* Desktop controls */}
-<div className="mt-10 relative z-20 flex items-center justify-center gap-4">
+<div className="mt-6 relative z-20 flex items-center justify-center gap-4">
                   <button
                     onClick={prevSlide}
                     className="bg-white hover:bg-gray-100 text-gray-800 w-12 h-12 rounded-xl flex items-center justify-center transition-colors shadow-md border border-gray-200 active:scale-95"
