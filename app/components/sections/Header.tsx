@@ -52,6 +52,60 @@ export default function Header() {
 
   return (
     <header className="w-full py-[14px] relative z-50">
+      {/* ✅ Promo strip ABOVE glass header */}
+      <div className="mx-3 sm:mx-5 mb-3">
+        <div className="rounded-[18px] border border-[#86EFAC]/30 bg-[#0B1220]/65 backdrop-blur-md shadow-[0_10px_50px_rgba(0,0,0,0.18)]">
+          <div className="px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#86EFAC]/20 border border-[#86EFAC]/25 flex items-center justify-center flex-shrink-0">
+                <span className="text-[#86EFAC] text-lg">🎁</span>
+              </div>
+
+              <div>
+                <p className="text-white font-extrabold text-sm sm:text-base leading-tight">
+                  Get <span className="text-[#86EFAC]">1 month FREE</span> with the Annual Plan{" "}
+                  <span className="hidden sm:inline text-white/70 font-semibold">• Pay for 11, get 12</span>
+                </p>
+
+                {/* sale points */}
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] sm:text-[13px] text-white/75">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="text-[#86EFAC]">✓</span> Cancel anytime
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="text-[#86EFAC]">✓</span> No contracts
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="text-[#86EFAC]">✓</span> Local Long Island pros
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="text-[#86EFAC]">✓</span> Materials at cost (no markups)
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between sm:justify-end gap-3">
+              <div className="hidden md:flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white/80 text-xs font-semibold">
+                  Best value
+                </span>
+                <span className="px-3 py-1 rounded-full bg-[#86EFAC]/15 border border-[#86EFAC]/25 text-[#86EFAC] text-xs font-extrabold">
+                  Save 1 month
+                </span>
+              </div>
+
+              <Link
+                href="#plans"
+                className="shrink-0 px-4 sm:px-5 py-2.5 rounded-xl bg-[#86EFAC] text-[#0B1220] font-extrabold text-sm sm:text-base hover:opacity-90 transition active:scale-[0.99]"
+              >
+                View Plans
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Glass wrapper */}
       <div className="mx-3 sm:mx-5 rounded-[18px] border border-white/30 bg-white/75 backdrop-blur-md shadow-[0_10px_60px_rgba(0,0,0,0.18)]">
         {/* ✅ ONE container only */}
@@ -146,11 +200,7 @@ export default function Header() {
                 isMenuOpen ? "rotate-45 translate-y-2" : ""
               }`}
             />
-            <span
-              className={`w-6 h-0.5 bg-[#111827] transition-all duration-300 ${
-                isMenuOpen ? "opacity-0" : ""
-              }`}
-            />
+            <span className={`w-6 h-0.5 bg-[#111827] transition-all duration-300 ${isMenuOpen ? "opacity-0" : ""}`} />
             <span
               className={`w-6 h-0.5 bg-[#111827] transition-all duration-300 ${
                 isMenuOpen ? "-rotate-45 -translate-y-2" : ""
@@ -179,7 +229,26 @@ export default function Header() {
             </Link>
           ))}
 
-          <div className="flex flex-col gap-4 mt-8 w-full max-w-xs">
+          {/* promo inside mobile menu too */}
+          <Link
+            href="#plans"
+            onClick={() => setIsMenuOpen(false)}
+            className="w-full max-w-xs rounded-[16px] border border-[#86EFAC]/25 bg-[#0B1220]/90 text-white px-4 py-3"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#86EFAC]/20 border border-[#86EFAC]/25 flex items-center justify-center">
+                <span className="text-[#86EFAC] text-lg">🎁</span>
+              </div>
+              <div>
+                <p className="font-extrabold text-base leading-tight">
+                  Annual = <span className="text-[#86EFAC]">1 month FREE</span>
+                </p>
+                <p className="text-white/75 text-sm mt-1">Pay for 11, get 12 • Cancel anytime • No contracts</p>
+              </div>
+            </div>
+          </Link>
+
+          <div className="flex flex-col gap-4 mt-2 w-full max-w-xs">
             {isAuthenticated ? (
               <>
                 <div className="flex items-center justify-center gap-3 mb-4">
