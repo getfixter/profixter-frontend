@@ -79,7 +79,7 @@ export default function Header() {
                     <span className="text-[#86EFAC]">✓</span> Local Long Island pros
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="text-[#86EFAC]">✓</span> Materials at cost (no markups)
+                    <span className="text-[#86EFAC]">✓</span> Personal Handyman 
                   </span>
                 </div>
               </div>
