@@ -212,10 +212,10 @@ export default function PlansSection() {
               </p>
             </div>
 
-            {/* switch */}
-<div className="flex items-center gap-3 shrink-0 sm:pl-4 sm:justify-end">
+{/* switch */}
+<div className="grid grid-cols-[72px_auto_72px] items-center gap-3 shrink-0">
   <span
-    className={`text-sm font-semibold whitespace-nowrap ${
+    className={`text-sm font-semibold text-right whitespace-nowrap ${
       billing === "monthly" ? "text-white" : "text-white/60"
     }`}
   >
@@ -226,8 +226,10 @@ export default function PlansSection() {
     type="button"
     onClick={() => setBilling((b) => (b === "monthly" ? "annual" : "monthly"))}
     aria-label="Toggle billing cycle"
-    className={`relative w-[70px] h-[38px] rounded-full border transition-colors duration-300 shrink-0 ${
-      billing === "annual" ? "bg-[#306EEC] border-[#306EEC]/60" : "bg-white/15 border-white/20"
+    className={`relative w-[70px] h-[38px] rounded-full border transition-colors duration-300 ${
+      billing === "annual"
+        ? "bg-[#306EEC] border-[#306EEC]/60"
+        : "bg-white/15 border-white/20"
     }`}
   >
     <span
@@ -238,13 +240,14 @@ export default function PlansSection() {
   </button>
 
   <span
-    className={`text-sm font-semibold whitespace-nowrap ${
+    className={`text-sm font-semibold text-left whitespace-nowrap ${
       billing === "annual" ? "text-white" : "text-white/60"
     }`}
   >
     Annually
   </span>
 </div>
+
 
 
           </div>
@@ -363,7 +366,7 @@ export default function PlansSection() {
     <section id="plans" className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden">
       {/* 🔥 Annual promo banner */}
 <div className="mx-auto max-w-[1240px] px-5 lg:px-5 mb-6">
-  <div className="bg-[#86EFAC]/15 border border-[#86EFAC]/30 rounded-2xl p-4 sm:p-5 backdrop-blur-md shadow-[0_10px_40px_rgba(0,0,0,0.25)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+  <div className="bg-[#86EFAC]/15 border border-[#86EFAC]/30 rounded-2xl p-3 sm:p-4 backdrop-blur-md shadow-[0_10px_40px_rgba(0,0,0,0.25)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div className="flex items-center gap-3">
       <div className="w-9 h-9 rounded-full bg-[#86EFAC]/25 flex items-center justify-center">
         <span className="text-[#1F7A2E] text-lg">🎁</span>
@@ -579,7 +582,7 @@ export default function PlansSection() {
 
             {/* Desktop layout */}
             <div className="hidden lg:block">
-<div className="relative pb-24">
+<div className="relative pb-44">
   {/* pb-16 guarantees room for controls below cards */}
   <div className="flex items-end gap-6">
                   {/* Main card */}
@@ -706,7 +709,7 @@ export default function PlansSection() {
                           key={offset}
                           type="button"
                           onClick={() => setCurrentSlide(index)}
-                          className="group relative w-[300px] h-[400px] flex-shrink-0 text-left"
+                          className="group relative w-[300px] min-h-[420px] flex-shrink-0 text-left"
                         >
                           <div className="absolute inset-0 bg-[#EEF2FF] rounded-[16px] border border-[#C5CBD8] p-6 shadow-[0_12px_60px_rgba(0,0,0,0.25)] transition-transform duration-300 group-hover:-translate-y-1" />
 
@@ -788,7 +791,7 @@ export default function PlansSection() {
                 </div>
 
                 {/* Desktop controls */}
-<div className="mt-6 relative z-20 flex items-center justify-center gap-4">
+<div className="mt-16 relative z-30 flex items-center justify-center gap-4">
                   <button
                     onClick={prevSlide}
                     className="bg-white hover:bg-gray-100 text-gray-800 w-12 h-12 rounded-xl flex items-center justify-center transition-colors shadow-md border border-gray-200 active:scale-95"
