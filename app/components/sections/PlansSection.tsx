@@ -193,7 +193,7 @@ export default function PlansSection() {
     <div className={`${compact ? "mt-6" : "mt-8"} w-full`}>
       <div className={`${compact ? "mx-auto max-w-[520px]" : ""}`}>
         <div className="bg-white/10 border border-white/15 rounded-2xl px-3 py-3 sm:px-4 sm:py-4 backdrop-blur-md shadow-[0_10px_60px_rgba(0,0,0,0.20)]">
-          <div className="flex items-center justify-between gap-3">
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex flex-col">
               <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
                 {billing === "annual" ? "Annual Plan" : "Monthly Plan"}
@@ -213,32 +213,31 @@ export default function PlansSection() {
             </div>
 
             {/* switch */}
-            <div className="flex items-center gap-2">
-              <span className={`text-xs sm:text-sm font-semibold ${billing === "monthly" ? "text-white" : "text-white/60"}`}>
-                Monthly
-              </span>
+            <div className="flex items-center gap-3">
+  <span className={`text-sm font-semibold ${billing === "monthly" ? "text-white" : "text-white/60"}`}>
+    Monthly
+  </span>
 
-              <button
-                type="button"
-                onClick={() => setBilling((b) => (b === "monthly" ? "annual" : "monthly"))}
-                aria-label="Toggle billing cycle"
-                className={`relative w-[62px] h-[36px] rounded-full border transition-all duration-300 ${
-                  billing === "annual"
-                    ? "bg-[#306EEC] border-[#306EEC]/60"
-                    : "bg-white/15 border-white/20"
-                }`}
-              >
-                <span
-                  className={`absolute top-[4px] w-[28px] h-[28px] rounded-full bg-white shadow-md transition-transform duration-300 ${
-                    billing === "annual" ? "translate-x-[30px]" : "translate-x-[4px]"
-                  }`}
-                />
-              </button>
+  <button
+    type="button"
+    onClick={() => setBilling((b) => (b === "monthly" ? "annual" : "monthly"))}
+    aria-label="Toggle billing cycle"
+    className={`relative w-[70px] h-[38px] rounded-full border transition-all duration-300 ${
+      billing === "annual" ? "bg-[#306EEC] border-[#306EEC]/60" : "bg-white/15 border-white/20"
+    }`}
+  >
+    <span
+      className={`absolute top-[4px] w-[30px] h-[30px] rounded-full bg-white shadow-md transition-transform duration-300 ${
+        billing === "annual" ? "translate-x-[36px]" : "translate-x-[4px]"
+      }`}
+    />
+  </button>
 
-              <span className={`text-xs sm:text-sm font-semibold ${billing === "annual" ? "text-white" : "text-white/60"}`}>
-                Annually
-              </span>
-            </div>
+  <span className={`text-sm font-semibold ${billing === "annual" ? "text-white" : "text-white/60"}`}>
+    Annually
+  </span>
+</div>
+
           </div>
 
           {/* little promo badge */}
@@ -421,7 +420,7 @@ export default function PlansSection() {
                               <div className="mb-3 flex justify-center">
                                 <div className="px-3 py-1 rounded-full bg-[#86EFAC]/20 border border-[#43A047]/25">
                                   <span className="text-[#1F7A2E] font-extrabold text-xs sm:text-sm">
-                                    1 month free • Save ${saving}
+                                    1 month FREE • Pay for 11, get 12
                                   </span>
                                 </div>
                               </div>
@@ -547,8 +546,9 @@ export default function PlansSection() {
 
             {/* Desktop layout */}
             <div className="hidden lg:block">
-              <div className="relative">
-                <div className="flex items-end gap-6">
+<div className="relative pb-16">
+  {/* pb-16 guarantees room for controls below cards */}
+  <div className="flex items-end gap-6">
                   {/* Main card */}
                   <div className="relative w-[420px] min-h-[560px] bg-[#EEF2FF] rounded-[22px] border border-[#C5CBD8] shadow-[0_20px_90px_rgba(0,0,0,0.35)] flex-shrink-0 overflow-hidden">
                     {plans[currentSlide].isPopular && (
@@ -563,11 +563,12 @@ export default function PlansSection() {
                       <div className="absolute top-4 right-4 z-10">
                         <div className="bg-[#86EFAC]/20 border border-[#43A047]/25 px-3 py-2 rounded-xl shadow-lg">
                           <div className="text-[#1F7A2E] font-extrabold text-[12px] leading-tight">
-                            1 month free
-                          </div>
-                          <div className="text-[#313234] font-bold text-[12px] leading-tight">
-                            pay 11 months
-                          </div>
+  1 month FREE
+</div>
+<div className="text-[#313234] font-bold text-[12px] leading-tight">
+  Pay for 11, get 12
+</div>
+
                         </div>
                       </div>
                     )}
@@ -599,7 +600,9 @@ export default function PlansSection() {
 
                             {billing === "annual" && (
                               <div className="mt-2 text-center text-sm text-[#6A6D71]">
-                                Save <span className="font-extrabold text-[#313234]">${saving}</span> • Equivalent{" "}
+Pay for <span className="font-extrabold text-[#313234]">11</span>, get{" "}
+<span className="font-extrabold text-[#313234]">12</span> • Equivalent{" "}
+<span className="font-extrabold text-[#313234]">${formatMoney(annual / 12)}</span>/mo billed annually
                                 <span className="font-extrabold text-[#313234]">${formatMoney(annual / 12)}</span>/mo billed annually
                               </div>
                             )}
@@ -669,7 +672,7 @@ export default function PlansSection() {
                           key={offset}
                           type="button"
                           onClick={() => setCurrentSlide(index)}
-                          className="group relative w-[300px] h-[420px] flex-shrink-0 text-left"
+                          className="group relative w-[300px] h-[400px] flex-shrink-0 text-left"
                         >
                           <div className="absolute inset-0 bg-[#EEF2FF] rounded-[16px] border border-[#C5CBD8] p-6 shadow-[0_12px_60px_rgba(0,0,0,0.25)] transition-transform duration-300 group-hover:-translate-y-1" />
 
@@ -683,7 +686,7 @@ export default function PlansSection() {
                               <div className="mb-3 flex justify-center">
                                 <div className="px-3 py-1 rounded-full bg-[#86EFAC]/20 border border-[#43A047]/25">
                                   <span className="text-[#1F7A2E] font-extrabold text-[11px]">
-                                    1 month free
+1 month FREE
                                   </span>
                                 </div>
                               </div>
@@ -732,11 +735,12 @@ export default function PlansSection() {
                               ))}
                             </div>
 
-                            <div className="mt-4">
-                              <div className="w-full h-[46px] rounded-[10px] bg-[#306EEC] text-white font-extrabold flex items-center justify-center opacity-90 group-hover:opacity-100 transition">
-                                View
-                              </div>
-                            </div>
+                            <div className="mt-auto pt-4">
+  <div className="w-full h-[40px] rounded-[10px] bg-[#306EEC] text-white text-[15px] font-extrabold flex items-center justify-center opacity-90 group-hover:opacity-100 transition">
+    View
+  </div>
+</div>
+
                           </div>
 
                           <div className="absolute inset-0 bg-[#313234]/15 backdrop-blur-[2px] rounded-[16px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -747,7 +751,7 @@ export default function PlansSection() {
                 </div>
 
                 {/* Desktop controls */}
-                <div className="mt-8 flex items-center justify-center gap-4">
+<div className="mt-10 relative z-20 flex items-center justify-center gap-4">
                   <button
                     onClick={prevSlide}
                     className="bg-white hover:bg-gray-100 text-gray-800 w-12 h-12 rounded-xl flex items-center justify-center transition-colors shadow-md border border-gray-200 active:scale-95"
