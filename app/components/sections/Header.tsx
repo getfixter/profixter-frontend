@@ -63,8 +63,9 @@ export default function Header() {
 
               <div>
                 <p className="text-white font-extrabold text-sm sm:text-base leading-tight">
-                  Get <span className="text-[#86EFAC]">1 month FREE</span> with the Annual Plan{" "}
-                  <span className="hidden sm:inline text-white/70 font-semibold">• Pay for 11, get 12</span>
+                  Get <span className="text-[#86EFAC]">20% OFF</span> your first month with code{" "}
+<span className="text-[#86EFAC] font-extrabold">SPRING</span>{" "}
+<span className="hidden sm:inline text-white/70 font-semibold">• Monthly plans only</span>
                 </p>
 
                 {/* sale points */}
@@ -80,6 +81,12 @@ export default function Header() {
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <span className="text-[#86EFAC]">✓</span> Personal Handyman 
+                    <span className="inline-flex items-center gap-1.5">
+  <span className="text-[#86EFAC]">✓</span> Personal Handyman 
+</span>
+<span className="inline-flex items-center gap-1.5">
+  <span className="text-[#86EFAC]">✓</span> Mr.Fixter — Your Home’s Best Friend
+</span>
                   </span>
                 </div>
               </div>
@@ -91,7 +98,7 @@ export default function Header() {
                   Best value
                 </span>
                 <span className="px-3 py-1 rounded-full bg-[#86EFAC]/15 border border-[#86EFAC]/25 text-[#86EFAC] text-xs font-extrabold">
-                  Save 1 month
+                  20% OFF
                 </span>
               </div>
 
@@ -241,9 +248,9 @@ export default function Header() {
               </div>
               <div>
                 <p className="font-extrabold text-base leading-tight">
-                  Annual = <span className="text-[#86EFAC]">1 month FREE</span>
+                  Get <span className="text-[#86EFAC]">20% OFF</span> First Month
                 </p>
-                <p className="text-white/75 text-sm mt-1">Pay for 11, get 12 • Cancel anytime • No contracts</p>
+                <p className="text-white/75 text-sm mt-1">Use code SPRING • Monthly plans only • Cancel anytime</p>
               </div>
             </div>
           </Link>

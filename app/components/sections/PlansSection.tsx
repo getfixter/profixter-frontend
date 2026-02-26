@@ -199,17 +199,17 @@ export default function PlansSection() {
                 {billing === "annual" ? "Annual Plan" : "Monthly Plan"}
               </p>
               <p className="text-[#C5CBD8] text-xs sm:text-sm leading-snug mt-1">
-                {billing === "annual" ? (
-                  <>
-                    Pay for <span className="text-white font-semibold">11 months</span>, get{" "}
-                    <span className="text-white font-semibold">12</span> (1 month free)
-                  </>
-                ) : (
-                  <>
-                    Switch to <span className="text-white font-semibold">Annual</span> to get 1 month free
-                  </>
-                )}
-              </p>
+  {billing === "annual" ? (
+    <>
+      Pay for <span className="text-white font-semibold">11 months</span>, get{" "}
+      <span className="text-white font-semibold">12</span>
+    </>
+  ) : (
+    <>
+      Use code <span className="text-white font-semibold">SPRING</span> — 20% off your first month
+    </>
+  )}
+</p>
             </div>
 
 {/* switch */}
@@ -257,8 +257,8 @@ export default function PlansSection() {
             <div className="flex items-center gap-2">
               <div className="px-3 py-1 rounded-full bg-[#86EFAC]/15 border border-[#86EFAC]/30">
                 <span className="text-[#86EFAC] font-extrabold text-xs sm:text-sm">
-                  ✅ 1 month free on Annual
-                </span>
+  ✅ SPRING: 20% off first month (monthly)
+</span>
               </div>
               <span className="hidden sm:inline text-[#C5CBD8] text-xs">
                 Cancel anytime • No contracts
@@ -340,13 +340,15 @@ export default function PlansSection() {
         </h2>
 
         <div className="mb-6">
-          <p className="text-white text-2xl sm:text-3xl font-normal leading-tight mb-2">$0 today</p>
-          <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed">
-            No 7-day trial anymore.
-            <br />
-            Instead: <span className="text-white font-semibold">1 free first visit</span> (Labor Only).
-          </p>
-        </div>
+  <p className="text-white text-2xl sm:text-3xl font-normal leading-tight mb-2">
+    Code <span className="text-white font-extrabold">SPRING</span>
+  </p>
+  <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed">
+    <span className="text-white font-semibold">20% off your first month</span> on monthly plans.
+    <br />
+    Mr.Fixter — Your Home’s Best Friend.
+  </p>
+</div>
 
         {!compact && (
           <p className="text-[#C5CBD8] text-base leading-[19px]">
@@ -373,11 +375,11 @@ export default function PlansSection() {
       </div>
       <div>
         <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
-          Get 1 month FREE with the Annual Plan
-        </p>
-        <p className="text-[#C5CBD8] text-sm">
-          Pay for 11 months, get 12 months of handyman service
-        </p>
+  Annual Plan — Pay 11 months, Get 12
+</p>
+<p className="text-[#C5CBD8] text-sm">
+  Or use code <span className="text-white font-semibold">SPRING</span> for 20% off your first month (monthly plans)
+</p>
       </div>
     </div>
 

@@ -16,7 +16,6 @@ type FixterUser = {
 
 type NextBookingResponse = {
   hasSubscription?: boolean;
-  freeFirstVisitAvailable?: boolean;
   plan?: string;
   hasAnyBookings?: boolean; // (if your backend returns it)
 };
@@ -27,7 +26,6 @@ function prettyPlan(p?: string) {
   if (x === "plus") return "Plus";
   if (x === "premium") return "Premium";
   if (x === "elite") return "Elite";
-  if (x === "free") return "Free Visit";
   return "";
 }
 
@@ -38,7 +36,7 @@ export default function HeroSection() {
   const [needItOpen, setNeedItOpen] = useState(false);
 
   // unknown = still loading; none = no free + no sub; free = free visit; sub = active subscription
-  const [subState, setSubState] = useState<"unknown" | "free" | "sub" | "none">("unknown");
+  const [subState, setSubState] = useState<"unknown" | "sub" | "none">("unknown");
   const [plan, setPlan] = useState<string>("");
 
   const mountedRef = useRef(true);
@@ -79,14 +77,12 @@ export default function HeroSection() {
         const nb = (await getNextBooking(addressId)) as NextBookingResponse;
 
         const hasSub = !!nb?.hasSubscription;
-        const freeOk = !!nb?.freeFirstVisitAvailable;
 
-        safeSet(() => {
-          setPlan(String(nb?.plan || ""));
-          if (hasSub) setSubState("sub");
-          else if (freeOk) setSubState("free");
-          else setSubState("none");
-        });
+safeSet(() => {
+  setPlan(String(nb?.plan || ""));
+  if (hasSub) setSubState("sub");
+  else setSubState("none");
+});
       } catch {
         safeSet(() => {
           setSubState("none");
@@ -115,62 +111,51 @@ export default function HeroSection() {
       window.location.href = "/signin?redirect=/";
       return;
     }
-
-    if (subState === "sub" || subState === "free") goToBooking();
-    else goToPlans();
+if (subState === "sub") goToBooking();
+else goToPlans();
   };
 
-  const heroCopy = useMemo(() => {
-    // while loading subscription state, show neutral copy (prevents “jump”)
-    if (isAuthenticated && subState === "unknown") {
-      return {
-        badge: "Checking your access…",
-        titleA: "Your Home",
-        titleB: "Handled.",
-        subtitle: "Loading your membership status…",
-        cta: "Continue",
-      };
-    }
+const heroCopy = useMemo(() => {
+  // while loading subscription state, show neutral copy (prevents “jump”)
+  if (isAuthenticated && subState === "unknown") {
+    return {
+      badge: "Checking your access…",
+      titleA: "Your Home",
+      titleB: "Handled.",
+      subtitle: "Loading your membership status…",
+      cta: "Continue",
+    };
+  }
 
-    if (!isAuthenticated) {
-      return {
-        badge: "Serving Long Island • Suffolk & Nassau",
-        titleA: "Your Home",
-        titleB: "Handled.",
-        subtitle: "Finally, someone you can trust to take care of the little things — without stress.",
-        cta: "Get Your First Fix Free",
-      };
-    }
-
-    if (subState === "free") {
-      return {
-        badge: "Welcome — your first visit is on us",
-        titleA: "Your first fix",
-        titleB: "is free.",
-        subtitle: "Relax. We’ve got your home handled from here.",
-        cta: "Book My Free Visit",
-      };
-    }
-
-    if (subState === "sub") {
-      const name = prettyPlan(plan);
-      return {
-        badge: name ? `Member access active — ${name}` : "Member access active",
-        titleA: "We missed you",
-        titleB: "Need help?",
-        subtitle: "Book your next visit in seconds. We’ll handle the rest.",
-        cta: "Book My Next Visit",
-      };
-    }
-
+  if (!isAuthenticated) {
     return {
       badge: "Serving Long Island • Suffolk & Nassau",
-      titleA: "Let’s take care",
-      titleB: "of your Home.",
-      subtitle: "The easy way to keep your home feeling right — every day.",
+      titleA: "Your Home",
+      titleB: "Handled.",
+      subtitle: "Mr.Fixter — Your Home’s Best Friend. Use code SPRING for 20% off your first month (monthly plans).",
       cta: "See Plans",
     };
-  }, [isAuthenticated, subState, plan]);
+  }
+
+  if (subState === "sub") {
+    const name = prettyPlan(plan);
+    return {
+      badge: name ? `Member access active — ${name}` : "Member access active",
+      titleA: "We missed you",
+      titleB: "Need help?",
+      subtitle: "Book your next visit in seconds. We’ll handle the rest.",
+      cta: "Book My Next Visit",
+    };
+  }
+
+  return {
+    badge: "Use code SPRING — 20% off first month (monthly plans)",
+    titleA: "Let’s take care",
+    titleB: "of your Home.",
+    subtitle: "Mr.Fixter — Your Home’s Best Friend. Pick a monthly plan and save 20% on month one with code SPRING.",
+    cta: "See Plans",
+  };
+}, [isAuthenticated, subState, plan]);
 
   return (
     <>
