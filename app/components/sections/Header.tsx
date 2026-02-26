@@ -50,6 +50,43 @@ export default function Header() {
 
   const firstName = user?.name?.split(" ")[0] || "User";
 
+  // ---------- SPRING promo countdown (35 days) ----------
+const PROMO_KEY = "pf_spring_promo_start_v1";
+const PROMO_DAYS = 35;
+
+const [promoLeft, setPromoLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(
+  null
+);
+
+useEffect(() => {
+  // store a stable start time (first visitor sets it)
+  let start = Number(localStorage.getItem(PROMO_KEY) || "0");
+  if (!start || !Number.isFinite(start)) {
+    start = Date.now();
+    localStorage.setItem(PROMO_KEY, String(start));
+  }
+
+  const end = start + PROMO_DAYS * 24 * 60 * 60 * 1000;
+
+  const tick = () => {
+    const ms = end - Date.now();
+    if (ms <= 0) {
+      setPromoLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      return;
+    }
+    const totalSec = Math.floor(ms / 1000);
+    const days = Math.floor(totalSec / 86400);
+    const hours = Math.floor((totalSec % 86400) / 3600);
+    const minutes = Math.floor((totalSec % 3600) / 60);
+    const seconds = totalSec % 60;
+    setPromoLeft({ days, hours, minutes, seconds });
+  };
+
+  tick();
+  const id = window.setInterval(tick, 1000);
+  return () => window.clearInterval(id);
+}, []);
+
   return (
     <header className="w-full py-[14px] relative z-50">
       {/* ✅ Promo strip ABOVE glass header */}
@@ -63,10 +100,20 @@ export default function Header() {
 
               <div>
                 <p className="text-white font-extrabold text-sm sm:text-base leading-tight">
-                  Get <span className="text-[#86EFAC]">20% OFF</span> your first month with code{" "}
-<span className="text-[#86EFAC] font-extrabold">SPRING</span>{" "}
-<span className="hidden sm:inline text-white/70 font-semibold">• Monthly plans only</span>
-                </p>
+  Get <span className="text-[#86EFAC]">20% OFF</span> your first month with code{" "}
+  <span className="text-[#86EFAC] font-extrabold">SPRING</span>{" "}
+  <span className="hidden sm:inline text-white/70 font-semibold">• Monthly plans only</span>
+</p>
+
+{promoLeft && (promoLeft.days + promoLeft.hours + promoLeft.minutes + promoLeft.seconds) > 0 && (
+  <p className="mt-1 text-white/70 text-[12px] sm:text-[13px] font-semibold">
+    Ends in{" "}
+    <span className="text-[#86EFAC] font-extrabold">
+      {promoLeft.days}d {String(promoLeft.hours).padStart(2, "0")}:{String(promoLeft.minutes).padStart(2, "0")}:
+      {String(promoLeft.seconds).padStart(2, "0")}
+    </span>
+  </p>
+)}
 
                 {/* sale points */}
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] sm:text-[13px] text-white/75">
@@ -250,8 +297,17 @@ export default function Header() {
                 <p className="font-extrabold text-base leading-tight">
                   Get <span className="text-[#86EFAC]">20% OFF</span> First Month
                 </p>
-                <p className="text-white/75 text-sm mt-1">Use code SPRING • Monthly plans only • Cancel anytime</p>
-              </div>
+<p className="text-white/75 text-sm mt-1">Use code SPRING • Monthly plans only • Cancel anytime</p>
+
+{promoLeft && (promoLeft.days + promoLeft.hours + promoLeft.minutes + promoLeft.seconds) > 0 && (
+  <p className="text-white/70 text-[12px] mt-1 font-semibold">
+    Ends in{" "}
+    <span className="text-[#86EFAC] font-extrabold">
+      {promoLeft.days}d {String(promoLeft.hours).padStart(2, "0")}:{String(promoLeft.minutes).padStart(2, "0")}:
+      {String(promoLeft.seconds).padStart(2, "0")}
+    </span>
+  </p>
+)}              </div>
             </div>
           </Link>
 
