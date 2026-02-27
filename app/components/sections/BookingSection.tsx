@@ -893,51 +893,15 @@ const canBook =
                 Selected: <span className="text-[#306EEC]">{selectedDateLabel}</span>
               </div>
             )}
-            {isAuthenticated && hasSubscription && activeBookings.length > 0 && (
-  <div className="mt-4 rounded-[14px] border border-[#c5cbd8] bg-white/60 p-3">
-    <div className="text-[12px] font-extrabold text-[#313234] uppercase mb-2">
-      Your bookings
-    </div>
-
-    <div className="space-y-2">
-      {activeBookings.map((b: any) => {
-        const dt = new Date(b.date);
-        const when = dt.toLocaleString("en-US", {
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-
-        const status = String(b.status || "Pending");
-        const statusColor =
-          status.toLowerCase() === "confirmed"
-            ? "text-green-700"
-            : "text-orange-700";
-
-        return (
-          <div
-            key={String(b._id)}
-            className="flex items-center gap-2 text-[12px] text-[#313234]"
-          >
-            <div className="min-w-0 flex-1 truncate">
-              <span className="font-semibold">{when}</span>{" "}
-              <span className={["font-semibold", statusColor].join(" ")}>
-                {status}
-              </span>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => rebook(b)}
-              className="shrink-0 px-2 py-1 rounded-lg bg-[#306EEC] text-white text-[11px] font-extrabold hover:bg-[#2558c9] transition"
-            >
-              Rebook
-            </button>
-          </div>
-        );
-      })}
-    </div>
+          {isAuthenticated && hasSubscription && (
+  <div className="mt-4">
+    <a
+      href="/account#my-bookings"
+      className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 rounded-[14px] bg-white border border-[#c5cbd8] text-[#313234] font-extrabold hover:bg-[#f8f9ff] transition"
+      style={{ boxShadow: "0px 0px 200px 0px rgba(0,0,0,0.06)" }}
+    >
+      Manage my bookings
+    </a>
   </div>
 )}
           </div>

@@ -29,6 +29,21 @@ export default function AccountPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
+  // ✅ If user comes from /account#my-bookings, open Bookings tab
+useEffect(() => {
+  if (typeof window === "undefined") return;
+
+  const applyHash = () => {
+    if (window.location.hash === "#my-bookings") {
+      setActiveTab("bookings");
+    }
+  };
+
+  applyHash();
+  window.addEventListener("hashchange", applyHash);
+  return () => window.removeEventListener("hashchange", applyHash);
+}, []);
+
   // Ensure we always have fresh user data (addresses/defaultAddressId)
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -97,7 +112,11 @@ export default function AccountPage() {
           >
             {activeTab === "personal" && <PersonalInfoForm formData={formData} />}
             {activeTab === "plan" && <PlanSection />}
-            {activeTab === "bookings" && <BookingsSection />}
+            {activeTab === "bookings" && (
+  <div id="my-bookings">
+    <BookingsSection />
+  </div>
+)}
             {activeTab === "password" && <PasswordForm />}
           </div>
         </div>
