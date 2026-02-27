@@ -250,7 +250,7 @@ export default function RecommendedBusinessesSection() {
             </p>
 
             <div className="mt-3 text-[13px] text-[#6A6D71]">
-              We only list licensed & insured professionals we trust — and we remove anyone who doesn’t deliver.
+              We only list licensed & insured professionals we trust - and we remove anyone who doesn’t deliver.
             </div>
           </div>
 

@@ -24,7 +24,7 @@ export const RECOMMENDED_BUSINESSES: RecommendedBusiness[] = [
     phoneDisplay: "(718) 450-2485",
     phoneTel: "+17184502485",
     description:
-      "Reliable electrician — clear communication, clean work, and solid troubleshooting.",
+      "Reliable electrician - clear communication, clean work, and solid troubleshooting.",
     photoSrc: "/images/partners/patrick.jpg",
     featured: true,
   },
@@ -34,7 +34,7 @@ export const RECOMMENDED_BUSINESSES: RecommendedBusiness[] = [
     phoneDisplay: "(631) 946-9890",
     phoneTel: "+16319469890",
     description:
-      "Great HVAC tech for diagnostics and service calls — honest recommendations and quick response.",
+      "Great HVAC tech for diagnostics and service calls - honest recommendations and quick response.",
     photoSrc: "/images/partners/kamil.jpg",
   },
   {
@@ -43,7 +43,7 @@ export const RECOMMENDED_BUSINESSES: RecommendedBusiness[] = [
     phoneDisplay: "(631) 988-0071",
     phoneTel: "+16319880071",
     description:
-      "Professional plumber — solves problems the right way and keeps things clean and straightforward.",
+      "Professional plumber - solves problems the right way and keeps things clean and straightforward.",
     photoSrc: "/images/partners/greg.jpg",
   },
   {
@@ -52,7 +52,7 @@ export const RECOMMENDED_BUSINESSES: RecommendedBusiness[] = [
     phoneDisplay: "(631) 835-3607",
     phoneTel: "+16318353607",
     description:
-      "Skilled home improvement pro — strong craftsmanship, detail-oriented finishes, reliable scheduling.",
+      "Skilled home improvement pro - strong craftsmanship, detail-oriented finishes, reliable scheduling.",
     photoSrc: "/images/partners/jarek.jpg",
   },
   {
@@ -61,7 +61,7 @@ export const RECOMMENDED_BUSINESSES: RecommendedBusiness[] = [
     phoneDisplay: "(631) 456-3334",
     phoneTel: "+16314563334",
     description:
-      "Trusted housekeeping — consistent quality, dependable, and great for recurring or deep cleanings.",
+      "Trusted housekeeping - consistent quality, dependable, and great for recurring or deep cleanings.",
     photoSrc: "/images/partners/edita.jpg",
   },
 ];
