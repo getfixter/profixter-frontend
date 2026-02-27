@@ -40,9 +40,14 @@ function BusinessCard({ b }: { b: RecommendedBusiness }) {
           {b.category}
         </div>
 
-        {/* LICENSED BADGE */}
-        <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ECFDF3] border border-[#ABEFC6] text-[#067647] text-[11px] font-semibold">
-          Licensed & Insured
+        {/* LICENSED + VERIFIED */}
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ECFDF3] border border-[#ABEFC6] text-[#067647] text-[11px] font-semibold">
+            Licensed & Insured
+          </div>
+          <div className="text-[11px] font-semibold text-[#6A6D71]">
+            Verified by <span className="text-[#313234]">Mr. Fixter</span>
+          </div>
         </div>
 
         {/* NAME */}
@@ -170,7 +175,7 @@ export default function RecommendedBusinessesSection() {
     setCanLeft(left > 5);
     setCanRight(left < maxScrollLeft - 5);
 
-    // determine active slide by nearest snap-start item (based on centers)
+    // determine active slide by nearest card (center-based)
     const children = Array.from(el.children) as HTMLDivElement[];
     if (!children.length) return;
 
@@ -228,20 +233,25 @@ export default function RecommendedBusinessesSection() {
         <div className="flex items-end justify-between gap-4 flex-wrap">
           <div>
             <div className="text-[12px] uppercase tracking-wider text-[#6A6D71] font-semibold">
-              Trusted Local Network
+              Mr. Fixter Trusted Pro Network
             </div>
 
             <h2 className="mt-2 text-[26px] sm:text-[34px] font-extrabold text-[#313234] leading-[110%]">
-              Professionals We Recommend
+              Licensed specialists we trust
             </h2>
 
-            <p className="mt-3 max-w-[920px] text-[14px] sm:text-[15px] text-[#6A6D71] leading-[150%]">
-              Swipe through trusted local pros. Tap any phone number to call.
+            <p className="mt-3 max-w-[980px] text-[14px] sm:text-[15px] text-[#6A6D71] leading-[150%]">
+              When a job needs a licensed specialist or bigger scope, we connect you with trusted local pros.
+              Tap any phone number to call.
               <span className="text-[#313234] font-semibold">
                 {" "}
                 For discount say “{RECOMMENDED_MAGIC_WORD}”.
               </span>
             </p>
+
+            <div className="mt-3 text-[13px] text-[#6A6D71]">
+              We only list licensed & insured professionals we trust — and we remove anyone who doesn’t deliver.
+            </div>
           </div>
 
           {/* RIGHT SIDE CONTROLS */}
@@ -264,7 +274,7 @@ export default function RecommendedBusinessesSection() {
               href="tel:631-599-1363"
               className="h-[46px] px-5 rounded-[14px] bg-[#EEF2FF] border border-[#C5CBD8] hover:bg-[#E6ECFF] transition-colors text-[#306EEC] text-[14px] font-semibold inline-flex items-center justify-center"
             >
-              Need guidance? Call us
+              Not sure who to hire? Ask Mr. Fixter
             </a>
           </div>
         </div>
@@ -272,9 +282,10 @@ export default function RecommendedBusinessesSection() {
         {/* Slider */}
         <div className="mt-8">
           <div className="relative">
-            {/* Fade edges */}
-<div className="pointer-events-none absolute inset-y-0 left-0 w-[8px] sm:w-[18px] bg-gradient-to-r from-white/90 to-transparent z-10" />
-<div className="pointer-events-none absolute inset-y-0 right-0 w-[8px] sm:w-[18px] bg-gradient-to-l from-white/90 to-transparent z-10" />
+            {/* Fade edges (subtle) */}
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-[8px] sm:w-[18px] bg-gradient-to-r from-white/90 to-transparent z-10" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-[8px] sm:w-[18px] bg-gradient-to-l from-white/90 to-transparent z-10" />
+
             <div
               ref={scrollerRef}
               onScroll={updateArrowsAndDots}
@@ -324,8 +335,7 @@ export default function RecommendedBusinessesSection() {
             Independent Professionals
           </div>
           <div className="mt-1 text-[14px] text-[#6A6D71] leading-relaxed">
-            These businesses operate independently from Mr. Fixter. Pricing and
-            discounts are determined by each provider.
+            These businesses operate independently from Mr. Fixter. Pricing and discounts are determined by each provider.
           </div>
         </div>
       </div>
