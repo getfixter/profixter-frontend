@@ -213,7 +213,7 @@ export default function BookingSection() {
 
   const planRank = (p?: string) => {
     const x = String(p || "").toLowerCase();
-    if (x === "free") return 1; // ✅ allow Labor Only for free visit
+    // if (x === "free") return 1; // ❌ no free visits anymore
     if (x === "basic") return 1;
     if (x === "plus") return 2;
     if (x === "premium") return 3;
@@ -343,18 +343,16 @@ useEffect(() => {
       const data = await getNextBooking(addressId);
 
       const hasSub = !!data?.hasSubscription;
-      const freeOk = !!data?.freeFirstVisitAvailable;
 
-      setHasSubscription(hasSub);
-      setFreeFirstVisitAvailable(freeOk);
-      setPlan(String(data?.plan || ""));
+setHasSubscription(hasSub);
+setFreeFirstVisitAvailable(false); // keep if you want, but always false
+setPlan(String(data?.plan || ""));
 
-      // show message only if neither is allowed
-      if (!hasSub && !freeOk) {
-        setSubscriptionError("This address does not have an active subscription. Purchase a subscription to book a visit.");
-      } else {
-        setSubscriptionError("");
-      }
+if (!hasSub) {
+  setSubscriptionError("This address does not have an active subscription. Purchase a subscription to book a visit.");
+} else {
+  setSubscriptionError("");
+}
 
       const limit = Number(data?.bookingLimit ?? 1);
       const count = Number(data?.activeCount ?? 0);
@@ -590,7 +588,7 @@ if (info) {
       return;
     }
 
-    if (!hasSubscription && !freeFirstVisitAvailable) {
+    if (!hasSubscription) {
   setError("This address does not have an active subscription. Purchase a subscription to book a visit.");
   return;
 }
@@ -623,12 +621,7 @@ if (info) {
 
       const serviceLabel = SERVICES.find((x) => x.key === service)?.label || "";
 
-// ✅ If this is a free first visit, only allow Labor Only
-if (!hasSubscription && freeFirstVisitAvailable && serviceLabel !== "Labor Only") {
-  setError('Free visit is available for "Labor Only" only. Please select "Labor Only".');
-  setLoading(false);
-  return;
-}
+
 
       const result = await createBooking({
         service: serviceLabel,
@@ -700,7 +693,7 @@ if (!hasSubscription && freeFirstVisitAvailable && serviceLabel !== "Labor Only"
 const canBook =
   !loading &&
   !checkingAccess &&
-  (hasSubscription || freeFirstVisitAvailable || !isAuthenticated) &&
+  (hasSubscription || !isAuthenticated) &&
   !hasActiveBooking;
 
 
@@ -759,17 +752,17 @@ const canBook =
           </div>
         </div>
 
-{/* ✅ Free first visit banner */}
-{(!isAuthenticated || (!hasSubscription && freeFirstVisitAvailable)) && (
-  <div className="mb-6 rounded-[16px] border border-green-300 bg-green-50 p-4 text-center">
-    <div className="font-extrabold text-green-800 text-lg">
-      🎁 Book your 1st visit FREE - No subscription required
-    </div>
-    <div className="text-sm text-green-700 mt-1">
-      Try our service risk-free. Labor Only visit included.
-    </div>
+
+{/* ✅ Promo banner */}
+<div className="mb-6 rounded-[16px] border border-[#c5cbd8] bg-white/60 p-4 text-center">
+  <div className="font-extrabold text-[#313234] text-base sm:text-lg">
+    🎟️ Promo code available until <span className="text-[#306EEC]">Apr 3</span>
   </div>
-)}
+  <div className="text-sm text-[#6A6D71] mt-1">
+    Enter your promo code during checkout to claim the discount.
+  </div>
+</div>
+
 
         {/* Content */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
@@ -925,15 +918,15 @@ const canBook =
                 <div ref={serviceWrapRef} className="relative">
                   <button
                     type="button"
-                    disabled={checkingAccess || (!hasSubscription && !freeFirstVisitAvailable)}
+                    disabled={checkingAccess || !hasSubscription}
 onClick={() => {
-  if (checkingAccess || (!hasSubscription && !freeFirstVisitAvailable)) return;
+  if (checkingAccess || !hasSubscription) return;
   setShowServiceMenu((v) => !v);
 }}
 
                     className={[
                       "h-[46px] px-4 sm:px-5 rounded-[12px] border text-sm sm:text-base whitespace-nowrap transition flex items-center justify-between gap-3 w-full sm:w-[260px]",
-checkingAccess || (!hasSubscription && !freeFirstVisitAvailable)
+checkingAccess || !hasSubscription
   ? "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
   : "border-[#313234] bg-white/50 text-[#313234] hover:bg-white"
                     ].join(" ")}
@@ -949,10 +942,7 @@ checkingAccess || (!hasSubscription && !freeFirstVisitAvailable)
                   {showServiceMenu && (
                     <div className="absolute top-[52px] left-0 w-full sm:w-[300px] bg-white border border-[#c5cbd8] rounded-[12px] shadow-lg z-20 overflow-hidden">
                       {SERVICES.map((s) => {
-                        const allowed =
-  (!hasSubscription && freeFirstVisitAvailable)
-    ? s.key === "labor_only"
-    : isServiceAllowed(s.minRank);
+                        const allowed = isServiceAllowed(s.minRank);
                         return (
                           <button
                             key={s.key}
@@ -1044,7 +1034,7 @@ checkingAccess || (!hasSubscription && !freeFirstVisitAvailable)
             </div>
 
             {/* Subscription warning */}
-{isAuthenticated && !checkingAccess && !hasSubscription && !freeFirstVisitAvailable && subscriptionError && (
+{isAuthenticated && !checkingAccess && !hasSubscription && subscriptionError && (
               <div className="mt-4 text-red-700 text-sm bg-red-50 border border-red-200 rounded-[14px] p-4">
                 <div className="font-extrabold mb-1">🔒 No Active Subscription</div>
                 <div className="mb-3">{subscriptionError}</div>
