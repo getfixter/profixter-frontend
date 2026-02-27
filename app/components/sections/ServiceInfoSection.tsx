@@ -53,7 +53,6 @@ export default function ServiceInfoSection() {
   const [hasAnyBookings, setHasAnyBookings] = useState<boolean | null>(null);
 
   // ✅ Autoplay rules (mobile requires muted; and respect reduced motion)
-  const [shouldAutoplay, setShouldAutoplay] = useState(true);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -62,23 +61,7 @@ export default function ServiceInfoSection() {
     };
   }, []);
 
-  useEffect(() => {
-    // Respect reduced motion preference (less annoying)
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-    if (!mq) return;
-
-    const apply = () => setShouldAutoplay(!mq.matches);
-    apply();
-
-    // Safari uses addListener in older versions
-    // @ts-ignore
-    mq.addEventListener ? mq.addEventListener("change", apply) : mq.addListener(apply);
-    return () => {
-      // @ts-ignore
-      mq.removeEventListener ? mq.removeEventListener("change", apply) : mq.removeListener(apply);
-    };
-  }, []);
+  
 
   useEffect(() => {
     const safeSet = (fn: () => void) => {
@@ -187,21 +170,17 @@ export default function ServiceInfoSection() {
 
   const showLeaveReviewBtn = state === "sub";
 
-  // ✅ YouTube autoplay (muted) + playsinline (important on iPhone)
-  // Note: Many phones will NOT autoplay with sound. Muted autoplay is the standard.
   const youtubeSrc = useMemo(() => {
-    const base = `https://www.youtube.com/embed/${YOUTUBE_ID}`;
-    const params = new URLSearchParams({
-      rel: "0",
-      modestbranding: "1",
-      playsinline: "1",
-      controls: "1",
-      // autoplay only when allowed (and muted so mobile can autoplay)
-      autoplay: shouldAutoplay ? "1" : "0",
-      mute: shouldAutoplay ? "1" : "0",
-    });
-    return `${base}?${params.toString()}`;
-  }, [shouldAutoplay]);
+  const base = `https://www.youtube.com/embed/${YOUTUBE_ID}`;
+  const params = new URLSearchParams({
+    rel: "0",
+    modestbranding: "1",
+    playsinline: "1",
+    controls: "1",
+    autoplay: "0",
+  });
+  return `${base}?${params.toString()}`;
+}, []);
 
   return (
     <section
@@ -296,15 +275,11 @@ export default function ServiceInfoSection() {
                           Watch: why Profixter is different (2 minutes)
                         </div>
                         <div className="text-[#6A6D71] text-[12px] mt-0.5">
-                          Autoplays muted on mobile. Tap to unmute.
+                          Tap play to watch.
                         </div>
                       </div>
 
-                      {!shouldAutoplay && (
-                        <span className="shrink-0 px-3 py-1 rounded-full bg-[#EEF2FF] border border-[#c5cbd8] text-[11px] font-extrabold text-[#313234]">
-                          Autoplay off
-                        </span>
-                      )}
+                      
                     </div>
 
                     <div className="relative aspect-video bg-black">
@@ -312,7 +287,7 @@ export default function ServiceInfoSection() {
                         className="absolute inset-0 w-full h-full"
                         src={youtubeSrc}
                         title="Profixter Introduction"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                       />
                     </div>
