@@ -27,6 +27,7 @@ function CallButton({ tel }: { tel: string }) {
 function BusinessCard({ b }: { b: RecommendedBusiness }) {
   return (
     <div className="rounded-[18px] border border-[#E6E8EF] bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+      {/* Image */}
       <div className="relative w-full h-[190px] bg-[#F6F7FB]">
         <Image
           src={b.photoSrc}
@@ -35,34 +36,38 @@ function BusinessCard({ b }: { b: RecommendedBusiness }) {
           className="object-cover"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
-
-        {b.featured ? (
-          <div className="absolute top-3 left-3 h-[28px] px-3 rounded-full bg-[#313234] text-white text-[12px] font-semibold inline-flex items-center">
-            Featured
-          </div>
-        ) : null}
       </div>
 
+      {/* Content */}
       <div className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="text-[16px] font-bold text-[#313234] leading-snug">
-              {b.name}
-            </div>
-            <div className="mt-2">
-              <CategoryPill label={b.category} />
-            </div>
-          </div>
+        {/* TOP: TRADE */}
+        <div className="text-[12px] uppercase tracking-wider text-[#6A6D71] font-semibold">
+          {b.category}
+        </div>
 
+        {/* LICENSED BADGE */}
+<div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ECFDF3] border border-[#ABEFC6] text-[#067647] text-[11px] font-semibold">
+  Licensed & Insured
+</div>
+
+        {/* NAME */}
+        <div className="mt-2 text-[18px] font-bold text-[#313234]">
+          {b.name}
+        </div>
+
+        {/* Call button aligned right */}
+        <div className="mt-3 flex justify-end">
           <CallButton tel={b.phoneTel} />
         </div>
 
+        {/* Description */}
         <div className="mt-3 text-[14px] text-[#6A6D71] leading-relaxed">
           {b.description}
         </div>
 
+        {/* Discount box */}
         <div className="mt-4 rounded-[14px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
-          <div className="text-[12px] uppercase tracking-wider text-[#6A6D71] font-semibold">
+          <div className="text-[11px] uppercase tracking-wider text-[#6A6D71] font-semibold">
             For discount say
           </div>
           <div className="mt-1 text-[16px] font-extrabold text-[#313234]">
@@ -70,6 +75,7 @@ function BusinessCard({ b }: { b: RecommendedBusiness }) {
           </div>
         </div>
 
+        {/* Phone line */}
         <div className="mt-4 flex items-center justify-between gap-3">
           <div className="text-[13px] text-[#6A6D71]">
             Phone:{" "}
@@ -100,20 +106,20 @@ export default function RecommendedBusinessesSection() {
         <div className="flex items-end justify-between gap-4 flex-wrap">
           <div>
             <div className="text-[12px] uppercase tracking-wider text-[#6A6D71] font-semibold">
-              Trusted local partners
+              Trusted Local Network
             </div>
 
             <h2 className="mt-2 text-[26px] sm:text-[34px] font-extrabold text-[#313234] leading-[110%]">
-              Businesses we recommend
+              Professionals We Recommend
             </h2>
 
             <p className="mt-3 max-w-[920px] text-[14px] sm:text-[15px] text-[#6A6D71] leading-[150%]">
-              When a job needs a specialist, we’ll point you to local pros we trust.
+              When a job needs a licensed specialist or bigger scope,
+              we connect you with trusted local professionals.
               <span className="text-[#313234] font-semibold">
                 {" "}
                 For discount say “{RECOMMENDED_MAGIC_WORD}”.
-              </span>{" "}
-              Phone numbers are clickable to call instantly.
+              </span>
             </p>
           </div>
 
@@ -121,7 +127,7 @@ export default function RecommendedBusinessesSection() {
             href="tel:631-599-1363"
             className="h-[46px] px-5 rounded-[14px] bg-[#EEF2FF] border border-[#C5CBD8] hover:bg-[#E6ECFF] transition-colors text-[#306EEC] text-[14px] font-semibold inline-flex items-center justify-center"
           >
-            Not sure who to call? Call us
+            Need guidance? Call us
           </a>
         </div>
 
@@ -133,11 +139,11 @@ export default function RecommendedBusinessesSection() {
 
         <div className="mt-8 rounded-[18px] border border-[#E6E8EF] bg-[#F6F7FB] p-6">
           <div className="text-[14px] text-[#313234] font-semibold">
-            Quick note
+            Independent Professionals
           </div>
           <div className="mt-1 text-[14px] text-[#6A6D71] leading-relaxed">
-            These are independent businesses (not Mr. Fixter employees). Pricing and discounts are set by each provider.
-            If you ever have an issue, tell us — we update the list.
+            These businesses operate independently from Mr. Fixter.
+            Pricing and discounts are determined by each provider.
           </div>
         </div>
       </div>
