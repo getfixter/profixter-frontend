@@ -201,6 +201,7 @@ export default function BookingSection() {
   const [existingBookingService, setExistingBookingService] = useState("");
   const [existingBookingTime, setExistingBookingTime] = useState("");
   const [existingBookingId, setExistingBookingId] = useState<string | null>(null);
+  const [activeBookings, setActiveBookings] = useState<any[]>([]);
 
   // Subscription / access (per address)
   const [hasSubscription, setHasSubscription] = useState(false);
@@ -335,6 +336,7 @@ useEffect(() => {
       setExistingBookingService("");
       setExistingBookingTime("");
       setSubscriptionError("");
+      setActiveBookings([]);
       return;
     }
 
@@ -360,33 +362,56 @@ if (!hasSub) {
       const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 1;
       const safeCount = Number.isFinite(count) && count >= 0 ? count : 0;
 
+      // ✅ ALL active bookings list (pending + confirmed)
+// Prefer array from API, fallback to single `future`
+const list = Array.isArray(data?.activeBookings)
+  ? data.activeBookings
+  : data?.future
+  ? [data.future]
+  : [];
+
+setActiveBookings(
+  list
+    .filter((b: any) => b?.date)
+    .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+);
+      // ✅ keep legacy "existingBooking*" in sync using earliest booking
+const sorted = list
+  .filter((b: any) => b?.date)
+  .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+const next = sorted[0];
+
+if (next?.date) {
+  const dt = new Date(next.date);
+  setExistingBookingDate(dt);
+  setExistingBookingId(next._id || null);
+  setExistingBookingService(next.service || "");
+
+  const hhmm = dt.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  setExistingBookingTime(hhmm);
+} else {
+  setExistingBookingDate(null);
+  setExistingBookingId(null);
+  setExistingBookingService("");
+  setExistingBookingTime("");
+}
+
       setActiveBookingLimit(safeLimit);
       setActiveBookingCount(safeCount);
       setHasActiveBooking(safeCount >= safeLimit);
 
-      if (data?.future?.date) {
-        const dt = new Date(data.future.date);
-        setExistingBookingDate(dt);
-        setExistingBookingId(data.future._id);
-        setExistingBookingService(data.future.service || "");
-
-        const hhmm = dt.toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        });
-        setExistingBookingTime(hhmm);
-      } else {
-        setExistingBookingDate(null);
-        setExistingBookingId(null);
-        setExistingBookingService("");
-        setExistingBookingTime("");
-      }
+      
     } catch (e) {
       setHasSubscription(false);
       setFreeFirstVisitAvailable(false);
       setPlan("");
       setSubscriptionError("Unable to verify booking access.");
+      setActiveBookings([]);
     } finally {
       setCheckingAccess(false);
     }
@@ -656,37 +681,65 @@ if (info) {
     }
   };
 
-  const rebook = async () => {
-    if (!existingBookingId) return;
+  const rebook = async (booking: any) => {
+  const id = booking?._id || existingBookingId;
+  if (!id) return;
 
-    try {
-      const token = localStorage.getItem("token");
+  try {
+    const token = localStorage.getItem("token");
 
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/cancel/${existingBookingId}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/cancel/${id}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-      setHasActiveBooking(false);
+    // remove it from list
+    setActiveBookings((prev) => prev.filter((b) => String(b._id) !== String(id)));
 
-      if (existingBookingService) {
-        const key = SERVICES.find((s) => s.label === existingBookingService)?.key || "";
-        setService(key as any);
-      }
+    // update counts/flags
+    setActiveBookingCount((c) => {
+  const next = Math.max(0, c - 1);
+  setHasActiveBooking(next >= (activeBookingLimit || 1));
+  return next;
+});
 
-      if (existingBookingDate) setSelectedDate(new Date(existingBookingDate));
-      if (existingBookingTime) setSelectedTime(existingBookingTime);
+    // prefill service/date/time for rebook
+    const svc = booking?.service || existingBookingService;
+    const dtRaw = booking?.date || existingBookingDate;
+    const timeRaw = booking?.time || existingBookingTime;
 
-      setTimeout(() => {
-        document.getElementById("pick-day")?.scrollIntoView({ behavior: "smooth" });
-      }, 150);
-
-      alert("Visit canceled. You may now rebook.");
-    } catch (err) {
-      console.error("Rebook failed:", err);
-      alert("Error canceling the visit.");
+    if (svc) {
+      const key = SERVICES.find((s) => s.label === svc)?.key || "";
+      setService(key as any);
     }
-  };
+
+    if (dtRaw) {
+      const dt = new Date(dtRaw);
+      const dd = new Date(dt);
+      dd.setHours(0, 0, 0, 0);
+      setSelectedDate(dd);
+
+      const hhmm =
+        timeRaw ||
+        dt.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+
+      setSelectedTime(hhmm);
+    }
+
+    setTimeout(() => {
+      document.getElementById("pick-day")?.scrollIntoView({ behavior: "smooth" });
+    }, 150);
+
+    alert("Visit canceled. You may now rebook.");
+  } catch (err) {
+    console.error("Rebook failed:", err);
+    alert("Error canceling the visit.");
+  }
+};
 
   const days = generateCalendarDays();
 
@@ -807,13 +860,19 @@ const canBook =
                       onClick={() => handleDayClick(day.date, day.muted)}
                       disabled={disabled}
                       className={[
-                        "mx-auto w-9 h-9 sm:w-10 sm:h-10 grid place-items-center rounded-[14px] text-sm sm:text-base font-semibold transition",
-                        day.muted ? "text-[#b7bdc8] cursor-not-allowed" : "",
-                        disabled && !day.muted ? "bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed" : "",
-                        !disabled && !isSelected ? "hover:bg-white/80 text-[#313234]" : "",
-                        isSelected ? "bg-[#306eec] text-white ring-4 ring-[#306eec]/15" : "",
-                        isToday && !disabled && !isSelected ? "ring-2 ring-[#306EEC]/35" : "",
-                      ].join(" ")}
+  "mx-auto w-9 h-9 sm:w-10 sm:h-10 grid place-items-center rounded-[14px] text-sm sm:text-base font-semibold transition",
+  day.muted ? "text-[#b7bdc8] cursor-not-allowed" : "",
+  disabled && !day.muted ? "bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed" : "",
+
+  // ✅ AVAILABLE days (not disabled, not selected) => blue tint
+  !disabled && !isSelected ? "bg-[#306EEC]/15 text-[#313234] hover:bg-[#306EEC]/25" : "",
+
+  // ✅ SELECTED day => white / no fill, blue text + ring
+  isSelected ? "bg-white text-[#306EEC] ring-4 ring-[#306EEC]/25" : "",
+
+  // Today ring stays subtle
+  isToday && !disabled && !isSelected ? "ring-2 ring-[#306EEC]/20" : "",
+].join(" ")}
                     >
                       {day.date.getDate()}
                     </button>
@@ -834,6 +893,53 @@ const canBook =
                 Selected: <span className="text-[#306EEC]">{selectedDateLabel}</span>
               </div>
             )}
+            {isAuthenticated && hasSubscription && activeBookings.length > 0 && (
+  <div className="mt-4 rounded-[14px] border border-[#c5cbd8] bg-white/60 p-3">
+    <div className="text-[12px] font-extrabold text-[#313234] uppercase mb-2">
+      Your bookings
+    </div>
+
+    <div className="space-y-2">
+      {activeBookings.map((b: any) => {
+        const dt = new Date(b.date);
+        const when = dt.toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        const status = String(b.status || "Pending");
+        const statusColor =
+          status.toLowerCase() === "confirmed"
+            ? "text-green-700"
+            : "text-orange-700";
+
+        return (
+          <div
+            key={String(b._id)}
+            className="flex items-center gap-2 text-[12px] text-[#313234]"
+          >
+            <div className="min-w-0 flex-1 truncate">
+              <span className="font-semibold">{when}</span>{" "}
+              <span className={["font-semibold", statusColor].join(" ")}>
+                {status}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => rebook(b)}
+              className="shrink-0 px-2 py-1 rounded-lg bg-[#306EEC] text-white text-[11px] font-extrabold hover:bg-[#2558c9] transition"
+            >
+              Rebook
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
           </div>
 
           {/* Right column */}
@@ -1066,7 +1172,7 @@ checkingAccess || !hasSubscription
 
                 <button
                   type="button"
-                  onClick={rebook}
+                  onClick={() => rebook(activeBookings[0] || null)}
                   className="px-4 py-2 bg-[#306EEC] text-white rounded-xl text-xs font-extrabold hover:bg-[#2558c9] transition"
                 >
                   Rebook

@@ -63,9 +63,18 @@ export interface NextBookingResponse {
   freeFirstVisitAvailable?: boolean;
   bookingLimit?: number;
   activeCount?: number;
-
-  // ✅ NEW: used for “new user gets 1 free visit”
   hasAnyBookings?: boolean;
+
+  // ✅ ADD THIS (important for your Pick Day page)
+  activeBookings?: Array<{
+    _id: string;
+    date: string;
+    status: string;
+    service?: string;
+    bookingNumber?: string;
+    addressId?: string;
+    time?: string;
+  }>;
 
   future?: {
     _id: string;
