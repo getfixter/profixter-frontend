@@ -247,7 +247,7 @@ export const plans: Plan[] = [
     name: "Plus",
   description: "Busy homes (2 active bookings)",
   price: 249,
-  subtitle: "Everything in Basic + book 2 appointments at once",
+  subtitle: "Everything in Basic",
   features: [
     "2 active appointments at once",
     "Multiple tasks per visit",
