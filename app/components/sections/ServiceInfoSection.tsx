@@ -52,10 +52,31 @@ export default function ServiceInfoSection() {
   const [plan, setPlan] = useState<string>("");
   const [hasAnyBookings, setHasAnyBookings] = useState<boolean | null>(null);
 
+  // ✅ Autoplay rules (mobile requires muted; and respect reduced motion)
+  const [shouldAutoplay, setShouldAutoplay] = useState(true);
+
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Respect reduced motion preference (less annoying)
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (!mq) return;
+
+    const apply = () => setShouldAutoplay(!mq.matches);
+    apply();
+
+    // Safari uses addListener in older versions
+    // @ts-ignore
+    mq.addEventListener ? mq.addEventListener("change", apply) : mq.addListener(apply);
+    return () => {
+      // @ts-ignore
+      mq.removeEventListener ? mq.removeEventListener("change", apply) : mq.removeListener(apply);
     };
   }, []);
 
@@ -166,6 +187,22 @@ export default function ServiceInfoSection() {
 
   const showLeaveReviewBtn = state === "sub";
 
+  // ✅ YouTube autoplay (muted) + playsinline (important on iPhone)
+  // Note: Many phones will NOT autoplay with sound. Muted autoplay is the standard.
+  const youtubeSrc = useMemo(() => {
+    const base = `https://www.youtube.com/embed/${YOUTUBE_ID}`;
+    const params = new URLSearchParams({
+      rel: "0",
+      modestbranding: "1",
+      playsinline: "1",
+      controls: "1",
+      // autoplay only when allowed (and muted so mobile can autoplay)
+      autoplay: shouldAutoplay ? "1" : "0",
+      mute: shouldAutoplay ? "1" : "0",
+    });
+    return `${base}?${params.toString()}`;
+  }, [shouldAutoplay]);
+
   return (
     <section
       id="how-booking-works"
@@ -217,7 +254,7 @@ export default function ServiceInfoSection() {
                   {cta.sub}
                 </p>
 
-                {/* WHY WE’RE THE BEST (tight + high converting) */}
+                {/* WHY WE’RE THE BEST */}
                 <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
                     <div className="text-[#313234] font-extrabold">⚡ Fast, scheduled, predictable</div>
@@ -250,22 +287,30 @@ export default function ServiceInfoSection() {
                   </div>
                 </div>
 
-                {/* ✅ Video (YouTube embed, perfect on mobile) */}
+                {/* ✅ Video (YouTube embed w/ autoplay muted) */}
                 <div className="mt-5">
                   <div className="rounded-[18px] border border-[#c5cbd8] bg-white overflow-hidden shadow-sm">
-                    <div className="px-4 sm:px-5 py-3 bg-[#F6F7FB] border-b border-[#E6E8EF]">
-                      <div className="text-[#313234] font-extrabold text-[14px] sm:text-[15px]">
-                        Watch: why Profixter is different (2 minutes)
+                    <div className="px-4 sm:px-5 py-3 bg-[#F6F7FB] border-b border-[#E6E8EF] flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-[#313234] font-extrabold text-[14px] sm:text-[15px]">
+                          Watch: why Profixter is different (2 minutes)
+                        </div>
+                        <div className="text-[#6A6D71] text-[12px] mt-0.5">
+                          Autoplays muted on mobile. Tap to unmute.
+                        </div>
                       </div>
-                      <div className="text-[#6A6D71] text-[12px] mt-0.5">
-                        Quick explanation from the founder - this will make the decision easy.
-                      </div>
+
+                      {!shouldAutoplay && (
+                        <span className="shrink-0 px-3 py-1 rounded-full bg-[#EEF2FF] border border-[#c5cbd8] text-[11px] font-extrabold text-[#313234]">
+                          Autoplay off
+                        </span>
+                      )}
                     </div>
 
                     <div className="relative aspect-video bg-black">
                       <iframe
                         className="absolute inset-0 w-full h-full"
-                        src={`https://www.youtube.com/embed/${YOUTUBE_ID}?rel=0&modestbranding=1`}
+                        src={youtubeSrc}
                         title="Profixter Introduction"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
@@ -274,7 +319,7 @@ export default function ServiceInfoSection() {
                   </div>
                 </div>
 
-                {/* HOW BOOKING WORKS (simple + clear) */}
+                {/* HOW BOOKING WORKS */}
                 <div className="mt-5 rounded-[18px] border border-[#C5CBD8] bg-white p-4 sm:p-5">
                   <div className="text-[#313234] font-extrabold">How booking works</div>
                   <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -305,7 +350,7 @@ export default function ServiceInfoSection() {
                   </div>
                 </div>
 
-                {/* Bonus perks (tight) */}
+                {/* Bonus perks */}
                 <div className="mt-5 rounded-[18px] border border-[#C5CBD8] bg-white p-4 sm:p-5">
                   <div className="text-[#313234] font-extrabold">Bonus perks</div>
                   <div className="mt-2 text-[#6A6D71] text-[13px] leading-relaxed">

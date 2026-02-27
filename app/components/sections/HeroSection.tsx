@@ -121,7 +121,7 @@ export default function HeroSection() {
     if (isAuthenticated && subState === "unknown") {
       return {
         badge: "Checking your membership…",
-        titleA: "Mr.Fixter —",
+        titleA: "Mr.Fixter -",
         titleB: "Your Home’s Best Friend.",
         subtitle: "Loading your account…",
         cta: "Continue",
@@ -133,7 +133,7 @@ export default function HeroSection() {
     if (!isAuthenticated) {
       return {
         badge: "Serving Long Island • Suffolk & Nassau",
-        titleA: "Mr.Fixter —",
+        titleA: "Mr.Fixter -",
         titleB: "Your Home’s Best Friend.",
         subtitle:
           "Create your account to get your Gift! Then pick a plan and book your first visit in minutes.",
@@ -147,7 +147,7 @@ export default function HeroSection() {
       const name = prettyPlan(plan);
       return {
         badge: name ? `Membership active • ${name}` : "Membership active",
-        titleA: "Mr.Fixter —",
+        titleA: "Mr.Fixter -",
         titleB: "Your Home’s Best Friend.",
         subtitle:
           "Book your next visit in seconds. For each referral you get $50 off your next payment.",
@@ -159,7 +159,7 @@ export default function HeroSection() {
     // Logged in, but no plan
     return {
       badge: "Special Offer for you",
-      titleA: "Mr.Fixter —",
+      titleA: "Mr.Fixter -",
       titleB: "Your Home’s Best Friend.",
       subtitle:
         "Special Offer for you - Use code SPRING for 20% off your first month (monthly plans).",
