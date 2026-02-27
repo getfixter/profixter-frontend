@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { ActiveTab, AccountFormData } from "../components/account/types";
@@ -15,13 +15,34 @@ import BookingsSection from "../components/account/BookingsSection";
 
 import { useAuth } from "@/lib/useAuth";
 
+/**
+ * ✅ IMPORTANT (Next.js App Router):
+ * useSearchParams MUST be used inside a component wrapped with <Suspense>.
+ */
+function TabSync({ onTab }: { onTab: (tab: string) => void }) {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) onTab(tab);
+  }, [searchParams, onTab]);
+
+  return null;
+}
+
 export default function AccountPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("personal");
   const [formData, setFormData] = useState<AccountFormData>(initialAccountFormData);
 
   const router = useRouter();
-const { user, isAuthenticated, isLoading, logout, refreshUser } = useAuth();
-const searchParams = useSearchParams();
+  const { user, isAuthenticated, isLoading, logout, refreshUser } = useAuth();
+
+  const applyTab = (tab: string) => {
+    if (tab === "bookings") setActiveTab("bookings");
+    else if (tab === "plan") setActiveTab("plan");
+    else if (tab === "password") setActiveTab("password");
+    else setActiveTab("personal");
+  };
 
   // Redirect to signin if not authenticated
   useEffect(() => {
@@ -30,17 +51,20 @@ const searchParams = useSearchParams();
     }
   }, [isAuthenticated, isLoading, router]);
 
+  // ✅ Keep support for /account#my-bookings
   useEffect(() => {
-  const tab = searchParams.get("tab");
-  if (!tab) return;
+    if (typeof window === "undefined") return;
 
-  if (tab === "bookings") setActiveTab("bookings");
-  else if (tab === "plan") setActiveTab("plan");
-  else if (tab === "password") setActiveTab("password");
-  else if (tab === "personal") setActiveTab("personal");
-}, [searchParams]);
+    const applyHash = () => {
+      if (window.location.hash === "#my-bookings") {
+        setActiveTab("bookings");
+      }
+    };
 
-  
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, []);
 
   // Ensure we always have fresh user data (addresses/defaultAddressId)
   useEffect(() => {
@@ -54,23 +78,23 @@ const searchParams = useSearchParams();
     if (!user) return;
 
     setFormData({
-      userId: user.userId || user.id || "",
+      userId: user.userId || (user as any).id || "",
       name: user.name || "",
       email: user.email || "",
       phone: user.phone || "",
 
       // Legacy address
-      address: user.address || "",
-      city: user.city || "",
-      state: user.state || "",
-      zip: user.zip || "",
-      county: user.county || "",
+      address: (user as any).address || "",
+      city: (user as any).city || "",
+      state: (user as any).state || "",
+      zip: (user as any).zip || "",
+      county: (user as any).county || "",
 
       // New multi-address support
-      addresses: user.addresses || [],
+      addresses: (user as any).addresses || [],
 
-      // ✅ Needed for picking day / booking pages
-      defaultAddressId: user.defaultAddressId || null,
+      // ✅ Needed for pick day / booking pages
+      defaultAddressId: (user as any).defaultAddressId || null,
     });
   }, [user]);
 
@@ -95,6 +119,11 @@ const searchParams = useSearchParams();
     <div className="min-h-screen bg-[#EEF2FF]">
       <AccountHeader userName={formData.name} />
 
+      {/* ✅ Query param support: /account?tab=bookings */}
+      <Suspense fallback={null}>
+        <TabSync onTab={applyTab} />
+      </Suspense>
+
       <main className="max-w-[1240px] mx-auto px-[20px] py-6 sm:py-10">
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
           <AccountSidebar
@@ -111,10 +140,10 @@ const searchParams = useSearchParams();
             {activeTab === "personal" && <PersonalInfoForm formData={formData} />}
             {activeTab === "plan" && <PlanSection />}
             {activeTab === "bookings" && (
-  <div id="my-bookings">
-    <BookingsSection />
-  </div>
-)}
+              <div id="my-bookings">
+                <BookingsSection />
+              </div>
+            )}
             {activeTab === "password" && <PasswordForm />}
           </div>
         </div>
