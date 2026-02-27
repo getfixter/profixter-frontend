@@ -56,7 +56,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
           {/* ✅ Special deal popup (homepage-only; component enforces it) */}
           <SpecialDealPopup
-            promoCode="SAVE20"
+            promoCode="SPRING"
             promoEndsLabel="Apr 3"
             ctaAnchorId="plans"
             showAgainAfterHoursNew={24}
