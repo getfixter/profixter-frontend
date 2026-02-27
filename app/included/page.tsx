@@ -253,6 +253,292 @@ const INCLUDED: Item[] = [
     time: "30–60 min",
     tags: ["small", "quick"],
   },
+
+  // ===================== EXPANDED COMMON HOMEOWNER MAINTENANCE (NO APPLIANCE REPAIR) =====================
+
+  // Doors & Windows
+  {
+    title: "Fix squeaky hinges / doors",
+    desc: "Lubricate hinges, tighten screws, minor adjustments to reduce squeaks.",
+    category: "Doors & Windows",
+    time: "10–30 min",
+    tags: ["squeaky", "hinge", "door"],
+  },
+  {
+    title: "Replace / adjust interior door knob (standard)",
+    desc: "Swap knob/lever and ensure latch closes correctly (hardware extra).",
+    category: "Doors & Windows",
+    time: "30–60 min",
+    tags: ["knob", "handle", "door", "lock"],
+  },
+  {
+    title: "Install / adjust door sweep",
+    desc: "Add/adjust door bottom sweep to reduce drafts and bugs (parts extra).",
+    category: "Exterior",
+    time: "30–60 min",
+    tags: ["door", "sweep", "draft"],
+  },
+  {
+    title: "Replace basic window locks / latches",
+    desc: "Swap common window latches/locks when compatible (parts extra).",
+    category: "Doors & Windows",
+    time: "30–60 min",
+    tags: ["window", "lock", "latch"],
+  },
+  {
+    title: "Install child safety locks (cabinet / drawer)",
+    desc: "Install standard child locks to keep cabinets/drawers secure.",
+    category: "Maintenance",
+    time: "30–60 min",
+    tags: ["child", "safety", "cabinet", "drawer"],
+  },
+
+  // Walls / mounting
+  {
+    title: "Mount heavy mirror (secure)",
+    desc: "Proper anchors/studs and safe mounting (mirror/hardware extra).",
+    category: "Install",
+    time: "30–60 min",
+    tags: ["mirror", "heavy", "mount"],
+  },
+  {
+    title: "Hang TV (small/medium) + soundbar mount (basic)",
+    desc: "Mount TV and a basic soundbar bracket when feasible (hardware extra).",
+    category: "Install",
+    time: "60–90 min",
+    tags: ["tv", "soundbar", "mount"],
+  },
+  {
+    title: "Mount curtain rods (2 windows)",
+    desc: "Install rods for up to two standard windows, level + secure.",
+    category: "Install",
+    time: "60–90 min",
+    tags: ["curtain", "rod", "windows"],
+  },
+  {
+    title: "Install floating shelves (standard)",
+    desc: "Mount floating shelves securely into studs/anchors (shelves extra).",
+    category: "Install",
+    time: "60–90 min",
+    tags: ["floating", "shelf", "mount"],
+  },
+  {
+    title: "Mount baby gate hardware (wall-mounted)",
+    desc: "Install wall-mounted baby gate brackets safely (gate extra).",
+    category: "Install",
+    time: "30–60 min",
+    tags: ["baby", "gate", "safety"],
+  },
+  {
+    title: "Anchor furniture to wall (anti-tip)",
+    desc: "Secure dresser/bookcase to reduce tip risk (hardware extra).",
+    category: "Maintenance",
+    time: "30–60 min",
+    tags: ["anchor", "anti-tip", "dresser", "bookcase"],
+  },
+
+  // Kitchen & Bath
+  {
+    title: "Fix loose towel bar / toilet paper holder",
+    desc: "Re-anchor properly so it won’t pull out again (anchors extra if needed).",
+    category: "Kitchen & Bath",
+    time: "10–30 min",
+    tags: ["towel", "toilet", "paper", "holder"],
+  },
+  {
+    title: "Replace garbage disposal (standard swap)",
+    desc: "Remove old and install new disposal when plumbing/electrical is standard (unit extra).",
+    category: "Plumbing",
+    time: "60–90 min",
+    tags: ["disposal", "garbage", "sink"],
+  },
+  {
+    title: "Install kitchen/bath sink strainer / drain (basic)",
+    desc: "Replace strainer/drain hardware if accessible (parts extra).",
+    category: "Plumbing",
+    time: "30–60 min",
+    tags: ["strainer", "drain", "sink"],
+  },
+  {
+    title: "Replace toilet seat",
+    desc: "Install new toilet seat and ensure proper fit (seat extra).",
+    category: "Plumbing",
+    time: "10–30 min",
+    tags: ["toilet", "seat"],
+  },
+  {
+    title: "Fix minor toilet leak at base (assessment + basic)",
+    desc: "Inspect and tighten; if wax ring needed, we’ll advise (parts extra).",
+    category: "Plumbing",
+    time: "30–60 min",
+    tags: ["toilet", "leak", "base"],
+  },
+  {
+    title: "Replace bathroom fan switch / timer (basic)",
+    desc: "Swap standard switch/timer where wiring is standard (parts extra).",
+    category: "Electrical",
+    time: "30–60 min",
+    tags: ["bathroom", "fan", "timer", "switch"],
+  },
+  {
+    title: "Replace shower valve trim (cosmetic trim only)",
+    desc: "Replace trim plate/handle when compatible (not inside-wall valve work).",
+    category: "Kitchen & Bath",
+    time: "30–60 min",
+    tags: ["shower", "trim", "handle"],
+  },
+  {
+    title: "Re-caulk tub / shower edge (standard)",
+    desc: "Remove failing caulk in small area and re-caulk for clean seal (basic caulk).",
+    category: "Kitchen & Bath",
+    time: "60–90 min",
+    tags: ["caulk", "tub", "shower"],
+  },
+
+  // Electrical (light)
+  {
+    title: "Install ceiling fan (swap existing fixture)",
+    desc: "Install fan where existing box/wiring is suitable (fan extra).",
+    category: "Electrical",
+    time: "60–90 min",
+    tags: ["ceiling", "fan"],
+  },
+  {
+    title: "Replace smoke/CO detector (hardwired swap)",
+    desc: "Swap compatible hardwired detector (device extra).",
+    category: "Electrical",
+    time: "30–60 min",
+    tags: ["smoke", "co", "hardwired"],
+  },
+  {
+    title: "Install dimmer switch (basic)",
+    desc: "Install compatible dimmer for standard lighting (parts extra).",
+    category: "Electrical",
+    time: "30–60 min",
+    tags: ["dimmer", "switch"],
+  },
+  {
+    title: "Replace light switch plate / outlet cover (multiple)",
+    desc: "Swap multiple plates/covers for a clean look (covers extra).",
+    category: "Electrical",
+    time: "10–30 min",
+    tags: ["plate", "cover", "outlet", "switch"],
+  },
+
+  // Plumbing (light)
+  {
+    title: "Fix dripping faucet (basic)",
+    desc: "Tighten/adjust and replace simple cartridge/washer if standard (parts extra).",
+    category: "Plumbing",
+    time: "30–60 min",
+    tags: ["drip", "faucet", "leak"],
+  },
+  {
+    title: "Replace P-trap (accessible under sink)",
+    desc: "Swap standard trap when accessible (parts extra).",
+    category: "Plumbing",
+    time: "30–60 min",
+    tags: ["ptrap", "trap", "sink"],
+  },
+  {
+    title: "Replace supply lines (sink/toilet) - basic",
+    desc: "Replace standard flexible supply lines when accessible (parts extra).",
+    category: "Plumbing",
+    time: "30–60 min",
+    tags: ["supply", "line", "toilet", "sink"],
+  },
+
+  // Smart home / tech installs
+  {
+    title: "Install smart thermostat (swap existing)",
+    desc: "Install and help connect/app setup when compatible (thermostat extra).",
+    category: "Smart Home",
+    time: "60–90 min",
+    tags: ["thermostat", "nest", "ecobee"],
+  },
+  {
+    title: "Install smart lock (standard door)",
+    desc: "Install compatible smart lock and basic setup (lock extra).",
+    category: "Smart Home",
+    time: "60–90 min",
+    tags: ["smart", "lock"],
+  },
+  {
+    title: "Wi-Fi extender / mesh setup help (basic)",
+    desc: "Place device and help with basic configuration (equipment extra).",
+    category: "Smart Home",
+    time: "30–60 min",
+    tags: ["wifi", "mesh", "extender"],
+  },
+
+  // Exterior / seasonal / maintenance
+  {
+    title: "Replace mailbox (post-mounted, basic)",
+    desc: "Swap standard mailbox when post is solid (mailbox extra).",
+    category: "Exterior",
+    time: "30–60 min",
+    tags: ["mailbox", "post"],
+  },
+  {
+    title: "Install ring doorbell (wired or battery)",
+    desc: "Mount doorbell and basic setup assistance (device extra).",
+    category: "Smart Home",
+    time: "30–60 min",
+    tags: ["ring", "doorbell"],
+  },
+  {
+    title: "Replace exterior light fixture (standard swap)",
+    desc: "Swap a porch/garage light where wiring is standard (fixture extra).",
+    category: "Electrical",
+    time: "30–60 min",
+    tags: ["exterior", "porch", "light"],
+  },
+  {
+    title: "Weatherstrip windows/doors (basic gaps)",
+    desc: "Minor sealing for drafts on accessible areas (materials may be extra).",
+    category: "Seasonal",
+    time: "60–90 min",
+    tags: ["draft", "seal", "weatherstrip"],
+  },
+  {
+    title: "Gutter downspout re-attach (basic)",
+    desc: "Reattach a loose downspout / strap when accessible (hardware extra).",
+    category: "Exterior",
+    time: "30–60 min",
+    tags: ["gutter", "downspout"],
+  },
+
+  // Assembly / installs
+  {
+    title: "Assemble shelving unit / storage rack (typical)",
+    desc: "Assemble standard storage rack or shelving unit (time depends on item).",
+    category: "Assembly",
+    time: "60–90 min",
+    tags: ["shelving", "rack", "storage", "assembly"],
+  },
+  {
+    title: "Install wall-mounted coat hooks / rack",
+    desc: "Secure hooks/rack into studs/anchors (rack extra).",
+    category: "Install",
+    time: "30–60 min",
+    tags: ["coat", "hook", "rack"],
+  },
+
+  // Appliance installs (NOT repair)
+  {
+    title: "Install microwave (countertop or basic over-range)",
+    desc: "Install microwave when mount/power is ready and standard (unit extra).",
+    category: "Install",
+    time: "60–90 min",
+    tags: ["microwave", "install"],
+  },
+  {
+    title: "Install dishwasher (basic hookup if ready)",
+    desc: "Install dishwasher when plumbing/electric is prepared (unit/parts extra).",
+    category: "Plumbing",
+    time: "60–90 min",
+    tags: ["dishwasher", "install"],
+  },
 ];
 
 const NOT_INCLUDED = [
@@ -276,6 +562,10 @@ const NOT_INCLUDED = [
     title: "Permit-required work (when applicable)",
     desc: "If permits are required, we’ll guide you and quote appropriately.",
   },
+  {
+    title: "Appliance repair",
+    desc: "We don’t repair appliances. We can often install/replace them if the site is ready.",
+  },
 ];
 
 const TIME_BADGE: Record<TimeBand, { label: string; className: string }> = {
@@ -294,7 +584,8 @@ const TIME_BADGE: Record<TimeBand, { label: string; className: string }> = {
 };
 
 function includesText(item: Item, q: string) {
-  const hay = `${item.title} ${item.desc} ${item.category} ${item.time} ${(item.tags || []).join(" ")}`.toLowerCase();
+  const hay =
+    `${item.title} ${item.desc} ${item.category} ${item.time} ${(item.tags || []).join(" ")}`.toLowerCase();
   return hay.includes(q.toLowerCase());
 }
 
@@ -329,8 +620,12 @@ export default function IncludedPage() {
             </h1>
 
             <p className="max-w-[860px] text-white/80 text-[15px] sm:text-[17px] leading-[145%]">
-              People get confused because every handyman is different. We make it simple:
-              <span className="text-white font-semibold"> no matter the task, each visit is up to 90 minutes.</span>{" "}
+              People get confused because every handyman is different. We make it
+              simple:
+              <span className="text-white font-semibold">
+                {" "}
+                no matter the task, each visit is up to 90 minutes.
+              </span>{" "}
               If it fits in 90 minutes — it’s included.
             </p>
 
@@ -353,8 +648,8 @@ export default function IncludedPage() {
         </div>
       </div>
 
-      {/* Sticky Controls */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-[#E6E8EF]">
+      {/* Controls (NOT sticky on mobile; sticky from md+) */}
+      <div className="relative md:sticky md:top-0 z-30 bg-white/95 backdrop-blur border-b border-[#E6E8EF]">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-[20px] py-3 flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
           <div className="flex gap-2 flex-wrap">
             {CATEGORIES.map((c) => (
@@ -403,12 +698,23 @@ export default function IncludedPage() {
             The rule that makes it simple
           </div>
           <div className="mt-2 text-[#313234] text-[22px] sm:text-[26px] font-bold leading-tight">
-            Every visit is up to <span className="text-[#306EEC]">90 minutes</span> — no matter the task.
+            Every visit is up to{" "}
+            <span className="text-[#306EEC]">90 minutes</span> — no matter the
+            task.
           </div>
           <div className="mt-3 text-[#6A6D71] text-[14px] sm:text-[15px] leading-relaxed">
-            If your task fits inside a 90-minute visit, it’s included. If it takes longer, we can:
-            <span className="text-[#313234] font-semibold"> continue on another visit</span> or
-            <span className="text-[#313234] font-semibold"> quote it as a bigger project</span>.
+            If your task fits inside a 90-minute visit, it’s included. If it
+            takes longer, we can:
+            <span className="text-[#313234] font-semibold">
+              {" "}
+              continue on another visit
+            </span>{" "}
+            or
+            <span className="text-[#313234] font-semibold">
+              {" "}
+              quote it as a bigger project
+            </span>
+            .
           </div>
 
           <div className="mt-5 flex flex-col sm:flex-row gap-3">
@@ -457,7 +763,9 @@ export default function IncludedPage() {
                 <div className="text-[16px] font-bold text-[#313234] leading-snug">
                   {i.title}
                 </div>
-                <div className={`shrink-0 px-3 py-1 rounded-full border text-[12px] font-semibold ${TIME_BADGE[i.time].className}`}>
+                <div
+                  className={`shrink-0 px-3 py-1 rounded-full border text-[12px] font-semibold ${TIME_BADGE[i.time].className}`}
+                >
                   {TIME_BADGE[i.time].label}
                 </div>
               </div>
@@ -471,7 +779,10 @@ export default function IncludedPage() {
                   {i.category}
                 </div>
                 <div className="text-[12px] text-[#6A6D71]">
-                  Included if within <span className="font-semibold text-[#313234]">90 minutes</span>
+                  Included if within{" "}
+                  <span className="font-semibold text-[#313234]">
+                    90 minutes
+                  </span>
                 </div>
               </div>
             </div>
@@ -491,29 +802,34 @@ export default function IncludedPage() {
           </div>
 
           <div className="mt-3 text-[#6A6D71] text-[14px] sm:text-[15px] leading-relaxed max-w-[920px]">
-            Most tasks require little or no materials. If something needs parts (example: faucet, outlet, wall anchors),
-            we’ll tell you before we install it. You can provide the items, or we can help pick the right ones.
+            Most tasks require little or no materials. If something needs parts
+            (example: faucet, outlet, wall anchors), we’ll tell you before we
+            install it. You can provide the items, or we can help pick the right
+            ones.
           </div>
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-5">
               <div className="font-bold text-[#313234]">Included</div>
               <div className="mt-2 text-[14px] text-[#6A6D71] leading-relaxed">
-                Labor/time during your 90-minute visit, tools, basic troubleshooting, mounting/adjusting, minor fixes.
+                Labor/time during your 90-minute visit, tools, basic
+                troubleshooting, mounting/adjusting, minor fixes.
               </div>
             </div>
 
             <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-5">
               <div className="font-bold text-[#313234]">Customer pays</div>
               <div className="mt-2 text-[14px] text-[#6A6D71] leading-relaxed">
-                Parts/materials: fixtures, faucets, outlets/switches, shelves, brackets, caulk/paint, etc.
+                Parts/materials: fixtures, faucets, outlets/switches, shelves,
+                brackets, caulk/paint, etc.
               </div>
             </div>
 
             <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-5">
               <div className="font-bold text-[#313234]">No surprises</div>
               <div className="mt-2 text-[14px] text-[#6A6D71] leading-relaxed">
-                If anything looks like a bigger project or over 90 minutes, we stop and explain the options.
+                If anything looks like a bigger project or over 90 minutes, we
+                stop and explain the options.
               </div>
             </div>
           </div>
@@ -547,7 +863,11 @@ export default function IncludedPage() {
             </div>
           </div>
           <div className="text-[13px] text-[#6A6D71]">
-            Showing <span className="font-semibold text-[#313234]">{filtered.length}</span> items
+            Showing{" "}
+            <span className="font-semibold text-[#313234]">
+              {filtered.length}
+            </span>{" "}
+            items
           </div>
         </div>
 
@@ -562,7 +882,9 @@ export default function IncludedPage() {
                   {i.title}
                 </div>
 
-                <div className={`shrink-0 px-3 py-1 rounded-full border text-[12px] font-semibold ${TIME_BADGE[i.time].className}`}>
+                <div
+                  className={`shrink-0 px-3 py-1 rounded-full border text-[12px] font-semibold ${TIME_BADGE[i.time].className}`}
+                >
                   {TIME_BADGE[i.time].label}
                 </div>
               </div>
@@ -576,7 +898,10 @@ export default function IncludedPage() {
                   {i.category}
                 </div>
                 <div className="text-[12px] text-[#6A6D71]">
-                  Included if within <span className="font-semibold text-[#313234]">90 minutes</span>
+                  Included if within{" "}
+                  <span className="font-semibold text-[#313234]">
+                    90 minutes
+                  </span>
                 </div>
               </div>
             </div>
@@ -587,9 +912,10 @@ export default function IncludedPage() {
           <div className="mt-8 rounded-[18px] border border-[#E6E8EF] bg-[#F6F7FB] p-6 text-[#313234]">
             <div className="font-bold text-[16px]">No matches.</div>
             <div className="text-[14px] text-[#6A6D71] mt-1">
-              Try another keyword (example: <span className="font-semibold">“outlet”</span>,{" "}
-              <span className="font-semibold">“mirror”</span>, <span className="font-semibold">“caulk”</span>).
-              Or hit Reset.
+              Try another keyword (example:{" "}
+              <span className="font-semibold">“outlet”</span>,{" "}
+              <span className="font-semibold">“mirror”</span>,{" "}
+              <span className="font-semibold">“caulk”</span>). Or hit Reset.
             </div>
           </div>
         ) : null}
@@ -602,8 +928,9 @@ export default function IncludedPage() {
             Not included (needs a quote)
           </div>
           <div className="text-[14px] text-[#6A6D71] mt-2 max-w-[820px]">
-            We’re transparent. Bigger/high-risk items usually need more time, permits, or a specialist.
-            We can still help — it just becomes a separate quote.
+            We’re transparent. Bigger/high-risk items usually need more time,
+            permits, or a specialist. We can still help — it just becomes a
+            separate quote.
           </div>
 
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -612,7 +939,9 @@ export default function IncludedPage() {
                 key={`${x.title}-${idx}`}
                 className="rounded-[18px] border border-[#E6E8EF] bg-white p-5"
               >
-                <div className="text-[16px] font-bold text-[#313234]">{x.title}</div>
+                <div className="text-[16px] font-bold text-[#313234]">
+                  {x.title}
+                </div>
                 <div className="mt-2 text-[14px] text-[#6A6D71] leading-relaxed">
                   {x.desc}
                 </div>
@@ -642,8 +971,10 @@ export default function IncludedPage() {
         <div className="rounded-[18px] border border-[#E6E8EF] bg-white p-6">
           <div className="text-[16px] font-bold text-[#313234]">Still unsure?</div>
           <div className="mt-1 text-[14px] text-[#6A6D71]">
-            The rule is simple: if it fits in <span className="font-semibold text-[#313234]">90 minutes</span>, it’s included.
-            If it needs more time — we continue next visit or quote it.
+            The rule is simple: if it fits in{" "}
+            <span className="font-semibold text-[#313234]">90 minutes</span>,
+            it’s included. If it needs more time — we continue next visit or
+            quote it.
           </div>
 
           <div className="mt-4 flex flex-col sm:flex-row gap-3">
