@@ -63,6 +63,20 @@ function ChevronRight() {
   );
 }
 
+function formatTime12(t: string): string {
+  if (!t) return "";
+  const [hh, mm] = t.split(":");
+  const h = Number(hh);
+  const m = Number(mm);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return t;
+
+  const period = h >= 12 ? "PM" : "AM";
+  let h12 = h % 12;
+  if (h12 === 0) h12 = 12;
+
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
 // ---------- Time Dropdown ----------
 function TimeDropdown({
   times,
@@ -97,7 +111,7 @@ function TimeDropdown({
         className="w-full h-[54px] rounded-[12px] border border-[#c5cbd8] bg-[#EEF2FF] px-4 sm:px-5 text-[#313234] text-[16px] sm:text-[18px] flex items-center justify-between shadow-[0_0_200px_rgba(0,0,0,0.08)] hover:bg-white/60 transition"
       >
         <span className={selectedTime ? "font-semibold" : "text-[#6a6c71]"}>
-          {selectedTime || "Select time"}
+          {selectedTime ? formatTime12(selectedTime) : "Select time"}
         </span>
 
         <svg width="20" height="20" viewBox="0 0 24 24" className={`transition-transform ${open ? "rotate-180" : ""}`}>
@@ -126,7 +140,7 @@ function TimeDropdown({
                   isFull ? "text-gray-400 cursor-not-allowed" : "hover:bg-[#EEF2FF] text-[#313234]",
                 ].join(" ")}
               >
-                <span className={isFull ? "line-through" : ""}>{time}</span>
+                <span className={isFull ? "line-through" : ""}>{formatTime12(time)}</span>
                 {!isFull && used > 0 && (
                   <span className="ml-auto text-xs text-[#6a6c71]">{capacity - used} left</span>
                 )}
