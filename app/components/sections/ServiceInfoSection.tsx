@@ -9,8 +9,6 @@ type FixterUser = {
   defaultAddressId?: string | null;
 };
 
-// NOTE: checkSubscription() actually returns { subscription: { plan } }
-// so we model it correctly here.
 type SubscriptionResponse = {
   hasSubscription: boolean;
   subscription?: {
@@ -21,21 +19,19 @@ type SubscriptionResponse = {
   message?: string;
 };
 
-// from /api/bookings/next?addressId=...
 type NextBookingResponse = {
   hasSubscription?: boolean;
-  freeFirstVisitAvailable?: boolean;
+  freeFirstVisitAvailable?: boolean; // legacy
   plan?: string;
-
-  // ✅ backend will return this (we added it)
-  hasAnyBookings?: boolean;
+  hasAnyBookings?: boolean; // backend-added
 };
 
 const TIP_URL = "https://buy.stripe.com/eVq8wO3W98O03NL3ASawo00";
 const PHONE = "631-599-1363";
-
-// 🔁 Put your real Google “Write a review” link here (the one that opens review box)
 const GOOGLE_REVIEW_URL = "https://maps.app.goo.gl/LM5fagx5GidLZfPB6";
+
+// ✅ Your YouTube video (embedded)
+const YOUTUBE_ID = "HQoAkLNGI9c";
 
 function prettyPlan(p?: string) {
   const x = String(p || "").toLowerCase();
@@ -43,7 +39,6 @@ function prettyPlan(p?: string) {
   if (x === "plus") return "Plus";
   if (x === "premium") return "Premium";
   if (x === "elite") return "Elite";
-  if (x === "free") return "Free Visit";
   return "";
 }
 
@@ -53,9 +48,9 @@ export default function ServiceInfoSection() {
 
   const mountedRef = useRef(true);
 
-  const [state, setState] = useState<"guest" | "free" | "sub" | "none">("guest");
+  const [state, setState] = useState<"guest" | "sub" | "none">("guest");
   const [plan, setPlan] = useState<string>("");
-  const [hasAnyBookings, setHasAnyBookings] = useState<boolean | null>(null); // null=unknown
+  const [hasAnyBookings, setHasAnyBookings] = useState<boolean | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -90,28 +85,22 @@ export default function ServiceInfoSection() {
         return;
       }
 
-      // ✅ Primary: use /api/bookings/next (it knows free-visit + booking truth)
+      // Primary: /api/bookings/next
       try {
         const nb = (await getNextBooking(addressId)) as NextBookingResponse;
-
         const hasSub = !!nb?.hasSubscription;
-        const freeOk = !!nb?.freeFirstVisitAvailable;
 
         safeSet(() => {
           setPlan(String(nb?.plan || ""));
           setHasAnyBookings(typeof nb?.hasAnyBookings === "boolean" ? nb.hasAnyBookings : null);
-
-          if (hasSub) setState("sub");
-          else if (freeOk) setState("free");
-          else setState("none");
+          setState(hasSub ? "sub" : "none");
         });
-
         return;
       } catch {
-        // fall through to subscription-only fallback
+        // fallback
       }
 
-      // ✅ Fallback: subscription check only (no booking history info)
+      // Fallback: subscription check only
       try {
         const sub = (await checkSubscription(addressId)) as SubscriptionResponse;
         const hasSub = !!sub?.hasSubscription;
@@ -134,76 +123,62 @@ export default function ServiceInfoSection() {
   }, [isAuthenticated, typedUser?.defaultAddressId]);
 
   const cta = useMemo(() => {
-    // ✅ If logged in + backend says never booked anything → treat as 1 free visit
-    const shouldShowNewUserFree = isAuthenticated && state === "none" && hasAnyBookings === false;
+    const isNewLoggedIn = isAuthenticated && state === "none" && hasAnyBookings === false;
+    const planName = prettyPlan(plan);
 
     if (state === "guest") {
       return {
-        title: "Get your home handled — the simple way.",
-        sub: "Create an account, then book your date and time in the calendar below.",
-        primaryLabel: "Create account",
-        primaryHref: "/signup?redirect=/",
-        secondaryLabel: "See what’s included",
-        secondaryHref: "/included",
-        badge: "Local • Long Island • 5-star service",
-        rightHint: "New here? Your first visit can be free.",
-      };
-    }
-
-    if (state === "free" || shouldShowNewUserFree) {
-      return {
-        title: "You have 1 free visit remaining.",
-        sub: "Pick your date and time below — we’ll handle one task for you, professionally and fast.",
-        primaryLabel: "Book my free visit",
-        primaryHref: "#pick-day",
-        secondaryLabel: "See what’s included",
-        secondaryHref: "/included",
-        badge: "Free visit available",
-        rightHint: "Scroll down to the calendar to book.",
+        title: "Trusted by Long Island homeowners",
+        sub: "Most homeowners don’t need a contractor — they need a reliable pro who shows up, fixes it fast, and doesn’t overcharge. That’s Profixter.",
+        primaryLabel: "View plans",
+        primaryHref: "#plans",
+        secondaryLabel: "Book a visit",
+        secondaryHref: "#pick-day",
+        badge: "Local • On-demand • Professional",
+        hint: "Pick a plan below — then book instantly in the calendar.",
       };
     }
 
     if (state === "sub") {
-      const name = prettyPlan(plan);
       return {
-        title: `Your plan is active${name ? ` — ${name}` : ""}.`,
-        sub: "Book your next visit in the calendar below — we’ll take it from there.",
+        title: `Your membership is active${planName ? ` — ${planName}` : ""}`,
+        sub: "Book your next visit in the calendar below. Upload photos so we bring the right tools and move fast.",
         primaryLabel: "Book next visit",
         primaryHref: "#pick-day",
         secondaryLabel: "What’s included",
         secondaryHref: "/included",
-        badge: name ? `${name} member` : "Member access",
-        rightHint: "Want another fix? Book your next slot below.",
+        badge: planName ? `${planName} member` : "Member access",
+        hint: "Pick a day → pick a time → describe the task → upload photos.",
       };
     }
 
-    // none (used free already)
     return {
-      title: "You have 0 free visits remaining.",
-      sub: "Get coverage to book visits anytime using the calendar below.",
-      primaryLabel: "Get coverage",
+      title: isNewLoggedIn ? "Welcome — pick a plan to start today" : "Pick a plan to book a visit",
+      sub: "No free first visit. Subscription is required to book — choose a plan and schedule immediately.",
+      primaryLabel: "View plans",
       primaryHref: "#plans",
-      secondaryLabel: "See what’s included",
+      secondaryLabel: "What’s included",
       secondaryHref: "/included",
-      badge: "No free visits left",
-      rightHint: "Choose a plan, then book in the calendar.",
+      badge: "Subscription required",
+      hint: "Choose a plan below, then book from the calendar.",
     };
   }, [state, plan, isAuthenticated, hasAnyBookings]);
 
-  const showMemberCard = state === "sub";
-  const showLeaveReviewBtn = state === "sub"; // ✅ “registered + subscribed”
+  const showLeaveReviewBtn = state === "sub";
 
   return (
     <section
       id="how-booking-works"
-      className="relative w-full bg-[#eaedfa] pt-12 sm:pt-14 lg:pt-16 pb-6 sm:pb-8"
-      aria-label="How booking works"
+      className="relative w-full bg-[#eaedfa] pt-10 sm:pt-12 lg:pt-14 pb-6 sm:pb-8"
+      aria-label="Service info"
     >
       <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
         <div className="rounded-[22px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] overflow-hidden">
-          {/* top stripe */}
+          {/* Top stripe */}
           <div className="px-5 sm:px-7 py-4 bg-[#313234] text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="text-[12px] uppercase tracking-wider text-white/70">How it works</div>
+            <div className="text-[12px] uppercase tracking-wider text-white/70">
+              Trusted by Long Island homeowners
+            </div>
 
             <div className="inline-flex items-center gap-2 flex-wrap">
               <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[12px] font-semibold">
@@ -214,7 +189,7 @@ export default function ServiceInfoSection() {
                 href={`tel:${PHONE}`}
                 className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[12px] font-semibold hover:bg-white/15 transition"
               >
-                Emergency / Projects: {PHONE}
+                Call: {PHONE}
               </a>
 
               {showLeaveReviewBtn ? (
@@ -231,7 +206,7 @@ export default function ServiceInfoSection() {
           </div>
 
           <div className="p-5 sm:p-7">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
               {/* LEFT */}
               <div className="lg:col-span-7">
                 <h2 className="text-[26px] sm:text-[32px] lg:text-[36px] font-extrabold leading-tight text-[#313234]">
@@ -242,60 +217,100 @@ export default function ServiceInfoSection() {
                   {cta.sub}
                 </p>
 
-                {/* Key rules */}
+                {/* WHY WE’RE THE BEST (tight + high converting) */}
                 <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
-                    <div className="text-[#313234] font-bold">✅ One task per visit</div>
+                    <div className="text-[#313234] font-extrabold">⚡ Fast, scheduled, predictable</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      We focus on completing{" "}
-                      <span className="font-semibold text-[#313234]">one job properly</span>. If it’s extremely small and time allows,
-                      we may do a second — but it’s not guaranteed.
+                      You pick the <span className="font-semibold text-[#313234]">day & time</span> yourself. No waiting for callbacks,
+                      no “we’ll let you know.”
                     </div>
                   </div>
 
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
-                    <div className="text-[#313234] font-bold">⏱️ Up to 90 minutes max</div>
+                    <div className="text-[#313234] font-extrabold">💰 No surprise invoices</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      A visit can be{" "}
-                      <span className="font-semibold text-[#313234]">shorter</span> if the task is done.
-                      We do <span className="font-semibold text-[#313234]">not</span> stay “just to hit 90.”
+                      Subscription pricing means <span className="font-semibold text-[#313234]">clear expectations</span> and no
+                      “contractor math” after the job.
                     </div>
                   </div>
 
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
-                    <div className="text-[#313234] font-bold">📍 Big service area</div>
+                    <div className="text-[#313234] font-extrabold">🛠️ Real pros, real standards</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      Our technicians cover a wide area. If we’re running late, we’ll still show up and do it right.
-                      Thank you for being patient and respectful.
+                      We show up prepared, communicate clearly, and fix things the right way — not the cheap way.
                     </div>
                   </div>
 
-                  {/* ✅ This card changes for subscribers */}
-                  {!showMemberCard ? (
-                    <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
-                      <div className="text-[#313234] font-bold">✨ Simple access</div>
-                      <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                        Coverage gives you access to book visits when you need help — straight from the calendar below.
-                      </div>
+                  <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
+                    <div className="text-[#313234] font-extrabold">📷 Photos = faster service</div>
+                    <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
+                      Upload photos when booking so we bring the right tools and plan ahead — less back-and-forth.
                     </div>
-                  ) : (
-                    <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
-                      <div className="text-[#313234] font-bold">⭐ Member priority</div>
-                      <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                        Your membership is active — book your next visit and we’ll confirm it fast.
-                      </div>
-                    </div>
-                  )}
+                  </div>
                 </div>
 
-                {/* Referral + Tip */}
+                {/* ✅ Video (YouTube embed, perfect on mobile) */}
+                <div className="mt-5">
+                  <div className="rounded-[18px] border border-[#c5cbd8] bg-white overflow-hidden shadow-sm">
+                    <div className="px-4 sm:px-5 py-3 bg-[#F6F7FB] border-b border-[#E6E8EF]">
+                      <div className="text-[#313234] font-extrabold text-[14px] sm:text-[15px]">
+                        Watch: why Profixter is different (2 minutes)
+                      </div>
+                      <div className="text-[#6A6D71] text-[12px] mt-0.5">
+                        Quick explanation from the founder — this will make the decision easy.
+                      </div>
+                    </div>
+
+                    <div className="relative aspect-video bg-black">
+                      <iframe
+                        className="absolute inset-0 w-full h-full"
+                        src={`https://www.youtube.com/embed/${YOUTUBE_ID}?rel=0&modestbranding=1`}
+                        title="Profixter Introduction"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* HOW BOOKING WORKS (simple + clear) */}
+                <div className="mt-5 rounded-[18px] border border-[#C5CBD8] bg-white p-4 sm:p-5">
+                  <div className="text-[#313234] font-extrabold">How booking works</div>
+                  <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
+                      <div className="text-[#313234] font-extrabold text-[13px]">1) Pick a plan</div>
+                      <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
+                        Choose coverage that matches your home needs.
+                      </div>
+                    </div>
+                    <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
+                      <div className="text-[#313234] font-extrabold text-[13px]">2) Book instantly</div>
+                      <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
+                        Pick your day & time right in the calendar.
+                      </div>
+                    </div>
+                    <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
+                      <div className="text-[#313234] font-extrabold text-[13px]">3) Describe + upload photos</div>
+                      <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
+                        Helps us prepare so the visit is efficient.
+                      </div>
+                    </div>
+                    <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
+                      <div className="text-[#313234] font-extrabold text-[13px]">4) We arrive & handle it</div>
+                      <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
+                        One job per visit, done right (up to 90 minutes).
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bonus perks (tight) */}
                 <div className="mt-5 rounded-[18px] border border-[#C5CBD8] bg-white p-4 sm:p-5">
                   <div className="text-[#313234] font-extrabold">Bonus perks</div>
                   <div className="mt-2 text-[#6A6D71] text-[13px] leading-relaxed">
-                    • Invite a friend or family member and get{" "}
-                    <span className="font-semibold text-[#313234]">$50 off</span> your next payment. <br />
-                    • Want to tip your Fixter? Tips go{" "}
-                    <span className="font-semibold text-[#313234]">100%</span> to the person who served you.
+                    • Refer a homeowner → get <span className="font-semibold text-[#313234]">$50 off</span> your next payment. <br />
+                    • Tips go <span className="font-semibold text-[#313234]">100%</span> to your Fixter.
                   </div>
 
                   <div className="mt-4 flex flex-col sm:flex-row gap-3">
@@ -303,16 +318,16 @@ export default function ServiceInfoSection() {
                       href={TIP_URL}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="h-[46px] px-5 rounded-[14px] bg-[#313234] hover:bg-black transition text-white font-bold text-[14px] inline-flex items-center justify-center"
+                      className="h-[46px] px-5 rounded-[14px] bg-[#313234] hover:bg-black transition text-white font-extrabold text-[14px] inline-flex items-center justify-center"
                     >
                       Leave a tip
                     </a>
 
                     <a
                       href={`tel:${PHONE}`}
-                      className="h-[46px] px-5 rounded-[14px] border border-[#C5CBD8] bg-[#F6F7FB] hover:bg-white transition text-[#313234] font-bold text-[14px] inline-flex items-center justify-center"
+                      className="h-[46px] px-5 rounded-[14px] border border-[#C5CBD8] bg-[#F6F7FB] hover:bg-white transition text-[#313234] font-extrabold text-[14px] inline-flex items-center justify-center"
                     >
-                      Call for emergency / projects
+                      Call {PHONE}
                     </a>
                   </div>
                 </div>
@@ -326,19 +341,14 @@ export default function ServiceInfoSection() {
                   </div>
 
                   <div className="mt-2 text-[#313234] text-[18px] sm:text-[20px] font-extrabold leading-tight">
-                    Book using the calendar below
+                    {state === "sub" ? "Book your next visit" : "Start today"}
                   </div>
 
                   <div className="mt-2 text-[#6A6D71] text-[13px] leading-relaxed">
-                    Pick a date. Choose a time. Tell us the task. Upload photos. We’ll confirm and handle it.
-                  </div>
-
-                  <div className="mt-4 text-[12px] text-[#6A6D71] font-semibold">
-                    {cta.rightHint}
+                    {cta.hint}
                   </div>
 
                   <div className="mt-5 flex flex-col gap-3">
-                    {/* Primary */}
                     {cta.primaryHref.startsWith("#") ? (
                       <a
                         href={cta.primaryHref}
@@ -355,18 +365,26 @@ export default function ServiceInfoSection() {
                       </Link>
                     )}
 
-                    {/* Secondary */}
-                    <Link
-                      href={cta.secondaryHref}
-                      className="h-[52px] rounded-[16px] border border-[#C5CBD8] bg-[#EEF2FF] hover:bg-white transition text-[#313234] font-extrabold text-[15px] inline-flex items-center justify-center"
-                    >
-                      {cta.secondaryLabel}
-                    </Link>
+                    {cta.secondaryHref.startsWith("#") ? (
+                      <a
+                        href={cta.secondaryHref}
+                        className="h-[52px] rounded-[16px] border border-[#C5CBD8] bg-[#EEF2FF] hover:bg-white transition text-[#313234] font-extrabold text-[15px] inline-flex items-center justify-center"
+                      >
+                        {cta.secondaryLabel}
+                      </a>
+                    ) : (
+                      <Link
+                        href={cta.secondaryHref}
+                        className="h-[52px] rounded-[16px] border border-[#C5CBD8] bg-[#EEF2FF] hover:bg-white transition text-[#313234] font-extrabold text-[15px] inline-flex items-center justify-center"
+                      >
+                        {cta.secondaryLabel}
+                      </Link>
+                    )}
                   </div>
 
                   <div className="mt-5 text-[12px] text-[#6A6D71]">
-                    Looking for what we do? See the full list on{" "}
-                    <Link href="/included" className="text-[#306EEC] font-bold hover:underline">
+                    See details on{" "}
+                    <Link href="/included" className="text-[#306EEC] font-extrabold hover:underline">
                       What’s included
                     </Link>
                     .
@@ -374,21 +392,19 @@ export default function ServiceInfoSection() {
                 </div>
 
                 <div className="mt-4 rounded-[18px] border border-[#E6E8EF] bg-[#F6F7FB] p-5">
-                  <div className="text-[#313234] font-extrabold">Quick note</div>
+                  <div className="text-[#313234] font-extrabold">Fast & respectful service</div>
                   <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                    We’re friendly and professional — and we appreciate the same back.
-                    If we’re delayed from a previous job, we’ll still arrive and take care of you.
+                    If a prior job runs long, we’ll still arrive and do it right. We’re not a marketplace — we’re a real local
+                    service with standards.
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* bottom hint */}
+          {/* Bottom hint */}
           <div className="px-5 sm:px-7 py-4 border-t border-[#c5cbd8] bg-white/60">
-            <div className="text-[13px] text-[#6A6D71]">
-              ↓ Next: scroll a little and use the calendar to book your visit.
-            </div>
+            <div className="text-[13px] text-[#6A6D71]">↓ Next: scroll down to plans & the booking calendar.</div>
           </div>
         </div>
       </div>
