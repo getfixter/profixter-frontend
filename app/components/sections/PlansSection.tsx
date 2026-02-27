@@ -35,7 +35,10 @@ function formatMoney(n: number): string {
 }
 
 export default function PlansSection() {
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(() => {
+  const i = plans.findIndex((p) => p.name === "Plus");
+  return i >= 0 ? i : 0;
+});
   const [billing, setBilling] = useState<BillingCycle>("monthly");
 
   const { user, isAuthenticated, token } = useAuth();
@@ -585,13 +588,15 @@ export default function PlansSection() {
   <div className="flex items-end gap-6">
                   {/* Main card */}
                   <div className="relative w-[420px] min-h-[560px] bg-[#EEF2FF] rounded-[22px] border border-[#C5CBD8] shadow-[0_20px_90px_rgba(0,0,0,0.35)] flex-shrink-0 overflow-hidden">
-                    {plans[currentSlide].isPopular && (
-                      <div className="absolute top-4 left-4 z-10">
-                        <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-[#EEF2FF]/70 shadow-lg">
-                          <span className="text-[14px] font-extrabold text-[#EEF2FF]">Popular</span>
-                        </div>
-                      </div>
-                    )}
+                    {(plans[currentSlide] as any)?.badge && (
+  <div className="absolute top-4 left-4 z-10">
+    <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-[#EEF2FF]/70 shadow-lg">
+      <span className="text-[14px] font-extrabold text-[#EEF2FF]">
+        {(plans[currentSlide] as any).badge}
+      </span>
+    </div>
+  </div>
+)}
 
                     {billing === "annual" && (
                       <div className="absolute top-4 right-4 z-10">

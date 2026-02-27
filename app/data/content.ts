@@ -223,7 +223,10 @@ export type Plan = {
   subtitle?: string;
   features: string[];
   buttonText: string;
-  isPopular?: boolean;
+
+  // ✅ plan badge shown on UI
+  badge?: "Popular" | "Recommended";
+
   stripeLink: string;
 };
 
@@ -242,17 +245,18 @@ export const plans: Plan[] = [
   },
   {
     name: "Plus",
-    description: "Busy homes (2 active bookings)",
-    price: 249,
-    subtitle: "Everything in Basic + book 2 appointments at once",
-    features: [
-      "2 active appointments at once",
-      "Multiple tasks per visit",
-      "Store pickup",
-      "Standard materials included",
-    ],
-    buttonText: "Get started",
-    stripeLink: "https://buy.stripe.com/4gMaEWboB1ly3NL4EWawo03",
+  description: "Busy homes (2 active bookings)",
+  price: 249,
+  subtitle: "Everything in Basic + book 2 appointments at once",
+  features: [
+    "2 active appointments at once",
+    "Multiple tasks per visit",
+    "Store pickup",
+    "Standard materials included",
+  ],
+  buttonText: "Get started",
+  badge: "Popular", // ✅ ADD
+  stripeLink: "https://buy.stripe.com/4gMaEWboB1ly3NL4EWawo03",
   },
   {
     name: "Premium",
@@ -266,7 +270,7 @@ export const plans: Plan[] = [
       "Home Improvement Consultation",
     ],
     buttonText: "Get started",
-    isPopular: true,
+    badge: "Recommended", // ✅ ADD
     stripeLink: "https://buy.stripe.com/9B614m78lc0c6ZXb3kawo04",
   },
   {
