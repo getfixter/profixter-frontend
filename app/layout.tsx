@@ -5,6 +5,8 @@ import Providers from "./providers";
 import ScrollToTop from "./ScrollToTop";
 import "./globals.css";
 
+import SpecialDealPopup from "./components/SpecialDealPopup";
+
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
@@ -26,7 +28,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable}`}
     >
       <head>
-        {/* ✅ Critical for consistent mobile/iPad scaling */}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
 
@@ -49,7 +50,20 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         </noscript>
 
         <ScrollToTop />
-        <Providers>{children}</Providers>
+
+        <Providers>
+          {children}
+
+          {/* ✅ Special deal popup (homepage-only; component enforces it) */}
+          <SpecialDealPopup
+            promoCode="SAVE20"
+            promoEndsLabel="Apr 3"
+            ctaAnchorId="plans"
+            showAgainAfterHoursNew={24}
+            showAgainAfterDaysExisting={7}
+            delayMs={900}
+          />
+        </Providers>
       </body>
     </html>
   );

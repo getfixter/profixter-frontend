@@ -753,17 +753,6 @@ const canBook =
         </div>
 
 
-{/* ✅ Promo banner */}
-<div className="mb-6 rounded-[16px] border border-[#c5cbd8] bg-white/60 p-4 text-center">
-  <div className="font-extrabold text-[#313234] text-base sm:text-lg">
-    🎟️ Promo code available until <span className="text-[#306EEC]">Apr 3</span>
-  </div>
-  <div className="text-sm text-[#6A6D71] mt-1">
-    Enter your promo code during checkout to claim the discount.
-  </div>
-</div>
-
-
         {/* Content */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
           {/* Calendar */}

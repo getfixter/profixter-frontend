@@ -255,11 +255,7 @@ export default function PlansSection() {
           {/* little promo badge */}
 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2">
-              <div className="px-3 py-1 rounded-full bg-[#86EFAC]/15 border border-[#86EFAC]/30">
-                <span className="text-[#86EFAC] font-extrabold text-xs sm:text-sm">
-  ✅ SPRING: 20% off first month (monthly)
-</span>
-              </div>
+              
               <span className="hidden sm:inline text-[#C5CBD8] text-xs">
                 Cancel anytime • No contracts
               </span>
