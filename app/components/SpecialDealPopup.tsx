@@ -166,7 +166,7 @@ export default function SpecialDealPopup({
               </div>
 
               <h3 className="mt-2 text-[18px] sm:text-[26px] leading-snug font-extrabold text-[#313234]">
-                Save <span className="text-[#306EEC]">20%</span> today{" "}
+                Save <span className="text-[#306EEC]">30%</span> today{" "}
                 <span className="hidden sm:inline">+ get</span>{" "}
                 <span className="text-[#306EEC]">$50</span> referral credit
               </h3>
@@ -200,7 +200,7 @@ export default function SpecialDealPopup({
 
               <div className="flex-1 min-w-0">
                 <div className="font-extrabold text-[#313234] text-[14px] sm:text-[16px]">
-                  20% OFF for new customers
+                  30% OFF for new customers
                 </div>
                 <div className="text-[12px] sm:text-[13px] text-[#6A6D71] mt-1">
                   Enter code at checkout{promoEndsLabel ? ` (until ${promoEndsLabel})` : ""}.
