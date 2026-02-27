@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { plans } from "@/app/data/content";
+import { plans, type Plan } from "@/app/data/content";
 import { useAuth } from "@/lib/useAuth";
 import type { PlanType } from "@/lib/stripe-links";
 
@@ -189,8 +189,8 @@ export default function PlansSection() {
   const disabledForAddress = isAuthenticated && !!selectedAddressId && addressIsActive;
 
   // ---------- Pricing helpers ----------
-  const getMonthly = (plan: any) => toNumberPrice(plan.price);
-  const getAnnual = (plan: any) => getMonthly(plan) * 11; // ✅ pay 11 months
+  const getMonthly = (plan: Plan) => toNumberPrice(plan.price);
+const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
 
   const BillingToggle = ({ compact }: { compact?: boolean }) => (
     <div className={`${compact ? "mt-6" : "mt-8"} w-full`}>
@@ -443,6 +443,15 @@ export default function PlansSection() {
                       <div key={idx} className="w-full flex-shrink-0 px-1">
                         <div className="mx-auto max-w-[440px]">
                           <div className="bg-[#EEF2FF] rounded-[26px] border border-[#C5CBD8] p-6 sm:p-8 flex flex-col shadow-[0_20px_80px_rgba(0,0,0,0.35)] transform transition duration-300 hover:-translate-y-1">
+                            {plan.badge && (
+  <div className="mb-3 flex justify-center">
+    <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-white/70 shadow">
+      <span className="text-[13px] font-extrabold text-white">
+        {plan.badge}
+      </span>
+    </div>
+  </div>
+)}
                             <div className="text-center mb-4 sm:mb-5">
                               <h3 className="text-2xl sm:text-3xl font-extrabold text-[#313234] leading-tight mb-2">
                                 {plan.name}
@@ -588,11 +597,11 @@ export default function PlansSection() {
   <div className="flex items-end gap-6">
                   {/* Main card */}
                   <div className="relative w-[420px] min-h-[560px] bg-[#EEF2FF] rounded-[22px] border border-[#C5CBD8] shadow-[0_20px_90px_rgba(0,0,0,0.35)] flex-shrink-0 overflow-hidden">
-                    {(plans[currentSlide] as any)?.badge && (
+                    {plans[currentSlide].badge && (
   <div className="absolute top-4 left-4 z-10">
     <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-[#EEF2FF]/70 shadow-lg">
       <span className="text-[14px] font-extrabold text-[#EEF2FF]">
-        {(plans[currentSlide] as any).badge}
+        {plans[currentSlide].badge}
       </span>
     </div>
   </div>
@@ -612,7 +621,12 @@ export default function PlansSection() {
                       </div>
                     )}
 
-                    <div className="p-8 flex flex-col h-full">
+                    <div
+  className={[
+    "p-8 flex flex-col h-full",
+    plans[currentSlide].badge ? "pt-14" : ""
+  ].join(" ")}
+>
                       <div className="text-center mb-8">
                         <h3 className="text-3xl font-extrabold text-[#313234] mb-2">{plans[currentSlide].name}</h3>
                         <p className="text-base text-[#6A6D71] leading-relaxed">{plans[currentSlide].description}</p>
@@ -715,7 +729,15 @@ export default function PlansSection() {
                           className="group relative w-[300px] min-h-[420px] flex-shrink-0 text-left"
                         >
                           <div className="absolute inset-0 bg-[#EEF2FF] rounded-[16px] border border-[#C5CBD8] p-6 shadow-[0_12px_60px_rgba(0,0,0,0.25)] transition-transform duration-300 group-hover:-translate-y-1" />
-
+                            {plan.badge && (
+  <div className="absolute top-3 left-3 z-20">
+    <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-3 py-1.5 rounded-lg border border-white/70 shadow">
+      <span className="text-[12px] font-extrabold text-white">
+        {plan.badge}
+      </span>
+    </div>
+  </div>
+)}
                           <div className="relative z-10 p-6 flex flex-col h-full">
                             <div className="text-center mb-6">
                               <h3 className="text-xl font-extrabold text-[#313234] mb-2">{plan.name}</h3>
