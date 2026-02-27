@@ -100,7 +100,7 @@ useEffect(() => {
 
               <div>
                 <p className="text-white font-extrabold text-sm sm:text-base leading-tight">
-  Get <span className="text-[#86EFAC]">20% OFF</span> your first month with code{" "}
+  Get <span className="text-[#86EFAC]">30% OFF</span> your first month with code{" "}
   <span className="text-[#86EFAC] font-extrabold">SPRING</span>{" "}
   <span className="hidden sm:inline text-white/70 font-semibold">• Monthly plans only</span>
 </p>
@@ -145,7 +145,7 @@ useEffect(() => {
                   Best value
                 </span>
                 <span className="px-3 py-1 rounded-full bg-[#86EFAC]/15 border border-[#86EFAC]/25 text-[#86EFAC] text-xs font-extrabold">
-                  20% OFF
+                  30% OFF
                 </span>
               </div>
 
@@ -295,7 +295,7 @@ useEffect(() => {
               </div>
               <div>
                 <p className="font-extrabold text-base leading-tight">
-                  Get <span className="text-[#86EFAC]">20% OFF</span> First Month
+                  Get <span className="text-[#86EFAC]">30% OFF</span> First Month
                 </p>
 <p className="text-white/75 text-sm mt-1">Use code SPRING • Monthly plans only • Cancel anytime</p>
 

@@ -209,7 +209,7 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
     </>
   ) : (
     <>
-      Use code <span className="text-white font-semibold">SPRING</span> - 20% off your first month
+      Use code <span className="text-white font-semibold">SPRING</span> - 30% off your first month
     </>
   )}
 </p>
@@ -343,7 +343,7 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
     Code <span className="text-white font-extrabold">SPRING</span>
   </p>
   <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed">
-    <span className="text-white font-semibold">20% off your first month</span> on monthly plans.
+    <span className="text-white font-semibold">30% off your first month</span> on monthly plans.
     <br />
     Mr.Fixter - Your Home’s Best Friend.
   </p>
@@ -377,7 +377,7 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
   Annual Plan - Pay 11 months, Get 12
 </p>
 <p className="text-[#C5CBD8] text-sm">
-  Or use code <span className="text-white font-semibold">SPRING</span> for 20% off your first month (monthly plans)
+  Or use code <span className="text-white font-semibold">SPRING</span> for 30% off your first month (monthly plans)
 </p>
       </div>
     </div>

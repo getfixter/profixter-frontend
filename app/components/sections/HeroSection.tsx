@@ -162,7 +162,7 @@ export default function HeroSection() {
       titleA: "Mr.Fixter -",
       titleB: "Your Home’s Best Friend.",
       subtitle:
-        "Special Offer for you - Use code SPRING for 20% off your first month (monthly plans).",
+        "Special Offer for you - Use code SPRING for 30% off your first month (monthly plans).",
       cta: "See Plans",
       bottomLine: "",
     };
