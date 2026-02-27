@@ -28,7 +28,7 @@ type Stored = {
 };
 
 export default function SpecialDealPopup({
-  promoCode = "SAVE20",
+  promoCode = "SPRING",
   promoEndsLabel = "Apr 3",
   ctaAnchorId = "plans",
   delayMs = 1200,
@@ -239,7 +239,7 @@ export default function SpecialDealPopup({
                   <div className="font-extrabold text-[#313234]">$50 referral credit</div>
                   <div className="text-[13px] text-[#6A6D71] mt-1">
                     Refer anyone who becomes a customer → you get{" "}
-                    <span className="font-extrabold text-[#313234]">$50 off</span> your next month.
+                    <span className="font-extrabold text-[#313234]">$50 off</span> your next month, just inform us by 631-599-1363 or my@profixter.com.
                   </div>
                 </div>
               </div>
