@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { ActiveTab, AccountFormData } from "../components/account/types";
 import { initialAccountFormData } from "../data/account";
@@ -19,8 +19,9 @@ export default function AccountPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("personal");
   const [formData, setFormData] = useState<AccountFormData>(initialAccountFormData);
 
-  const { user, isAuthenticated, isLoading, logout, refreshUser } = useAuth();
   const router = useRouter();
+const { user, isAuthenticated, isLoading, logout, refreshUser } = useAuth();
+const searchParams = useSearchParams();
 
   // Redirect to signin if not authenticated
   useEffect(() => {
@@ -29,20 +30,17 @@ export default function AccountPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // ✅ If user comes from /account#my-bookings, open Bookings tab
-useEffect(() => {
-  if (typeof window === "undefined") return;
+  useEffect(() => {
+  const tab = searchParams.get("tab");
+  if (!tab) return;
 
-  const applyHash = () => {
-    if (window.location.hash === "#my-bookings") {
-      setActiveTab("bookings");
-    }
-  };
+  if (tab === "bookings") setActiveTab("bookings");
+  else if (tab === "plan") setActiveTab("plan");
+  else if (tab === "password") setActiveTab("password");
+  else if (tab === "personal") setActiveTab("personal");
+}, [searchParams]);
 
-  applyHash();
-  window.addEventListener("hashchange", applyHash);
-  return () => window.removeEventListener("hashchange", applyHash);
-}, []);
+  
 
   // Ensure we always have fresh user data (addresses/defaultAddressId)
   useEffect(() => {

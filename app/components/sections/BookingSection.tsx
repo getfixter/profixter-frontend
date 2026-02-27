@@ -11,6 +11,7 @@ import {
   CalendarConfig,
 } from "@/lib/booking-service";
 import { compressImage } from "@/lib/compressImage";
+import { useRouter } from "next/navigation";
 
 const SERVICES = [
   { key: "labor_only", label: "Labor Only", minRank: 1 }, // Basic+
@@ -141,6 +142,7 @@ function TimeDropdown({
 
 // ---------- Booking Section ----------
 export default function BookingSection() {
+  const router = useRouter();
   const { user, isAuthenticated } = useAuth();
 
   const addresses = ((user as any)?.addresses || []) as any[];
@@ -895,13 +897,14 @@ const canBook =
             )}
           {isAuthenticated && hasSubscription && (
   <div className="mt-4">
-    <a
-      href="/account#my-bookings"
+    <button
+      type="button"
+      onClick={() => router.push("/account?tab=bookings")}
       className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 rounded-[14px] bg-white border border-[#c5cbd8] text-[#313234] font-extrabold hover:bg-[#f8f9ff] transition"
       style={{ boxShadow: "0px 0px 200px 0px rgba(0,0,0,0.06)" }}
     >
       Manage my bookings
-    </a>
+    </button>
   </div>
 )}
           </div>
