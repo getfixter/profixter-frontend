@@ -1,123 +1,112 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
 type Props = {
-  promoCode?: string;
-  promoEndsLabel?: string; // display only
-  ctaAnchorId?: string; // e.g. "plans"
-  delayMs?: number; // default 1200
+  promoCode?: string;            // e.g. "SPRING"
+  promoEndsLabel?: string;       // e.g. "Apr 3"
+  ctaAnchorId?: string;          // e.g. "plans"
+  delayMs?: number;              // default 900
 
-  // How often it can re-appear:
-  // - New visitors: default 24h
-  // - Existing customers: default 14 days
-  showAgainAfterHoursNew?: number;
-  showAgainAfterDaysExisting?: number;
-
-  // "Don't show again" duration (days)
-  snoozeDays?: number;
-
-  // Optional: only show if URL contains UTM (good for promo traffic)
-  // requireUtm?: boolean;
-};
-
-type Stored = {
-  closedAt?: number;
-  snoozedUntil?: number;
+  // ✅ not annoying rules
+  showAgainAfterHoursNew?: number;        // default 24 (new visitors)
+  showAgainAfterDaysExisting?: number;    // default 14 (existing customers)
+  homepageOnly?: boolean;                // default true
 };
 
 export default function SpecialDealPopup({
   promoCode = "SPRING",
   promoEndsLabel = "Apr 3",
   ctaAnchorId = "plans",
-  delayMs = 1200,
+  delayMs = 900,
   showAgainAfterHoursNew = 24,
   showAgainAfterDaysExisting = 14,
-  snoozeDays = 60,
+  homepageOnly = true,
 }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [hasCopied, setHasCopied] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const storageKey = useMemo(() => "profixter_special_deal_popup_v2", []);
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
-  // ✅ Only homepage
-  const isHome = pathname === "/" || pathname === "";
-
-  // Gentle heuristic: if they have auth token → likely existing customer
+  const isHomepage = pathname === "/" || pathname === "";
   const isExistingCustomer = () => {
+    // Best-effort: if they’re logged in, treat as existing (less frequent popup)
     try {
-      if (typeof window === "undefined") return false;
-      const t =
-        localStorage.getItem("token") ||
-        localStorage.getItem("authToken") ||
-        localStorage.getItem("profixter_token");
+      const t = localStorage.getItem("token");
       return !!t;
     } catch {
       return false;
     }
   };
 
-  const readStored = (): Stored => {
+  const shouldSuppress = () => {
     try {
       const raw = localStorage.getItem(storageKey);
-      if (!raw) return {};
-      return JSON.parse(raw) as Stored;
-    } catch {
-      return {};
-    }
-  };
+      if (!raw) return false;
 
-  const writeStored = (data: Stored) => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(data));
+      const data = JSON.parse(raw) as { closedAt?: number; kind?: "new" | "existing" };
+      if (!data?.closedAt) return false;
+
+      const elapsedMs = Date.now() - data.closedAt;
+      const elapsedHours = elapsedMs / (1000 * 60 * 60);
+      const elapsedDays = elapsedHours / 24;
+
+      const kind = data.kind || "new";
+
+      if (kind === "existing") return elapsedDays < showAgainAfterDaysExisting;
+      return elapsedHours < showAgainAfterHoursNew;
     } catch {
-      // ignore
+      return false;
     }
   };
 
   useEffect(() => {
-    if (!isHome) return;
     if (typeof window === "undefined") return;
+    if (homepageOnly && !isHomepage) return;
 
-    const stored = readStored();
-
-    // If user snoozed, don’t show
-    if (stored?.snoozedUntil && Date.now() < stored.snoozedUntil) return;
-
-    // Cooldown depends on customer type
-    const existing = isExistingCustomer();
-    const cooldownMs = existing
-      ? showAgainAfterDaysExisting * 24 * 60 * 60 * 1000
-      : showAgainAfterHoursNew * 60 * 60 * 1000;
-
-    if (stored?.closedAt && Date.now() - stored.closedAt < cooldownMs) return;
+    if (shouldSuppress()) return;
 
     const t = setTimeout(() => setOpen(true), delayMs);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHome, delayMs, showAgainAfterHoursNew, showAgainAfterDaysExisting, storageKey]);
+  }, [delayMs, homepageOnly, isHomepage]);
 
   useEffect(() => {
-    // Lock background scroll while open
     if (!open) return;
+
+    // lock scroll behind modal
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    // focus close button for accessibility
+    setTimeout(() => closeBtnRef.current?.focus(), 0);
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    window.addEventListener("keydown", onKey);
+
     return () => {
       document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const close = () => {
     setOpen(false);
-    writeStored({ ...readStored(), closedAt: Date.now() });
-  };
-
-  const snooze = () => {
-    setOpen(false);
-    const until = Date.now() + snoozeDays * 24 * 60 * 60 * 1000;
-    writeStored({ ...readStored(), snoozedUntil: until, closedAt: Date.now() });
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          closedAt: Date.now(),
+          kind: isExistingCustomer() ? "existing" : "new",
+        })
+      );
+    } catch {}
   };
 
   const scrollToPlans = () => {
@@ -126,25 +115,24 @@ export default function SpecialDealPopup({
       const el = document.getElementById(ctaAnchorId);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
       else window.location.href = `/#${ctaAnchorId}`;
-    }, 50);
+    }, 60);
   };
 
   const copyCode = async () => {
     try {
       await navigator.clipboard.writeText(promoCode);
-      setHasCopied(true);
-      setTimeout(() => setHasCopied(false), 1300);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
     } catch {
       alert(`Promo code: ${promoCode}`);
     }
   };
 
-  if (!isHome) return null;
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center px-3 sm:px-5"
       role="dialog"
       aria-modal="true"
       onMouseDown={(e) => {
@@ -152,43 +140,47 @@ export default function SpecialDealPopup({
       }}
       style={{
         background:
-          "radial-gradient(1200px 800px at 50% 30%, rgba(48,110,236,0.18), rgba(0,0,0,0.55))",
+          "radial-gradient(900px 600px at 50% 25%, rgba(48,110,236,0.18), rgba(0,0,0,0.55))",
       }}
     >
-      <div className="w-full max-w-[560px] rounded-[22px] border border-[#c5cbd8] bg-white shadow-2xl overflow-hidden">
+      {/* ✅ Mobile: bottom sheet | Desktop: centered modal */}
+      <div
+        className={[
+          "w-full max-w-[560px] overflow-hidden border border-[#c5cbd8] bg-white shadow-2xl",
+          "rounded-[18px] sm:rounded-[22px]",
+          // bottom-sheet feel on mobile
+          "mb-[max(12px,env(safe-area-inset-bottom))] sm:mb-0",
+        ].join(" ")}
+      >
         {/* Header */}
-        <div className="px-5 py-4 bg-[#EEF2FF] border-b border-[#c5cbd8]">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#c5cbd8]">
-                  <span className="text-[12px] font-extrabold text-[#306EEC] uppercase tracking-wide">
-                    Special Deal
-                  </span>
-                  <span className="text-[12px] font-bold text-[#313234]">
-                    Limited{promoEndsLabel ? ` • until ${promoEndsLabel}` : ""}
-                  </span>
-                </div>
-
-                <div className="text-[12px] font-semibold text-[#6A6D71]">
-                  ✅ Trusted by <span className="text-[#313234] font-extrabold">Long Island homeowners</span>
-                </div>
+        <div className="px-4 sm:px-6 py-4 bg-[#EEF2FF] border-b border-[#c5cbd8]">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white border border-[#c5cbd8]">
+                <span className="text-[11px] sm:text-[12px] font-extrabold text-[#306EEC] uppercase tracking-wide">
+                  Special Deal
+                </span>
+                <span className="text-[11px] sm:text-[12px] font-bold text-[#313234]">
+                  Limited{promoEndsLabel ? ` • until ${promoEndsLabel}` : ""}
+                </span>
               </div>
 
-              <h3 className="mt-3 text-[22px] sm:text-[26px] leading-tight font-extrabold text-[#313234]">
-                Save <span className="text-[#306EEC]">20%</span> today + get{" "}
-                <span className="text-[#306EEC]">$50</span> for referrals
+              <h3 className="mt-2 text-[18px] sm:text-[26px] leading-snug font-extrabold text-[#313234]">
+                Save <span className="text-[#306EEC]">20%</span> today{" "}
+                <span className="hidden sm:inline">+ get</span>{" "}
+                <span className="text-[#306EEC]">$50</span> referral credit
               </h3>
 
-              <p className="mt-2 text-[13px] sm:text-[14px] text-[#6A6D71]">
-                Quick checkout discount + referral credit + annual bonus.
+              <p className="mt-1 text-[12px] sm:text-[14px] text-[#6A6D71]">
+                Quick checkout wins. No spam — you won’t see this often.
               </p>
             </div>
 
             <button
+              ref={closeBtnRef}
               type="button"
               onClick={close}
-              className="shrink-0 w-10 h-10 rounded-[14px] border border-[#c5cbd8] bg-white grid place-items-center hover:bg-[#f7f9ff] transition active:scale-95"
+              className="shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-[14px] border border-[#c5cbd8] bg-white grid place-items-center hover:bg-[#f7f9ff] transition active:scale-95"
               aria-label="Close"
               title="Close"
             >
@@ -197,64 +189,70 @@ export default function SpecialDealPopup({
           </div>
         </div>
 
-        {/* Body */}
-        <div className="p-5 sm:p-6">
-          <div className="grid gap-3">
-            {/* Promo */}
-            <div className="rounded-[16px] border border-[#c5cbd8] bg-white p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-[14px] bg-[#EEF2FF] grid place-items-center text-[18px]">
-                  🎟️
+        {/* Body (scrollable on small screens if needed) */}
+        <div className="px-4 sm:px-6 py-4 sm:py-5 max-h-[68vh] sm:max-h-none overflow-auto">
+          {/* Promo code block (compact) */}
+          <div className="rounded-[16px] border border-[#c5cbd8] bg-white p-3.5 sm:p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-[14px] bg-[#EEF2FF] grid place-items-center text-[16px] sm:text-[18px]">
+                🎟️
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="font-extrabold text-[#313234] text-[14px] sm:text-[16px]">
+                  20% OFF for new customers
+                </div>
+                <div className="text-[12px] sm:text-[13px] text-[#6A6D71] mt-1">
+                  Enter code at checkout{promoEndsLabel ? ` (until ${promoEndsLabel})` : ""}.
                 </div>
 
-                <div className="flex-1">
-                  <div className="font-extrabold text-[#313234]">20% OFF promo code</div>
-                  <div className="text-[13px] text-[#6A6D71] mt-1">
-                    Enter this code during checkout{promoEndsLabel ? ` (until ${promoEndsLabel})` : ""}.
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="flex-1 rounded-[14px] border border-[#c5cbd8] bg-[#EEF2FF] px-3 py-2.5 font-extrabold text-[#313234] tracking-widest text-center text-[14px] sm:text-[16px]">
+                    {promoCode}
                   </div>
 
-                  <div className="mt-3 flex items-center gap-2">
-                    <div className="flex-1 rounded-[14px] border border-[#c5cbd8] bg-[#EEF2FF] px-4 py-3 font-extrabold text-[#313234] tracking-widest text-center">
-                      {promoCode}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={copyCode}
-                      className="h-[48px] px-4 rounded-[14px] bg-[#306EEC] text-white font-extrabold hover:bg-[#2558c9] transition active:scale-[0.99]"
-                    >
-                      {hasCopied ? "Copied!" : "Copy"}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={copyCode}
+                    className="h-[42px] sm:h-[48px] px-3.5 sm:px-4 rounded-[14px] bg-[#306EEC] text-white font-extrabold text-[13px] sm:text-[14px] hover:bg-[#2558c9] transition active:scale-[0.99]"
+                  >
+                    {copied ? "Copied!" : "Copy"}
+                  </button>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Referral */}
-            <div className="rounded-[16px] border border-[#c5cbd8] bg-white p-4">
+          {/* Two compact perks (side-by-side on desktop, stacked on mobile) */}
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="rounded-[16px] border border-[#c5cbd8] bg-white p-3.5 sm:p-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-[14px] bg-[#EEF2FF] grid place-items-center text-[18px]">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-[14px] bg-[#EEF2FF] grid place-items-center text-[16px] sm:text-[18px]">
                   💵
                 </div>
                 <div className="flex-1">
-                  <div className="font-extrabold text-[#313234]">$50 referral credit</div>
-                  <div className="text-[13px] text-[#6A6D71] mt-1">
-                    Refer anyone who becomes a customer → you get{" "}
-                    <span className="font-extrabold text-[#313234]">$50 off</span> your next month, just inform us by 631-599-1363 or my@profixter.com.
+                  <div className="font-extrabold text-[#313234] text-[14px] sm:text-[16px]">
+                    $50 referral credit
+                  </div>
+                  <div className="text-[12px] sm:text-[13px] text-[#6A6D71] mt-1">
+                    Friend becomes a customer → you get <span className="font-semibold text-[#313234]">$50 off</span>.
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Annual */}
-            <div className="rounded-[16px] border border-[#c5cbd8] bg-white p-4">
+            <div className="rounded-[16px] border border-[#c5cbd8] bg-white p-3.5 sm:p-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-[14px] bg-[#EEF2FF] grid place-items-center text-[18px]">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-[14px] bg-[#EEF2FF] grid place-items-center text-[16px] sm:text-[18px]">
                   🏆
                 </div>
                 <div className="flex-1">
-                  <div className="font-extrabold text-[#313234]">Annual plan bonus</div>
-                  <div className="text-[13px] text-[#6A6D71] mt-1">
-                    Buy annual today → <span className="font-extrabold text-[#313234]">pay for 11 months, get 12</span>.
+                  <div className="font-extrabold text-[#313234] text-[14px] sm:text-[16px]">
+                    Annual bonus: 1 month FREE
+                  </div>
+                  <div className="text-[12px] sm:text-[13px] text-[#6A6D71] mt-1">
+                    Pay for <span className="font-semibold text-[#313234]">11</span> months, get{" "}
+                    <span className="font-semibold text-[#313234]">12</span>.
                   </div>
                 </div>
               </div>
@@ -262,11 +260,11 @@ export default function SpecialDealPopup({
           </div>
 
           {/* CTA */}
-          <div className="mt-5 flex flex-col sm:flex-row gap-3">
+          <div className="mt-4 flex flex-col sm:flex-row gap-2.5 sm:gap-3">
             <button
               type="button"
               onClick={scrollToPlans}
-              className="h-[54px] w-full rounded-[16px] bg-[#306EEC] text-white text-[16px] font-extrabold hover:bg-[#2558c9] transition active:scale-[0.99]"
+              className="h-[50px] sm:h-[54px] w-full rounded-[16px] bg-[#306EEC] text-white text-[15px] sm:text-[16px] font-extrabold hover:bg-[#2558c9] transition active:scale-[0.99]"
             >
               View Plans & Claim Deal
             </button>
@@ -274,23 +272,14 @@ export default function SpecialDealPopup({
             <button
               type="button"
               onClick={close}
-              className="h-[54px] w-full rounded-[16px] border border-[#c5cbd8] bg-white text-[#313234] text-[16px] font-extrabold hover:bg-[#f7f9ff] transition active:scale-[0.99]"
+              className="h-[50px] sm:h-[54px] w-full rounded-[16px] border border-[#c5cbd8] bg-white text-[#313234] text-[15px] sm:text-[16px] font-extrabold hover:bg-[#f7f9ff] transition active:scale-[0.99]"
             >
               Not now
             </button>
           </div>
 
-          {/* Not annoying controls */}
-          <div className="mt-3 flex items-center justify-between gap-3 text-[12px] text-[#6A6D71]">
-            <span>*Limited-time promo. Terms may apply.</span>
-            <button
-              type="button"
-              onClick={snooze}
-              className="font-semibold text-[#313234] hover:underline"
-              title={`Hide for ${snoozeDays} days`}
-            >
-              Don’t show again
-            </button>
+          <div className="mt-2 text-[11px] sm:text-[12px] text-[#6A6D71]">
+            *Promo intended for new customers. Limited-time offer.
           </div>
         </div>
       </div>
