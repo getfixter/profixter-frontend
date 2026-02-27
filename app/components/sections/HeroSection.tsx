@@ -17,7 +17,7 @@ type FixterUser = {
 type NextBookingResponse = {
   hasSubscription?: boolean;
   plan?: string;
-  hasAnyBookings?: boolean; // (if your backend returns it)
+  hasAnyBookings?: boolean;
 };
 
 function prettyPlan(p?: string) {
@@ -35,7 +35,7 @@ export default function HeroSection() {
 
   const [needItOpen, setNeedItOpen] = useState(false);
 
-  // unknown = still loading; none = no free + no sub; free = free visit; sub = active subscription
+  // unknown = still loading (logged-in only), sub = active subscription, none = no subscription (or no address)
   const [subState, setSubState] = useState<"unknown" | "sub" | "none">("unknown");
   const [plan, setPlan] = useState<string>("");
 
@@ -72,17 +72,16 @@ export default function HeroSection() {
         return;
       }
 
-      try {
-        // ✅ single source of truth for subscription + free-visit status
-        const nb = (await getNextBooking(addressId)) as NextBookingResponse;
+      safeSet(() => setSubState("unknown"));
 
+      try {
+        const nb = (await getNextBooking(addressId)) as NextBookingResponse;
         const hasSub = !!nb?.hasSubscription;
 
-safeSet(() => {
-  setPlan(String(nb?.plan || ""));
-  if (hasSub) setSubState("sub");
-  else setSubState("none");
-});
+        safeSet(() => {
+          setPlan(String(nb?.plan || ""));
+          setSubState(hasSub ? "sub" : "none");
+        });
       } catch {
         safeSet(() => {
           setSubState("none");
@@ -108,54 +107,66 @@ safeSet(() => {
 
   const handleMainCTA = () => {
     if (!isAuthenticated) {
-      window.location.href = "/signin?redirect=/";
+      window.location.href = "/signup?redirect=/";
       return;
     }
-if (subState === "sub") goToBooking();
-else goToPlans();
+    if (subState === "sub") goToBooking();
+    else goToPlans();
   };
 
-const heroCopy = useMemo(() => {
-  // while loading subscription state, show neutral copy (prevents “jump”)
-  if (isAuthenticated && subState === "unknown") {
-    return {
-      badge: "Checking your access…",
-      titleA: "Your Home",
-      titleB: "Handled.",
-      subtitle: "Loading your membership status…",
-      cta: "Continue",
-    };
-  }
+  const heroCopy = useMemo(() => {
+    const mainLine = "Mr.Fixter - Your Home’s Best Friend.";
 
-  if (!isAuthenticated) {
+    // Logged-in but still loading status
+    if (isAuthenticated && subState === "unknown") {
+      return {
+        badge: "Checking your membership…",
+        titleA: "Mr.Fixter —",
+        titleB: "Your Home’s Best Friend.",
+        subtitle: "Loading your account…",
+        cta: "Continue",
+        bottomLine: "",
+      };
+    }
+
+    // Not registered / not logged in
+    if (!isAuthenticated) {
+      return {
+        badge: "Serving Long Island • Suffolk & Nassau",
+        titleA: "Mr.Fixter —",
+        titleB: "Your Home’s Best Friend.",
+        subtitle:
+          "Create your account to get your Gift! Then pick a plan and book your first visit in minutes.",
+        cta: "Create Account",
+        bottomLine: "",
+      };
+    }
+
+    // Has subscription
+    if (subState === "sub") {
+      const name = prettyPlan(plan);
+      return {
+        badge: name ? `Membership active • ${name}` : "Membership active",
+        titleA: "Mr.Fixter —",
+        titleB: "Your Home’s Best Friend.",
+        subtitle:
+          "Book your next visit in seconds. For each referral you get $50 off your next payment.",
+        cta: "Book My Next Visit",
+        bottomLine: "",
+      };
+    }
+
+    // Logged in, but no plan
     return {
-      badge: "Serving Long Island • Suffolk & Nassau",
-      titleA: "Your Home",
-      titleB: "Handled.",
-      subtitle: "Mr.Fixter — Your Home’s Best Friend. Use code SPRING for 20% off your first month (monthly plans).",
+      badge: "Special Offer for you",
+      titleA: "Mr.Fixter —",
+      titleB: "Your Home’s Best Friend.",
+      subtitle:
+        "Special Offer for you - Use code SPRING for 20% off your first month (monthly plans).",
       cta: "See Plans",
+      bottomLine: "",
     };
-  }
-
-  if (subState === "sub") {
-    const name = prettyPlan(plan);
-    return {
-      badge: name ? `Member access active — ${name}` : "Member access active",
-      titleA: "We missed you",
-      titleB: "Need help?",
-      subtitle: "Book your next visit in seconds. We’ll handle the rest.",
-      cta: "Book My Next Visit",
-    };
-  }
-
-  return {
-    badge: "Use code SPRING — 20% off first month (monthly plans)",
-    titleA: "Let’s take care",
-    titleB: "of your Home.",
-    subtitle: "Mr.Fixter — Your Home’s Best Friend. Pick a monthly plan and save 20% on month one with code SPRING.",
-    cta: "See Plans",
-  };
-}, [isAuthenticated, subState, plan]);
+  }, [isAuthenticated, subState, plan]);
 
   return (
     <>
@@ -169,7 +180,7 @@ const heroCopy = useMemo(() => {
             className="object-cover opacity-80"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/35 to-black/75" />
         </div>
 
         <div className="relative z-10 mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-6">
@@ -183,16 +194,16 @@ const heroCopy = useMemo(() => {
 
             {/* Headline */}
             <h1 className="max-w-[980px] text-white font-extrabold uppercase leading-[0.95] tracking-[-0.04em]">
-              <div className="text-[50px] sm:text-[72px] lg:text-[88px]">
+              <div className="text-[44px] sm:text-[66px] lg:text-[82px]">
                 {heroCopy.titleA}
               </div>
-              <div className="text-[50px] sm:text-[72px] lg:text-[88px] text-[#5E8BFF]">
+              <div className="text-[44px] sm:text-[66px] lg:text-[82px] text-[#5E8BFF]">
                 {heroCopy.titleB}
               </div>
             </h1>
 
             {/* Sub */}
-            <p className="mt-6 max-w-[560px] text-[18px] sm:text-[20px] text-white/85">
+            <p className="mt-6 max-w-[620px] text-[18px] sm:text-[20px] text-white/85">
               {heroCopy.subtitle}
             </p>
 
@@ -206,21 +217,22 @@ const heroCopy = useMemo(() => {
                 {heroCopy.cta}
               </button>
 
+              {/* ✅ Make quiz button BLUE like requested */}
               <button
                 type="button"
                 onClick={() => setNeedItOpen(true)}
-                className="h-[56px] px-8 rounded-[16px] border border-white/30 text-white text-lg font-semibold hover:bg-white/10 transition"
+                className="h-[56px] px-8 rounded-[16px] border border-[#5E8BFF] text-white text-lg font-semibold hover:bg-[#5E8BFF]/15 transition"
               >
                 Take 20-second quiz
               </button>
 
-              {/* ✅ Leave review button: only for logged in + subscribed */}
+              {/* ✅ Leave review button BLUE like requested (only subscribed) */}
               {isAuthenticated && subState === "sub" && (
                 <a
                   href={GOOGLE_REVIEW_WRITE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="h-[56px] px-8 rounded-[16px] border border-white/20 text-white/90 text-lg font-semibold hover:bg-white/10 transition flex items-center justify-center"
+                  className="h-[56px] px-8 rounded-[16px] border border-[#5E8BFF] text-white text-lg font-semibold hover:bg-[#5E8BFF]/15 transition flex items-center justify-center"
                 >
                   Leave a review
                 </a>

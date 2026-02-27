@@ -132,7 +132,7 @@ useEffect(() => {
   <span className="text-[#86EFAC]">✓</span> Personal Handyman 
 </span>
 <span className="inline-flex items-center gap-1.5">
-  <span className="text-[#86EFAC]">✓</span> Mr.Fixter — Your Home’s Best Friend
+  <span className="text-[#86EFAC]">✓</span> Mr.Fixter - Your Home’s Best Friend
 </span>
                   </span>
                 </div>

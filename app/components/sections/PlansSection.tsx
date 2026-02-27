@@ -206,7 +206,7 @@ export default function PlansSection() {
     </>
   ) : (
     <>
-      Use code <span className="text-white font-semibold">SPRING</span> — 20% off your first month
+      Use code <span className="text-white font-semibold">SPRING</span> - 20% off your first month
     </>
   )}
 </p>
@@ -342,7 +342,7 @@ export default function PlansSection() {
   <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed">
     <span className="text-white font-semibold">20% off your first month</span> on monthly plans.
     <br />
-    Mr.Fixter — Your Home’s Best Friend.
+    Mr.Fixter - Your Home’s Best Friend.
   </p>
 </div>
 
@@ -350,7 +350,7 @@ export default function PlansSection() {
           <p className="text-[#C5CBD8] text-base leading-[19px]">
             Materials at cost. Only if needed,
             <br />
-            with your approval — no markups.
+            with your approval - no markups.
           </p>
         )}
 
@@ -371,7 +371,7 @@ export default function PlansSection() {
       </div>
       <div>
         <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
-  Annual Plan — Pay 11 months, Get 12
+  Annual Plan - Pay 11 months, Get 12
 </p>
 <p className="text-[#C5CBD8] text-sm">
   Or use code <span className="text-white font-semibold">SPRING</span> for 20% off your first month (monthly plans)
@@ -574,7 +574,7 @@ export default function PlansSection() {
               <p className="text-[#C5CBD8] text-sm sm:text-base leading-relaxed text-center mt-6 px-4">
                 Materials at cost. Only if needed,
                 <br />
-                with your approval — no markups.
+                with your approval - no markups.
               </p>
             </div>
 

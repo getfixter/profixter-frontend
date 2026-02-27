@@ -60,7 +60,7 @@ export default function HandymenSection() {
 
           <p className="mt-4 text-sm sm:text-base text-[#c5cbd8] max-w-md mx-auto">
             Skilled professionals who bring comfort and quality to every home.
-            Reliable, friendly, and ready to tackle any task — big or small.
+            Reliable, friendly, and ready to tackle any task - big or small.
           </p>
         </div>
 
@@ -88,7 +88,7 @@ export default function HandymenSection() {
 
             <p className="text-[14px] text-[#c5cbd8] text-right max-w-[420px] pt-3">
               Skilled professionals who bring comfort and quality to every home.
-              Reliable, friendly, and ready to tackle any task — big or small.
+              Reliable, friendly, and ready to tackle any task - big or small.
             </p>
           </div>
 

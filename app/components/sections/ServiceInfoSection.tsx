@@ -129,19 +129,19 @@ export default function ServiceInfoSection() {
     if (state === "guest") {
       return {
         title: "Trusted by Long Island homeowners",
-        sub: "Most homeowners don’t need a contractor — they need a reliable pro who shows up, fixes it fast, and doesn’t overcharge. That’s Profixter.",
+        sub: "Most homeowners don’t need a contractor - they need a reliable pro who shows up, fixes it fast, and doesn’t overcharge. That’s Profixter.",
         primaryLabel: "View plans",
         primaryHref: "#plans",
         secondaryLabel: "Book a visit",
         secondaryHref: "#pick-day",
         badge: "Local • On-demand • Professional",
-        hint: "Pick a plan below — then book instantly in the calendar.",
+        hint: "Pick a plan below - then book instantly in the calendar.",
       };
     }
 
     if (state === "sub") {
       return {
-        title: `Your membership is active${planName ? ` — ${planName}` : ""}`,
+        title: `Your membership is active${planName ? ` - ${planName}` : ""}`,
         sub: "Book your next visit in the calendar below. Upload photos so we bring the right tools and move fast.",
         primaryLabel: "Book next visit",
         primaryHref: "#pick-day",
@@ -153,8 +153,8 @@ export default function ServiceInfoSection() {
     }
 
     return {
-      title: isNewLoggedIn ? "Welcome — pick a plan to start today" : "Pick a plan to book a visit",
-      sub: "No free first visit. Subscription is required to book — choose a plan and schedule immediately.",
+      title: isNewLoggedIn ? "Welcome - pick a plan to start today" : "Pick a plan to book a visit",
+      sub: "No free first visit. Subscription is required to book - choose a plan and schedule immediately.",
       primaryLabel: "View plans",
       primaryHref: "#plans",
       secondaryLabel: "What’s included",
@@ -238,14 +238,14 @@ export default function ServiceInfoSection() {
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
                     <div className="text-[#313234] font-extrabold">🛠️ Real pros, real standards</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      We show up prepared, communicate clearly, and fix things the right way — not the cheap way.
+                      We show up prepared, communicate clearly, and fix things the right way - not the cheap way.
                     </div>
                   </div>
 
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
                     <div className="text-[#313234] font-extrabold">📷 Photos = faster service</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      Upload photos when booking so we bring the right tools and plan ahead — less back-and-forth.
+                      Upload photos when booking so we bring the right tools and plan ahead - less back-and-forth.
                     </div>
                   </div>
                 </div>
@@ -258,7 +258,7 @@ export default function ServiceInfoSection() {
                         Watch: why Profixter is different (2 minutes)
                       </div>
                       <div className="text-[#6A6D71] text-[12px] mt-0.5">
-                        Quick explanation from the founder — this will make the decision easy.
+                        Quick explanation from the founder - this will make the decision easy.
                       </div>
                     </div>
 
@@ -394,7 +394,7 @@ export default function ServiceInfoSection() {
                 <div className="mt-4 rounded-[18px] border border-[#E6E8EF] bg-[#F6F7FB] p-5">
                   <div className="text-[#313234] font-extrabold">Fast & respectful service</div>
                   <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                    If a prior job runs long, we’ll still arrive and do it right. We’re not a marketplace — we’re a real local
+                    If a prior job runs long, we’ll still arrive and do it right. We’re not a marketplace - we’re a real local
                     service with standards.
                   </div>
                 </div>

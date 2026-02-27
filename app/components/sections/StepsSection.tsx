@@ -60,7 +60,7 @@ export default function StepsSection() {
               TO BE <span className="text-[#306eec]">HAPPY</span>
             </h2>
             <p className="mt-4 text-[#6a6c71] text-sm sm:text-base max-w-[680px] mx-auto">
-              Quick signup, choose a plan, book online — and we’ll take care of the fixes.
+              Quick signup, choose a plan, book online - and we’ll take care of the fixes.
             </p>
           </div>
 

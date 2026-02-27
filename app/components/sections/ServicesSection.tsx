@@ -229,7 +229,7 @@ export default function ServicesSection() {
       {showPopup && (
         <div className="fixed bottom-6 right-6 z-[9999] max-w-[360px] rounded-[16px] bg-[#0B1220] text-white border border-white/10 shadow-[0_20px_80px_rgba(0,0,0,0.55)] p-4">
           <p className="font-semibold font-montserrat text-white">
-            Thank you — we received your request.
+            Thank you - we received your request.
           </p>
           <p className="text-sm text-[#C5CBD8] font-montserrat mt-1 leading-[140%]">
             We’ll contact you shortly from{" "}

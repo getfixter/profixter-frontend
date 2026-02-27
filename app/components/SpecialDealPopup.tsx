@@ -172,7 +172,7 @@ export default function SpecialDealPopup({
               </h3>
 
               <p className="mt-1 text-[12px] sm:text-[14px] text-[#6A6D71]">
-                Quick checkout wins. No spam — you won’t see this often.
+                Quick checkout wins. No spam - you won’t see this often.
               </p>
             </div>
 
