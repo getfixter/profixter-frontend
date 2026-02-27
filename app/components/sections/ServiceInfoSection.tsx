@@ -272,11 +272,23 @@ export default function ServiceInfoSection() {
                     <div className="px-4 sm:px-5 py-3 bg-[#F6F7FB] border-b border-[#E6E8EF] flex items-start justify-between gap-3">
                       <div>
                         <div className="text-[#313234] font-extrabold text-[14px] sm:text-[15px]">
-                          Watch: why Profixter is different (2 minutes)
+                          Why Profixter is different?
                         </div>
                         <div className="text-[#6A6D71] text-[12px] mt-0.5">
-                          Tap play to watch.
-                        </div>
+  Here is <span className="font-semibold text-[#313234]">WHY</span>
+  <svg
+className="inline w-3.5 h-3.5 ml-1 text-[#306EEC] align-middle animate-pulse"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M12 6V18" />
+    <path d="M8 14L12 18L16 14" />
+  </svg>
+</div>
                       </div>
 
                       
