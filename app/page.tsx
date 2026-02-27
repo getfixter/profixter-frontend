@@ -17,6 +17,9 @@ import { ChatWidget } from "./components/ChatWidget";
 import Image from "next/image";
 import ServiceInfoSection from "./components/sections/ServiceInfoSection";
 
+// ✅ NEW SECTION
+import RecommendedBusinessesSection from "./components/sections/RecommendedBusinessesSection";
+
 const ADMIN_EMAIL = "getfixter@gmail.com";
 
 export default function Home() {
@@ -58,6 +61,10 @@ export default function Home() {
         <StepsSection />
         <PlansSection />
         <ServicesSection />
+
+        {/* ✅ NEW: Businesses we recommend */}
+        <RecommendedBusinessesSection />
+
         <HandymenSection />
         <ProjectsSection />
         <Footer />
