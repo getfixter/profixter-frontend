@@ -56,9 +56,10 @@ export default function Home() {
 
       <main className="relative">
         <HeroSection />
+                <StepsSection />
+
         <ServiceInfoSection />
         <BookingSection />
-        <StepsSection />
         <PlansSection />
         <ServicesSection />
 
