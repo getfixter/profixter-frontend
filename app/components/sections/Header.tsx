@@ -325,13 +325,13 @@ export default function Header() {
 
       {/* Mobile Menu Overlay */}
       <div
-        className={`lg:hidden fixed inset-0 z-[65] bg-white transition-all duration-300 ${
-          isMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"
-        }`}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Mobile navigation"
-      >
+  className={`lg:hidden fixed inset-0 z-[65] bg-white transition-all duration-300 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]${
+    isMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"
+  }`}
+  role="dialog"
+  aria-modal="true"
+  aria-label="Mobile navigation"
+>
         {/* Close Button (always visible) */}
         <button
           onClick={() => setIsMenuOpen(false)}
@@ -350,7 +350,17 @@ export default function Header() {
 
         {/* Content */}
         <div className="relative z-[75]">
-          <nav className="flex flex-col items-center justify-center min-h-screen gap-7 px-8 pt-24">
+          <nav
+  className={[
+    // iOS-safe full height
+    "flex flex-col items-center justify-start",
+    "min-h-[100svh] sm:min-h-[100dvh] overflow-y-auto pb-10",
+    // allow scrolling if the content is taller than the screen
+    "overflow-y-auto overscroll-contain",
+    // padding to avoid cutting top/bottom buttons
+    "gap-7 px-8 pt-24 pb-10",
+  ].join(" ")}
+>
             {NAV.map((item) =>
               item.href.startsWith("#") ? (
                 <button
