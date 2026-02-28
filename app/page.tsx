@@ -59,8 +59,8 @@ export default function Home() {
                 <StepsSection />
 
         <ServiceInfoSection />
+                <PlansSection />
         <BookingSection />
-        <PlansSection />
         <ServicesSection />
 
         {/* ✅ NEW: Businesses we recommend */}
