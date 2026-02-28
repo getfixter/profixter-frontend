@@ -38,6 +38,20 @@ export default function Footer() {
     setTimeout(() => setShowPopup(false), 5000);
   };
 
+  // ✅ Smooth scroll with header offset (prevents section hiding under sticky header)
+  const scrollToHash = (hash: string) => {
+    const id = hash.replace("#", "");
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    // tune if needed — matches your header behavior
+    const HEADER_OFFSET = window.innerWidth >= 1024 ? 180 : 140;
+
+    const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+    window.scrollTo({ top: y, behavior: "smooth" });
+    history.replaceState(null, "", hash);
+  };
+
   // Optional: Esc closes popup
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -90,22 +104,51 @@ export default function Footer() {
             <div className="text-white font-semibold mb-3">Explore</div>
 
             <nav className="grid grid-cols-2 sm:grid-cols-1 gap-y-3 gap-x-6 lg:text-right">
-              <Link href="#how-it-works" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
+              {/* ✅ Hash links use scrollToHash (prevents hiding under header) */}
+              <button
+                type="button"
+                onClick={() => scrollToHash("#how-it-works")}
+                className="text-left text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
+              >
                 How it works
-              </Link>
-              <Link href="#plans" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
+              </button>
+
+              <button
+                type="button"
+                onClick={() => scrollToHash("#plans")}
+                className="text-left text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
+              >
                 Plans
-              </Link>
-              <Link href="#pick-day" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
+              </button>
+
+              <button
+                type="button"
+                onClick={() => scrollToHash("#pick-day")}
+                className="text-left text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
+              >
                 Pick day
-              </Link>
-              <Link href="#projects" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
+              </button>
+
+              <button
+                type="button"
+                onClick={() => scrollToHash("#projects")}
+                className="text-left text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
+              >
                 Projects
-              </Link>
-              <Link href="/partnerships" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
+              </button>
+
+              {/* ✅ Real pages keep Link */}
+              <Link
+                href="/partnerships"
+                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
+              >
                 Partnerships
               </Link>
-              <Link href="/careers" className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors">
+
+              <Link
+                href="/careers"
+                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
+              >
                 Careers
               </Link>
             </nav>

@@ -364,8 +364,11 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
   );
 
   return (
-    <section id="plans" className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden">
-      {/* 🔥 Annual promo banner */}
+<section
+  id="plans"
+  className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden scroll-mt-[140px]"
+>
+        {/* 🔥 Annual promo banner */}
 <div className="mx-auto max-w-[1240px] px-5 lg:px-5 mb-6">
   <div className="bg-[#86EFAC]/15 border border-[#86EFAC]/30 rounded-2xl p-3 sm:p-4 backdrop-blur-md shadow-[0_10px_40px_rgba(0,0,0,0.25)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div className="flex items-center gap-3">

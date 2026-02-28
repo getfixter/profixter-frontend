@@ -34,11 +34,15 @@ export default function ProjectsSection() {
 
   // ✅ scroll to BookingSection (#pick-day)
   const goToBooking = () => {
-    const el = document.getElementById("pick-day");
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-    history.replaceState(null, "", "#pick-day");
-  };
+  const el = document.getElementById("pick-day");
+  if (!el) return;
+
+  const HEADER_OFFSET = window.innerWidth >= 1024 ? 160 : 120;
+  const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+
+  window.scrollTo({ top: y, behavior: "smooth" });
+  history.replaceState(null, "", "#pick-day");
+};
 
   const active = projects[currentSlide];
   const next1 = projects[(currentSlide + 1) % projects.length];
@@ -83,9 +87,9 @@ export default function ProjectsSection() {
 
   return (
     <section
-      id="projects"
-      className="w-full bg-[#313234] py-12 sm:py-16 lg:py-20 overflow-hidden relative"
-    >
+  id="projects"
+  className="w-full bg-[#313234] py-12 sm:py-16 lg:py-20 overflow-hidden relative scroll-mt-[140px]"
+>
       <div className="max-w-[1240px] mx-auto px-5 sm:px-6 lg:px-5">
         {/* ================= MOBILE / TABLET ================= */}
         <div className="lg:hidden">

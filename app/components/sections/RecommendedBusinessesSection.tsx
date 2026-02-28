@@ -208,16 +208,18 @@ export default function RecommendedBusinessesSection() {
   }
 
   function scrollToIndex(i: number) {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const child = el.children.item(i) as HTMLElement | null;
-    if (!child) return;
+  const el = scrollerRef.current;
+  if (!el) return;
+  const child = el.children.item(i) as HTMLElement | null;
+  if (!child) return;
 
-    el.scrollTo({
-      left: child.offsetLeft,
-      behavior: "smooth",
-    });
-  }
+  const left = child.offsetLeft - (el.clientWidth - child.clientWidth) / 2;
+
+  el.scrollTo({
+    left: Math.max(0, left),
+    behavior: "smooth",
+  });
+}
 
   useEffect(() => {
     updateArrowsAndDots();
@@ -228,7 +230,10 @@ export default function RecommendedBusinessesSection() {
   }, []);
 
   return (
-    <section id="recommended-pros" className="bg-white">
+    <section
+  id="recommended-pros"
+  className="bg-white scroll-mt-[140px] lg:scroll-mt-[180px]"
+>
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-[20px] py-12 sm:py-16">
         <div className="flex items-end justify-between gap-4 flex-wrap">
           <div>

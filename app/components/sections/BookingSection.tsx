@@ -780,8 +780,11 @@ const canBook =
   const ymdSelected = selectedDate ? formatDateYMD(selectedDate) : "";
 
   return (
-    <section id="pick-day" className="relative w-full pt-28 sm:pt-36 lg:pt-44 pb-12 sm:pb-16 lg:pb-24 bg-[#eaedfa]">
-      <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
+<section
+  id="pick-day"
+  className="relative w-full pt-28 sm:pt-36 lg:pt-44 pb-12 sm:pb-16 lg:pb-24 bg-[#eaedfa] scroll-mt-[140px]"
+>
+        <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
         {/* Header */}
         <div className="mb-8 sm:mb-10 lg:mb-12">
           {/* Desktop edge labels */}

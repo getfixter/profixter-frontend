@@ -93,15 +93,28 @@ export default function HeroSection() {
     run();
   }, [isAuthenticated, typedUser?.defaultAddressId]);
 
+  // ✅ offset scroll so anchor never hides under sticky header/promo
+  const scrollToHash = (hash: string) => {
+    const id = hash.replace("#", "");
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const HEADER_OFFSET = window.innerWidth >= 1024 ? 180 : 140;
+    const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+
+    window.scrollTo({ top: y, behavior: "smooth" });
+    history.replaceState(null, "", hash);
+  };
+
   const goToPlans = () => {
     const el = document.getElementById("plans");
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+    if (el) scrollToHash("#plans");
     else window.location.href = "/#plans";
   };
 
   const goToBooking = () => {
     const booking = document.getElementById("pick-day");
-    if (booking) booking.scrollIntoView({ behavior: "smooth" });
+    if (booking) scrollToHash("#pick-day");
     else window.location.href = "/#pick-day";
   };
 
@@ -115,8 +128,6 @@ export default function HeroSection() {
   };
 
   const heroCopy = useMemo(() => {
-    const mainLine = "Mr.Fixter - Your Home’s Best Friend.";
-
     // Logged-in but still loading status
     if (isAuthenticated && subState === "unknown") {
       return {
@@ -194,9 +205,7 @@ export default function HeroSection() {
 
             {/* Headline */}
             <h1 className="max-w-[980px] text-white font-extrabold uppercase leading-[0.95] tracking-[-0.04em]">
-              <div className="text-[44px] sm:text-[66px] lg:text-[82px]">
-                {heroCopy.titleA}
-              </div>
+              <div className="text-[44px] sm:text-[66px] lg:text-[82px]">{heroCopy.titleA}</div>
               <div className="text-[44px] sm:text-[66px] lg:text-[82px] text-[#5E8BFF]">
                 {heroCopy.titleB}
               </div>
@@ -250,7 +259,7 @@ export default function HeroSection() {
         onClose={() => setNeedItOpen(false)}
         onGoToPlans={() => {
           const el = document.getElementById("plans");
-          if (el) el.scrollIntoView({ behavior: "smooth" });
+          if (el) scrollToHash("#plans");
           else window.location.href = "/#plans";
         }}
         ctaLabel="Get Started"

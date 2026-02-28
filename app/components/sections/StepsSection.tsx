@@ -21,10 +21,10 @@ const STEPS = [
 export default function StepsSection() {
   return (
     <section
-      id="how-it-works"
-      aria-label="How it works"
-      className="relative w-full py-12 sm:py-16 lg:py-20 overflow-hidden"
-    >
+  id="how-it-works"
+  aria-label="How it works"
+  className="relative w-full py-12 sm:py-16 lg:py-20 overflow-hidden scroll-mt-[140px]"
+>
       {/* ✅ Force readable background on ALL screens */}
       <div className="absolute inset-0 -z-10 bg-[#EEF2FF]" />
       {/* subtle premium glow */}

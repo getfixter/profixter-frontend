@@ -17,14 +17,20 @@ export default function HandymenSection() {
 
   // Keep active thumbnail visible when idx changes (thumb click OR next/prev)
   useEffect(() => {
-    const el = itemRefs.current[idx];
-    if (!el) return;
-    el.scrollIntoView({
-      behavior: "smooth",
-      inline: "center",
-      block: "nearest",
-    });
-  }, [idx]);
+  const container = stripRef.current;
+  const el = itemRefs.current[idx];
+  if (!container || !el) return;
+
+  const containerRect = container.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+
+  // center the thumbnail inside the strip (horizontal only)
+  const currentLeft = container.scrollLeft;
+  const elCenterInViewport = (elRect.left - containerRect.left) + elRect.width / 2;
+  const targetLeft = currentLeft + elCenterInViewport - containerRect.width / 2;
+
+  container.scrollTo({ left: targetLeft, behavior: "smooth" });
+}, [idx]);
 
   // Close any "stuck hover" issues on iOS when tapping thumbnails
   useEffect(() => {

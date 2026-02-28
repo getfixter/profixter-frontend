@@ -38,6 +38,20 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // ✅ offset scroll so anchors never hide under sticky header/promo
+  const scrollToHash = (hash: string) => {
+    const id = hash.replace("#", "");
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    // header + promo strip combined
+    const HEADER_OFFSET = window.innerWidth >= 1024 ? 180 : 140;
+
+    const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+    window.scrollTo({ top: y, behavior: "smooth" });
+    history.replaceState(null, "", hash);
+  };
+
   // Lock body scroll when mobile menu open (prevents iOS weirdness)
   useEffect(() => {
     if (isMenuOpen) document.body.style.overflow = "hidden";
@@ -176,12 +190,13 @@ export default function Header() {
                 </span>
               </div>
 
-              <Link
-                href="#plans"
+              <button
+                type="button"
+                onClick={() => scrollToHash("#plans")}
                 className="shrink-0 px-4 sm:px-5 py-2.5 rounded-xl bg-[#86EFAC] text-[#0B1220] font-extrabold text-sm sm:text-base hover:opacity-90 transition active:scale-[0.99]"
               >
                 View Plans
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -197,16 +212,28 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-7">
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="text-[#111827] hover:text-[#306EEC] transition-colors text-[15px] font-normal relative group pb-2"
-              >
-                {item.label}
-                <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-[#306eec] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-              </Link>
-            ))}
+            {NAV.map((item) =>
+              item.href.startsWith("#") ? (
+                <button
+                  key={item.href}
+                  type="button"
+                  onClick={() => scrollToHash(item.href)}
+                  className="text-[#111827] hover:text-[#306EEC] transition-colors text-[15px] font-normal relative group pb-2"
+                >
+                  {item.label}
+                  <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-[#306eec] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                </button>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="text-[#111827] hover:text-[#306EEC] transition-colors text-[15px] font-normal relative group pb-2"
+                >
+                  {item.label}
+                  <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-[#306eec] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                </Link>
+              )
+            )}
           </nav>
 
           {/* Desktop Auth / Profile */}
@@ -282,7 +309,11 @@ export default function Header() {
                 isMenuOpen ? "rotate-45 translate-y-2" : ""
               }`}
             />
-            <span className={`w-6 h-0.5 bg-[#111827] transition-all duration-300 ${isMenuOpen ? "opacity-0" : ""}`} />
+            <span
+              className={`w-6 h-0.5 bg-[#111827] transition-all duration-300 ${
+                isMenuOpen ? "opacity-0" : ""
+              }`}
+            />
             <span
               className={`w-6 h-0.5 bg-[#111827] transition-all duration-300 ${
                 isMenuOpen ? "-rotate-45 -translate-y-2" : ""
@@ -320,22 +351,39 @@ export default function Header() {
         {/* Content */}
         <div className="relative z-[75]">
           <nav className="flex flex-col items-center justify-center min-h-screen gap-7 px-8 pt-24">
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setIsMenuOpen(false)}
-                className="text-[#111827] hover:text-[#306EEC] text-[28px] font-normal transition-colors"
-              >
-                {item.label}
-              </Link>
-            ))}
+            {NAV.map((item) =>
+              item.href.startsWith("#") ? (
+                <button
+                  key={item.href}
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    requestAnimationFrame(() => scrollToHash(item.href));
+                  }}
+                  className="text-[#111827] hover:text-[#306EEC] text-[28px] font-normal transition-colors"
+                >
+                  {item.label}
+                </button>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="text-[#111827] hover:text-[#306EEC] text-[28px] font-normal transition-colors"
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
 
             {/* promo inside mobile menu too */}
-            <Link
-              href="#plans"
-              onClick={() => setIsMenuOpen(false)}
-              className="w-full max-w-xs rounded-[16px] border border-[#86EFAC]/25 bg-[#0B1220]/90 text-white px-4 py-3"
+            <button
+              type="button"
+              onClick={() => {
+                setIsMenuOpen(false);
+                requestAnimationFrame(() => scrollToHash("#plans"));
+              }}
+              className="w-full max-w-xs rounded-[16px] border border-[#86EFAC]/25 bg-[#0B1220]/90 text-white px-4 py-3 text-left"
             >
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-full bg-[#86EFAC]/20 border border-[#86EFAC]/25 flex items-center justify-center">
@@ -345,7 +393,9 @@ export default function Header() {
                   <p className="font-extrabold text-base leading-tight">
                     Get <span className="text-[#86EFAC]">30% OFF</span> First Month
                   </p>
-                  <p className="text-white/75 text-sm mt-1">Use code SPRING • Monthly plans only • Cancel anytime</p>
+                  <p className="text-white/75 text-sm mt-1">
+                    Use code SPRING • Monthly plans only • Cancel anytime
+                  </p>
 
                   {promoActive && promoLeft ? (
                     <p className="text-white/70 text-[12px] mt-1 font-semibold">
@@ -358,7 +408,7 @@ export default function Header() {
                   ) : null}
                 </div>
               </div>
-            </Link>
+            </button>
 
             <div className="flex flex-col gap-4 mt-1 w-full max-w-xs">
               {isAuthenticated ? (

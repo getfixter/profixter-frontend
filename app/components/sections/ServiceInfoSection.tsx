@@ -182,6 +182,18 @@ export default function ServiceInfoSection() {
   return `${base}?${params.toString()}`;
 }, []);
 
+const scrollToHash = (hash: string) => {
+  const id = hash.replace("#", "");
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  const HEADER_OFFSET = window.innerWidth >= 1024 ? 160 : 120; // same offset you used before
+  const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+
+  window.scrollTo({ top: y, behavior: "smooth" });
+  history.replaceState(null, "", hash);
+};
+
   return (
     <section
       id="how-booking-works"
@@ -382,36 +394,38 @@ className="inline w-3.5 h-3.5 ml-1 text-[#306EEC] align-middle animate-pulse"
 
                   <div className="mt-5 flex flex-col gap-3">
                     {cta.primaryHref.startsWith("#") ? (
-                      <a
-                        href={cta.primaryHref}
-                        className="h-[52px] rounded-[16px] bg-[#306EEC] hover:bg-[#2558c9] transition text-white font-extrabold text-[15px] inline-flex items-center justify-center"
-                      >
-                        {cta.primaryLabel}
-                      </a>
-                    ) : (
-                      <Link
-                        href={cta.primaryHref}
-                        className="h-[52px] rounded-[16px] bg-[#306EEC] hover:bg-[#2558c9] transition text-white font-extrabold text-[15px] inline-flex items-center justify-center"
-                      >
-                        {cta.primaryLabel}
-                      </Link>
-                    )}
+  <button
+    type="button"
+    onClick={() => scrollToHash(cta.primaryHref)}
+    className="h-[52px] rounded-[16px] bg-[#306EEC] hover:bg-[#2558c9] transition text-white font-extrabold text-[15px] inline-flex items-center justify-center"
+  >
+    {cta.primaryLabel}
+  </button>
+) : (
+  <Link
+    href={cta.primaryHref}
+    className="h-[52px] rounded-[16px] bg-[#306EEC] hover:bg-[#2558c9] transition text-white font-extrabold text-[15px] inline-flex items-center justify-center"
+  >
+    {cta.primaryLabel}
+  </Link>
+)}
 
                     {cta.secondaryHref.startsWith("#") ? (
-                      <a
-                        href={cta.secondaryHref}
-                        className="h-[52px] rounded-[16px] border border-[#C5CBD8] bg-[#EEF2FF] hover:bg-white transition text-[#313234] font-extrabold text-[15px] inline-flex items-center justify-center"
-                      >
-                        {cta.secondaryLabel}
-                      </a>
-                    ) : (
-                      <Link
-                        href={cta.secondaryHref}
-                        className="h-[52px] rounded-[16px] border border-[#C5CBD8] bg-[#EEF2FF] hover:bg-white transition text-[#313234] font-extrabold text-[15px] inline-flex items-center justify-center"
-                      >
-                        {cta.secondaryLabel}
-                      </Link>
-                    )}
+  <button
+    type="button"
+    onClick={() => scrollToHash(cta.secondaryHref)}
+    className="h-[52px] rounded-[16px] border border-[#C5CBD8] bg-[#EEF2FF] hover:bg-white transition text-[#313234] font-extrabold text-[15px] inline-flex items-center justify-center"
+  >
+    {cta.secondaryLabel}
+  </button>
+) : (
+  <Link
+    href={cta.secondaryHref}
+    className="h-[52px] rounded-[16px] border border-[#C5CBD8] bg-[#EEF2FF] hover:bg-white transition text-[#313234] font-extrabold text-[15px] inline-flex items-center justify-center"
+  >
+    {cta.secondaryLabel}
+  </Link>
+)}
                   </div>
 
                   <div className="mt-5 text-[12px] text-[#6A6D71]">
