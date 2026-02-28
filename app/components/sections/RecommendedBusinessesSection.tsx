@@ -228,7 +228,7 @@ export default function RecommendedBusinessesSection() {
   }, []);
 
   return (
-    <section className="bg-white">
+    <section id="recommended-pros" className="bg-white">
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-[20px] py-12 sm:py-16">
         <div className="flex items-end justify-between gap-4 flex-wrap">
           <div>

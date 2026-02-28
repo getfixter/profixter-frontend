@@ -155,7 +155,10 @@ export default function ServicesSection() {
   };
 
   return (
-    <section className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden">
+    <section
+  id="services"
+  className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden scroll-mt-[120px]"
+>
       {/* Background glow */}
       <div
         className="hidden lg:block absolute -top-40 left-1/2 -translate-x-1/2 w-[1460px] h-[1460px] rounded-full z-0"
