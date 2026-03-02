@@ -76,6 +76,13 @@ export default function QuickStats({
           <StatCard icon="⛔" label="Blacklisted" value={blacklistCount} color="from-red-500 to-red-600" />
         </div>
       )}
+
+      {/* Placeholder stats for technicians tab */}
+      {active === 'techs' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard icon="🛠️" label="Technicians" value={0} color="from-teal-500 to-teal-600" />
+        </div>
+      )}
     </div>
   );
 }

@@ -29,9 +29,85 @@ export default function UsersTable({
     }
   });
 
+  // Sort by user creation date descending for easier review. Users with no
+  // createdAt will be placed at the bottom. This makes the most recent
+  // signups appear first.
+  rows.sort((a, b) => {
+    const ta = a.user.createdAt ? new Date(a.user.createdAt).getTime() : 0;
+    const tb = b.user.createdAt ? new Date(b.user.createdAt).getTime() : 0;
+    return tb - ta;
+  });
+
+  // Generate and download a CSV of the current rows. Only the currently
+  // visible data is exported (flattened per address). All text values are
+  // wrapped in quotes and internal quotes are escaped.
+  const exportCSV = () => {
+    const headers = [
+      'User ID',
+      'Name',
+      'Email',
+      'Phone',
+      'Address',
+      'Plan',
+      'Created',
+      'Blacklisted',
+    ];
+    const data = rows.map(({ user, address }) => {
+      const addressText = address
+        ? `${address.line1}, ${address.city}, ${address.state} ${address.zip}`
+        : 'No address';
+      const planValue = address?.plan ? String(address.plan).toLowerCase() : 'cancel';
+      const created = user.createdAt
+        ? new Date(user.createdAt).toLocaleString()
+        : '';
+      const isBL = blacklistIds.has(user._id) ? 'Yes' : 'No';
+      return [
+        user.userId,
+        user.name || '',
+        user.email || '',
+        user.phone || '',
+        addressText,
+        planValue,
+        created,
+        isBL,
+      ];
+    });
+    const escapeCell = (val: any) => {
+      const str = String(val ?? '');
+      return '"' + str.replace(/"/g, '""') + '"';
+    };
+    const csvLines = [headers.map(escapeCell).join(',')].concat(
+      data.map((row) => row.map(escapeCell).join(','))
+    );
+    const csvContent = csvLines.join('\n');
+    const blob = new Blob([csvContent], {
+      type: 'text/csv;charset=utf-8;',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `users-${Date.now()}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
-    
+      {/* Export button */}
+      {rows.length > 0 && (
+        <div className="flex justify-end mb-3">
+          <button
+            type="button"
+            onClick={exportCSV}
+            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm font-medium hover:shadow-lg active:scale-95 transition-all"
+          >
+            Export CSV
+          </button>
+        </div>
+      )}
+
       {/* Desktop Table */}
       <div className="hidden lg:block bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
         <div className="overflow-x-auto">

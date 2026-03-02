@@ -118,6 +118,57 @@ export default function BookingsTable({
     return colors[String(status || "").toLowerCase()] || "bg-gray-100 text-gray-800 border-gray-200";
   };
 
+  // Export currently displayed bookings to CSV. This flattens grouped bookings and
+  // includes basic details such as booking number, user, service, status and date.
+  const exportCSV = () => {
+    const headers = [
+      'Booking #',
+      'Name',
+      'User ID',
+      'Service',
+      'Subscription',
+      'Status',
+      'Date (NY)',
+      'Note',
+      'Phone',
+      'Address',
+    ];
+    const rowsData: string[][] = [];
+    bookings.forEach((b) => {
+      const u = userMap[b.userId] || ({} as any);
+      const fullAddress = formatAddress(b.address, b.city, b.state, b.zip);
+      rowsData.push([
+        String(b.bookingNumber ?? ''),
+        b.name || u.name || '',
+        b.userId || '',
+        b.service || '',
+        b.subscription || u.subscription || '',
+        b.status || '',
+        formatTimeNY(b.date),
+        b.note ? b.note.replace(/\n/g, ' ') : '',
+        b.phone || u.phone || '',
+        fullAddress || '',
+      ]);
+    });
+    const escapeCell = (val: any) => {
+      const str = String(val ?? '');
+      return '"' + str.replace(/"/g, '""') + '"';
+    };
+    const csvLines = [headers.map(escapeCell).join(',')].concat(
+      rowsData.map((row) => row.map(escapeCell).join(','))
+    );
+    const csvContent = csvLines.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `bookings-${Date.now()}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const startEdit = (b: Booking) => {
     setEditingId(b._id);
     setDraftNote(String(b.note || ""));
@@ -145,6 +196,18 @@ export default function BookingsTable({
 
   return (
     <div className="space-y-6 bookings-table-section">
+      {/* Export button */}
+      {bookings.length > 0 && (
+        <div className="flex justify-end mb-3">
+          <button
+            type="button"
+            onClick={exportCSV}
+            className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg text-sm font-medium hover:shadow-lg active:scale-95 transition-all"
+          >
+            Export CSV
+          </button>
+        </div>
+      )}
       {dayKeys.map((day) => (
         <div key={day} className="space-y-3 md:space-y-4">
           {/* Day Header */}
