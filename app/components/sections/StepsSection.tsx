@@ -1,30 +1,31 @@
 import Image from "next/image";
 
+// Updated steps with clearer language and emphasis on unlimited visits.
 const STEPS = [
   {
     id: "01",
-    title: "Create your Account",
-    desc: "Sign up in just a few clicks. Provide basic info to get started and access your first booking.",
+    title: "Create your account & pick a plan",
+    desc: "Sign up in minutes and choose a membership that fits your needs. Cancel anytime — no contracts.",
   },
   {
     id: "02",
-    title: "Pick your plan",
-    desc: "Choose the plan that fits your needs best and unlock exclusive savings with every visit.",
+    title: "Book your first visit",
+    desc: "Schedule your first handyman visit right away. Pick a date and time that works for you.",
   },
   {
     id: "03",
-    title: "Book first visit & relax",
-    desc: "Create your first booking in a minute. Select date and time and enjoy the service.",
+    title: "Enjoy unlimited visits",
+    desc: "Relax knowing you can book 2+ visits each month. We’ll take care of all the fixes and maintenance.",
   },
 ];
 
 export default function StepsSection() {
   return (
     <section
-  id="how-it-works"
-  aria-label="How it works"
-  className="relative w-full py-12 sm:py-16 lg:py-20 overflow-hidden scroll-mt-[140px]"
->
+      id="how-it-works"
+      aria-label="How it works"
+      className="relative w-full py-12 sm:py-16 lg:py-20 overflow-hidden scroll-mt-[140px]"
+    >
       {/* ✅ Force readable background on ALL screens */}
       <div className="absolute inset-0 -z-10 bg-[#EEF2FF]" />
       {/* subtle premium glow */}
@@ -42,29 +43,24 @@ export default function StepsSection() {
         <div className="relative">
           {/* Side notes (desktop only) */}
           <div className="hidden lg:block absolute left-0 top-2 text-sm text-[#6a6c71]">
-            Easy steps for easy life.
+            Simple steps to get unlimited handyman visits.
           </div>
           <div className="hidden lg:block absolute right-0 top-2 text-sm text-[#6a6c71]">
-  Use promo Code "Spring" to get 30% off on first month.
-</div>
-
+            Use code "SPRING" for 30% off your first month (2+ visits per month).
+          </div>
 
           {/* Heading */}
           <div className="text-center mb-8 sm:mb-12 lg:mb-14">
             <h2 className="text-3xl sm:text-5xl lg:text-[64px] font-extrabold tracking-[-0.05em] leading-[1.0] text-[#313234]">
-              <span>JUST </span>
-              <span className="text-[#306eec]">3</span>
-              <span> STEPS</span>
+              <span>3 EASY STEPS</span>
             </h2>
             <h2 className="mt-1 text-3xl sm:text-5xl lg:text-[64px] font-extrabold tracking-[-0.05em] leading-[1.0] text-[#313234]">
-              TO BE <span className="text-[#306eec]">HAPPY</span>
+              TO UNLIMITED HANDYMAN SERVICE
             </h2>
             <p className="mt-4 text-[#6a6c71] text-sm sm:text-base max-w-[680px] mx-auto">
-              Quick signup, choose a plan, book online - and we’ll take care of the fixes.
+              Create your account, choose a plan, then book online — and we'll handle everything else. Enjoy more than two visits per month.
             </p>
           </div>
-
-          
 
           {/* ✅ Responsive layout:
               - Mobile/iPad: cards (always perfect)

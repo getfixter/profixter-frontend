@@ -156,9 +156,9 @@ export default function ServicesSection() {
 
   return (
     <section
-  id="services"
-  className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden"
->
+      id="services"
+      className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden"
+    >
       {/* Background glow */}
       <div
         className="hidden lg:block absolute -top-40 left-1/2 -translate-x-1/2 w-[1460px] h-[1460px] rounded-full z-0"
@@ -180,7 +180,7 @@ export default function ServicesSection() {
               </h2>
 
               <p className="text-[#c5cbd8] text-base sm:text-lg font-medium mt-3">
-                Simple answers before you book.
+                Simple answers about your unlimited handyman service before you book.
               </p>
 
               <div className="mt-6 flex justify-center">
@@ -219,6 +219,16 @@ export default function ServicesSection() {
               ))}
             </div>
 
+            {/* CTA: encourage users to view plans */}
+            <div className="mt-8 text-center">
+              <a
+                href="#plans"
+                className="inline-flex px-6 py-3 bg-[#306EEC] text-white rounded-[14px] font-extrabold text-sm sm:text-base hover:bg-[#2558c9] transition"
+              >
+                See Plans
+              </a>
+            </div>
+
             <div className="lg:hidden mt-6 text-center">
               <p className="text-[#C5CBD8] text-sm">
                 Tap a card to expand the answer.
@@ -235,7 +245,7 @@ export default function ServicesSection() {
             Thank you - we received your request.
           </p>
           <p className="text-sm text-[#C5CBD8] font-montserrat mt-1 leading-[140%]">
-            We’ll contact you shortly from{" "}
+            We’ll contact you shortly from{' '}
             <span className="text-white font-semibold">631-599-1363</span>.
           </p>
         </div>

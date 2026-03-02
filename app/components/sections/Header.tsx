@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
 
+// Navigation items for the header.  Keeping the same anchors for familiarity.
 const NAV = [
   { href: "#how-it-works", label: "How it works" },
   { href: "#plans", label: "Plans" },
@@ -143,15 +144,17 @@ export default function Header() {
               </div>
 
               <div>
+                {/* Updated copy to emphasize unlimited visits and 30% discount */}
                 <p className="text-white font-extrabold text-sm sm:text-base leading-tight">
-                  Get <span className="text-[#86EFAC]">30% OFF</span> your first month with code{" "}
-                  <span className="text-[#86EFAC] font-extrabold">SPRING</span>{" "}
-                  <span className="hidden sm:inline text-white/70 font-semibold">• Monthly plans only</span>
+                  Unlimited handyman visits (2+ per month) for Long Island homes.
+                  <span className="ml-1 text-[#86EFAC] font-extrabold">30% OFF</span> your first month with code
+                  <span className="ml-1 text-[#86EFAC] font-extrabold">SPRING</span>
+                  <span className="hidden sm:inline text-white/70 font-semibold"> • Monthly plans only</span>
                 </p>
 
                 {promoActive && promoLeft ? (
                   <p className="mt-1 text-white/70 text-[12px] sm:text-[13px] font-semibold">
-                    Ends in{" "}
+                    Ends in {" "}
                     <span className="text-[#86EFAC] font-extrabold">
                       {promoLeft.days}d {String(promoLeft.hours).padStart(2, "0")}:
                       {String(promoLeft.minutes).padStart(2, "0")}:{String(promoLeft.seconds).padStart(2, "0")}
@@ -159,8 +162,11 @@ export default function Header() {
                   </p>
                 ) : null}
 
-                {/* sale points */}
+                {/* Sale points emphasising unlimited visits */}
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] sm:text-[13px] text-white/75">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="text-[#86EFAC]">✓</span> Unlimited visits (2+ per month)
+                  </span>
                   <span className="inline-flex items-center gap-1.5">
                     <span className="text-[#86EFAC]">✓</span> Cancel anytime
                   </span>
@@ -171,10 +177,7 @@ export default function Header() {
                     <span className="text-[#86EFAC]">✓</span> Local Long Island pros
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="text-[#86EFAC]">✓</span> Personal Handyman
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="text-[#86EFAC]">✓</span> Mr. Fixter - Your Home’s Best Friend
+                    <span className="text-[#86EFAC]">✓</span> Personal handyman
                   </span>
                 </div>
               </div>
@@ -192,10 +195,10 @@ export default function Header() {
 
               <button
                 type="button"
-                onClick={() => scrollToHash("#plans")}
+                onClick={() => scrollToHash("#pick-day")}
                 className="shrink-0 px-4 sm:px-5 py-2.5 rounded-xl bg-[#86EFAC] text-[#0B1220] font-extrabold text-sm sm:text-base hover:opacity-90 transition active:scale-[0.99]"
               >
-                View Plans
+                Start First Visit
               </button>
             </div>
           </div>
@@ -325,14 +328,14 @@ export default function Header() {
 
       {/* Mobile Menu Overlay */}
       <div
-  className={`lg:hidden fixed inset-0 z-[65] bg-white transition-all duration-300 overflow-y-auto
+        className={`lg:hidden fixed inset-0 z-[65] bg-white transition-all duration-300 overflow-y-auto
     pt-[env(safe-area-inset-top)]
     pb-[calc(env(safe-area-inset-bottom)+120px)]
     ${isMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"}`}
-  role="dialog"
-  aria-modal="true"
-  aria-label="Mobile navigation"
->
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile navigation"
+      >
         {/* Close Button (always visible) */}
         <button
           onClick={() => setIsMenuOpen(false)}
@@ -352,12 +355,12 @@ export default function Header() {
         {/* Content */}
         <div className="relative z-[75]">
           <nav
-  className={[
-    "flex flex-col items-center justify-start",
-    "min-h-[100svh]",
-    "gap-7 px-8 pt-24 pb-10",
-  ].join(" ")}
->
+            className={[
+              "flex flex-col items-center justify-start",
+              "min-h-[100svh]",
+              "gap-7 px-8 pt-24 pb-10",
+            ].join(" ")}
+          >
             {NAV.map((item) =>
               item.href.startsWith("#") ? (
                 <button
@@ -383,12 +386,12 @@ export default function Header() {
               )
             )}
 
-            {/* promo inside mobile menu too */}
+            {/* Promo inside mobile menu too */}
             <button
               type="button"
               onClick={() => {
                 setIsMenuOpen(false);
-                requestAnimationFrame(() => scrollToHash("#plans"));
+                requestAnimationFrame(() => scrollToHash("#pick-day"));
               }}
               className="w-full max-w-xs rounded-[16px] border border-[#86EFAC]/25 bg-[#0B1220]/90 text-white px-4 py-3 text-left"
             >
@@ -398,18 +401,17 @@ export default function Header() {
                 </div>
                 <div>
                   <p className="font-extrabold text-base leading-tight">
-                    Get <span className="text-[#86EFAC]">30% OFF</span> First Month
+                    Unlimited visits (2+ per month)
                   </p>
                   <p className="text-white/75 text-sm mt-1">
-                    Use code SPRING • Monthly plans only • Cancel anytime
+                    30% off first month • Use code SPRING • Monthly plans only
                   </p>
 
                   {promoActive && promoLeft ? (
                     <p className="text-white/70 text-[12px] mt-1 font-semibold">
-                      Ends in{" "}
+                      Ends in {" "}
                       <span className="text-[#86EFAC] font-extrabold">
-                        {promoLeft.days}d {String(promoLeft.hours).padStart(2, "0")}:
-                        {String(promoLeft.minutes).padStart(2, "0")}:{String(promoLeft.seconds).padStart(2, "0")}
+                        {promoLeft.days}d {String(promoLeft.hours).padStart(2, "0")}: {String(promoLeft.minutes).padStart(2, "0")}: {String(promoLeft.seconds).padStart(2, "0")}
                       </span>
                     </p>
                   ) : null}

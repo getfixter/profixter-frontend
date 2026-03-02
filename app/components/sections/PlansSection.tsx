@@ -29,16 +29,15 @@ function toNumberPrice(v: any): number {
 }
 
 function formatMoney(n: number): string {
-  // your prices look like whole dollars; keep it clean
   const rounded = Math.round(n);
   return String(rounded);
 }
 
 export default function PlansSection() {
   const [currentSlide, setCurrentSlide] = useState(() => {
-  const i = plans.findIndex((p) => p.name === "Plus");
-  return i >= 0 ? i : 0;
-});
+    const i = plans.findIndex((p) => p.name === "Plus");
+    return i >= 0 ? i : 0;
+  });
   const [billing, setBilling] = useState<BillingCycle>("monthly");
 
   const { user, isAuthenticated, token } = useAuth();
@@ -57,7 +56,6 @@ export default function PlansSection() {
     [addresses, selectedAddressId]
   );
 
-  // per-address active status cache
   const [addrActiveMap, setAddrActiveMap] = useState<Record<string, boolean>>({});
   const [checkingAddr, setCheckingAddr] = useState(false);
 
@@ -71,9 +69,12 @@ export default function PlansSection() {
     if (!token) return;
     setCheckingAddr(true);
     try {
-      const res = await fetch(`https://api.profixter.com/api/subscriptions/check/address/${addressId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `https://api.profixter.com/api/subscriptions/check/address/${addressId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       const data = await res.json();
       const active = !!data?.active;
       setAddrActiveMap((m) => ({ ...m, [addressId]: active }));
@@ -91,15 +92,22 @@ export default function PlansSection() {
         checkAddressActive(selectedAddressId);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, selectedAddressId]);
 
-  const startCheckout = async (plan: PlanType, addressId: string, email: string, cycle: BillingCycle) => {
-    const res = await fetch("https://api.profixter.com/api/stripe/checkout/create-checkout-session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan, addressId, email, billingCycle: cycle }),
-    });
+  const startCheckout = async (
+    plan: PlanType,
+    addressId: string,
+    email: string,
+    cycle: BillingCycle
+  ) => {
+    const res = await fetch(
+      "https://api.profixter.com/api/stripe/checkout/create-checkout-session",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan, addressId, email, billingCycle: cycle }),
+      }
+    );
 
     const data = await res.json();
 
@@ -188,80 +196,73 @@ export default function PlansSection() {
 
   const disabledForAddress = isAuthenticated && !!selectedAddressId && addressIsActive;
 
-  // ---------- Pricing helpers ----------
   const getMonthly = (plan: Plan) => toNumberPrice(plan.price);
-const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
+  const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
 
   const BillingToggle = ({ compact }: { compact?: boolean }) => (
     <div className={`${compact ? "mt-6" : "mt-8"} w-full`}>
       <div className={`${compact ? "mx-auto max-w-[520px]" : ""}`}>
         <div className="bg-white/10 border border-white/15 rounded-2xl px-3 py-3 sm:px-4 sm:py-4 backdrop-blur-md shadow-[0_10px_60px_rgba(0,0,0,0.20)]">
-<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex flex-col">
               <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
                 {billing === "annual" ? "Annual Plan" : "Monthly Plan"}
               </p>
               <p className="text-[#C5CBD8] text-xs sm:text-sm leading-snug mt-1">
-  {billing === "annual" ? (
-    <>
-      Pay for <span className="text-white font-semibold">11 months</span>, get{" "}
-      <span className="text-white font-semibold">12</span>
-    </>
-  ) : (
-    <>
-      Use code <span className="text-white font-semibold">SPRING</span> - 30% off your first month
-    </>
-  )}
-</p>
+                {billing === "annual" ? (
+                  <>
+                    Pay for <span className="text-white font-semibold">11 months</span>, get{' '}
+                    <span className="text-white font-semibold">12</span> (unlimited visits)
+                  </>
+                ) : (
+                  <>
+                    Use code <span className="text-white font-semibold">SPRING</span> – 30% off your first month; unlimited visits (2+ per month)
+                  </>
+                )}
+              </p>
             </div>
 
-{/* switch */}
-<div className="grid grid-cols-[72px_auto_72px] items-center gap-3 shrink-0">
-  <span
-    className={`text-sm font-semibold text-right whitespace-nowrap ${
-      billing === "monthly" ? "text-white" : "text-white/60"
-    }`}
-  >
-    Monthly
-  </span>
+            {/* switch */}
+            <div className="grid grid-cols-[72px_auto_72px] items-center gap-3 shrink-0">
+              <span
+                className={`text-sm font-semibold text-right whitespace-nowrap ${
+                  billing === "monthly" ? "text-white" : "text-white/60"
+                }`}
+              >
+                Monthly
+              </span>
 
-  <button
-    type="button"
-    onClick={() => setBilling((b) => (b === "monthly" ? "annual" : "monthly"))}
-    aria-label="Toggle billing cycle"
-    className={`relative w-[70px] h-[38px] rounded-full border transition-colors duration-300 ${
-      billing === "annual"
-        ? "bg-[#306EEC] border-[#306EEC]/60"
-        : "bg-white/15 border-white/20"
-    }`}
-  >
-    <span
-      className={`absolute top-[4px] left-[4px] w-[30px] h-[30px] rounded-full bg-white shadow-md transition-transform duration-300 ${
-        billing === "annual" ? "translate-x-[32px]" : "translate-x-0"
-      }`}
-    />
-  </button>
+              <button
+                type="button"
+                onClick={() => setBilling((b) => (b === "monthly" ? "annual" : "monthly"))}
+                aria-label="Toggle billing cycle"
+                className={`relative w-[70px] h-[38px] rounded-full border transition-colors duration-300 ${
+                  billing === "annual"
+                    ? "bg-[#306EEC] border-[#306EEC]/60"
+                    : "bg-white/15 border-white/20"
+                }`}
+              >
+                <span
+                  className={`absolute top-[4px] left-[4px] w-[30px] h-[30px] rounded-full bg-white shadow-md transition-transform duration-300 ${
+                    billing === "annual" ? "translate-x-[32px]" : "translate-x-0"
+                  }`}
+                />
+              </button>
 
-  <span
-    className={`text-sm font-semibold text-left whitespace-nowrap ${
-      billing === "annual" ? "text-white" : "text-white/60"
-    }`}
-  >
-    Annually
-  </span>
-</div>
-
-
-
+              <span
+                className={`text-sm font-semibold text-left whitespace-nowrap ${
+                  billing === "annual" ? "text-white" : "text-white/60"
+                }`}
+              >
+                Annually
+              </span>
+            </div>
           </div>
 
           {/* little promo badge */}
-<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2">
-              
-              <span className="hidden sm:inline text-[#C5CBD8] text-xs">
-                Cancel anytime • No contracts
-              </span>
+              {/* Left intentionally blank */}
             </div>
             <span className="sm:hidden text-[#C5CBD8] text-[11px]">Cancel anytime</span>
           </div>
@@ -324,36 +325,34 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
   const HeaderBlock = ({ compact }: { compact?: boolean }) => (
     <div className={`${compact ? "lg:hidden" : "hidden lg:block"} w-full`}>
       <div className={`${compact ? "text-center" : ""} mb-8 sm:mb-12`}>
-        <div className={`mb-6 ${compact ? "flex justify-center" : ""}`}>
+        <div className={`mb-6 ${compact ? "flex justify-center" : ""}`}> 
           <Image src="/images/logo.svg" alt="Profixter" width={80} height={32} />
         </div>
 
         <h2
-          className={`${
-            compact ? "text-5xl sm:text-6xl" : "text-[64px]"
-          } font-bold leading-[89%] mb-8 uppercase tracking-[-0.05em] flex flex-col gap-0`}
+          className={`$${compact ? "text-5xl sm:text-6xl" : "text-[64px]"} font-bold leading-[89%] mb-8 uppercase tracking-[-0.05em] flex flex-col gap-0`}
         >
           <span className="text-white">Choose</span>
-          <span className="text-[#306EEC] -mt-2">Your</span>
+          <span className="text-[#306EEC] -mt-2">Your Unlimited</span>
           <span className="text-white -mt-2">Plan</span>
         </h2>
 
         <div className="mb-6">
-  <p className="text-white text-2xl sm:text-3xl font-normal leading-tight mb-2">
-    Code <span className="text-white font-extrabold">SPRING</span>
-  </p>
-  <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed">
-    <span className="text-white font-semibold">30% off your first month</span> on monthly plans.
-    <br />
-    Mr.Fixter - Your Home’s Best Friend.
-  </p>
-</div>
+          <p className="text-white text-2xl sm:text-3xl font-normal leading-tight mb-2">
+            Code <span className="text-white font-extrabold">SPRING</span>
+          </p>
+          <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed">
+            <span className="text-white font-semibold">30% off your first month</span> on monthly plans & unlimited visits (2+ per month).
+            <br />
+            Cancel anytime, no contracts.
+          </p>
+        </div>
 
         {!compact && (
           <p className="text-[#C5CBD8] text-base leading-[19px]">
             Materials at cost. Only if needed,
             <br />
-            with your approval - no markups.
+            with your approval – no markups.
           </p>
         )}
 
@@ -364,33 +363,32 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
   );
 
   return (
-<section
-  id="plans"
-  className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden scroll-mt-[140px]"
->
-        {/* 🔥 Annual promo banner */}
-<div className="mx-auto max-w-[1240px] px-5 lg:px-5 mb-6">
-  <div className="bg-[#86EFAC]/15 border border-[#86EFAC]/30 rounded-2xl p-3 sm:p-4 backdrop-blur-md shadow-[0_10px_40px_rgba(0,0,0,0.25)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-    <div className="flex items-center gap-3">
-      <div className="w-9 h-9 rounded-full bg-[#86EFAC]/25 flex items-center justify-center">
-        <span className="text-[#1F7A2E] text-lg">🎁</span>
-      </div>
-      <div>
-        <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
-  Annual Plan - Pay 11 months, Get 12
-</p>
-<p className="text-[#C5CBD8] text-sm">
-  Or use code <span className="text-white font-semibold">SPRING</span> for 30% off your first month (monthly plans)
-</p>
-      </div>
-    </div>
+    <section
+      id="plans"
+      className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden scroll-mt-[140px]"
+    >
+      {/* 🔥 Annual promo banner */}
+      <div className="mx-auto max-w-[1240px] px-5 lg:px-5 mb-6">
+        <div className="bg-[#86EFAC]/15 border border-[#86EFAC]/30 rounded-2xl p-3 sm:p-4 backdrop-blur-md shadow-[0_10px_40px_rgba(0,0,0,0.25)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#86EFAC]/25 flex items-center justify-center">
+              <span className="text-[#1F7A2E] text-lg">🎁</span>
+            </div>
+            <div>
+              <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
+                Annual Plan – Pay for 11 months, get 12 months of unlimited visits
+              </p>
+              <p className="text-[#C5CBD8] text-sm">
+                Or use code <span className="text-white font-semibold">SPRING</span> for 30% off your first month (monthly plans)
+              </p>
+            </div>
+          </div>
 
-    <div className="text-[#86EFAC] font-extrabold text-sm sm:text-base">
-  Pay 11 months • Get 12
-</div>
-
-  </div>
-</div>
+          <div className="text-[#86EFAC] font-extrabold text-sm sm:text-base">
+            Pay 11 months • Get 12 (unlimited visits)
+          </div>
+        </div>
+      </div>
 
       <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-[#306EEC]/10 blur-[120px]" />
 
@@ -437,8 +435,6 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
                   {plans.map((plan, idx) => {
                     const monthly = getMonthly(plan);
                     const annual = getAnnual(plan);
-                    const saving = Math.max(0, Math.round(monthly)); // 1 month free
-
                     const showPrice = billing === "annual" ? annual : monthly;
                     const big = formatMoney(showPrice);
 
@@ -447,14 +443,14 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
                         <div className="mx-auto max-w-[440px]">
                           <div className="bg-[#EEF2FF] rounded-[26px] border border-[#C5CBD8] p-6 sm:p-8 flex flex-col shadow-[0_20px_80px_rgba(0,0,0,0.35)] transform transition duration-300 hover:-translate-y-1">
                             {plan.badge && (
-  <div className="mb-3 flex justify-center">
-    <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-white/70 shadow">
-      <span className="text-[13px] font-extrabold text-white">
-        {plan.badge}
-      </span>
-    </div>
-  </div>
-)}
+                              <div className="mb-3 flex justify-center">
+                                <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-white/70 shadow">
+                                  <span className="text-[13px] font-extrabold text-white">
+                                    {plan.badge}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                             <div className="text-center mb-4 sm:mb-5">
                               <h3 className="text-2xl sm:text-3xl font-extrabold text-[#313234] leading-tight mb-2">
                                 {plan.name}
@@ -487,7 +483,7 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
 
                               {billing === "annual" && (
                                 <div className="mt-2 text-sm sm:text-base text-[#6A6D71]">
-                                  Equivalent to{" "}
+                                  Equivalent to{' '}
                                   <span className="font-extrabold text-[#313234]">
                                     ${formatMoney(annual / 12)}
                                   </span>
@@ -540,7 +536,7 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
                             </button>
 
                             <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
-                              Cancel anytime • No contracts
+                              Unlimited visits • Cancel anytime • No contracts
                             </div>
                           </div>
                         </div>
@@ -589,47 +585,46 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
               <p className="text-[#C5CBD8] text-sm sm:text-base leading-relaxed text-center mt-6 px-4">
                 Materials at cost. Only if needed,
                 <br />
-                with your approval - no markups.
+                with your approval – no markups.
               </p>
             </div>
 
             {/* Desktop layout */}
             <div className="hidden lg:block">
-<div className="relative pb-44">
-  {/* pb-16 guarantees room for controls below cards */}
-  <div className="flex items-end gap-6">
+              <div className="relative pb-44">
+                {/* pb-16 guarantees room for controls below cards */}
+                <div className="flex items-end gap-6">
                   {/* Main card */}
                   <div className="relative w-[420px] min-h-[560px] bg-[#EEF2FF] rounded-[22px] border border-[#C5CBD8] shadow-[0_20px_90px_rgba(0,0,0,0.35)] flex-shrink-0 overflow-hidden">
                     {plans[currentSlide].badge && (
-  <div className="absolute top-4 left-4 z-10">
-    <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-[#EEF2FF]/70 shadow-lg">
-      <span className="text-[14px] font-extrabold text-[#EEF2FF]">
-        {plans[currentSlide].badge}
-      </span>
-    </div>
-  </div>
-)}
+                      <div className="absolute top-4 left-4 z-10">
+                        <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-[#EEF2FF]/70 shadow-lg">
+                          <span className="text-[14px] font-extrabold text-[#EEF2FF]">
+                            {plans[currentSlide].badge}
+                          </span>
+                        </div>
+                      </div>
+                    )}
 
                     {billing === "annual" && (
                       <div className="absolute top-4 right-4 z-10">
                         <div className="bg-[#86EFAC]/20 border border-[#43A047]/25 px-3 py-2 rounded-xl shadow-lg">
                           <div className="text-[#1F7A2E] font-extrabold text-[12px] leading-tight">
-  1 month FREE
-</div>
-<div className="text-[#313234] font-bold text-[12px] leading-tight">
-  Pay for 11, get 12
-</div>
-
+                            1 month FREE
+                          </div>
+                          <div className="text-[#313234] font-bold text-[12px] leading-tight">
+                            Pay for 11, get 12
+                          </div>
                         </div>
                       </div>
                     )}
 
                     <div
-  className={[
-    "p-8 flex flex-col h-full",
-    plans[currentSlide].badge ? "pt-14" : ""
-  ].join(" ")}
->
+                      className={[
+                        "p-8 flex flex-col h-full",
+                        plans[currentSlide].badge ? "pt-14" : "",
+                      ].join(" ")}
+                    >
                       <div className="text-center mb-8">
                         <h3 className="text-3xl font-extrabold text-[#313234] mb-2">{plans[currentSlide].name}</h3>
                         <p className="text-base text-[#6A6D71] leading-relaxed">{plans[currentSlide].description}</p>
@@ -640,7 +635,6 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
                         const plan = plans[currentSlide];
                         const monthly = getMonthly(plan);
                         const annual = getAnnual(plan);
-                        const saving = Math.max(0, Math.round(monthly));
                         const show = billing === "annual" ? annual : monthly;
 
                         return (
@@ -655,14 +649,13 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
                             </div>
 
                             {billing === "annual" && (
-  <div className="mt-2 text-center text-sm text-[#6A6D71]">
-    Pay for <span className="font-extrabold text-[#313234]">11</span>, get{" "}
-    <span className="font-extrabold text-[#313234]">12</span> • Equivalent{" "}
-    <span className="font-extrabold text-[#313234]">${formatMoney(annual / 12)}</span>
-    /mo billed annually
-  </div>
-)}
-
+                              <div className="mt-2 text-center text-sm text-[#6A6D71]">
+                                Pay for <span className="font-extrabold text-[#313234]">11</span>, get{' '}
+                                <span className="font-extrabold text-[#313234]">12</span> • Equivalent{' '}
+                                <span className="font-extrabold text-[#313234]">${formatMoney(annual / 12)}</span>
+                                /mo billed annually
+                              </div>
+                            )}
                           </div>
                         );
                       })()}
@@ -709,7 +702,7 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
                       </button>
 
                       <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
-                        Cancel anytime • No contracts
+                        Unlimited visits • Cancel anytime • No contracts
                       </div>
                     </div>
                   </div>
@@ -732,15 +725,15 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
                           className="group relative w-[300px] min-h-[420px] flex-shrink-0 text-left"
                         >
                           <div className="absolute inset-0 bg-[#EEF2FF] rounded-[16px] border border-[#C5CBD8] p-6 shadow-[0_12px_60px_rgba(0,0,0,0.25)] transition-transform duration-300 group-hover:-translate-y-1" />
-                            {plan.badge && (
-  <div className="absolute top-3 left-3 z-20">
-    <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-3 py-1.5 rounded-lg border border-white/70 shadow">
-      <span className="text-[12px] font-extrabold text-white">
-        {plan.badge}
-      </span>
-    </div>
-  </div>
-)}
+                          {plan.badge && (
+                            <div className="absolute top-3 left-3 z-20">
+                              <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-3 py-1.5 rounded-lg border border-white/70 shadow">
+                                <span className="text-[12px] font-extrabold text-white">
+                                  {plan.badge}
+                                </span>
+                              </div>
+                            </div>
+                          )}
                           <div className="relative z-10 p-6 flex flex-col h-full">
                             <div className="text-center mb-6">
                               <h3 className="text-xl font-extrabold text-[#313234] mb-2">{plan.name}</h3>
@@ -751,29 +744,28 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
                               <div className="mb-3 flex justify-center">
                                 <div className="px-3 py-1 rounded-full bg-[#86EFAC]/20 border border-[#43A047]/25">
                                   <span className="text-[#1F7A2E] font-extrabold text-[11px]">
-1 month FREE
+                                    1 month FREE
                                   </span>
                                 </div>
                               </div>
                             )}
 
                             <div className="mb-6 text-center min-h-[86px]">
-  <div className="flex items-end gap-2 justify-center">
-    <span className="text-5xl font-extrabold text-[#313234]">
-      ${formatMoney(show)}
-    </span>
-    <span className="text-sm text-[#6A6D71] pb-1">
-      {billing === "annual" ? "/year" : "/month"}
-    </span>
-  </div>
+                              <div className="flex items-end gap-2 justify-center">
+                                <span className="text-5xl font-extrabold text-[#313234]">
+                                  ${formatMoney(show)}
+                                </span>
+                                <span className="text-sm text-[#6A6D71] pb-1">
+                                  {billing === "annual" ? "/year" : "/month"}
+                                </span>
+                              </div>
 
-  <div className="mt-2 text-[12px] text-[#6A6D71]">
-    {billing === "annual"
-      ? `${formatMoney(annual / 12)}/mo billed annually`
-      : "\u00A0"}
-  </div>
-</div>
-
+                              <div className="mt-2 text-[12px] text-[#6A6D71]">
+                                {billing === "annual"
+                                  ? `${formatMoney(annual / 12)}/mo billed annually`
+                                  : "\u00A0"}
+                              </div>
+                            </div>
 
                             {plan.subtitle && (
                               <p className="text-[15px] font-bold text-[#306EEC] mb-4 text-center">
@@ -803,12 +795,10 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
                             </div>
 
                             <div className="mt-auto pt-4">
-  <div className="w-full h-[40px] rounded-[10px] bg-[#306EEC] text-white text-[15px] font-extrabold flex items-center justify-center opacity-90 group-hover:opacity-100 transition">
-    {billing === "annual" ? "View Annual" : "View"}
-
-  </div>
-</div>
-
+                              <div className="w-full h-[40px] rounded-[10px] bg-[#306EEC] text-white text-[15px] font-extrabold flex items-center justify-center opacity-90 group-hover:opacity-100 transition">
+                                {billing === "annual" ? "View Annual" : "View"}
+                              </div>
+                            </div>
                           </div>
 
                           <div className="absolute inset-0 bg-[#313234]/15 backdrop-blur-[2px] rounded-[16px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -819,7 +809,7 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
                 </div>
 
                 {/* Desktop controls */}
-<div className="mt-16 relative z-30 flex items-center justify-center gap-4">
+                <div className="mt-16 relative z-30 flex items-center justify-center gap-4">
                   <button
                     onClick={prevSlide}
                     className="bg-white hover:bg-gray-100 text-gray-800 w-12 h-12 rounded-xl flex items-center justify-center transition-colors shadow-md border border-gray-200 active:scale-95"
@@ -837,7 +827,9 @@ const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
                         onClick={() => setCurrentSlide(idx)}
                         aria-label={`Go to plan ${idx + 1}`}
                         className={`h-2.5 rounded-full transition-all duration-300 ${
-                          idx === currentSlide ? "w-10 bg-[#306EEC]" : "w-2.5 bg-[#C5CBD8] hover:bg-[#306EEC]/50"
+                          idx === currentSlide
+                            ? "w-10 bg-[#306EEC]"
+                            : "w-2.5 bg-[#C5CBD8] hover:bg-[#306EEC]/50"
                         }`}
                       />
                     ))}

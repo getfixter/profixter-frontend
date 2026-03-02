@@ -7,6 +7,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import NeedItQuizModal from "@/app/components/NeedItQuizModal";
 import GoogleReviewsLiveMini from "@/app/components/GoogleReviewsLiveMini";
 
+// This hero section has been redesigned for clarity and conversion.
+// It clearly communicates what the service is (unlimited handyman visits),
+// highlights the local service area (Long Island), and uses a single primary call‑to‑action.
+// The copy adapts based on the user's authentication and subscription status.
+
 const GOOGLE_REVIEW_WRITE_URL =
   "https://search.google.com/local/writereview?placeid=ChIJjZtSCtd1XogR0kdxepnQJu8";
 
@@ -35,7 +40,7 @@ export default function HeroSection() {
 
   const [needItOpen, setNeedItOpen] = useState(false);
 
-  // unknown = still loading (logged-in only), sub = active subscription, none = no subscription (or no address)
+  // unknown = still loading (logged‑in only), sub = active subscription, none = no subscription (or no address)
   const [subState, setSubState] = useState<"unknown" | "sub" | "none">("unknown");
   const [plan, setPlan] = useState<string>("");
 
@@ -93,7 +98,7 @@ export default function HeroSection() {
     run();
   }, [isAuthenticated, typedUser?.defaultAddressId]);
 
-  // ✅ offset scroll so anchor never hides under sticky header/promo
+  // Offset scroll so anchor never hides under sticky header/promo
   const scrollToHash = (hash: string) => {
     const id = hash.replace("#", "");
     const el = document.getElementById(id);
@@ -127,16 +132,18 @@ export default function HeroSection() {
     else goToPlans();
   };
 
+  // Build dynamic hero copy depending on authentication and subscription state.
   const heroCopy = useMemo(() => {
-    // Logged-in but still loading status
+    // Logged‑in but still loading status
     if (isAuthenticated && subState === "unknown") {
       return {
         badge: "Checking your membership…",
-        titleA: "Mr.Fixter -",
-        titleB: "Your Home’s Best Friend.",
+        titleA: "Unlimited Handyman Service",
+        titleB: "for Long Island Homes",
         subtitle: "Loading your account…",
         cta: "Continue",
-        bottomLine: "",
+        showQuiz: false,
+        showReview: false,
       };
     }
 
@@ -144,12 +151,13 @@ export default function HeroSection() {
     if (!isAuthenticated) {
       return {
         badge: "Serving Long Island • Suffolk & Nassau",
-        titleA: "Mr.Fixter -",
-        titleB: "Your Home’s Best Friend.",
+        titleA: "Unlimited Handyman Service",
+        titleB: "for Long Island Homes",
         subtitle:
-          "Create your account to get your Gift! Then pick a plan and book your first visit in minutes.",
-        cta: "Create Account",
-        bottomLine: "",
+          "Get unlimited home repairs and maintenance — 2+ visits per month. No contracts. Cancel anytime.",
+        cta: "Start First Visit",
+        showQuiz: false,
+        showReview: false,
       };
     }
 
@@ -158,24 +166,26 @@ export default function HeroSection() {
       const name = prettyPlan(plan);
       return {
         badge: name ? `Membership active • ${name}` : "Membership active",
-        titleA: "Mr.Fixter -",
-        titleB: "Your Home’s Best Friend.",
+        titleA: "Unlimited Handyman Service",
+        titleB: "for Long Island Homes",
         subtitle:
-          "Book your next visit in seconds. For each referral you get $50 off your next payment.",
+          "Book your next visit in seconds. Enjoy unlimited visits every month.",
         cta: "Book My Next Visit",
-        bottomLine: "",
+        showQuiz: false,
+        showReview: true,
       };
     }
 
     // Logged in, but no plan
     return {
-      badge: "Special Offer for you",
-      titleA: "Mr.Fixter -",
-      titleB: "Your Home’s Best Friend.",
+      badge: "Special Offer for You",
+      titleA: "Unlimited Handyman Service",
+      titleB: "for Long Island Homes",
       subtitle:
-        "Special Offer for you - Use code SPRING for 30% off your first month (monthly plans).",
+        "Join today and enjoy 30% off your first month. Book as many visits as you need — 2+ per month included.",
       cta: "See Plans",
-      bottomLine: "",
+      showQuiz: false,
+      showReview: false,
     };
   }, [isAuthenticated, subState, plan]);
 
@@ -205,13 +215,13 @@ export default function HeroSection() {
 
             {/* Headline */}
             <h1 className="max-w-[980px] text-white font-extrabold uppercase leading-[0.95] tracking-[-0.04em]">
-              <div className="text-[44px] sm:text-[66px] lg:text-[82px]">{heroCopy.titleA}</div>
-              <div className="text-[44px] sm:text-[66px] lg:text-[82px] text-[#5E8BFF]">
+              <div className="text-[40px] sm:text-[60px] lg:text-[78px]">{heroCopy.titleA}</div>
+              <div className="text-[40px] sm:text-[60px] lg:text-[78px] text-[#5E8BFF]">
                 {heroCopy.titleB}
               </div>
             </h1>
 
-            {/* Sub */}
+            {/* Subtitle */}
             <p className="mt-6 max-w-[620px] text-[18px] sm:text-[20px] text-white/85">
               {heroCopy.subtitle}
             </p>
@@ -226,17 +236,19 @@ export default function HeroSection() {
                 {heroCopy.cta}
               </button>
 
-              {/* ✅ Make quiz button BLUE like requested */}
-              <button
-                type="button"
-                onClick={() => setNeedItOpen(true)}
-                className="h-[56px] px-8 rounded-[16px] border border-[#5E8BFF] text-white text-lg font-semibold hover:bg-[#5E8BFF]/15 transition"
-              >
-                Take 20-second quiz
-              </button>
+              {/* Quiz button: hidden by default to reduce decision fatigue */}
+              {heroCopy.showQuiz && (
+                <button
+                  type="button"
+                  onClick={() => setNeedItOpen(true)}
+                  className="h-[56px] px-8 rounded-[16px] border border-[#5E8BFF] text-white text-lg font-semibold hover:bg-[#5E8BFF]/15 transition"
+                >
+                  Take 20‑second quiz
+                </button>
+              )}
 
-              {/* ✅ Leave review button BLUE like requested (only subscribed) */}
-              {isAuthenticated && subState === "sub" && (
+              {/* Leave review button (only for active members) */}
+              {heroCopy.showReview && isAuthenticated && subState === "sub" && (
                 <a
                   href={GOOGLE_REVIEW_WRITE_URL}
                   target="_blank"
@@ -254,6 +266,7 @@ export default function HeroSection() {
         </div>
       </section>
 
+      {/* Quiz Modal */}
       <NeedItQuizModal
         open={needItOpen}
         onClose={() => setNeedItOpen(false)}

@@ -1,5 +1,12 @@
 "use client";
 
+// This footer component remains mostly unchanged but now highlights the core value
+// proposition of Profixter.  The introductory copy has been updated to
+// explicitly mention unlimited handyman visits under one subscription,
+// reinforcing the message used throughout the site.  Everything else—the
+// navigation links, contact card, and popup feedback—remains identical to
+// preserve the design and functionality.
+
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -93,8 +100,8 @@ export default function Footer() {
               </div>
 
               <p className="text-[#C5CBD8] text-sm sm:text-base leading-relaxed max-w-[560px] sm:pt-1">
-                Our goal is to make home repairs and maintenance hassle-free, so
-                you can focus on what matters most.
+                Our goal is to make home repairs and maintenance hassle‑free with
+                unlimited handyman visits under one subscription, so you can focus on what matters most.
               </p>
             </div>
           </div>

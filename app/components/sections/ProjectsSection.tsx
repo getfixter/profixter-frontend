@@ -1,5 +1,11 @@
 "use client";
 
+// This section showcases real project photos and encourages users to book a visit.
+// The updated copy lightly reminds visitors that, as members, they can book unlimited
+// handyman visits to tackle projects like these.  No functionality or layout was
+// changed — we simply updated a couple of sentences to reinforce the value of
+// membership without overwhelming the design.
+
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
@@ -19,10 +25,8 @@ const projects = [
 export default function ProjectsSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  const nextSlide = () =>
-    setCurrentSlide((prev) => (prev + 1) % projects.length);
-  const prevSlide = () =>
-    setCurrentSlide((prev) => (prev - 1 + projects.length) % projects.length);
+  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % projects.length);
+  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + projects.length) % projects.length);
 
   // Smooth auto-advance
   useEffect(() => {
@@ -34,27 +38,21 @@ export default function ProjectsSection() {
 
   // ✅ scroll to BookingSection (#pick-day)
   const goToBooking = () => {
-  const el = document.getElementById("pick-day");
-  if (!el) return;
+    const el = document.getElementById("pick-day");
+    if (!el) return;
 
-  const HEADER_OFFSET = window.innerWidth >= 1024 ? 160 : 120;
-  const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+    const HEADER_OFFSET = window.innerWidth >= 1024 ? 160 : 120;
+    const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
 
-  window.scrollTo({ top: y, behavior: "smooth" });
-  history.replaceState(null, "", "#pick-day");
-};
+    window.scrollTo({ top: y, behavior: "smooth" });
+    history.replaceState(null, "", "#pick-day");
+  };
 
   const active = projects[currentSlide];
   const next1 = projects[(currentSlide + 1) % projects.length];
   const next2 = projects[(currentSlide + 2) % projects.length];
 
-  const ArrowBtn = ({
-    dir,
-    onClick,
-  }: {
-    dir: "prev" | "next";
-    onClick: () => void;
-  }) => (
+  const ArrowBtn = ({ dir, onClick }: { dir: "prev" | "next"; onClick: () => void }) => (
     <button
       onClick={onClick}
       type="button"
@@ -63,23 +61,11 @@ export default function ProjectsSection() {
     >
       {dir === "prev" ? (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M15 18L9 12L15 6"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ) : (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M9 6L15 12L9 18"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )}
     </button>
@@ -87,9 +73,9 @@ export default function ProjectsSection() {
 
   return (
     <section
-  id="projects"
-  className="w-full bg-[#313234] py-12 sm:py-16 lg:py-20 overflow-hidden relative scroll-mt-[140px]"
->
+      id="projects"
+      className="w-full bg-[#313234] py-12 sm:py-16 lg:py-20 overflow-hidden relative scroll-mt-[140px]"
+    >
       <div className="max-w-[1240px] mx-auto px-5 sm:px-6 lg:px-5">
         {/* ================= MOBILE / TABLET ================= */}
         <div className="lg:hidden">
@@ -103,7 +89,7 @@ export default function ProjectsSection() {
             </h2>
 
             <p className="text-[#C5CBD8] text-sm sm:text-base leading-relaxed mb-6 max-w-md mx-auto">
-              Real examples of house maintenance work we do and more.
+              Real examples of house maintenance work we do and more. Members can book unlimited visits to handle projects like these.
             </p>
 
             <button
@@ -118,14 +104,7 @@ export default function ProjectsSection() {
           {/* Carousel card */}
           <div className="relative">
             <div className="relative w-full aspect-square max-w-[450px] mx-auto rounded-[20px] overflow-hidden shadow-[0_10px_80px_rgba(0,0,0,0.25)]">
-              <Image
-                src={active.image}
-                alt="Project Image"
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 92vw, 450px"
-                priority
-              />
+              <Image src={active.image} alt="Project Image" fill className="object-cover" sizes="(max-width: 768px) 92vw, 450px" priority />
               <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/25 pointer-events-none" />
             </div>
 
@@ -141,9 +120,7 @@ export default function ProjectsSection() {
                   onClick={() => setCurrentSlide(idx)}
                   className={[
                     "h-2 rounded-full transition-all duration-300",
-                    idx === currentSlide
-                      ? "w-8 bg-[#306EEC]"
-                      : "w-2 bg-[#C5CBD8] hover:bg-[#306EEC]/50",
+                    idx === currentSlide ? "w-8 bg-[#306EEC]" : "w-2 bg-[#C5CBD8] hover:bg-[#306EEC]/50",
                   ].join(" ")}
                   aria-label={`Go to slide ${idx + 1}`}
                 />
@@ -152,8 +129,7 @@ export default function ProjectsSection() {
           </div>
 
           <p className="text-[#C5CBD8] text-sm sm:text-base leading-relaxed text-center mt-8 max-w-md mx-auto">
-            Every project we take on is built on trust, skill, and attention to
-            detail.
+            Every project we take on is built on trust, skill, and attention to detail.
           </p>
         </div>
 
@@ -170,7 +146,7 @@ export default function ProjectsSection() {
             </h2>
 
             <p className="text-[#C5CBD8] text-base leading-[120%] mt-5 max-w-[320px]">
-              Real examples of house maintenance work we do and more.
+              Real examples of house maintenance work we do and more. Members can book unlimited visits to handle projects like these.
             </p>
 
             <button
@@ -182,8 +158,7 @@ export default function ProjectsSection() {
             </button>
 
             <p className="text-[#C5CBD8] text-[15px] leading-[120%] max-w-[320px] mt-10">
-              Every project we take on is built on trust, skill, and attention to
-              detail.
+              Every project we take on is built on trust, skill, and attention to detail.
             </p>
           </div>
 
@@ -194,14 +169,7 @@ export default function ProjectsSection() {
                 {/* Main column = image + arrows underneath */}
                 <div className="w-[450px] flex-shrink-0">
                   <div className="relative w-[450px] h-[450px] rounded-[20px] overflow-hidden shadow-[0_10px_80px_rgba(0,0,0,0.25)]">
-                    <Image
-                      src={active.image}
-                      alt="Project Image"
-                      fill
-                      className="object-cover"
-                      sizes="450px"
-                      priority
-                    />
+                    <Image src={active.image} alt="Project Image" fill className="object-cover" sizes="450px" priority />
                     <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/25 pointer-events-none" />
                   </div>
 
@@ -224,9 +192,7 @@ export default function ProjectsSection() {
                         onClick={() => setCurrentSlide(idx)}
                         className={[
                           "h-2 rounded-full transition-all duration-300",
-                          idx === currentSlide
-                            ? "w-8 bg-[#306EEC]"
-                            : "w-2 bg-[#C5CBD8] hover:bg-[#306EEC]/50",
+                          idx === currentSlide ? "w-8 bg-[#306EEC]" : "w-2 bg-[#C5CBD8] hover:bg-[#306EEC]/50",
                         ].join(" ")}
                         aria-label={`Go to slide ${idx + 1}`}
                       />
@@ -241,13 +207,7 @@ export default function ProjectsSection() {
                       key={p.id}
                       className="relative w-[300px] h-[300px] rounded-[12px] overflow-hidden flex-shrink-0"
                     >
-                      <Image
-                        src={p.image}
-                        alt="Project Preview"
-                        fill
-                        className="object-cover"
-                        sizes="300px"
-                      />
+                      <Image src={p.image} alt="Project Preview" fill className="object-cover" sizes="300px" />
                       <div className="absolute inset-0 bg-[#313234]/30 backdrop-blur-[3px] pointer-events-none" />
                     </div>
                   ))}

@@ -1,5 +1,14 @@
 "use client";
 
+// This component displays the service info block that explains how Profixter works
+// for both members and non‑members.  In addition to the original functionality, this
+// version makes the unlimited nature of the subscription crystal clear.  The copy
+// now calls out that plans include two or more handyman visits per month and
+// reassures users that they can book multiple visits as needed without any
+// surprise charges.  These small tweaks help differentiate Profixter from
+// traditional contractors while keeping the experience familiar for existing
+// subscribers.
+
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
@@ -52,8 +61,6 @@ export default function ServiceInfoSection() {
   const [plan, setPlan] = useState<string>("");
   const [hasAnyBookings, setHasAnyBookings] = useState<boolean | null>(null);
 
-  // ✅ Autoplay rules (mobile requires muted; and respect reduced motion)
-
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -61,8 +68,7 @@ export default function ServiceInfoSection() {
     };
   }, []);
 
-  
-
+  // Check membership state and plan when authenticated
   useEffect(() => {
     const safeSet = (fn: () => void) => {
       if (!mountedRef.current) return;
@@ -96,7 +102,9 @@ export default function ServiceInfoSection() {
 
         safeSet(() => {
           setPlan(String(nb?.plan || ""));
-          setHasAnyBookings(typeof nb?.hasAnyBookings === "boolean" ? nb.hasAnyBookings : null);
+          setHasAnyBookings(
+            typeof nb?.hasAnyBookings === "boolean" ? nb.hasAnyBookings : null
+          );
           setState(hasSub ? "sub" : "none");
         });
         return;
@@ -126,6 +134,7 @@ export default function ServiceInfoSection() {
     run();
   }, [isAuthenticated, typedUser?.defaultAddressId]);
 
+  // Build CTA copy based on membership state
   const cta = useMemo(() => {
     const isNewLoggedIn = isAuthenticated && state === "none" && hasAnyBookings === false;
     const planName = prettyPlan(plan);
@@ -133,20 +142,25 @@ export default function ServiceInfoSection() {
     if (state === "guest") {
       return {
         title: "Trusted by Long Island homeowners",
-        sub: "Most homeowners don’t need a contractor - they need a reliable pro who shows up, fixes it fast, and doesn’t overcharge. That’s Profixter.",
+        // Emphasize the unlimited nature of the subscription for visitors
+        sub:
+          "Most homeowners don’t need a contractor – they need a reliable pro who shows up, fixes it fast, and doesn’t overcharge. With Profixter you get unlimited handyman visits (two or more per month) for a simple subscription.",
         primaryLabel: "View plans",
         primaryHref: "#plans",
         secondaryLabel: "Book a visit",
         secondaryHref: "#pick-day",
-        badge: "Local • On-demand • Professional",
-        hint: "Pick a plan below - then book instantly in the calendar.",
+        badge: "Local • On‑demand • Professional",
+        // Guide users to pick an unlimited plan and book
+        hint: "Pick an unlimited plan below (2+ visits per month), then book instantly in the calendar.",
       };
     }
 
     if (state === "sub") {
       return {
-        title: `Your membership is active${planName ? ` - ${planName}` : ""}`,
-        sub: "Book your next visit in the calendar below. Upload photos so we bring the right tools and move fast.",
+        title: `Your membership is active${planName ? ` – ${planName}` : ""}`,
+        // Let members know they have unlimited visits and encourage booking
+        sub:
+          "Enjoy unlimited visits — book your next one in the calendar below. Upload photos so we bring the right tools and move fast.",
         primaryLabel: "Book next visit",
         primaryHref: "#pick-day",
         secondaryLabel: "What’s included",
@@ -156,43 +170,47 @@ export default function ServiceInfoSection() {
       };
     }
 
+    // For logged‑in users without an active plan
     return {
-      title: isNewLoggedIn ? "Welcome - pick a plan to start today" : "Pick a plan to book a visit",
-      sub: "No free first visit. Subscription is required to book - choose a plan and schedule immediately.",
+      title: isNewLoggedIn
+        ? "Welcome – pick a plan to start today"
+        : "Pick a plan to book a visit",
+      sub:
+        "No free first visit. Subscription is required to book – choose an unlimited plan (two or more visits per month) and schedule immediately.",
       primaryLabel: "View plans",
       primaryHref: "#plans",
       secondaryLabel: "What’s included",
       secondaryHref: "/included",
       badge: "Subscription required",
-      hint: "Choose a plan below, then book from the calendar.",
+      hint: "Choose a plan below (unlimited visits), then book from the calendar.",
     };
   }, [state, plan, isAuthenticated, hasAnyBookings]);
 
   const showLeaveReviewBtn = state === "sub";
 
   const youtubeSrc = useMemo(() => {
-  const base = `https://www.youtube.com/embed/${YOUTUBE_ID}`;
-  const params = new URLSearchParams({
-    rel: "0",
-    modestbranding: "1",
-    playsinline: "1",
-    controls: "1",
-    autoplay: "0",
-  });
-  return `${base}?${params.toString()}`;
-}, []);
+    const base = `https://www.youtube.com/embed/${YOUTUBE_ID}`;
+    const params = new URLSearchParams({
+      rel: "0",
+      modestbranding: "1",
+      playsinline: "1",
+      controls: "1",
+      autoplay: "0",
+    });
+    return `${base}?${params.toString()}`;
+  }, []);
 
-const scrollToHash = (hash: string) => {
-  const id = hash.replace("#", "");
-  const el = document.getElementById(id);
-  if (!el) return;
+  const scrollToHash = (hash: string) => {
+    const id = hash.replace("#", "");
+    const el = document.getElementById(id);
+    if (!el) return;
 
-  const HEADER_OFFSET = window.innerWidth >= 1024 ? 160 : 120; // same offset you used before
-  const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+    const HEADER_OFFSET = window.innerWidth >= 1024 ? 160 : 120; // same offset used in header
+    const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
 
-  window.scrollTo({ top: y, behavior: "smooth" });
-  history.replaceState(null, "", hash);
-};
+    window.scrollTo({ top: y, behavior: "smooth" });
+    history.replaceState(null, "", hash);
+  };
 
   return (
     <section
@@ -251,29 +269,29 @@ const scrollToHash = (hash: string) => {
                     <div className="text-[#313234] font-extrabold">⚡ Fast, scheduled, predictable</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
                       You pick the <span className="font-semibold text-[#313234]">day & time</span> yourself. No waiting for callbacks,
-                      no “we’ll let you know.”
+                      no “we’ll let you know” — and unlimited visits are included.
                     </div>
                   </div>
 
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
                     <div className="text-[#313234] font-extrabold">💰 No surprise invoices</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      Subscription pricing means <span className="font-semibold text-[#313234]">clear expectations</span> and no
-                      “contractor math” after the job.
+                      Subscription pricing means <span className="font-semibold text-[#313234]">clear expectations</span> and
+                      unlimited visits (two or more per month) — no “contractor math” after the job.
                     </div>
                   </div>
 
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
                     <div className="text-[#313234] font-extrabold">🛠️ Real pros, real standards</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      We show up prepared, communicate clearly, and fix things the right way - not the cheap way.
+                      We show up prepared, communicate clearly, and fix things the right way — not the cheap way.
                     </div>
                   </div>
 
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
                     <div className="text-[#313234] font-extrabold">📷 Photos = faster service</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      Upload photos when booking so we bring the right tools and plan ahead - less back-and-forth.
+                      Upload photos when booking so we bring the right tools and plan ahead — less back‑and‑forth.
                     </div>
                   </div>
                 </div>
@@ -287,23 +305,22 @@ const scrollToHash = (hash: string) => {
                           Why Profixter is different?
                         </div>
                         <div className="text-[#6A6D71] text-[12px] mt-0.5">
-  Here is <span className="font-semibold text-[#313234]">WHY</span>
-  <svg
-className="inline w-3.5 h-3.5 ml-1 text-[#306EEC] align-middle animate-pulse"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M12 6V18" />
-    <path d="M8 14L12 18L16 14" />
-  </svg>
-</div>
+                          Here is <span className="font-semibold text-[#313234]">WHY</span>
+                          <svg
+                            className="inline w-3.5 h-3.5 ml-1 text-[#306EEC] align-middle animate-pulse"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M12 6V18" />
+                            <path d="M8 14L12 18L16 14" />
+                          </svg>
+                        </div>
                       </div>
 
-                      
                     </div>
 
                     <div className="relative aspect-video bg-black">
@@ -343,7 +360,7 @@ className="inline w-3.5 h-3.5 ml-1 text-[#306EEC] align-middle animate-pulse"
                     <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
                       <div className="text-[#313234] font-extrabold text-[13px]">4) We arrive & handle it</div>
                       <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                        One job per visit, done right (up to 90 minutes).
+                        One job per visit, done right (each visit is up to 90 minutes). Book as many visits as you need.
                       </div>
                     </div>
                   </div>
@@ -353,8 +370,8 @@ className="inline w-3.5 h-3.5 ml-1 text-[#306EEC] align-middle animate-pulse"
                 <div className="mt-5 rounded-[18px] border border-[#C5CBD8] bg-white p-4 sm:p-5">
                   <div className="text-[#313234] font-extrabold">Bonus perks</div>
                   <div className="mt-2 text-[#6A6D71] text-[13px] leading-relaxed">
-                    • Refer a homeowner → get <span className="font-semibold text-[#313234]">$50 off</span> your next payment. <br />
-                    • Tips go <span className="font-semibold text-[#313234]">100%</span> to your Fixter.
+                    • Refer a homeowner → get <span className="font-semibold text-[#313234]">$50 off</span> your next payment.
+                    <br />• Tips go <span className="font-semibold text-[#313234]">100%</span> to your Fixter.
                   </div>
 
                   <div className="mt-4 flex flex-col sm:flex-row gap-3">
@@ -394,42 +411,42 @@ className="inline w-3.5 h-3.5 ml-1 text-[#306EEC] align-middle animate-pulse"
 
                   <div className="mt-5 flex flex-col gap-3">
                     {cta.primaryHref.startsWith("#") ? (
-  <button
-    type="button"
-    onClick={() => scrollToHash(cta.primaryHref)}
-    className="h-[52px] rounded-[16px] bg-[#306EEC] hover:bg-[#2558c9] transition text-white font-extrabold text-[15px] inline-flex items-center justify-center"
-  >
-    {cta.primaryLabel}
-  </button>
-) : (
-  <Link
-    href={cta.primaryHref}
-    className="h-[52px] rounded-[16px] bg-[#306EEC] hover:bg-[#2558c9] transition text-white font-extrabold text-[15px] inline-flex items-center justify-center"
-  >
-    {cta.primaryLabel}
-  </Link>
-)}
+                      <button
+                        type="button"
+                        onClick={() => scrollToHash(cta.primaryHref)}
+                        className="h-[52px] rounded-[16px] bg-[#306EEC] hover:bg-[#2558c9] transition text-white font-extrabold text-[15px] inline-flex items-center justify-center"
+                      >
+                        {cta.primaryLabel}
+                      </button>
+                    ) : (
+                      <Link
+                        href={cta.primaryHref}
+                        className="h-[52px] rounded-[16px] bg-[#306EEC] hover:bg-[#2558c9] transition text-white font-extrabold text-[15px] inline-flex items-center justify-center"
+                      >
+                        {cta.primaryLabel}
+                      </Link>
+                    )}
 
                     {cta.secondaryHref.startsWith("#") ? (
-  <button
-    type="button"
-    onClick={() => scrollToHash(cta.secondaryHref)}
-    className="h-[52px] rounded-[16px] border border-[#C5CBD8] bg-[#EEF2FF] hover:bg-white transition text-[#313234] font-extrabold text-[15px] inline-flex items-center justify-center"
-  >
-    {cta.secondaryLabel}
-  </button>
-) : (
-  <Link
-    href={cta.secondaryHref}
-    className="h-[52px] rounded-[16px] border border-[#C5CBD8] bg-[#EEF2FF] hover:bg-white transition text-[#313234] font-extrabold text-[15px] inline-flex items-center justify-center"
-  >
-    {cta.secondaryLabel}
-  </Link>
-)}
+                      <button
+                        type="button"
+                        onClick={() => scrollToHash(cta.secondaryHref)}
+                        className="h-[52px] rounded-[16px] border border-[#C5CBD8] bg-[#EEF2FF] hover:bg-white transition text-[#313234] font-extrabold text-[15px] inline-flex items-center justify-center"
+                      >
+                        {cta.secondaryLabel}
+                      </button>
+                    ) : (
+                      <Link
+                        href={cta.secondaryHref}
+                        className="h-[52px] rounded-[16px] border border-[#C5CBD8] bg-[#EEF2FF] hover:bg-white transition text-[#313234] font-extrabold text-[15px] inline-flex items-center justify-center"
+                      >
+                        {cta.secondaryLabel}
+                      </Link>
+                    )}
                   </div>
 
                   <div className="mt-5 text-[12px] text-[#6A6D71]">
-                    See details on{" "}
+                    See details on{' '}
                     <Link href="/included" className="text-[#306EEC] font-extrabold hover:underline">
                       What’s included
                     </Link>
@@ -440,8 +457,8 @@ className="inline w-3.5 h-3.5 ml-1 text-[#306EEC] align-middle animate-pulse"
                 <div className="mt-4 rounded-[18px] border border-[#E6E8EF] bg-[#F6F7FB] p-5">
                   <div className="text-[#313234] font-extrabold">Fast & respectful service</div>
                   <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                    If a prior job runs long, we’ll still arrive and do it right. We’re not a marketplace - we’re a real local
-                    service with standards.
+                    If a prior job runs long, we’ll still arrive and do it right. We’re not a marketplace — we’re a real local service
+                    with standards.
                   </div>
                 </div>
               </div>
@@ -450,7 +467,9 @@ className="inline w-3.5 h-3.5 ml-1 text-[#306EEC] align-middle animate-pulse"
 
           {/* Bottom hint */}
           <div className="px-5 sm:px-7 py-4 border-t border-[#c5cbd8] bg-white/60">
-            <div className="text-[13px] text-[#6A6D71]">↓ Next: scroll down to plans & the booking calendar.</div>
+            <div className="text-[13px] text-[#6A6D71]">
+              ↓ Next: scroll down to plans & the booking calendar.
+            </div>
           </div>
         </div>
       </div>
