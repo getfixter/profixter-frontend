@@ -224,7 +224,7 @@ export default function BookingsTable({
           ? `https://www.google.com/maps/dir/${confirmedAddresses.map((addr) => encodeURIComponent(addr)).join('/')}`
           : null;
         return (
-        <div key={day} className="space-y-3 md:space-y-4">
+  <div key={day} className="space-y-3 md:space-y-4">
           {/* Day Header */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg md:rounded-xl px-4 md:px-6 py-3 md:py-4 shadow-lg">
             <div className="flex items-center justify-between gap-2">
@@ -487,13 +487,13 @@ export default function BookingsTable({
                       </div>
                     )}
                   </div>
-                </div>
-              );
-            });
+                </div>          
+               );
+            })}
           </div>
         </div>
-        );
-      });
-    </div>
-  );
+      );
+    })}
+  </div>
+);
 }
