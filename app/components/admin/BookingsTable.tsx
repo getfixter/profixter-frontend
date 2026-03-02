@@ -220,9 +220,31 @@ export default function BookingsTable({
         // Build a Google Maps multi-stop directions URL.  When there's one address it will still
         // navigate to that address from the user's current location.  We only create the URL
         // when at least one confirmed booking exists for the day.
-        const mapsUrl = confirmedAddresses.length > 0
-          ? `https://www.google.com/maps/dir/${confirmedAddresses.map((addr) => encodeURIComponent(addr)).join('/')}`
-          : null;
+        const mapsUrl =
+  confirmedAddresses.length > 0
+    ? (() => {
+        const stops = confirmedAddresses.map((a) => a.trim()).filter(Boolean);
+
+        // destination must be the LAST stop
+        const destination = stops[stops.length - 1];
+
+        // waypoints are everything BEFORE destination
+        const waypoints = stops.slice(0, -1);
+
+        const params = new URLSearchParams({
+          api: "1",
+          origin: "My Location",
+          destination,
+        });
+
+        if (waypoints.length) {
+          // waypoints must be pipe-separated
+          params.set("waypoints", waypoints.join("|"));
+        }
+
+        return `https://www.google.com/maps/dir/?${params.toString()}`;
+      })()
+    : null;
         return (
   <div key={day} className="space-y-3 md:space-y-4">
           {/* Day Header */}
