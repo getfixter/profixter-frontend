@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import type { User } from '@/lib/admin-service';
 
 interface UsersTableProps {
@@ -18,25 +18,54 @@ export default function UsersTable({
   onBlacklist,
   onUnblacklist,
 }: UsersTableProps) {
-  // Flatten: one row per address
-  const rows: Array<{ user: User; address: any }> = [];
-  users.forEach((u) => {
-    const addresses = u.addressesDetailed || [];
-    if (addresses.length > 0) {
-      addresses.forEach((a) => rows.push({ user: u, address: a }));
-    } else {
-      rows.push({ user: u, address: null });
-    }
-  });
+  const [search, setSearch] = useState('');
 
-  // Sort by user creation date descending for easier review. Users with no
-  // createdAt will be placed at the bottom. This makes the most recent
-  // signups appear first.
-  rows.sort((a, b) => {
-    const ta = a.user.createdAt ? new Date(a.user.createdAt).getTime() : 0;
-    const tb = b.user.createdAt ? new Date(b.user.createdAt).getTime() : 0;
-    return tb - ta;
-  });
+  const getAddressText = (address: any) =>
+    address
+      ? `${address.line1 || ''}, ${address.city || ''}, ${address.state || ''} ${address.zip || ''}`.trim()
+      : 'No address';
+
+  const rows = useMemo(() => {
+    // Flatten: one row per address
+    const flattened: Array<{ user: User; address: any }> = [];
+    users.forEach((u) => {
+      const addresses = u.addressesDetailed || [];
+      if (addresses.length > 0) {
+        addresses.forEach((a) => flattened.push({ user: u, address: a }));
+      } else {
+        flattened.push({ user: u, address: null });
+      }
+    });
+
+    // Sort by user creation date descending for easier review. Users with no
+    // createdAt will be placed at the bottom. This makes the most recent
+    // signups appear first.
+    flattened.sort((a, b) => {
+      const ta = a.user.createdAt ? new Date(a.user.createdAt).getTime() : 0;
+      const tb = b.user.createdAt ? new Date(b.user.createdAt).getTime() : 0;
+      return tb - ta;
+    });
+
+    return flattened;
+  }, [users]);
+
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+
+    return rows.filter(({ user, address }) => {
+      const addressText = getAddressText(address);
+      return [
+        user.userId,
+        user.name,
+        user.email,
+        user.phone,
+        addressText,
+      ]
+        .map((v) => String(v || '').toLowerCase())
+        .some((v) => v.includes(q));
+    });
+  }, [rows, search]);
 
   // Generate and download a CSV of the current rows. Only the currently
   // visible data is exported (flattened per address). All text values are
@@ -52,10 +81,8 @@ export default function UsersTable({
       'Created',
       'Blacklisted',
     ];
-    const data = rows.map(({ user, address }) => {
-      const addressText = address
-        ? `${address.line1}, ${address.city}, ${address.state} ${address.zip}`
-        : 'No address';
+    const data = filteredRows.map(({ user, address }) => {
+      const addressText = getAddressText(address);
       const planValue = address?.plan ? String(address.plan).toLowerCase() : 'cancel';
       const created = user.createdAt
         ? new Date(user.createdAt).toLocaleString()
@@ -95,9 +122,32 @@ export default function UsersTable({
 
   return (
     <>
-      {/* Export button */}
-      {rows.length > 0 && (
-        <div className="flex justify-end mb-3">
+      {/* Search + Export */}
+      <div className="mb-3 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-md">
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by ID, Name, Email, Phone, Address..."
+            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        {filteredRows.length > 0 && (
           <button
             type="button"
             onClick={exportCSV}
@@ -105,9 +155,10 @@ export default function UsersTable({
           >
             Export CSV
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
+      {/* Export button */}
       {/* Desktop Table */}
       <div className="hidden lg:block bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
         <div className="overflow-x-auto">
@@ -127,11 +178,9 @@ export default function UsersTable({
 </thead>
 
         <tbody>
-          {rows.map(({ user, address }) => {
+          {filteredRows.map(({ user, address }) => {
             const isBL = blacklistIds.has(user._id);
-            const addressText = address
-              ? `${address.line1}, ${address.city}, ${address.state} ${address.zip}`
-              : 'No address';
+            const addressText = getAddressText(address);
 const planValue = address?.plan ? String(address.plan).toLowerCase() : "cancel";
 
             return (
@@ -242,11 +291,9 @@ const planValue = address?.plan ? String(address.plan).toLowerCase() : "cancel";
 
       {/* Mobile Cards */}
       <div className="lg:hidden space-y-3">
-        {rows.map(({ user, address }) => {
+        {filteredRows.map(({ user, address }) => {
           const isBL = blacklistIds.has(user._id);
-          const addressText = address
-            ? `${address.line1}, ${address.city}, ${address.state} ${address.zip}`
-            : 'No address';
+          const addressText = getAddressText(address);
           const planValue = address?.plan ? String(address.plan).toLowerCase() : "cancel";
 
           return (
