@@ -208,11 +208,26 @@ export default function BookingsTable({
           </button>
         </div>
       )}
-      {dayKeys.map((day) => (
+      {dayKeys.map((day) => {
+        // Collect confirmed booking addresses for this day to generate a multi-stop Google Maps route.
+        const confirmedAddresses = (groups[day] || [])
+          .filter((booking) => booking.status && String(booking.status).toLowerCase() === 'confirmed')
+          .map((booking) => {
+            const addr = formatAddress(booking.address, booking.city, booking.state, booking.zip);
+            return addr;
+          })
+          .filter((addr) => !!addr);
+        // Build a Google Maps multi-stop directions URL.  When there's one address it will still
+        // navigate to that address from the user's current location.  We only create the URL
+        // when at least one confirmed booking exists for the day.
+        const mapsUrl = confirmedAddresses.length > 0
+          ? `https://www.google.com/maps/dir/${confirmedAddresses.map((addr) => encodeURIComponent(addr)).join('/')}`
+          : null;
+        return (
         <div key={day} className="space-y-3 md:space-y-4">
           {/* Day Header */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg md:rounded-xl px-4 md:px-6 py-3 md:py-4 shadow-lg">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 md:gap-3">
                 <div className="bg-white/20 p-1.5 md:p-2 rounded-lg">
                   <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -233,6 +248,16 @@ export default function BookingsTable({
                   </p>
                 </div>
               </div>
+              {mapsUrl && (
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 md:px-4 md:py-2 bg-white text-blue-600 border border-blue-200 rounded-lg text-xs md:text-sm font-semibold hover:bg-blue-50 transition-colors"
+                >
+                  🗺️ Route
+                </a>
+              )}
             </div>
           </div>
 
@@ -464,10 +489,11 @@ export default function BookingsTable({
                   </div>
                 </div>
               );
-            })}
+            });
           </div>
         </div>
-      ))}
+        );
+      });
     </div>
   );
 }
