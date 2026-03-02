@@ -160,7 +160,7 @@ export default function ServiceInfoSection() {
         title: `Your membership is active${planName ? ` – ${planName}` : ""}`,
         // Let members know they have unlimited visits and encourage booking
         sub:
-          "Enjoy unlimited visits — book your next one in the calendar below. Upload photos so we bring the right tools and move fast.",
+          "Enjoy unlimited visits - book your next one in the calendar below. Upload photos so we bring the right tools and move fast.",
         primaryLabel: "Book next visit",
         primaryHref: "#pick-day",
         secondaryLabel: "What’s included",
@@ -269,7 +269,7 @@ export default function ServiceInfoSection() {
                     <div className="text-[#313234] font-extrabold">⚡ Fast, scheduled, predictable</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
                       You pick the <span className="font-semibold text-[#313234]">day & time</span> yourself. No waiting for callbacks,
-                      no “we’ll let you know” — and unlimited visits are included.
+                      no “we’ll let you know” - and unlimited visits are included.
                     </div>
                   </div>
 
@@ -277,21 +277,21 @@ export default function ServiceInfoSection() {
                     <div className="text-[#313234] font-extrabold">💰 No surprise invoices</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
                       Subscription pricing means <span className="font-semibold text-[#313234]">clear expectations</span> and
-                      unlimited visits (two or more per month) — no “contractor math” after the job.
+                      unlimited visits (two or more per month) - no “contractor math” after the job.
                     </div>
                   </div>
 
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
                     <div className="text-[#313234] font-extrabold">🛠️ Real pros, real standards</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      We show up prepared, communicate clearly, and fix things the right way — not the cheap way.
+                      We show up prepared, communicate clearly, and fix things the right way - not the cheap way.
                     </div>
                   </div>
 
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
                     <div className="text-[#313234] font-extrabold">📷 Photos = faster service</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      Upload photos when booking so we bring the right tools and plan ahead — less back‑and‑forth.
+                      Upload photos when booking so we bring the right tools and plan ahead - less back‑and‑forth.
                     </div>
                   </div>
                 </div>
@@ -457,7 +457,7 @@ export default function ServiceInfoSection() {
                 <div className="mt-4 rounded-[18px] border border-[#E6E8EF] bg-[#F6F7FB] p-5">
                   <div className="text-[#313234] font-extrabold">Fast & respectful service</div>
                   <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                    If a prior job runs long, we’ll still arrive and do it right. We’re not a marketplace — we’re a real local service
+                    If a prior job runs long, we’ll still arrive and do it right. We’re not a marketplace - we’re a real local service
                     with standards.
                   </div>
                 </div>

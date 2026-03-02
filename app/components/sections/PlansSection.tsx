@@ -323,44 +323,50 @@ export default function PlansSection() {
   );
 
   const HeaderBlock = ({ compact }: { compact?: boolean }) => (
-    <div className={`${compact ? "lg:hidden" : "hidden lg:block"} w-full`}>
-      <div className={`${compact ? "text-center" : ""} mb-8 sm:mb-12`}>
-        <div className={`mb-6 ${compact ? "flex justify-center" : ""}`}> 
-          <Image src="/images/logo.svg" alt="Profixter" width={80} height={32} />
-        </div>
-
-        <h2
-          className={`$${compact ? "text-5xl sm:text-6xl" : "text-[64px]"} font-bold leading-[89%] mb-8 uppercase tracking-[-0.05em] flex flex-col gap-0`}
-        >
-          <span className="text-white">Choose</span>
-          <span className="text-[#306EEC] -mt-2">Your Unlimited</span>
-          <span className="text-white -mt-2">Plan</span>
-        </h2>
-
-        <div className="mb-6">
-          <p className="text-white text-2xl sm:text-3xl font-normal leading-tight mb-2">
-            Code <span className="text-white font-extrabold">SPRING</span>
-          </p>
-          <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed">
-            <span className="text-white font-semibold">30% off your first month</span> on monthly plans & unlimited visits (2+ per month).
-            <br />
-            Cancel anytime, no contracts.
-          </p>
-        </div>
-
-        {!compact && (
-          <p className="text-[#C5CBD8] text-base leading-[19px]">
-            Materials at cost. Only if needed,
-            <br />
-            with your approval – no markups.
-          </p>
-        )}
-
-        {/* ✅ Billing toggle under header */}
-        <BillingToggle compact={compact} />
+  <div className={`${compact ? "lg:hidden" : "hidden lg:block"} w-full`}>
+    <div className={`${compact ? "text-center" : ""} mb-8 sm:mb-12`}>
+      <div className={`mb-6 ${compact ? "flex justify-center" : ""}`}>
+        <Image src="/images/logo.svg" alt="Profixter" width={80} height={32} />
       </div>
+
+      {/* ✅ Title (no overlap / no collision) */}
+      <h2
+        className={[
+          compact ? "text-5xl sm:text-6xl" : "text-[64px]",
+          "font-bold uppercase tracking-[-0.05em]",
+          "leading-[0.86]", // tighter but safe (no overlapping)
+          "mb-8",
+        ].join(" ")}
+      >
+        <span className="block text-white">Choose</span>
+        <span className="block text-[#306EEC]">Your Unlimited</span>
+        <span className="block text-white">Plan</span>
+      </h2>
+
+      <div className="mb-6">
+        <p className="text-white text-2xl sm:text-3xl font-normal leading-tight mb-2">
+          Code <span className="text-white font-extrabold">SPRING</span>
+        </p>
+        <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed">
+          <span className="text-white font-semibold">30% off your first month</span> on monthly plans & unlimited visits (2+ per month).
+          <br />
+          Cancel anytime, no contracts.
+        </p>
+      </div>
+
+      {!compact && (
+        <p className="text-[#C5CBD8] text-base leading-[19px]">
+          Materials at cost. Only if needed,
+          <br />
+          with your approval – no markups.
+        </p>
+      )}
+
+      {/* ✅ Billing toggle under header */}
+      <BillingToggle compact={compact} />
     </div>
-  );
+  </div>
+);
 
   return (
     <section

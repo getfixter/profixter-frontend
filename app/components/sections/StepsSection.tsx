@@ -46,7 +46,7 @@ export default function StepsSection() {
             Simple steps to get unlimited handyman visits.
           </div>
           <div className="hidden lg:block absolute right-0 top-2 text-sm text-[#6a6c71]">
-            Use code "SPRING" for 30% off your first month (2+ visits per month).
+            At least 2 Visits Garrantee.
           </div>
 
           {/* Heading */}
