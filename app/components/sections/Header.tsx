@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
 
-// Navigation items for the header.  Keeping the same anchors for familiarity.
+// Navigation items for the header. Keeping the same anchors for familiarity.
 const NAV = [
   { href: "#how-it-works", label: "How it works" },
   { href: "#plans", label: "Plans" },
@@ -154,7 +154,7 @@ export default function Header() {
 
                 {promoActive && promoLeft ? (
                   <p className="mt-1 text-white/70 text-[12px] sm:text-[13px] font-semibold">
-                    Ends in {" "}
+                    Ends in{" "}
                     <span className="text-[#86EFAC] font-extrabold">
                       {promoLeft.days}d {String(promoLeft.hours).padStart(2, "0")}:
                       {String(promoLeft.minutes).padStart(2, "0")}:{String(promoLeft.seconds).padStart(2, "0")}
@@ -336,11 +336,11 @@ export default function Header() {
         aria-modal="true"
         aria-label="Mobile navigation"
       >
-        {/* Close Button (always visible) */}
+        {/* Close Button (moved down a bit so it doesn’t block sign buttons) */}
         <button
           onClick={() => setIsMenuOpen(false)}
           aria-label="Close menu"
-          className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/95 border border-[#E6E8EF] shadow-[0_10px_30px_rgba(17,24,39,0.15)] flex items-center justify-center text-[#111827] text-xl font-semibold z-[80] hover:bg-[#F6F7FB] transition"
+          className="absolute top-14 right-5 w-10 h-10 rounded-full bg-white/95 border border-[#E6E8EF] shadow-[0_10px_30px_rgba(17,24,39,0.15)] flex items-center justify-center text-[#111827] text-xl font-semibold z-[80] hover:bg-[#F6F7FB] transition"
         >
           ×
         </button>
@@ -361,6 +361,27 @@ export default function Header() {
               "gap-7 px-8 pt-24 pb-10",
             ].join(" ")}
           >
+            {/* Mobile sign in / sign up at top */}
+            {!isAuthenticated && (
+              <div className="flex flex-col gap-3 w-full max-w-xs">
+                <Link
+                  href="/signin"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="w-full text-center px-6 py-3 text-[#111827] hover:text-[#306EEC] border border-[#111827] rounded-[14px] text-base font-normal transition-colors hover:bg-black/5"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/signup"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="w-full text-center px-8 py-3 bg-[#eef2ff] text-[#111827] rounded-[14px] text-base font-normal transition-colors hover:bg-white border border-[#C5CBD8]"
+                >
+                  Sign up
+                </Link>
+              </div>
+            )}
+
+            {/* Navigation items */}
             {NAV.map((item) =>
               item.href.startsWith("#") ? (
                 <button
@@ -409,7 +430,7 @@ export default function Header() {
 
                   {promoActive && promoLeft ? (
                     <p className="text-white/70 text-[12px] mt-1 font-semibold">
-                      Ends in {" "}
+                      Ends in{" "}
                       <span className="text-[#86EFAC] font-extrabold">
                         {promoLeft.days}d {String(promoLeft.hours).padStart(2, "0")}: {String(promoLeft.minutes).padStart(2, "0")}: {String(promoLeft.seconds).padStart(2, "0")}
                       </span>
@@ -419,6 +440,7 @@ export default function Header() {
               </div>
             </button>
 
+            {/* Auth buttons or profile at bottom */}
             <div className="flex flex-col gap-4 mt-1 w-full max-w-xs">
               {isAuthenticated ? (
                 <>
@@ -453,24 +475,7 @@ export default function Header() {
                     Log out
                   </button>
                 </>
-              ) : (
-                <>
-                  <Link
-                    href="/signin"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="w-full text-center px-6 py-3 text-[#111827] hover:text-[#306EEC] border border-[#111827] rounded-[14px] text-base font-normal transition-colors hover:bg-black/5"
-                  >
-                    Sign in
-                  </Link>
-                  <Link
-                    href="/signup"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="w-full text-center px-8 py-3 bg-[#eef2ff] text-[#111827] rounded-[14px] text-base font-normal transition-colors hover:bg-white border border-[#C5CBD8]"
-                  >
-                    Sign up
-                  </Link>
-                </>
-              )}
+              ) : null}
             </div>
           </nav>
         </div>
