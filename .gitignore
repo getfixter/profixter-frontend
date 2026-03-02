@@ -30,3 +30,8 @@ pnpm-debug.log*
 
 # Environment files
 .env*
+
+# never commit zips
+*.zip
+lib.zip
+
