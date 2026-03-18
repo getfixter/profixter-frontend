@@ -120,6 +120,7 @@ export default function Footer() {
                   consent is optional and not required to submit this form.
                 </div>
               </div>
+              
 
               <div className="lg:col-span-7">
                 <form onSubmit={handleSubmit} className="space-y-5">
@@ -196,22 +197,26 @@ export default function Footer() {
                     </label>
 
                     <div className="text-xs text-white/50 leading-relaxed">
-                      Your information is handled according to our{" "}
-                      <Link
-                        href="/privacy"
-                        className="underline underline-offset-2 hover:text-white transition"
-                      >
-                        Privacy Policy
-                      </Link>{" "}
-                      and{" "}
-                      <Link
-                        href="/terms"
-                        className="underline underline-offset-2 hover:text-white transition"
-                      >
-                        Terms of Service
-                      </Link>
-                      .
-                    </div>
+  Message frequency may vary. Msg &amp; data rates may apply. Reply STOP to opt out or HELP for help.
+</div>
+
+<div className="text-xs text-white/50 leading-relaxed">
+  Your information is handled according to our{" "}
+  <Link
+    href="/privacy"
+    className="underline underline-offset-2 hover:text-white transition"
+  >
+    Privacy Policy
+  </Link>{" "}
+  and{" "}
+  <Link
+    href="/terms"
+    className="underline underline-offset-2 hover:text-white transition"
+  >
+    Terms of Service
+  </Link>
+  .
+</div>
 
                     <div className="text-xs text-white/40 leading-relaxed">
                       Premium Island Homes INC operates as Profixter.

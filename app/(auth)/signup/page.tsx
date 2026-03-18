@@ -344,20 +344,24 @@ export default function SignUpPage() {
             <div className="h-px bg-white/10" />
 
             <Checkbox checked={smsMarketingConsent} onChange={setSmsMarketingConsent}>
-              I agree to receive marketing text messages from Premium Island Homes
-              INC (Profixter), including promotions, offers, and discounts. Message
-              frequency may vary. Message and data rates may apply. Text HELP for
-              help and STOP to opt out.
-            </Checkbox>
+  I agree to receive marketing text messages from Premium Island Homes
+  INC (Profixter), including promotional offers and service-related
+  updates. Consent is not required to purchase. Message frequency may
+  vary. Msg &amp; data rates may apply. Reply HELP for help or STOP to
+  opt out.
+</Checkbox>
 
             <Checkbox checked={smsServiceConsent} onChange={setSmsServiceConsent}>
-              I agree to receive non-marketing text messages from Premium Island
-              Homes INC (Profixter) related to my account, service requests,
-              scheduling updates, appointment reminders, and customer support.
-              Message frequency may vary. Message and data rates may apply. Text
-              HELP for help and STOP to opt out.
-            </Checkbox>
+  I agree to receive non-marketing text messages from Premium Island
+  Homes INC (Profixter) related to my account, service requests,
+  scheduling updates, appointment reminders, and customer support.
+  Consent is not required to purchase. Message frequency may vary. Msg
+  &amp; data rates may apply. Reply HELP for help or STOP to opt out.
+</Checkbox>
           </div>
+          <p className="text-white/60 text-xs sm:text-sm leading-relaxed">
+  Message frequency may vary. Msg &amp; data rates may apply. Reply STOP to opt out or HELP for help.
+</p>
 
           {error && (
             <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-lg p-3">

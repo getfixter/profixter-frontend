@@ -376,10 +376,12 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">13. Electronic Communications (Email, SMS, Phone)</h2>
             <p>
-              By providing your phone number/email, you consent to receive service-related communications (scheduling, reminders,
-              receipts, account notices) via email, SMS, and/or phone. Message frequency varies. Message/data rates may apply. We are
-              not responsible for carrier delays, spam filtering, or inaccurate contact info.
-            </p>
+  By providing your phone number and opting in, you consent to receive
+  service-related SMS communications, including scheduling updates,
+  appointment reminders, customer support messages, and account notices.
+  Message frequency may vary. Msg &amp; data rates may apply. We are not
+  responsible for carrier delays, spam filtering, or inaccurate contact info.
+</p>
           </section>
 
           {/* 14 */}
@@ -387,11 +389,15 @@ export default function TermsPage() {
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">14. SMS Program Terms</h2>
 
             <div className="rounded-2xl bg-white/5 border border-white/10 p-5 space-y-3">
-              <p className="font-semibold">Program Name: Mr. Fixter Alerts &amp; Updates</p>
+              <p className="font-semibold">
+  Program Name: Premium Island Homes INC (Profixter) SMS Alerts &amp; Updates
+</p>
               <p>
-                Program Description: By opting in, you may receive appointment confirmations, service reminders, account updates, and
-                (if you separately opt in) occasional marketing messages from Mr. Fixter.
-              </p>
+  Program Description: By opting in, you may receive appointment confirmations,
+  scheduling updates, service reminders, customer support messages, account
+  updates, and, if you separately opt in, occasional marketing messages from
+  Premium Island Homes INC (Profixter).
+</p>
 
               <ul className="list-disc list-inside space-y-2">
                 <li>

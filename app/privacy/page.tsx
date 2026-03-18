@@ -157,23 +157,33 @@ export default function PrivacyPage() {
             </p>
 
             <p className="mt-3">
-              <span className="font-semibold">SMS data protection:</span> All
-              categories above exclude text messaging originator opt-in data and
-              consent. This information will not be shared with any third parties,
-              except as needed to deliver messages you consented to receive (for
-              example, SMS platform/aggregator providers).
-            </p>
+  <span className="font-semibold">SMS data protection:</span> All
+  categories above exclude text messaging originator opt-in data and
+  consent. This information will not be shared with any third parties,
+  except as needed to deliver messages you consented to receive (for
+  example, SMS platform/aggregator providers).
+</p>
+
+<p className="mt-3">
+  SMS opt-in consent and phone numbers collected for SMS purposes are not
+  shared with third parties or affiliates for marketing purposes.
+</p>
           </section>
 
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">5. Cookies</h2>
-            <p>
-              We may use cookies and similar technologies for basic site
-              functionality, security, and to understand site usage. You can
-              control cookies through your browser settings. Disabling cookies may
-              limit certain site features.
-            </p>
-          </section>
+  <h2 className="text-xl sm:text-2xl font-semibold mb-3">5. Cookies</h2>
+  <p>
+    We may use cookies and similar technologies for basic site
+    functionality, security, and to understand site usage. You can
+    control cookies through your browser settings. Disabling cookies may
+    limit certain site features.
+  </p>
+  <p className="mt-3">
+    We may use cookies, analytics tools, and similar tracking
+    technologies to understand website usage, improve performance, and
+    support website security.
+  </p>
+</section>
 
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">
