@@ -95,7 +95,6 @@ export default function Footer() {
       </div>
 
       <div className="relative mx-auto max-w-[1240px] px-5 sm:px-6 lg:px-5 py-10 sm:py-12 lg:py-14">
-        {/* Top contact section */}
         <div className="mb-10 sm:mb-12 lg:mb-14">
           <div className="rounded-[24px] border border-white/15 bg-white/10 backdrop-blur-md p-5 sm:p-7 lg:p-8 shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
@@ -170,10 +169,11 @@ export default function Footer() {
                       />
                       <span className="text-white/90 text-sm leading-relaxed">
                         I agree to receive marketing text messages from Premium
-                        Island Homes INC (Profixter), including promotions,
-                        offers, and discounts. Consent is not a condition of
-                        purchase. Message frequency may vary. Message and data
-                        rates may apply. Reply HELP for help or STOP to opt out.
+                        Island Homes INC (Profixter), including promotional
+                        offers and service-related updates. Consent is not
+                        required to purchase. Message frequency may vary. Msg &
+                        data rates may apply. Reply HELP for help or STOP to opt
+                        out.
                       </span>
                     </label>
 
@@ -189,9 +189,9 @@ export default function Footer() {
                         I agree to receive non-marketing text messages from
                         Premium Island Homes INC (Profixter) related to my
                         inquiry, scheduling, appointment reminders, service
-                        updates, and customer support. Message frequency may
-                        vary. Message and data rates may apply. Reply HELP for
-                        help or STOP to opt out.
+                        updates, and customer support. Consent is not required
+                        to purchase. Message frequency may vary. Msg & data
+                        rates may apply. Reply HELP for help or STOP to opt out.
                       </span>
                     </label>
 
@@ -211,6 +211,10 @@ export default function Footer() {
                         Terms of Service
                       </Link>
                       .
+                    </div>
+
+                    <div className="text-xs text-white/40 leading-relaxed">
+                      Premium Island Homes INC operates as Profixter.
                     </div>
                   </div>
 
@@ -238,7 +242,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Main footer grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
           <div className="lg:col-span-7">
             <div className="flex flex-col sm:flex-row sm:items-start gap-5 sm:gap-7">
