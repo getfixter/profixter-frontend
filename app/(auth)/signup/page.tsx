@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PasswordField } from "../../components/auth/PasswordField";
 import { register } from "@/lib/auth-service";
 
@@ -9,16 +10,13 @@ import { register } from "@/lib/auth-service";
 export default function SignUpPage() {
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signup");
 
-  // ✅ Required legal acceptance
+  // ✅ Terms (REQUIRED)
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [consentError, setConsentError] = useState(false);
 
-  // ✅ Optional SMS consents for A2P
-  const [smsMarketingConsent, setSmsMarketingConsent] = useState(false);
-  const [smsServiceConsent, setSmsServiceConsent] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   // Form fields
   const [formData, setFormData] = useState({
@@ -48,10 +46,10 @@ export default function SignUpPage() {
     setError("");
     setConsentError(false);
 
-    // ✅ Required Terms / Privacy acceptance
+    // ✅ Required terms
     if (!agreeTerms) {
       setConsentError(true);
-      setError("You must agree to the Terms of Service and Privacy Policy to continue.");
+      setError("You must agree to the Terms and Privacy Policy to continue.");
       return;
     }
 
@@ -66,29 +64,28 @@ export default function SignUpPage() {
       !formData.zip ||
       !formData.county
     ) {
-      setError("Please fill in all required fields.");
+      setError("Please fill in all required fields");
       return;
     }
 
     if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError("Password must be at least 8 characters");
       return;
     }
 
     if (formData.password !== formData.repeatPassword) {
-      setError("Passwords do not match.");
+      setError("Passwords do not match");
       return;
     }
 
     const phoneDigits = formData.phone.replace(/\D/g, "");
     if (phoneDigits.length !== 10) {
-      setError("Phone number must be 10 digits.");
+      setError("Phone number must be 10 digits");
       return;
     }
 
-    const zipDigits = formData.zip.replace(/\D/g, "");
-    if (zipDigits.length !== 5) {
-      setError("Zip code must be 5 digits.");
+    if (formData.zip.length !== 5) {
+      setError("Zip code must be 5 digits");
       return;
     }
 
@@ -103,22 +100,20 @@ export default function SignUpPage() {
         address: formData.address,
         city: formData.city,
         state: formData.state,
-        zip: zipDigits,
+        zip: formData.zip,
         county: formData.county,
 
-        // Required legal acceptance
+        // Consent metadata
         termsAccepted: true,
-
-        // ✅ Optional SMS consent metadata
-        smsMarketingConsent,
-        smsServiceConsent,
         consentSource: "website_signup",
         consentAt: new Date().toISOString(),
       } as any);
 
+      // Save token and user data
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
 
+      // Redirect
       window.location.href = "/";
     } catch (err: any) {
       console.error("Registration failed:", err);
@@ -129,6 +124,7 @@ export default function SignUpPage() {
     }
   };
 
+  // Reusable checkbox UI (matches your Terms style)
   const Checkbox = ({
     checked,
     onChange,
@@ -147,7 +143,8 @@ export default function SignUpPage() {
           className="sr-only peer"
         />
         <div
-          className={`w-4 h-4 sm:w-5 sm:h-5 border-2 rounded flex items-center justify-center border-white peer-checked:bg-transparent peer-checked:border-white`}
+          className={`w-4 h-4 sm:w-5 sm:h-5 border-2 rounded flex items-center justify-center
+          border-white peer-checked:bg-transparent peer-checked:border-white`}
         >
           {checked && (
             <svg width="12" height="10" viewBox="0 0 14 11" fill="none">
@@ -244,7 +241,9 @@ export default function SignUpPage() {
                 iconSize={20}
               />
               {passwordsDoNotMatch && (
-                <p className="text-red-400 text-xs mt-1">Passwords do not match.</p>
+                <p className="text-red-400 text-xs mt-1">
+                  Passwords do not match.
+                </p>
               )}
             </div>
 
@@ -322,7 +321,8 @@ export default function SignUpPage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-4 pt-4">
+          {/* ✅ REQUIRED TERMS ONLY */}
+          <div className="flex flex-col gap-3 pt-4">
             <Checkbox checked={agreeTerms} onChange={setAgreeTerms}>
               I agree to the{" "}
               <Link href="/terms" className="underline text-white hover:text-[#93c5fd]">
@@ -337,31 +337,10 @@ export default function SignUpPage() {
 
             {consentError && (
               <p className="text-red-400 text-xs">
-                Please agree to the Terms of Service and Privacy Policy to continue.
+                Please agree to the Terms and Privacy Policy to continue.
               </p>
             )}
-
-            <div className="h-px bg-white/10" />
-
-            <Checkbox checked={smsMarketingConsent} onChange={setSmsMarketingConsent}>
-  I agree to receive marketing text messages from Premium Island Homes
-  INC (Profixter), including promotional offers and service-related
-  updates. Consent is not required to purchase. Message frequency may
-  vary. Msg &amp; data rates may apply. Reply HELP for help or STOP to
-  opt out.
-</Checkbox>
-
-            <Checkbox checked={smsServiceConsent} onChange={setSmsServiceConsent}>
-  I agree to receive non-marketing text messages from Premium Island
-  Homes INC (Profixter) related to my account, service requests,
-  scheduling updates, appointment reminders, and customer support.
-  Consent is not required to purchase. Message frequency may vary. Msg
-  &amp; data rates may apply. Reply HELP for help or STOP to opt out.
-</Checkbox>
           </div>
-          <p className="text-white/60 text-xs sm:text-sm leading-relaxed">
-  Message frequency may vary. Msg &amp; data rates may apply. Reply STOP to opt out or HELP for help.
-</p>
 
           {error && (
             <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-lg p-3">
