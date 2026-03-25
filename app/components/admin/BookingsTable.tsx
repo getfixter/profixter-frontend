@@ -353,53 +353,6 @@ export default function BookingsTable({
                         onUpdate={updateStatus}
                       />
 
-                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                        {phone ? (
-                          <div className="col-span-2 flex gap-2">
-                            <a
-                              href={`tel:${sanitizeTel(phone)}`}
-                              className="flex-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-center text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
-                            >
-                              Call
-                            </a>
-                            <a
-                              href={`sms:${sanitizeTel(phone)}`}
-                              className="flex-1 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-center text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
-                            >
-                              Text
-                            </a>
-                          </div>
-                        ) : (
-                          <div className="col-span-2 rounded-xl border border-dashed border-slate-200 px-3 py-2.5 text-center text-sm font-semibold text-slate-400">
-                            No phone
-                          </div>
-                        )}
-
-                        {fullAddress ? (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => navigator.clipboard.writeText(fullAddress)}
-                              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                            >
-                              Copy
-                            </button>
-                            <a
-                              href={`https://maps.google.com/?q=${encodeURIComponent(fullAddress)}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-center text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
-                            >
-                              Maps
-                            </a>
-                          </>
-                        ) : (
-                          <div className="col-span-2 rounded-xl border border-dashed border-slate-200 px-3 py-2.5 text-center text-sm font-semibold text-slate-400">
-                            No address
-                          </div>
-                        )}
-                      </div>
-
                       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
                         <div className="mb-2 flex items-center justify-between gap-3">
                           <div className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">
@@ -444,14 +397,58 @@ export default function BookingsTable({
                       </div>
 
                       {phone && (
-                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-medium text-slate-900">
-                          {phone}
+                        <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+                          <div className="min-w-0 truncate text-sm font-medium text-slate-900">{phone}</div>
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`tel:${sanitizeTel(phone)}`}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-200 bg-white text-emerald-700 transition hover:bg-emerald-100"
+                              title="Call"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                              </svg>
+                            </a>
+                            <a
+                              href={`sms:${sanitizeTel(phone)}`}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-sky-200 bg-white text-sky-700 transition hover:bg-sky-100"
+                              title="Text"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h8m-8 4h5m8 5l-3.5-3.5M19 4H5a2 2 0 00-2 2v8a2 2 0 002 2h4l4 4 4-4h2a2 2 0 002-2V6a2 2 0 00-2-2z" />
+                              </svg>
+                            </a>
+                          </div>
                         </div>
                       )}
 
                       {fullAddress && (
-                        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-slate-700">
-                          {fullAddress}
+                        <div className="flex items-start justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2.5">
+                          <div className="min-w-0 text-sm text-slate-700">{fullAddress}</div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => navigator.clipboard.writeText(fullAddress)}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-100"
+                              title="Copy address"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-4 12h6a2 2 0 002-2v-8a2 2 0 00-2-2h-6a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            </button>
+                            <a
+                              href={`https://maps.google.com/?q=${encodeURIComponent(fullAddress)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-rose-200 bg-white text-rose-700 transition hover:bg-rose-100"
+                              title="Open maps"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            </a>
+                          </div>
                         </div>
                       )}
 
