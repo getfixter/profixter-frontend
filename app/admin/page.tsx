@@ -210,6 +210,11 @@ export default function AdminPage() {
     });
   }, [users]);
 
+  const blacklistByUserId = useMemo(
+    () => new Map(blacklist.map((entry) => [String(entry.userId), entry._id])),
+    [blacklist]
+  );
+
   if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -336,7 +341,7 @@ export default function AdminPage() {
               <UsersTable
                 users={filteredUsers}
                 onSetAddressPlan={handleSetAddressPlan}
-                blacklistIds={new Set(blacklist.map((x) => x._id))}
+                blacklistByUserId={blacklistByUserId}
                 onBlacklist={handleBlacklist}
                 onUnblacklist={handleUnblacklist}
               />
@@ -346,7 +351,7 @@ export default function AdminPage() {
               <UsersTable
                 users={subscribedUsers}
                 onSetAddressPlan={handleSetAddressPlan}
-                blacklistIds={new Set(blacklist.map((x) => x._id))}
+                blacklistByUserId={blacklistByUserId}
                 onBlacklist={handleBlacklist}
                 onUnblacklist={handleUnblacklist}
               />
