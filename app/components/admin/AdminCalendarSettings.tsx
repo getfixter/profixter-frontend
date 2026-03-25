@@ -10,7 +10,7 @@ type CalendarConfigState = {
   closedWeekdays: number[];
   minLeadDays: number;
   defaultHours: string[];
-  overrides: Record<string, string[]>;
+  overrides: Record<string, string[]>; 
   holidays: string[];
   handymanCapacity: number;
 };

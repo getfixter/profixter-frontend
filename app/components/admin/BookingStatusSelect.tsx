@@ -10,19 +10,23 @@ interface BookingStatusSelectProps {
 
 const statusConfig = {
   Pending: {
-    color: 'border-amber-200 bg-amber-50 text-amber-800',
+    color: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+    icon: '⏳',
     label: 'Pending',
   },
   Confirmed: {
-    color: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    color: 'bg-green-100 text-green-800 border-green-300',
+    icon: '✓',
     label: 'Confirmed',
   },
   Completed: {
-    color: 'border-sky-200 bg-sky-50 text-sky-800',
+    color: 'bg-blue-100 text-blue-800 border-blue-300',
+    icon: '✔',
     label: 'Completed',
   },
   Canceled: {
-    color: 'border-rose-200 bg-rose-50 text-rose-800',
+    color: 'bg-gray-100 text-gray-800 border-gray-300',
+    icon: '✕',
     label: 'Canceled',
   },
 };
@@ -30,40 +34,88 @@ const statusConfig = {
 export default function BookingStatusSelect({
   bookingId,
   currentStatus,
-  onUpdate,
+  onUpdate, 
 }: BookingStatusSelectProps) {
-  const config =
-    statusConfig[currentStatus as keyof typeof statusConfig] || statusConfig.Pending;
+  const config = statusConfig[currentStatus as keyof typeof statusConfig] || statusConfig.Pending;
 
-  const handleChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newStatus = e.target.value;
     try {
-      await onUpdate(bookingId, event.target.value);
+      await onUpdate(bookingId, newStatus);
     } catch (error) {
       console.error('Failed to update status:', error);
     }
   };
 
   return (
-    <div className="relative">
+    <div className="status-select-wrapper">
+      <div className={`status-indicator ${config.color}`}>
+        <span className="status-icon">{config.icon}</span>
+        <span className="status-label">{config.label}</span>
+      </div>
       <select
-        className={`w-full appearance-none rounded-2xl border px-4 py-3 pr-10 text-sm font-semibold outline-none transition focus:ring-4 focus:ring-sky-100 ${config.color}`}
+        className={`status-select ${config.color}`}
         value={currentStatus}
         onChange={handleChange}
       >
-        <option value="Pending">Pending</option>
-        <option value="Confirmed">Confirmed</option>
-        <option value="Completed">Completed</option>
-        <option value="Canceled">Canceled</option>
+        <option value="Pending">⏳ Pending</option>
+        <option value="Confirmed">✓ Confirmed</option>
+        <option value="Completed">✔ Completed</option>
+        <option value="Canceled">✕ Canceled</option>
       </select>
 
-      <svg
-        className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-current opacity-70"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
+      <style jsx>{`
+        .status-select-wrapper {
+          position: relative;
+          min-width: 140px;
+        }
+
+        .status-indicator {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 12px;
+          border-radius: 8px;
+          border: 1px solid;
+          font-weight: 600;
+          font-size: 0.875rem;
+          pointer-events: none;
+        }
+
+        .status-icon {
+          font-size: 1rem;
+        }
+
+        .status-label {
+          flex: 1;
+        }
+
+        .status-select {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          opacity: 0;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 0.875rem;
+          border-radius: 8px;
+          border: 1px solid;
+          padding: 8px 12px;
+        }
+
+        .status-select:hover + .status-indicator,
+        .status-select:focus + .status-indicator {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-select option {
+          background: white;
+          color: #1f2937;
+        }
+      `}</style>
     </div>
   );
 }
