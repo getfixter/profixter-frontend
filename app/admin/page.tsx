@@ -240,8 +240,8 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-50">
       <AdminHeader />
 
-      {/* Sticky toolbar */}
-        <div className="sticky top-[56px] md:top-[64px] z-40 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
+      {/* Top toolbar */}
+        <div className="border-b border-slate-200 bg-white shadow-sm">
         <div className="px-3 md:px-8 py-3 md:py-4">
           <AdminTabs active={active} onChange={setActive} />
           <BottomNav active={active} onChange={setActive} />

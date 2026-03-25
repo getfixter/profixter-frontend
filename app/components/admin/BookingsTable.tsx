@@ -15,41 +15,6 @@ interface BookingsTableProps {
 
 type BookingGroups = Record<string, Booking[]>;
 
-function IconButton({
-  title,
-  onClick,
-  href,
-  className,
-  children,
-}: {
-  title: string;
-  onClick?: () => void;
-  href?: string;
-  className: string;
-  children: React.ReactNode;
-}) {
-  const content = (
-    <>
-      <span className="sr-only">{title}</span>
-      {children}
-    </>
-  );
-
-  if (href) {
-    return (
-      <a href={href} title={title} className={className}>
-        {content}
-      </a>
-    );
-  }
-
-  return (
-    <button type="button" title={title} onClick={onClick} className={className}>
-      {content}
-    </button>
-  );
-}
-
 function escapeCsvCell(value: unknown) {
   const stringValue = String(value ?? "");
   return `"${stringValue.replace(/"/g, '""')}"`;
@@ -124,7 +89,6 @@ export default function BookingsTable({
   users,
   onUpdateBooking,
 }: BookingsTableProps) {
-  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftNote, setDraftNote] = useState("");
   const [draftDT, setDraftDT] = useState("");
@@ -227,15 +191,6 @@ export default function BookingsTable({
     }
   };
 
-  const toggleNote = (bookingId: string) => {
-    setExpandedNotes((prev) => {
-      const next = new Set(prev);
-      if (next.has(bookingId)) next.delete(bookingId);
-      else next.add(bookingId);
-      return next;
-    });
-  };
-
   return (
     <div className="space-y-5 bookings-table-section">
       {bookings.length > 0 && (
@@ -322,7 +277,6 @@ export default function BookingsTable({
                 const phone = booking.phone || user?.phone || "";
                 const fullAddress = formatAddress(booking.address, booking.city, booking.state, booking.zip);
                 const isEditing = editingId === booking._id;
-                const noteOpen = expandedNotes.has(booking._id);
 
                 return (
                   <article
@@ -350,42 +304,13 @@ export default function BookingsTable({
                           <p className="text-[11px] text-slate-500">ID: {booking.userId}</p>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <IconButton
-                            title={isEditing ? "Close edit" : "Edit booking"}
-                            onClick={() => (isEditing ? cancelEdit() : startEdit(booking))}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700"
-                          >
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M16.5 3.5a2.121 2.121 0 113 3L12 14l-4 1 1-4 7.5-7.5z" />
-                            </svg>
-                          </IconButton>
-
-                          {phone && (
-                            <IconButton
-                              title="Call customer"
-                              href={`tel:${sanitizeTel(phone)}`}
-                              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700"
-                            >
-                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                              </svg>
-                            </IconButton>
-                          )}
-
-                          {fullAddress && (
-                            <IconButton
-                              title="Open map"
-                              href={`https://maps.google.com/?q=${encodeURIComponent(fullAddress)}`}
-                              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700"
-                            >
-                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                            </IconButton>
-                          )}
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => (isEditing ? cancelEdit() : startEdit(booking))}
+                          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                        >
+                          {isEditing ? "Close edit" : "Edit"}
+                        </button>
                       </div>
                     </div>
 
@@ -428,69 +353,93 @@ export default function BookingsTable({
                         onUpdate={updateStatus}
                       />
 
-                      <div className="grid grid-cols-4 gap-2">
-                        <IconButton
-                          title="Toggle note"
-                          onClick={() => toggleNote(booking._id)}
-                          className="inline-flex h-11 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-700"
-                        >
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h6m-6 4h8M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
-                          </svg>
-                        </IconButton>
-
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                         {phone ? (
-                          <IconButton
-                            title="Send SMS"
-                            href={`sms:${sanitizeTel(phone)}`}
-                            className="inline-flex h-11 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-700"
-                          >
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h8m-8 4h5m8 5l-3.5-3.5M19 4H5a2 2 0 00-2 2v8a2 2 0 002 2h4l4 4 4-4h2a2 2 0 002-2V6a2 2 0 00-2-2z" />
-                            </svg>
-                          </IconButton>
+                          <div className="col-span-2 flex gap-2">
+                            <a
+                              href={`tel:${sanitizeTel(phone)}`}
+                              className="flex-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-center text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                            >
+                              Call
+                            </a>
+                            <a
+                              href={`sms:${sanitizeTel(phone)}`}
+                              className="flex-1 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-center text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
+                            >
+                              Text
+                            </a>
+                          </div>
                         ) : (
-                          <div className="inline-flex h-11 items-center justify-center rounded-xl border border-dashed border-slate-200 text-slate-300">
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-1.414 1.414M6.343 17.657l-1.414 1.414m0-13.435l14.142 14.142" />
-                            </svg>
+                          <div className="col-span-2 rounded-xl border border-dashed border-slate-200 px-3 py-2.5 text-center text-sm font-semibold text-slate-400">
+                            No phone
                           </div>
                         )}
 
                         {fullAddress ? (
-                          <IconButton
-                            title="Copy address"
-                            onClick={() => navigator.clipboard.writeText(fullAddress)}
-                            className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700"
-                          >
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-4 12h6a2 2 0 002-2v-8a2 2 0 00-2-2h-6a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                          </IconButton>
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => navigator.clipboard.writeText(fullAddress)}
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                            >
+                              Copy
+                            </button>
+                            <a
+                              href={`https://maps.google.com/?q=${encodeURIComponent(fullAddress)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-center text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                            >
+                              Maps
+                            </a>
+                          </>
                         ) : (
-                          <div className="inline-flex h-11 items-center justify-center rounded-xl border border-dashed border-slate-200 text-slate-300">
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14-4H5m14 8H9" />
-                            </svg>
+                          <div className="col-span-2 rounded-xl border border-dashed border-slate-200 px-3 py-2.5 text-center text-sm font-semibold text-slate-400">
+                            No address
                           </div>
                         )}
+                      </div>
 
-                        {booking.images && booking.images.length > 0 ? (
-                          <a
-                            href={`#photos-${booking._id}`}
-                            className="inline-flex h-11 items-center justify-center rounded-xl border border-violet-200 bg-violet-50 text-violet-700"
-                            title="Jump to photos"
-                          >
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </a>
-                        ) : (
-                          <div className="inline-flex h-11 items-center justify-center rounded-xl border border-dashed border-slate-200 text-slate-300">
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14" />
-                            </svg>
+                      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">
+                            Note
                           </div>
+
+                          {isEditing && (
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={cancelEdit}
+                                disabled={saving}
+                                className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-900"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => saveEdit(booking)}
+                                disabled={saving}
+                                className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white"
+                              >
+                                {saving ? "Saving..." : "Save"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {isEditing ? (
+                          <textarea
+                            value={draftNote}
+                            onChange={(event) => setDraftNote(event.target.value)}
+                            rows={4}
+                            className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
+                            placeholder="Type note here..."
+                          />
+                        ) : (
+                          <p className="whitespace-pre-wrap text-sm text-slate-700">
+                            {booking.note || "No note"}
+                          </p>
                         )}
                       </div>
 
@@ -506,66 +455,25 @@ export default function BookingsTable({
                         </div>
                       )}
 
-                      {(noteOpen || isEditing) && (
-                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
-                          <div className="mb-2 flex items-center justify-between gap-3">
-                            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">
-                              Note
-                            </div>
-
-                            {isEditing && (
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={cancelEdit}
-                                  disabled={saving}
-                                  className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-900"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => saveEdit(booking)}
-                                  disabled={saving}
-                                  className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white"
-                                >
-                                  {saving ? "Saving..." : "Save"}
-                                </button>
-                              </div>
-                            )}
-                          </div>
-
-                          {isEditing ? (
-                            <textarea
-                              value={draftNote}
-                              onChange={(event) => setDraftNote(event.target.value)}
-                              rows={4}
-                              className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
-                              placeholder="Type note here..."
-                            />
-                          ) : (
-                            <p className="whitespace-pre-wrap text-sm text-slate-700">
-                              {booking.note || "No note"}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {booking.images && booking.images.length > 0 && (
-                        <details
+                      {booking.images && booking.images.length > 0 ? (
+                        <div
                           id={`photos-${booking._id}`}
                           className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
                         >
-                          <summary className="cursor-pointer list-none text-sm font-semibold text-slate-800">
+                          <div className="text-sm font-semibold text-slate-800">
                             Photos ({booking.images.length})
-                          </summary>
+                          </div>
                           <div className="mt-3">
                             <BookingImageGallery
                               images={booking.images}
                               bookingNumber={booking.bookingNumber}
                             />
                           </div>
-                        </details>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-200 px-3 py-3 text-sm font-semibold text-slate-400">
+                          No photos
+                        </div>
                       )}
                     </div>
                   </article>
