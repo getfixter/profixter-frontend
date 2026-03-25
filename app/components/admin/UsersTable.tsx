@@ -2,12 +2,18 @@
 
 import React, { useMemo, useState } from 'react';
 import type { AddressDetailed, User } from '@/lib/admin-service';
+import { formatDateNY, getTodayNY } from '@/lib/utils/timezone-helpers';
 
 type PlanFilter = 'all' | 'basic' | 'plus' | 'premium' | 'elite' | 'cancel';
 
 interface UsersTableProps {
   users: User[];
   onSetAddressPlan: (userId: string, addressId: string, plan: string) => void;
+  onSetAddressCancellationDate: (
+    userId: string,
+    addressId: string,
+    cancelOnDate: string | null
+  ) => Promise<void> | void;
   blacklistByUserId: Map<string, string>;
   onBlacklist: (userId: string) => void;
   onUnblacklist: (blacklistId: string) => void;
@@ -106,12 +112,36 @@ function formatPlanLabel(plan: PlanFilter) {
 export default function UsersTable({
   users,
   onSetAddressPlan,
+  onSetAddressCancellationDate,
   blacklistByUserId,
   onBlacklist,
   onUnblacklist,
 }: UsersTableProps) {
   const [search, setSearch] = useState('');
   const [planFilter, setPlanFilter] = useState<PlanFilter>('all');
+  const [savingCancellationByAddress, setSavingCancellationByAddress] = useState<Record<string, boolean>>({});
+
+  const minCancellationDate = getTodayNY();
+
+  const handleSetCancellationDate = async (
+    userId: string,
+    addressId: string,
+    cancelOnDate: string | null
+  ) => {
+    setSavingCancellationByAddress((current) => ({
+      ...current,
+      [addressId]: true,
+    }));
+
+    try {
+      await onSetAddressCancellationDate(userId, addressId, cancelOnDate);
+    } finally {
+      setSavingCancellationByAddress((current) => ({
+        ...current,
+        [addressId]: false,
+      }));
+    }
+  };
 
   const rows = useMemo(() => {
     const flattened: FlattenedRow[] = [];
@@ -242,6 +272,39 @@ export default function UsersTable({
   };
 
   const activeFilterMeta = PLAN_FILTERS.find((filter) => filter.key === planFilter) || PLAN_FILTERS[0];
+
+  const renderCancellationControls = (user: User, address: AddressDetailed, compact = false) => {
+    const scheduledDate = address.scheduledCancellationDate || '';
+    const isSaving = Boolean(savingCancellationByAddress[address._id]);
+
+    return (
+      <div className="space-y-2">
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+            Cancel on day
+          </span>
+          <input
+            type="date"
+            min={minCancellationDate}
+            value={scheduledDate}
+            disabled={isSaving}
+            onChange={(event) => handleSetCancellationDate(user._id, address._id, event.target.value || null)}
+            className={`block rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 ${
+              compact ? 'w-full' : 'max-w-[180px] w-full'
+            } ${isSaving ? 'cursor-wait opacity-70' : ''}`}
+          />
+        </label>
+
+        {scheduledDate ? (
+          <div className="text-xs font-medium text-amber-700">
+            Cancels on {formatDateNY(scheduledDate)} (NY)
+          </div>
+        ) : (
+          <div className="text-xs text-slate-500">Pick a New York day for auto-cancel.</div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-5">
@@ -467,6 +530,7 @@ export default function UsersTable({
                               <option value="elite">Elite</option>
                               <option value="cancel">Cancel</option>
                             </select>
+                            {rowPlan !== 'cancel' && renderCancellationControls(user, address)}
                           </div>
                         ) : (
                           <span className="text-sm text-slate-400">No address record</span>
@@ -595,19 +659,22 @@ export default function UsersTable({
                       </span>
                     </div>
                     {address ? (
-                      <select
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                        value={rowPlan}
-                        onChange={(event) =>
-                          onSetAddressPlan(user._id, address._id, event.target.value)
-                        }
-                      >
-                        <option value="basic">Basic</option>
-                        <option value="plus">Plus</option>
-                        <option value="premium">Premium</option>
-                        <option value="elite">Elite</option>
-                        <option value="cancel">Cancel</option>
-                      </select>
+                      <>
+                        <select
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                          value={rowPlan}
+                          onChange={(event) =>
+                            onSetAddressPlan(user._id, address._id, event.target.value)
+                          }
+                        >
+                          <option value="basic">Basic</option>
+                          <option value="plus">Plus</option>
+                          <option value="premium">Premium</option>
+                          <option value="elite">Elite</option>
+                          <option value="cancel">Cancel</option>
+                        </select>
+                        {rowPlan !== 'cancel' && renderCancellationControls(user, address, true)}
+                      </>
                     ) : (
                       <div className="text-sm text-slate-400">No address record</div>
                     )}

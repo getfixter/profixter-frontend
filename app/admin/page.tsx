@@ -20,6 +20,7 @@ import {
   updateBookingStatus,
   updateBookingAdmin, // ✅ NEW
   setAddressPlan,
+  setAddressCancellationDate,
   addToBlacklist,
   removeFromBlacklist,
 } from "@/lib/admin-service";
@@ -74,9 +75,13 @@ export default function AdminPage() {
       setUsers(usersData);
       setBookings(bookingsData);
       setBlacklist(blacklistData);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to fetch admin data:", error);
-      if (error.response?.status === 403) {
+      const status = typeof error === "object" && error !== null && "response" in error
+        ? (error as { response?: { status?: number } }).response?.status
+        : undefined;
+
+      if (status === 403) {
         alert("Access denied. Admin only.");
         router.push("/signin");
       }
@@ -147,6 +152,20 @@ export default function AdminPage() {
     } catch (error) {
       console.error("Failed to update plan:", error);
       alert("Failed to update subscription plan");
+    }
+  };
+
+  const handleSetAddressCancellationDate = async (
+    userId: string,
+    addressId: string,
+    cancelOnDate: string | null
+  ) => {
+    try {
+      await setAddressCancellationDate(userId, addressId, cancelOnDate);
+      fetchAll();
+    } catch (error) {
+      console.error("Failed to update scheduled cancellation:", error);
+      alert("Failed to save cancellation date");
     }
   };
 
@@ -401,6 +420,7 @@ export default function AdminPage() {
               <UsersTable
                 users={filteredUsers}
                 onSetAddressPlan={handleSetAddressPlan}
+                onSetAddressCancellationDate={handleSetAddressCancellationDate}
                 blacklistByUserId={blacklistByUserId}
                 onBlacklist={handleBlacklist}
                 onUnblacklist={handleUnblacklist}
@@ -411,6 +431,7 @@ export default function AdminPage() {
               <UsersTable
                 users={subscribedUsers}
                 onSetAddressPlan={handleSetAddressPlan}
+                onSetAddressCancellationDate={handleSetAddressCancellationDate}
                 blacklistByUserId={blacklistByUserId}
                 onBlacklist={handleBlacklist}
                 onUnblacklist={handleUnblacklist}

@@ -27,6 +27,7 @@ export interface Address {
 export interface AddressDetailed extends Address {
   isDefault: boolean;
   plan?: "basic" | "plus" | "premium" | "elite" | null;
+  scheduledCancellationDate?: string | null;
 }
 
 
@@ -115,6 +116,21 @@ export const setAddressPlan = async (
   const response = await API.put(
     `/api/admin/users/${userId}/address/${addressId}/subscription`,
     { plan }
+  );
+  return response.data.addressesDetailed;
+};
+
+export const setAddressCancellationDate = async (
+  userId: string,
+  addressId: string,
+  cancelOnDate: string | null
+): Promise<AddressDetailed[]> => {
+  const response = await API.put(
+    `/api/admin/users/${userId}/address/${addressId}/cancellation-date`,
+    {
+      cancelOnDate,
+      timezone: "America/New_York",
+    }
   );
   return response.data.addressesDetailed;
 };
