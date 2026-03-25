@@ -132,7 +132,7 @@ export default function BookingsCalendar({
 
       <div className="calendar-container">
         <Calendar
-          value={value}
+          value={value} 
           onClickDay={handleDayClick}
           tileContent={tileContent}
           tileClassName={tileClassName}

@@ -44,7 +44,7 @@ export default function EmailComposer() {
         (segmentCounts.elite || 0)
       : segmentCounts[segment as keyof SegmentCounts] || 0
     : '...';
-
+ 
   async function send(testOnly: boolean) {
     if (!subject || !body) {
       setLog('Subject and message are required.');

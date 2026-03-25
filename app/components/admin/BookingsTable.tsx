@@ -10,12 +10,18 @@ interface BookingsTableProps {
   bookings: Booking[];
   updateStatus: (bookingId: string, status: string) => Promise<void>;
   users: User[];
-  onUpdateBooking: (bookingId: string, patch: { note?: string; date?: string }) => Promise<void>; // ✅ NEW
+  onUpdateBooking: (bookingId: string, patch: { note?: string; date?: string }) => Promise<void>;
 }
 
+type BookingGroup = Record<string, Booking[]>;
+type BookingCounts = {
+  confirmed: number;
+  pending: number;
+  completed: number;
+  canceled: number;
+};
+
 function nyDateTimeLocalValue(iso: string) {
-  // "YYYY-MM-DDTHH:mm" in America/New_York
-  const d = new Date(iso);
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/New_York",
     year: "numeric",
@@ -25,23 +31,23 @@ function nyDateTimeLocalValue(iso: string) {
     minute: "2-digit",
     hour12: false,
   })
-    .formatToParts(d)
-    .reduce((acc: any, p) => ((acc[p.type] = p.value), acc), {});
+    .formatToParts(new Date(iso))
+    .reduce<Record<string, string>>((acc, part) => {
+      acc[part.type] = part.value;
+      return acc;
+    }, {});
+
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
 }
 
 function nyLocalToISOString(local: string) {
-  // local is "YYYY-MM-DDTHH:mm" in NY time (from datetime-local)
   if (!local) return "";
 
   const [datePart, timePart] = local.split("T");
   const [y, m, d] = datePart.split("-").map(Number);
   const [hh, mm] = timePart.split(":").map(Number);
-
-  // Build a UTC date with the same components first
   const pretendUTC = new Date(Date.UTC(y, m - 1, d, hh, mm, 0));
 
-  // Get NY offset at that moment (handles DST)
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
     timeZoneName: "shortOffset",
@@ -53,20 +59,75 @@ function nyLocalToISOString(local: string) {
     hour12: false,
   }).formatToParts(pretendUTC);
 
-  const off = parts.find((p) => p.type === "timeZoneName")?.value || "GMT-0"; // ex "GMT-5"
-  const m2 = off.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
-  if (!m2) return pretendUTC.toISOString();
+  const offset = parts.find((part) => part.type === "timeZoneName")?.value || "GMT-0";
+  const match = offset.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+  if (!match) return pretendUTC.toISOString();
 
-  const sign = m2[1] === "-" ? -1 : 1;
-  const oh = Number(m2[2] || 0);
-  const om = Number(m2[3] || 0);
-  const offsetMinutes = sign * (oh * 60 + om);
+  const sign = match[1] === "-" ? -1 : 1;
+  const offsetHours = Number(match[2] || 0);
+  const offsetMinutes = Number(match[3] || 0);
+  const totalOffsetMinutes = sign * (offsetHours * 60 + offsetMinutes);
+  const realUTCms = pretendUTC.getTime() - totalOffsetMinutes * 60_000;
 
-  // NY = UTC + offsetMinutes => UTC = NY - offsetMinutes
-  const realUTCms = pretendUTC.getTime() - offsetMinutes * 60_000;
   return new Date(realUTCms).toISOString();
 }
 
+function escapeCsvCell(value: unknown) {
+  const stringValue = String(value ?? "");
+  return `"${stringValue.replace(/"/g, '""')}"`;
+}
+
+function getStatusTone(status: string) {
+  const normalized = String(status || "").toLowerCase();
+
+  if (normalized === "confirmed") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-800";
+  }
+  if (normalized === "pending") {
+    return "border-amber-200 bg-amber-50 text-amber-800";
+  }
+  if (normalized === "completed") {
+    return "border-sky-200 bg-sky-50 text-sky-800";
+  }
+  if (normalized === "canceled" || normalized === "cancelled") {
+    return "border-rose-200 bg-rose-50 text-rose-800";
+  }
+
+  return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
+function countStatuses(bookings: Booking[]): BookingCounts {
+  return bookings.reduce<BookingCounts>(
+    (acc, booking) => {
+      const normalized = String(booking.status || "").toLowerCase();
+      if (normalized === "confirmed") acc.confirmed += 1;
+      else if (normalized === "pending") acc.pending += 1;
+      else if (normalized === "completed") acc.completed += 1;
+      else if (normalized === "canceled" || normalized === "cancelled") acc.canceled += 1;
+      return acc;
+    },
+    { confirmed: 0, pending: 0, completed: 0, canceled: 0 }
+  );
+}
+
+function ActionLink({
+  href,
+  label,
+  tone,
+}: {
+  href: string;
+  label: string;
+  tone: string;
+}) {
+  return (
+    <a
+      href={href}
+      className={`inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition ${tone}`}
+    >
+      {label}
+    </a>
+  );
+}
 
 export default function BookingsTable({
   bookings,
@@ -75,27 +136,33 @@ export default function BookingsTable({
   onUpdateBooking,
 }: BookingsTableProps) {
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
-
-  // ✅ editing state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftNote, setDraftNote] = useState("");
   const [draftDT, setDraftDT] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const userMap = useMemo(() => Object.fromEntries(users.map((u) => [u.userId, u])), [users]);
-
-  // Group by day
-  const groups = useMemo(() => {
-    return bookings.reduce((acc, b) => {
-      const day = new Date(b.date).toDateString();
-      (acc[day] ||= []).push(b);
+  const userMap = useMemo(
+    () => users.reduce<Record<string, User>>((acc, user) => {
+      acc[user.userId] = user;
       return acc;
-    }, {} as Record<string, Booking[]>);
+    }, {}),
+    [users]
+  );
+
+  const groups = useMemo(() => {
+    return bookings.reduce<BookingGroup>((acc, booking) => {
+      const day = new Date(booking.date).toDateString();
+      (acc[day] ||= []).push(booking);
+      return acc;
+    }, {});
   }, [bookings]);
 
-  const dayKeys = useMemo(() => {
-    return Object.keys(groups).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-  }, [groups]);
+  const dayKeys = useMemo(
+    () => Object.keys(groups).sort((a, b) => new Date(a).getTime() - new Date(b).getTime()),
+    [groups]
+  );
+
+  const totals = useMemo(() => countStatuses(bookings), [bookings]);
 
   const toggleNote = (bookingId: string) => {
     setExpandedNotes((prev) => {
@@ -106,61 +173,45 @@ export default function BookingsTable({
     });
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      confirmed: "bg-blue-100 text-blue-800 border-blue-200",
-      completed: "bg-green-100 text-green-800 border-green-200",
-      cancelled: "bg-red-100 text-red-800 border-red-200",
-      canceled: "bg-red-100 text-red-800 border-red-200",
-      "in-progress": "bg-purple-100 text-purple-800 border-purple-200",
-    };
-    return colors[String(status || "").toLowerCase()] || "bg-gray-100 text-gray-800 border-gray-200";
-  };
-
-  // Export currently displayed bookings to CSV. This flattens grouped bookings and
-  // includes basic details such as booking number, user, service, status and date.
   const exportCSV = () => {
     const headers = [
-      'Booking #',
-      'Name',
-      'User ID',
-      'Service',
-      'Subscription',
-      'Status',
-      'Date (NY)',
-      'Note',
-      'Phone',
-      'Address',
+      "Booking #",
+      "Name",
+      "User ID",
+      "Service",
+      "Subscription",
+      "Status",
+      "Date (NY)",
+      "Note",
+      "Phone",
+      "Address",
     ];
-    const rowsData: string[][] = [];
-    bookings.forEach((b) => {
-      const u = userMap[b.userId] || ({} as any);
-      const fullAddress = formatAddress(b.address, b.city, b.state, b.zip);
-      rowsData.push([
-        String(b.bookingNumber ?? ''),
-        b.name || u.name || '',
-        b.userId || '',
-        b.service || '',
-        b.subscription || u.subscription || '',
-        b.status || '',
-        formatTimeNY(b.date),
-        b.note ? b.note.replace(/\n/g, ' ') : '',
-        b.phone || u.phone || '',
-        fullAddress || '',
-      ]);
+
+    const rows = bookings.map((booking) => {
+      const user = userMap[booking.userId];
+      const fullAddress = formatAddress(booking.address, booking.city, booking.state, booking.zip);
+
+      return [
+        booking.bookingNumber,
+        booking.name || user?.name || "",
+        booking.userId || "",
+        booking.service || "",
+        booking.subscription || user?.subscription || "",
+        booking.status || "",
+        formatTimeNY(booking.date),
+        booking.note ? booking.note.replace(/\n/g, " ") : "",
+        booking.phone || user?.phone || "",
+        fullAddress,
+      ];
     });
-    const escapeCell = (val: any) => {
-      const str = String(val ?? '');
-      return '"' + str.replace(/"/g, '""') + '"';
-    };
-    const csvLines = [headers.map(escapeCell).join(',')].concat(
-      rowsData.map((row) => row.map(escapeCell).join(','))
+
+    const csvLines = [headers.map(escapeCsvCell).join(",")].concat(
+      rows.map((row) => row.map(escapeCsvCell).join(","))
     );
-    const csvContent = csvLines.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+    const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = `bookings-${Date.now()}.csv`;
     document.body.appendChild(link);
@@ -169,10 +220,10 @@ export default function BookingsTable({
     URL.revokeObjectURL(url);
   };
 
-  const startEdit = (b: Booking) => {
-    setEditingId(b._id);
-    setDraftNote(String(b.note || ""));
-    setDraftDT(nyDateTimeLocalValue(b.date));
+  const startEdit = (booking: Booking) => {
+    setEditingId(booking._id);
+    setDraftNote(String(booking.note || ""));
+    setDraftDT(nyDateTimeLocalValue(booking.date));
   };
 
   const cancelEdit = () => {
@@ -182,340 +233,371 @@ export default function BookingsTable({
     setSaving(false);
   };
 
-  const saveEdit = async (b: Booking) => {
+  const saveEdit = async (booking: Booking) => {
     setSaving(true);
     try {
-      await onUpdateBooking(b._id, { note: draftNote, date: nyLocalToISOString(draftDT) });
+      await onUpdateBooking(booking._id, {
+        note: draftNote,
+        date: nyLocalToISOString(draftDT),
+      });
       cancelEdit();
-    } catch (e) {
-      console.error("Save booking edit failed:", e);
+    } catch (error) {
+      console.error("Save booking edit failed:", error);
       alert("Failed to save booking changes");
       setSaving(false);
     }
   };
 
   return (
-    <div className="space-y-6 bookings-table-section">
-      {/* Export button */}
+    <div className="space-y-5 bookings-table-section">
       {bookings.length > 0 && (
-        <div className="flex justify-end mb-3">
-          <button
-            type="button"
-            onClick={exportCSV}
-            className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg text-sm font-medium hover:shadow-lg active:scale-95 transition-all"
-          >
-            Export CSV
-          </button>
-        </div>
+        <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] md:p-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Booking command center
+              </div>
+              <h2 className="mt-1 text-xl font-semibold text-slate-900">
+                {bookings.length} booking{bookings.length !== 1 ? "s" : ""} in this view
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Fast actions and compact cards for phone-first scheduling.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={exportCSV}
+              className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              Export CSV
+            </button>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Pending</div>
+              <div className="mt-2 text-2xl font-semibold text-slate-900">{totals.pending}</div>
+            </div>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Confirmed</div>
+              <div className="mt-2 text-2xl font-semibold text-emerald-900">{totals.confirmed}</div>
+            </div>
+            <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Completed</div>
+              <div className="mt-2 text-2xl font-semibold text-sky-900">{totals.completed}</div>
+            </div>
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-rose-700">Canceled</div>
+              <div className="mt-2 text-2xl font-semibold text-rose-900">{totals.canceled}</div>
+            </div>
+          </div>
+        </section>
       )}
+
       {dayKeys.map((day) => {
-        // Collect confirmed booking addresses for this day to generate a multi-stop Google Maps route.
-        const confirmedAddresses = (groups[day] || [])
-          .filter((booking) => booking.status && String(booking.status).toLowerCase() === 'confirmed')
-          .map((booking) => {
-            const addr = formatAddress(booking.address, booking.city, booking.state, booking.zip);
-            return addr;
-          })
-          .filter((addr) => !!addr);
-        // Build a Google Maps multi-stop directions URL.  When there's one address it will still
-        // navigate to that address from the user's current location.  We only create the URL
-        // when at least one confirmed booking exists for the day.
+        const dayBookings = groups[day] || [];
+        const dayCounts = countStatuses(dayBookings);
+        const confirmedAddresses = dayBookings
+          .filter((booking) => String(booking.status || "").toLowerCase() === "confirmed")
+          .map((booking) => formatAddress(booking.address, booking.city, booking.state, booking.zip))
+          .filter(Boolean);
+
         const mapsUrl =
-  confirmedAddresses.length > 0
-    ? (() => {
-        const stops = confirmedAddresses.map((a) => a.trim()).filter(Boolean);
+          confirmedAddresses.length > 0
+            ? (() => {
+                const destination = confirmedAddresses[confirmedAddresses.length - 1];
+                const waypoints = confirmedAddresses.slice(0, -1);
+                const params = new URLSearchParams({
+                  api: "1",
+                  origin: "My Location",
+                  destination,
+                });
+                if (waypoints.length > 0) params.set("waypoints", waypoints.join("|"));
+                return `https://www.google.com/maps/dir/?${params.toString()}`;
+              })()
+            : null;
 
-        // destination must be the LAST stop
-        const destination = stops[stops.length - 1];
-
-        // waypoints are everything BEFORE destination
-        const waypoints = stops.slice(0, -1);
-
-        const params = new URLSearchParams({
-          api: "1",
-          origin: "My Location",
-          destination,
-        });
-
-        if (waypoints.length) {
-          // waypoints must be pipe-separated
-          params.set("waypoints", waypoints.join("|"));
-        }
-
-        return `https://www.google.com/maps/dir/?${params.toString()}`;
-      })()
-    : null;
         return (
-  <div key={day} className="space-y-3 md:space-y-4">
-          {/* Day Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg md:rounded-xl px-4 md:px-6 py-3 md:py-4 shadow-lg">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 md:gap-3">
-                <div className="bg-white/20 p-1.5 md:p-2 rounded-lg">
-                  <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
+          <section key={day} className="space-y-3 md:space-y-4">
+            <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 p-4 text-white shadow-[0_16px_36px_rgba(15,23,42,0.18)] md:p-5">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <h2 className="text-white font-bold text-base md:text-xl">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+                    Service day
+                  </div>
+                  <h3 className="mt-1 text-lg font-semibold md:text-2xl">
                     {new Date(day).toLocaleDateString("en-US", {
                       weekday: "long",
                       month: "long",
                       day: "numeric",
                       year: "numeric",
                     })}
-                  </h2>
-                  <p className="text-blue-100 text-xs md:text-sm">
-                    {groups[day].length} booking{groups[day].length !== 1 ? "s" : ""}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-300">
+                    {dayBookings.length} stop{dayBookings.length !== 1 ? "s" : ""} scheduled
                   </p>
                 </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
+                    Pending {dayCounts.pending}
+                  </span>
+                  <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-100">
+                    Confirmed {dayCounts.confirmed}
+                  </span>
+                  <span className="rounded-full border border-sky-400/20 bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-sky-100">
+                    Completed {dayCounts.completed}
+                  </span>
+                  {mapsUrl && (
+                    <a
+                      href={mapsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-full border border-white/10 bg-white text-slate-950 px-4 py-2 text-xs font-semibold transition hover:bg-slate-100"
+                    >
+                      Open route
+                    </a>
+                  )}
+                </div>
               </div>
-              {mapsUrl && (
-                <a
-                  href={mapsUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 px-3 py-1.5 md:px-4 md:py-2 bg-white text-blue-600 border border-blue-200 rounded-lg text-xs md:text-sm font-semibold hover:bg-blue-50 transition-colors"
-                >
-                  🗺️ Route
-                </a>
-              )}
             </div>
-          </div>
 
-          {/* Bookings Grid */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 md:gap-6">
-            {groups[day].map((b) => {
-              const u = userMap[b.userId] || ({} as any);
-              const phone = b.phone || u.phone;
-              const fullAddress = formatAddress(b.address, b.city, b.state, b.zip);
-              const isEditing = editingId === b._id;
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-2 xl:gap-5">
+              {dayBookings.map((booking) => {
+                const user = userMap[booking.userId];
+                const phone = booking.phone || user?.phone || "";
+                const fullAddress = formatAddress(booking.address, booking.city, booking.state, booking.zip);
+                const isEditing = editingId === booking._id;
+                const showNote = expandedNotes.has(booking._id);
 
-              return (
-                <div
-                  key={b._id}
-                  className="bg-white rounded-lg md:rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100"
-                >
-                  {/* Card Header */}
-                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 md:px-6 py-3 md:py-4 border-b border-gray-200">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2 md:gap-3">
-                        <div className="bg-blue-600 text-white px-2 md:px-3 py-1 md:py-1.5 rounded-lg font-mono font-bold text-xs md:text-sm">
-                          #{b.bookingNumber}
-                        </div>
+                return (
+                  <article
+                    key={booking._id}
+                    className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_12px_30px_rgba(15,23,42,0.06)]"
+                  >
+                    <div className="border-b border-slate-200 bg-slate-50 px-4 py-4 md:px-5">
+                      <div className="flex items-start justify-between gap-3">
                         <div>
-                          <h3 className="font-bold text-gray-900 text-base md:text-lg">
-                            {b.name || u.name || "Unknown User"}
-                          </h3>
-                          <p className="text-[10px] md:text-xs text-gray-500 font-mono">ID: {b.userId}</p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-xl bg-slate-950 px-2.5 py-1 text-xs font-bold text-white">
+                              #{booking.bookingNumber}
+                            </span>
+                            <span
+                              className={`rounded-xl border px-2.5 py-1 text-xs font-semibold ${getStatusTone(booking.status)}`}
+                            >
+                              {booking.status || "Pending"}
+                            </span>
+                          </div>
+                          <h4 className="mt-3 text-lg font-semibold text-slate-900">
+                            {booking.name || user?.name || "Unknown user"}
+                          </h4>
+                          <div className="mt-1 text-xs text-slate-500">User ID: {booking.userId}</div>
                         </div>
-                      </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 md:px-3 py-0.5 md:py-1 rounded-lg text-[10px] md:text-xs font-semibold ${getStatusColor(b.status)} border`}>
-                          {b.status}
-                        </span>
-
-                        {/* ✅ edit button */}
                         <button
                           type="button"
-                          onClick={() => (isEditing ? cancelEdit() : startEdit(b))}
-                          className="p-2 bg-white hover:bg-gray-50 active:bg-gray-100 rounded-lg border border-gray-200"
-                          title={isEditing ? "Cancel edit" : "Edit note/time"}
+                          onClick={() => (isEditing ? cancelEdit() : startEdit(booking))}
+                          className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                            isEditing
+                              ? "border-amber-200 bg-amber-50 text-amber-800"
+                              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                          }`}
                         >
-                          ✏️
+                          {isEditing ? "Close edit" : "Edit"}
                         </button>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Card Body */}
-                  <div className="p-4 md:p-6 space-y-3 md:space-y-5">
-                    {/* Service & Plan */}
-                    <div className="grid grid-cols-2 gap-2 md:gap-4">
-                      <div className="bg-blue-50 rounded-lg p-3 md:p-4 border border-blue-100">
-                        <div className="flex items-center gap-1.5 md:gap-2 mb-1.5 md:mb-2">
-                          <svg className="w-4 h-4 md:w-5 md:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
-                          <span className="text-[10px] md:text-xs font-semibold text-blue-600 uppercase">Service</span>
+                    <div className="space-y-4 p-4 md:p-5">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Time</div>
+                          {!isEditing ? (
+                            <div className="mt-2 text-sm font-semibold text-slate-900">{formatTimeNY(booking.date)}</div>
+                          ) : (
+                            <input
+                              type="datetime-local"
+                              value={draftDT}
+                              onChange={(event) => setDraftDT(event.target.value)}
+                              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                            />
+                          )}
                         </div>
-                        <p className="font-bold text-gray-900 text-sm md:text-base">{b.service}</p>
-                      </div>
-                      <div className="bg-purple-50 rounded-lg p-3 md:p-4 border border-purple-100">
-                        <div className="flex items-center gap-1.5 md:gap-2 mb-1.5 md:mb-2">
-                          <svg className="w-4 h-4 md:w-5 md:h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                          </svg>
-                          <span className="text-[10px] md:text-xs font-semibold text-purple-600 uppercase">Plan</span>
-                        </div>
-                        <p className="font-bold text-gray-900 text-sm md:text-base">
-                          {b.subscription || u.subscription || "None"}
-                        </p>
-                      </div>
-                    </div>
 
-                    {/* Time & Status Controls */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 md:gap-4 p-3 md:p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4 md:w-5 md:h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-
-                        {!isEditing ? (
-                          <span className="font-bold text-gray-900 text-sm md:text-base">{formatTimeNY(b.date)}</span>
-                        ) : (
-                          <input
-                            type="datetime-local"
-                            value={draftDT}
-                            onChange={(e) => setDraftDT(e.target.value)}
-                            className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-semibold"
-                          />
-                        )}
-                      </div>
-
-                      <BookingStatusSelect bookingId={b._id} currentStatus={b.status} onUpdate={updateStatus} />
-                    </div>
-
-                    {/* ✅ Edit Note block */}
-                    <div className="p-3 md:p-4 bg-amber-50 rounded-lg border border-amber-100">
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="font-semibold text-amber-800">Note</div>
-
-                        {isEditing && (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => cancelEdit()}
-                              disabled={saving}
-                              className="px-3 py-1.5 rounded-lg bg-white border border-amber-200 text-amber-900 text-xs font-bold disabled:opacity-60"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={() => saveEdit(b)}
-                              disabled={saving}
-                              className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold disabled:opacity-60"
-                            >
-                              {saving ? "Saving..." : "Save"}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {!isEditing ? (
-                        b.note ? (
-                          <>
-                            <button
-                              onClick={() => toggleNote(b._id)}
-                              className="flex items-center gap-2 font-semibold text-amber-800 hover:text-amber-900 transition-colors text-sm"
-                            >
-                              <svg
-                                className={`w-4 h-4 transition-transform ${expandedNotes.has(b._id) ? "rotate-90" : ""}`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                              View note
-                            </button>
-
-                            {expandedNotes.has(b._id) && (
-                              <p className="text-xs md:text-sm text-gray-700 pl-6 whitespace-pre-wrap">{b.note}</p>
-                            )}
-                          </>
-                        ) : (
-                          <p className="text-xs md:text-sm text-gray-500">No note</p>
-                        )
-                      ) : (
-                        <textarea
-                          value={draftNote}
-                          onChange={(e) => setDraftNote(e.target.value)}
-                          rows={4}
-                          className="w-full px-3 py-2 rounded-lg border border-amber-200 bg-white text-sm"
-                          placeholder="Type note here..."
-                        />
-                      )}
-                    </div>
-
-                    {/* Contact Info */}
-                    {phone && (
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 md:gap-3 p-3 md:p-4 bg-green-50 rounded-lg border border-green-100">
-                        <div className="flex items-center gap-2 md:gap-3">
-                          <svg className="w-4 h-4 md:w-5 md:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                          </svg>
-                          <span className="font-semibold text-gray-900 text-sm md:text-base">{phone}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <a
-                            href={`tel:${sanitizeTel(phone)}`}
-                            className="p-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-lg transition-all active:scale-95"
-                            title="Call"
-                          >
-                            📞
-                          </a>
-                          <a
-                            href={`sms:${sanitizeTel(phone)}`}
-                            className="p-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg transition-all active:scale-95"
-                            title="SMS"
-                          >
-                            💬
-                          </a>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Service</div>
+                          <div className="mt-2 text-sm font-semibold text-slate-900">{booking.service || "Not set"}</div>
                         </div>
                       </div>
-                    )}
 
-                    {/* Address */}
-                    {fullAddress && (
-                      <div className="p-3 md:p-4 bg-red-50 rounded-lg border border-red-100">
-                        <div className="flex items-start gap-2 md:gap-3">
-                          <svg className="w-4 h-4 md:w-5 md:h-5 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          <div className="flex-1">
-                            <p className="text-xs md:text-sm text-gray-700 mb-2">{fullAddress}</p>
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                onClick={() => navigator.clipboard.writeText(fullAddress)}
-                                className="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 rounded-lg text-xs font-semibold transition-all border border-gray-200"
-                              >
-                                📋 Copy
-                              </button>
-                              <a
-                                href={`https://maps.google.com/?q=${encodeURIComponent(fullAddress)}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold transition-all"
-                              >
-                                📍 Maps
-                              </a>
+                      <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-3">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                              Status and plan
+                            </div>
+                            <div className="mt-1 text-sm text-slate-600">
+                              {booking.subscription || user?.subscription || "No plan"}
                             </div>
                           </div>
                         </div>
+                        <BookingStatusSelect
+                          bookingId={booking._id}
+                          currentStatus={booking.status}
+                          onUpdate={updateStatus}
+                        />
                       </div>
-                    )}
 
-                    {/* Images */}
-                    {b.images && b.images.length > 0 && (
-                      <div className="p-3 md:p-4 bg-slate-50 rounded-lg border border-slate-200">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="font-semibold text-slate-700 text-sm md:text-base">
-                            Photos ({b.images.length})
-                          </span>
-                        </div>
-                        <BookingImageGallery images={b.images} bookingNumber={b.bookingNumber} />
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {phone ? (
+                          <>
+                            <ActionLink
+                              href={`tel:${sanitizeTel(phone)}`}
+                              label="Call"
+                              tone="border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                            />
+                            <ActionLink
+                              href={`sms:${sanitizeTel(phone)}`}
+                              label="SMS"
+                              tone="border border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100"
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <div className="inline-flex items-center justify-center rounded-xl border border-dashed border-slate-200 px-3 py-2 text-xs font-semibold text-slate-400">
+                              No phone
+                            </div>
+                            <div className="inline-flex items-center justify-center rounded-xl border border-dashed border-slate-200 px-3 py-2 text-xs font-semibold text-slate-400">
+                              No SMS
+                            </div>
+                          </>
+                        )}
+
+                        {fullAddress ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => navigator.clipboard.writeText(fullAddress)}
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                            >
+                              Copy address
+                            </button>
+                            <ActionLink
+                              href={`https://maps.google.com/?q=${encodeURIComponent(fullAddress)}`}
+                              label="Open map"
+                              tone="border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100"
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <div className="inline-flex items-center justify-center rounded-xl border border-dashed border-slate-200 px-3 py-2 text-xs font-semibold text-slate-400">
+                              No address
+                            </div>
+                            <div className="inline-flex items-center justify-center rounded-xl border border-dashed border-slate-200 px-3 py-2 text-xs font-semibold text-slate-400">
+                              Maps unavailable
+                            </div>
+                          </>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>          
-               );
-            })}
-          </div>
+
+                      {phone && (
+                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
+                          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Phone</div>
+                          <div className="mt-1 text-sm font-semibold text-slate-900">{phone}</div>
+                        </div>
+                      )}
+
+                      {fullAddress && (
+                        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3">
+                          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-rose-700">Address</div>
+                          <div className="mt-1 text-sm text-slate-700">{fullAddress}</div>
+                        </div>
+                      )}
+
+                      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">Notes</div>
+                          {!isEditing && booking.note && (
+                            <button
+                              type="button"
+                              onClick={() => toggleNote(booking._id)}
+                              className="text-xs font-semibold text-amber-800"
+                            >
+                              {showNote ? "Hide" : "View"}
+                            </button>
+                          )}
+                        </div>
+
+                        {isEditing ? (
+                          <div className="space-y-2">
+                            <textarea
+                              value={draftNote}
+                              onChange={(event) => setDraftNote(event.target.value)}
+                              rows={4}
+                              className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
+                              placeholder="Type note here..."
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={cancelEdit}
+                                disabled={saving}
+                                className="flex-1 rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-900"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => saveEdit(booking)}
+                                disabled={saving}
+                                className="flex-1 rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white"
+                              >
+                                {saving ? "Saving..." : "Save"}
+                              </button>
+                            </div>
+                          </div>
+                        ) : booking.note ? (
+                          <>
+                            <p className="text-sm text-slate-700">
+                              {showNote ? booking.note : `${booking.note.slice(0, 120)}${booking.note.length > 120 ? "..." : ""}`}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-sm text-slate-500">No note yet.</p>
+                        )}
+                      </div>
+
+                      {booking.images && booking.images.length > 0 && (
+                        <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                          <summary className="cursor-pointer list-none text-sm font-semibold text-slate-800">
+                            Photos ({booking.images.length})
+                          </summary>
+                          <div className="mt-3">
+                            <BookingImageGallery
+                              images={booking.images}
+                              bookingNumber={booking.bookingNumber}
+                            />
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
+
+      {bookings.length === 0 && (
+        <div className="rounded-[28px] border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+          <div className="text-lg font-semibold text-slate-900">No bookings in this view</div>
+          <p className="mt-2 text-sm text-slate-500">
+            Try a different date, clear filters, or refresh the admin data.
+          </p>
         </div>
-      );
-    })}
-  </div>
-);
+      )}
+    </div>
+  );
 }

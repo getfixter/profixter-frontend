@@ -17,13 +17,13 @@ export default function AdminHeader() {
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-r from-[#0b1220] to-[#1a2332] border-b border-[#2a3442] shadow-lg">
       <div className="max-w-[1400px] mx-auto px-4 md:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-14 md:h-16">
           {/* Logo & Title */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 md:gap-4 min-w-0">
             <Link href="/" className="text-white hover:text-[#306EEC] transition-colors">
               <svg
-                width="32"
-                height="32"
+                width="30"
+                height="30"
                 viewBox="0 0 24 24"
                 fill="none"
                 className="text-white"
@@ -39,15 +39,15 @@ export default function AdminHeader() {
                 />
               </svg>
             </Link>
-            <div>
-              <h1 className="text-white font-bold text-lg">Admin Panel</h1>
-              <p className="text-[#94a3b8] text-xs">ProFixter Management</p>
+            <div className="min-w-0">
+              <h1 className="truncate text-white font-bold text-base md:text-lg">Admin Panel</h1>
+              <p className="hidden sm:block text-[#94a3b8] text-xs">ProFixter Management</p>
             </div>
           </div>
 
           {/* User Info & Logout */}
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-[#1e293b] rounded-lg">
+          <div className="flex items-center gap-2 md:gap-4">
+            <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-[#1e293b] rounded-2xl">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#306EEC] to-[#1e40af] flex items-center justify-center text-white font-bold text-sm">
                 {user?.name?.charAt(0).toUpperCase() || 'A'}
               </div>
@@ -59,9 +59,16 @@ export default function AdminHeader() {
               </div>
             </div>
 
+            <div className="md:hidden flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white/80">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#306EEC] text-[11px] font-bold text-white">
+                {user?.name?.charAt(0).toUpperCase() || 'A'}
+              </span>
+              <span className="max-w-[90px] truncate font-medium">{user?.name || 'Admin'}</span>
+            </div>
+
             <button
               onClick={handleLogout}
-              className="px-4 py-2 bg-[#1e293b] hover:bg-[#2d3b4f] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
+              className="px-3 md:px-4 py-2 bg-[#1e293b] hover:bg-[#2d3b4f] text-white rounded-xl font-medium text-sm transition-colors flex items-center gap-2"
             >
               <svg
                 width="16"
