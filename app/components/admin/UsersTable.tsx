@@ -148,7 +148,7 @@ export default function UsersTable({
 
   const handleRunCleanup = async () => {
     const ok = window.confirm(
-      'Run one-time GHL cleanup?\n\nThis will remove "subscription_purchased" tag for users who have no active subscription in MongoDB.'
+      'Run Fix GHL?\n\nStep 1: sync all DB users into GHL.\nStep 2: remove subscription_purchased tag for users with no active subscription.'
     );
 
     if (!ok) return;
@@ -157,10 +157,10 @@ export default function UsersTable({
 
     try {
       await onRunSubscriptionCleanup();
-      window.alert('Cleanup finished.');
+      window.alert('Fix GHL finished.');
     } catch (error) {
-      console.error('Cleanup failed:', error);
-      window.alert('Cleanup failed. Check console or backend response.');
+      console.error('Fix GHL failed:', error);
+      window.alert('Fix GHL failed. Check console or backend response.');
     } finally {
       setIsRunningCleanup(false);
     }
@@ -378,7 +378,7 @@ export default function UsersTable({
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6"> 
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
             {PLAN_FILTERS.map((filter) => {
               const isActive = planFilter === filter.key;
 
@@ -450,7 +450,7 @@ export default function UsersTable({
                   : 'bg-amber-600 hover:bg-amber-700'
               }`}
             >
-              {isRunningCleanup ? 'Running cleanup...' : 'Run GHL cleanup'}
+              {isRunningCleanup ? 'Fixing GHL...' : 'Fix GHL'}
             </button>
 
             {filteredRows.length > 0 && (

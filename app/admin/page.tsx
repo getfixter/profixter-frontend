@@ -165,38 +165,63 @@ export default function AdminPage() {
   };
 
   const handleRunSubscriptionCleanup = async () => {
-    try {
-      const token = localStorage.getItem("token");
+  try {
+    const token = localStorage.getItem("token");
 
-      const res = await fetch(`${API_URL}/api/admin/ghl/subscription-tags/cleanup`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token || ""}`,
-          "Content-Type": "application/json",
-        },
-      });
+    const syncRes = await fetch(`${API_URL}/api/admin/ghl/sync-all-users`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token || ""}`,
+        "Content-Type": "application/json",
+      },
+    });
 
-      const data = await res.json();
+    const syncData = await syncRes.json();
 
-      if (!res.ok) {
-        throw new Error(data?.message || "Cleanup failed");
-      }
-
-      console.log("Cleanup result:", data);
-
-      alert(
-        `Cleanup finished.\n\nScanned: ${data.scanned ?? 0}\nRemoved: ${data.removed ?? 0}\nNo Contact: ${data.noContact ?? 0}\nErrors: ${(data.errors || []).length}`
-      );
-
-      await fetchAll();
-    } catch (error) {
-      console.error("Failed to run subscription cleanup:", error);
-      const message =
-        error instanceof Error ? error.message : "Failed to run subscription cleanup";
-      alert(message);
-      throw error;
+    if (!syncRes.ok) {
+      throw new Error(syncData?.message || "Sync all users failed");
     }
-  };
+
+    const cleanupRes = await fetch(`${API_URL}/api/admin/ghl/subscription-tags/cleanup`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token || ""}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const cleanupData = await cleanupRes.json();
+
+    if (!cleanupRes.ok) {
+      throw new Error(cleanupData?.message || "Cleanup failed");
+    }
+
+    console.log("Sync result:", syncData);
+    console.log("Cleanup result:", cleanupData);
+
+    alert(
+      `Fix GHL finished.\n\n` +
+        `SYNC:\n` +
+        `Scanned: ${syncData.scanned ?? 0}\n` +
+        `Synced: ${syncData.synced ?? 0}\n` +
+        `Skipped no phone: ${syncData.skippedNoPhone ?? 0}\n` +
+        `Sync errors: ${(syncData.errors || []).length}\n\n` +
+        `CLEANUP:\n` +
+        `Scanned: ${cleanupData.scanned ?? 0}\n` +
+        `Removed tags: ${cleanupData.removed ?? 0}\n` +
+        `No Contact: ${cleanupData.noContact ?? 0}\n` +
+        `Cleanup errors: ${(cleanupData.errors || []).length}`
+    );
+
+    await fetchAll();
+  } catch (error) {
+    console.error("Failed to fix GHL:", error);
+    const message =
+      error instanceof Error ? error.message : "Failed to fix GHL";
+    alert(message);
+    throw error;
+  }
+};
 
   const handleBlacklist = async (userId: string) => {
     try {
