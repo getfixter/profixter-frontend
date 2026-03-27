@@ -18,7 +18,7 @@ import {
   getAllBookings,
   getBlacklist,
   updateBookingStatus,
-  updateBookingAdmin, // ✅ NEW
+  updateBookingAdmin,
   setAddressPlan,
   setAddressCancellationDate,
   addToBlacklist,
@@ -28,13 +28,13 @@ import type { User, Booking, BlacklistEntry } from "@/lib/admin-service";
 import AdminCalendarSettings from "@/app/components/admin/AdminCalendarSettings";
 
 const ADMIN_EMAIL = "getfixter@gmail.com";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 // ✅ NY "today" helper (YYYY-MM-DD)
 function todayNY() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 }
 function addDaysYMD(ymd: string, days: number) {
-  // ymd is YYYY-MM-DD in NY; treat as local date string
   const [y, m, d] = ymd.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
   dt.setDate(dt.getDate() + days);
@@ -53,11 +53,10 @@ export default function AdminPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState(""); // search query
+  const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [selectedDate, setSelectedDate] = useState<string | null>(() => todayNY()); // ✅ DEFAULT = TODAY NY
+  const [selectedDate, setSelectedDate] = useState<string | null>(() => todayNY());
 
-  // ✅ mobile comfort: hide filter row when scrolling / toggle
   const [showFilters, setShowFilters] = useState(false);
   const [showCalendarMobile, setShowCalendarMobile] = useState(false);
 
@@ -77,9 +76,10 @@ export default function AdminPage() {
       setBlacklist(blacklistData);
     } catch (error: unknown) {
       console.error("Failed to fetch admin data:", error);
-      const status = typeof error === "object" && error !== null && "response" in error
-        ? (error as { response?: { status?: number } }).response?.status
-        : undefined;
+      const status =
+        typeof error === "object" && error !== null && "response" in error
+          ? (error as { response?: { status?: number } }).response?.status
+          : undefined;
 
       if (status === 403) {
         alert("Access denied. Admin only.");
@@ -104,12 +104,10 @@ export default function AdminPage() {
       return;
     }
 
-    // ✅ Ensure default is always "today" when admin opens tab again
     setSelectedDate((prev) => prev || todayNY());
     fetchAll();
   }, [user, isAdmin, authLoading, router, fetchAll]);
 
-  // ✅ Auto-hide filters row while scrolling on mobile
   useEffect(() => {
     let lastY = window.scrollY;
     const onScroll = () => {
@@ -122,7 +120,6 @@ export default function AdminPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Update booking status
   const handleUpdateBookingStatus = async (bookingId: string, status: string) => {
     try {
       await updateBookingStatus(bookingId, status);
@@ -133,7 +130,6 @@ export default function AdminPage() {
     }
   };
 
-  // ✅ Update booking note/date
   const handleUpdateBooking = async (bookingId: string, patch: { note?: string; date?: string }) => {
     try {
       await updateBookingAdmin(bookingId, patch);
@@ -144,7 +140,6 @@ export default function AdminPage() {
     }
   };
 
-  // Set per-address subscription plan
   const handleSetAddressPlan = async (userId: string, addressId: string, plan: string) => {
     try {
       await setAddressPlan(userId, addressId, plan);
@@ -169,7 +164,40 @@ export default function AdminPage() {
     }
   };
 
-  // Blacklist/unblacklist user
+  const handleRunSubscriptionCleanup = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(`${API_URL}/api/admin/ghl/subscription-tags/cleanup`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token || ""}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.message || "Cleanup failed");
+      }
+
+      console.log("Cleanup result:", data);
+
+      alert(
+        `Cleanup finished.\n\nScanned: ${data.scanned ?? 0}\nRemoved: ${data.removed ?? 0}\nNo Contact: ${data.noContact ?? 0}\nErrors: ${(data.errors || []).length}`
+      );
+
+      await fetchAll();
+    } catch (error) {
+      console.error("Failed to run subscription cleanup:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to run subscription cleanup";
+      alert(message);
+      throw error;
+    }
+  };
+
   const handleBlacklist = async (userId: string) => {
     try {
       await addToBlacklist(userId, "Admin action");
@@ -188,7 +216,6 @@ export default function AdminPage() {
     }
   };
 
-  // Filter logic
   const qlc = q.trim().toLowerCase();
 
   const filteredUsers = useMemo(
@@ -204,19 +231,18 @@ export default function AdminPage() {
   const filteredBookings = useMemo(() => {
     let list = bookings;
 
-    // Search filter
     if (qlc) {
       list = list.filter((b) =>
-        [b.userId, b.name, b.service, b.status].some((v) => String(v || "").toLowerCase().includes(qlc))
+        [b.userId, b.name, b.service, b.status].some((v) =>
+          String(v || "").toLowerCase().includes(qlc)
+        )
       );
     }
 
-    // Status filter
     if (statusFilter) {
       list = list.filter((b) => String(b.status || "").toLowerCase() === statusFilter);
     }
 
-    // Date filter (default today)
     if (selectedDate) {
       list = list.filter((b) => toYMDNY(new Date(b.date)) === selectedDate);
     }
@@ -259,8 +285,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-50">
       <AdminHeader />
 
-      {/* Top toolbar */}
-        <div className="border-b border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-200 bg-white shadow-sm">
         <div className="px-3 md:px-8 py-3 md:py-4">
           <AdminTabs active={active} onChange={setActive} />
           <BottomNav active={active} onChange={setActive} />
@@ -304,14 +329,15 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* ✅ Quick day buttons only in bookings */}
           {active === "bookings" && (
             <div className="mt-3 flex items-center gap-2 flex-wrap">
               <button
                 type="button"
                 onClick={() => setSelectedDate(today)}
                 className={`px-3 py-2 rounded-xl text-xs md:text-sm font-semibold border ${
-                  selectedDate === today ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-800 border-gray-300"
+                  selectedDate === today
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-800 border-gray-300"
                 }`}
               >
                 <span className="hidden sm:inline">Today (NY)</span>
@@ -321,7 +347,9 @@ export default function AdminPage() {
                 type="button"
                 onClick={() => setSelectedDate(tomorrow)}
                 className={`px-3 py-2 rounded-xl text-xs md:text-sm font-semibold border ${
-                  selectedDate === tomorrow ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-800 border-gray-300"
+                  selectedDate === tomorrow
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-800 border-gray-300"
                 }`}
               >
                 <span className="hidden sm:inline">Tomorrow</span>
@@ -331,7 +359,9 @@ export default function AdminPage() {
                 type="button"
                 onClick={() => setSelectedDate(null)}
                 className={`px-3 py-2 rounded-xl text-xs md:text-sm font-semibold border ${
-                  selectedDate === null ? "bg-slate-900 text-white border-slate-900" : "bg-white text-gray-800 border-gray-300"
+                  selectedDate === null
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "bg-white text-gray-800 border-gray-300"
                 }`}
               >
                 All
@@ -354,7 +384,6 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* ✅ Filters row (collapsible for mobile comfort) */}
           <div className={`${active === "bookings" ? (showFilters ? "block" : "hidden md:block") : ""}`}>
             <div className="grid gap-2 md:gap-3 grid-cols-1 md:grid-cols-3 mt-3 md:mt-4">
               <div className="relative">
@@ -364,7 +393,12 @@ export default function AdminPage() {
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
                 </svg>
                 <input
                   className="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
@@ -393,7 +427,12 @@ export default function AdminPage() {
                     onClick={fetchAll}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
                     </svg>
                     <span className="hidden sm:inline">Refresh</span>
                     <span className="sm:hidden">↻</span>
@@ -405,7 +444,6 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-[1400px] mx-auto px-3 pb-8 pt-3 md:px-8 md:py-6">
         {loading ? (
           <div className="bg-white rounded-xl shadow-lg p-12 text-center">
@@ -424,6 +462,7 @@ export default function AdminPage() {
                 blacklistByUserId={blacklistByUserId}
                 onBlacklist={handleBlacklist}
                 onUnblacklist={handleUnblacklist}
+                onRunSubscriptionCleanup={handleRunSubscriptionCleanup}
               />
             )}
 
@@ -435,30 +474,30 @@ export default function AdminPage() {
                 blacklistByUserId={blacklistByUserId}
                 onBlacklist={handleBlacklist}
                 onUnblacklist={handleUnblacklist}
+                onRunSubscriptionCleanup={handleRunSubscriptionCleanup}
               />
             )}
 
             {active === "bookings" && (
               <div className="space-y-6">
-                {/* Calendar on top - full width */}
                 <div className={showCalendarMobile ? "block" : "hidden md:block"}>
                   <BookingsCalendar bookings={bookings} selectedDate={selectedDate} onChange={setSelectedDate} />
                 </div>
 
-                {/* Bookings below */}
                 <BookingsTable
-  bookings={filteredBookings}
-  updateStatus={handleUpdateBookingStatus}
-  users={users}
-  onUpdateBooking={handleUpdateBooking}
-/>
-
+                  bookings={filteredBookings}
+                  updateStatus={handleUpdateBookingStatus}
+                  users={users}
+                  onUpdateBooking={handleUpdateBooking}
+                />
               </div>
             )}
 
             {active === "emails" && <EmailComposer />}
 
-            {active === "blacklist" && <BlacklistTable blacklist={blacklist} onUnblacklist={handleUnblacklist} />}
+            {active === "blacklist" && (
+              <BlacklistTable blacklist={blacklist} onUnblacklist={handleUnblacklist} />
+            )}
 
             {active === "calendar" && <AdminCalendarSettings />}
           </>

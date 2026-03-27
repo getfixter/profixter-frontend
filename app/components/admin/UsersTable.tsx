@@ -17,6 +17,7 @@ interface UsersTableProps {
   blacklistByUserId: Map<string, string>;
   onBlacklist: (userId: string) => void;
   onUnblacklist: (blacklistId: string) => void;
+  onRunSubscriptionCleanup: () => Promise<void> | void;
 }
 
 type FlattenedRow = {
@@ -116,10 +117,12 @@ export default function UsersTable({
   blacklistByUserId,
   onBlacklist,
   onUnblacklist,
+  onRunSubscriptionCleanup,
 }: UsersTableProps) {
   const [search, setSearch] = useState('');
   const [planFilter, setPlanFilter] = useState<PlanFilter>('all');
   const [savingCancellationByAddress, setSavingCancellationByAddress] = useState<Record<string, boolean>>({});
+  const [isRunningCleanup, setIsRunningCleanup] = useState(false);
 
   const minCancellationDate = getTodayNY();
 
@@ -140,6 +143,26 @@ export default function UsersTable({
         ...current,
         [addressId]: false,
       }));
+    }
+  };
+
+  const handleRunCleanup = async () => {
+    const ok = window.confirm(
+      'Run one-time GHL cleanup?\n\nThis will remove "subscription_purchased" tag for users who have no active subscription in MongoDB.'
+    );
+
+    if (!ok) return;
+
+    setIsRunningCleanup(true);
+
+    try {
+      await onRunSubscriptionCleanup();
+      window.alert('Cleanup finished.');
+    } catch (error) {
+      console.error('Cleanup failed:', error);
+      window.alert('Cleanup failed. Check console or backend response.');
+    } finally {
+      setIsRunningCleanup(false);
     }
   };
 
@@ -416,6 +439,19 @@ export default function UsersTable({
               Showing <span className="font-semibold text-slate-900">{filteredRows.length}</span> records for{' '}
               <span className="font-semibold text-slate-900">{formatPlanLabel(planFilter)}</span>
             </div>
+
+            <button
+              type="button"
+              onClick={handleRunCleanup}
+              disabled={isRunningCleanup}
+              className={`rounded-2xl px-4 py-3 text-sm font-semibold text-white transition ${
+                isRunningCleanup
+                  ? 'cursor-wait bg-amber-400'
+                  : 'bg-amber-600 hover:bg-amber-700'
+              }`}
+            >
+              {isRunningCleanup ? 'Running cleanup...' : 'Run GHL cleanup'}
+            </button>
 
             {filteredRows.length > 0 && (
               <button
