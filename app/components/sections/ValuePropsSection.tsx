@@ -34,7 +34,7 @@ export default function ValuePropsSection() {
               <span className="text-2xl">⏱️</span>
             </div>
             <h3 className="font-bold text-gray-800 mb-2">Fast Scheduling</h3>
-            <p className="text-sm text-gray-600">Book appointments online 24/7 and choose dates that work for you – even same‑day in many cases.</p>
+            <p className="text-sm text-gray-600">Book appointments online 24/7 and choose dates that work for you. Or reach out for emergency.</p>
           </div>
           <div className="flex flex-col items-center text-center">
             <div className="w-12 h-12 rounded-full bg-[#E6F8EC] text-[#34A853] flex items-center justify-center mb-3">
@@ -59,25 +59,25 @@ export default function ValuePropsSection() {
                 <td className="px-4 py-2 border-b border-gray-200">Hourly Rate</td>
                 {/* Cross out the old price and show the spring discount */}
                 <td className="px-4 py-2 border-b border-gray-200">
-                  <span className="line-through text-gray-400 mr-1">$150</span>
+                  
                   $149/hour
                 </td>
                 <td className="px-4 py-2 border-b border-gray-200">
-                  <span className="line-through text-gray-400 mr-1">$100</span>
+                  
                   $99/hour
                 </td>
               </tr>
               <tr className="bg-gray-50">
                 <td className="px-4 py-2 border-b border-gray-200">Full Day Rate</td>
                 <td className="px-4 py-2 border-b border-gray-200">
-                  <span className="line-through text-gray-400 mr-1">$500</span>
+                  
                   $499/day
                 </td>
-                <td className="px-4 py-2 border-b border-gray-200">Included in plans*</td>
+                <td className="px-4 py-2 border-b border-gray-200">Included in elite plan*</td>
               </tr>
               <tr>
                 <td className="px-4 py-2 border-b border-gray-200">Emergency Service</td>
-                <td className="px-4 py-2 border-b border-gray-200">$200+/visit</td>
+                <td className="px-4 py-2 border-b border-gray-200">$300+/visit</td>
                 <td className="px-4 py-2 border-b border-gray-200">Included with Premium</td>
               </tr>
               <tr className="bg-gray-50">
@@ -87,7 +87,6 @@ export default function ValuePropsSection() {
               </tr>
             </tbody>
           </table>
-          <p className="text-xs text-green-600 font-semibold mt-2">Spring Discount</p>
           <p className="text-xs text-gray-500">*Full day service may require additional materials or fees depending on project scope.</p>
         </div>
       </div>

@@ -27,9 +27,8 @@ export default function PlanComparisonSection() {
       description: "For occasional help and small tasks",
       features: [
         "2 guaranteed visits per month (unlimited scheduling)",
-        "$99/hour rate for additional hours",
         "Standard scheduling during business hours",
-        "Cancel anytime",
+        "$99/hour rate for additional hours",
       ],
     },
     {
@@ -39,10 +38,9 @@ export default function PlanComparisonSection() {
       price: 249,
       description: "For busy homes needing frequent help",
       features: [
-        "Unlimited visits and priority scheduling",
-        "$99/hour rate for additional hours",
         "Multiple active bookings",
-        "Preferred handyman assigned",
+        "Secondary materials included",
+        "$99/hour rate for additional hours",
       ],
     },
     {
@@ -52,10 +50,9 @@ export default function PlanComparisonSection() {
       price: 349,
       description: "For families requiring 24/7 support",
       features: [
-        "Unlimited visits with emergency & after-hours support",
-        "$99/hour rate for additional hours",
+        "Emergency for no cost & after-hours support",
         "Two handymen for complex tasks",
-        "Dedicated account manager",
+        "$99/hour rate for additional hours",
       ],
     },
   ];

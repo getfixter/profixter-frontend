@@ -34,23 +34,19 @@ export default function OnDemandPage() {
               <h3 className="text-xl font-bold mb-2">Hourly Rate</h3>
               <p className="text-gray-500 mb-4">Perfect for small repairs and quick jobs</p>
               <p className="text-4xl font-extrabold text-gray-800 mb-2">
-                <span className="line-through text-gray-400 text-2xl mr-1">$150</span>
                 $149<span className="text-lg font-semibold">/hr</span>
               </p>
               <p className="text-sm text-gray-500">
-                Materials extra.  Members pay <span className="line-through text-gray-400 mr-1">$100</span>$99/hr.
+                Materials extra.  Members pay $99/hr.
               </p>
-              <p className="text-xs font-semibold text-green-600 mt-1">Spring Discount</p>
             </div>
             <div className="p-6 rounded-2xl border border-gray-200 bg-[#F9FAFB]">
               <h3 className="text-xl font-bold mb-2">Full Day Rate</h3>
               <p className="text-gray-500 mb-4">For bigger jobs that need a full day</p>
               <p className="text-4xl font-extrabold text-gray-800 mb-2">
-                <span className="line-through text-gray-400 text-2xl mr-1">$500</span>
                 $499<span className="text-lg font-semibold">/day</span>
               </p>
               <p className="text-sm text-gray-500">Up to 8 hours.  Includes travel time.  Members receive priority scheduling.</p>
-              <p className="text-xs font-semibold text-green-600 mt-1">Spring Discount</p>
             </div>
           </div>
           <p className="text-gray-600 mb-10 text-center">
