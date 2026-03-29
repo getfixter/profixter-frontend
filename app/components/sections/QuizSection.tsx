@@ -45,7 +45,7 @@ export default function QuizSection() {
   const recommendation = getRecommendation();
 
   return (
-    <section className="py-12 sm:py-16 px-4 sm:px-6 md:px-8 bg-[#F9FAFB]" id="quiz">
+    <section className="py-12 sm:py-16 px-4 sm:px-6 md:px-8 bg-[#F9FAFB] animate-fadeIn" id="quiz">
       <div className="max-w-3xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-extrabold text-center text-gray-800 mb-6">
           Find the Right Plan for You

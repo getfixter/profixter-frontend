@@ -37,7 +37,7 @@ export default function DepartmentsSection() {
     },
   ];
   return (
-    <section className="py-12 sm:py-16 bg-[#F3F4F6] px-4 sm:px-6 md:px-8" id="departments">
+    <section className="py-12 sm:py-16 bg-[#F3F4F6] px-4 sm:px-6 md:px-8 animate-fadeIn" id="departments">
       <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-center text-gray-800 mb-8">
             Our Services

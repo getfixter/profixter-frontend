@@ -56,7 +56,7 @@ export default function SubscriptionServicePage() {
             </li>
             <li className="flex items-start gap-3">
               <span className="text-green-600">✓</span>
-              <span>Discounted hourly rate for longer jobs ($100/hr)</span>
+              <span>Discounted hourly rate for longer jobs ($99/hr)</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="text-green-600">✓</span>

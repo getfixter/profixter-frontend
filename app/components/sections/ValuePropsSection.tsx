@@ -9,7 +9,7 @@
  */
 export default function ValuePropsSection() {
   return (
-    <section className="py-12 sm:py-16 bg-white px-4 sm:px-6 md:px-8" id="value-props">
+    <section className="py-12 sm:py-16 bg-white px-4 sm:px-6 md:px-8 animate-fadeIn" id="value-props">
       <div className="max-w-5xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-extrabold text-center text-gray-800 mb-8">
           Why Choose Profixter?
@@ -57,12 +57,22 @@ export default function ValuePropsSection() {
             <tbody>
               <tr>
                 <td className="px-4 py-2 border-b border-gray-200">Hourly Rate</td>
-                <td className="px-4 py-2 border-b border-gray-200">$150/hour</td>
-                <td className="px-4 py-2 border-b border-gray-200">$100/hour</td>
+                {/* Cross out the old price and show the spring discount */}
+                <td className="px-4 py-2 border-b border-gray-200">
+                  <span className="line-through text-gray-400 mr-1">$150</span>
+                  $149/hour
+                </td>
+                <td className="px-4 py-2 border-b border-gray-200">
+                  <span className="line-through text-gray-400 mr-1">$100</span>
+                  $99/hour
+                </td>
               </tr>
               <tr className="bg-gray-50">
                 <td className="px-4 py-2 border-b border-gray-200">Full Day Rate</td>
-                <td className="px-4 py-2 border-b border-gray-200">$500/day</td>
+                <td className="px-4 py-2 border-b border-gray-200">
+                  <span className="line-through text-gray-400 mr-1">$500</span>
+                  $499/day
+                </td>
                 <td className="px-4 py-2 border-b border-gray-200">Included in plans*</td>
               </tr>
               <tr>
@@ -77,7 +87,8 @@ export default function ValuePropsSection() {
               </tr>
             </tbody>
           </table>
-          <p className="text-xs text-gray-500 mt-2">*Full day service may require additional materials or fees depending on project scope.</p>
+          <p className="text-xs text-green-600 font-semibold mt-2">Spring Discount</p>
+          <p className="text-xs text-gray-500">*Full day service may require additional materials or fees depending on project scope.</p>
         </div>
       </div>
     </section>

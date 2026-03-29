@@ -12,6 +12,15 @@ import DepartmentsSection from "./components/sections/DepartmentsSection";
 import PlanComparisonSection from "./components/sections/PlanComparisonSection";
 import TestimonialsSection from "./components/sections/TestimonialsSection";
 import Footer from "./components/sections/Footer";
+// Import legacy sections for authenticated users
+import HeroSection from "./components/sections/HeroSection";
+import StepsSection from "./components/sections/StepsSection";
+import ServiceInfoSection from "./components/sections/ServiceInfoSection";
+import PlansSection from "./components/sections/PlansSection";
+import BookingSection from "./components/sections/BookingSection";
+import ServicesSection from "./components/sections/ServicesSection";
+import HandymenSection from "./components/sections/HandymenSection";
+import ProjectsSection from "./components/sections/ProjectsSection";
 import { ChatWidget } from "./components/ChatWidget";
 import Image from "next/image";
 
@@ -21,7 +30,8 @@ export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const router = useRouter();
-  const { user, isLoading } = useAuth();
+  // Pull the authenticated user and subscription state
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   // ✅ Redirect admin to admin panel on home load
   useEffect(() => {
@@ -50,20 +60,35 @@ export default function Home() {
       </div>
 
       <main className="relative">
-        {/* New hero with clear value proposition and primary CTAs */}
-        <NewHeroSection />
-        {/* Interactive quiz guides visitors to the right service or plan */}
-        <QuizSection />
-        {/* Core reasons to choose Profixter, including cost comparison */}
-        <ValuePropsSection />
-        {/* Show available service departments */}
-        <DepartmentsSection />
-        {/* Highlight subscription plans for quick comparison */}
-        <PlanComparisonSection />
-        {/* Social proof from happy customers */}
-        <TestimonialsSection />
-        {/* Footer contains contact info and nav */}
-        <Footer />
+        {/* Conditionally render the old or new home depending on authentication */}
+        {/* Show the legacy experience only if the user is logged in AND has an active subscription.  */}
+        {isAuthenticated &&
+        ((user?.subscription && user?.subscription !== "") ||
+          user?.addresses?.some((addr) => addr.hasActiveSubscription)) ? (
+          <>
+            {/* Legacy home layout for signed‑in users (keeps old features) */}
+            <HeroSection />
+            <StepsSection />
+            <ServiceInfoSection />
+            <PlansSection />
+            <BookingSection />
+            <ServicesSection />
+            <HandymenSection />
+            <ProjectsSection />
+            <Footer />
+          </>
+        ) : (
+          <>
+            {/* New layout for visitors */}
+            <NewHeroSection />
+            <QuizSection />
+            <ValuePropsSection />
+            <DepartmentsSection />
+            <PlanComparisonSection />
+            <TestimonialsSection />
+            <Footer />
+          </>
+        )}
       </main>
 
       {/* Chat widget trigger */}

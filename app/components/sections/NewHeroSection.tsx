@@ -14,7 +14,7 @@ import Link from "next/link";
  */
 export default function NewHeroSection() {
   return (
-    <section className="w-full bg-gradient-to-b from-[#0B1220] via-[#0B1220] to-transparent text-white pt-24 pb-16 px-4 sm:px-6 md:px-8 flex flex-col items-center">
+    <section className="w-full bg-gradient-to-b from-[#0B1220] via-[#0B1220] to-transparent text-white pt-24 pb-16 px-4 sm:px-6 md:px-8 flex flex-col items-center animate-fadeIn">
       <div className="max-w-4xl text-center">
         <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight mb-4">
           Your Personal Home‑Maintenance Team
