@@ -3,6 +3,7 @@
 import Link from "next/link";
 import PlanComparisonSection from "../../components/sections/PlanComparisonSection";
 import ValuePropsSection from "../../components/sections/ValuePropsSection";
+import DepartmentsSection from "../../components/sections/DepartmentsSection";
 
 /**
  * Subscription Service Page
@@ -32,12 +33,7 @@ export default function SubscriptionServicePage() {
           >
             Join Now
           </Link>
-          <Link
-            href="/plans"
-            className="inline-block px-6 py-3 rounded-xl bg-white/10 text-white/90 border border-white/20 font-bold text-base sm:text-lg hover:bg-white/20 transition"
-          >
-            View Plans
-          </Link>
+          
         </div>
       </section>
 
@@ -74,6 +70,8 @@ export default function SubscriptionServicePage() {
       <PlanComparisonSection />
       {/* And reinforce the overall value proposition */}
       <ValuePropsSection />
+      {/* Our Services Section */}
+<DepartmentsSection />
     </div>
   );
 }
