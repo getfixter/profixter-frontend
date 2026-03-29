@@ -5,20 +5,24 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 
 import Header from "./components/sections/Header";
+import NewHeroSection from "./components/sections/NewHeroSection";
+import QuizSection from "./components/sections/QuizSection";
+import ValuePropsSection from "./components/sections/ValuePropsSection";
+import DepartmentsSection from "./components/sections/DepartmentsSection";
+import PlanComparisonSection from "./components/sections/PlanComparisonSection";
+import TestimonialsSection from "./components/sections/TestimonialsSection";
+import Footer from "./components/sections/Footer";
+// Import legacy sections for authenticated users
 import HeroSection from "./components/sections/HeroSection";
 import StepsSection from "./components/sections/StepsSection";
+import ServiceInfoSection from "./components/sections/ServiceInfoSection";
 import PlansSection from "./components/sections/PlansSection";
-import ServicesSection from "./components/sections/ServicesSection";
 import BookingSection from "./components/sections/BookingSection";
+import ServicesSection from "./components/sections/ServicesSection";
 import HandymenSection from "./components/sections/HandymenSection";
 import ProjectsSection from "./components/sections/ProjectsSection";
-import Footer from "./components/sections/Footer";
 import { ChatWidget } from "./components/ChatWidget";
 import Image from "next/image";
-import ServiceInfoSection from "./components/sections/ServiceInfoSection";
-
-// ✅ NEW SECTION
-import RecommendedBusinessesSection from "./components/sections/RecommendedBusinessesSection";
 
 const ADMIN_EMAIL = "getfixter@gmail.com";
 
@@ -26,7 +30,8 @@ export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const router = useRouter();
-  const { user, isLoading } = useAuth();
+  // Pull the authenticated user and subscription state
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   // ✅ Redirect admin to admin panel on home load
   useEffect(() => {
@@ -49,29 +54,44 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* ✅ Use sticky instead of absolute for consistent layout */}
+      {/* Header stays sticky at the top */}
       <div className="sticky top-0 z-50">
         <Header />
       </div>
 
       <main className="relative">
-        <HeroSection />
-                <StepsSection />
-
-        <ServiceInfoSection />
-                <PlansSection />
-        <BookingSection />
-        <ServicesSection />
-
-        {/* ✅ NEW: Businesses we recommend */}
-        <RecommendedBusinessesSection />
-
-        <HandymenSection />
-        <ProjectsSection />
-        <Footer />
+        {/* Conditionally render the old or new home depending on authentication */}
+        {/* Show the legacy experience only if the user is logged in AND has an active subscription.  */}
+        {isAuthenticated &&
+        ((user?.subscription && user?.subscription !== "") ||
+          user?.addresses?.some((addr) => addr.hasActiveSubscription)) ? (
+          <>
+            {/* Legacy home layout for signed‑in users (keeps old features) */}
+            <HeroSection />
+            <StepsSection />
+            <ServiceInfoSection />
+            <PlansSection />
+            <BookingSection />
+            <ServicesSection />
+            <HandymenSection />
+            <ProjectsSection />
+            <Footer />
+          </>
+        ) : (
+          <>
+            {/* New layout for visitors */}
+            <NewHeroSection />
+            <QuizSection />
+            <ValuePropsSection />
+            <DepartmentsSection />
+            <PlanComparisonSection />
+            <TestimonialsSection />
+            <Footer />
+          </>
+        )}
       </main>
 
-      {/* ✅ Chat button */}
+      {/* Chat widget trigger */}
       <div className="fixed bottom-16 sm:bottom-24 right-6 sm:right-8 z-[999999]">
         <button
           onClick={() => setIsChatOpen((v) => !v)}
