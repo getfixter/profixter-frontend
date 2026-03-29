@@ -6,20 +6,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
 
-// Navigation items for the header. We replaced the old anchor links with
-// dedicated pages and meaningful anchors that match the new site structure.
+// Navigation items for the header. Keeping the same anchors for familiarity.
 const NAV = [
-  // Dedicated subscription plan page where visitors can compare memberships
-  { href: "/plans", label: "Plans" },
-  // One‑time service booking page
-  { href: "/on-demand", label: "On Demand" },
-  // Service categories. These pages explain each department in detail
-  { href: "/services/subscription", label: "Subscription" },
-  { href: "/services/general-contractor", label: "General Contractor" },
-  { href: "/services/home-improvement", label: "Home Improvement" },
-  // Anchored sections on the home page for social proof and contact
-  { href: "#testimonials", label: "Testimonials" },
-  { href: "#contact-us", label: "Contact" },
+  { href: "#how-it-works", label: "How it works" },
+  { href: "#plans", label: "Plans" },
+  { href: "#pick-day", label: "Pick day" },
+  { href: "#services", label: "Services" },
+  { href: "#recommended-pros", label: "Trusted Pros" },
+  { href: "#projects", label: "Projects" },
+  { href: "#contact-us", label: "Contact us" },
 ];
 
 export default function Header() {
@@ -200,11 +195,10 @@ export default function Header() {
 
               <button
                 type="button"
-                // Redirect visitors directly to the plans page instead of a hash that no longer exists
-                onClick={() => router.push("/plans")}
+                onClick={() => scrollToHash("#pick-day")}
                 className="shrink-0 px-4 sm:px-5 py-2.5 rounded-xl bg-[#86EFAC] text-[#0B1220] font-extrabold text-sm sm:text-base hover:opacity-90 transition active:scale-[0.99]"
               >
-                Get Started
+                Start First Visit
               </button>
             </div>
           </div>
@@ -418,8 +412,7 @@ export default function Header() {
               type="button"
               onClick={() => {
                 setIsMenuOpen(false);
-                // Navigate to plans page instead of non‑existent anchor
-                router.push("/plans");
+                requestAnimationFrame(() => scrollToHash("#pick-day"));
               }}
               className="w-full max-w-xs rounded-[16px] border border-[#86EFAC]/25 bg-[#0B1220]/90 text-white px-4 py-3 text-left"
             >

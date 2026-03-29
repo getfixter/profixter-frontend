@@ -111,39 +111,47 @@ export default function Footer() {
             <div className="text-white font-semibold mb-3">Explore</div>
 
             <nav className="grid grid-cols-2 sm:grid-cols-1 gap-y-3 gap-x-6 lg:text-right">
-              {/* We replaced old anchor targets with links to the new pages and sections */}
-              <Link
-                href="/plans"
-                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
+              {/* ✅ Hash links use scrollToHash (prevents hiding under header) */}
+              <button
+                type="button"
+                onClick={() => scrollToHash("#how-it-works")}
+                className="text-left text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
+              >
+                How it works
+              </button>
+
+              <button
+                type="button"
+                onClick={() => scrollToHash("#plans")}
+                className="text-left text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
               >
                 Plans
-              </Link>
-              <Link
-                href="/on-demand"
-                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
-              >
-                On Demand
-              </Link>
+              </button>
+
               <button
                 type="button"
-                onClick={() => scrollToHash("#departments")}
+                onClick={() => scrollToHash("#pick-day")}
                 className="text-left text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
               >
-                Services
+                Pick day
               </button>
+
               <button
                 type="button"
-                onClick={() => scrollToHash("#testimonials")}
+                onClick={() => scrollToHash("#projects")}
                 className="text-left text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
               >
-                Testimonials
+                Projects
               </button>
+
+              {/* ✅ Real pages keep Link */}
               <Link
                 href="/partnerships"
                 className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
               >
                 Partnerships
               </Link>
+
               <Link
                 href="/careers"
                 className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
