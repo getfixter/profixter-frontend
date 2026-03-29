@@ -1,19 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { PAYMENT_LINKS } from "@/lib/stripe-links";
+import { PAYMENT_LINKS, type PlanType } from "@/lib/stripe-links";
+
+type PlanCard = {
+  id: PlanType;
+  name: string;
+  oldPrice: number;
+  price: number;
+  description: string;
+  features: string[];
+};
 
 /**
  * PlanComparisonSection
  *
- * Displays Profixter's subscription plans side by side for easy comparison.  Each
- * plan card lists pricing, included features and a CTA.  On small screens
- * the cards stack vertically.  This component can be used on the dedicated
- * Plans page and linked to from the homepage or quiz.
+ * Displays Profixter's subscription plans side by side for easy comparison.
  */
 export default function PlanComparisonSection() {
-  // Spring discount pricing: oldPrice is crossed out; price is the new promotional price
-  const plans = [
+  const plans: PlanCard[] = [
     {
       id: "basic",
       name: "Basic",
@@ -47,20 +52,24 @@ export default function PlanComparisonSection() {
       price: 349,
       description: "For families requiring 24/7 support",
       features: [
-        "Unlimited visits with emergency & after‑hours support",
+        "Unlimited visits with emergency & after-hours support",
         "$99/hour rate for additional hours",
         "Two handymen for complex tasks",
         "Dedicated account manager",
       ],
     },
   ];
+
   return (
     <section className="py-12 sm:py-16 bg-white px-4 sm:px-6 md:px-8 animate-fadeIn" id="plans">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-center text-gray-800 mb-8">Choose Your Plan</h2>
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-center text-gray-800 mb-8">
+          Choose Your Plan
+        </h2>
         <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto">
-          Pick the membership that fits your household.  Cancel anytime and upgrade or downgrade as needed.
+          Pick the membership that fits your household. Cancel anytime and upgrade or downgrade as needed.
         </p>
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {plans.map((plan) => (
             <div
@@ -69,26 +78,24 @@ export default function PlanComparisonSection() {
               className="relative p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition bg-[#F9FAFB]"
             >
               {plan.name === "Plus" && (
-                <span className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-[#34A853] text-white px-3 py-1 text-xs font-semibold rounded-full">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#34A853] text-white px-3 py-1 text-xs font-semibold rounded-full">
                   Most Popular
                 </span>
               )}
+
               <h3 className="text-xl font-bold text-gray-800 mb-2 text-center">{plan.name}</h3>
               <p className="text-sm text-gray-500 mb-4 text-center">{plan.description}</p>
+
               <div className="text-center mb-4">
-                {/* Show old price crossed out if provided */}
-                {plan.oldPrice && (
-                  <span className="text-lg line-through text-gray-400 mr-2">
-                    ${plan.oldPrice}
-                  </span>
-                )}
-                <span className="text-4xl font-extrabold text-gray-800">
-                  ${plan.price}
-                </span>
+                <span className="text-lg line-through text-gray-400 mr-2">${plan.oldPrice}</span>
+                <span className="text-4xl font-extrabold text-gray-800">${plan.price}</span>
                 <span className="text-base text-gray-500">/ month</span>
               </div>
-              {/* Spring discount label */}
-              <p className="text-center text-[13px] font-semibold text-green-600 mb-4">Spring Discount</p>
+
+              <p className="text-center text-[13px] font-semibold text-green-600 mb-4">
+                Spring Discount
+              </p>
+
               <ul className="mb-6 space-y-2">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2">
@@ -97,6 +104,7 @@ export default function PlanComparisonSection() {
                   </li>
                 ))}
               </ul>
+
               <Link
                 href={PAYMENT_LINKS[plan.id]}
                 className="block w-full text-center px-4 py-3 rounded-xl bg-[#86EFAC] text-[#0B1220] font-bold hover:opacity-90 transition"
