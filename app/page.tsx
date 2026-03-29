@@ -5,20 +5,15 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 
 import Header from "./components/sections/Header";
-import HeroSection from "./components/sections/HeroSection";
-import StepsSection from "./components/sections/StepsSection";
-import PlansSection from "./components/sections/PlansSection";
-import ServicesSection from "./components/sections/ServicesSection";
-import BookingSection from "./components/sections/BookingSection";
-import HandymenSection from "./components/sections/HandymenSection";
-import ProjectsSection from "./components/sections/ProjectsSection";
+import NewHeroSection from "./components/sections/NewHeroSection";
+import QuizSection from "./components/sections/QuizSection";
+import ValuePropsSection from "./components/sections/ValuePropsSection";
+import DepartmentsSection from "./components/sections/DepartmentsSection";
+import PlanComparisonSection from "./components/sections/PlanComparisonSection";
+import TestimonialsSection from "./components/sections/TestimonialsSection";
 import Footer from "./components/sections/Footer";
 import { ChatWidget } from "./components/ChatWidget";
 import Image from "next/image";
-import ServiceInfoSection from "./components/sections/ServiceInfoSection";
-
-// ✅ NEW SECTION
-import RecommendedBusinessesSection from "./components/sections/RecommendedBusinessesSection";
 
 const ADMIN_EMAIL = "getfixter@gmail.com";
 
@@ -49,29 +44,29 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* ✅ Use sticky instead of absolute for consistent layout */}
+      {/* Header stays sticky at the top */}
       <div className="sticky top-0 z-50">
         <Header />
       </div>
 
       <main className="relative">
-        <HeroSection />
-                <StepsSection />
-
-        <ServiceInfoSection />
-                <PlansSection />
-        <BookingSection />
-        <ServicesSection />
-
-        {/* ✅ NEW: Businesses we recommend */}
-        <RecommendedBusinessesSection />
-
-        <HandymenSection />
-        <ProjectsSection />
+        {/* New hero with clear value proposition and primary CTAs */}
+        <NewHeroSection />
+        {/* Interactive quiz guides visitors to the right service or plan */}
+        <QuizSection />
+        {/* Core reasons to choose Profixter, including cost comparison */}
+        <ValuePropsSection />
+        {/* Show available service departments */}
+        <DepartmentsSection />
+        {/* Highlight subscription plans for quick comparison */}
+        <PlanComparisonSection />
+        {/* Social proof from happy customers */}
+        <TestimonialsSection />
+        {/* Footer contains contact info and nav */}
         <Footer />
       </main>
 
-      {/* ✅ Chat button */}
+      {/* Chat widget trigger */}
       <div className="fixed bottom-16 sm:bottom-24 right-6 sm:right-8 z-[999999]">
         <button
           onClick={() => setIsChatOpen((v) => !v)}
