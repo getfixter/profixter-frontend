@@ -1,112 +1,97 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 
-/**
- * Home Improvement Service Page
- *
- * This page showcases Profixter's capabilities for mid‑sized projects like
- * painting, flooring and cabinetry.  It includes a simple form for
- * requesting a quote and directs visitors to subscription plans for
- * ongoing maintenance.
- */
 export default function HomeImprovementServicePage() {
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitted(true);
-  };
-
   return (
-    <div className="min-h-screen">
-      {/* Hero */}
+    <div className="min-h-screen bg-white">
       <section className="bg-[#0B1220] text-white pt-24 pb-16 px-4 sm:px-6 md:px-8 text-center">
-        <h1 className="text-3xl sm:text-5xl font-extrabold mb-4">
-          Home Improvement Services
-        </h1>
-        <p className="text-lg sm:text-xl text-white/80 max-w-3xl mx-auto mb-6">
-          From painting and flooring to cabinet refacing and lighting upgrades, our skilled craftsmen
-          handle the projects that make your house a home.
-        </p>
+        <div className="max-w-4xl mx-auto">
+          <span className="inline-block px-4 py-1.5 rounded-full bg-white/10 border border-white/15 text-sm font-semibold mb-5">
+            Home Improvement Department
+          </span>
+
+          <h1 className="text-3xl sm:text-5xl font-extrabold mb-4">
+            Home Improvement Services
+          </h1>
+
+          <p className="text-lg sm:text-xl text-white/80 max-w-3xl mx-auto mb-8">
+            From painting and flooring to cabinet upgrades and lighting improvements,
+            we help Long Island homeowners make their homes look better, feel better,
+            and work better.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/signup"
+              className="inline-block px-6 py-3 rounded-xl bg-[#86EFAC] text-[#0B1220] font-bold text-base sm:text-lg hover:opacity-90 transition"
+            >
+              Get Started
+            </Link>
+
+            <Link
+              href="/services/subscription"
+              className="inline-block px-6 py-3 rounded-xl bg-white/10 text-white border border-white/20 font-bold text-base sm:text-lg hover:bg-white/20 transition"
+            >
+              See Subscription
+            </Link>
+          </div>
+        </div>
       </section>
 
-      {/* Services list */}
       <section className="py-12 sm:py-16 px-4 sm:px-6 md:px-8">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-800 mb-6 text-center">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-800 mb-8 text-center">
             What We Do
           </h2>
-          <ul className="space-y-4 text-gray-700 text-base sm:text-lg mb-8">
-            <li className="flex items-start gap-3">
-              <span className="text-green-600">✓</span>
-              <span>Interior and exterior painting & drywall repair</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-green-600">✓</span>
-              <span>Flooring installation: hardwood, laminate, tile and more</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-green-600">✓</span>
-              <span>Cabinet refacing and custom built‑ins</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-green-600">✓</span>
-              <span>Light fixture installation and upgrades</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-green-600">✓</span>
-              <span>Minor plumbing and electrical work</span>
-            </li>
-          </ul>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-800 mb-4 text-center">
-            Request a Free Quote
-          </h2>
-          {submitted ? (
-            <div className="p-6 bg-[#E6F8EC] text-[#22543D] rounded-lg text-center">
-              Thank you!  We'll contact you shortly to discuss your project.
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
-              <input
-                type="text"
-                required
-                placeholder="Your name"
-                className="px-4 py-3 rounded-lg border border-gray-300 w-full focus:ring-2 focus:ring-[#86EFAC] focus:outline-none"
-              />
-              <input
-                type="tel"
-                required
-                placeholder="Phone number"
-                className="px-4 py-3 rounded-lg border border-gray-300 w-full focus:ring-2 focus:ring-[#86EFAC] focus:outline-none"
-              />
-              <input
-                type="email"
-                required
-                placeholder="Email address"
-                className="px-4 py-3 rounded-lg border border-gray-300 w-full focus:ring-2 focus:ring-[#86EFAC] focus:outline-none sm:col-span-2"
-              />
-              <textarea
-                required
-                placeholder="Tell us about your project"
-                className="px-4 py-3 rounded-lg border border-gray-300 w-full h-32 focus:ring-2 focus:ring-[#86EFAC] focus:outline-none sm:col-span-2"
-              />
-              <button
-                type="submit"
-                className="sm:col-span-2 px-6 py-3 rounded-xl bg-[#86EFAC] text-[#0B1220] font-bold hover:opacity-90 transition w-full"
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-12">
+            {[
+              "Interior and exterior painting",
+              "Drywall repair and finishing",
+              "Flooring installation and replacement",
+              "Cabinet updates and built-ins",
+              "Light fixture installation",
+              "Trim, doors, shelving and finish work",
+              "Minor plumbing and electrical tasks",
+              "General home upgrades and improvements",
+            ].map((item) => (
+              <div
+                key={item}
+                className="rounded-2xl border border-gray-200 bg-[#F9FAFB] px-5 py-4 flex items-start gap-3"
               >
-                Submit Request
-              </button>
-            </form>
-          )}
-          <p className="mt-6 text-center text-gray-600">
-            Looking for regular maintenance?  Explore our{' '}
-            <Link href="/plans" className="text-[#34A853] font-semibold hover:underline">
-              subscription plans
-            </Link>
-            .
-          </p>
+                <span className="text-green-600 font-bold mt-0.5">✓</span>
+                <span className="text-gray-700 text-base">{item}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-3xl border border-[#86EFAC]/40 bg-gradient-to-br from-[#F4FFF7] to-white p-6 sm:p-10 text-center shadow-sm">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-3">
+              Ready to improve your home?
+            </h3>
+
+            <p className="text-gray-600 max-w-2xl mx-auto mb-6">
+              Start with Profixter and we’ll help you choose the right path —
+              one-time work, ongoing handyman support, or a larger improvement project.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/signup"
+                className="inline-block px-6 py-3 rounded-xl bg-[#86EFAC] text-[#0B1220] font-bold hover:opacity-90 transition"
+              >
+                Start Now
+              </Link>
+
+              <Link
+                href="/services/general-contractor"
+                className="inline-block px-6 py-3 rounded-xl border border-gray-300 text-gray-800 font-bold hover:bg-gray-50 transition"
+              >
+                Need a Bigger Project?
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
     </div>
