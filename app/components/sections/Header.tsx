@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
 // dedicated pages and meaningful anchors that match the new site structure.
 const NAV = [
   // Dedicated subscription plan page where visitors can compare memberships
-  { href: "/plans", label: "Plans" },
   // One‑time service booking page
   { href: "/on-demand", label: "On Demand" },
   // Service categories. These pages explain each department in detail

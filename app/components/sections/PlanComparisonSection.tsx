@@ -14,7 +14,13 @@ type PlanCard = {
 };
 
 export default function PlanComparisonSection() {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+
+  // ✅ Detect active subscription
+  const hasSubscription =
+    isAuthenticated &&
+    ((user?.subscription && user?.subscription !== "") ||
+      user?.addresses?.some((a) => a.hasActiveSubscription));
 
   const plans: PlanCard[] = [
     {
@@ -115,12 +121,19 @@ export default function PlanComparisonSection() {
                   ))}
                 </ul>
 
-                <Link
-                  href={href}
-                  className="block w-full text-center px-4 py-3 rounded-xl bg-[#86EFAC] text-[#0B1220] font-bold hover:opacity-90 transition"
-                >
-                  {isAuthenticated ? "Continue to Payment" : "Sign Up & Continue"}
-                </Link>
+                {/* ✅ BUTTON LOGIC */}
+                {hasSubscription ? (
+                  <div className="block w-full text-center px-4 py-3 rounded-xl bg-gray-200 text-gray-500 font-bold cursor-not-allowed">
+                    Active
+                  </div>
+                ) : (
+                  <Link
+                    href={href}
+                    className="block w-full text-center px-4 py-3 rounded-xl bg-[#86EFAC] text-[#0B1220] font-bold hover:opacity-90 transition"
+                  >
+                    {isAuthenticated ? "Continue" : "Sign Up"}
+                  </Link>
+                )}
               </div>
             );
           })}
