@@ -1,12 +1,5 @@
 "use client";
 
-// This footer component remains mostly unchanged but now highlights the core value
-// proposition of Profixter.  The introductory copy has been updated to
-// explicitly mention unlimited handyman visits under one subscription,
-// reinforcing the message used throughout the site.  Everything else—the
-// navigation links, contact card, and popup feedback—remains identical to
-// preserve the design and functionality.
-
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -45,21 +38,18 @@ export default function Footer() {
     setTimeout(() => setShowPopup(false), 5000);
   };
 
-  // ✅ Smooth scroll with header offset (prevents section hiding under sticky header)
   const scrollToHash = (hash: string) => {
-    const id = hash.replace("#", ""); 
+    const id = hash.replace("#", "");
     const el = document.getElementById(id);
     if (!el) return;
 
-    // tune if needed — matches your header behavior
     const HEADER_OFFSET = window.innerWidth >= 1024 ? 180 : 140;
-
     const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+
     window.scrollTo({ top: y, behavior: "smooth" });
     history.replaceState(null, "", hash);
   };
 
-  // Optional: Esc closes popup
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setShowPopup(false);
@@ -79,51 +69,54 @@ export default function Footer() {
           className="object-cover"
           priority={false}
         />
-        <div className="absolute inset-0 bg-black/55" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/30" />
+        <div className="absolute inset-0 bg-black/65" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/40" />
       </div>
 
       {/* Content */}
       <div className="relative mx-auto max-w-[1240px] px-5 sm:px-6 lg:px-5 py-10 sm:py-12 lg:py-14">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
-          {/* Left: logo + copy */}
-          <div className="lg:col-span-7">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-5 sm:gap-7">
+        {/* TOP SECTION */}
+        <div className="grid grid-cols-1 xl:grid-cols-[1.35fr_0.7fr_0.95fr] gap-8 lg:gap-10 items-start">
+          {/* LEFT */}
+          <div className="min-w-0">
+            <div className="flex flex-col gap-5">
               <div className="shrink-0">
                 <Image
                   src="/images/logo-footer.svg"
                   alt="Profixter"
                   width={320}
                   height={70}
-                  className="w-[240px] sm:w-[300px] lg:w-[320px] h-auto"
+                  className="w-[220px] sm:w-[280px] lg:w-[320px] h-auto"
                 />
               </div>
 
-              <p className="text-[#C5CBD8] text-sm sm:text-base leading-relaxed max-w-[560px] sm:pt-1">
-                Our goal is to make home repairs and maintenance hassle‑free with
-                unlimited handyman visits under one subscription, so you can focus on what matters most.
+              <p className="text-[#D6DBE5] text-sm sm:text-base leading-relaxed max-w-[640px]">
+                Our goal is to make home repairs and maintenance hassle-free with
+                unlimited handyman visits under one subscription, so you can stop
+                chasing contractors and keep your home handled.
               </p>
             </div>
           </div>
 
-          {/* Middle: nav */}
-          <div className="lg:col-span-3">
-            <div className="text-white font-semibold mb-3">Explore</div>
+          {/* MIDDLE */}
+          <div className="min-w-0">
+            <div className="text-white font-semibold mb-4 text-base">Explore</div>
 
-            <nav className="grid grid-cols-2 sm:grid-cols-1 gap-y-3 gap-x-6 lg:text-right">
-              {/* We replaced old anchor targets with links to the new pages and sections */}
+            <nav className="grid grid-cols-2 gap-x-8 gap-y-3 sm:max-w-[320px] xl:max-w-none">
               <Link
-                href="/plans"
+                href="/services/subscription"
                 className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
               >
-                Plans
+                Subscription
               </Link>
+
               <Link
                 href="/on-demand"
                 className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
               >
                 On Demand
               </Link>
+
               <button
                 type="button"
                 onClick={() => scrollToHash("#departments")}
@@ -131,6 +124,7 @@ export default function Footer() {
               >
                 Services
               </button>
+
               <button
                 type="button"
                 onClick={() => scrollToHash("#testimonials")}
@@ -138,12 +132,14 @@ export default function Footer() {
               >
                 Testimonials
               </button>
+
               <Link
                 href="/partnerships"
                 className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
               >
                 Partnerships
               </Link>
+
               <Link
                 href="/careers"
                 className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
@@ -153,9 +149,9 @@ export default function Footer() {
             </nav>
           </div>
 
-          {/* Right: contact card */}
-          <div className="lg:col-span-2">
-            <div className="rounded-[18px] border border-white/15 bg-white/10 backdrop-blur-md p-5 sm:p-6 shadow-[0_20px_80px_rgba(0,0,0,0.35)] max-w-full overflow-hidden">
+          {/* RIGHT */}
+          <div className="min-w-0">
+            <div className="rounded-[22px] border border-white/15 bg-white/10 backdrop-blur-md p-5 sm:p-6 shadow-[0_20px_80px_rgba(0,0,0,0.35)] w-full max-w-[360px] xl:ml-auto">
               <h3 className="text-[20px] sm:text-[22px] font-extrabold text-[#306EEC]">
                 Get in Touch
               </h3>
@@ -185,7 +181,9 @@ export default function Footer() {
                   >
                     Privacy Policy
                   </Link>
+
                   <span className="text-white/25">|</span>
+
                   <Link
                     href="/terms"
                     className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition"
@@ -194,7 +192,7 @@ export default function Footer() {
                   </Link>
                 </div>
 
-                <div className="mt-3 text-xs text-white/50 leading-relaxed">
+                <div className="mt-3 text-xs text-white/55 leading-relaxed">
                   Serving Suffolk & Nassau. Licensed & insured.
                 </div>
               </div>
@@ -202,10 +200,10 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom strip */}
+        {/* BOTTOM STRIP */}
         <div className="mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row gap-2 sm:gap-4 items-center justify-between">
-          <p className="text-[#6A6D71] text-sm">© 2025 All rights reserved.</p>
-          <p className="text-[#6A6D71] text-sm">License HI-71484 • Insured</p>
+          <p className="text-[#7C8596] text-sm">© 2025 All rights reserved.</p>
+          <p className="text-[#7C8596] text-sm">License HI-71484 • Insured</p>
         </div>
       </div>
 
