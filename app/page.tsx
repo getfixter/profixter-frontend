@@ -9,7 +9,6 @@ import NewHeroSection from "./components/sections/NewHeroSection";
 import QuizSection from "./components/sections/QuizSection";
 import ValuePropsSection from "./components/sections/ValuePropsSection";
 import DepartmentsSection from "./components/sections/DepartmentsSection";
-import PlanComparisonSection from "./components/sections/PlanComparisonSection";
 import TestimonialsSection from "./components/sections/TestimonialsSection";
 import Footer from "./components/sections/Footer";
 

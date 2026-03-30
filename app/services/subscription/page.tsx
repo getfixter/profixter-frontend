@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import PlanComparisonSection from "../../components/sections/PlanComparisonSection";
+import PlansSection from "../../components/sections/PlansSection";
 import ValuePropsSection from "../../components/sections/ValuePropsSection";
 import DepartmentsSection from "../../components/sections/DepartmentsSection";
 
@@ -226,7 +226,7 @@ export default function SubscriptionServicePage() {
       </section>
 
       {/* PLAN COMPARISON */}
-      <PlanComparisonSection />
+      <PlansSection />
 
       {/* VALUE PROPS */}
       <ValuePropsSection />
