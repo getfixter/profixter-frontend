@@ -1,23 +1,100 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useAuth } from "@/lib/useAuth";
-import { PAYMENT_LINKS, type PlanType } from "@/lib/stripe-links";
+import type { PlanType } from "@/lib/stripe-links";
 
-type PlanCard = {
+type Address = {
+  _id: string;
+  label?: string;
+  line1: string;
+  city: string;
+  state: string;
+  zip: string;
+  county?: string;
+};
+
+type BillingCycle = "monthly" | "annual";
+
+type Plan = {
   id: PlanType;
   name: string;
-  oldPrice: number;
   price: number;
-  description: string;
   badge?: string;
+  description: string;
+  subtitle?: string;
   features: string[];
 };
 
 const TARAS_PHONE_DISPLAY = "631-599-1363";
 const TARAS_PHONE_LINK = "tel:6315991363";
 const TARAS_SMS_LINK = "sms:6315991363";
+
+const plans: Plan[] = [
+  {
+    id: "basic",
+    name: "Basic",
+    price: 149,
+    description: "Perfect for occasional help and everyday home tasks.",
+    subtitle: "A simple way to stop paying for every small repair",
+    features: [
+      "2 visits per month (up to 90 minutes each)",
+      "Ideal for repairs, installs, assembly, and small jobs",
+      "$99/hour for extra time if needed",
+    ],
+  },
+  {
+    id: "plus",
+    name: "Plus",
+    price: 249,
+    badge: "Most Popular",
+    description: "Best for busy homes that need more flexibility and faster help.",
+    subtitle: "The best value for most homeowners",
+    features: [
+      "Multiple bookings at the same time",
+      "Secondary materials and store pickup included",
+      "$99/hour for extra time if needed",
+    ],
+  },
+  {
+    id: "premium",
+    name: "Premium",
+    price: 349,
+    description: "For families who want priority support and more convenience.",
+    subtitle: "More support, less waiting, fewer headaches",
+    features: [
+      "Emergency service at no extra cost",
+      "After-hours support",
+      "$99/hour for extra time if needed",
+    ],
+  },
+  {
+    id: "elite",
+    name: "Elite",
+    price: 499,
+    description: "Maximum support for homes that want the highest level of service.",
+    subtitle: "Our most complete membership",
+    features: [
+      "Two handymen available for complex tasks",
+      "Priority scheduling and premium support",
+      "$99/hour for extra time if needed",
+    ],
+  },
+];
+
+function formatMoney(n: number): string {
+  return String(Math.round(n));
+}
+
+function normalizePlanType(name: string): PlanType | null {
+  const x = String(name || "").toLowerCase().trim();
+  if (x === "basic") return "basic";
+  if (x === "plus") return "plus";
+  if (x === "premium") return "premium";
+  if (x === "elite") return "elite";
+  return null;
+}
 
 function prettyPlanName(plan: PlanType | null): string {
   if (plan === "basic") return "Basic";
@@ -35,86 +112,142 @@ function getPlanRank(plan: PlanType | null): number {
   return 0;
 }
 
-function normalizePlanType(name: string): PlanType | null {
-  const x = String(name || "").toLowerCase().trim();
-  if (x === "basic") return "basic";
-  if (x === "plus") return "plus";
-  if (x === "premium") return "premium";
-  if (x === "elite") return "elite";
-  return null;
-}
+export default function PlansSection() {
+  const [currentSlide, setCurrentSlide] = useState(() => {
+    const i = plans.findIndex((p) => p.name === "Plus");
+    return i >= 0 ? i : 0;
+  });
 
-export default function PlanComparisonSection() {
-  const { user, isAuthenticated } = useAuth();
+  const [billing, setBilling] = useState<BillingCycle>("monthly");
   const [upgradePopupOpen, setUpgradePopupOpen] = useState(false);
   const [upgradeTargetPlan, setUpgradeTargetPlan] = useState<PlanType | null>(null);
 
-  const plans: PlanCard[] = [
-    {
-      id: "basic",
-      name: "Basic",
-      oldPrice: 199,
-      price: 149,
-      description: "Perfect for occasional help and everyday home tasks",
-      features: [
-        "2 visits per month (up to 90 minutes each)",
-        "Great for repairs, installs, assembly, and small jobs",
-        "$99/hour rate for additional time if needed",
-      ],
-    },
-    {
-      id: "plus",
-      name: "Plus",
-      oldPrice: 299,
-      price: 249,
-      badge: "Most Popular",
-      description: "Best for busy homes that need more flexibility",
-      features: [
-        "Multiple bookings at the same time",
-        "Secondary materials and store pickup included",
-        "$99/hour rate for additional time if needed",
-      ],
-    },
-    {
-      id: "premium",
-      name: "Premium",
-      oldPrice: 399,
-      price: 349,
-      description: "For families who want priority and maximum support",
-      features: [
-        "Emergency service at no extra cost & after-hours support",
-        "Two handymen available for more complex work",
-        "$99/hour rate for additional time if needed",
-      ],
-    },
-  ];
+  const { user, isAuthenticated, token } = useAuth();
 
+  const addresses: Address[] = ((user as any)?.addresses || []) as Address[];
   const currentUserPlan = normalizePlanType((user as any)?.subscription || "");
+
+  const defaultAddress = useMemo(() => {
+    if (!user) return null;
+    const defaultId = String((user as any)?.defaultAddressId || "");
+    return addresses.find((a) => String(a._id) === defaultId) || addresses[0] || null;
+  }, [addresses, user]);
+
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+
+  const selectedAddress = useMemo(
+    () => addresses.find((a) => String(a._id) === String(selectedAddressId)) || null,
+    [addresses, selectedAddressId]
+  );
+
+  const [addrActiveMap, setAddrActiveMap] = useState<Record<string, boolean>>({});
+  const [checkingAddr, setCheckingAddr] = useState(false);
+
+  useEffect(() => {
+    if (!selectedAddressId && defaultAddress?._id) {
+      setSelectedAddressId(String(defaultAddress._id));
+    }
+  }, [defaultAddress, selectedAddressId]);
+
+  const checkAddressActive = async (addressId: string) => {
+    if (!token) return;
+
+    setCheckingAddr(true);
+    try {
+      const res = await fetch(
+        `https://api.profixter.com/api/subscriptions/check/address/${addressId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const data = await res.json();
+      const active = !!data?.active;
+
+      setAddrActiveMap((m) => ({ ...m, [addressId]: active }));
+    } catch (e) {
+      console.error("checkAddressActive failed:", e);
+      setAddrActiveMap((m) => ({ ...m, [addressId]: false }));
+    } finally {
+      setCheckingAddr(false);
+    }
+  };
+
+  useEffect(() => {
+    if (token && selectedAddressId) {
+      if (addrActiveMap[selectedAddressId] === undefined) {
+        checkAddressActive(selectedAddressId);
+      }
+    }
+  }, [token, selectedAddressId, addrActiveMap]);
+
+  const startCheckout = async (
+    plan: PlanType,
+    addressId: string,
+    email: string,
+    cycle: BillingCycle
+  ) => {
+    const res = await fetch(
+      "https://api.profixter.com/api/stripe/checkout/create-checkout-session",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan, addressId, email, billingCycle: cycle }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (res.status === 409 && data?.code === "ADDRESS_ALREADY_SUBSCRIBED") {
+      alert("This address already has an active plan.");
+      setAddrActiveMap((m) => ({ ...m, [addressId]: true }));
+      return;
+    }
+
+    if (data?.url) {
+      window.location.href = data.url;
+    } else {
+      alert("Unable to start subscription. Please try again.");
+    }
+  };
 
   const openUpgradePopup = (plan: PlanType) => {
     setUpgradeTargetPlan(plan);
     setUpgradePopupOpen(true);
   };
 
-  const getActionForPlan = (planId: PlanType) => {
-    if (!isAuthenticated) {
+  const getActionForPlan = (planName: string) => {
+    const planType = normalizePlanType(planName);
+    const selectedAddressActive = selectedAddressId
+      ? addrActiveMap[selectedAddressId] === true
+      : false;
+
+    if (!planType) {
       return {
-        kind: "signup" as const,
-        label: "Start Now",
+        kind: "subscribe" as const,
+        label: "Start Membership",
+        disabled: false,
+      };
+    }
+
+    if (!selectedAddressActive) {
+      return {
+        kind: "subscribe" as const,
+        label: billing === "annual" ? "Start Annual & Save" : "Start Membership",
         disabled: false,
       };
     }
 
     if (!currentUserPlan) {
       return {
-        kind: "continue" as const,
-        label: "Continue",
-        disabled: false,
+        kind: "active-unknown" as const,
+        label: "Already Active",
+        disabled: true,
       };
     }
 
     const currentRank = getPlanRank(currentUserPlan);
-    const targetRank = getPlanRank(planId);
+    const targetRank = getPlanRank(planType);
 
     if (targetRank === currentRank) {
       return {
@@ -127,7 +260,7 @@ export default function PlanComparisonSection() {
     if (targetRank > currentRank) {
       return {
         kind: "upgrade" as const,
-        label: `Upgrade to ${prettyPlanName(planId)}`,
+        label: `Upgrade to ${prettyPlanName(planType)}`,
         disabled: false,
       };
     }
@@ -139,130 +272,800 @@ export default function PlanComparisonSection() {
     };
   };
 
-  return (
-    <>
-      <section
-        className="py-14 sm:py-16 md:py-20 bg-[#313234] px-4 sm:px-6 md:px-8"
-        id="plans"
-      >
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-8 sm:mb-10">
-            <div className="mx-auto max-w-4xl rounded-2xl border border-[#86EFAC]/30 bg-[#86EFAC]/10 px-4 py-3 sm:px-6 sm:py-4 shadow-[0_10px_40px_rgba(0,0,0,0.18)]">
-              <p className="text-center text-sm sm:text-base font-bold text-white">
-                Use code <span className="text-[#86EFAC]">SPRING</span> for 30% off your first month
+  const handleSubscribe = (planName: string) => {
+    const planType = normalizePlanType(planName);
+
+    if (!planType) {
+      alert("Invalid plan selected. Please refresh and try again.");
+      return;
+    }
+
+    if (!isAuthenticated || !user) {
+      window.location.href = "/signin?redirect=/";
+      return;
+    }
+
+    if (!addresses.length) {
+      alert("Please add an address to your account first");
+      window.location.href = "/account";
+      return;
+    }
+
+    if (!selectedAddressId || !selectedAddress) {
+      alert("Please select an address");
+      return;
+    }
+
+    const action = getActionForPlan(planName);
+
+    if (
+      action.kind === "active" ||
+      action.kind === "lower" ||
+      action.kind === "active-unknown"
+    ) {
+      return;
+    }
+
+    if (action.kind === "upgrade") {
+      openUpgradePopup(planType);
+      return;
+    }
+
+    startCheckout(planType, selectedAddress._id, (user as any).email, billing);
+  };
+
+  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % plans.length);
+  const prevSlide = () =>
+    setCurrentSlide((prev) => (prev - 1 + plans.length) % plans.length);
+
+  const addressIsActive = selectedAddressId
+    ? addrActiveMap[selectedAddressId] === true
+    : false;
+
+  const touchStartX = useRef<number | null>(null);
+  const touchLastX = useRef<number | null>(null);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0]?.clientX ?? null;
+    touchLastX.current = touchStartX.current;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    touchLastX.current = e.touches[0]?.clientX ?? touchLastX.current;
+  };
+
+  const onTouchEnd = () => {
+    if (touchStartX.current == null || touchLastX.current == null) return;
+    const dx = touchLastX.current - touchStartX.current;
+
+    if (Math.abs(dx) > 55) {
+      if (dx < 0) nextSlide();
+      else prevSlide();
+    }
+
+    touchStartX.current = null;
+    touchLastX.current = null;
+  };
+
+  const getMonthly = (plan: Plan) => plan.price;
+  const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
+
+  const BillingToggle = ({ compact }: { compact?: boolean }) => (
+    <div className={`${compact ? "mt-6" : "mt-8"} w-full`}>
+      <div className={`${compact ? "mx-auto max-w-[520px]" : ""}`}>
+        <div className="bg-white/10 border border-white/15 rounded-2xl px-3 py-3 sm:px-4 sm:py-4 backdrop-blur-md shadow-[0_10px_60px_rgba(0,0,0,0.20)]">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex flex-col">
+              <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
+                {billing === "annual" ? "Annual Plan" : "Monthly Plan"}
               </p>
+              <p className="text-[#C5CBD8] text-xs sm:text-sm leading-snug mt-1">
+                {billing === "annual" ? (
+                  <>
+                    Pay for <span className="text-white font-semibold">11 months</span>, get{" "}
+                    <span className="text-white font-semibold">12</span>
+                  </>
+                ) : (
+                  <>
+                    Use code <span className="text-white font-semibold">SPRING</span> — 30%
+                    off your first month
+                  </>
+                )}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-[72px_auto_72px] items-center gap-3 shrink-0">
+              <span
+                className={`text-sm font-semibold text-right whitespace-nowrap ${
+                  billing === "monthly" ? "text-white" : "text-white/60"
+                }`}
+              >
+                Monthly
+              </span>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setBilling((b) => (b === "monthly" ? "annual" : "monthly"))
+                }
+                aria-label="Toggle billing cycle"
+                className={`relative w-[70px] h-[38px] rounded-full border transition-colors duration-300 ${
+                  billing === "annual"
+                    ? "bg-[#306EEC] border-[#306EEC]/60"
+                    : "bg-white/15 border-white/20"
+                }`}
+              >
+                <span
+                  className={`absolute top-[4px] left-[4px] w-[30px] h-[30px] rounded-full bg-white shadow-md transition-transform duration-300 ${
+                    billing === "annual" ? "translate-x-[32px]" : "translate-x-0"
+                  }`}
+                />
+              </button>
+
+              <span
+                className={`text-sm font-semibold text-left whitespace-nowrap ${
+                  billing === "annual" ? "text-white" : "text-white/60"
+                }`}
+              >
+                Annually
+              </span>
             </div>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-center text-white mb-4 leading-tight">
-            Stop Paying for Every Repair
-          </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div />
+            <span className="sm:hidden text-[#C5CBD8] text-[11px]">Cancel anytime</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
-          <p className="text-center text-[#D1D5DB] mb-10 sm:mb-12 max-w-3xl mx-auto text-base sm:text-lg leading-relaxed">
-            Choose the membership that fits your home and get reliable handyman help
-            without the stress of hiring someone new every time.
-          </p>
+  const AddressPicker = () => (
+    <div className="w-full mb-6">
+      <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
+        <div className="bg-white/10 border border-white/15 rounded-2xl p-4 backdrop-blur-md shadow-[0_10px_60px_rgba(0,0,0,0.20)]">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex-1">
+              <p className="text-white text-sm font-semibold mb-2">Select address</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-            {plans.map((plan) => {
-              const href = isAuthenticated
-                ? PAYMENT_LINKS[plan.id]
-                : `/signup?plan=${plan.id}`;
-
-              const action = getActionForPlan(plan.id);
-
-              return (
-                <div
-                  key={plan.id}
-                  id={plan.id}
-                  className={`relative rounded-3xl border p-6 sm:p-7 shadow-[0_20px_60px_rgba(0,0,0,0.20)] transition duration-300 hover:-translate-y-1 ${
-                    plan.name === "Plus"
-                      ? "bg-[#EEF2FF] border-[#306EEC] md:scale-[1.02]"
-                      : "bg-white border-gray-200"
-                  }`}
+              {addresses.length ? (
+                <select
+                  value={selectedAddressId || ""}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setSelectedAddressId(id);
+                    if (token && addrActiveMap[id] === undefined) checkAddressActive(id);
+                  }}
+                  className="w-full h-[46px] rounded-xl px-3 bg-[#EEF2FF] text-[#313234] font-semibold outline-none focus:ring-4 focus:ring-[#306EEC]/25"
                 >
-                  {plan.badge && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="inline-flex items-center rounded-full bg-[#306EEC] px-4 py-1.5 text-xs font-extrabold text-white shadow-lg">
-                        {plan.badge}
-                      </span>
-                    </div>
-                  )}
+                  {addresses.map((a) => (
+                    <option key={a._id} value={a._id}>
+                      {(a.label ? `${a.label}: ` : "") + `${a.line1}, ${a.city}`}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="text-white/80">No addresses yet</div>
+              )}
 
-                  <div className="text-center mb-5">
-                    <h3 className="text-2xl font-extrabold text-[#111827] mb-2">
-                      {plan.name}
-                    </h3>
+              <div className="mt-2 text-sm">
+                {checkingAddr ? (
+                  <span className="text-[#C5CBD8]">Checking plan for this address…</span>
+                ) : addressIsActive ? (
+                  <span className="text-[#FCA5A5] font-semibold">
+                    Active plan{currentUserPlan ? `: ${prettyPlanName(currentUserPlan)}` : ""}
+                  </span>
+                ) : (
+                  <span className="text-[#86EFAC] font-semibold">No active plan</span>
+                )}
+              </div>
+            </div>
 
-                    <p className="text-sm sm:text-base text-gray-600 leading-relaxed min-h-[48px]">
-                      {plan.description}
-                    </p>
-                  </div>
+            <button
+              onClick={() => (window.location.href = "/account")}
+              className="h-[46px] px-4 rounded-xl bg-white text-[#313234] font-extrabold hover:bg-gray-100 transition active:scale-[0.99]"
+            >
+              Add / Manage
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
-                  <div className="text-center mb-5">
-                    <div className="flex items-end justify-center gap-2">
-                      <span className="text-lg line-through text-gray-400">
-                        ${plan.oldPrice}
-                      </span>
-                      <span className="text-5xl font-extrabold text-[#111827] leading-none">
-                        ${plan.price}
-                      </span>
-                      <span className="text-base text-gray-500 pb-1">/month</span>
-                    </div>
+  const HeaderBlock = ({ compact }: { compact?: boolean }) => (
+    <div className={`${compact ? "lg:hidden" : "hidden lg:block"} w-full`}>
+      <div className={`${compact ? "text-center" : ""} mb-8 sm:mb-12`}>
+        <div className={`mb-6 ${compact ? "flex justify-center" : ""}`}>
+          <Image src="/images/logo.svg" alt="Profixter" width={80} height={32} />
+        </div>
 
-                    <p className="mt-2 text-[13px] sm:text-sm font-bold text-green-600">
-                      30% OFF first month with code SPRING
-                    </p>
-                  </div>
+        <h2
+          className={[
+            compact ? "text-4xl sm:text-5xl" : "text-[56px]",
+            "font-extrabold tracking-[-0.04em]",
+            "leading-[1.05]",
+            "mb-6",
+          ].join(" ")}
+        >
+          <span className="block text-white">Stop Paying</span>
+          <span className="block text-[#86EFAC]">For Every Repair</span>
+          <span className="block text-white">Get Unlimited Help</span>
+        </h2>
 
-                  <ul className="mb-7 space-y-3">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-3">
-                        <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-green-600 text-green-600 text-sm font-bold shrink-0">
-                          ✓
-                        </span>
-                        <span className="text-sm sm:text-[15px] text-gray-700 font-medium leading-relaxed">
-                          {feature}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+        <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed max-w-[520px] mx-auto">
+          One subscription. Your own handyman. Fix everything in your home without
+          worrying about hourly costs every single time.
+        </p>
 
-                  <div className="mt-auto">
-                    {action.kind === "active" || action.kind === "lower" ? (
-                      <div
-                        className={`block w-full text-center px-4 py-3.5 rounded-2xl font-extrabold text-sm sm:text-base ${
-                          action.kind === "active"
-                            ? "bg-gray-300 text-gray-700 cursor-not-allowed"
-                            : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                        }`}
-                      >
-                        {action.label}
-                      </div>
-                    ) : action.kind === "upgrade" ? (
-                      <button
-                        type="button"
-                        onClick={() => openUpgradePopup(plan.id)}
-                        className="block w-full text-center px-4 py-3.5 rounded-2xl bg-[#111827] text-white font-extrabold text-sm sm:text-base hover:bg-black transition"
-                      >
-                        {action.label}
-                      </button>
-                    ) : (
-                      <Link
-                        href={href}
-                        className="block w-full text-center px-4 py-3.5 rounded-2xl bg-[#86EFAC] text-[#0B1220] font-extrabold text-sm sm:text-base hover:opacity-90 transition"
-                      >
-                        {action.label}
-                      </Link>
-                    )}
+        <div className="mt-5">
+          <p className="text-white text-xl sm:text-2xl font-bold">
+            Use code <span className="text-[#86EFAC]">SPRING</span>
+          </p>
+          <p className="text-[#C5CBD8] text-sm sm:text-base">
+            30% off your first month • Cancel anytime
+          </p>
+        </div>
 
-                    <p className="text-center text-xs text-gray-500 mt-3 leading-relaxed">
-                      Cancel anytime • Clear pricing • Reliable local help
-                    </p>
+        {!compact && (
+          <p className="mt-5 text-[#C5CBD8] text-base leading-[22px]">
+            Materials at cost, only if needed, with your approval.
+            <br />
+            No markup. No contractor games. Just clear pricing.
+          </p>
+        )}
+
+        <BillingToggle compact={compact} />
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <section
+        id="plans"
+        className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden scroll-mt-[140px]"
+      >
+        <div className="mx-auto max-w-[1240px] px-5 lg:px-5 mb-6">
+          <div className="bg-[#86EFAC]/15 border border-[#86EFAC]/30 rounded-2xl p-3 sm:p-4 backdrop-blur-md shadow-[0_10px_40px_rgba(0,0,0,0.25)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-[#86EFAC]/25 flex items-center justify-center">
+                <span className="text-[#1F7A2E] text-lg">🎁</span>
+              </div>
+              <div>
+                <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
+                  Annual Plan — Pay for 11 months, get 12 months of unlimited visits
+                </p>
+                <p className="text-[#C5CBD8] text-sm">
+                  Or use code <span className="text-white font-semibold">SPRING</span> for
+                  30% off your first month
+                </p>
+              </div>
+            </div>
+
+            <div className="text-[#86EFAC] font-extrabold text-sm sm:text-base">
+              1 month FREE
+            </div>
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-[#306EEC]/10 blur-[120px]" />
+
+        {isAuthenticated && user && addresses.length > 0 && <AddressPicker />}
+
+        {isAuthenticated && user && addresses.length === 0 && (
+          <div className="mx-auto max-w-[1240px] px-5 lg:px-5 mb-6">
+            <div className="bg-white/10 border border-white/15 rounded-2xl p-4 backdrop-blur-md shadow-[0_10px_60px_rgba(0,0,0,0.20)]">
+              <p className="text-white font-semibold mb-2">No address on file</p>
+              <button
+                onClick={() => (window.location.href = "/account")}
+                className="h-[46px] px-4 rounded-xl bg-white text-[#313234] font-extrabold hover:bg-gray-100 transition active:scale-[0.99]"
+              >
+                Add Address
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
+          <HeaderBlock compact />
+
+          <div className="flex flex-col lg:flex-row items-start gap-8 sm:gap-10 lg:gap-12">
+            <div className="hidden lg:flex flex-shrink-0 w-[360px] pt-4 flex-col justify-between min-h-[560px]">
+              <HeaderBlock />
+            </div>
+
+            <div className="flex-1 relative w-full">
+              <div className="lg:hidden">
+                <div
+                  className="relative overflow-hidden"
+                  onTouchStart={onTouchStart}
+                  onTouchMove={onTouchMove}
+                  onTouchEnd={onTouchEnd}
+                >
+                  <div
+                    className="flex transition-transform duration-500 ease-out"
+                    style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                  >
+                    {plans.map((plan, idx) => {
+                      const monthly = getMonthly(plan);
+                      const annual = getAnnual(plan);
+                      const showPrice = billing === "annual" ? annual : monthly;
+                      const big = formatMoney(showPrice);
+                      const action = getActionForPlan(plan.name);
+
+                      return (
+                        <div key={idx} className="w-full flex-shrink-0 px-1">
+                          <div className="mx-auto max-w-[440px]">
+                            <div className="bg-[#EEF2FF] rounded-[26px] border border-[#C5CBD8] p-6 sm:p-8 flex flex-col shadow-[0_20px_80px_rgba(0,0,0,0.35)] transform transition duration-300 hover:-translate-y-1">
+                              {plan.badge && (
+                                <div className="mb-3 flex justify-center">
+                                  <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-white/70 shadow">
+                                    <span className="text-[13px] font-extrabold text-white">
+                                      {plan.badge}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="text-center mb-4 sm:mb-5">
+                                <h3 className="text-2xl sm:text-3xl font-extrabold text-[#313234] leading-tight mb-2">
+                                  {plan.name}
+                                </h3>
+                                <p className="text-sm sm:text-base text-[#6A6D71] leading-relaxed">
+                                  {plan.description}
+                                </p>
+                              </div>
+
+                              {billing === "annual" && (
+                                <div className="mb-3 flex justify-center">
+                                  <div className="px-3 py-1 rounded-full bg-[#86EFAC]/20 border border-[#43A047]/25">
+                                    <span className="text-[#1F7A2E] font-extrabold text-xs sm:text-sm">
+                                      1 month FREE • Pay for 11, get 12
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="mb-5 sm:mb-6 text-center">
+                                <div className="flex items-end gap-2 justify-center">
+                                  <span className="text-5xl sm:text-6xl font-extrabold text-[#313234] leading-none">
+                                    ${big}
+                                  </span>
+                                  <span className="text-base sm:text-lg text-[#6A6D71] leading-tight pb-1">
+                                    {billing === "annual" ? "/year" : "/month"}
+                                  </span>
+                                </div>
+
+                                {billing === "annual" && (
+                                  <div className="mt-2 text-sm sm:text-base text-[#6A6D71]">
+                                    Equivalent to{" "}
+                                    <span className="font-extrabold text-[#313234]">
+                                      ${formatMoney(annual / 12)}
+                                    </span>
+                                    /mo billed annually
+                                  </div>
+                                )}
+                              </div>
+
+                              {plan.subtitle && (
+                                <p className="text-[#306EEC] font-bold text-base sm:text-lg text-center mb-3">
+                                  {plan.subtitle}
+                                </p>
+                              )}
+
+                              <div className="space-y-2.5 mb-auto">
+                                {plan.features.map((feature, featureIdx) => (
+                                  <div key={featureIdx} className="flex items-center gap-2.5">
+                                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#43A047] flex items-center justify-center flex-shrink-0">
+                                      <svg width="14" height="11" viewBox="0 0 16 13" fill="none">
+                                        <path
+                                          d="M1 6.5L5.5 11L15 1.5"
+                                          stroke="#43A047"
+                                          strokeWidth="2.5"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </svg>
+                                    </div>
+                                    <span className="text-base sm:text-lg font-semibold text-[#313234] leading-tight">
+                                      {feature}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <button
+                                onClick={() => handleSubscribe(plan.name)}
+                                disabled={action.disabled}
+                                className={`w-full h-[56px] sm:h-[60px] rounded-2xl text-lg sm:text-xl font-extrabold leading-none transition-all duration-300 mt-6 flex items-center justify-center ${
+                                  action.disabled
+                                    ? "bg-gray-400 text-white cursor-not-allowed"
+                                    : action.kind === "upgrade"
+                                    ? "bg-[#111827] hover:bg-black text-white hover:scale-[1.01]"
+                                    : "bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF] hover:scale-[1.01]"
+                                }`}
+                              >
+                                {action.label}
+                              </button>
+
+                              <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
+                                Unlimited visits • Cancel anytime • No contracts
+                                <br />
+                                <span className="text-[#6A6D71]/80">
+                                  Materials at cost • No markup • Transparent pricing
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              );
-            })}
+
+                <div className="flex gap-2 justify-center mt-6 mb-4">
+                  {plans.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentSlide(idx)}
+                      aria-label={`Go to plan ${idx + 1}`}
+                      className={`h-2.5 rounded-full transition-all duration-300 ${
+                        idx === currentSlide
+                          ? "w-10 bg-[#306EEC]"
+                          : "w-2.5 bg-[#C5CBD8] hover:bg-[#306EEC]/50"
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex gap-4 justify-center mt-4">
+                  <button
+                    onClick={prevSlide}
+                    className="bg-white hover:bg-gray-50 text-[#313234] w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-lg border-2 border-[#E5E7EB] active:scale-95"
+                    aria-label="Previous plan"
+                  >
+                    <svg
+                      className="w-6 h-6 sm:w-7 sm:h-7"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="3"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={nextSlide}
+                    className="bg-[#306EEC] hover:bg-[#2558c9] text-white w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-lg shadow-[#306EEC]/30 active:scale-95"
+                    aria-label="Next plan"
+                  >
+                    <svg
+                      className="w-6 h-6 sm:w-7 sm:h-7"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="3"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+
+                <p className="text-[#C5CBD8] text-sm sm:text-base leading-relaxed text-center mt-6 px-4">
+                  Your home stops being a list of problems.
+                  <br />
+                  It becomes handled.
+                </p>
+              </div>
+
+              <div className="hidden lg:block">
+                <div className="relative pb-44">
+                  <div className="flex items-end gap-6">
+                    <div className="relative w-[420px] min-h-[560px] bg-[#EEF2FF] rounded-[22px] border border-[#C5CBD8] shadow-[0_20px_90px_rgba(0,0,0,0.35)] flex-shrink-0 overflow-hidden">
+                      {plans[currentSlide].badge && (
+                        <div className="absolute top-4 left-4 z-10">
+                          <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-[#EEF2FF]/70 shadow-lg">
+                            <span className="text-[14px] font-extrabold text-[#EEF2FF]">
+                              {plans[currentSlide].badge}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {billing === "annual" && (
+                        <div className="absolute top-4 right-4 z-10">
+                          <div className="bg-[#86EFAC]/20 border border-[#43A047]/25 px-3 py-2 rounded-xl shadow-lg">
+                            <div className="text-[#1F7A2E] font-extrabold text-[12px] leading-tight">
+                              1 month FREE
+                            </div>
+                            <div className="text-[#313234] font-bold text-[12px] leading-tight">
+                              Pay for 11, get 12
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div
+                        className={[
+                          "p-8 flex flex-col h-full",
+                          plans[currentSlide].badge ? "pt-14" : "",
+                        ].join(" ")}
+                      >
+                        <div className="text-center mb-8">
+                          <h3 className="text-3xl font-extrabold text-[#313234] mb-2">
+                            {plans[currentSlide].name}
+                          </h3>
+                          <p className="text-base text-[#6A6D71] leading-relaxed">
+                            {plans[currentSlide].description}
+                          </p>
+                        </div>
+
+                        {(() => {
+                          const plan = plans[currentSlide];
+                          const monthly = getMonthly(plan);
+                          const annual = getAnnual(plan);
+                          const show = billing === "annual" ? annual : monthly;
+                          const action = getActionForPlan(plan.name);
+
+                          return (
+                            <>
+                              <div className="mb-6">
+                                <div className="flex items-end gap-2 justify-center">
+                                  <span className="text-[64px] font-extrabold text-[#313234] leading-[0.95]">
+                                    ${formatMoney(show)}
+                                  </span>
+                                  <span className="text-base text-[#6A6D71] pb-2">
+                                    {billing === "annual" ? "/year" : "/month"}
+                                  </span>
+                                </div>
+
+                                {billing === "annual" && (
+                                  <div className="mt-2 text-center text-sm text-[#6A6D71]">
+                                    Pay for{" "}
+                                    <span className="font-extrabold text-[#313234]">11</span>, get{" "}
+                                    <span className="font-extrabold text-[#313234]">12</span> •
+                                    Equivalent{" "}
+                                    <span className="font-extrabold text-[#313234]">
+                                      ${formatMoney(annual / 12)}
+                                    </span>
+                                    /mo billed annually
+                                  </div>
+                                )}
+                              </div>
+
+                              {plan.subtitle && (
+                                <p className="text-[18px] font-bold text-[#306EEC] mb-4 text-center">
+                                  {plan.subtitle}
+                                </p>
+                              )}
+
+                              <div className="space-y-3 mb-auto">
+                                {plan.features.map((feature, idx) => (
+                                  <div key={idx} className="flex items-center gap-3">
+                                    <div className="w-[34px] h-[34px] rounded-full border-2 border-[#43A047] flex items-center justify-center flex-shrink-0">
+                                      <svg width="16" height="13" viewBox="0 0 16 13" fill="none">
+                                        <path
+                                          d="M1 6.5L5.5 11L15 1.5"
+                                          stroke="#43A047"
+                                          strokeWidth="2.25"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </svg>
+                                    </div>
+                                    <span className="text-[20px] font-semibold text-[#313234] leading-snug">
+                                      {feature}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <button
+                                onClick={() => handleSubscribe(plan.name)}
+                                disabled={action.disabled}
+                                className={`w-full h-[62px] rounded-[14px] text-xl font-extrabold transition-all mt-6 flex items-center justify-center ${
+                                  action.disabled
+                                    ? "bg-gray-400 text-white cursor-not-allowed"
+                                    : action.kind === "upgrade"
+                                    ? "bg-[#111827] hover:bg-black text-white hover:scale-[1.01]"
+                                    : "bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF] hover:scale-[1.01]"
+                                }`}
+                              >
+                                {action.label}
+                              </button>
+
+                              <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
+                                Unlimited visits • Cancel anytime • No contracts
+                                <br />
+                                <span className="text-[#6A6D71]/80">
+                                  Materials at cost • No markup • Transparent pricing
+                                </span>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-6">
+                      {[1, 2, 3].map((offset) => {
+                        const index = (currentSlide + offset) % plans.length;
+                        const plan = plans[index];
+                        const monthly = getMonthly(plan);
+                        const annual = getAnnual(plan);
+                        const show = billing === "annual" ? annual : monthly;
+                        const action = getActionForPlan(plan.name);
+
+                        return (
+                          <button
+                            key={offset}
+                            type="button"
+                            onClick={() => setCurrentSlide(index)}
+                            className="group relative w-[240px] min-h-[420px] flex-shrink-0 text-left"
+                          >
+                            <div className="absolute inset-0 bg-[#EEF2FF] rounded-[16px] border border-[#C5CBD8] p-6 shadow-[0_12px_60px_rgba(0,0,0,0.25)] transition-transform duration-300 group-hover:-translate-y-1" />
+
+                            {plan.badge && (
+                              <div className="absolute top-3 left-3 z-20">
+                                <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-3 py-1.5 rounded-lg border border-white/70 shadow">
+                                  <span className="text-[12px] font-extrabold text-white">
+                                    {plan.badge}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="relative z-10 p-6 flex flex-col h-full">
+                              <div className="text-center mb-6">
+                                <h3 className="text-xl font-extrabold text-[#313234] mb-2">
+                                  {plan.name}
+                                </h3>
+                                <p className="text-sm text-[#6A6D71] leading-relaxed">
+                                  {plan.description}
+                                </p>
+                              </div>
+
+                              {billing === "annual" && (
+                                <div className="mb-3 flex justify-center">
+                                  <div className="px-3 py-1 rounded-full bg-[#86EFAC]/20 border border-[#43A047]/25">
+                                    <span className="text-[#1F7A2E] font-extrabold text-[11px]">
+                                      1 month FREE
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="mb-6 text-center min-h-[86px]">
+                                <div className="flex items-end gap-2 justify-center">
+                                  <span className="text-5xl font-extrabold text-[#313234]">
+                                    ${formatMoney(show)}
+                                  </span>
+                                  <span className="text-sm text-[#6A6D71] pb-1">
+                                    {billing === "annual" ? "/year" : "/month"}
+                                  </span>
+                                </div>
+
+                                <div className="mt-2 text-[12px] text-[#6A6D71]">
+                                  {billing === "annual"
+                                    ? `${formatMoney(annual / 12)}/mo billed annually`
+                                    : "\u00A0"}
+                                </div>
+                              </div>
+
+                              {plan.subtitle && (
+                                <p className="text-[15px] font-bold text-[#306EEC] mb-4 text-center">
+                                  {plan.subtitle}
+                                </p>
+                              )}
+
+                              <div className="space-y-2 mb-auto">
+                                {plan.features.slice(0, 3).map((feature, idx2) => (
+                                  <div key={idx2} className="flex items-center gap-2">
+                                    <div className="w-[26px] h-[26px] rounded-full border-2 border-[#43A047] flex items-center justify-center flex-shrink-0">
+                                      <svg width="12" height="10" viewBox="0 0 11 9" fill="none">
+                                        <path
+                                          d="M1 4.5L4 7.5L10 1.5"
+                                          stroke="#43A047"
+                                          strokeWidth="2"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </svg>
+                                    </div>
+                                    <span className="text-[15px] font-semibold text-[#313234] leading-snug">
+                                      {feature}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div className="mt-auto pt-4">
+                                <div
+                                  className={`w-full h-[40px] rounded-[10px] text-[15px] font-extrabold flex items-center justify-center transition ${
+                                    action.kind === "upgrade"
+                                      ? "bg-[#111827] text-white"
+                                      : action.kind === "active"
+                                      ? "bg-gray-300 text-gray-600"
+                                      : action.kind === "lower" || action.kind === "active-unknown"
+                                      ? "bg-gray-300 text-gray-600"
+                                      : "bg-[#306EEC] text-white"
+                                  }`}
+                                >
+                                  {action.kind === "upgrade"
+                                    ? "Upgrade"
+                                    : action.kind === "active"
+                                    ? "Active"
+                                    : action.kind === "lower"
+                                    ? "Higher Active"
+                                    : billing === "annual"
+                                    ? "View Annual"
+                                    : "View"}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="absolute inset-0 bg-[#313234]/15 backdrop-blur-[2px] rounded-[16px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-16 relative z-30 flex items-center justify-center gap-4">
+                    <button
+                      onClick={prevSlide}
+                      className="bg-white hover:bg-gray-100 text-gray-800 w-12 h-12 rounded-xl flex items-center justify-center transition-colors shadow-md border border-gray-200 active:scale-95"
+                      aria-label="Previous plan"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 19l-7-7 7-7"
+                        />
+                      </svg>
+                    </button>
+
+                    <div className="flex gap-2">
+                      {plans.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentSlide(idx)}
+                          aria-label={`Go to plan ${idx + 1}`}
+                          className={`h-2.5 rounded-full transition-all duration-300 ${
+                            idx === currentSlide
+                              ? "w-10 bg-[#306EEC]"
+                              : "w-2.5 bg-[#C5CBD8] hover:bg-[#306EEC]/50"
+                          }`}
+                        />
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={nextSlide}
+                      className="bg-white hover:bg-gray-100 text-gray-800 w-12 h-12 rounded-xl flex items-center justify-center transition-colors shadow-md border border-gray-200 active:scale-95"
+                      aria-label="Next plan"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:hidden mt-4 text-center text-[12px] text-[#C5CBD8]">
+                Tip: swipe left/right to see plans
+              </div>
+            </div>
           </div>
         </div>
       </section>
