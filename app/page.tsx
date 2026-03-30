@@ -62,116 +62,63 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Header */}
       <div className="sticky top-0 z-50">
         <Header />
       </div>
 
       <main className="relative">
-        {/* ===================================================== */}
-        {/* 1. SUBSCRIBED USER VERSION                            */}
-        {/* Best order: use first, then explore                   */}
-        {/* ===================================================== */}
+        {/* ========================================= */}
+        {/* SUBSCRIBED VERSION                        */}
+        {/* Goal: make using the membership easy      */}
+        {/* ========================================= */}
         {isSubscribed && (
-          <>
-            {/* --- SUBSCRIBED ORDER START --- */}
-
-            {/* Main member hero */}
-            <HeroSection />
-
-            {/* Fastest important action for subscribed users */}
+          <>  
             <BookingSection />
-
-            {/* Reminder / simple process */}
-            <StepsSection />
-
-            {/* Explain value / member info */}
             <ServiceInfoSection />
-
-            {/* Existing plan info */}
             <PlansSection />
-
-            {/* What they can book/use */}
             <ServicesSection />
-
-            {/* Social trust / team */}
             <HandymenSection />
-
-            {/* Inspiration / bigger work */}
-            <ProjectsSection />
-
             <Footer />
-
-            {/* --- SUBSCRIBED ORDER END --- */}
           </>
         )}
 
-        {/* ===================================================== */}
-        {/* 2. REGISTERED BUT NOT SUBSCRIBED VERSION             */}
-        {/* Best order: sell subscription harder                 */}
-        {/* ===================================================== */}
+        {/* ========================================= */}
+        {/* REGISTERED BUT NOT SUBSCRIBED VERSION     */}
+        {/* Goal: push subscription + remove doubts   */}
+        {/* ========================================= */}
         {isRegistered && (
           <>
-            {/* --- REGISTERED ORDER START --- */}
-
-            {/* Keep hero first */}
             <NewHeroSection />
-
-            {/* Put plans very high because they already registered */}
-            <PlanComparisonSection />
-
-            {/* Then help them choose */}
+            <PlansSection />
             <QuizSection />
-
-            {/* Explain why subscription is smart */}
             <ValuePropsSection />
-
-            {/* Trust before they leave */}
+            <ServiceInfoSection />
+            <ServicesSection />
+            <HandymenSection />
             <TestimonialsSection />
-
-            {/* Show everything else only after subscription push */}
+            <ProjectsSection />
             <DepartmentsSection />
-
             <Footer />
-
-            {/* --- REGISTERED ORDER END --- */}
           </>
         )}
 
-        {/* ===================================================== */}
-        {/* 3. VISITOR / NOT REGISTERED VERSION                  */}
-        {/* Best order: understand -> choose -> trust -> buy     */}
-        {/* ===================================================== */}
+        {/* ========================================= */}
+        {/* VISITOR VERSION                           */}
+        {/* Goal: simple, clear, high conversion      */}
+        {/* ========================================= */}
         {isVisitor && (
           <>
-            {/* --- VISITOR ORDER START --- */}
-
-            {/* Clear first impression */}
             <NewHeroSection />
-
-            {/* Help them self-identify */}
             <QuizSection />
-
-            {/* Explain why this is valuable */}
             <ValuePropsSection />
-
-            {/* Show subscription before other distractions */}
-            <PlanComparisonSection />
-
-            {/* Trust */}
+            <PlansSection />
             <TestimonialsSection />
-
-            {/* Other services lower on page */}
             <DepartmentsSection />
-
             <Footer />
-
-            {/* --- VISITOR ORDER END --- */}
           </>
         )}
       </main>
 
-      {/* Chat widget trigger */}
       <div className="fixed bottom-16 sm:bottom-24 right-6 sm:right-8 z-[999999]">
         <button
           onClick={() => setIsChatOpen((v) => !v)}

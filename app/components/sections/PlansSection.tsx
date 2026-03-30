@@ -18,6 +18,10 @@ type Address = {
 
 type BillingCycle = "monthly" | "annual";
 
+const TARAS_PHONE_DISPLAY = "631-599-1363";
+const TARAS_PHONE_LINK = "tel:6315991363";
+const TARAS_SMS_LINK = "sms:6315991363";
+
 function toNumberPrice(v: any): number {
   if (typeof v === "number") return v;
   if (typeof v === "string") {
@@ -33,16 +37,45 @@ function formatMoney(n: number): string {
   return String(rounded);
 }
 
+function normalizePlanType(name: string): PlanType | null {
+  const x = String(name || "").toLowerCase().trim();
+  if (x === "basic") return "basic";
+  if (x === "plus") return "plus";
+  if (x === "premium") return "premium";
+  if (x === "elite") return "elite";
+  return null;
+}
+
+function prettyPlanName(plan: PlanType | null): string {
+  if (plan === "basic") return "Basic";
+  if (plan === "plus") return "Plus";
+  if (plan === "premium") return "Premium";
+  if (plan === "elite") return "Elite";
+  return "";
+}
+
+function getPlanRank(plan: PlanType | null): number {
+  if (plan === "basic") return 1;
+  if (plan === "plus") return 2;
+  if (plan === "premium") return 3;
+  if (plan === "elite") return 4;
+  return 0;
+}
+
 export default function PlansSection() {
   const [currentSlide, setCurrentSlide] = useState(() => {
     const i = plans.findIndex((p) => p.name === "Plus");
     return i >= 0 ? i : 0;
   });
+
   const [billing, setBilling] = useState<BillingCycle>("monthly");
+  const [upgradePopupOpen, setUpgradePopupOpen] = useState(false);
+  const [upgradeTargetPlan, setUpgradeTargetPlan] = useState<PlanType | null>(null);
 
   const { user, isAuthenticated, token } = useAuth();
 
   const addresses: Address[] = ((user as any)?.addresses || []) as Address[];
+  const currentUserPlan = normalizePlanType((user as any)?.subscription || "");
 
   const defaultAddress = useMemo(() => {
     if (!user) return null;
@@ -92,7 +125,7 @@ export default function PlansSection() {
         checkAddressActive(selectedAddressId);
       }
     }
-  }, [token, selectedAddressId]);
+  }, [token, selectedAddressId, addrActiveMap]);
 
   const startCheckout = async (
     plan: PlanType,
@@ -124,7 +157,73 @@ export default function PlansSection() {
     }
   };
 
+  const openUpgradePopup = (plan: PlanType) => {
+    setUpgradeTargetPlan(plan);
+    setUpgradePopupOpen(true);
+  };
+
+  const getActionForPlan = (planName: string) => {
+    const planType = normalizePlanType(planName);
+    const selectedAddressActive = selectedAddressId ? addrActiveMap[selectedAddressId] === true : false;
+
+    if (!planType) {
+      return {
+        kind: "subscribe" as const,
+        label: "Start Membership",
+        disabled: false,
+      };
+    }
+
+    if (!selectedAddressActive) {
+      return {
+        kind: "subscribe" as const,
+        label: billing === "annual" ? "Start Annual & Save" : "Start Membership",
+        disabled: false,
+      };
+    }
+
+    if (!currentUserPlan) {
+      return {
+        kind: "active-unknown" as const,
+        label: "Already Active",
+        disabled: true,
+      };
+    }
+
+    const currentRank = getPlanRank(currentUserPlan);
+    const targetRank = getPlanRank(planType);
+
+    if (targetRank === currentRank) {
+      return {
+        kind: "active" as const,
+        label: "Active",
+        disabled: true,
+      };
+    }
+
+    if (targetRank > currentRank) {
+      return {
+        kind: "upgrade" as const,
+        label: `Upgrade to ${prettyPlanName(planType)}`,
+        disabled: false,
+      };
+    }
+
+    return {
+      kind: "lower" as const,
+      label: "Active Higher Plan",
+      disabled: true,
+    };
+  };
+
   const handleSubscribe = (planName: string) => {
+    const planType = normalizePlanType(planName);
+
+    if (!planType) {
+      alert("Invalid plan selected. Please refresh and try again.");
+      return;
+    }
+
     if (!isAuthenticated || !user) {
       window.location.href = "/signin?redirect=/";
       return;
@@ -141,22 +240,14 @@ export default function PlansSection() {
       return;
     }
 
-    const isActive = addrActiveMap[selectedAddressId] === true;
-    if (isActive) {
-      alert("This address already has an active plan.");
+    const action = getActionForPlan(planName);
+
+    if (action.kind === "active" || action.kind === "lower" || action.kind === "active-unknown") {
       return;
     }
 
-    const planTypeMap: Record<string, PlanType> = {
-      Basic: "basic",
-      Plus: "plus",
-      Premium: "premium",
-      Elite: "elite",
-    };
-
-    const planType = planTypeMap[planName];
-    if (!planType) {
-      alert("Invalid plan selected. Please refresh and try again.");
+    if (action.kind === "upgrade") {
+      openUpgradePopup(planType);
       return;
     }
 
@@ -168,7 +259,6 @@ export default function PlansSection() {
 
   const addressIsActive = selectedAddressId ? addrActiveMap[selectedAddressId] === true : false;
 
-  // ----- Mobile swipe support -----
   const touchStartX = useRef<number | null>(null);
   const touchLastX = useRef<number | null>(null);
 
@@ -194,8 +284,6 @@ export default function PlansSection() {
     touchLastX.current = null;
   };
 
-  const disabledForAddress = isAuthenticated && !!selectedAddressId && addressIsActive;
-
   const getMonthly = (plan: Plan) => toNumberPrice(plan.price);
   const getAnnual = (plan: Plan) => getMonthly(plan) * 11;
 
@@ -211,18 +299,17 @@ export default function PlansSection() {
               <p className="text-[#C5CBD8] text-xs sm:text-sm leading-snug mt-1">
                 {billing === "annual" ? (
                   <>
-                    Pay for <span className="text-white font-semibold">11 months</span>, get{' '}
-                    <span className="text-white font-semibold">12</span> (unlimited visits)
+                    Pay for <span className="text-white font-semibold">11 months</span>, get{" "}
+                    <span className="text-white font-semibold">12</span>
                   </>
                 ) : (
                   <>
-                    Use code <span className="text-white font-semibold">SPRING</span> – 30% off your first month; unlimited visits (2+ per month)
+                    Use code <span className="text-white font-semibold">SPRING</span> — 30% off your first month
                   </>
                 )}
               </p>
             </div>
 
-            {/* switch */}
             <div className="grid grid-cols-[72px_auto_72px] items-center gap-3 shrink-0">
               <span
                 className={`text-sm font-semibold text-right whitespace-nowrap ${
@@ -259,11 +346,8 @@ export default function PlansSection() {
             </div>
           </div>
 
-          {/* little promo badge */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-2">
-              {/* Left intentionally blank */}
-            </div>
+            <div />
             <span className="sm:hidden text-[#C5CBD8] text-[11px]">Cancel anytime</span>
           </div>
         </div>
@@ -303,7 +387,9 @@ export default function PlansSection() {
                 {checkingAddr ? (
                   <span className="text-[#C5CBD8]">Checking plan for this address…</span>
                 ) : addressIsActive ? (
-                  <span className="text-[#FCA5A5] font-semibold">Already has a plan</span>
+                  <span className="text-[#FCA5A5] font-semibold">
+                    Active plan{currentUserPlan ? `: ${prettyPlanName(currentUserPlan)}` : ""}
+                  </span>
                 ) : (
                   <span className="text-[#86EFAC] font-semibold">No active plan</span>
                 )}
@@ -323,543 +409,603 @@ export default function PlansSection() {
   );
 
   const HeaderBlock = ({ compact }: { compact?: boolean }) => (
-  <div className={`${compact ? "lg:hidden" : "hidden lg:block"} w-full`}>
-    <div className={`${compact ? "text-center" : ""} mb-8 sm:mb-12`}>
-      <div className={`mb-6 ${compact ? "flex justify-center" : ""}`}>
-        <Image src="/images/logo.svg" alt="Profixter" width={80} height={32} />
+    <div className={`${compact ? "lg:hidden" : "hidden lg:block"} w-full`}>
+      <div className={`${compact ? "text-center" : ""} mb-8 sm:mb-12`}>
+        <div className={`mb-6 ${compact ? "flex justify-center" : ""}`}>
+          <Image src="/images/logo.svg" alt="Profixter" width={80} height={32} />
+        </div>
+
+        <h2
+          className={[
+            compact ? "text-4xl sm:text-5xl" : "text-[56px]",
+            "font-extrabold tracking-[-0.04em]",
+            "leading-[1.05]",
+            "mb-6",
+          ].join(" ")}
+        >
+          <span className="block text-white">Stop Paying</span>
+          <span className="block text-[#86EFAC]">For Every Repair</span>
+          <span className="block text-white">Get Unlimited Help</span>
+        </h2>
+
+        <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed max-w-[520px] mx-auto">
+          One subscription. Your own handyman. Fix everything in your home without worrying
+          about hourly costs every single time.
+        </p>
+
+        <div className="mt-5">
+          <p className="text-white text-xl sm:text-2xl font-bold">
+            Use code <span className="text-[#86EFAC]">SPRING</span>
+          </p>
+          <p className="text-[#C5CBD8] text-sm sm:text-base">
+            30% off your first month • Cancel anytime
+          </p>
+        </div>
+
+        {!compact && (
+          <p className="mt-5 text-[#C5CBD8] text-base leading-[22px]">
+            Materials at cost, only if needed, with your approval.
+            <br />
+            No markup. No contractor games. Just clear pricing.
+          </p>
+        )}
+
+        <BillingToggle compact={compact} />
       </div>
-
-      {/* ✅ Title (no overlap / no collision) */}
-      <h2
-        className={[
-          compact ? "text-5xl sm:text-6xl" : "text-[64px]",
-          "font-bold uppercase tracking-[-0.05em]",
-          "leading-[0.86]", // tighter but safe (no overlapping)
-          "mb-8",
-        ].join(" ")}
-      >
-        <span className="block text-white">Choose</span>
-        <span className="block text-[#306EEC]">Your Unlimited</span>
-        <span className="block text-white">Plan</span>
-      </h2>
-
-      <div className="mb-6">
-        <p className="text-white text-2xl sm:text-3xl font-normal leading-tight mb-2">
-          Code <span className="text-white font-extrabold">SPRING</span>
-        </p>
-        <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed">
-          <span className="text-white font-semibold">30% off your first month</span> on monthly plans & unlimited visits (2+ per month).
-          <br />
-          Cancel anytime, no contracts.
-        </p>
-      </div>
-
-      {!compact && (
-        <p className="text-[#C5CBD8] text-base leading-[19px]">
-          Materials at cost. Only if needed,
-          <br />
-          with your approval – no markups.
-        </p>
-      )}
-
-      {/* ✅ Billing toggle under header */}
-      <BillingToggle compact={compact} />
     </div>
-  </div>
-);
+  );
 
   return (
-    <section
-      id="plans"
-      className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden scroll-mt-[140px]"
-    >
-      {/* 🔥 Annual promo banner */}
-      <div className="mx-auto max-w-[1240px] px-5 lg:px-5 mb-6">
-        <div className="bg-[#86EFAC]/15 border border-[#86EFAC]/30 rounded-2xl p-3 sm:p-4 backdrop-blur-md shadow-[0_10px_40px_rgba(0,0,0,0.25)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-[#86EFAC]/25 flex items-center justify-center">
-              <span className="text-[#1F7A2E] text-lg">🎁</span>
-            </div>
-            <div>
-              <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
-                Annual Plan – Pay for 11 months, get 12 months of unlimited visits
-              </p>
-              <p className="text-[#C5CBD8] text-sm">
-                Or use code <span className="text-white font-semibold">SPRING</span> for 30% off your first month (monthly plans)
-              </p>
-            </div>
-          </div>
-
-          <div className="text-[#86EFAC] font-extrabold text-sm sm:text-base">
-            Pay 11 months • Get 12 (unlimited visits)
-          </div>
-        </div>
-      </div>
-
-      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-[#306EEC]/10 blur-[120px]" />
-
-      {isAuthenticated && user && addresses.length > 0 && <AddressPicker />}
-
-      {isAuthenticated && user && addresses.length === 0 && (
+    <>
+      <section
+        id="plans"
+        className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden scroll-mt-[140px]"
+      >
         <div className="mx-auto max-w-[1240px] px-5 lg:px-5 mb-6">
-          <div className="bg-white/10 border border-white/15 rounded-2xl p-4 backdrop-blur-md shadow-[0_10px_60px_rgba(0,0,0,0.20)]">
-            <p className="text-white font-semibold mb-2">No address on file</p>
-            <button
-              onClick={() => (window.location.href = "/account")}
-              className="h-[46px] px-4 rounded-xl bg-white text-[#313234] font-extrabold hover:bg-gray-100 transition active:scale-[0.99]"
-            >
-              Add Address
-            </button>
+          <div className="bg-[#86EFAC]/15 border border-[#86EFAC]/30 rounded-2xl p-3 sm:p-4 backdrop-blur-md shadow-[0_10px_40px_rgba(0,0,0,0.25)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-[#86EFAC]/25 flex items-center justify-center">
+                <span className="text-[#1F7A2E] text-lg">🎁</span>
+              </div>
+              <div>
+                <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
+                  Annual Plan — Pay for 11 months, get 12 months of unlimited visits
+                </p>
+                <p className="text-[#C5CBD8] text-sm">
+                  Or use code <span className="text-white font-semibold">SPRING</span> for 30% off your first month
+                </p>
+              </div>
+            </div>
+
+            <div className="text-[#86EFAC] font-extrabold text-sm sm:text-base">
+              1 month FREE
+            </div>
           </div>
         </div>
-      )}
 
-      <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
-        {/* Mobile/Tablet Header */}
-        <HeaderBlock compact />
+        <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-[#306EEC]/10 blur-[120px]" />
 
-        <div className="flex flex-col lg:flex-row items-start gap-8 sm:gap-10 lg:gap-12">
-          {/* Left Side - Desktop Only */}
-          <div className="hidden lg:flex flex-shrink-0 w-[360px] pt-4 flex-col justify-between min-h-[560px]">
-            <HeaderBlock />
-          </div>
+        {isAuthenticated && user && addresses.length > 0 && <AddressPicker />}
 
-          {/* Right Side */}
-          <div className="flex-1 relative w-full">
-            {/* Mobile/Tablet carousel */}
-            <div className="lg:hidden">
-              <div
-                className="relative overflow-hidden"
-                onTouchStart={onTouchStart}
-                onTouchMove={onTouchMove}
-                onTouchEnd={onTouchEnd}
+        {isAuthenticated && user && addresses.length === 0 && (
+          <div className="mx-auto max-w-[1240px] px-5 lg:px-5 mb-6">
+            <div className="bg-white/10 border border-white/15 rounded-2xl p-4 backdrop-blur-md shadow-[0_10px_60px_rgba(0,0,0,0.20)]">
+              <p className="text-white font-semibold mb-2">No address on file</p>
+              <button
+                onClick={() => (window.location.href = "/account")}
+                className="h-[46px] px-4 rounded-xl bg-white text-[#313234] font-extrabold hover:bg-gray-100 transition active:scale-[0.99]"
               >
+                Add Address
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
+          <HeaderBlock compact />
+
+          <div className="flex flex-col lg:flex-row items-start gap-8 sm:gap-10 lg:gap-12">
+            <div className="hidden lg:flex flex-shrink-0 w-[360px] pt-4 flex-col justify-between min-h-[560px]">
+              <HeaderBlock />
+            </div>
+
+            <div className="flex-1 relative w-full">
+              <div className="lg:hidden">
                 <div
-                  className="flex transition-transform duration-500 ease-out"
-                  style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                  className="relative overflow-hidden"
+                  onTouchStart={onTouchStart}
+                  onTouchMove={onTouchMove}
+                  onTouchEnd={onTouchEnd}
                 >
-                  {plans.map((plan, idx) => {
-                    const monthly = getMonthly(plan);
-                    const annual = getAnnual(plan);
-                    const showPrice = billing === "annual" ? annual : monthly;
-                    const big = formatMoney(showPrice);
+                  <div
+                    className="flex transition-transform duration-500 ease-out"
+                    style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                  >
+                    {plans.map((plan, idx) => {
+                      const monthly = getMonthly(plan);
+                      const annual = getAnnual(plan);
+                      const showPrice = billing === "annual" ? annual : monthly;
+                      const big = formatMoney(showPrice);
+                      const action = getActionForPlan(plan.name);
 
-                    return (
-                      <div key={idx} className="w-full flex-shrink-0 px-1">
-                        <div className="mx-auto max-w-[440px]">
-                          <div className="bg-[#EEF2FF] rounded-[26px] border border-[#C5CBD8] p-6 sm:p-8 flex flex-col shadow-[0_20px_80px_rgba(0,0,0,0.35)] transform transition duration-300 hover:-translate-y-1">
-                            {plan.badge && (
-                              <div className="mb-3 flex justify-center">
-                                <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-white/70 shadow">
-                                  <span className="text-[13px] font-extrabold text-white">
-                                    {plan.badge}
-                                  </span>
+                      return (
+                        <div key={idx} className="w-full flex-shrink-0 px-1">
+                          <div className="mx-auto max-w-[440px]">
+                            <div className="bg-[#EEF2FF] rounded-[26px] border border-[#C5CBD8] p-6 sm:p-8 flex flex-col shadow-[0_20px_80px_rgba(0,0,0,0.35)] transform transition duration-300 hover:-translate-y-1">
+                              {plan.badge && (
+                                <div className="mb-3 flex justify-center">
+                                  <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-white/70 shadow">
+                                    <span className="text-[13px] font-extrabold text-white">
+                                      {plan.badge}
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                            <div className="text-center mb-4 sm:mb-5">
-                              <h3 className="text-2xl sm:text-3xl font-extrabold text-[#313234] leading-tight mb-2">
-                                {plan.name}
-                              </h3>
-                              <p className="text-sm sm:text-base text-[#6A6D71] leading-relaxed">
-                                {plan.description}
-                              </p>
-                            </div>
+                              )}
 
-                            {/* ✅ Annual badge */}
-                            {billing === "annual" && (
-                              <div className="mb-3 flex justify-center">
-                                <div className="px-3 py-1 rounded-full bg-[#86EFAC]/20 border border-[#43A047]/25">
-                                  <span className="text-[#1F7A2E] font-extrabold text-xs sm:text-sm">
-                                    1 month FREE • Pay for 11, get 12
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-
-                            <div className="mb-5 sm:mb-6 text-center">
-                              <div className="flex items-end gap-2 justify-center">
-                                <span className="text-5xl sm:text-6xl font-extrabold text-[#313234] leading-none">
-                                  ${big}
-                                </span>
-                                <span className="text-base sm:text-lg text-[#6A6D71] leading-tight pb-1">
-                                  {billing === "annual" ? "/year" : "/month"}
-                                </span>
+                              <div className="text-center mb-4 sm:mb-5">
+                                <h3 className="text-2xl sm:text-3xl font-extrabold text-[#313234] leading-tight mb-2">
+                                  {plan.name}
+                                </h3>
+                                <p className="text-sm sm:text-base text-[#6A6D71] leading-relaxed">
+                                  {plan.description}
+                                </p>
                               </div>
 
                               {billing === "annual" && (
-                                <div className="mt-2 text-sm sm:text-base text-[#6A6D71]">
-                                  Equivalent to{' '}
-                                  <span className="font-extrabold text-[#313234]">
-                                    ${formatMoney(annual / 12)}
-                                  </span>
-                                  /mo billed annually
+                                <div className="mb-3 flex justify-center">
+                                  <div className="px-3 py-1 rounded-full bg-[#86EFAC]/20 border border-[#43A047]/25">
+                                    <span className="text-[#1F7A2E] font-extrabold text-xs sm:text-sm">
+                                      1 month FREE • Pay for 11, get 12
+                                    </span>
+                                  </div>
                                 </div>
                               )}
-                            </div>
 
-                            {plan.subtitle && (
-                              <p className="text-[#306EEC] font-bold text-base sm:text-lg text-center mb-3">
-                                {plan.subtitle}
-                              </p>
-                            )}
+                              <div className="mb-5 sm:mb-6 text-center">
+                                <div className="flex items-end gap-2 justify-center">
+                                  <span className="text-5xl sm:text-6xl font-extrabold text-[#313234] leading-none">
+                                    ${big}
+                                  </span>
+                                  <span className="text-base sm:text-lg text-[#6A6D71] leading-tight pb-1">
+                                    {billing === "annual" ? "/year" : "/month"}
+                                  </span>
+                                </div>
 
-                            <div className="space-y-2.5 mb-auto">
-                              {plan.features.map((feature: string, featureIdx: number) => (
-                                <div key={featureIdx} className="flex items-center gap-2.5">
-                                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#43A047] flex items-center justify-center flex-shrink-0">
-                                    <svg width="14" height="11" viewBox="0 0 16 13" fill="none">
-                                      <path
-                                        d="M1 6.5L5.5 11L15 1.5"
-                                        stroke="#43A047"
-                                        strokeWidth="2.5"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                      />
-                                    </svg>
+                                {billing === "annual" && (
+                                  <div className="mt-2 text-sm sm:text-base text-[#6A6D71]">
+                                    Equivalent to{" "}
+                                    <span className="font-extrabold text-[#313234]">
+                                      ${formatMoney(annual / 12)}
+                                    </span>
+                                    /mo billed annually
                                   </div>
-                                  <span className="text-base sm:text-lg font-semibold text-[#313234] leading-tight">
-                                    {feature}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-
-                            <button
-                              onClick={() => handleSubscribe(plan.name)}
-                              disabled={disabledForAddress}
-                              className={`w-full h-[56px] sm:h-[60px] rounded-2xl text-lg sm:text-xl font-extrabold leading-none transition-all duration-300 mt-6 flex items-center justify-center ${
-                                disabledForAddress
-                                  ? "bg-gray-400 text-white cursor-not-allowed"
-                                  : "bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF] hover:scale-[1.01]"
-                              }`}
-                            >
-                              {disabledForAddress
-                                ? "Already has a plan"
-                                : billing === "annual"
-                                ? "Start Annual (1 month free)"
-                                : plan.buttonText}
-                            </button>
-
-                            <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
-                              Unlimited visits • Cancel anytime • No contracts
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* dots */}
-              <div className="flex gap-2 justify-center mt-6 mb-4">
-                {plans.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCurrentSlide(idx)}
-                    aria-label={`Go to plan ${idx + 1}`}
-                    className={`h-2.5 rounded-full transition-all duration-300 ${
-                      idx === currentSlide ? "w-10 bg-[#306EEC]" : "w-2.5 bg-[#C5CBD8] hover:bg-[#306EEC]/50"
-                    }`}
-                  />
-                ))}
-              </div>
-
-              {/* arrows */}
-              <div className="flex gap-4 justify-center mt-4">
-                <button
-                  onClick={prevSlide}
-                  className="bg-white hover:bg-gray-50 text-[#313234] w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-lg border-2 border-[#E5E7EB] active:scale-95"
-                  aria-label="Previous plan"
-                >
-                  <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <button
-                  onClick={nextSlide}
-                  className="bg-[#306EEC] hover:bg-[#2558c9] text-white w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-lg shadow-[#306EEC]/30 active:scale-95"
-                  aria-label="Next plan"
-                >
-                  <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-
-              <p className="text-[#C5CBD8] text-sm sm:text-base leading-relaxed text-center mt-6 px-4">
-                Materials at cost. Only if needed,
-                <br />
-                with your approval – no markups.
-              </p>
-            </div>
-
-            {/* Desktop layout */}
-            <div className="hidden lg:block">
-              <div className="relative pb-44">
-                {/* pb-16 guarantees room for controls below cards */}
-                <div className="flex items-end gap-6">
-                  {/* Main card */}
-                  <div className="relative w-[420px] min-h-[560px] bg-[#EEF2FF] rounded-[22px] border border-[#C5CBD8] shadow-[0_20px_90px_rgba(0,0,0,0.35)] flex-shrink-0 overflow-hidden">
-                    {plans[currentSlide].badge && (
-                      <div className="absolute top-4 left-4 z-10">
-                        <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-[#EEF2FF]/70 shadow-lg">
-                          <span className="text-[14px] font-extrabold text-[#EEF2FF]">
-                            {plans[currentSlide].badge}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {billing === "annual" && (
-                      <div className="absolute top-4 right-4 z-10">
-                        <div className="bg-[#86EFAC]/20 border border-[#43A047]/25 px-3 py-2 rounded-xl shadow-lg">
-                          <div className="text-[#1F7A2E] font-extrabold text-[12px] leading-tight">
-                            1 month FREE
-                          </div>
-                          <div className="text-[#313234] font-bold text-[12px] leading-tight">
-                            Pay for 11, get 12
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div
-                      className={[
-                        "p-8 flex flex-col h-full",
-                        plans[currentSlide].badge ? "pt-14" : "",
-                      ].join(" ")}
-                    >
-                      <div className="text-center mb-8">
-                        <h3 className="text-3xl font-extrabold text-[#313234] mb-2">{plans[currentSlide].name}</h3>
-                        <p className="text-base text-[#6A6D71] leading-relaxed">{plans[currentSlide].description}</p>
-                      </div>
-
-                      {/* price */}
-                      {(() => {
-                        const plan = plans[currentSlide];
-                        const monthly = getMonthly(plan);
-                        const annual = getAnnual(plan);
-                        const show = billing === "annual" ? annual : monthly;
-
-                        return (
-                          <div className="mb-6">
-                            <div className="flex items-end gap-2 justify-center">
-                              <span className="text-[64px] font-extrabold text-[#313234] leading-[0.95]">
-                                ${formatMoney(show)}
-                              </span>
-                              <span className="text-base text-[#6A6D71] pb-2">
-                                {billing === "annual" ? "/year" : "/month"}
-                              </span>
-                            </div>
-
-                            {billing === "annual" && (
-                              <div className="mt-2 text-center text-sm text-[#6A6D71]">
-                                Pay for <span className="font-extrabold text-[#313234]">11</span>, get{' '}
-                                <span className="font-extrabold text-[#313234]">12</span> • Equivalent{' '}
-                                <span className="font-extrabold text-[#313234]">${formatMoney(annual / 12)}</span>
-                                /mo billed annually
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
-
-                      {plans[currentSlide].subtitle && (
-                        <p className="text-[18px] font-bold text-[#306EEC] mb-4 text-center">
-                          {plans[currentSlide].subtitle}
-                        </p>
-                      )}
-
-                      <div className="space-y-3 mb-auto">
-                        {plans[currentSlide].features.map((feature: string, idx: number) => (
-                          <div key={idx} className="flex items-center gap-3">
-                            <div className="w-[34px] h-[34px] rounded-full border-2 border-[#43A047] flex items-center justify-center flex-shrink-0">
-                              <svg width="16" height="13" viewBox="0 0 16 13" fill="none">
-                                <path
-                                  d="M1 6.5L5.5 11L15 1.5"
-                                  stroke="#43A047"
-                                  strokeWidth="2.25"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </div>
-                            <span className="text-[20px] font-semibold text-[#313234] leading-snug">{feature}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <button
-                        onClick={() => handleSubscribe(plans[currentSlide].name)}
-                        disabled={disabledForAddress}
-                        className={`w-full h-[62px] rounded-[14px] text-xl font-extrabold transition-all mt-6 flex items-center justify-center ${
-                          disabledForAddress
-                            ? "bg-gray-400 text-white cursor-not-allowed"
-                            : "bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF] hover:scale-[1.01]"
-                        }`}
-                      >
-                        {disabledForAddress
-                          ? "Already has a plan"
-                          : billing === "annual"
-                          ? "Start Annual (1 month free)"
-                          : plans[currentSlide].buttonText}
-                      </button>
-
-                      <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
-                        Unlimited visits • Cancel anytime • No contracts
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Side preview cards */}
-                  <div className="flex gap-6">
-                    {[1, 2].map((offset) => {
-                      const index = (currentSlide + offset) % plans.length;
-                      const plan = plans[index];
-
-                      const monthly = getMonthly(plan);
-                      const annual = getAnnual(plan);
-                      const show = billing === "annual" ? annual : monthly;
-
-                      return (
-                        <button
-                          key={offset}
-                          type="button"
-                          onClick={() => setCurrentSlide(index)}
-                          className="group relative w-[300px] min-h-[420px] flex-shrink-0 text-left"
-                        >
-                          <div className="absolute inset-0 bg-[#EEF2FF] rounded-[16px] border border-[#C5CBD8] p-6 shadow-[0_12px_60px_rgba(0,0,0,0.25)] transition-transform duration-300 group-hover:-translate-y-1" />
-                          {plan.badge && (
-                            <div className="absolute top-3 left-3 z-20">
-                              <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-3 py-1.5 rounded-lg border border-white/70 shadow">
-                                <span className="text-[12px] font-extrabold text-white">
-                                  {plan.badge}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                          <div className="relative z-10 p-6 flex flex-col h-full">
-                            <div className="text-center mb-6">
-                              <h3 className="text-xl font-extrabold text-[#313234] mb-2">{plan.name}</h3>
-                              <p className="text-sm text-[#6A6D71] leading-relaxed">{plan.description}</p>
-                            </div>
-
-                            {billing === "annual" && (
-                              <div className="mb-3 flex justify-center">
-                                <div className="px-3 py-1 rounded-full bg-[#86EFAC]/20 border border-[#43A047]/25">
-                                  <span className="text-[#1F7A2E] font-extrabold text-[11px]">
-                                    1 month FREE
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-
-                            <div className="mb-6 text-center min-h-[86px]">
-                              <div className="flex items-end gap-2 justify-center">
-                                <span className="text-5xl font-extrabold text-[#313234]">
-                                  ${formatMoney(show)}
-                                </span>
-                                <span className="text-sm text-[#6A6D71] pb-1">
-                                  {billing === "annual" ? "/year" : "/month"}
-                                </span>
+                                )}
                               </div>
 
-                              <div className="mt-2 text-[12px] text-[#6A6D71]">
-                                {billing === "annual"
-                                  ? `${formatMoney(annual / 12)}/mo billed annually`
-                                  : "\u00A0"}
-                              </div>
-                            </div>
+                              {plan.subtitle && (
+                                <p className="text-[#306EEC] font-bold text-base sm:text-lg text-center mb-3">
+                                  {plan.subtitle}
+                                </p>
+                              )}
 
-                            {plan.subtitle && (
-                              <p className="text-[15px] font-bold text-[#306EEC] mb-4 text-center">
-                                {plan.subtitle}
-                              </p>
-                            )}
-
-                            <div className="space-y-2 mb-auto">
-                              {plan.features.slice(0, 3).map((feature: string, idx2: number) => (
-                                <div key={idx2} className="flex items-center gap-2">
-                                  <div className="w-[26px] h-[26px] rounded-full border-2 border-[#43A047] flex items-center justify-center flex-shrink-0">
-                                    <svg width="12" height="10" viewBox="0 0 11 9" fill="none">
-                                      <path
-                                        d="M1 4.5L4 7.5L10 1.5"
-                                        stroke="#43A047"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                      />
-                                    </svg>
+                              <div className="space-y-2.5 mb-auto">
+                                {plan.features.map((feature: string, featureIdx: number) => (
+                                  <div key={featureIdx} className="flex items-center gap-2.5">
+                                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#43A047] flex items-center justify-center flex-shrink-0">
+                                      <svg width="14" height="11" viewBox="0 0 16 13" fill="none">
+                                        <path
+                                          d="M1 6.5L5.5 11L15 1.5"
+                                          stroke="#43A047"
+                                          strokeWidth="2.5"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </svg>
+                                    </div>
+                                    <span className="text-base sm:text-lg font-semibold text-[#313234] leading-tight">
+                                      {feature}
+                                    </span>
                                   </div>
-                                  <span className="text-[15px] font-semibold text-[#313234] leading-snug">
-                                    {feature}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
+                                ))}
+                              </div>
 
-                            <div className="mt-auto pt-4">
-                              <div className="w-full h-[40px] rounded-[10px] bg-[#306EEC] text-white text-[15px] font-extrabold flex items-center justify-center opacity-90 group-hover:opacity-100 transition">
-                                {billing === "annual" ? "View Annual" : "View"}
+                              <button
+                                onClick={() => handleSubscribe(plan.name)}
+                                disabled={action.disabled}
+                                className={`w-full h-[56px] sm:h-[60px] rounded-2xl text-lg sm:text-xl font-extrabold leading-none transition-all duration-300 mt-6 flex items-center justify-center ${
+                                  action.disabled
+                                    ? "bg-gray-400 text-white cursor-not-allowed"
+                                    : action.kind === "upgrade"
+                                    ? "bg-[#111827] hover:bg-black text-white hover:scale-[1.01]"
+                                    : "bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF] hover:scale-[1.01]"
+                                }`}
+                              >
+                                {action.label}
+                              </button>
+
+                              <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
+                                Unlimited visits • Cancel anytime • No contracts
+                                <br />
+                                <span className="text-[#6A6D71]/80">
+                                  Materials at cost • No markup • Transparent pricing
+                                </span>
                               </div>
                             </div>
                           </div>
-
-                          <div className="absolute inset-0 bg-[#313234]/15 backdrop-blur-[2px] rounded-[16px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* Desktop controls */}
-                <div className="mt-16 relative z-30 flex items-center justify-center gap-4">
+                <div className="flex gap-2 justify-center mt-6 mb-4">
+                  {plans.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentSlide(idx)}
+                      aria-label={`Go to plan ${idx + 1}`}
+                      className={`h-2.5 rounded-full transition-all duration-300 ${
+                        idx === currentSlide ? "w-10 bg-[#306EEC]" : "w-2.5 bg-[#C5CBD8] hover:bg-[#306EEC]/50"
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex gap-4 justify-center mt-4">
                   <button
                     onClick={prevSlide}
-                    className="bg-white hover:bg-gray-100 text-gray-800 w-12 h-12 rounded-xl flex items-center justify-center transition-colors shadow-md border border-gray-200 active:scale-95"
+                    className="bg-white hover:bg-gray-50 text-[#313234] w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-lg border-2 border-[#E5E7EB] active:scale-95"
                     aria-label="Previous plan"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-
-                  <div className="flex gap-2">
-                    {plans.map((_, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setCurrentSlide(idx)}
-                        aria-label={`Go to plan ${idx + 1}`}
-                        className={`h-2.5 rounded-full transition-all duration-300 ${
-                          idx === currentSlide
-                            ? "w-10 bg-[#306EEC]"
-                            : "w-2.5 bg-[#C5CBD8] hover:bg-[#306EEC]/50"
-                        }`}
-                      />
-                    ))}
-                  </div>
-
                   <button
                     onClick={nextSlide}
-                    className="bg-white hover:bg-gray-100 text-gray-800 w-12 h-12 rounded-xl flex items-center justify-center transition-colors shadow-md border border-gray-200 active:scale-95"
+                    className="bg-[#306EEC] hover:bg-[#2558c9] text-white w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-lg shadow-[#306EEC]/30 active:scale-95"
                     aria-label="Next plan"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
                 </div>
-              </div>
-            </div>
 
-            <div className="lg:hidden mt-4 text-center text-[12px] text-[#C5CBD8]">
-              Tip: swipe left/right to see plans
+                <p className="text-[#C5CBD8] text-sm sm:text-base leading-relaxed text-center mt-6 px-4">
+                  Your home stops being a list of problems.
+                  <br />
+                  It becomes handled.
+                </p>
+              </div>
+
+              <div className="hidden lg:block">
+                <div className="relative pb-44">
+                  <div className="flex items-end gap-6">
+                    <div className="relative w-[420px] min-h-[560px] bg-[#EEF2FF] rounded-[22px] border border-[#C5CBD8] shadow-[0_20px_90px_rgba(0,0,0,0.35)] flex-shrink-0 overflow-hidden">
+                      {plans[currentSlide].badge && (
+                        <div className="absolute top-4 left-4 z-10">
+                          <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-[#EEF2FF]/70 shadow-lg">
+                            <span className="text-[14px] font-extrabold text-[#EEF2FF]">
+                              {plans[currentSlide].badge}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {billing === "annual" && (
+                        <div className="absolute top-4 right-4 z-10">
+                          <div className="bg-[#86EFAC]/20 border border-[#43A047]/25 px-3 py-2 rounded-xl shadow-lg">
+                            <div className="text-[#1F7A2E] font-extrabold text-[12px] leading-tight">
+                              1 month FREE
+                            </div>
+                            <div className="text-[#313234] font-bold text-[12px] leading-tight">
+                              Pay for 11, get 12
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div
+                        className={[
+                          "p-8 flex flex-col h-full",
+                          plans[currentSlide].badge ? "pt-14" : "",
+                        ].join(" ")}
+                      >
+                        <div className="text-center mb-8">
+                          <h3 className="text-3xl font-extrabold text-[#313234] mb-2">
+                            {plans[currentSlide].name}
+                          </h3>
+                          <p className="text-base text-[#6A6D71] leading-relaxed">
+                            {plans[currentSlide].description}
+                          </p>
+                        </div>
+
+                        {(() => {
+                          const plan = plans[currentSlide];
+                          const monthly = getMonthly(plan);
+                          const annual = getAnnual(plan);
+                          const show = billing === "annual" ? annual : monthly;
+                          const action = getActionForPlan(plan.name);
+
+                          return (
+                            <>
+                              <div className="mb-6">
+                                <div className="flex items-end gap-2 justify-center">
+                                  <span className="text-[64px] font-extrabold text-[#313234] leading-[0.95]">
+                                    ${formatMoney(show)}
+                                  </span>
+                                  <span className="text-base text-[#6A6D71] pb-2">
+                                    {billing === "annual" ? "/year" : "/month"}
+                                  </span>
+                                </div>
+
+                                {billing === "annual" && (
+                                  <div className="mt-2 text-center text-sm text-[#6A6D71]">
+                                    Pay for <span className="font-extrabold text-[#313234]">11</span>, get{" "}
+                                    <span className="font-extrabold text-[#313234]">12</span> • Equivalent{" "}
+                                    <span className="font-extrabold text-[#313234]">
+                                      ${formatMoney(annual / 12)}
+                                    </span>
+                                    /mo billed annually
+                                  </div>
+                                )}
+                              </div>
+
+                              {plan.subtitle && (
+                                <p className="text-[18px] font-bold text-[#306EEC] mb-4 text-center">
+                                  {plan.subtitle}
+                                </p>
+                              )}
+
+                              <div className="space-y-3 mb-auto">
+                                {plan.features.map((feature: string, idx: number) => (
+                                  <div key={idx} className="flex items-center gap-3">
+                                    <div className="w-[34px] h-[34px] rounded-full border-2 border-[#43A047] flex items-center justify-center flex-shrink-0">
+                                      <svg width="16" height="13" viewBox="0 0 16 13" fill="none">
+                                        <path
+                                          d="M1 6.5L5.5 11L15 1.5"
+                                          stroke="#43A047"
+                                          strokeWidth="2.25"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </svg>
+                                    </div>
+                                    <span className="text-[20px] font-semibold text-[#313234] leading-snug">
+                                      {feature}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <button
+                                onClick={() => handleSubscribe(plan.name)}
+                                disabled={action.disabled}
+                                className={`w-full h-[62px] rounded-[14px] text-xl font-extrabold transition-all mt-6 flex items-center justify-center ${
+                                  action.disabled
+                                    ? "bg-gray-400 text-white cursor-not-allowed"
+                                    : action.kind === "upgrade"
+                                    ? "bg-[#111827] hover:bg-black text-white hover:scale-[1.01]"
+                                    : "bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF] hover:scale-[1.01]"
+                                }`}
+                              >
+                                {action.label}
+                              </button>
+
+                              <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
+                                Unlimited visits • Cancel anytime • No contracts
+                                <br />
+                                <span className="text-[#6A6D71]/80">
+                                  Materials at cost • No markup • Transparent pricing
+                                </span>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-6">
+                      {[1, 2].map((offset) => {
+                        const index = (currentSlide + offset) % plans.length;
+                        const plan = plans[index];
+                        const monthly = getMonthly(plan);
+                        const annual = getAnnual(plan);
+                        const show = billing === "annual" ? annual : monthly;
+                        const action = getActionForPlan(plan.name);
+
+                        return (
+                          <button
+                            key={offset}
+                            type="button"
+                            onClick={() => setCurrentSlide(index)}
+                            className="group relative w-[300px] min-h-[420px] flex-shrink-0 text-left"
+                          >
+                            <div className="absolute inset-0 bg-[#EEF2FF] rounded-[16px] border border-[#C5CBD8] p-6 shadow-[0_12px_60px_rgba(0,0,0,0.25)] transition-transform duration-300 group-hover:-translate-y-1" />
+                            {plan.badge && (
+                              <div className="absolute top-3 left-3 z-20">
+                                <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-3 py-1.5 rounded-lg border border-white/70 shadow">
+                                  <span className="text-[12px] font-extrabold text-white">
+                                    {plan.badge}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            <div className="relative z-10 p-6 flex flex-col h-full">
+                              <div className="text-center mb-6">
+                                <h3 className="text-xl font-extrabold text-[#313234] mb-2">{plan.name}</h3>
+                                <p className="text-sm text-[#6A6D71] leading-relaxed">{plan.description}</p>
+                              </div>
+
+                              {billing === "annual" && (
+                                <div className="mb-3 flex justify-center">
+                                  <div className="px-3 py-1 rounded-full bg-[#86EFAC]/20 border border-[#43A047]/25">
+                                    <span className="text-[#1F7A2E] font-extrabold text-[11px]">
+                                      1 month FREE
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="mb-6 text-center min-h-[86px]">
+                                <div className="flex items-end gap-2 justify-center">
+                                  <span className="text-5xl font-extrabold text-[#313234]">
+                                    ${formatMoney(show)}
+                                  </span>
+                                  <span className="text-sm text-[#6A6D71] pb-1">
+                                    {billing === "annual" ? "/year" : "/month"}
+                                  </span>
+                                </div>
+
+                                <div className="mt-2 text-[12px] text-[#6A6D71]">
+                                  {billing === "annual"
+                                    ? `${formatMoney(annual / 12)}/mo billed annually`
+                                    : "\u00A0"}
+                                </div>
+                              </div>
+
+                              {plan.subtitle && (
+                                <p className="text-[15px] font-bold text-[#306EEC] mb-4 text-center">
+                                  {plan.subtitle}
+                                </p>
+                              )}
+
+                              <div className="space-y-2 mb-auto">
+                                {plan.features.slice(0, 3).map((feature: string, idx2: number) => (
+                                  <div key={idx2} className="flex items-center gap-2">
+                                    <div className="w-[26px] h-[26px] rounded-full border-2 border-[#43A047] flex items-center justify-center flex-shrink-0">
+                                      <svg width="12" height="10" viewBox="0 0 11 9" fill="none">
+                                        <path
+                                          d="M1 4.5L4 7.5L10 1.5"
+                                          stroke="#43A047"
+                                          strokeWidth="2"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </svg>
+                                    </div>
+                                    <span className="text-[15px] font-semibold text-[#313234] leading-snug">
+                                      {feature}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div className="mt-auto pt-4">
+                                <div
+                                  className={`w-full h-[40px] rounded-[10px] text-[15px] font-extrabold flex items-center justify-center transition ${
+                                    action.kind === "upgrade"
+                                      ? "bg-[#111827] text-white"
+                                      : action.kind === "active"
+                                      ? "bg-gray-300 text-gray-600"
+                                      : "bg-[#306EEC] text-white"
+                                  }`}
+                                >
+                                  {action.kind === "upgrade" ? "Upgrade" : action.kind === "active" ? "Active" : billing === "annual" ? "View Annual" : "View"}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="absolute inset-0 bg-[#313234]/15 backdrop-blur-[2px] rounded-[16px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-16 relative z-30 flex items-center justify-center gap-4">
+                    <button
+                      onClick={prevSlide}
+                      className="bg-white hover:bg-gray-100 text-gray-800 w-12 h-12 rounded-xl flex items-center justify-center transition-colors shadow-md border border-gray-200 active:scale-95"
+                      aria-label="Previous plan"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+
+                    <div className="flex gap-2">
+                      {plans.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentSlide(idx)}
+                          aria-label={`Go to plan ${idx + 1}`}
+                          className={`h-2.5 rounded-full transition-all duration-300 ${
+                            idx === currentSlide ? "w-10 bg-[#306EEC]" : "w-2.5 bg-[#C5CBD8] hover:bg-[#306EEC]/50"
+                          }`}
+                        />
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={nextSlide}
+                      className="bg-white hover:bg-gray-100 text-gray-800 w-12 h-12 rounded-xl flex items-center justify-center transition-colors shadow-md border border-gray-200 active:scale-95"
+                      aria-label="Next plan"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:hidden mt-4 text-center text-[12px] text-[#C5CBD8]">
+                Tip: swipe left/right to see plans
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      {upgradePopupOpen && (
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center px-4">
+          <div className="w-full max-w-md rounded-[24px] bg-white p-6 sm:p-7 shadow-[0_20px_100px_rgba(0,0,0,0.35)]">
+            <div className="text-center">
+              <div className="mx-auto w-14 h-14 rounded-full bg-[#EEF2FF] flex items-center justify-center text-2xl mb-4">
+                📞
+              </div>
+
+              <h3 className="text-2xl font-extrabold text-[#313234]">
+                Upgrade to {prettyPlanName(upgradeTargetPlan)}
+              </h3>
+
+              <p className="mt-3 text-[#6A6D71] leading-relaxed">
+                To upgrade your current plan, please call or text Taras directly.
+              </p>
+
+              <div className="mt-5 rounded-2xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+                <p className="text-sm text-[#6A6D71]">Taras</p>
+                <p className="text-2xl font-extrabold text-[#313234]">{TARAS_PHONE_DISPLAY}</p>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <a
+                  href={TARAS_PHONE_LINK}
+                  className="h-[52px] rounded-[16px] bg-[#306EEC] hover:bg-[#2558c9] text-white font-extrabold inline-flex items-center justify-center transition"
+                >
+                  Call Taras
+                </a>
+                <a
+                  href={TARAS_SMS_LINK}
+                  className="h-[52px] rounded-[16px] bg-[#111827] hover:bg-black text-white font-extrabold inline-flex items-center justify-center transition"
+                >
+                  Text Taras
+                </a>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setUpgradePopupOpen(false)}
+                className="mt-4 h-[48px] px-5 rounded-[14px] border border-[#D1D5DB] bg-white hover:bg-[#F9FAFB] text-[#313234] font-bold transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

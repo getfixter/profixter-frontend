@@ -8,70 +8,231 @@ import DepartmentsSection from "../../components/sections/DepartmentsSection";
 /**
  * Subscription Service Page
  *
- * This page explains the benefits of joining the Profixter subscription
- * handyman service.  It highlights key features, encourages visitors to
- * join, and includes the full plan comparison table and value proposition
- * section to help visitors choose the right membership.  The design is
- * responsive and mobile‑friendly.
+ * Keeps the original page accurate and simple, but upgrades the design to feel
+ * more premium, modern, and mobile-friendly. The structure is:
+ * 1) Strong hero
+ * 2) Benefit cards
+ * 3) Simple "how it works"
+ * 4) Plan comparison
+ * 5) Value props
+ * 6) Services section
  */
 export default function SubscriptionServicePage() {
+  const benefits = [
+    {
+      title: "Unlimited visits",
+      text: "Book as many handyman visits as you need for ongoing repairs, maintenance, and home care.",
+      icon: "🔁",
+    },
+    {
+      title: "Lower hourly rate",
+      text: "For longer jobs, members get discounted additional labor at $99/hour.",
+      icon: "💰",
+    },
+    {
+      title: "Priority support",
+      text: "Get faster scheduling and stronger support when your home needs attention.",
+      icon: "⚡",
+    },
+    {
+      title: "Dedicated handyman",
+      text: "Work with professionals who get familiar with your home and your preferences.",
+      icon: "🛠️",
+    },
+    {
+      title: "Plan flexibility",
+      text: "Upgrade, downgrade, or cancel anytime as your needs change.",
+      icon: "📦",
+    },
+    {
+      title: "Peace of mind",
+      text: "Stop worrying about who to call every time something breaks or needs attention.",
+      icon: "🏡",
+    },
+  ];
+
+  const steps = [
+    {
+      number: "01",
+      title: "Choose your plan",
+      text: "Pick the membership tier that fits your home, schedule, and level of support.",
+    },
+    {
+      number: "02",
+      title: "Book your visits",
+      text: "Schedule handyman help when you need it and keep your home in shape year-round.",
+    },
+    {
+      number: "03",
+      title: "Enjoy ongoing support",
+      text: "Use your membership for repairs, upkeep, and peace of mind without starting from zero every time.",
+    },
+  ];
+
   return (
-    <div className="min-h-screen">
-      {/* Hero section */}
-      <section className="bg-[#0B1220] text-white pt-24 pb-16 px-4 sm:px-6 md:px-8 text-center">
-        <h1 className="text-3xl sm:text-5xl font-extrabold mb-4">
-          Subscription Handyman Service
-        </h1>
-        <p className="text-lg sm:text-xl text-white/80 max-w-3xl mx-auto mb-6">
-          Unlimited visits, priority scheduling and peace of mind for your home.  Enjoy predictable pricing and
-          dedicated professionals who know your space.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link
-            href="/signup"
-            className="inline-block px-6 py-3 rounded-xl bg-[#86EFAC] text-[#0B1220] font-bold text-base sm:text-lg hover:opacity-90 transition"
-          >
-            Join Now
-          </Link>
-          
+    <div className="min-h-screen bg-white">
+      {/* HERO */}
+      <section className="relative overflow-hidden bg-[#0B1220] text-white">
+        <div className="absolute inset-0">
+          <div className="absolute left-1/2 top-[-180px] h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-[#306EEC]/20 blur-3xl" />
+          <div className="absolute right-[-120px] top-[120px] h-[260px] w-[260px] rounded-full bg-[#86EFAC]/10 blur-3xl" />
+          <div className="absolute left-[-120px] bottom-[-40px] h-[220px] w-[220px] rounded-full bg-white/5 blur-3xl" />
+        </div>
+
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 md:px-8 pt-24 pb-16 sm:pt-28 sm:pb-20">
+          <div className="mx-auto max-w-4xl text-center">
+            <div className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-[12px] sm:text-sm font-semibold text-white/85">
+              Best for homeowners who want ongoing help
+            </div>
+
+            <h1 className="mt-5 text-3xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-[-0.03em]">
+              Subscription Handyman Service
+            </h1>
+
+            <p className="mt-5 text-base sm:text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
+              Unlimited visits, priority scheduling, and peace of mind for your home.
+              Enjoy predictable pricing and dedicated professionals who know your space.
+            </p>
+
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/signup"
+                className="inline-flex items-center justify-center px-6 py-3.5 rounded-2xl bg-[#86EFAC] text-[#0B1220] font-bold text-base sm:text-lg hover:opacity-90 transition shadow-[0_12px_30px_rgba(134,239,172,0.25)]"
+              >
+                Join Now
+              </Link>
+
+              <a
+                href="#plans"
+                className="inline-flex items-center justify-center px-6 py-3.5 rounded-2xl border border-white/20 bg-white/10 text-white font-bold text-base sm:text-lg hover:bg-white/15 transition"
+              >
+                View Plans
+              </a>
+            </div>
+
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                <div className="text-white font-bold">Unlimited visits</div>
+                <div className="mt-1 text-sm text-white/70">
+                  Ongoing handyman help without paying full hourly pricing every time.
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                <div className="text-white font-bold">$99/hr extra labor</div>
+                <div className="mt-1 text-sm text-white/70">
+                  Lower member pricing for longer jobs when extra time is needed.
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                <div className="text-white font-bold">Cancel anytime</div>
+                <div className="mt-1 text-sm text-white/70">
+                  Stay flexible and adjust your plan as your household needs change.
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Benefits list */}
-      <section className="py-12 sm:py-16 px-4 sm:px-6 md:px-8">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-800 mb-6 text-center">What You Get</h2>
-          <ul className="space-y-4 text-gray-700 text-base sm:text-lg">
-            <li className="flex items-start gap-3">
-              <span className="text-green-600">✓</span>
-              <span>Unlimited handyman visits each month</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-green-600">✓</span>
-              <span>Discounted hourly rate for longer jobs ($99/hr)</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-green-600">✓</span>
-              <span>Access to emergency and after‑hours support</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-green-600">✓</span>
-              <span>Dedicated handyman familiar with your home</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-green-600">✓</span>
-              <span>Cancel or change your plan anytime</span>
-            </li>
-          </ul>
+      {/* BENEFITS */}
+      <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 md:px-8 bg-[#F8FAFC]">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center max-w-3xl mx-auto">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#0F172A]">
+              What You Get
+            </h2>
+            <p className="mt-3 text-[#475569] text-base sm:text-lg">
+              Everything important from your original version — now presented in a cleaner,
+              stronger way that feels more premium.
+            </p>
+          </div>
+
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+            {benefits.map((item) => (
+              <div
+                key={item.title}
+                className="rounded-[24px] border border-[#E2E8F0] bg-white p-6 shadow-sm hover:shadow-md transition"
+              >
+                <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-[#EEF2FF] text-2xl">
+                  {item.icon}
+                </div>
+
+                <h3 className="mt-4 text-lg sm:text-xl font-bold text-[#0F172A]">
+                  {item.title}
+                </h3>
+
+                <p className="mt-2 text-sm sm:text-base leading-relaxed text-[#475569]">
+                  {item.text}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Include the plan comparison table to help visitors pick a tier */}
+      {/* HOW IT WORKS */}
+      <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 md:px-8 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="rounded-[28px] border border-[#E2E8F0] bg-gradient-to-br from-[#F8FAFF] to-[#EEF2FF] p-6 sm:p-8 lg:p-10">
+            <div className="max-w-3xl">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#0F172A]">
+                How Subscription Works
+              </h2>
+              <p className="mt-3 text-[#475569] text-base sm:text-lg">
+                Simple, predictable, and designed for homeowners who want reliable support.
+              </p>
+            </div>
+
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+              {steps.map((step) => (
+                <div
+                  key={step.number}
+                  className="rounded-[22px] bg-white border border-[#DCE3F1] p-6 shadow-sm"
+                >
+                  <div className="text-[42px] sm:text-[52px] font-extrabold leading-none text-[#306EEC]/25">
+                    {step.number}
+                  </div>
+
+                  <h3 className="mt-3 text-lg sm:text-xl font-bold text-[#0F172A]">
+                    {step.title}
+                  </h3>
+
+                  <p className="mt-2 text-sm sm:text-base text-[#475569] leading-relaxed">
+                    {step.text}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 flex flex-col sm:flex-row gap-4">
+              <Link
+                href="/signup"
+                className="inline-flex items-center justify-center px-6 py-3.5 rounded-2xl bg-[#306EEC] text-white font-bold hover:bg-[#2558c9] transition"
+              >
+                Start Your Membership
+              </Link>
+
+              <a
+                href="#plans"
+                className="inline-flex items-center justify-center px-6 py-3.5 rounded-2xl border border-[#C7D2FE] bg-white text-[#0F172A] font-bold hover:bg-[#F8FAFF] transition"
+              >
+                Compare Plans
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* PLAN COMPARISON */}
       <PlanComparisonSection />
-      {/* And reinforce the overall value proposition */}
+
+      {/* VALUE PROPS */}
       <ValuePropsSection />
-      {/* Our Services Section */}
-<DepartmentsSection />
+
+      {/* SERVICES */}
+      <DepartmentsSection />
     </div>
   );
 }
