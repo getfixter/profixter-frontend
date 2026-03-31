@@ -2,6 +2,7 @@ export type AdminTabId =
   | "bookings"
   | "users"
   | "subscribed"
+  | "requests"
   | "emails"
   | "blacklist"
   | "calendar"
@@ -18,6 +19,7 @@ export const ADMIN_TABS: AdminTabItem[] = [
   { id: "bookings", label: "Bookings", shortLabel: "BK", description: "Jobs" },
   { id: "users", label: "Users", shortLabel: "US", description: "Customers" },
   { id: "subscribed", label: "Subscribed", shortLabel: "SU", description: "Plans" },
+  { id: "requests", label: "Requests", shortLabel: "RQ", description: "Leads" },
   { id: "emails", label: "Emails", shortLabel: "EM", description: "Campaigns" },
   { id: "blacklist", label: "Blacklist", shortLabel: "BL", description: "Blocked" },
   { id: "calendar", label: "Calendar", shortLabel: "CA", description: "Schedule" },

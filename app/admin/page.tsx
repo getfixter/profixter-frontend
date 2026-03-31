@@ -12,19 +12,27 @@ import BookingsTable from "@/app/components/admin/BookingsTable";
 import BookingsCalendar from "@/app/components/admin/BookingsCalendar";
 import BlacklistTable from "@/app/components/admin/BlacklistTable";
 import EmailComposer from "@/app/components/admin/EmailComposer";
+import RequestsTable from "@/app/components/admin/RequestsTable";
 import { toYMDNY } from "@/lib/utils/timezone-helpers";
 import {
   getAllUsers,
   getAllBookings,
   getBlacklist,
+  getAllRequests,
   updateBookingStatus,
   updateBookingAdmin,
+  updateRequestStatus,
   setAddressPlan,
   setAddressCancellationDate,
   addToBlacklist,
   removeFromBlacklist,
 } from "@/lib/admin-service";
-import type { User, Booking, BlacklistEntry } from "@/lib/admin-service";
+import type {
+  User,
+  Booking,
+  BlacklistEntry,
+  RequestLead,
+} from "@/lib/admin-service";
 import AdminCalendarSettings from "@/app/components/admin/AdminCalendarSettings";
 
 const ADMIN_EMAIL = "getfixter@gmail.com";
@@ -32,8 +40,11 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 // ✅ NY "today" helper (YYYY-MM-DD)
 function todayNY() {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+  }).format(new Date());
 }
+
 function addDaysYMD(ymd: string, days: number) {
   const [y, m, d] = ymd.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
@@ -52,6 +63,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
+  const [requests, setRequests] = useState<RequestLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -65,15 +77,18 @@ export default function AdminPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [usersData, bookingsData, blacklistData] = await Promise.all([
-        getAllUsers(),
-        getAllBookings(),
-        getBlacklist().catch(() => []),
-      ]);
+      const [usersData, bookingsData, blacklistData, requestsData] =
+        await Promise.all([
+          getAllUsers(),
+          getAllBookings(),
+          getBlacklist().catch(() => []),
+          getAllRequests().catch(() => []),
+        ]);
 
       setUsers(usersData);
       setBookings(bookingsData);
       setBlacklist(blacklistData);
+      setRequests(requestsData);
     } catch (error: unknown) {
       console.error("Failed to fetch admin data:", error);
       const status =
@@ -120,7 +135,10 @@ export default function AdminPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const handleUpdateBookingStatus = async (bookingId: string, status: string) => {
+  const handleUpdateBookingStatus = async (
+    bookingId: string,
+    status: string
+  ) => {
     try {
       await updateBookingStatus(bookingId, status);
       fetchAll();
@@ -130,7 +148,10 @@ export default function AdminPage() {
     }
   };
 
-  const handleUpdateBooking = async (bookingId: string, patch: { note?: string; date?: string }) => {
+  const handleUpdateBooking = async (
+    bookingId: string,
+    patch: { note?: string; date?: string }
+  ) => {
     try {
       await updateBookingAdmin(bookingId, patch);
       fetchAll();
@@ -140,7 +161,24 @@ export default function AdminPage() {
     }
   };
 
-  const handleSetAddressPlan = async (userId: string, addressId: string, plan: string) => {
+  const handleUpdateRequestStatus = async (
+    requestId: string,
+    status: "new" | "contacted" | "won" | "lost"
+  ) => {
+    try {
+      await updateRequestStatus(requestId, status);
+      fetchAll();
+    } catch (error) {
+      console.error("Failed to update request status:", error);
+      alert("Failed to update request status");
+    }
+  };
+
+  const handleSetAddressPlan = async (
+    userId: string,
+    addressId: string,
+    plan: string
+  ) => {
     try {
       await setAddressPlan(userId, addressId, plan);
       fetchAll();
@@ -165,63 +203,66 @@ export default function AdminPage() {
   };
 
   const handleRunSubscriptionCleanup = async () => {
-  try {
-    const token = localStorage.getItem("token");
+    try {
+      const token = localStorage.getItem("token");
 
-    const syncRes = await fetch(`${API_URL}/api/admin/ghl/sync-all-users`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token || ""}`,
-        "Content-Type": "application/json",
-      },
-    });
+      const syncRes = await fetch(`${API_URL}/api/admin/ghl/sync-all-users`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token || ""}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-    const syncData = await syncRes.json();
+      const syncData = await syncRes.json();
 
-    if (!syncRes.ok) {
-      throw new Error(syncData?.message || "Sync all users failed");
+      if (!syncRes.ok) {
+        throw new Error(syncData?.message || "Sync all users failed");
+      }
+
+      const cleanupRes = await fetch(
+        `${API_URL}/api/admin/ghl/subscription-tags/cleanup`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token || ""}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const cleanupData = await cleanupRes.json();
+
+      if (!cleanupRes.ok) {
+        throw new Error(cleanupData?.message || "Cleanup failed");
+      }
+
+      console.log("Sync result:", syncData);
+      console.log("Cleanup result:", cleanupData);
+
+      alert(
+        `Fix GHL finished.\n\n` +
+          `SYNC:\n` +
+          `Scanned: ${syncData.scanned ?? 0}\n` +
+          `Synced: ${syncData.synced ?? 0}\n` +
+          `Skipped no phone: ${syncData.skippedNoPhone ?? 0}\n` +
+          `Sync errors: ${(syncData.errors || []).length}\n\n` +
+          `CLEANUP:\n` +
+          `Scanned: ${cleanupData.scanned ?? 0}\n` +
+          `Removed tags: ${cleanupData.removed ?? 0}\n` +
+          `No Contact: ${cleanupData.noContact ?? 0}\n` +
+          `Cleanup errors: ${(cleanupData.errors || []).length}`
+      );
+
+      await fetchAll();
+    } catch (error) {
+      console.error("Failed to fix GHL:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to fix GHL";
+      alert(message);
+      throw error;
     }
-
-    const cleanupRes = await fetch(`${API_URL}/api/admin/ghl/subscription-tags/cleanup`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token || ""}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    const cleanupData = await cleanupRes.json();
-
-    if (!cleanupRes.ok) {
-      throw new Error(cleanupData?.message || "Cleanup failed");
-    }
-
-    console.log("Sync result:", syncData);
-    console.log("Cleanup result:", cleanupData);
-
-    alert(
-      `Fix GHL finished.\n\n` +
-        `SYNC:\n` +
-        `Scanned: ${syncData.scanned ?? 0}\n` +
-        `Synced: ${syncData.synced ?? 0}\n` +
-        `Skipped no phone: ${syncData.skippedNoPhone ?? 0}\n` +
-        `Sync errors: ${(syncData.errors || []).length}\n\n` +
-        `CLEANUP:\n` +
-        `Scanned: ${cleanupData.scanned ?? 0}\n` +
-        `Removed tags: ${cleanupData.removed ?? 0}\n` +
-        `No Contact: ${cleanupData.noContact ?? 0}\n` +
-        `Cleanup errors: ${(cleanupData.errors || []).length}`
-    );
-
-    await fetchAll();
-  } catch (error) {
-    console.error("Failed to fix GHL:", error);
-    const message =
-      error instanceof Error ? error.message : "Failed to fix GHL";
-    alert(message);
-    throw error;
-  }
-};
+  };
 
   const handleBlacklist = async (userId: string) => {
     try {
@@ -265,15 +306,39 @@ export default function AdminPage() {
     }
 
     if (statusFilter) {
-      list = list.filter((b) => String(b.status || "").toLowerCase() === statusFilter);
+      list = list.filter(
+        (b) => String(b.status || "").toLowerCase() === statusFilter
+      );
     }
 
     if (selectedDate) {
       list = list.filter((b) => toYMDNY(new Date(b.date)) === selectedDate);
     }
 
-    return list.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return list.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
   }, [bookings, qlc, statusFilter, selectedDate]);
+
+  const filteredRequests = useMemo(() => {
+    let list = requests;
+
+    if (qlc) {
+      list = list.filter((r) =>
+        [
+          r.name,
+          r.email,
+          r.phone,
+          r.serviceType,
+          r.sourcePage,
+          r.message,
+          r.status,
+        ].some((v) => String(v || "").toLowerCase().includes(qlc))
+      );
+    }
+
+    return list;
+  }, [requests, qlc]);
 
   const subscribedUsers = useMemo(() => {
     return users.filter((u) => {
@@ -314,6 +379,7 @@ export default function AdminPage() {
         <div className="px-3 md:px-8 py-3 md:py-4">
           <AdminTabs active={active} onChange={setActive} />
           <BottomNav active={active} onChange={setActive} />
+
           <div className="mt-3 md:hidden rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -409,7 +475,15 @@ export default function AdminPage() {
             </div>
           )}
 
-          <div className={`${active === "bookings" ? (showFilters ? "block" : "hidden md:block") : ""}`}>
+          <div
+            className={`${
+              active === "bookings"
+                ? showFilters
+                  ? "block"
+                  : "hidden md:block"
+                : ""
+            }`}
+          >
             <div className="grid gap-2 md:gap-3 grid-cols-1 md:grid-cols-3 mt-3 md:mt-4">
               <div className="relative">
                 <svg
@@ -451,7 +525,12 @@ export default function AdminPage() {
                     className="px-4 md:px-6 py-2 md:py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm md:text-base font-medium hover:shadow-lg active:scale-95 md:hover:scale-105 transition-all flex items-center justify-center gap-2"
                     onClick={fetchAll}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -473,11 +552,18 @@ export default function AdminPage() {
         {loading ? (
           <div className="bg-white rounded-xl shadow-lg p-12 text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-            <p className="mt-4 text-gray-600 font-medium">Loading admin data...</p>
+            <p className="mt-4 text-gray-600 font-medium">
+              Loading admin data...
+            </p>
           </div>
         ) : (
           <>
-            <QuickStats active={active} users={users} bookings={bookings} blacklistCount={blacklist.length} />
+            <QuickStats
+              active={active}
+              users={users}
+              bookings={bookings}
+              blacklistCount={blacklist.length}
+            />
 
             {active === "users" && (
               <UsersTable
@@ -503,10 +589,21 @@ export default function AdminPage() {
               />
             )}
 
+            {active === "requests" && (
+              <RequestsTable
+                requests={filteredRequests}
+                onUpdateStatus={handleUpdateRequestStatus}
+              />
+            )}
+
             {active === "bookings" && (
               <div className="space-y-6">
                 <div className={showCalendarMobile ? "block" : "hidden md:block"}>
-                  <BookingsCalendar bookings={bookings} selectedDate={selectedDate} onChange={setSelectedDate} />
+                  <BookingsCalendar
+                    bookings={bookings}
+                    selectedDate={selectedDate}
+                    onChange={setSelectedDate}
+                  />
                 </div>
 
                 <BookingsTable
@@ -521,7 +618,10 @@ export default function AdminPage() {
             {active === "emails" && <EmailComposer />}
 
             {active === "blacklist" && (
-              <BlacklistTable blacklist={blacklist} onUnblacklist={handleUnblacklist} />
+              <BlacklistTable
+                blacklist={blacklist}
+                onUnblacklist={handleUnblacklist}
+              />
             )}
 
             {active === "calendar" && <AdminCalendarSettings />}

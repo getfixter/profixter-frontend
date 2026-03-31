@@ -90,6 +90,18 @@ export interface CampaignResponse {
   errors: Array<{ email: string; error: string }>;
 }
 
+export interface RequestLead {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  message?: string;
+  serviceType?: string;
+  sourcePage?: string;
+  status?: "new" | "contacted" | "won" | "lost";
+  createdAt?: string;
+}
+
 // Users
 export const getAllUsers = async (): Promise<User[]> => {
   const response = await API.get('/api/admin/users');
@@ -224,6 +236,22 @@ export interface Referral {
   status: string;
   createdAt: string;
 }
+
+// Requests / Leads
+export const getAllRequests = async (): Promise<RequestLead[]> => {
+  const response = await API.get("/api/admin/requests");
+  return response.data;
+};
+
+export const updateRequestStatus = async (
+  requestId: string,
+  status: "new" | "contacted" | "won" | "lost"
+): Promise<RequestLead> => {
+  const response = await API.put(`/api/admin/requests/${requestId}/status`, {
+    status,
+  });
+  return response.data.request;
+};
 
 export const getReferrals = async (): Promise<Referral[]> => {
   const response = await API.get('/api/admin/referrals');
