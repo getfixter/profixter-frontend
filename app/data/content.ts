@@ -68,7 +68,7 @@ export const services: Service[] = [
     id: "07",
     title: "Second pro when needed",
     description:
-      "Premium includes 1 scheduled visit with 2 pros when a job needs extra hands.",
+      "Premium includes 4 visits per month plus 1 emergency visit for urgent issues.",
     color: "dark",
     size: "normal",
     offset: 10,
@@ -134,7 +134,7 @@ export const faqs: Faq[] = [
     id: "03",
     question: "How many visits come with each plan?",
     answer:
-      "Basic includes 2 visits per month. Plus includes 4 visits per month. Premium adds 1 emergency visit and 1 visit with 2 pros. Elite includes unlimited visits by calendar schedule.",
+      "Basic includes 2 visits per month. Plus includes 4 visits per month. Premium includes 4 visits per month plus 1 emergency visit. Elite includes unlimited visits by calendar schedule.",
     color: "dark",
     size: "normal",
     offset: 0,
@@ -260,12 +260,12 @@ export const plans: Plan[] = [
   },
   {
     name: "Premium",
-    description: "Priority support for urgent and heavier jobs",
+    description: "4 visits each month plus emergency support",
     price: 349,
     subtitle: "Everything in Plus",
     features: [
+      "4 visits per month",
       "1 emergency visit",
-      "1 visit with 2 pros",
       "Each visit is up to 90 minutes",
       "Priority support",
     ],

@@ -123,7 +123,7 @@ export default function ServiceInfoSection() {
       return {
         title: "Trusted by Long Island homeowners",
         sub:
-          "Most homeowners don't need vague coverage. They need clear help. Basic gives you 2 visits per month for $149, Plus gives you 4 visits per month, Premium adds 1 emergency visit and 1 two-pro visit, and Elite gives you unlimited visits by calendar schedule. Every visit is up to 90 minutes.",
+          "Most homeowners don't need vague coverage. They need clear help. Basic gives you 2 visits per month for $149, Plus gives you 4 visits per month, Premium gives you the same 4 visits per month plus 1 emergency visit, and Elite gives you unlimited visits by calendar schedule. Every visit is up to 90 minutes.",
         primaryLabel: "View plans",
         primaryHref: "#plans",
         secondaryLabel: "Book a visit",
@@ -149,7 +149,7 @@ export default function ServiceInfoSection() {
     return {
       title: isNewLoggedIn ? "Welcome - pick a plan to start today" : "Pick a plan to book a visit",
       sub:
-        "Subscription is required to book. Choose Basic for 2 visits per month, Plus for 4 visits per month, Premium for emergency and two-pro coverage, or Elite for unlimited visits by calendar schedule. Every visit is up to 90 minutes.",
+        "Subscription is required to book. Choose Basic for 2 visits per month, Plus for 4 visits per month, Premium for 4 visits per month plus 1 emergency visit, or Elite for unlimited visits by calendar schedule. Every visit is up to 90 minutes.",
       primaryLabel: "View plans",
       primaryHref: "#plans",
       secondaryLabel: "What's included",

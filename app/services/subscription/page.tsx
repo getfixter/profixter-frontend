@@ -31,7 +31,7 @@ export default function SubscriptionServicePage() {
     },
     {
       title: "Premium support options",
-      text: "Premium adds 1 emergency visit and 1 visit with 2 pros when you need stronger coverage.",
+      text: "Premium gives you the same 4 visits per month as Plus, plus 1 emergency visit when something urgent comes up.",
       icon: "⚡",
     },
     {
