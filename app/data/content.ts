@@ -12,9 +12,9 @@ export type Service = {
 export const services: Service[] = [
   {
     id: "01",
-    title: "Unlimited requests",
+    title: "Simple monthly visits",
     description:
-      "Basic: 1 active appointment at a time. Plus & higher: 2 active appointments at once.",
+      "Basic includes 2 visits per month, Plus includes 4 visits per month, and every visit is up to 90 minutes.",
     color: "blue",
     size: "normal",
     offset: 0,
@@ -68,7 +68,7 @@ export const services: Service[] = [
     id: "07",
     title: "Second pro when needed",
     description:
-      "Extra hands for heavy lifting or complex tasks - included when needed at no extra labor cost.",
+      "Premium includes 1 scheduled visit with 2 pros when a job needs extra hands.",
     color: "dark",
     size: "normal",
     offset: 10,
@@ -114,9 +114,9 @@ export type Faq = {
 export const faqs: Faq[] = [
   {
     id: "01",
-    question: "What is included in each visit?",
+    question: "How long is each visit?",
     answer:
-      "Each visit includes up to 90 minutes of handyman labor for eligible tasks.",
+      "Every included visit is up to 90 minutes of handyman labor for eligible tasks.",
     color: "blue",
     size: "normal",
     offset: 0,
@@ -132,9 +132,9 @@ export const faqs: Faq[] = [
   },
   {
     id: "03",
-    question: "How many appointments can I have booked at once?",
+    question: "How many visits come with each plan?",
     answer:
-      "Basic members can have 1 active appointment booked at a time. Plus, Premium, and Elite can have 2 active appointments booked at once.",
+      "Basic includes 2 visits per month. Plus includes 4 visits per month. Premium adds 1 emergency visit and 1 visit with 2 pros. Elite includes unlimited visits by calendar schedule.",
     color: "dark",
     size: "normal",
     offset: 0,
@@ -233,11 +233,11 @@ export type Plan = {
 export const plans: Plan[] = [
   {
     name: "Basic",
-    description: "Small fixes",
+    description: "2 scheduled visits each month",
     price: 149,
     features: [
-      "Unlimited visits",
-      "Up to 90 minutes per visit",
+      "2 visits per month",
+      "Each visit is up to 90 minutes",
       "1 active appointment at a time",
     ],
     buttonText: "Get started",
@@ -245,14 +245,14 @@ export const plans: Plan[] = [
   },
   {
     name: "Plus",
-  description: "Busy homes (2 active bookings)",
+  description: "4 scheduled visits each month",
   price: 249,
   subtitle: "Everything in Basic",
   features: [
+    "4 visits per month",
+    "Each visit is up to 90 minutes",
     "2 active appointments at once",
-    "Multiple tasks per visit",
-    "Store pickup",
-    "Standard materials included",
+    "Best for homes that need regular help",
   ],
   buttonText: "Get started",
   badge: "Popular", // ✅ ADD
@@ -260,14 +260,14 @@ export const plans: Plan[] = [
   },
   {
     name: "Premium",
-    description: "Families & urgent needs",
+    description: "Priority support for urgent and heavier jobs",
     price: 349,
     subtitle: "Everything in Plus",
     features: [
-      "24/7 emergency Visit",
-      "After-hours availability",
-      "2 Fixters when needed",
-      "Home Improvement Consultation",
+      "1 emergency visit",
+      "1 visit with 2 pros",
+      "Each visit is up to 90 minutes",
+      "Priority support",
     ],
     buttonText: "Get started",
     badge: "Recommended", // ✅ ADD
@@ -275,14 +275,14 @@ export const plans: Plan[] = [
   },
   {
     name: "Elite",
-    description: "Rentals & large homes",
+    description: "Unlimited visits by calendar schedule",
     price: 499,
     subtitle: "Everything in Premium",
     features: [
-      "Personal general contractor",
-      "Personal property manager",
-      "Home-improvement discounts",
-      "1 Full day visit - 8 hours",
+      "Unlimited scheduled visits",
+      "Each visit is up to 90 minutes",
+      "Best for busy homes and ongoing maintenance",
+      "Top scheduling flexibility",
     ],
     buttonText: "Get started",
     stripeLink: "https://buy.stripe.com/5kQ28qeANaW8ac93ASawo01",

@@ -20,7 +20,7 @@ export default function ValuePropsSection() {
               <span className="text-2xl">✓</span>
             </div>
             <h3 className="font-bold text-gray-800 mb-2">Predictable Pricing</h3>
-            <p className="text-sm text-gray-600">A flat monthly fee covers unlimited visits and ensures there are no surprise invoices.</p>
+            <p className="text-sm text-gray-600">Clear monthly plans make it obvious how many 90-minute visits and support options you get.</p>
           </div>
           <div className="flex flex-col items-center text-center">
             <div className="w-12 h-12 rounded-full bg-[#E6F8EC] text-[#34A853] flex items-center justify-center mb-3">
@@ -83,7 +83,7 @@ export default function ValuePropsSection() {
               <tr className="bg-gray-50">
                 <td className="px-4 py-2 border-b border-gray-200">Visits per Month</td>
                 <td className="px-4 py-2 border-b border-gray-200">Pay per visit</td>
-                <td className="px-4 py-2 border-b border-gray-200">2+ included (Basic) with unlimited scheduling</td>
+                <td className="px-4 py-2 border-b border-gray-200">Basic: 2/month, Plus: 4/month, Elite: unlimited by schedule</td>
               </tr>
             </tbody>
           </table>

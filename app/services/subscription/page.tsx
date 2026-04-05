@@ -20,8 +20,8 @@ import DepartmentsSection from "../../components/sections/DepartmentsSection";
 export default function SubscriptionServicePage() {
   const benefits = [
     {
-      title: "Unlimited visits",
-      text: "Book as many handyman visits as you need for ongoing repairs, maintenance, and home care.",
+      title: "Clear monthly visit counts",
+      text: "Basic includes 2 visits per month, Plus includes 4 visits per month, and every visit is up to 90 minutes.",
       icon: "🔁",
     },
     {
@@ -30,8 +30,8 @@ export default function SubscriptionServicePage() {
       icon: "💰",
     },
     {
-      title: "Priority support",
-      text: "Get faster scheduling and stronger support when your home needs attention.",
+      title: "Premium support options",
+      text: "Premium adds 1 emergency visit and 1 visit with 2 pros when you need stronger coverage.",
       icon: "⚡",
     },
     {
@@ -40,8 +40,8 @@ export default function SubscriptionServicePage() {
       icon: "🛠️",
     },
     {
-      title: "Plan flexibility",
-      text: "Upgrade, downgrade, or cancel anytime as your needs change.",
+      title: "Elite flexibility",
+      text: "Elite gives you unlimited visits by calendar schedule for homes that need ongoing attention.",
       icon: "📦",
     },
     {
@@ -60,7 +60,7 @@ export default function SubscriptionServicePage() {
     {
       number: "02",
       title: "Book your visits",
-      text: "Schedule handyman help when you need it and keep your home in shape year-round.",
+      text: "Schedule your included 90-minute visits in the calendar and keep your home in shape year-round.",
     },
     {
       number: "03",
@@ -90,8 +90,8 @@ export default function SubscriptionServicePage() {
             </h1>
 
             <p className="mt-5 text-base sm:text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
-              Unlimited visits, priority scheduling, and peace of mind for your home.
-              Enjoy predictable pricing and dedicated professionals who know your space.
+              Choose a plan based on how many 90-minute visits you want each month.
+              Keep it simple: 2 visits, 4 visits, premium support, or unlimited scheduled visits.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
@@ -112,9 +112,9 @@ export default function SubscriptionServicePage() {
 
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
               <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                <div className="text-white font-bold">Unlimited visits</div>
+                <div className="text-white font-bold">2 or 4 visits per month</div>
                 <div className="mt-1 text-sm text-white/70">
-                  Ongoing handyman help without paying full hourly pricing every time.
+                  Straightforward plans that make it obvious what you get.
                 </div>
               </div>
 
@@ -126,9 +126,9 @@ export default function SubscriptionServicePage() {
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                <div className="text-white font-bold">Cancel anytime</div>
+                <div className="text-white font-bold">90-minute visits</div>
                 <div className="mt-1 text-sm text-white/70">
-                  Stay flexible and adjust your plan as your household needs change.
+                  Every included visit is up to 90 minutes of handyman labor.
                 </div>
               </div>
             </div>

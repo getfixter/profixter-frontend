@@ -427,8 +427,8 @@ export default function PlansSection() {
         </h2>
 
         <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed max-w-[520px] mx-auto">
-          One subscription. Your own handyman. Fix everything in your home without worrying
-          about hourly costs every single time.
+          Clear monthly plans for real home maintenance. Pick how many 90-minute visits you need,
+          then book them on your schedule.
         </p>
         {!compact && (
           <p className="mt-5 text-[#C5CBD8] text-base leading-[22px]">
@@ -457,7 +457,7 @@ export default function PlansSection() {
               </div>
               <div>
                 <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
-                  Annual Plan — Pay for 11 months, get 12 months of unlimited visits
+                  Annual Plan — Pay for 11 months, get 12 months of scheduled handyman support
                 </p>
                 <p className="text-[#C5CBD8] text-sm">Best value for long-term home maintenance.</p>
               </div>
@@ -610,7 +610,7 @@ export default function PlansSection() {
                               </button>
 
                               <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
-                                Unlimited visits • Cancel anytime • No contracts
+                                Each visit up to 90 minutes • Cancel anytime • No contracts
                                 <br />
                                 <span className="text-[#6A6D71]/80">
                                   Materials at cost • No markup • Transparent pricing
@@ -780,7 +780,7 @@ export default function PlansSection() {
                               </button>
 
                               <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
-                                Unlimited visits • Cancel anytime • No contracts
+                                Each visit up to 90 minutes • Cancel anytime • No contracts
                                 <br />
                                 <span className="text-[#6A6D71]/80">
                                   Materials at cost • No markup • Transparent pricing

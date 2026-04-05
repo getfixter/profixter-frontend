@@ -154,7 +154,7 @@ export default function HeroSection() {
         titleA: "Unlimited Handyman Service",
         titleB: "for Long Island Homes",
         subtitle:
-          "Get unlimited home repairs and maintenance - 2+ visits per month. No contracts. Cancel anytime.",
+          "Choose a simple plan for your home: Basic gives 2 visits per month, Plus gives 4, and every visit is up to 90 minutes.",
         cta: "Start First Visit",
         showQuiz: false,
         showReview: false,
@@ -169,7 +169,7 @@ export default function HeroSection() {
         titleA: "Unlimited Handyman Service",
         titleB: "for Long Island Homes",
         subtitle:
-          "Book your next visit in seconds. Enjoy unlimited visits every month.",
+          "Book your next visit in seconds and use the support included with your membership.",
         cta: "Book My Next Visit",
         showQuiz: false,
         showReview: true,

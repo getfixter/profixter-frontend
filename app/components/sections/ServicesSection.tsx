@@ -180,7 +180,7 @@ export default function ServicesSection() {
               </h2>
 
               <p className="text-[#c5cbd8] text-base sm:text-lg font-medium mt-3">
-                Simple answers about your unlimited handyman service before you book.
+                Simple answers about visit counts, 90-minute visits, and what each plan includes.
               </p>
 
               <div className="mt-6 flex justify-center">

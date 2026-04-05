@@ -13,7 +13,7 @@ export default function DepartmentsSection() {
   const departments = [
     {
       title: "Subscription Handyman",
-      description: "Unlimited visits and priority scheduling for ongoing home maintenance.",
+      description: "Choose 2 visits, 4 visits, premium support, or unlimited scheduled visits for ongoing home maintenance.",
       href: "/services/subscription",
       icon: "📅",
     },

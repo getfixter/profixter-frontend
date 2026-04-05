@@ -1,14 +1,5 @@
 "use client";
 
-// This component displays the service info block that explains how Profixter works
-// for both members and non‑members.  In addition to the original functionality, this
-// version makes the unlimited nature of the subscription crystal clear.  The copy
-// now calls out that plans include two or more handyman visits per month and
-// reassures users that they can book multiple visits as needed without any
-// surprise charges.  These small tweaks help differentiate Profixter from
-// traditional contractors while keeping the experience familiar for existing
-// subscribers.
-
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
@@ -30,16 +21,14 @@ type SubscriptionResponse = {
 
 type NextBookingResponse = {
   hasSubscription?: boolean;
-  freeFirstVisitAvailable?: boolean; // legacy
+  freeFirstVisitAvailable?: boolean;
   plan?: string;
-  hasAnyBookings?: boolean; // backend-added
+  hasAnyBookings?: boolean;
 };
 
 const TIP_URL = "https://buy.stripe.com/eVq8wO3W98O03NL3ASawo00";
 const PHONE = "631-599-1363";
 const GOOGLE_REVIEW_URL = "https://maps.app.goo.gl/LM5fagx5GidLZfPB6";
-
-// ✅ Your YouTube video (embedded)
 const YOUTUBE_ID = "HQoAkLNGI9c";
 
 function prettyPlan(p?: string) {
@@ -56,7 +45,6 @@ export default function ServiceInfoSection() {
   const typedUser = user as FixterUser;
 
   const mountedRef = useRef(true);
-
   const [state, setState] = useState<"guest" | "sub" | "none">("guest");
   const [plan, setPlan] = useState<string>("");
   const [hasAnyBookings, setHasAnyBookings] = useState<boolean | null>(null);
@@ -68,7 +56,6 @@ export default function ServiceInfoSection() {
     };
   }, []);
 
-  // Check membership state and plan when authenticated
   useEffect(() => {
     const safeSet = (fn: () => void) => {
       if (!mountedRef.current) return;
@@ -95,24 +82,18 @@ export default function ServiceInfoSection() {
         return;
       }
 
-      // Primary: /api/bookings/next
       try {
         const nb = (await getNextBooking(addressId)) as NextBookingResponse;
         const hasSub = !!nb?.hasSubscription;
 
         safeSet(() => {
           setPlan(String(nb?.plan || ""));
-          setHasAnyBookings(
-            typeof nb?.hasAnyBookings === "boolean" ? nb.hasAnyBookings : null
-          );
+          setHasAnyBookings(typeof nb?.hasAnyBookings === "boolean" ? nb.hasAnyBookings : null);
           setState(hasSub ? "sub" : "none");
         });
         return;
-      } catch {
-        // fallback
-      }
+      } catch {}
 
-      // Fallback: subscription check only
       try {
         const sub = (await checkSubscription(addressId)) as SubscriptionResponse;
         const hasSub = !!sub?.hasSubscription;
@@ -134,7 +115,6 @@ export default function ServiceInfoSection() {
     run();
   }, [isAuthenticated, typedUser?.defaultAddressId]);
 
-  // Build CTA copy based on membership state
   const cta = useMemo(() => {
     const isNewLoggedIn = isAuthenticated && state === "none" && hasAnyBookings === false;
     const planName = prettyPlan(plan);
@@ -142,47 +122,40 @@ export default function ServiceInfoSection() {
     if (state === "guest") {
       return {
         title: "Trusted by Long Island homeowners",
-        // Emphasize the unlimited nature of the subscription for visitors
         sub:
-          "Most homeowners don’t need a contractor – they need a reliable pro who shows up, fixes it fast, and doesn’t overcharge. With Profixter you get unlimited handyman visits (two or more per month) for a simple subscription.",
+          "Most homeowners don't need vague coverage. They need clear help. Basic gives you 2 visits per month for $149, Plus gives you 4 visits per month, Premium adds 1 emergency visit and 1 two-pro visit, and Elite gives you unlimited visits by calendar schedule. Every visit is up to 90 minutes.",
         primaryLabel: "View plans",
         primaryHref: "#plans",
         secondaryLabel: "Book a visit",
         secondaryHref: "#pick-day",
-        badge: "Local • On‑demand • Professional",
-        // Guide users to pick an unlimited plan and book
-        hint: "Pick an unlimited plan below (2+ visits per month), then book instantly in the calendar.",
+        badge: "Local • On-demand • Professional",
+        hint: "Pick the plan with the right number of 90-minute visits, then book from the calendar.",
       };
     }
 
     if (state === "sub") {
       return {
-        title: `Your membership is active${planName ? ` – ${planName}` : ""}`,
-        // Let members know they have unlimited visits and encourage booking
-        sub:
-          "Enjoy unlimited visits - book your next one in the calendar below. Upload photos so we bring the right tools and move fast.",
+        title: `Your membership is active${planName ? ` - ${planName}` : ""}`,
+        sub: "Book your next visit in the calendar below. Upload photos so we bring the right tools and move fast.",
         primaryLabel: "Book next visit",
         primaryHref: "#pick-day",
-        secondaryLabel: "What’s included",
+        secondaryLabel: "What's included",
         secondaryHref: "/included",
         badge: planName ? `${planName} member` : "Member access",
-        hint: "Pick a day → pick a time → describe the task → upload photos.",
+        hint: "Pick a day -> pick a time -> describe the task -> upload photos.",
       };
     }
 
-    // For logged‑in users without an active plan
     return {
-      title: isNewLoggedIn
-        ? "Welcome – pick a plan to start today"
-        : "Pick a plan to book a visit",
+      title: isNewLoggedIn ? "Welcome - pick a plan to start today" : "Pick a plan to book a visit",
       sub:
-        "No free first visit. Subscription is required to book – choose an unlimited plan (two or more visits per month) and schedule immediately.",
+        "Subscription is required to book. Choose Basic for 2 visits per month, Plus for 4 visits per month, Premium for emergency and two-pro coverage, or Elite for unlimited visits by calendar schedule. Every visit is up to 90 minutes.",
       primaryLabel: "View plans",
       primaryHref: "#plans",
-      secondaryLabel: "What’s included",
+      secondaryLabel: "What's included",
       secondaryHref: "/included",
       badge: "Subscription required",
-      hint: "Choose a plan below (unlimited visits), then book from the calendar.",
+      hint: "Choose the plan that fits your home, then book your 90-minute visits from the calendar.",
     };
   }, [state, plan, isAuthenticated, hasAnyBookings]);
 
@@ -205,7 +178,7 @@ export default function ServiceInfoSection() {
     const el = document.getElementById(id);
     if (!el) return;
 
-    const HEADER_OFFSET = window.innerWidth >= 1024 ? 160 : 120; // same offset used in header
+    const HEADER_OFFSET = window.innerWidth >= 1024 ? 160 : 120;
     const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
 
     window.scrollTo({ top: y, behavior: "smooth" });
@@ -220,7 +193,6 @@ export default function ServiceInfoSection() {
     >
       <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
         <div className="rounded-[22px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] overflow-hidden">
-          {/* Top stripe */}
           <div className="px-5 sm:px-7 py-4 bg-[#313234] text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="text-[12px] uppercase tracking-wider text-white/70">
               Trusted by Long Island homeowners
@@ -253,7 +225,6 @@ export default function ServiceInfoSection() {
 
           <div className="p-5 sm:p-7">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-              {/* LEFT */}
               <div className="lg:col-span-7">
                 <h2 className="text-[26px] sm:text-[32px] lg:text-[36px] font-extrabold leading-tight text-[#313234]">
                   {cta.title}
@@ -263,40 +234,38 @@ export default function ServiceInfoSection() {
                   {cta.sub}
                 </p>
 
-                {/* WHY WE’RE THE BEST */}
                 <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
-                    <div className="text-[#313234] font-extrabold">⚡ Fast, scheduled, predictable</div>
+                    <div className="text-[#313234] font-extrabold">Fast, scheduled, predictable</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
                       You pick the <span className="font-semibold text-[#313234]">day & time</span> yourself. No waiting for callbacks,
-                      no “we’ll let you know” - and unlimited visits are included.
+                      no "we'll let you know" - and every plan is easy to understand before you join.
                     </div>
                   </div>
 
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
-                    <div className="text-[#313234] font-extrabold">💰 No surprise invoices</div>
+                    <div className="text-[#313234] font-extrabold">No surprise invoices</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
                       Subscription pricing means <span className="font-semibold text-[#313234]">clear expectations</span> and
-                      unlimited visits (two or more per month) - no “contractor math” after the job.
+                      simple monthly coverage - no "contractor math" after the job.
                     </div>
                   </div>
 
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
-                    <div className="text-[#313234] font-extrabold">🛠️ Real pros, real standards</div>
+                    <div className="text-[#313234] font-extrabold">Real pros, real standards</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
                       We show up prepared, communicate clearly, and fix things the right way - not the cheap way.
                     </div>
                   </div>
 
                   <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
-                    <div className="text-[#313234] font-extrabold">📷 Photos = faster service</div>
+                    <div className="text-[#313234] font-extrabold">Photos = faster service</div>
                     <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      Upload photos when booking so we bring the right tools and plan ahead - less back‑and‑forth.
+                      Upload photos when booking so we bring the right tools and plan ahead - less back-and-forth.
                     </div>
                   </div>
                 </div>
 
-                {/* ✅ Video (YouTube embed w/ autoplay muted) */}
                 <div className="mt-5">
                   <div className="rounded-[18px] border border-[#c5cbd8] bg-white overflow-hidden shadow-sm">
                     <div className="px-4 sm:px-5 py-3 bg-[#F6F7FB] border-b border-[#E6E8EF] flex items-start justify-between gap-3">
@@ -306,21 +275,8 @@ export default function ServiceInfoSection() {
                         </div>
                         <div className="text-[#6A6D71] text-[12px] mt-0.5">
                           Here is <span className="font-semibold text-[#313234]">WHY</span>
-                          <svg
-                            className="inline w-3.5 h-3.5 ml-1 text-[#306EEC] align-middle animate-pulse"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M12 6V18" />
-                            <path d="M8 14L12 18L16 14" />
-                          </svg>
                         </div>
                       </div>
-
                     </div>
 
                     <div className="relative aspect-video bg-black">
@@ -335,20 +291,19 @@ export default function ServiceInfoSection() {
                   </div>
                 </div>
 
-                {/* HOW BOOKING WORKS */}
                 <div className="mt-5 rounded-[18px] border border-[#C5CBD8] bg-white p-4 sm:p-5">
                   <div className="text-[#313234] font-extrabold">How booking works</div>
                   <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
                       <div className="text-[#313234] font-extrabold text-[13px]">1) Pick a plan</div>
                       <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                        Choose coverage that matches your home needs.
+                        Choose the monthly visit count and support level that matches your home.
                       </div>
                     </div>
                     <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
                       <div className="text-[#313234] font-extrabold text-[13px]">2) Book instantly</div>
                       <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                        Pick your day & time right in the calendar.
+                        Pick your day and time right in the calendar.
                       </div>
                     </div>
                     <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
@@ -360,18 +315,17 @@ export default function ServiceInfoSection() {
                     <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
                       <div className="text-[#313234] font-extrabold text-[13px]">4) We arrive & handle it</div>
                       <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                        One job per visit, done right (each visit is up to 90 minutes). Book as many visits as you need.
+                        Each visit is up to 90 minutes, and we handle the work clearly and efficiently.
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Bonus perks */}
                 <div className="mt-5 rounded-[18px] border border-[#C5CBD8] bg-white p-4 sm:p-5">
                   <div className="text-[#313234] font-extrabold">Bonus perks</div>
                   <div className="mt-2 text-[#6A6D71] text-[13px] leading-relaxed">
-                    • Refer a homeowner → get <span className="font-semibold text-[#313234]">$50 off</span> your next payment.
-                    <br />• Tips go <span className="font-semibold text-[#313234]">100%</span> to your Fixter.
+                    Refer a homeowner -> get <span className="font-semibold text-[#313234]">$50 off</span> your next payment.
+                    <br />Tips go <span className="font-semibold text-[#313234]">100%</span> to your Fixter.
                   </div>
 
                   <div className="mt-4 flex flex-col sm:flex-row gap-3">
@@ -394,7 +348,6 @@ export default function ServiceInfoSection() {
                 </div>
               </div>
 
-              {/* RIGHT */}
               <div className="lg:col-span-5">
                 <div className="rounded-[18px] border border-[#C5CBD8] bg-white p-5 sm:p-6">
                   <div className="text-[12px] uppercase tracking-wider text-[#6A6D71] font-bold">
@@ -446,18 +399,18 @@ export default function ServiceInfoSection() {
                   </div>
 
                   <div className="mt-5 text-[12px] text-[#6A6D71]">
-                    See details on{' '}
+                    See details on {" "}
                     <Link href="/included" className="text-[#306EEC] font-extrabold hover:underline">
-                      What’s included
+                      What's included
                     </Link>
                     .
                   </div>
                 </div>
 
                 <div className="mt-4 rounded-[18px] border border-[#E6E8EF] bg-[#F6F7FB] p-5">
-                  <div className="text-[#313234] font-extrabold">Fast & respectful service</div>
+                  <div className="text-[#313234] font-extrabold">Fast and respectful service</div>
                   <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                    If a prior job runs long, we’ll still arrive and do it right. We’re not a marketplace - we’re a real local service
+                    If a prior job runs long, we'll still arrive and do it right. We're not a marketplace - we're a real local service
                     with standards.
                   </div>
                 </div>
@@ -465,10 +418,9 @@ export default function ServiceInfoSection() {
             </div>
           </div>
 
-          {/* Bottom hint */}
           <div className="px-5 sm:px-7 py-4 border-t border-[#c5cbd8] bg-white/60">
             <div className="text-[13px] text-[#6A6D71]">
-              ↓ Next: scroll down to plans & the booking calendar.
+              Next: scroll down to plans and the booking calendar.
             </div>
           </div>
         </div>
