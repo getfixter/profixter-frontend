@@ -87,14 +87,14 @@ export default function Home() {
         {/* ========================================= */}
         {isRegistered && (
           <>
-            <NewHeroSection />
-            <PlansSection />
             <QuizSection />
-            <ValuePropsSection />
-            <ServiceInfoSection />
-            <ServicesSection />
+                        <ServiceInfoSection />
+<ServicesSection />
+            <PlansSection />
+            
+            
+            
             <HandymenSection />
-            <TestimonialsSection />
             <ProjectsSection />
             <DepartmentsSection />
             <Footer />
@@ -107,11 +107,13 @@ export default function Home() {
         {/* ========================================= */}
         {isVisitor && (
           <>
-            <NewHeroSection />
+            <ServiceInfoSection />
             <QuizSection />
-            <ValuePropsSection />
+            <ServicesSection />
+
+            {/* <ValuePropsSection /> */}
             <PlansSection />
-            <TestimonialsSection />
+            <HandymenSection />
             <DepartmentsSection />
             <Footer />
           </>
