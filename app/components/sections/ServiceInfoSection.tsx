@@ -324,7 +324,7 @@ export default function ServiceInfoSection() {
                 <div className="mt-5 rounded-[18px] border border-[#C5CBD8] bg-white p-4 sm:p-5">
                   <div className="text-[#313234] font-extrabold">Bonus perks</div>
                   <div className="mt-2 text-[#6A6D71] text-[13px] leading-relaxed">
-                    Refer a homeowner -> get <span className="font-semibold text-[#313234]">$50 off</span> your next payment.
+                    Refer a homeowner {"->"} get <span className="font-semibold text-[#313234]">$50 off</span> your next payment.
                     <br />Tips go <span className="font-semibold text-[#313234]">100%</span> to your Fixter.
                   </div>
 
