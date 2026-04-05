@@ -43,14 +43,13 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ✅ offset scroll so anchors never hide under sticky header/promo
+  // ✅ offset scroll so anchors never hide under the sticky header
   const scrollToHash = (hash: string) => {
     const id = hash.replace("#", "");
     const el = document.getElementById(id);
     if (!el) return;
 
-    // header + promo strip combined
-    const HEADER_OFFSET = window.innerWidth >= 1024 ? 180 : 140;
+    const HEADER_OFFSET = window.innerWidth >= 1024 ? 120 : 100;
 
     const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
     window.scrollTo({ top: y, behavior: "smooth" });
@@ -84,46 +83,6 @@ export default function Header() {
     router.push("/");
   };
 
-  // ---------- SPRING promo countdown (35 days) ----------
-  const PROMO_KEY = "pf_spring_promo_start_v1";
-  const PROMO_DAYS = 35;
-
-  const [promoLeft, setPromoLeft] = useState<{
-    days: number;
-    hours: number;
-    minutes: number;
-    seconds: number;
-  } | null>(null);
-
-  useEffect(() => {
-    // store a stable start time (first visitor sets it)
-    let start = Number(localStorage.getItem(PROMO_KEY) || "0");
-    if (!start || !Number.isFinite(start)) {
-      start = Date.now();
-      localStorage.setItem(PROMO_KEY, String(start));
-    }
-
-    const end = start + PROMO_DAYS * 24 * 60 * 60 * 1000;
-
-    const tick = () => {
-      const ms = end - Date.now();
-      if (ms <= 0) {
-        setPromoLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-        return;
-      }
-      const totalSec = Math.floor(ms / 1000);
-      const days = Math.floor(totalSec / 86400);
-      const hours = Math.floor((totalSec % 86400) / 3600);
-      const minutes = Math.floor((totalSec % 3600) / 60);
-      const seconds = totalSec % 60;
-      setPromoLeft({ days, hours, minutes, seconds });
-    };
-
-    tick();
-    const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
-  }, []);
-
   // Esc closes mobile menu
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -133,83 +92,8 @@ export default function Header() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const promoActive =
-    promoLeft && promoLeft.days + promoLeft.hours + promoLeft.minutes + promoLeft.seconds > 0;
-
   return (
     <header className="w-full py-[14px] relative z-50">
-      {/* ✅ Promo strip ABOVE glass header */}
-      <div className="mx-3 sm:mx-5 mb-3">
-        <div className="rounded-[18px] border border-[#86EFAC]/30 bg-[#0B1220]/65 backdrop-blur-md shadow-[0_10px_50px_rgba(0,0,0,0.18)]">
-          <div className="px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#86EFAC]/20 border border-[#86EFAC]/25 flex items-center justify-center flex-shrink-0">
-                <span className="text-[#86EFAC] text-lg">🎁</span>
-              </div>
-
-              <div>
-                {/* Updated copy to emphasize unlimited visits and 30% discount */}
-                <p className="text-white font-extrabold text-sm sm:text-base leading-tight">
-                  Unlimited handyman visits (2+ per month) for Long Island homes.
-                  <span className="ml-1 text-[#86EFAC] font-extrabold">30% OFF</span> your first month with code
-                  <span className="ml-1 text-[#86EFAC] font-extrabold">SPRING</span>
-                  <span className="hidden sm:inline text-white/70 font-semibold"> • Monthly plans only</span>
-                </p>
-
-                {promoActive && promoLeft ? (
-                  <p className="mt-1 text-white/70 text-[12px] sm:text-[13px] font-semibold">
-                    Ends in{" "}
-                    <span className="text-[#86EFAC] font-extrabold">
-                      {promoLeft.days}d {String(promoLeft.hours).padStart(2, "0")}:
-                      {String(promoLeft.minutes).padStart(2, "0")}:{String(promoLeft.seconds).padStart(2, "0")}
-                    </span>
-                  </p>
-                ) : null}
-
-                {/* Sale points emphasising unlimited visits */}
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] sm:text-[13px] text-white/75">
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="text-[#86EFAC]">✓</span> Unlimited visits (2+ per month)
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="text-[#86EFAC]">✓</span> Cancel anytime
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="text-[#86EFAC]">✓</span> No contracts
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="text-[#86EFAC]">✓</span> Local Long Island pros
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="text-[#86EFAC]">✓</span> Personal handyman
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between sm:justify-end gap-3">
-              <div className="hidden md:flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white/80 text-xs font-semibold">
-                  Best value
-                </span>
-                <span className="px-3 py-1 rounded-full bg-[#86EFAC]/15 border border-[#86EFAC]/25 text-[#86EFAC] text-xs font-extrabold">
-                  30% OFF
-                </span>
-              </div>
-
-              <button
-                type="button"
-                // Redirect visitors directly to the plans page instead of a hash that no longer exists
-                onClick={() => router.push("/plans")}
-                className="shrink-0 px-4 sm:px-5 py-2.5 rounded-xl bg-[#86EFAC] text-[#0B1220] font-extrabold text-sm sm:text-base hover:opacity-90 transition active:scale-[0.99]"
-              >
-                Get Started
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Glass wrapper */}
       <div className="mx-3 sm:mx-5 rounded-[18px] border border-white/30 bg-white/75 backdrop-blur-md shadow-[0_10px_60px_rgba(0,0,0,0.18)]">
         <div className="mx-auto max-w-[1240px] px-[14px] sm:px-[18px] py-[10px] flex items-center justify-between">
@@ -411,41 +295,6 @@ export default function Header() {
                 </Link>
               )
             )}
-
-            {/* Promo inside mobile menu too */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsMenuOpen(false);
-                // Navigate to plans page instead of non‑existent anchor
-                router.push("/plans");
-              }}
-              className="w-full max-w-xs rounded-[16px] border border-[#86EFAC]/25 bg-[#0B1220]/90 text-white px-4 py-3 text-left"
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#86EFAC]/20 border border-[#86EFAC]/25 flex items-center justify-center">
-                  <span className="text-[#86EFAC] text-lg">🎁</span>
-                </div>
-                <div>
-                  <p className="font-extrabold text-base leading-tight">
-                    Unlimited visits (2+ per month)
-                  </p>
-                  <p className="text-white/75 text-sm mt-1">
-                    30% off first month • Use code SPRING • Monthly plans only
-                  </p>
-
-                  {promoActive && promoLeft ? (
-                    <p className="text-white/70 text-[12px] mt-1 font-semibold">
-                      Ends in{" "}
-                      <span className="text-[#86EFAC] font-extrabold">
-                        {promoLeft.days}d {String(promoLeft.hours).padStart(2, "0")}: {String(promoLeft.minutes).padStart(2, "0")}: {String(promoLeft.seconds).padStart(2, "0")}
-                      </span>
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-            </button>
-
             {/* Auth buttons or profile at bottom */}
             <div className="flex flex-col gap-4 mt-1 w-full max-w-xs">
               {isAuthenticated ? (

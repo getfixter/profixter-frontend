@@ -98,13 +98,13 @@ export default function HeroSection() {
     run();
   }, [isAuthenticated, typedUser?.defaultAddressId]);
 
-  // Offset scroll so anchor never hides under sticky header/promo
+  // Offset scroll so anchor never hides under the sticky header
   const scrollToHash = (hash: string) => {
     const id = hash.replace("#", "");
     const el = document.getElementById(id);
     if (!el) return;
 
-    const HEADER_OFFSET = window.innerWidth >= 1024 ? 180 : 140;
+    const HEADER_OFFSET = window.innerWidth >= 1024 ? 120 : 100;
     const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
 
     window.scrollTo({ top: y, behavior: "smooth" });
@@ -178,11 +178,11 @@ export default function HeroSection() {
 
     // Logged in, but no plan
     return {
-      badge: "Special Offer for You",
+      badge: "Membership Options Available",
       titleA: "Unlimited Handyman Service",
       titleB: "for Long Island Homes",
       subtitle:
-        "Join today and enjoy 30% off your first month. Book as many visits as you need - 2+ per month included.",
+        "Choose the membership that fits your home and book unlimited handyman visits with flexible monthly or annual options.",
       cta: "See Plans",
       showQuiz: false,
       showReview: false,

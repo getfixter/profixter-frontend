@@ -303,9 +303,7 @@ export default function PlansSection() {
                     <span className="text-white font-semibold">12</span>
                   </>
                 ) : (
-                  <>
-                    Use code <span className="text-white font-semibold">SPRING</span> — 30% off your first month
-                  </>
+                  <>Flexible month-to-month coverage with no long-term contract</>
                 )}
               </p>
             </div>
@@ -432,16 +430,6 @@ export default function PlansSection() {
           One subscription. Your own handyman. Fix everything in your home without worrying
           about hourly costs every single time.
         </p>
-
-        <div className="mt-5">
-          <p className="text-white text-xl sm:text-2xl font-bold">
-            Use code <span className="text-[#86EFAC]">SPRING</span>
-          </p>
-          <p className="text-[#C5CBD8] text-sm sm:text-base">
-            30% off your first month • Cancel anytime
-          </p>
-        </div>
-
         {!compact && (
           <p className="mt-5 text-[#C5CBD8] text-base leading-[22px]">
             Materials at cost, only if needed, with your approval.
@@ -471,9 +459,7 @@ export default function PlansSection() {
                 <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
                   Annual Plan — Pay for 11 months, get 12 months of unlimited visits
                 </p>
-                <p className="text-[#C5CBD8] text-sm">
-                  Or use code <span className="text-white font-semibold">SPRING</span> for 30% off your first month
-                </p>
+                <p className="text-[#C5CBD8] text-sm">Best value for long-term home maintenance.</p>
               </div>
             </div>
 
