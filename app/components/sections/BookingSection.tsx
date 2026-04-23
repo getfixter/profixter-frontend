@@ -12,6 +12,7 @@ import {
 } from "@/lib/booking-service";
 import { compressImage } from "@/lib/compressImage";
 import { useRouter } from "next/navigation";
+import { POPULAR_TASKS } from "./PopularTasksSection";
 
 const SERVICES = [
   { key: "labor_only", label: "Labor Only", minRank: 1 }, // Basic+
@@ -25,6 +26,18 @@ type DayAvailability = {
   taken: Record<string, number>;
   capacity: number;
   slots: string[];
+};
+const QUICK_BOOKING_DESCRIPTIONS: Record<string, string> = {
+  "TV Mounting": "TV mounting help",
+  "Light Fixtures": "Light fixture replacement",
+  "Faucets & Minor Leaks": "Minor faucet leak",
+  "Doors & Locks": "Door or lock repair",
+  "Drywall Patches": "Drywall patch repair",
+  "Caulking & Sealing": "Caulking and sealing",
+  "Furniture Assembly": "Furniture assembly help",
+  "Shelves & Wall Hardware": "Shelf installation help",
+  "Paint Touch-Ups": "Paint touch up",
+  "Home Maintenance Punch Lists": "Home maintenance tasks",
 };
 
 // Fallback 9–17 every 30 min
@@ -81,79 +94,54 @@ function formatTime12(t: string): string {
   return `${h12}:${String(m).padStart(2, "0")} ${period}`;
 }
 
-// ---------- Time Dropdown ----------
-function TimeDropdown({
-  times,
-  takenCounts,
-  capacity,
+function TimeSlotGrid({
+  slotOptions,
   selectedTime,
   onSelect,
 }: {
-  times: string[];
-  takenCounts: Record<string, number>;
-  capacity: number;
+  slotOptions: Array<{ time: string; available: boolean; remaining: number | null }>;
   selectedTime: string;
   onSelect: (value: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (!wrapRef.current) return;
-      if (!wrapRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, []);
-
   return (
-    <div ref={wrapRef} className="relative w-full sm:w-[190px]">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full h-[54px] rounded-[12px] border border-[#c5cbd8] bg-[#EEF2FF] px-4 sm:px-5 text-[#313234] text-[16px] sm:text-[18px] flex items-center justify-between shadow-[0_0_200px_rgba(0,0,0,0.08)] hover:bg-white/60 transition"
-      >
-        <span className={selectedTime ? "font-semibold" : "text-[#6a6c71]"}>
-          {selectedTime ? formatTime12(selectedTime) : "Select time"}
-        </span>
-
-        <svg width="20" height="20" viewBox="0 0 24 24" className={`transition-transform ${open ? "rotate-180" : ""}`}>
-          <path d="M6 9L12 15L18 9" stroke="#313234" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-
-      {open && (
-        <div className="absolute mt-2 w-full bg-white border border-[#c5cbd8] rounded-[12px] shadow-lg z-20 py-2 max-h-[260px] overflow-auto">
-          {times.map((time) => {
-            const used = takenCounts[time] || 0;
-            const isFull = used >= capacity;
-
-            return (
-              <button
-                key={time}
-                type="button"
-                disabled={isFull}
-                onClick={() => {
-                  if (isFull) return;
-                  onSelect(time);
-                  setOpen(false);
-                }}
-                className={[
-                  "w-full text-left px-4 py-2 text-[16px] sm:text-[18px] flex items-center",
-                  isFull ? "text-gray-400 cursor-not-allowed" : "hover:bg-[#EEF2FF] text-[#313234]",
-                ].join(" ")}
-              >
-                <span className={isFull ? "line-through" : ""}>{formatTime12(time)}</span>
-                {!isFull && used > 0 && (
-                  <span className="ml-auto text-xs text-[#6a6c71]">{capacity - used} left</span>
-                )}
-                {isFull && <span className="ml-auto text-xs text-gray-400">Full</span>}
-              </button>
-            );
-          })}
-        </div>
-      )}
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+      {slotOptions.map((slot) => {
+        const isSelected = slot.time === selectedTime;
+        return (
+          <button
+            key={slot.time}
+            type="button"
+            disabled={!slot.available}
+            onClick={() => {
+              if (!slot.available) return;
+              onSelect(slot.time);
+            }}
+            className={[
+              "min-h-[56px] rounded-[16px] border px-3 py-3 text-left transition",
+              slot.available
+                ? "border-[#306EEC] bg-[#306EEC] text-white shadow-[0_10px_30px_rgba(48,110,236,0.28)] hover:bg-[#2558c9]"
+                : "border-[#D1D5DB] bg-white/70 text-[#9CA3AF] opacity-80",
+              isSelected ? "ring-4 ring-[#306EEC]/25 bg-[#2558c9]" : "",
+              !slot.available ? "cursor-not-allowed" : "",
+            ].join(" ")}
+          >
+            <div className={`text-sm font-extrabold ${slot.available ? "" : "line-through"}`}>
+              {formatTime12(slot.time)}
+            </div>
+            <div
+              className={`mt-1 text-[11px] font-semibold ${
+                slot.available ? "text-white/85" : "text-[#9CA3AF]"
+              }`}
+            >
+              {slot.available
+                ? slot.remaining && slot.remaining > 0
+                  ? `${slot.remaining} left`
+                  : "Available"
+                : "Unavailable"}
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -179,12 +167,15 @@ export default function BookingSection() {
   const [dayAvailabilityMap, setDayAvailabilityMap] = useState<Record<string, DayAvailability>>({});
   const [loadingMonthKey, setLoadingMonthKey] = useState<string | null>(null);
   const [loadingSelectedDate, setLoadingSelectedDate] = useState(false);
+  const [quickBookOpen, setQuickBookOpen] = useState(false);
+  const [quickBookingLoading, setQuickBookingLoading] = useState(false);
 
 
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const dayRequestCacheRef = useRef<Record<string, Promise<DayAvailability | null>>>({});
   const loadedMonthsRef = useRef<Record<string, boolean>>({});
+  const autoSelectedDateRef = useRef(false);
 
   const [service, setService] = useState<ServiceKey | "">("");
   const [note, setNote] = useState<string>("");
@@ -259,6 +250,7 @@ export default function BookingSection() {
     setSelectedDate(null);
     setSelectedTime("");
     setDisplayedTimes([]);
+    autoSelectedDateRef.current = false;
     setService("");
     setShowServiceMenu(false);
     setError("");
@@ -277,6 +269,25 @@ export default function BookingSection() {
 
   const getMonthKey = (date: Date) =>
     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+  const isDateSelectable = (date: Date) => {
+    const normalized = new Date(date);
+    normalized.setHours(0, 0, 0, 0);
+    return !isDayDisabled(normalized);
+  };
+
+  const getClosestAvailableDate = () => {
+    const entries = Object.entries(dayAvailabilityMap)
+      .filter(([, info]) => Array.isArray(info?.slots) && info.slots.length > 0)
+      .map(([ymd]) => {
+        const [year, month, day] = ymd.split("-").map(Number);
+        return new Date(year, (month || 1) - 1, day || 1);
+      })
+      .filter((date) => isDateSelectable(date))
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    return entries[0] || null;
+  };
 
   const fetchDayAvailability = async (ymd: string): Promise<DayAvailability | null> => {
     if (dayAvailabilityMap[ymd]) return dayAvailabilityMap[ymd];
@@ -389,6 +400,20 @@ useEffect(() => {
     cancelled = true;
   };
 }, [config, currentMonth, dayAvailabilityMap]);
+
+  useEffect(() => {
+    if (!config) return;
+    if (selectedDate && isDateSelectable(selectedDate)) return;
+    if (autoSelectedDateRef.current) return;
+
+    const closest = getClosestAvailableDate();
+    if (!closest) return;
+
+    autoSelectedDateRef.current = true;
+    setCurrentMonth(new Date(closest.getFullYear(), closest.getMonth(), 1));
+    setSelectedDate(closest);
+    setSelectedTime("");
+  }, [config, dayAvailabilityMap, selectedDate]);
 
 
 
@@ -665,6 +690,46 @@ if (info) {
     setUploadedPhotos((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  const selectClosestAvailableDateAndTime = () => {
+    const closest = getClosestAvailableDate();
+    if (!closest) return null;
+
+    const ymd = formatDateYMD(closest);
+    const availability = dayAvailabilityMap[ymd];
+    const firstAvailableSlot = availability?.slots?.[0] || "";
+    if (!firstAvailableSlot) return null;
+
+    setCurrentMonth(new Date(closest.getFullYear(), closest.getMonth(), 1));
+    setSelectedDate(closest);
+    setSelectedTime(firstAvailableSlot);
+    setDisplayedTimes(availability.slots);
+    autoSelectedDateRef.current = true;
+
+    return { date: closest, time: firstAvailableSlot };
+  };
+
+  const handleQuickBookingSelect = (taskTitle: string) => {
+    setQuickBookingLoading(true);
+    setError("");
+    setNotice("");
+
+    const selected = selectClosestAvailableDateAndTime();
+    if (!selected) {
+      setQuickBookingLoading(false);
+      setError("We are still checking nearby availability. Please try Quick Booking again in a moment.");
+      return;
+    }
+
+    if (taskTitle === "Other Small Home Tasks") {
+      setNote("");
+    } else {
+      setNote(QUICK_BOOKING_DESCRIPTIONS[taskTitle] || taskTitle);
+    }
+
+    setQuickBookOpen(false);
+    setQuickBookingLoading(false);
+  };
+
   const selectedDateLabel = useMemo(() => {
     if (!selectedDate) return "";
     return selectedDate.toLocaleDateString("en-US", {
@@ -830,17 +895,24 @@ const canBook =
 
   const wordsCount = note.trim().split(/\s+/).filter(Boolean).length;
 
-  // times shown = based on config + fetched slots intersection
-  const timesForSelectedDay = useMemo(() => {
-    if (!selectedDate || !config) return [];
-    const baseTimes = getHoursForDate(selectedDate);
-    const finalTimes =
-      displayedTimes.length > 0 ? baseTimes.filter((t) => displayedTimes.includes(t)) : displayedTimes;
-    return finalTimes;
-  }, [selectedDate, config, displayedTimes]);
-
   const ymdSelected = selectedDate ? formatDateYMD(selectedDate) : "";
   const visibleMonthKey = getMonthKey(currentMonth);
+  const slotOptions = useMemo(() => {
+    if (!selectedDate || !config) return [];
+    const taken = dayAvailabilityMap[ymdSelected]?.taken || {};
+    const capacity = dayAvailabilityMap[ymdSelected]?.capacity || 1;
+    const availableSet = new Set(displayedTimes);
+
+    return getHoursForDate(selectedDate).map((time) => {
+      const used = taken[time] || 0;
+      const available = availableSet.has(time);
+      return {
+        time,
+        available,
+        remaining: available ? Math.max(capacity - used, 0) : null,
+      };
+    });
+  }, [selectedDate, config, dayAvailabilityMap, ymdSelected, displayedTimes]);
 
   return (
 <section
@@ -1020,34 +1092,46 @@ const canBook =
           <div className="lg:col-span-7">
             {/* Time + info */}
             <div className="rounded-[18px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] p-4 sm:p-5">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-[#313234]">Choose a time</div>
+                    <div className="mt-1 text-sm sm:text-base text-[#6a6c71]">
+                      Visit length: <span className="font-semibold text-[#313234]">up to 90 minutes</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setQuickBookOpen(true)}
+                    disabled={checkingAccess || loadingMonthKey === visibleMonthKey}
+                    className="inline-flex h-[48px] items-center justify-center rounded-[14px] bg-[#306EEC] px-5 text-sm font-extrabold text-white shadow-[0_10px_30px_rgba(48,110,236,0.24)] transition hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Quick Booking
+                  </button>
+                </div>
+
                 {selectedDate && config ? (
                   loadingSelectedDate && displayedTimes.length === 0 ? (
-                    <div className="w-full sm:w-[190px] h-[54px] rounded-[12px] border border-[#c5cbd8] bg-white/70 flex items-center px-4">
+                    <div className="rounded-[16px] border border-[#c5cbd8] bg-white/70 p-4">
                       <div className="h-3 w-full rounded-full bg-[#D7E0F5] animate-pulse" />
                     </div>
-                  ) : timesForSelectedDay.length > 0 ? (
-                    <TimeDropdown
-                      times={timesForSelectedDay}
-                      takenCounts={dayAvailabilityMap[ymdSelected]?.taken || {}}
-                      capacity={dayAvailabilityMap[ymdSelected]?.capacity || 999}
+                  ) : slotOptions.length > 0 ? (
+                    <TimeSlotGrid
+                      slotOptions={slotOptions}
                       selectedTime={selectedTime}
                       onSelect={(t) => setSelectedTime(t)}
                     />
+                  ) : (
+                    <div className="rounded-[16px] border border-[#c5cbd8] bg-white/60 px-4 py-4 text-[#6a6c71] text-sm">
+                      No times available. Try another date or check back soon.
+                    </div>
+                  )
                 ) : (
-                  <div className="w-full sm:w-[190px] h-[54px] rounded-[12px] border border-[#c5cbd8] bg-white/60 flex items-center px-4 text-[#6a6c71] text-sm">
-                    No times available. Try another date or check back soon.
-                  </div>
-                )
-              ) : (
-                  <div className="w-full sm:w-[190px] h-[54px] rounded-[12px] border border-[#c5cbd8] bg-white/60 flex items-center px-4 text-[#6a6c71] text-sm">
+                  <div className="rounded-[16px] border border-[#c5cbd8] bg-white/60 px-4 py-4 text-[#6a6c71] text-sm">
                     Select a date first
                   </div>
                 )}
-
-                <div className="text-sm sm:text-base text-[#6a6c71]">
-                  Visit length: <span className="font-semibold text-[#313234]">up to 90 minutes</span>
-                </div>
               </div>
 
               <div className="mt-3 text-xs sm:text-sm text-[#6a6c71]">
@@ -1056,6 +1140,10 @@ const canBook =
 
               <div className="mt-2 text-xs sm:text-sm text-[#6a6c71]">
                 Bookings are scheduled in advance. Most members book one visit per month.
+              </div>
+
+              <div className="mt-2 text-xs sm:text-sm text-[#6a6c71]">
+                Service includes labor only. Materials are not included unless specified in your plan.
               </div>
 
               {/* Address selector if 2+ */}
@@ -1204,6 +1292,10 @@ checkingAccess || !hasSubscription
                 />
               </div>
 
+              <div className="mt-3 text-xs sm:text-sm text-[#6a6c71]">
+                Service includes labor only. Materials are not included unless specified in your plan.
+              </div>
+
               {/* Photo previews */}
               {uploadedPhotos.length > 0 && (
                 <div className="mt-5">
@@ -1309,9 +1401,9 @@ checkingAccess || !hasSubscription
               <div className="mb-4 rounded-[16px] border border-[#C5CBD8] bg-white p-4 sm:p-5">
                 <div className="text-sm font-semibold text-[#313234] mb-2">Before you confirm</div>
                 <div className="space-y-1.5 text-xs sm:text-sm text-[#6a6c71] leading-relaxed">
-                  <div>Most members book one visit per month</div>
-                  <div>All work is completed within your visit time</div>
-                  <div>You can always book your next visit after completion</div>
+                  <div>Each visit is for 1 task and cannot exceed 90 minutes</div>
+                  <div>Please upload clear photos so we can prepare properly</div>
+                  <div>If your task may take longer, book a future visit for the next item</div>
                 </div>
               </div>
 
@@ -1330,6 +1422,68 @@ checkingAccess || !hasSubscription
             </div>
           </div>
         </div>
+
+        {quickBookOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+            onClick={() => {
+              if (!quickBookingLoading) setQuickBookOpen(false);
+            }}
+          >
+            <div
+              className="w-full max-w-[720px] rounded-[24px] bg-white p-5 shadow-[0_20px_100px_rgba(0,0,0,0.32)] sm:p-6"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#6A6D71]">
+                    Quick Booking
+                  </div>
+                  <h3 className="mt-2 text-2xl font-extrabold text-[#313234]">
+                    What can we do for you?
+                  </h3>
+                  <p className="mt-2 text-sm text-[#6A6D71]">
+                    Pick a task and we will fill the closest available day and time for you.
+                  </p>
+                  <p className="mt-2 text-xs text-[#6A6D71]">
+                    Labor service only. Materials may be additional.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={quickBookingLoading}
+                  onClick={() => setQuickBookOpen(false)}
+                  className="h-10 w-10 rounded-full border border-[#D1D5DB] text-[#313234] transition hover:bg-[#F8FAFF] disabled:opacity-60"
+                  aria-label="Close quick booking"
+                >
+                  x
+                </button>
+              </div>
+
+              <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {POPULAR_TASKS.map((task) => (
+                  <button
+                    key={task.title}
+                    type="button"
+                    disabled={quickBookingLoading}
+                    onClick={() => handleQuickBookingSelect(task.title)}
+                    className="rounded-[18px] border border-[#D7E0F5] bg-[#EEF2FF] px-4 py-4 text-left transition hover:border-[#306EEC] hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <div className="text-sm font-extrabold text-[#313234]">{task.title}</div>
+                    <div className="mt-1 text-xs text-[#6A6D71]">{task.subtitle}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-5 text-xs text-[#6A6D71]">
+                {quickBookingLoading
+                  ? "Choosing the nearest available booking for you..."
+                  : "Quick Booking still uses the normal booking form. Photos are still required before submission."}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Confirmation Modal */}
         {showModal && (

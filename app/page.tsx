@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 
 import Header from "./components/sections/Header";
+import HeroSection from "./components/sections/HeroSection";
 import QuizSection from "./components/sections/QuizSection";
 import DepartmentsSection from "./components/sections/DepartmentsSection";
 import Footer from "./components/sections/Footer";
-import ServiceInfoSection from "./components/sections/ServiceInfoSection";
 import PlansSection from "./components/sections/PlansSection";
 import BookingSection from "./components/sections/BookingSection";
 import ServicesSection from "./components/sections/ServicesSection";
@@ -59,17 +59,18 @@ export default function Home() {
       </div>
 
       <main className="relative">
+        <HeroSection />
+
         {/* ========================================= */}
         {/* SUBSCRIBED VERSION                        */}
         {/* Goal: make using the membership easy      */}
         {/* ========================================= */}
         {isSubscribed && (
           <>
-            <ServiceInfoSection />
+            <BookingSection />
             <PlansSection />
             <TrustSection />
             <PopularTasksSection />
-            <BookingSection />
             <ServicesSection />
             <HandymenSection />
             <FinalCTASection />
@@ -83,7 +84,6 @@ export default function Home() {
         {/* ========================================= */}
         {isRegistered && (
           <>
-            <ServiceInfoSection />
             <PlansSection />
             <TrustSection />
             <PopularTasksSection />
@@ -103,7 +103,6 @@ export default function Home() {
         {/* ========================================= */}
         {isVisitor && (
           <>
-            <ServiceInfoSection />
             <PlansSection />
             <TrustSection />
             <PopularTasksSection />

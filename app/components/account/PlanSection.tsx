@@ -78,6 +78,7 @@ function isManageableStatus(status?: string | null) {
 function statusLabel(subscription: ManagedSubscription) {
   if (subscription.cancelAtPeriodEnd) return "Cancels at period end";
   if (subscription.cancellationReason === "payment_failed") return "Payment could not be processed";
+  if (subscription.pendingPlan) return "Scheduled change";
   const status = String(subscription.status || "").toLowerCase();
   if (status === "trialing") return "Trialing";
   if (status === "past_due") return "Past due";
@@ -303,6 +304,12 @@ export function PlanSection() {
                     subscription.currentPeriodEnd || subscription.nextPaymentDate || null
                   );
                   const cancellationDate = formatDate(subscription.cancellationDate || null);
+                  const pendingPlan = subscription.pendingPlan
+                    ? formatPlanName(subscription.pendingPlan)
+                    : null;
+                  const pendingChangeDate = formatDate(
+                    subscription.pendingChangeEffectiveDate || null
+                  );
 
                   return (
                     <Card key={subscription._id} className="max-w-[620px]">
@@ -379,6 +386,17 @@ export function PlanSection() {
                         </div>
                       ) : null}
 
+                      {pendingPlan ? (
+                        <div className="mt-5 rounded-[14px] border border-[#BFDBFE] bg-[#EFF6FF] p-4 text-sm text-[#1D4ED8]">
+                          <div className="font-semibold">Scheduled next plan: {pendingPlan}</div>
+                          <div className="mt-1">
+                            Your current {formatPlanName(plan)} plan stays active until{" "}
+                            {pendingChangeDate || renewalDate || "the next billing date"}. After that,
+                            {` ${pendingPlan}`} begins automatically.
+                          </div>
+                        </div>
+                      ) : null}
+
                       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                         <Link
                           href="/#plans"
@@ -400,7 +418,9 @@ export function PlanSection() {
                       <div className="mt-3 text-xs text-[#6A6D71]">
                         {subscription.cancelAtPeriodEnd
                           ? `You'll keep easy booking and plan access until ${cancellationDate || renewalDate || "the end of the current period"}.`
-                          : "You can manage your plan and book online anytime."}
+                          : pendingPlan
+                            ? `${pendingPlan} is scheduled for ${pendingChangeDate || renewalDate || "your next billing date"}, while your current plan stays active now.`
+                            : "You can manage your plan and book online anytime."}
                       </div>
                     </Card>
                   );

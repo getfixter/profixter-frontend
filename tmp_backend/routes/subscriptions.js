@@ -8,8 +8,11 @@ const {
   normalizePlanType,
   normalizeBillingCycle,
   getPriceId,
+  classifyPlanChange,
   serializeSubscription,
   resolveStripeSubscriptionForRecord,
+  applyStripeSubscriptionUpgrade,
+  scheduleStripeSubscriptionDowngrade,
   upsertSubscriptionFromStripe,
   getOwnedSubscriptionForAddress,
 } = require("../utils/subscriptionManagement");
@@ -150,6 +153,13 @@ router.patch("/manage/address/:addressId", auth, async (req, res) => {
       return res.status(404).json({ message: "No active subscription found for this address" });
     }
 
+    if (subscription.cancelAtPeriodEnd) {
+      return res.status(409).json({
+        message:
+          "Cancellation is already scheduled for this subscription. Please keep the current plan or start a new subscription later.",
+      });
+    }
+
     if (
       String(subscription.subscriptionType || "").toLowerCase() === targetPlan &&
       normalizeBillingCycle(subscription.billingCycle, "monthly") === requestedCycle
@@ -165,7 +175,10 @@ router.patch("/manage/address/:addressId", auth, async (req, res) => {
       });
     }
 
-    const item = stripeSubscription.items?.data?.[0];
+    const item = getStripeSubscriptionItemForRecord({
+      subscription,
+      stripeSubscription,
+    });
     if (!item?.id) {
       return res.status(409).json({ message: "Stripe subscription item not found" });
     }
@@ -175,18 +188,31 @@ router.patch("/manage/address/:addressId", auth, async (req, res) => {
       return res.status(400).json({ message: "Unable to map the requested plan" });
     }
 
-    const updatedStripeSubscription = await stripe.subscriptions.update(stripeSubscription.id, {
-      cancel_at_period_end: false,
-      proration_behavior: "create_prorations",
-      items: [{ id: item.id, price: nextPriceId }],
-      metadata: {
-        ...(stripeSubscription.metadata || {}),
-        addressId: String(address._id),
-        userId: String(user.userId || user._id),
-        localSubscriptionId: String(subscription._id),
-      },
-      expand: ["items.data.price"],
+    const changeType = classifyPlanChange({
+      currentPlan: subscription.subscriptionType,
+      currentBillingCycle: subscription.billingCycle,
+      targetPlan,
+      targetBillingCycle: requestedCycle,
     });
+
+    let updatedStripeSubscription;
+    if (changeType === "upgrade") {
+      updatedStripeSubscription = await applyStripeSubscriptionUpgrade({
+        stripeSubscription,
+        subscription,
+        user,
+        addressId: String(address._id),
+        nextPriceId,
+      });
+    } else {
+      updatedStripeSubscription = await scheduleStripeSubscriptionDowngrade({
+        stripeSubscription,
+        subscription,
+        user,
+        addressId: String(address._id),
+        nextPriceId,
+      });
+    }
 
     const updatedSubscription = await upsertSubscriptionFromStripe({
       stripeSubscription: updatedStripeSubscription,
@@ -195,12 +221,15 @@ router.patch("/manage/address/:addressId", auth, async (req, res) => {
     });
 
     return res.json({
-      message: "Plan updated successfully",
+      message:
+        changeType === "upgrade"
+          ? "Plan updated successfully"
+          : "Plan change scheduled for your next billing cycle",
       subscription: serializeSubscription(updatedSubscription, address),
     });
   } catch (err) {
     console.error("PATCH /subscriptions/manage/address error:", err);
-    return res.status(500).json({
+    return res.status(err?.statusCode || 500).json({
       message: err?.message || "Unable to update plan right now",
     });
   }
@@ -235,15 +264,18 @@ router.post("/manage/address/:addressId/cancel", auth, async (req, res) => {
       });
     }
 
-    const canceledStripeSubscription = await stripe.subscriptions.update(stripeSubscription.id, {
+    const activeStripeSubscription = await clearStripeSubscriptionSchedule(stripeSubscription);
+    const cancellationTarget = activeStripeSubscription || stripeSubscription;
+
+    const canceledStripeSubscription = await stripe.subscriptions.update(cancellationTarget.id, {
       cancel_at_period_end: true,
       metadata: {
-        ...(stripeSubscription.metadata || {}),
+        ...(cancellationTarget.metadata || {}),
         addressId: String(address._id),
         userId: String(user.userId || user._id),
         localSubscriptionId: String(subscription._id),
       },
-      expand: ["items.data.price"],
+      expand: ["items.data.price", "schedule"],
     });
 
     const updatedSubscription = await upsertSubscriptionFromStripe({

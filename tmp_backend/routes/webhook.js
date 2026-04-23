@@ -8,6 +8,7 @@ const { createOrUpdateContact, addTag } = require("../utils/ghlContact");
 const {
   stripe,
   getPlanPrice,
+  retrieveStripeSubscription,
   upsertSubscriptionFromStripe,
   syncLegacyUserSubscription,
 } = require("../utils/subscriptionManagement");
@@ -242,9 +243,7 @@ async function handleCheckoutCompleted(session) {
     return;
   }
 
-  const stripeSubscription = await stripe.subscriptions.retrieve(stripeSubscriptionId, {
-    expand: ["items.data.price"],
-  });
+  const stripeSubscription = await retrieveStripeSubscription(stripeSubscriptionId);
 
   const subscription = await upsertSubscriptionFromStripe({
     stripeSubscription,
@@ -367,21 +366,36 @@ async function handleCheckoutCompleted(session) {
 }
 
 async function syncStripeSubscriptionRecord(stripeSubscription) {
-  const user = await findUserForStripeObject(stripeSubscription);
+  let canonicalStripeSubscription = stripeSubscription;
+
+  if (
+    stripeSubscription?.id &&
+    String(stripeSubscription?.status || "").toLowerCase() !== "canceled"
+  ) {
+    canonicalStripeSubscription = await retrieveStripeSubscription(String(stripeSubscription.id));
+  }
+
+  const user = await findUserForStripeObject(canonicalStripeSubscription);
   if (!user) {
-    console.warn("No local user found for Stripe subscription event:", stripeSubscription.id);
+    console.warn(
+      "No local user found for Stripe subscription event:",
+      canonicalStripeSubscription.id
+    );
     return null;
   }
 
-  const status = String(stripeSubscription?.status || "").toLowerCase();
+  const status = String(canonicalStripeSubscription?.status || "").toLowerCase();
   if (PAYMENT_FAILURE_STATUSES.has(status)) {
-    return endSubscriptionForPaymentFailure({ stripeSubscription, user });
+    return endSubscriptionForPaymentFailure({
+      stripeSubscription: canonicalStripeSubscription,
+      user,
+    });
   }
 
   return upsertSubscriptionFromStripe({
-    stripeSubscription,
+    stripeSubscription: canonicalStripeSubscription,
     user,
-    addressIdHint: stripeSubscription.metadata?.addressId || null,
+    addressIdHint: canonicalStripeSubscription.metadata?.addressId || null,
   });
 }
 
@@ -392,9 +406,7 @@ async function endSubscriptionForPaymentFailure({ stripeSubscription, user }) {
     await stripe.subscriptions.cancel(String(stripeSubscription.id), {
       prorate: false,
     });
-    terminalStripeSubscription = await stripe.subscriptions.retrieve(String(stripeSubscription.id), {
-      expand: ["items.data.price"],
-    });
+    terminalStripeSubscription = await retrieveStripeSubscription(String(stripeSubscription.id));
   }
 
   const subscription = await upsertSubscriptionFromStripe({
@@ -420,9 +432,7 @@ async function endSubscriptionForPaymentFailure({ stripeSubscription, user }) {
 async function handleInvoicePaid(invoice) {
   if (!invoice?.subscription) return;
 
-  const stripeSubscription = await stripe.subscriptions.retrieve(String(invoice.subscription), {
-    expand: ["items.data.price"],
-  });
+  const stripeSubscription = await retrieveStripeSubscription(String(invoice.subscription));
 
   const subscription = await syncStripeSubscriptionRecord(stripeSubscription);
   if (!subscription) return;
@@ -436,9 +446,7 @@ async function handleInvoicePaid(invoice) {
 async function handleInvoicePaymentFailed(invoice) {
   if (!invoice?.subscription) return;
 
-  const stripeSubscription = await stripe.subscriptions.retrieve(String(invoice.subscription), {
-    expand: ["items.data.price"],
-  });
+  const stripeSubscription = await retrieveStripeSubscription(String(invoice.subscription));
 
   const billingReason = String(invoice.billing_reason || "").toLowerCase();
   if (billingReason === "subscription_cycle") {
@@ -471,6 +479,10 @@ module.exports = async (req, res) => {
     switch (event.type) {
       case "checkout.session.completed":
         await handleCheckoutCompleted(event.data.object);
+        break;
+
+      case "customer.subscription.created":
+        await syncStripeSubscriptionRecord(event.data.object);
         break;
 
       case "customer.subscription.updated":

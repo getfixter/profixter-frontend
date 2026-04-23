@@ -55,6 +55,147 @@ function getPlanPrice(plan) {
   return PLAN_PRICES[String(plan || "").toLowerCase()] || 0;
 }
 
+function getPlanRank(plan) {
+  if (plan === "basic") return 1;
+  if (plan === "plus") return 2;
+  if (plan === "premium") return 3;
+  if (plan === "elite") return 4;
+  return 0;
+}
+
+function classifyPlanChange({
+  currentPlan,
+  currentBillingCycle,
+  targetPlan,
+  targetBillingCycle,
+}) {
+  const currentRank = getPlanRank(normalizePlanType(currentPlan));
+  const targetRank = getPlanRank(normalizePlanType(targetPlan));
+  const normalizedCurrentCycle = normalizeBillingCycle(currentBillingCycle, "monthly");
+  const normalizedTargetCycle = normalizeBillingCycle(targetBillingCycle, "monthly");
+
+  if (currentRank === targetRank && normalizedCurrentCycle === normalizedTargetCycle) {
+    return "same";
+  }
+
+  if (targetRank > currentRank) {
+    return "upgrade";
+  }
+
+  if (targetRank < currentRank) {
+    return "downgrade";
+  }
+
+  if (normalizedCurrentCycle === "monthly" && normalizedTargetCycle === "annual") {
+    return "upgrade";
+  }
+
+  return "downgrade";
+}
+
+function getStripeScheduleId(stripeSubscription) {
+  if (!stripeSubscription?.schedule) return null;
+  if (typeof stripeSubscription.schedule === "string") {
+    return stripeSubscription.schedule;
+  }
+  return stripeSubscription.schedule?.id || null;
+}
+
+async function retrieveStripeSubscription(subscriptionId) {
+  return stripe.subscriptions.retrieve(String(subscriptionId), {
+    expand: ["items.data.price", "schedule"],
+  });
+}
+
+async function retrieveStripeSubscriptionSchedule(scheduleId) {
+  if (!scheduleId) return null;
+  return stripe.subscriptionSchedules.retrieve(String(scheduleId), {
+    expand: ["phases.items.price"],
+  });
+}
+
+function getPendingPlanChange(stripeSubscription) {
+  const schedule = stripeSubscription?.schedule;
+  if (!schedule || typeof schedule === "string") {
+    return {
+      pendingPlan: null,
+      pendingBillingCycle: null,
+      pendingStripePriceId: null,
+      pendingChangeEffectiveDate: null,
+    };
+  }
+
+  if (!["active", "not_started"].includes(String(schedule.status || "").toLowerCase())) {
+    return {
+      pendingPlan: null,
+      pendingBillingCycle: null,
+      pendingStripePriceId: null,
+      pendingChangeEffectiveDate: null,
+    };
+  }
+
+  const currentPeriodEnd = Number(stripeSubscription?.current_period_end || 0);
+  const phases = Array.isArray(schedule.phases) ? schedule.phases : [];
+  const nextPhase =
+    phases
+      .filter((phase) => Number(phase?.start_date || 0) >= currentPeriodEnd)
+      .sort((a, b) => Number(a.start_date || 0) - Number(b.start_date || 0))[0] || null;
+
+  const nextItem = nextPhase?.items?.[0] || null;
+  const nextPriceId =
+    typeof nextItem?.price === "string" ? nextItem.price : nextItem?.price?.id || null;
+  const { plan, billingCycle } = getPlanAndBillingFromPrice(nextPriceId);
+  const currentItem = stripeSubscription?.items?.data?.[0] || null;
+  const currentPriceId = currentItem?.price?.id || null;
+  const currentPlan = getPlanAndBillingFromPrice(currentPriceId).plan;
+  const currentCycle = getPlanAndBillingFromPrice(currentPriceId).billingCycle;
+
+  if (!plan || (plan === currentPlan && billingCycle === currentCycle)) {
+    return {
+      pendingPlan: null,
+      pendingBillingCycle: null,
+      pendingStripePriceId: null,
+      pendingChangeEffectiveDate: null,
+    };
+  }
+
+  return {
+    pendingPlan: plan,
+    pendingBillingCycle: billingCycle,
+    pendingStripePriceId: nextPriceId,
+    pendingChangeEffectiveDate: toDate(nextPhase?.start_date) || null,
+  };
+}
+
+function getStripeSubscriptionItemForRecord({ subscription, stripeSubscription }) {
+  const items = stripeSubscription?.items?.data || [];
+  if (!items.length) return null;
+
+  if (subscription?.stripeSubscriptionItemId) {
+    const exactItem = items.find(
+      (item) => String(item?.id || "") === String(subscription.stripeSubscriptionItemId)
+    );
+    if (exactItem) return exactItem;
+  }
+
+  if (subscription?.stripePriceId) {
+    const exactPrice = items.find(
+      (item) => String(item?.price?.id || "") === String(subscription.stripePriceId)
+    );
+    if (exactPrice) return exactPrice;
+  }
+
+  const targetPlan = normalizePlanType(subscription?.subscriptionType);
+  const targetCycle = normalizeBillingCycle(subscription?.billingCycle, "monthly");
+  const derivedMatch = items.find((item) => {
+    const derived = getPlanAndBillingFromPrice(item?.price?.id || "");
+    return derived.plan === targetPlan && derived.billingCycle === targetCycle;
+  });
+  if (derivedMatch) return derivedMatch;
+
+  return items.length === 1 ? items[0] : null;
+}
+
 function toDate(value) {
   if (!value) return null;
   if (value instanceof Date) return value;
@@ -89,6 +230,10 @@ function serializeSubscription(subscription, address = null) {
     cancelAtPeriodEnd: !!subscription.cancelAtPeriodEnd,
     cancellationDate: subscription.cancellationDate || null,
     cancellationReason: subscription.cancellationReason || null,
+    pendingPlan: subscription.pendingPlan || null,
+    pendingBillingCycle: subscription.pendingBillingCycle || null,
+    pendingStripePriceId: subscription.pendingStripePriceId || null,
+    pendingChangeEffectiveDate: subscription.pendingChangeEffectiveDate || null,
     planPrice: subscription.planPrice ?? null,
     stripeManaged: !!subscription.stripeSubscriptionId,
   };
@@ -147,9 +292,35 @@ async function resolveUserStripeCustomerId(user) {
 
 async function resolveStripeSubscriptionForRecord({ subscription, user }) {
   if (subscription?.stripeSubscriptionId) {
-    return stripe.subscriptions.retrieve(subscription.stripeSubscriptionId, {
-      expand: ["items.data.price"],
-    });
+    const direct = await retrieveStripeSubscription(subscription.stripeSubscriptionId);
+    const metadata = direct?.metadata || {};
+    const targetAddressId = subscription?.addressId ? String(subscription.addressId) : "";
+    const customerId = String(direct?.customer || "");
+
+    if (
+      metadata.localSubscriptionId &&
+      String(metadata.localSubscriptionId) !== String(subscription._id)
+    ) {
+      return null;
+    }
+
+    if (metadata.addressId && targetAddressId && String(metadata.addressId) !== targetAddressId) {
+      return null;
+    }
+
+    if (
+      customerId &&
+      subscription?.stripeCustomerId &&
+      customerId !== String(subscription.stripeCustomerId)
+    ) {
+      return null;
+    }
+
+    if (customerId && user?.stripeCustomerId && customerId !== String(user.stripeCustomerId)) {
+      return null;
+    }
+
+    return direct;
   }
 
   const customerIds = new Set();
@@ -167,7 +338,7 @@ async function resolveStripeSubscriptionForRecord({ subscription, user }) {
       customer: customerId,
       status: "all",
       limit: 100,
-      expand: ["data.items.data.price"],
+      expand: ["data.items.data.price", "data.schedule"],
     });
     candidates.push(...result.data);
   }
@@ -225,7 +396,7 @@ async function resolveStripeSubscriptionForRecord({ subscription, user }) {
     return null;
   }
 
-  if (!bestEntry.hasLocalMatch && !bestEntry.hasAddressMatch && scored.length > 1) {
+  if (!bestEntry.hasLocalMatch && !bestEntry.hasAddressMatch) {
     return null;
   }
 
@@ -247,7 +418,14 @@ async function upsertSubscriptionFromStripe({
 }) {
   if (!stripeSubscription || !user) return null;
 
-  const item = stripeSubscription.items?.data?.[0] || null;
+  const scheduleId = getStripeScheduleId(stripeSubscription);
+  let canonicalStripeSubscription = stripeSubscription;
+  if (scheduleId && typeof stripeSubscription.schedule === "string") {
+    canonicalStripeSubscription = await retrieveStripeSubscription(stripeSubscription.id);
+  }
+
+  const pendingChange = getPendingPlanChange(canonicalStripeSubscription);
+  const item = canonicalStripeSubscription.items?.data?.[0] || null;
   const priceId = item?.price?.id || null;
   const { plan, billingCycle } = getPlanAndBillingFromPrice(priceId);
 
@@ -255,9 +433,9 @@ async function upsertSubscriptionFromStripe({
     throw new Error(`Unable to map Stripe price to local plan: ${priceId || "missing price id"}`);
   }
 
-  const metadata = stripeSubscription.metadata || {};
+  const metadata = canonicalStripeSubscription.metadata || {};
   let subscription =
-    (await Subscription.findOne({ stripeSubscriptionId: stripeSubscription.id })) ||
+    (await Subscription.findOne({ stripeSubscriptionId: canonicalStripeSubscription.id })) ||
     null;
 
   if (!subscription && metadata.localSubscriptionId) {
@@ -287,9 +465,9 @@ async function upsertSubscriptionFromStripe({
       user: user._id,
       userId: user.userId,
       addressId: address._id,
-      startDate: toDate(stripeSubscription.start_date) || new Date(),
-      latestPaymentDate: toDate(stripeSubscription.current_period_start) || new Date(),
-      nextPaymentDate: toDate(stripeSubscription.current_period_end) || new Date(),
+      startDate: toDate(canonicalStripeSubscription.start_date) || new Date(),
+      latestPaymentDate: toDate(canonicalStripeSubscription.current_period_start) || new Date(),
+      nextPaymentDate: toDate(canonicalStripeSubscription.current_period_end) || new Date(),
     });
   }
 
@@ -304,34 +482,41 @@ async function upsertSubscriptionFromStripe({
     zip: address.zip,
     county: address.county || "",
   };
-  subscription.stripeCustomerId = String(stripeSubscription.customer || user.stripeCustomerId || "");
-  subscription.stripeSubscriptionId = stripeSubscription.id;
+  subscription.stripeCustomerId = String(
+    canonicalStripeSubscription.customer || user.stripeCustomerId || ""
+  );
+  subscription.stripeSubscriptionId = canonicalStripeSubscription.id;
   subscription.stripeSubscriptionItemId = item?.id || null;
   subscription.stripePriceId = priceId;
   subscription.stripeCheckoutSessionId =
     stripeCheckoutSessionId || subscription.stripeCheckoutSessionId || null;
   subscription.billingCycle = billingCycle;
-  subscription.startDate = toDate(stripeSubscription.start_date) || subscription.startDate || new Date();
+  subscription.startDate =
+    toDate(canonicalStripeSubscription.start_date) || subscription.startDate || new Date();
   subscription.latestPaymentDate =
-    toDate(stripeSubscription.current_period_start) ||
+    toDate(canonicalStripeSubscription.current_period_start) ||
     subscription.latestPaymentDate ||
     subscription.startDate ||
     new Date();
   subscription.nextPaymentDate =
-    toDate(stripeSubscription.current_period_end) ||
+    toDate(canonicalStripeSubscription.current_period_end) ||
     subscription.nextPaymentDate ||
     subscription.latestPaymentDate ||
     new Date();
   subscription.currentPeriodEnd =
-    toDate(stripeSubscription.current_period_end) || subscription.currentPeriodEnd || null;
-  subscription.status = stripeSubscription.status || subscription.status || "active";
-  subscription.cancelAtPeriodEnd = !!stripeSubscription.cancel_at_period_end;
+    toDate(canonicalStripeSubscription.current_period_end) || subscription.currentPeriodEnd || null;
+  subscription.status = canonicalStripeSubscription.status || subscription.status || "active";
+  subscription.cancelAtPeriodEnd = !!canonicalStripeSubscription.cancel_at_period_end;
   subscription.cancellationDate = subscription.cancelAtPeriodEnd
-    ? toDate(stripeSubscription.current_period_end)
-    : toDate(stripeSubscription.canceled_at) || null;
+    ? toDate(canonicalStripeSubscription.current_period_end)
+    : toDate(canonicalStripeSubscription.canceled_at) || null;
   if (["active", "trialing"].includes(String(subscription.status || "").toLowerCase())) {
     subscription.cancellationReason = null;
   }
+  subscription.pendingPlan = pendingChange.pendingPlan;
+  subscription.pendingBillingCycle = pendingChange.pendingBillingCycle;
+  subscription.pendingStripePriceId = pendingChange.pendingStripePriceId;
+  subscription.pendingChangeEffectiveDate = pendingChange.pendingChangeEffectiveDate;
   subscription.planPrice = getPlanPrice(plan);
   subscription.paymentMethod = "card";
 
@@ -344,6 +529,151 @@ async function upsertSubscriptionFromStripe({
 
   await syncLegacyUserSubscription(user._id);
   return subscription;
+}
+
+async function clearStripeSubscriptionSchedule(stripeSubscription) {
+  const scheduleId = getStripeScheduleId(stripeSubscription);
+  if (!scheduleId) return null;
+  await stripe.subscriptionSchedules.release(String(scheduleId), {
+    preserve_cancel_date: false,
+  });
+  return retrieveStripeSubscription(stripeSubscription.id);
+}
+
+async function applyStripeSubscriptionUpgrade({
+  stripeSubscription,
+  subscription,
+  user,
+  addressId,
+  nextPriceId,
+}) {
+  const previousPendingChange = getPendingPlanChange(stripeSubscription);
+  const activeStripeSubscription = await clearStripeSubscriptionSchedule(stripeSubscription);
+  const upgradeTarget = activeStripeSubscription || stripeSubscription;
+  const upgradeItem = getStripeSubscriptionItemForRecord({
+    subscription,
+    stripeSubscription: upgradeTarget,
+  });
+
+  if (!upgradeItem?.id) {
+    throw new Error("Stripe subscription item not found");
+  }
+
+  let updatedStripeSubscription;
+  try {
+    updatedStripeSubscription = await stripe.subscriptions.update(upgradeTarget.id, {
+      cancel_at_period_end: false,
+      proration_behavior: "always_invoice",
+      payment_behavior: "pending_if_incomplete",
+      items: [{ id: upgradeItem.id, price: nextPriceId }],
+      metadata: {
+        ...(upgradeTarget.metadata || {}),
+        addressId: String(addressId),
+        userId: String(user.userId || user._id),
+        localSubscriptionId: String(subscription._id),
+      },
+      expand: ["items.data.price", "schedule", "latest_invoice.payment_intent"],
+    });
+  } catch (error) {
+    if (previousPendingChange.pendingStripePriceId) {
+      const restoredSubscription = await retrieveStripeSubscription(upgradeTarget.id);
+      await scheduleStripeSubscriptionDowngrade({
+        stripeSubscription: restoredSubscription,
+        subscription,
+        user,
+        addressId: String(addressId),
+        nextPriceId: previousPendingChange.pendingStripePriceId,
+      });
+    }
+    throw error;
+  }
+
+  if (updatedStripeSubscription.pending_update) {
+    if (previousPendingChange.pendingStripePriceId) {
+      const restoredSubscription = await retrieveStripeSubscription(upgradeTarget.id);
+      await scheduleStripeSubscriptionDowngrade({
+        stripeSubscription: restoredSubscription,
+        subscription,
+        user,
+        addressId: String(addressId),
+        nextPriceId: previousPendingChange.pendingStripePriceId,
+      });
+    }
+
+    const invoice =
+      updatedStripeSubscription.latest_invoice &&
+      typeof updatedStripeSubscription.latest_invoice !== "string"
+        ? updatedStripeSubscription.latest_invoice
+        : null;
+    const paymentIntent =
+      invoice?.payment_intent && typeof invoice.payment_intent !== "string"
+        ? invoice.payment_intent
+        : null;
+
+    const error = new Error(
+      paymentIntent?.status === "requires_action"
+        ? "Stripe requires additional payment confirmation before the upgrade can be applied. Your current plan is unchanged."
+        : "Stripe could not complete the prorated upgrade charge. Your current plan is unchanged."
+    );
+    error.statusCode = 402;
+    error.code = "stripe_upgrade_payment_incomplete";
+    throw error;
+  }
+
+  return retrieveStripeSubscription(updatedStripeSubscription.id);
+}
+
+async function scheduleStripeSubscriptionDowngrade({
+  stripeSubscription,
+  subscription,
+  user,
+  addressId,
+  nextPriceId,
+}) {
+  const item = getStripeSubscriptionItemForRecord({ subscription, stripeSubscription });
+  if (!item?.id || !item?.price?.id) {
+    throw new Error("Stripe subscription item not found");
+  }
+
+  let scheduleId = getStripeScheduleId(stripeSubscription);
+  let schedule = scheduleId ? await retrieveStripeSubscriptionSchedule(scheduleId) : null;
+
+  if (!schedule) {
+    schedule = await stripe.subscriptionSchedules.create({
+      from_subscription: stripeSubscription.id,
+    });
+    scheduleId = schedule.id;
+    schedule = await retrieveStripeSubscriptionSchedule(scheduleId);
+  }
+
+  const scheduleMetadata = {
+    ...(schedule?.metadata || {}),
+    addressId: String(addressId),
+    userId: String(user.userId || user._id),
+    localSubscriptionId: String(subscription._id),
+  };
+
+  await stripe.subscriptionSchedules.update(String(scheduleId), {
+    end_behavior: "release",
+    metadata: scheduleMetadata,
+    phases: [
+      {
+        start_date: stripeSubscription.current_period_start,
+        end_date: stripeSubscription.current_period_end,
+        items: [{ price: item.price.id, quantity: item.quantity || 1 }],
+        metadata: scheduleMetadata,
+        proration_behavior: "none",
+      },
+      {
+        start_date: stripeSubscription.current_period_end,
+        items: [{ price: nextPriceId, quantity: item.quantity || 1 }],
+        metadata: scheduleMetadata,
+        proration_behavior: "none",
+      },
+    ],
+  });
+
+  return retrieveStripeSubscription(stripeSubscription.id);
 }
 
 async function getOwnedSubscriptionForAddress({ userId, addressId, statuses = null }) {
@@ -369,11 +699,18 @@ module.exports = {
   getPriceId,
   getPlanAndBillingFromPrice,
   getPlanPrice,
+  getPlanRank,
+  classifyPlanChange,
   toDate,
   serializeSubscription,
   syncLegacyUserSubscription,
   resolveUserStripeCustomerId,
+  retrieveStripeSubscription,
   resolveStripeSubscriptionForRecord,
+  getStripeSubscriptionItemForRecord,
+  clearStripeSubscriptionSchedule,
+  applyStripeSubscriptionUpgrade,
+  scheduleStripeSubscriptionDowngrade,
   upsertSubscriptionFromStripe,
   getOwnedSubscriptionForAddress,
 };

@@ -42,6 +42,10 @@ export type ManagedSubscription = {
   cancelAtPeriodEnd?: boolean;
   cancellationDate?: string | null;
   cancellationReason?: string | null;
+  pendingPlan?: SubscriptionPlan | null;
+  pendingBillingCycle?: BillingCycle | null;
+  pendingStripePriceId?: string | null;
+  pendingChangeEffectiveDate?: string | null;
   planPrice?: number | null;
   stripeManaged?: boolean;
 };

@@ -63,6 +63,18 @@ const SubscriptionSchema = new mongoose.Schema(
     cancelAtPeriodEnd: { type: Boolean, default: false },
     cancellationDate: { type: Date, default: null },
     cancellationReason: { type: String, default: null },
+    pendingPlan: {
+      type: String,
+      enum: ["basic", "plus", "premium", "elite", null],
+      default: null,
+    },
+    pendingBillingCycle: {
+      type: String,
+      enum: ["monthly", "annual", null],
+      default: null,
+    },
+    pendingStripePriceId: { type: String, default: null },
+    pendingChangeEffectiveDate: { type: Date, default: null },
 
     renewalAttempts: { type: Number, default: 0 },
     planPrice: { type: Number, default: 0 },

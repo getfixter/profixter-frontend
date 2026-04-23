@@ -22,6 +22,17 @@ const {
   addTag,
   removeTag,
 } = require("../utils/ghlContact");
+const {
+  stripe,
+  normalizePlanType,
+  getPriceId,
+  classifyPlanChange,
+  resolveStripeSubscriptionForRecord,
+  getStripeSubscriptionItemForRecord,
+  applyStripeSubscriptionUpgrade,
+  scheduleStripeSubscriptionDowngrade,
+  upsertSubscriptionFromStripe,
+} = require("../utils/subscriptionManagement");
 
 const ADMIN_EMAIL = process.env.MAIL_ADMIN || "getfixter@gmail.com";
 
@@ -225,7 +236,7 @@ router.put("/users/:id/subscription", auth, onlyAdmin, async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Admin Subscription Update Error:", err.message);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(err?.statusCode || 500).json({ message: "Server error", error: err.message });
   }
 });
 
@@ -253,8 +264,60 @@ router.put(
         return res.json({ message, addressesDetailed });
       };
 
+      const activeSub = await Subscription.findOne({
+        user: user._id,
+        addressId: addrObjId,
+        status: { $in: ["active", "trialing"] },
+      }).sort({ updatedAt: -1 });
+
+      const stripeSubscription = activeSub
+        ? await resolveStripeSubscriptionForRecord({ subscription: activeSub, user })
+        : null;
+
+      const shouldRequireStripeSync = !!(
+        activeSub &&
+        (activeSub.stripeSubscriptionId ||
+          activeSub.stripeCustomerId ||
+          activeSub.stripeSubscriptionItemId ||
+          activeSub.stripePriceId ||
+          user.stripeCustomerId)
+      );
+
       // 1) CANCEL
       if (planRaw === "cancel") {
+        if (stripeSubscription && activeSub) {
+          const activeStripeSubscription = await clearStripeSubscriptionSchedule(stripeSubscription);
+          const cancellationTarget = activeStripeSubscription || stripeSubscription;
+          const canceledStripeSubscription = await stripe.subscriptions.update(
+            cancellationTarget.id,
+            {
+              cancel_at_period_end: true,
+              metadata: {
+                ...(cancellationTarget.metadata || {}),
+                addressId: String(addrObjId),
+                userId: String(user.userId || user._id),
+                localSubscriptionId: String(activeSub._id),
+              },
+              expand: ["items.data.price", "schedule"],
+            }
+          );
+
+          await upsertSubscriptionFromStripe({
+            stripeSubscription: canceledStripeSubscription,
+            user,
+            addressIdHint: String(addrObjId),
+          });
+
+          return respond("Address cancellation scheduled in Stripe");
+        }
+
+        if (shouldRequireStripeSync) {
+          return res.status(409).json({
+            message:
+              "This subscription could not be safely linked to Stripe. Admin DB-only cancellation was blocked.",
+          });
+        }
+
         await Subscription.updateMany(
           {
             user: user._id,
@@ -307,12 +370,76 @@ router.put(
         return res.status(400).json({ message: "Invalid plan" });
       }
 
+      if (stripeSubscription && activeSub) {
+        if (activeSub.cancelAtPeriodEnd) {
+          return res.status(409).json({
+            message:
+              "Cancellation is already scheduled for this subscription. Admin plan changes are blocked until that is removed.",
+          });
+        }
+
+        const targetPlan = normalizePlanType(planRaw);
+        const targetCycle = activeSub.billingCycle || "monthly";
+        const nextPriceId = getPriceId(targetPlan, targetCycle);
+        const item = getStripeSubscriptionItemForRecord({
+          subscription: activeSub,
+          stripeSubscription,
+        });
+
+        if (!targetPlan || !nextPriceId || !item?.id) {
+          return res.status(409).json({
+            message: "Unable to map this Stripe subscription for an admin plan change.",
+          });
+        }
+
+        const changeType = classifyPlanChange({
+          currentPlan: activeSub.subscriptionType,
+          currentBillingCycle: activeSub.billingCycle,
+          targetPlan,
+          targetBillingCycle: targetCycle,
+        });
+
+        let updatedStripeSubscription;
+        if (changeType === "upgrade") {
+          updatedStripeSubscription = await applyStripeSubscriptionUpgrade({
+            stripeSubscription,
+            subscription: activeSub,
+            user,
+            addressId: String(addrObjId),
+            nextPriceId,
+          });
+        } else {
+          updatedStripeSubscription = await scheduleStripeSubscriptionDowngrade({
+            stripeSubscription,
+            subscription: activeSub,
+            user,
+            addressId: String(addrObjId),
+            nextPriceId,
+          });
+        }
+
+        await upsertSubscriptionFromStripe({
+          stripeSubscription: updatedStripeSubscription,
+          user,
+          addressIdHint: String(addrObjId),
+        });
+
+        return respond(
+          changeType === "upgrade"
+            ? "Address plan updated in Stripe"
+            : "Address downgrade scheduled in Stripe"
+        );
+      }
+
+      if (shouldRequireStripeSync) {
+        return res.status(409).json({
+          message:
+            "This subscription could not be safely linked to Stripe. Admin DB-only plan update was blocked.",
+        });
+      }
+
       // 3) UPSERT active subscription
-      let sub = await Subscription.findOne({
-        user: user._id,
-        addressId: addrObjId,
-        status: { $in: ["active", "trialing"] },
-      });
+      let sub = activeSub;
 
       const now = new Date();
       const next = new Date(now);
@@ -370,7 +497,7 @@ router.put(
       return respond("Address plan updated");
     } catch (err) {
       console.error("❌ Per-address plan update error:", err.message);
-      res.status(500).json({ message: "Server error", error: err.message });
+      res.status(err?.statusCode || 500).json({ message: "Server error", error: err.message });
     }
   }
 );
@@ -678,6 +805,10 @@ router.put("/bookings/:id", auth, onlyAdmin, async (req, res) => {
         return res.status(400).json({ message: "Invalid date" });
       }
       booking.date = d;
+      booking.reminder24hQueuedAt = undefined;
+      booking.reminder24hSentAt = undefined;
+      booking.reminder60mQueuedAt = undefined;
+      booking.reminder60mSentAt = undefined;
     }
 
     await booking.save();
@@ -685,7 +816,7 @@ router.put("/bookings/:id", auth, onlyAdmin, async (req, res) => {
     return res.json({ message: "Booking updated", booking });
   } catch (err) {
     console.error("❌ Admin booking update error:", err.message);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(err?.statusCode || 500).json({ message: "Server error", error: err.message });
   }
 });
 
@@ -945,3 +1076,4 @@ router.put("/requests/:id/status", auth, onlyAdmin, async (req, res) => {
 });
 
 module.exports = router;
+

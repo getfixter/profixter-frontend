@@ -40,6 +40,17 @@ function formatMoney(n: number): string {
   return String(rounded);
 }
 
+function formatDate(date?: string | null): string | null {
+  if (!date) return null;
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function normalizePlanType(name: string): PlanType | null {
   const x = String(name || "").toLowerCase().trim();
   if (x === "basic") return "basic";
@@ -82,6 +93,15 @@ function isManagedActiveStatus(status?: string | null): boolean {
   return ["active", "trialing"].includes(String(status || "").toLowerCase());
 }
 
+type ChangeActionKind =
+  | "subscribe"
+  | "active"
+  | "active-unknown"
+  | "scheduled"
+  | "cancel-scheduled"
+  | "upgrade"
+  | "downgrade";
+
 export default function PlansSection() {
   const [currentSlide, setCurrentSlide] = useState(() => {
     const i = plans.findIndex((p) => p.name === "Plus");
@@ -92,6 +112,11 @@ export default function PlansSection() {
   const [actionMessage, setActionMessage] = useState("");
   const [actionError, setActionError] = useState("");
   const [actionLoadingPlan, setActionLoadingPlan] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{
+    planName: string;
+    planType: PlanType;
+    kind: "upgrade" | "downgrade";
+  } | null>(null);
 
   const { user, isAuthenticated, token } = useAuth();
 
@@ -196,10 +221,14 @@ export default function PlansSection() {
       : null;
     const selectedAddressActive = isManagedActiveStatus(selectedSubscription?.status);
     const currentPlan = normalizePlanType(selectedSubscription?.subscriptionType || "");
+    const pendingPlan = normalizePlanType(selectedSubscription?.pendingPlan || "");
+    const pendingCycle = String(
+      selectedSubscription?.pendingBillingCycle || selectedSubscription?.billingCycle || "monthly"
+    );
 
     if (!planType) {
       return {
-        kind: "subscribe" as const,
+        kind: "subscribe" as ChangeActionKind,
         label: "Get Started",
         disabled: false,
       };
@@ -207,15 +236,23 @@ export default function PlansSection() {
 
     if (!selectedAddressActive) {
       return {
-        kind: "subscribe" as const,
+        kind: "subscribe" as ChangeActionKind,
         label: "Get Started",
         disabled: false,
       };
     }
 
+    if (selectedSubscription?.cancelAtPeriodEnd) {
+      return {
+        kind: "cancel-scheduled" as ChangeActionKind,
+        label: "Cancellation scheduled",
+        disabled: true,
+      };
+    }
+
     if (!currentPlan) {
       return {
-        kind: "active-unknown" as const,
+        kind: "active-unknown" as ChangeActionKind,
         label: "Manage Plan",
         disabled: true,
       };
@@ -226,9 +263,17 @@ export default function PlansSection() {
     const sameCycle =
       String(selectedSubscription?.billingCycle || "monthly") === String(billing || "monthly");
 
+    if (pendingPlan === planType && pendingCycle === String(billing || "monthly")) {
+      return {
+        kind: "scheduled" as ChangeActionKind,
+        label: "Scheduled",
+        disabled: true,
+      };
+    }
+
     if (targetRank === currentRank && sameCycle) {
       return {
-        kind: "active" as const,
+        kind: "active" as ChangeActionKind,
         label: "Current Plan",
         disabled: true,
       };
@@ -236,25 +281,59 @@ export default function PlansSection() {
 
     if (targetRank === currentRank && !sameCycle) {
       return {
-        kind: "change" as const,
-        label: "Change Plan",
+        kind: billing === "annual" ? ("upgrade" as ChangeActionKind) : ("downgrade" as ChangeActionKind),
+        label: billing === "annual" ? "Switch now" : "Schedule change",
         disabled: false,
       };
     }
 
     if (targetRank > currentRank) {
       return {
-        kind: "upgrade" as const,
+        kind: "upgrade" as ChangeActionKind,
         label: "Upgrade",
         disabled: false,
       };
     }
 
     return {
-      kind: "downgrade" as const,
+      kind: "downgrade" as ChangeActionKind,
       label: "Downgrade",
       disabled: false,
     };
+  };
+
+  const applyPlanChange = async (
+    planName: string,
+    planType: PlanType,
+    kind: "upgrade" | "downgrade"
+  ) => {
+    if (!selectedAddress) return;
+
+    try {
+      setActionLoadingPlan(planName);
+      const result = await changeSubscriptionPlan({
+        addressId: selectedAddress._id,
+        plan: planType,
+        billingCycle: billing as ManagedBillingCycle,
+      });
+      setAddressSubscriptionMap((map) => ({
+        ...map,
+        [selectedAddress._id]: result.subscription,
+      }));
+      setActionMessage(
+        result.message ||
+          (kind === "upgrade"
+            ? "Your plan was updated successfully."
+            : "Your downgrade is scheduled for the next billing date.")
+      );
+      setConfirmAction(null);
+    } catch (error: any) {
+      setActionError(
+        error?.response?.data?.message || error?.message || "Unable to update your plan right now."
+      );
+    } finally {
+      setActionLoadingPlan(null);
+    }
   };
 
   const handleSubscribe = async (planName: string) => {
@@ -286,7 +365,12 @@ export default function PlansSection() {
 
     const action = getActionForPlan(planName);
 
-    if (action.kind === "active" || action.kind === "active-unknown") {
+    if (
+      action.kind === "active" ||
+      action.kind === "active-unknown" ||
+      action.kind === "scheduled" ||
+      action.kind === "cancel-scheduled"
+    ) {
       return;
     }
 
@@ -295,25 +379,11 @@ export default function PlansSection() {
       return;
     }
 
-    try {
-      setActionLoadingPlan(planName);
-      const result = await changeSubscriptionPlan({
-        addressId: selectedAddress._id,
-        plan: planType,
-        billingCycle: billing as ManagedBillingCycle,
-      });
-      setAddressSubscriptionMap((map) => ({
-        ...map,
-        [selectedAddress._id]: result.subscription,
-      }));
-      setActionMessage(result.message || "Plan updated successfully.");
-    } catch (error: any) {
-      setActionError(
-        error?.response?.data?.message || error?.message || "Unable to update your plan right now."
-      );
-    } finally {
-      setActionLoadingPlan(null);
-    }
+    setConfirmAction({
+      planName,
+      planType,
+      kind: action.kind === "upgrade" ? "upgrade" : "downgrade",
+    });
   };
 
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % plans.length);
@@ -323,6 +393,12 @@ export default function PlansSection() {
     ? addressSubscriptionMap[selectedAddressId] || null
     : null;
   const addressIsActive = isManagedActiveStatus(selectedAddressSubscription?.status);
+  const scheduledPlanName = selectedAddressSubscription?.pendingPlan
+    ? `${String(selectedAddressSubscription.pendingPlan).charAt(0).toUpperCase()}${String(
+        selectedAddressSubscription.pendingPlan
+      ).slice(1)}`
+    : null;
+  const scheduledChangeDate = formatDate(selectedAddressSubscription?.pendingChangeEffectiveDate);
 
   const touchStartX = useRef<number | null>(null);
   const touchLastX = useRef<number | null>(null);
@@ -452,9 +528,20 @@ export default function PlansSection() {
                 {checkingAddr ? (
                   <span className="text-[#C5CBD8]">Checking plan for this address...</span>
                 ) : addressIsActive ? (
-                  <span className="text-[#FCA5A5] font-semibold">
-                    Active plan{selectedAddressSubscription?.subscriptionType ? `: ${String(selectedAddressSubscription.subscriptionType).charAt(0).toUpperCase()}${String(selectedAddressSubscription.subscriptionType).slice(1)}` : ""}
-                  </span>
+                  <div className="space-y-1">
+                    <span className="text-[#FCA5A5] font-semibold">
+                      Active plan
+                      {selectedAddressSubscription?.subscriptionType
+                        ? `: ${String(selectedAddressSubscription.subscriptionType).charAt(0).toUpperCase()}${String(selectedAddressSubscription.subscriptionType).slice(1)}`
+                        : ""}
+                    </span>
+                    {scheduledPlanName ? (
+                      <div className="text-[#FDE68A] font-semibold">
+                        Scheduled next plan: {scheduledPlanName}
+                        {scheduledChangeDate ? ` on ${scheduledChangeDate}` : ""}
+                      </div>
+                    ) : null}
+                  </div>
                 ) : (
                   <span className="text-[#86EFAC] font-semibold">No active plan</span>
                 )}
@@ -715,7 +802,7 @@ export default function PlansSection() {
                                 className={`w-full h-[56px] sm:h-[60px] rounded-2xl text-lg sm:text-xl font-extrabold leading-none transition-all duration-300 mt-6 flex items-center justify-center ${
                                   action.disabled || !!actionLoadingPlan || checkingAddr
                                     ? "bg-gray-400 text-white cursor-not-allowed"
-                                    : action.kind === "upgrade" || action.kind === "downgrade" || action.kind === "change"
+                                    : action.kind === "upgrade" || action.kind === "downgrade"
                                     ? "bg-[#111827] hover:bg-black text-white hover:scale-[1.01]"
                                     : "bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF] hover:scale-[1.01]"
                                 }`}
@@ -933,7 +1020,7 @@ export default function PlansSection() {
                                 className={`w-full h-[62px] rounded-[14px] text-xl font-extrabold transition-all mt-6 flex items-center justify-center ${
                                   action.disabled || !!actionLoadingPlan || checkingAddr
                                     ? "bg-gray-400 text-white cursor-not-allowed"
-                                    : action.kind === "upgrade" || action.kind === "downgrade" || action.kind === "change"
+                                    : action.kind === "upgrade" || action.kind === "downgrade"
                                     ? "bg-[#111827] hover:bg-black text-white hover:scale-[1.01]"
                                     : "bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF] hover:scale-[1.01]"
                                 }`}
@@ -1070,7 +1157,7 @@ export default function PlansSection() {
                               <div className="mt-auto pt-4">
                                 <div
                                   className={`w-full h-[40px] rounded-[10px] text-[15px] font-extrabold flex items-center justify-center transition ${
-                                    action.kind === "upgrade" || action.kind === "downgrade" || action.kind === "change"
+                                    action.kind === "upgrade" || action.kind === "downgrade"
                                       ? "bg-[#111827] text-white"
                                     : action.kind === "active"
                                       ? "bg-gray-300 text-gray-600"
@@ -1133,6 +1220,78 @@ export default function PlansSection() {
           </div>
         </div>
       </section>
+
+      {confirmAction ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4"
+          onClick={() => {
+            if (!actionLoadingPlan) setConfirmAction(null);
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-[22px] bg-white p-6 shadow-[0_20px_100px_rgba(0,0,0,0.35)] sm:p-7"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#EEF2FF] text-2xl">
+                {confirmAction.kind === "upgrade" ? "+" : "v"}
+              </div>
+
+              <h3 className="text-2xl font-extrabold text-[#313234]">
+                {confirmAction.kind === "upgrade" ? "Upgrade plan?" : "Schedule downgrade?"}
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-[#6A6D71]">
+                {confirmAction.kind === "upgrade"
+                  ? "Your plan will update immediately and Stripe will charge the prorated difference now."
+                  : "Your current plan stays active until your next billing date. The lower plan will begin after that."}
+              </p>
+
+              <div className="mt-5 rounded-[16px] border border-[#D7E0F5] bg-[#F8FAFF] p-4 text-left">
+                <div className="text-sm font-semibold text-[#313234]">
+                  {confirmAction.kind === "upgrade" ? "What happens next" : "Scheduled for renewal"}
+                </div>
+                <div className="mt-2 text-sm text-[#6A6D71]">
+                  {confirmAction.kind === "upgrade"
+                    ? `${confirmAction.planName} starts right away once Stripe confirms the change.`
+                    : `${confirmAction.planName} begins after your current billing period ends.`}
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  disabled={!!actionLoadingPlan}
+                  onClick={() => setConfirmAction(null)}
+                  className="h-[52px] rounded-[16px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
+                >
+                  Keep current plan
+                </button>
+                <button
+                  type="button"
+                  disabled={!!actionLoadingPlan}
+                  onClick={() =>
+                    applyPlanChange(
+                      confirmAction.planName,
+                      confirmAction.planType,
+                      confirmAction.kind
+                    )
+                  }
+                  className="h-[52px] rounded-[16px] border border-[#D1D5DB] bg-white font-extrabold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
+                >
+                  {actionLoadingPlan === confirmAction.planName
+                    ? confirmAction.kind === "upgrade"
+                      ? "Upgrading..."
+                      : "Scheduling..."
+                    : confirmAction.kind === "upgrade"
+                      ? "Upgrade now"
+                      : "Schedule downgrade"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
+
