@@ -6,7 +6,7 @@ export interface CalendarConfig {
   minLeadDays: number;
   closedWeekdays: number[];
 
-  // ✅ support both names
+  // Support both names
   handymanCapacity?: number;
   maxConcurrent?: number;
 
@@ -65,7 +65,7 @@ export interface NextBookingResponse {
   activeCount?: number;
   hasAnyBookings?: boolean;
 
-  // ✅ ADD THIS (important for your Pick Day page)
+  // Active bookings for the Pick Day page
   activeBookings?: Array<{
     _id: string;
     date: string;
@@ -101,7 +101,6 @@ export const getCalendarConfig = async (): Promise<CalendarConfig> => {
   const response = await API.get<CalendarConfig>("/api/calendar/config");
   return response.data;
 };
-
 export const getTimeSlots = async (date: string): Promise<TimeSlot> => {
   const response = await API.get<TimeSlot>("/api/calendar/slots", {
     params: { date },
@@ -155,7 +154,7 @@ export const checkSubscription = async (
       matched = activeSubs.find((s: any) => String(s.addressId) === String(addressId));
     }
 
-    // ❌ NO FALLBACK — subscription MUST belong to this address
+    // No fallback - subscription must belong to this address
     if (!matched) {
       return {
         hasSubscription: false,
@@ -219,3 +218,4 @@ export const getAllBookings = async (): Promise<Booking[]> => {
   const data = response.data;
   return Array.isArray(data) ? data : data.bookings || [];
 };
+

@@ -21,6 +21,11 @@ const SERVICES = [
 ] as const;
 
 type ServiceKey = (typeof SERVICES)[number]["key"];
+type DayAvailability = {
+  taken: Record<string, number>;
+  capacity: number;
+  slots: string[];
+};
 
 // Fallback 9–17 every 30 min
 const FALLBACK_HOURS: string[] = (() => {
@@ -39,7 +44,6 @@ function formatDateYMD(date: Date): string {
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
-
 function sameDay(a: Date, b: Date) {
   return (
     a.getDate() === b.getDate() &&
@@ -171,15 +175,16 @@ export default function BookingSection() {
   // Form state
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>("");
-  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
-  const [dayCapacityMap, setDayCapacityMap] = useState<
-    Record<string, { taken: Record<string, number>; capacity: number }>
-  >({});
-  const [preloadingMonth, setPreloadingMonth] = useState(false);
+  const [displayedTimes, setDisplayedTimes] = useState<string[]>([]);
+  const [dayAvailabilityMap, setDayAvailabilityMap] = useState<Record<string, DayAvailability>>({});
+  const [loadingMonthKey, setLoadingMonthKey] = useState<string | null>(null);
+  const [loadingSelectedDate, setLoadingSelectedDate] = useState(false);
 
 
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const dayRequestCacheRef = useRef<Record<string, Promise<DayAvailability | null>>>({});
+  const loadedMonthsRef = useRef<Record<string, boolean>>({});
 
   const [service, setService] = useState<ServiceKey | "">("");
   const [note, setNote] = useState<string>("");
@@ -253,6 +258,7 @@ export default function BookingSection() {
   useEffect(() => {
     setSelectedDate(null);
     setSelectedTime("");
+    setDisplayedTimes([]);
     setService("");
     setShowServiceMenu(false);
     setError("");
@@ -261,6 +267,49 @@ export default function BookingSection() {
     setPhotoUrls([]);
     setNote("");
   }, [selectedAddressId]);
+
+  const getHoursForDate = (date: Date) => {
+    if (!config) return [];
+    const ymd = formatDateYMD(date);
+    const overrideHours = config.overrides[ymd];
+    return overrideHours?.length ? overrideHours : config.defaultHours;
+  };
+
+  const getMonthKey = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+  const fetchDayAvailability = async (ymd: string): Promise<DayAvailability | null> => {
+    if (dayAvailabilityMap[ymd]) return dayAvailabilityMap[ymd];
+
+    const existingRequest = dayRequestCacheRef.current[ymd];
+    if (existingRequest) return existingRequest;
+
+    const request = getTimeSlots(ymd)
+      .then((data) => {
+        const nextAvailability: DayAvailability = {
+          taken: data.taken || {},
+          capacity: data.capacityPerSlot ?? 1,
+          slots: data.slots || [],
+        };
+
+        setDayAvailabilityMap((prev) => {
+          if (prev[ymd]) return prev;
+          return { ...prev, [ymd]: nextAvailability };
+        });
+
+        return nextAvailability;
+      })
+      .catch((err) => {
+        console.error("Failed to load time slots:", err);
+        return null;
+      })
+      .finally(() => {
+        delete dayRequestCacheRef.current[ymd];
+      });
+
+    dayRequestCacheRef.current[ymd] = request;
+    return request;
+  };
 
   // Load calendar config
   useEffect(() => {
@@ -289,40 +338,57 @@ export default function BookingSection() {
 useEffect(() => {
   if (!config) return;
 
-  const preloadMonth = async () => {
-    setPreloadingMonth(true);
+  let cancelled = false;
 
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
+  const preloadMonth = async (monthDate: Date) => {
+    const monthKey = getMonthKey(monthDate);
+    if (loadedMonthsRef.current[monthKey]) return;
 
+    setLoadingMonthKey(monthKey);
+
+    const year = monthDate.getFullYear();
+    const month = monthDate.getMonth();
     const lastDay = new Date(year, month + 1, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    const updates: Record<string, { taken: Record<string, number>; capacity: number }> = {};
+    const datesToFetch: string[] = [];
 
     for (let d = 1; d <= lastDay.getDate(); d++) {
       const date = new Date(year, month, d);
       date.setHours(0, 0, 0, 0);
 
       const ymd = formatDateYMD(date);
+      const diffDays = Math.floor((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const overrideHours = config.overrides[ymd];
 
-      try {
-        const data = await getTimeSlots(ymd);
+      if (date < today) continue;
+      if (diffDays < config.minLeadDays) continue;
+      if (config.closedWeekdays.includes(date.getDay())) continue;
+      if (config.holidays.includes(ymd)) continue;
+      if (overrideHours !== undefined && overrideHours.length === 0) continue;
+      if (dayAvailabilityMap[ymd]) continue;
 
-        updates[ymd] = {
-          taken: data.taken || {},
-          capacity: data.capacityPerSlot ?? 1,
-        };
-      } catch (e) {
-        console.error("Preload failed for", ymd, e);
-      }
+      datesToFetch.push(ymd);
     }
 
-    setDayCapacityMap((prev) => ({ ...prev, ...updates }));
-    setPreloadingMonth(false);
+    try {
+      await Promise.all(datesToFetch.map((ymd) => fetchDayAvailability(ymd)));
+      loadedMonthsRef.current[monthKey] = true;
+    } finally {
+      if (!cancelled) {
+        setLoadingMonthKey((current) => (current === monthKey ? null : current));
+      }
+    }
   };
 
-  preloadMonth();
-}, [config, currentMonth]);
+  void preloadMonth(currentMonth);
+  void preloadMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+
+  return () => {
+    cancelled = true;
+  };
+}, [config, currentMonth, dayAvailabilityMap]);
 
 
 
@@ -441,37 +507,35 @@ if (next?.date) {
   // Load time slots when date selected
   useEffect(() => {
     if (!selectedDate) {
-      setAvailableTimes([]);
+      setDisplayedTimes([]);
       return;
     }
 
-    const loadSlots = async () => {
-      try {
-        const dateStr = formatDateYMD(selectedDate);
-        const data = await getTimeSlots(dateStr);
+    let cancelled = false;
+    const dateStr = formatDateYMD(selectedDate);
+    const cached = dayAvailabilityMap[dateStr];
 
-        setAvailableTimes(data.slots || []);
+    if (cached) {
+      setDisplayedTimes(cached.slots);
+      setLoadingSelectedDate(false);
+      return;
+    }
 
-        setDayCapacityMap((prev) => ({
-          ...prev,
-          [dateStr]: {
-            taken: data.taken || {},
-            capacity: data.capacityPerSlot ?? 1,
-          },
-        }));
-      } catch (err) {
-        console.error("Failed to load time slots:", err);
-        setAvailableTimes([]);
-      }
+    setLoadingSelectedDate(true);
+
+    void fetchDayAvailability(dateStr).then((data) => {
+      if (cancelled) return;
+      setDisplayedTimes(data?.slots || []);
+      setLoadingSelectedDate(false);
+    });
+
+    return () => {
+      cancelled = true;
     };
-
-    loadSlots();
-  }, [selectedDate]);
+  }, [selectedDate, dayAvailabilityMap]);
 
 const isDayDisabled = (date: Date): boolean => {
   if (!config) return true;
-  if (preloadingMonth) return true;
-
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -498,8 +562,8 @@ const isDayDisabled = (date: Date): boolean => {
     if (config.overrides[ymd] !== undefined && config.overrides[ymd].length === 0) return true;
 
     // Fully booked OR no available slots day
-const info = dayCapacityMap[ymd];
-const hours = config.overrides[ymd]?.length ? config.overrides[ymd] : config.defaultHours;
+const info = dayAvailabilityMap[ymd];
+const hours = getHoursForDate(d);
 
 // If no hours configured at all => disable
 if (!hours || hours.length === 0) return true;
@@ -516,52 +580,43 @@ if (info) {
   };
 
   const handleDayClick = async (dayDate: Date, muted: boolean) => {
-  if (muted) return;
+    if (muted) return;
 
-  const d = new Date(dayDate);
-  d.setHours(0, 0, 0, 0);
+    const d = new Date(dayDate);
+    d.setHours(0, 0, 0, 0);
 
-  // If already known disabled, block immediately
-  if (isDayDisabled(d)) return;
+    if (isDayDisabled(d)) return;
 
-  const ymd = formatDateYMD(d);
+    const ymd = formatDateYMD(d);
+    const cached = dayAvailabilityMap[ymd];
 
-  try {
-    // 🔥 Check slots BEFORE allowing selection
-    const data = await getTimeSlots(ymd);
-    const slots = data.slots || [];
-
-    // If no available slots -> block selection
-    if (slots.length === 0) {
-      // Cache it as fully booked so UI disables it next render
-      setDayCapacityMap((prev) => ({
-        ...prev,
-        [ymd]: {
-          taken: data.taken || {},
-          capacity: data.capacityPerSlot ?? 1,
-        },
-      }));
-      return; // ❌ DO NOT select this day
+    if (cached) {
+      if (cached.slots.length === 0) return;
+      setSelectedDate(d);
+      setSelectedTime("");
+      setDisplayedTimes(cached.slots);
+      return;
     }
 
-    // Cache capacity info
-    setDayCapacityMap((prev) => ({
-      ...prev,
-      [ymd]: {
-        taken: data.taken || {},
-        capacity: data.capacityPerSlot ?? 1,
-      },
-    }));
-
-    // ✅ Now it's safe to select
     setSelectedDate(d);
     setSelectedTime("");
-    setAvailableTimes(slots);
-  } catch (err) {
-    console.error("Failed to check slots for day:", err);
-    return; // fail safe: don't allow selection
-  }
-};
+    setLoadingSelectedDate(true);
+
+    const data = await fetchDayAvailability(ymd);
+    if (!data) {
+      setLoadingSelectedDate(false);
+      return;
+    }
+
+    if (data.slots.length === 0) {
+      setLoadingSelectedDate(false);
+      setSelectedDate((current) => (current && sameDay(current, d) ? null : current));
+      return;
+    }
+
+    setDisplayedTimes(data.slots);
+    setLoadingSelectedDate(false);
+  };
 
 
   const generateCalendarDays = () => {
@@ -600,7 +655,7 @@ if (info) {
     }
 
     setUploadedPhotos((prev) => [...prev, ...compressed].slice(0, 10));
-    if (error === "Photos help us prepare — please upload at least one") {
+    if (error === "Photos help us prepare - please upload at least one") {
       setError("");
     }
     e.target.value = ""; // allow re-select same file
@@ -653,7 +708,7 @@ if (info) {
       return;
     }
     if (uploadedPhotos.length === 0) {
-      setError("Photos help us prepare — please upload at least one");
+      setError("Photos help us prepare - please upload at least one");
       return;
     }
 
@@ -775,16 +830,17 @@ const canBook =
 
   const wordsCount = note.trim().split(/\s+/).filter(Boolean).length;
 
-  // times shown = based on config + availableTimes intersection
+  // times shown = based on config + fetched slots intersection
   const timesForSelectedDay = useMemo(() => {
     if (!selectedDate || !config) return [];
-    const ymd = formatDateYMD(selectedDate);
-    const baseTimes = config.overrides?.[ymd]?.length ? config.overrides[ymd] : config.defaultHours || [];
-    const finalTimes = availableTimes.length > 0 ? baseTimes.filter((t) => availableTimes.includes(t)) : baseTimes;
+    const baseTimes = getHoursForDate(selectedDate);
+    const finalTimes =
+      displayedTimes.length > 0 ? baseTimes.filter((t) => displayedTimes.includes(t)) : displayedTimes;
     return finalTimes;
-  }, [selectedDate, config, availableTimes]);
+  }, [selectedDate, config, displayedTimes]);
 
   const ymdSelected = selectedDate ? formatDateYMD(selectedDate) : "";
+  const visibleMonthKey = getMonthKey(currentMonth);
 
   return (
 <section
@@ -879,6 +935,12 @@ const canBook =
                 </button>
               </div>
 
+              {loadingMonthKey === visibleMonthKey && (
+                <div className="mt-4 rounded-[14px] border border-[#D7E0F5] bg-white/70 px-3 py-2 text-xs font-semibold text-[#6A6D71]">
+                  Checking availability for this month...
+                </div>
+              )}
+
               {/* Week headers */}
               <div className="mt-5 grid grid-cols-7 text-center text-sm sm:text-base font-semibold">
                 <div className="text-[#cf3f3f]">Su</div>
@@ -895,6 +957,10 @@ const canBook =
                 {days.map((day, i) => {
                   const disabled = day.muted || isDayDisabled(new Date(day.date));
                   const isSelected = selectedDate ? sameDay(day.date, selectedDate) : false;
+                  const isCheckingDay =
+                    !day.muted &&
+                    !dayAvailabilityMap[formatDateYMD(day.date)] &&
+                    loadingMonthKey === visibleMonthKey;
 
                   const today = new Date();
                   const isToday = sameDay(day.date, today);
@@ -920,7 +986,7 @@ const canBook =
   isToday && !disabled && !isSelected ? "ring-2 ring-[#306EEC]/20" : "",
 ].join(" ")}
                     >
-                      {day.date.getDate()}
+                      <span className={isCheckingDay ? "opacity-60" : ""}>{day.date.getDate()}</span>
                     </button>
                   );
                 })}
@@ -956,11 +1022,15 @@ const canBook =
             <div className="rounded-[18px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] p-4 sm:p-5">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                 {selectedDate && config ? (
-                  timesForSelectedDay.length > 0 ? (
+                  loadingSelectedDate && displayedTimes.length === 0 ? (
+                    <div className="w-full sm:w-[190px] h-[54px] rounded-[12px] border border-[#c5cbd8] bg-white/70 flex items-center px-4">
+                      <div className="h-3 w-full rounded-full bg-[#D7E0F5] animate-pulse" />
+                    </div>
+                  ) : timesForSelectedDay.length > 0 ? (
                     <TimeDropdown
                       times={timesForSelectedDay}
-                      takenCounts={dayCapacityMap[ymdSelected]?.taken || {}}
-                      capacity={dayCapacityMap[ymdSelected]?.capacity || 999}
+                      takenCounts={dayAvailabilityMap[ymdSelected]?.taken || {}}
+                      capacity={dayAvailabilityMap[ymdSelected]?.capacity || 999}
                       selectedTime={selectedTime}
                       onSelect={(t) => setSelectedTime(t)}
                     />
@@ -981,7 +1051,7 @@ const canBook =
               </div>
 
               <div className="mt-3 text-xs sm:text-sm text-[#6a6c71]">
-                Available times depend on schedule and your plan.
+                {loadingSelectedDate ? "Updating available times..." : "Available times depend on schedule and your plan."}
               </div>
 
               <div className="mt-2 text-xs sm:text-sm text-[#6a6c71]">
@@ -1151,7 +1221,7 @@ checkingAccess || !hasSubscription
                             className="absolute top-2 right-2 bg-black/60 text-white rounded-full w-8 h-8 grid place-items-center hover:bg-black/70 transition"
                             aria-label="Remove photo"
                           >
-                            ✕
+                            x
                           </button>
                         </div>
                       );
@@ -1164,9 +1234,9 @@ checkingAccess || !hasSubscription
               <div className="mt-4 text-xs sm:text-sm text-[#6a6c71]">
                 Photos help us prepare and bring the right tools.
               </div>
-              {error === "Photos help us prepare — please upload at least one" ? (
+              {error === "Photos help us prepare - please upload at least one" ? (
                 <div className="mt-2 text-xs sm:text-sm text-red-700">
-                  Photos help us prepare — please upload at least one
+                  Photos help us prepare - please upload at least one
                 </div>
               ) : null}
 
@@ -1347,3 +1417,4 @@ checkingAccess || !hasSubscription
     </section>
   );
 }
+

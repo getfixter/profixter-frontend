@@ -520,11 +520,11 @@ export default function PlansSection() {
           <div className="bg-[#86EFAC]/15 border border-[#86EFAC]/30 rounded-2xl p-3 sm:p-4 backdrop-blur-md shadow-[0_10px_40px_rgba(0,0,0,0.25)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-[#86EFAC]/25 flex items-center justify-center">
-                <span className="text-[#1F7A2E] text-lg">ðŸŽ</span>
+                <span className="text-[#1F7A2E] text-lg">Gift</span>
               </div>
               <div>
                 <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
-                  Annual Plan â€” Pay for 11 months, get 12 months of ongoing handyman help
+                  Annual Plan - Pay for 11 months, get 12 months of ongoing handyman help
                 </p>
                 <p className="text-[#C5CBD8] text-sm">Best value for long-term home maintenance.</p>
               </div>
@@ -626,7 +626,7 @@ export default function PlansSection() {
                                 <div className="mb-3 flex justify-center">
                                   <div className="px-3 py-1 rounded-full bg-[#86EFAC]/20 border border-[#43A047]/25">
                                     <span className="text-[#1F7A2E] font-extrabold text-xs sm:text-sm">
-                                      1 month FREE • Pay for 11, get 12
+                                      1 month FREE - Pay for 11, get 12
                                     </span>
                                   </div>
                                 </div>
@@ -740,10 +740,10 @@ export default function PlansSection() {
                               </div>
 
                               <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
-                                Each visit covers up to 90 minutes of work • Cancel anytime • No contracts
+                                Each visit covers up to 90 minutes of work - Cancel anytime - No contracts
                                 <br />
                                 <span className="text-[#6A6D71]/80">
-                                  Book as often as availability allows • Materials at cost • Transparent pricing
+                                  Book as often as availability allows - Materials at cost - Transparent pricing
                                 </span>
                               </div>
                             </div>
@@ -862,7 +862,7 @@ export default function PlansSection() {
                                 {billing === "annual" && (
                                   <div className="mt-2 text-center text-sm text-[#6A6D71]">
                                     Pay for <span className="font-extrabold text-[#313234]">11</span>, get{" "}
-                                    <span className="font-extrabold text-[#313234]">12</span> • Equivalent{" "}
+                                    <span className="font-extrabold text-[#313234]">12</span> - Equivalent{" "}
                                     <span className="font-extrabold text-[#313234]">
                                       ${formatMoney(annual / 12)}
                                     </span>
@@ -958,10 +958,10 @@ export default function PlansSection() {
                               </div>
 
                               <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
-                                Each visit covers up to 90 minutes of work • Cancel anytime • No contracts
+                                Each visit covers up to 90 minutes of work - Cancel anytime - No contracts
                                 <br />
                                 <span className="text-[#6A6D71]/80">
-                                  Book as often as availability allows • Materials at cost • Transparent pricing
+                                  Book as often as availability allows - Materials at cost - Transparent pricing
                                 </span>
                               </div>
                             </>
@@ -1136,7 +1136,3 @@ export default function PlansSection() {
     </>
   );
 }
-
-
-
-
