@@ -63,7 +63,8 @@ function formatDate(date?: string | null) {
 function formatAddress(subscription: ManagedSubscription) {
   const address = subscription.address || subscription.addressSnapshot;
   if (!address) return "Address on file";
-  const prefix = address.label ? `${address.label}: ` : "";
+  const label = "label" in address ? address.label : undefined;
+  const prefix = label ? `${label}: ` : "";
   const line = [address.line1, address.city, address.state, address.zip]
     .filter(Boolean)
     .join(", ");
