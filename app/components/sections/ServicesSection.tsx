@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
-import { faqs } from "@/app/data/content";
+import { homepageFaqs } from "@/app/data/content";
+import { trackEvent } from "@/lib/analytics";
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -30,7 +31,7 @@ function FaqCard({
   isOpen,
   onToggle,
 }: {
-  faq: (typeof faqs)[number];
+  faq: (typeof homepageFaqs)[number];
   isOpen: boolean;
   onToggle: () => void;
 }) {
@@ -112,7 +113,7 @@ function FaqCard({
 }
 
 export default function ServicesSection() {
-  const items = useMemo(() => faqs, []);
+  const items = useMemo(() => homepageFaqs, []);
   const [openId, setOpenId] = useState<string | null>("01");
 
   // ✅ Contact form state (kept for future API wiring)
@@ -157,7 +158,7 @@ export default function ServicesSection() {
   return (
     <section
       id="services"
-      className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden"
+      className="relative w-full overflow-hidden bg-[#313234] py-10 sm:py-12 lg:py-14"
     >
       {/* Background glow */}
       <div
@@ -179,8 +180,8 @@ export default function ServicesSection() {
                 <span className="text-[#306eec]">Questions</span>
               </h2>
 
-              <p className="text-[#c5cbd8] text-base sm:text-lg font-medium mt-3">
-                Simple answers about visit counts, 90-minute visits, and what each plan includes.
+              <p className="mt-3 text-base font-medium text-[#c5cbd8] sm:text-[17px]">
+                Simple answers about booking, visits, and what each plan includes.
               </p>
 
               <div className="mt-6 flex justify-center">
@@ -223,9 +224,10 @@ export default function ServicesSection() {
             <div className="mt-8 text-center">
               <a
                 href="#plans"
+                onClick={() => trackEvent("view_plans", { placement: "faq" })}
                 className="inline-flex px-6 py-3 bg-[#306EEC] text-white rounded-[14px] font-extrabold text-sm sm:text-base hover:bg-[#2558c9] transition"
               >
-                See Plans
+                View Plans
               </a>
             </div>
 

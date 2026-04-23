@@ -137,6 +137,35 @@ export default function AccountPage() {
             className="flex-1 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[11px] p-6 sm:p-8 lg:p-12"
             style={{ boxShadow: "0px 0px 200px 0px rgba(0, 0, 0, 0.1)" }}
           >
+            <div className="mb-6 rounded-[18px] border border-[#C5CBD8] bg-white p-5 shadow-[0_0_120px_rgba(0,0,0,0.04)] sm:mb-8">
+              <h2 className="text-[20px] font-extrabold text-[#313234]">
+                Need help before reaching out?
+              </h2>
+              <p className="mt-2 text-[14px] leading-relaxed text-[#6A6D71]">
+                Most answers are available in your booking and plan details.
+              </p>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <a
+                  href="/included"
+                  className="inline-flex items-center justify-center rounded-[14px] border border-[#C5CBD8] bg-[#EEF2FF] px-4 py-3 text-[14px] font-semibold text-[#313234] transition hover:bg-white"
+                >
+                  What can I book?
+                </a>
+                <a
+                  href="/#services"
+                  className="inline-flex items-center justify-center rounded-[14px] border border-[#C5CBD8] bg-[#EEF2FF] px-4 py-3 text-[14px] font-semibold text-[#313234] transition hover:bg-white"
+                >
+                  How often can I book?
+                </a>
+                <a
+                  href="/#pick-day"
+                  className="inline-flex items-center justify-center rounded-[14px] border border-[#C5CBD8] bg-[#EEF2FF] px-4 py-3 text-[14px] font-semibold text-[#313234] transition hover:bg-white"
+                >
+                  Book your next visit
+                </a>
+              </div>
+            </div>
+
             {activeTab === "personal" && <PersonalInfoForm formData={formData} />}
             {activeTab === "plan" && <PlanSection />}
             {activeTab === "bookings" && (

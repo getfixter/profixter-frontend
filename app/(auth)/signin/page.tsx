@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PasswordField } from "../../components/auth/PasswordField";
 import { login } from "@/lib/auth-service";
 import { useAuth } from "@/lib/useAuth";
+import { trackEvent } from "@/lib/analytics";
 
 // NOTE: Structure moved into (auth) route group. Visual styles intentionally unchanged.
 export default function SignInPage() {
@@ -17,6 +18,10 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { login: authLogin } = useAuth();
+
+  useEffect(() => {
+    trackEvent("view_login", { page: "/signin" });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -192,6 +192,20 @@ export default function Footer() {
                   </Link>
                 </div>
 
+                <div className="mt-3 text-sm text-white/75 leading-relaxed">
+                  Have a question? Most answers are here{" "}
+                  <Link
+                    href="/included"
+                    className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition"
+                  >
+                    → What can I book?
+                  </Link>
+                </div>
+
+                <div className="mt-3 text-sm text-white/75 leading-relaxed">
+                  Love the service? Tell a neighbor.
+                </div>
+
                 <div className="mt-3 text-xs text-white/55 leading-relaxed">
                   Serving Suffolk & Nassau. Licensed & insured.
                 </div>

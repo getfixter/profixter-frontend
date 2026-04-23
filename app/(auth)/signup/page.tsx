@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PasswordField } from "../../components/auth/PasswordField";
 import { register } from "@/lib/auth-service";
+import { trackEvent } from "@/lib/analytics";
 
 type Step = 1 | 2;
 
@@ -13,6 +14,7 @@ export default function SignUpPage() {
 
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [consentError, setConsentError] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; phone?: string }>({});
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -45,12 +47,21 @@ export default function SignUpPage() {
     [formData.zip]
   );
 
+  useEffect(() => {
+    trackEvent("view_signup", { page: "/signup" });
+  }, []);
+
   const handleChange = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
 
     if (error) setError("");
     if (consentError) setConsentError(false);
+    if (field === "email" || field === "phone") {
+      setFieldErrors((prev) => ({ ...prev, [field]: "" }));
+    }
   };
+
+  const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
   const formatPhone = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 10);
@@ -67,17 +78,22 @@ export default function SignUpPage() {
     }
 
     if (!formData.email.trim()) {
-      setError("Please enter your email");
+      setFieldErrors((prev) => ({ ...prev, email: "Please enter your email" }));
+      return false;
+    }
+
+    if (!isValidEmail(formData.email)) {
+      setFieldErrors((prev) => ({ ...prev, email: "Please enter a valid email address" }));
       return false;
     }
 
     if (!formData.phone.trim()) {
-      setError("Please enter your phone number");
+      setFieldErrors((prev) => ({ ...prev, phone: "Please enter your phone number" }));
       return false;
     }
 
     if (phoneDigits.length !== 10) {
-      setError("Phone number must be 10 digits");
+      setFieldErrors((prev) => ({ ...prev, phone: "Please enter a valid 10-digit phone number" }));
       return false;
     }
 
@@ -102,6 +118,7 @@ export default function SignUpPage() {
     }
 
     setError("");
+    setFieldErrors({});
     return true;
   };
 
@@ -202,7 +219,7 @@ export default function SignUpPage() {
     onChange: (v: boolean) => void;
     children: React.ReactNode;
   }) => (
-    <label className="flex items-start gap-3 cursor-pointer">
+    <label className="flex cursor-pointer items-start gap-3">
       <div className="relative mt-0.5">
         <input
           type="checkbox"
@@ -210,7 +227,7 @@ export default function SignUpPage() {
           onChange={(e) => onChange(e.target.checked)}
           className="sr-only peer"
         />
-        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 rounded flex items-center justify-center border-white peer-checked:bg-transparent peer-checked:border-white">
+        <div className="flex h-4 w-4 items-center justify-center rounded border-2 border-white sm:h-5 sm:w-5 peer-checked:border-white peer-checked:bg-transparent">
           {checked && (
             <svg width="12" height="10" viewBox="0 0 14 11" fill="none">
               <path d="M1 5.5L5 9.5L13 1.5" stroke="white" strokeWidth="2" />
@@ -219,65 +236,72 @@ export default function SignUpPage() {
         </div>
       </div>
 
-      <span className="text-white text-sm sm:text-base leading-relaxed">
+      <span className="text-sm leading-relaxed text-white sm:text-base">
         {children}
       </span>
     </label>
   );
 
   return (
-    <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-24 sm:py-32">
+    <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-24 sm:py-32">
       <div
-        className="w-full max-w-[760px] rounded-[20px] p-6 sm:p-8 lg:p-12 backdrop-blur-[10px]"
+        className="w-full max-w-[760px] rounded-[20px] p-6 backdrop-blur-[10px] sm:p-8 lg:p-12"
         style={{
           background:
             "linear-gradient(180deg, rgba(49, 50, 52, 0.4) 0%, rgba(49, 50, 52, 0.3) 50%, rgba(49, 50, 52, 0.3) 100%), rgba(238, 242, 255, 0.1)",
           boxShadow: "0px 0px 80px 0px rgba(0, 0, 0, 0.25)",
         }}
       >
-        <div className="flex gap-6 sm:gap-8 mb-8 sm:mb-10">
+        <div className="mb-5 inline-flex rounded-full border border-[#86EFAC]/25 bg-[#86EFAC]/10 px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.18em] text-[#DDFBE8] sm:mb-6">
+          Takes less than 1 minute
+        </div>
+
+        <div className="mb-8 flex gap-6 sm:mb-10 sm:gap-8">
           <Link
             href="/signin"
-            className="text-xl sm:text-2xl font-medium pb-2 text-white/60 hover:text-white transition-colors"
+            className="pb-2 text-xl font-medium text-white/60 transition-colors hover:text-white sm:text-2xl"
           >
             Sign in
           </Link>
 
           <button
             onClick={() => setActiveTab("signup")}
-            className={`text-xl sm:text-2xl font-medium pb-2 transition-colors relative ${
+            className={`relative pb-2 text-xl font-medium transition-colors sm:text-2xl ${
               activeTab === "signup" ? "text-white" : "text-white/60"
             }`}
             type="button"
           >
             Sign up
             {activeTab === "signup" && (
-              <span className="absolute bottom-0 left-0 w-full h-[3px] bg-[#306EEC]" />
+              <span className="absolute bottom-0 left-0 h-[3px] w-full bg-[#306EEC]" />
             )}
           </button>
         </div>
 
         <div className="mb-8">
-          <div className="flex items-center justify-between gap-4 mb-3">
+          <div className="mb-3 flex items-start justify-between gap-4">
             <div>
-              <p className="text-white text-xl sm:text-2xl font-semibold">
+              <p className="text-xl font-semibold text-white sm:text-2xl">
                 {step === 1 ? "Create your account" : "Where should we service your home?"}
               </p>
-              <p className="text-white/70 text-sm sm:text-base mt-1">
+              <p className="mt-1 text-sm text-white/70 sm:text-base">
                 {step === 1
-                  ? "Step 1 of 2 — this only takes a minute."
-                  : "Step 2 of 2 — your membership is tied to one service address."}
+                  ? "Step 1 of 2 - this only takes a minute."
+                  : "Step 2 of 2 - your membership is tied to one service address."}
               </p>
+              {step === 1 && (
+                <p className="mt-2 text-[13px] leading-relaxed text-[#D6DBE5] sm:text-sm">
+                  No spam. Just your account and booking access.
+                </p>
+              )}
             </div>
 
-            <div className="text-right shrink-0">
-              <p className="text-white font-bold text-sm sm:text-base">
-                Step {step} / 2
-              </p>
+            <div className="shrink-0 text-right">
+              <p className="text-sm font-bold text-white sm:text-base">Step {step} / 2</p>
             </div>
           </div>
 
-          <div className="h-2 w-full rounded-full bg-white/15 overflow-hidden">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-white/15">
             <div
               className={`h-full rounded-full bg-[#306EEC] transition-all duration-300 ${
                 step === 1 ? "w-1/2" : "w-full"
@@ -289,14 +313,14 @@ export default function SignUpPage() {
         <form className="space-y-6 sm:space-y-8" onSubmit={handleSubmit}>
           {step === 1 && (
             <>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-x-12 sm:gap-y-8">
+              <div className="grid grid-cols-1 gap-6 sm:gap-x-12 sm:gap-y-8 lg:grid-cols-2">
                 <div>
                   <input
                     type="text"
                     id="name"
                     value={formData.name}
                     onChange={(e) => handleChange("name", e.target.value)}
-                    className="glass-input w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
+                    className="glass-input w-full border-b border-white bg-transparent pb-2 text-sm text-white placeholder-white/40 transition-colors focus:border-[#306EEC] focus:outline-none sm:pb-3 sm:text-base"
                     placeholder="Full name"
                     aria-label="Full name"
                     autoComplete="name"
@@ -309,11 +333,14 @@ export default function SignUpPage() {
                     id="email"
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
-                    className="glass-input w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
+                    className="glass-input w-full border-b border-white bg-transparent pb-2 text-sm text-white placeholder-white/40 transition-colors focus:border-[#306EEC] focus:outline-none sm:pb-3 sm:text-base"
                     placeholder="Email"
                     aria-label="Email"
                     autoComplete="email"
                   />
+                  {fieldErrors.email ? (
+                    <p className="mt-1 text-xs text-red-400">{fieldErrors.email}</p>
+                  ) : null}
                 </div>
 
                 <div>
@@ -322,11 +349,14 @@ export default function SignUpPage() {
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => handleChange("phone", formatPhone(e.target.value))}
-                    className="glass-input w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
+                    className="glass-input w-full border-b border-white bg-transparent pb-2 text-sm text-white placeholder-white/40 transition-colors focus:border-[#306EEC] focus:outline-none sm:pb-3 sm:text-base"
                     placeholder="Phone number"
                     aria-label="Phone number"
                     autoComplete="tel"
                   />
+                  {fieldErrors.phone ? (
+                    <p className="mt-1 text-xs text-red-400">{fieldErrors.phone}</p>
+                  ) : null}
                 </div>
 
                 <div className="hidden lg:block" />
@@ -352,23 +382,20 @@ export default function SignUpPage() {
                     iconSize={20}
                   />
                   {passwordsDoNotMatch && (
-                    <p className="text-red-400 text-xs mt-1">Passwords do not match.</p>
+                    <p className="mt-1 text-xs text-red-400">Passwords do not match.</p>
                   )}
                 </div>
               </div>
 
               <div className="rounded-2xl border border-white/15 bg-white/5 p-4 sm:p-5">
-                <p className="text-white font-semibold text-sm sm:text-base">
-                  Why we ask for this
-                </p>
-                <p className="text-white/70 text-sm sm:text-base mt-1 leading-relaxed">
-                  We create your account first, then connect your membership to the
-                  correct home on the next step.
+                <p className="text-sm font-semibold text-white sm:text-base">Why we ask for this</p>
+                <p className="mt-1 text-sm leading-relaxed text-white/70 sm:text-base">
+                  We create your account first, then connect your membership to the correct home on the next step.
                 </p>
               </div>
 
               {error && (
-                <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-center text-sm text-red-400">
                   {error}
                 </div>
               )}
@@ -377,7 +404,7 @@ export default function SignUpPage() {
                 <button
                   type="button"
                   onClick={handleNextStep}
-                  className="w-full sm:max-w-[355px] py-3 sm:py-4 bg-[#306EEC] text-white rounded-[14px] text-base font-medium hover:bg-[#2557C7] transition-colors"
+                  className="w-full rounded-[14px] bg-[#306EEC] py-3 text-base font-medium text-white transition-colors hover:bg-[#2557C7] sm:max-w-[355px] sm:py-4"
                 >
                   Continue
                 </button>
@@ -388,123 +415,131 @@ export default function SignUpPage() {
           {step === 2 && (
             <>
               <div className="rounded-2xl border border-[#86EFAC]/20 bg-[#86EFAC]/10 p-4 sm:p-5">
-                <p className="text-white font-semibold text-sm sm:text-base">
+                <p className="text-sm font-semibold text-white sm:text-base">
                   One membership = one service address
                 </p>
-                <p className="text-white/75 text-sm sm:text-base mt-1 leading-relaxed">
-                  This helps us confirm service area, manage bookings correctly, and tie
-                  your plan to the right home.
+                <p className="mt-1 text-sm leading-relaxed text-white/75 sm:text-base">
+                  This helps us confirm service area, manage bookings correctly, and tie your plan to the right home.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-x-12 sm:gap-y-8">
-                <div className="lg:col-span-2">
-                  <input
-                    type="text"
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => handleChange("address", e.target.value)}
-                    className="glass-input w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
-                    placeholder="Full address"
-                    aria-label="Full address"
-                    autoComplete="street-address"
-                  />
+              <div className="rounded-[20px] border border-white/12 bg-white/5 p-4 sm:p-5 lg:p-6">
+                <div className="mb-5">
+                  <p className="text-base font-semibold text-white sm:text-lg">Service address</p>
+                  <p className="mt-1 text-sm leading-relaxed text-white/70 sm:text-base">
+                    This is where your membership and future bookings will be linked.
+                  </p>
                 </div>
 
-                <div>
-                  <input
-                    type="text"
-                    id="city"
-                    value={formData.city}
-                    onChange={(e) => handleChange("city", e.target.value)}
-                    className="glass-input w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
-                    placeholder="City"
-                    aria-label="City"
-                    autoComplete="address-level2"
-                  />
-                </div>
+                <div className="grid grid-cols-1 gap-6 sm:gap-7 lg:grid-cols-2 lg:gap-x-12 lg:gap-y-8">
+                  <div className="lg:col-span-2">
+                    <input
+                      type="text"
+                      id="address"
+                      value={formData.address}
+                      onChange={(e) => handleChange("address", e.target.value)}
+                      className="glass-input w-full border-b border-white bg-transparent pb-2 text-sm text-white placeholder-white/40 transition-colors focus:border-[#306EEC] focus:outline-none sm:pb-3 sm:text-base"
+                      placeholder="Full address"
+                      aria-label="Full address"
+                      autoComplete="street-address"
+                    />
+                  </div>
 
-                <div>
-                  <input
-                    type="text"
-                    id="zip"
-                    value={formData.zip}
-                    onChange={(e) =>
-                      handleChange("zip", e.target.value.replace(/\D/g, "").slice(0, 5))
-                    }
-                    className="glass-input w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
-                    placeholder="Zip code"
-                    aria-label="Zip code"
-                    autoComplete="postal-code"
-                  />
-                </div>
+                  <div>
+                    <input
+                      type="text"
+                      id="city"
+                      value={formData.city}
+                      onChange={(e) => handleChange("city", e.target.value)}
+                      className="glass-input w-full border-b border-white bg-transparent pb-2 text-sm text-white placeholder-white/40 transition-colors focus:border-[#306EEC] focus:outline-none sm:pb-3 sm:text-base"
+                      placeholder="City"
+                      aria-label="City"
+                      autoComplete="address-level2"
+                    />
+                  </div>
 
-                <div>
-                  <select
-                    id="county"
-                    value={formData.county}
-                    onChange={(e) => handleChange("county", e.target.value)}
-                    className="glass-input w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base focus:outline-none focus:border-[#306EEC] transition-colors"
-                    aria-label="County"
-                  >
-                    <option value="" className="bg-[#313234] text-white">
-                      Select County
-                    </option>
-                    <option value="Nassau" className="bg-[#313234] text-white">
-                      Nassau
-                    </option>
-                    <option value="Suffolk" className="bg-[#313234] text-white">
-                      Suffolk
-                    </option>
-                  </select>
-                </div>
+                  <div>
+                    <select
+                      id="county"
+                      value={formData.county}
+                      onChange={(e) => handleChange("county", e.target.value)}
+                      className="glass-input w-full border-b border-white bg-transparent pb-2 text-sm text-white transition-colors focus:border-[#306EEC] focus:outline-none sm:pb-3 sm:text-base"
+                      aria-label="County"
+                    >
+                      <option value="" className="bg-[#313234] text-white">
+                        Select County
+                      </option>
+                      <option value="Nassau" className="bg-[#313234] text-white">
+                        Nassau
+                      </option>
+                      <option value="Suffolk" className="bg-[#313234] text-white">
+                        Suffolk
+                      </option>
+                    </select>
+                  </div>
 
-                <div>
-                  <input
-                    type="text"
-                    id="state"
-                    value={formData.state}
-                    onChange={(e) => handleChange("state", e.target.value)}
-                    className="glass-input w-full pb-2 sm:pb-3 bg-transparent border-b border-white text-white text-sm sm:text-base placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
-                    placeholder="State"
-                    aria-label="State"
-                    autoComplete="address-level1"
-                  />
+                  <div>
+                    <input
+                      type="text"
+                      id="zip"
+                      value={formData.zip}
+                      onChange={(e) =>
+                        handleChange("zip", e.target.value.replace(/\D/g, "").slice(0, 5))
+                      }
+                      className="glass-input w-full border-b border-white bg-transparent pb-2 text-sm text-white placeholder-white/40 transition-colors focus:border-[#306EEC] focus:outline-none sm:pb-3 sm:text-base"
+                      placeholder="Zip code"
+                      aria-label="Zip code"
+                      autoComplete="postal-code"
+                    />
+                  </div>
+
+                  <div>
+                    <input
+                      type="text"
+                      id="state"
+                      value={formData.state}
+                      onChange={(e) => handleChange("state", e.target.value)}
+                      className="glass-input w-full border-b border-white bg-transparent pb-2 text-sm text-white placeholder-white/40 transition-colors focus:border-[#306EEC] focus:outline-none sm:pb-3 sm:text-base"
+                      placeholder="State"
+                      aria-label="State"
+                      autoComplete="address-level1"
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="flex flex-col gap-3 pt-2">
                 <Checkbox checked={agreeTerms} onChange={setAgreeTerms}>
                   I agree to the{" "}
-                  <Link href="/terms" className="underline text-white hover:text-[#93c5fd]">
+                  <Link href="/terms" className="text-white underline hover:text-[#93c5fd]">
                     Terms of Service
                   </Link>{" "}
                   and{" "}
-                  <Link href="/privacy" className="underline text-white hover:text-[#93c5fd]">
+                  <Link href="/privacy" className="text-white underline hover:text-[#93c5fd]">
                     Privacy Policy
                   </Link>
                   .
                 </Checkbox>
 
                 {consentError && (
-                  <p className="text-red-400 text-xs">
+                  <p className="text-xs text-red-400">
                     Please agree to the Terms and Privacy Policy to continue.
                   </p>
                 )}
               </div>
 
               {error && (
-                <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-center text-sm text-red-400">
                   {error}
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row justify-center gap-3 pt-4">
+              <div className="flex flex-col justify-center gap-3 pt-4 sm:flex-row">
                 <button
                   type="button"
                   onClick={handleBackStep}
                   disabled={loading}
-                  className="w-full sm:w-[180px] py-3 sm:py-4 bg-white/10 text-white rounded-[14px] text-base font-medium hover:bg-white/15 transition-colors disabled:opacity-50"
+                  className="w-full rounded-[14px] bg-white/10 py-3 text-base font-medium text-white transition-colors hover:bg-white/15 disabled:opacity-50 sm:w-[180px] sm:py-4"
                 >
                   Back
                 </button>
@@ -512,7 +547,7 @@ export default function SignUpPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full sm:w-[260px] py-3 sm:py-4 bg-[#306EEC] text-white rounded-[14px] text-base font-medium hover:bg-[#2557C7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full rounded-[14px] bg-[#306EEC] py-3 text-base font-medium text-white transition-colors hover:bg-[#2557C7] disabled:cursor-not-allowed disabled:opacity-50 sm:w-[260px] sm:py-4"
                 >
                   {loading ? "Creating account..." : "Create account"}
                 </button>

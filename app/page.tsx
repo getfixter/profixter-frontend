@@ -5,21 +5,17 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 
 import Header from "./components/sections/Header";
-import NewHeroSection from "./components/sections/NewHeroSection";
 import QuizSection from "./components/sections/QuizSection";
-import ValuePropsSection from "./components/sections/ValuePropsSection";
 import DepartmentsSection from "./components/sections/DepartmentsSection";
-import TestimonialsSection from "./components/sections/TestimonialsSection";
 import Footer from "./components/sections/Footer";
-
-import HeroSection from "./components/sections/HeroSection";
-import StepsSection from "./components/sections/StepsSection";
 import ServiceInfoSection from "./components/sections/ServiceInfoSection";
 import PlansSection from "./components/sections/PlansSection";
 import BookingSection from "./components/sections/BookingSection";
 import ServicesSection from "./components/sections/ServicesSection";
 import HandymenSection from "./components/sections/HandymenSection";
-import ProjectsSection from "./components/sections/ProjectsSection";
+import TrustSection from "./components/sections/TrustSection";
+import FinalCTASection from "./components/sections/FinalCTASection";
+import PopularTasksSection from "./components/sections/PopularTasksSection";
 
 import { ChatWidget } from "./components/ChatWidget";
 import Image from "next/image";
@@ -34,10 +30,7 @@ export default function Home() {
 
   const isSubscribed =
     !!isAuthenticated &&
-    !!(
-      (user?.subscription && user.subscription !== "") ||
-      user?.addresses?.some((addr) => addr.hasActiveSubscription)
-    );
+    !!user?.addresses?.some((addr) => addr.hasActiveSubscription);
 
   const isRegistered = !!isAuthenticated && !isSubscribed;
   const isVisitor = !isAuthenticated;
@@ -71,12 +64,15 @@ export default function Home() {
         {/* Goal: make using the membership easy      */}
         {/* ========================================= */}
         {isSubscribed && (
-          <>  
-            <BookingSection />
+          <>
             <ServiceInfoSection />
             <PlansSection />
+            <TrustSection />
+            <PopularTasksSection />
+            <BookingSection />
             <ServicesSection />
             <HandymenSection />
+            <FinalCTASection />
             <Footer />
           </>
         )}
@@ -87,16 +83,16 @@ export default function Home() {
         {/* ========================================= */}
         {isRegistered && (
           <>
-            <QuizSection />
-                        <ServiceInfoSection />
-<ServicesSection />
+            <ServiceInfoSection />
             <PlansSection />
-            
-            
-            
+            <TrustSection />
+            <PopularTasksSection />
+            <BookingSection />
+            <QuizSection />
+            <ServicesSection />
             <HandymenSection />
-            <ProjectsSection />
             <DepartmentsSection />
+            <FinalCTASection />
             <Footer />
           </>
         )}
@@ -108,13 +104,15 @@ export default function Home() {
         {isVisitor && (
           <>
             <ServiceInfoSection />
+            <PlansSection />
+            <TrustSection />
+            <PopularTasksSection />
+            <BookingSection />
             <QuizSection />
             <ServicesSection />
-
-            {/* <ValuePropsSection /> */}
-            <PlansSection />
             <HandymenSection />
             <DepartmentsSection />
+            <FinalCTASection />
             <Footer />
           </>
         )}

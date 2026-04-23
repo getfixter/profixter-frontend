@@ -13,7 +13,7 @@ export default function DepartmentsSection() {
   const departments = [
     {
       title: "Subscription Handyman",
-      description: "Choose 2 visits, 4 visits, premium support, or unlimited scheduled visits for ongoing home maintenance.",
+      description: "Choose the plan that fits your home, from simple ongoing tasks to larger full-day projects.",
       href: "/services/subscription",
       icon: "📅",
     },
@@ -37,23 +37,27 @@ export default function DepartmentsSection() {
     },
   ];
   return (
-    <section className="py-12 sm:py-16 bg-[#F3F4F6] px-4 sm:px-6 md:px-8 animate-fadeIn" id="departments">
-      <div className="max-w-5xl mx-auto">
+    <section className="animate-fadeIn bg-[#eaedfa] px-5 py-10 sm:px-6 sm:py-12 lg:px-5 lg:py-14" id="departments">
+      <div className="mx-auto max-w-[1240px]">
+        <div className="rounded-[22px] border border-[#C5CBD8] bg-white p-5 shadow-[0_0_160px_rgba(0,0,0,0.06)] sm:p-7 lg:p-8">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-center text-gray-800 mb-8">
             Our Services
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <p className="mx-auto mb-8 max-w-2xl text-center text-[15px] leading-relaxed text-[#6A6D71] sm:text-[16px]">
+            Explore the main ways homeowners work with Profixter.
+          </p>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {departments.map((dept) => (
               <Link
                 key={dept.href}
                 href={dept.href}
-                className="group block p-6 rounded-2xl bg-white shadow hover:shadow-md transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#86EFAC]"
+                className="group block rounded-2xl border border-[#E6E8EF] bg-[#F8FAFF] p-6 shadow-sm transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#306EEC]"
               >
                 <div className="flex flex-col items-center text-center h-full">
-                  <div className="w-14 h-14 flex items-center justify-center rounded-full bg-[#E6F8EC] text-2xl text-[#34A853] mb-4">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#EEF2FF] text-2xl text-[#306EEC]">
                     <span>{dept.icon}</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2 group-hover:text-[#34A853]">
+                  <h3 className="mb-2 text-lg font-semibold text-gray-800 group-hover:text-[#306EEC]">
                     {dept.title}
                   </h3>
                   <p className="text-sm text-gray-600 flex-grow">
@@ -63,6 +67,7 @@ export default function DepartmentsSection() {
               </Link>
             ))}
           </div>
+        </div>
       </div>
     </section>
   );

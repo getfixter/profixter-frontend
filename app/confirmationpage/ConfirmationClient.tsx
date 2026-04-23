@@ -3,12 +3,7 @@
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
-
-declare global {
-  interface Window {
-    dataLayer?: any[];
-  }
-}
+import { trackPurchase } from "@/lib/analytics";
 
 export default function ConfirmationClient() {
   const searchParams = useSearchParams();
@@ -26,12 +21,6 @@ export default function ConfirmationClient() {
     const key = "profixter_purchase_fired";
     if (sessionStorage.getItem(key)) return;
 
-    const push = (payload: any) => {
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push(payload);
-      sessionStorage.setItem(key, "1");
-    };
-
     (async () => {
       try {
         const api = process.env.NEXT_PUBLIC_API_URL || "https://api.profixter.com";
@@ -44,13 +33,13 @@ export default function ConfirmationClient() {
         const data = await r.json();
         if (!data?.ok) throw new Error("no data");
 
-        push({
-          event: "purchase",
+        trackPurchase({
           currency: data.currency || "USD",
           value: Number(data.value) || 0,
           plan: data.plan || "unknown",
           page_type: "stripe_confirmation",
         });
+        sessionStorage.setItem(key, "1");
       } catch {
         // no fake purchase
       }
@@ -59,51 +48,61 @@ export default function ConfirmationClient() {
 
   return (
     <main className="min-h-screen flex items-center justify-center px-6 py-20 bg-gradient-to-b from-[#F4F6FF] to-[#E6EBFF]">
-      <div className="relative bg-white rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.1)] w-full max-w-lg p-10 text-center border border-[#DCE3F8] animate-fadeIn">
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-5xl">
-          🎉
-        </div>
+      <div className="relative w-full max-w-lg rounded-[24px] border border-[#DCE3F8] bg-white p-10 text-center shadow-[0_20px_60px_rgba(0,0,0,0.1)] animate-fadeIn">
+        <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-5xl">🎉</div>
 
-        <div className="flex justify-center mb-6">
-          <div className="w-20 h-20 rounded-full bg-[#E8F1FF] flex items-center justify-center shadow-inner">
-            <CheckCircleIcon className="w-14 h-14 text-[#306EEC]" />
+        <div className="mb-6 flex justify-center">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#E8F1FF] shadow-inner">
+            <CheckCircleIcon className="h-14 w-14 text-[#306EEC]" />
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-[#313234] mb-3 tracking-tight">
-          You’re All Set!
+        <h1 className="mb-3 text-3xl font-bold tracking-tight text-[#313234]">
+          You&apos;re all set
         </h1>
 
-        <p className="text-[#6A6D71] text-lg mb-6 leading-relaxed">
+        <p className="mb-6 text-lg leading-relaxed text-[#6A6D71]">
           Your subscription is now{" "}
           <span className="font-semibold text-[#306EEC]">active</span>. Thanks
-          for becoming part of the Mr. Fixter family!
+          for becoming part of the Mr. Fixter family.
         </p>
 
-        <div className="bg-[#F4F7FF] border border-[#D7E0F5] rounded-xl p-5 mb-6 text-left shadow-sm">
-          <h3 className="text-[#306EEC] text-lg font-semibold mb-2">
-            What’s Next?
+        <div className="mb-6 rounded-xl border border-[#D7E0F5] bg-[#F4F7FF] p-5 text-left shadow-sm">
+          <h3 className="mb-2 text-lg font-semibold text-[#306EEC]">
+            What&apos;s next
           </h3>
-          <ul className="text-[#6A6D71] space-y-2">
-            <li>✔ Book your first home visit</li>
-            <li>✔ Prepare any fixtures or materials</li>
-            <li>✔ Your Fixter arrives ready to help</li>
+          <ul className="space-y-2 text-[#6A6D71]">
+            <li>1. Your subscription is active</li>
+            <li>2. Book your first visit</li>
+            <li>3. We&apos;ll confirm your appointment</li>
           </ul>
         </div>
 
         <button
           onClick={handleBookClick}
-          className="w-full h-[56px] bg-[#306EEC] hover:bg-[#2558c9] transition-all rounded-xl text-white text-lg font-semibold shadow-lg shadow-[#306EEC]/30"
+          className="h-[56px] w-full rounded-xl bg-[#306EEC] text-lg font-semibold text-white shadow-lg shadow-[#306EEC]/30 transition-all hover:bg-[#2558c9]"
         >
           Book Your First Visit
         </button>
 
-        <p className="text-sm text-[#6A6D71] mt-4">
+        <div className="mt-4 rounded-[16px] border border-[#D7E0F5] bg-[#F8FAFF] p-4 text-left">
+          <p className="text-sm font-semibold text-[#313234]">
+            Most members book one visit per month
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-[#6A6D71]">
+            You can always schedule your next visit after completion.
+          </p>
+        </div>
+
+        <div className="mt-4 rounded-[16px] border border-[#D7E0F5] bg-[#F8FAFF] p-4 text-left">
+          <p className="text-sm font-semibold text-[#313234]">
+            Invite a friend and share simple monthly home help
+          </p>
+        </div>
+
+        <p className="mt-4 text-sm text-[#6A6D71]">
           Need help? Email{" "}
-          <a
-            href="mailto:my@profixter.com"
-            className="text-[#306EEC] underline"
-          >
+          <a href="mailto:my@profixter.com" className="text-[#306EEC] underline">
             my@profixter.com
           </a>
         </p>

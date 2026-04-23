@@ -14,7 +14,7 @@ export const services: Service[] = [
     id: "01",
     title: "Simple monthly visits",
     description:
-      "Basic includes 2 visits per month, Plus includes 4 visits per month, and every visit is up to 90 minutes.",
+      "Choose the plan that fits your home. Each visit covers up to 90 minutes of work.",
     color: "blue",
     size: "normal",
     offset: 0,
@@ -68,7 +68,7 @@ export const services: Service[] = [
     id: "07",
     title: "Second pro when needed",
     description:
-      "Premium includes 4 visits per month plus 1 emergency visit for urgent issues.",
+      "Emergency visits are limited to one per month and are for urgent situations only.",
     color: "dark",
     size: "normal",
     offset: 10,
@@ -116,7 +116,7 @@ export const faqs: Faq[] = [
     id: "01",
     question: "How long is each visit?",
     answer:
-      "Every included visit is up to 90 minutes of handyman labor for eligible tasks.",
+      "Each visit covers up to 90 minutes of work for eligible tasks.",
     color: "blue",
     size: "normal",
     offset: 0,
@@ -134,7 +134,7 @@ export const faqs: Faq[] = [
     id: "03",
     question: "How many visits come with each plan?",
     answer:
-      "Basic includes 2 visits per month. Plus includes 4 visits per month. Premium includes 4 visits per month plus 1 emergency visit. Elite includes unlimited visits by calendar schedule.",
+      "Basic supports 1 active booking. Plus supports 2 active bookings. Premium supports 2 active bookings plus 1 emergency visit per month. Elite supports 2-3 active bookings plus 1 full-day visit per month (up to 8 hours).",
     color: "dark",
     size: "normal",
     offset: 0,
@@ -211,9 +211,66 @@ export const faqs: Faq[] = [
     size: "large",
     offset: -60,
   },
+  {
+    id: "12",
+    question: "How often can I book?",
+    answer:
+      "You can book as often as availability allows. Most members use one visit per month.",
+    color: "light",
+    size: "normal",
+    offset: -20,
+  },
   
 
 
+];
+
+export const homepageFaqs: Faq[] = [
+  {
+    id: "01",
+    question: "What can I book?",
+    answer:
+      "Common handyman tasks that fit within your visit time. Use 'What can I book?' for the full guide.",
+    color: "blue",
+    size: "normal",
+    offset: 0,
+  },
+  {
+    id: "02",
+    question: "How often can I book?",
+    answer:
+      "You can book as often as availability allows. Most members use one visit per month.",
+    color: "light",
+    size: "normal",
+    offset: 0,
+  },
+  {
+    id: "03",
+    question: "Do I need estimates?",
+    answer:
+      "No. You choose your plan, book online, and know what to expect upfront. No estimates and no surprise invoices.",
+    color: "dark",
+    size: "normal",
+    offset: 0,
+  },
+  {
+    id: "04",
+    question: "How does booking work?",
+    answer:
+      "Pick your plan, choose an available day and time, describe the task, add photos, and we confirm the appointment.",
+    color: "dark",
+    size: "small",
+    offset: 0,
+  },
+  {
+    id: "05",
+    question: "What if I need more flexibility?",
+    answer:
+      "Higher plans let you keep more active bookings and handle more work without changing how booking works.",
+    color: "blue",
+    size: "normal",
+    offset: -50,
+  },
 ];
 
 export type Plan = {
@@ -233,26 +290,25 @@ export type Plan = {
 export const plans: Plan[] = [
   {
     name: "Basic",
-    description: "2 scheduled visits each month",
+    description: "Ongoing handyman help, one visit at a time",
     price: 149,
     features: [
-      "2 visits per month",
-      "Each visit is up to 90 minutes",
-      "1 active appointment at a time",
+      "1 active booking",
+      "Each visit covers up to 90 minutes of work",
+      "Book when spots are available",
     ],
     buttonText: "Get started",
     stripeLink: "https://buy.stripe.com/eVqfZgeAN2pCgAxb3kawo02",
   },
   {
     name: "Plus",
-  description: "4 scheduled visits each month",
+  description: "More flexibility with scheduling",
   price: 249,
   subtitle: "Everything in Basic",
   features: [
-    "4 visits per month",
-    "Each visit is up to 90 minutes",
-    "2 active appointments at once",
-    "Best for homes that need regular help",
+    "2 active bookings",
+    "Each visit covers up to 90 minutes of work",
+    "Book when spots are available",
   ],
   buttonText: "Get started",
   badge: "Popular", // ✅ ADD
@@ -260,14 +316,14 @@ export const plans: Plan[] = [
   },
   {
     name: "Premium",
-    description: "4 visits each month plus emergency support",
+    description: "Urgent situations and peace of mind",
     price: 349,
     subtitle: "Everything in Plus",
     features: [
-      "4 visits per month",
-      "1 emergency visit",
-      "Each visit is up to 90 minutes",
-      "Priority support",
+      "2 active bookings",
+      "1 emergency visit per month",
+      "Emergency visits are limited to one per month",
+      "Each visit covers up to 90 minutes of work",
     ],
     buttonText: "Get started",
     badge: "Recommended", // ✅ ADD
@@ -275,14 +331,14 @@ export const plans: Plan[] = [
   },
   {
     name: "Elite",
-    description: "Unlimited visits by calendar schedule",
+    description: "Larger projects and full-day tasks",
     price: 499,
     subtitle: "Everything in Premium",
     features: [
-      "Unlimited scheduled visits",
-      "Each visit is up to 90 minutes",
-      "Best for busy homes and ongoing maintenance",
-      "Top scheduling flexibility",
+      "2-3 active bookings",
+      "1 full-day visit per month (up to 8 hours)",
+      "Full-day visit must be scheduled in advance",
+      "Each standard visit covers up to 90 minutes of work",
     ],
     buttonText: "Get started",
     stripeLink: "https://buy.stripe.com/5kQ28qeANaW8ac93ASawo01",

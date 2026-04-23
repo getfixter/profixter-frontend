@@ -202,6 +202,7 @@ export default function BookingSection() {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [bookingNumber, setBookingNumber] = useState("");
 
   // Modal display data
@@ -255,6 +256,7 @@ export default function BookingSection() {
     setService("");
     setShowServiceMenu(false);
     setError("");
+    setNotice("");
     setUploadedPhotos([]);
     setPhotoUrls([]);
     setNote("");
@@ -598,6 +600,9 @@ if (info) {
     }
 
     setUploadedPhotos((prev) => [...prev, ...compressed].slice(0, 10));
+    if (error === "Photos help us prepare — please upload at least one") {
+      setError("");
+    }
     e.target.value = ""; // allow re-select same file
   };
 
@@ -644,16 +649,17 @@ if (info) {
       return;
     }
     if (note.trim().split(/\s+/).filter(Boolean).length < 3) {
-      setError("Please describe your issue (at least 3 words)");
+      setError("Please describe your task (at least a few words)");
       return;
     }
     if (uploadedPhotos.length === 0) {
-      setError("Please upload at least one photo");
+      setError("Photos help us prepare — please upload at least one");
       return;
     }
 
     setLoading(true);
     setError("");
+    setNotice("");
 
     try {
       const [hours, minutes] = selectedTime.split(":").map(Number);
@@ -691,7 +697,6 @@ if (info) {
     } catch (err: any) {
       const message = err?.response?.data?.message || "Failed to create booking. Please try again.";
       setError(message);
-      alert(message);
     } finally {
       setLoading(false);
     }
@@ -703,6 +708,8 @@ if (info) {
 
   try {
     const token = localStorage.getItem("token");
+    setError("");
+    setNotice("");
 
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/cancel/${id}`, {
       method: "POST",
@@ -750,10 +757,10 @@ if (info) {
       document.getElementById("pick-day")?.scrollIntoView({ behavior: "smooth" });
     }, 150);
 
-    alert("Visit canceled. You may now rebook.");
+    setNotice("Visit canceled. You may now rebook.");
   } catch (err) {
     console.error("Rebook failed:", err);
-    alert("Error canceling the visit.");
+    setError("Error canceling the visit. Please try again.");
   }
 };
 
@@ -829,6 +836,26 @@ const canBook =
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
           {/* Calendar */}
           <div className="lg:col-span-5">
+            <div className="mb-6 rounded-[18px] border border-[#c5cbd8] bg-white p-4 sm:p-5 shadow-[0_0_200px_rgba(0,0,0,0.06)]">
+              <div className="text-sm font-semibold text-[#313234] mb-3">How booking works</div>
+              <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                {[
+                  "Step 1: Pick a day",
+                  "Step 2: Pick a time",
+                  "Step 3: Describe your task",
+                  "Step 4: Upload photos",
+                  "Step 5: Confirm booking",
+                ].map((step) => (
+                  <div
+                    key={step}
+                    className="rounded-[14px] border border-[#E6E8EF] bg-[#EEF2FF] px-3 py-3 text-xs sm:text-[13px] font-extrabold text-[#313234] leading-relaxed"
+                  >
+                    {step}
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="rounded-[18px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <button
@@ -899,19 +926,16 @@ const canBook =
                 })}
               </div>
 
-              <div className="mt-4 text-center text-sm text-[#6a6c71]">
-                Emergency? Call{" "}
-                <a href="tel:631-599-1363" className="text-[#306EEC] font-semibold hover:underline">
-                  631-599-1363
-                </a>
-              </div>
             </div>
 
             {selectedDate && (
-              <div className="mt-4 text-center text-sm sm:text-base text-[#313234] font-semibold">
+              <div className="mt-3 text-center text-sm sm:text-base text-[#313234] font-semibold">
                 Selected: <span className="text-[#306EEC]">{selectedDateLabel}</span>
               </div>
             )}
+            <div className="mt-2 text-center text-xs sm:text-sm text-[#6a6c71]">
+              Choose any available day that works for you.
+            </div>
           {isAuthenticated && hasSubscription && (
   <div className="mt-4">
     <button
@@ -929,7 +953,7 @@ const canBook =
           {/* Right column */}
           <div className="lg:col-span-7">
             {/* Time + info */}
-            <div className="rounded-[18px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] p-4 sm:p-6">
+            <div className="rounded-[18px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] p-4 sm:p-5">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                 {selectedDate && config ? (
                   timesForSelectedDay.length > 0 ? (
@@ -940,20 +964,28 @@ const canBook =
                       selectedTime={selectedTime}
                       onSelect={(t) => setSelectedTime(t)}
                     />
-                  ) : (
-                    <div className="w-full sm:w-[190px] h-[54px] rounded-[12px] border border-[#c5cbd8] bg-white/60 flex items-center px-4 text-[#6a6c71] text-sm">
-                      No available times
-                    </div>
-                  )
                 ) : (
+                  <div className="w-full sm:w-[190px] h-[54px] rounded-[12px] border border-[#c5cbd8] bg-white/60 flex items-center px-4 text-[#6a6c71] text-sm">
+                    No times available. Try another date or check back soon.
+                  </div>
+                )
+              ) : (
                   <div className="w-full sm:w-[190px] h-[54px] rounded-[12px] border border-[#c5cbd8] bg-white/60 flex items-center px-4 text-[#6a6c71] text-sm">
                     Select a date first
                   </div>
                 )}
 
                 <div className="text-sm sm:text-base text-[#6a6c71]">
-                  Visit length: <span className="font-semibold text-[#313234]">up to 90 minutes</span>. Please take clear photos.
+                  Visit length: <span className="font-semibold text-[#313234]">up to 90 minutes</span>
                 </div>
+              </div>
+
+              <div className="mt-3 text-xs sm:text-sm text-[#6a6c71]">
+                Available times depend on schedule and your plan.
+              </div>
+
+              <div className="mt-2 text-xs sm:text-sm text-[#6a6c71]">
+                Bookings are scheduled in advance. Most members book one visit per month.
               </div>
 
               {/* Address selector if 2+ */}
@@ -977,20 +1009,37 @@ const canBook =
             </div>
 
             {/* Issue + service + photos */}
-            <div className="mt-6 rounded-[18px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] p-4 sm:p-6">
+            <div className="mt-5 rounded-[18px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] p-4 sm:p-5">
               <div className="text-sm font-semibold text-[#313234] mb-2">Describe the issue</div>
-
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Briefly describe your issue (e.g. leaking faucet, light switch not working)..."
-                className="w-full min-h-[120px] max-h-[320px] overflow-y-auto bg-white/40 rounded-[14px] border border-[#c5cbd8] p-4 text-sm sm:text-base text-[#313234] placeholder-[#6a6c71] resize-none focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15"
-              />
-
-              <div className="mt-2 text-xs text-[#6a6c71]">
-                Words: <span className={wordsCount >= 3 ? "text-green-700 font-semibold" : "text-red-700 font-semibold"}>{wordsCount}</span>{" "}
-                (minimum 3)
+              <div className="text-xs sm:text-sm text-[#6a6c71] mb-3">
+                Describe what you need done. Most tasks fit within one visit.
               </div>
+
+                <textarea
+                  value={note}
+                  onChange={(e) => {
+                    setNote(e.target.value);
+                    if (error === "Please describe your task (at least a few words)") {
+                      setError("");
+                    }
+                  }}
+                  placeholder="Briefly describe your issue (e.g. leaking faucet, light switch not working)..."
+                  className={`w-full min-h-[120px] max-h-[320px] overflow-y-auto bg-white/40 rounded-[14px] border p-4 text-sm sm:text-base text-[#313234] placeholder-[#6a6c71] resize-none focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 ${
+                    error === "Please describe your task (at least a few words)"
+                      ? "border-red-300"
+                      : "border-[#c5cbd8]"
+                  }`}
+                />
+
+                <div className="mt-2 text-xs text-[#6a6c71]">
+                  Words: <span className={wordsCount >= 3 ? "text-green-700 font-semibold" : "text-red-700 font-semibold"}>{wordsCount}</span>{" "}
+                  (minimum 3)
+                </div>
+                {error === "Please describe your task (at least a few words)" ? (
+                  <div className="mt-2 text-xs sm:text-sm text-red-700">
+                    Please describe your task (at least a few words)
+                  </div>
+                ) : null}
 
               <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
                 {/* Service dropdown */}
@@ -1054,7 +1103,7 @@ checkingAccess || !hasSubscription
                   onClick={() => cameraInputRef.current?.click()}
                   className="h-[46px] px-4 sm:px-5 rounded-[12px] border border-[#313234] bg-white/50 text-[#313234] text-sm sm:text-base font-semibold flex items-center justify-center gap-2 hover:bg-white transition active:scale-[0.99]"
                 >
-                  📷 Take a picture
+                  Take Photo
                 </button>
 
                 {/* Gallery */}
@@ -1063,7 +1112,7 @@ checkingAccess || !hasSubscription
                   onClick={() => galleryInputRef.current?.click()}
                   className="h-[46px] px-4 sm:px-5 rounded-[12px] border border-[#313234] bg-white/50 text-[#313234] text-sm sm:text-base font-semibold flex items-center justify-center gap-2 hover:bg-white transition active:scale-[0.99]"
                 >
-                  🖼️ Add photos {uploadedPhotos.length > 0 ? `(${uploadedPhotos.length})` : ""}
+                  Add Photos {uploadedPhotos.length > 0 ? `(${uploadedPhotos.length})` : ""}
                 </button>
 
                 {/* hidden inputs */}
@@ -1112,16 +1161,25 @@ checkingAccess || !hasSubscription
               )}
             </div>
 
+              <div className="mt-4 text-xs sm:text-sm text-[#6a6c71]">
+                Photos help us prepare and bring the right tools.
+              </div>
+              {error === "Photos help us prepare — please upload at least one" ? (
+                <div className="mt-2 text-xs sm:text-sm text-red-700">
+                  Photos help us prepare — please upload at least one
+                </div>
+              ) : null}
+
             {/* Subscription warning */}
 {isAuthenticated && !checkingAccess && !hasSubscription && subscriptionError && (
               <div className="mt-4 text-red-700 text-sm bg-red-50 border border-red-200 rounded-[14px] p-4">
-                <div className="font-extrabold mb-1">🔒 No Active Subscription</div>
-                <div className="mb-3">{subscriptionError}</div>
+                <div className="font-extrabold mb-1">No Active Subscription</div>
+                <div className="mb-3">Active plan required to book. View plans below.</div>
                 <a
                   href="#plans"
                   className="inline-flex px-4 py-2 bg-[#306EEC] text-white rounded-xl hover:bg-[#2558c9] transition text-sm font-bold"
                 >
-                  View Subscription Plans
+                  View Plans
                 </a>
               </div>
             )}
@@ -1129,7 +1187,7 @@ checkingAccess || !hasSubscription
             {/* Active booking limit warning */}
             {isAuthenticated && hasSubscription && hasActiveBooking && (
               <div className="mt-4 text-orange-800 text-sm bg-orange-50 border border-orange-200 rounded-[14px] p-4">
-                <div className="font-extrabold mb-1">⚠️ Active booking limit reached</div>
+                <div className="font-extrabold mb-1">Active booking limit reached</div>
                 <div className="text-xs mt-1">
                   You currently have <span className="font-semibold">{activeBookingCount}</span> active booking
                   {activeBookingCount === 1 ? "" : "s"}. Your plan allows{" "}
@@ -1165,6 +1223,11 @@ checkingAccess || !hasSubscription
             )}
 
             {/* Error */}
+            {notice && (
+              <div className="mt-4 rounded-[14px] border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+                {notice}
+              </div>
+            )}
             {error && (
               <div className="mt-4 text-red-700 text-sm bg-red-50 border border-red-200 rounded-[14px] p-3">
                 {error}
@@ -1173,16 +1236,26 @@ checkingAccess || !hasSubscription
 
             {/* Book button */}
             <div className="mt-6">
+              <div className="mb-4 rounded-[16px] border border-[#C5CBD8] bg-white p-4 sm:p-5">
+                <div className="text-sm font-semibold text-[#313234] mb-2">Before you confirm</div>
+                <div className="space-y-1.5 text-xs sm:text-sm text-[#6a6c71] leading-relaxed">
+                  <div>Most members book one visit per month</div>
+                  <div>All work is completed within your visit time</div>
+                  <div>You can always book your next visit after completion</div>
+                </div>
+              </div>
+
               <button
                 onClick={handleBookNow}
+                data-track="booking-cta"
                 disabled={!canBook}
                 className="w-full sm:w-[280px] h-[58px] rounded-[16px] bg-[#306eec] border border-[#306eec] text-[#eef2ff] text-lg sm:text-[20px] font-extrabold hover:bg-[#2558c9] transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99]"
               >
-{checkingAccess ? "Checking..." : loading ? "Booking..." : hasActiveBooking ? "Limit reached" : "Book now"}
+{checkingAccess ? "Checking..." : loading ? "Booking..." : hasActiveBooking ? "Limit reached" : "Book Visit"}
               </button>
 
               <div className="mt-2 text-xs text-[#6a6c71]">
-                By booking, you confirm the photos and description are accurate for faster service.
+                You'll receive confirmation once your booking is reviewed.
               </div>
             </div>
           </div>

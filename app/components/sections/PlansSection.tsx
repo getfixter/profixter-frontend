@@ -5,6 +5,13 @@ import Image from "next/image";
 import { plans, type Plan } from "@/app/data/content";
 import { useAuth } from "@/lib/useAuth";
 import type { PlanType } from "@/lib/stripe-links";
+import { trackInitiateCheckout } from "@/lib/analytics";
+import {
+  changeSubscriptionPlan,
+  getManagedSubscriptionForAddress,
+  type BillingCycle as ManagedBillingCycle,
+  type ManagedSubscription,
+} from "@/lib/subscription-service";
 
 type Address = {
   _id: string;
@@ -17,10 +24,6 @@ type Address = {
 };
 
 type BillingCycle = "monthly" | "annual";
-
-const TARAS_PHONE_DISPLAY = "631-599-1363";
-const TARAS_PHONE_LINK = "tel:6315991363";
-const TARAS_SMS_LINK = "sms:6315991363";
 
 function toNumberPrice(v: any): number {
   if (typeof v === "number") return v;
@@ -46,20 +49,37 @@ function normalizePlanType(name: string): PlanType | null {
   return null;
 }
 
-function prettyPlanName(plan: PlanType | null): string {
-  if (plan === "basic") return "Basic";
-  if (plan === "plus") return "Plus";
-  if (plan === "premium") return "Premium";
-  if (plan === "elite") return "Elite";
-  return "";
-}
-
 function getPlanRank(plan: PlanType | null): number {
   if (plan === "basic") return 1;
   if (plan === "plus") return 2;
   if (plan === "premium") return 3;
   if (plan === "elite") return 4;
   return 0;
+}
+
+function getPositioningLabel(planName: string): string {
+  if (planName === "Basic") return "For simple ongoing home tasks";
+  if (planName === "Plus") return "For more flexibility with scheduling";
+  if (planName === "Premium") return "For urgent situations and peace of mind";
+  if (planName === "Elite") return "For larger projects and full-day tasks";
+  return "";
+}
+
+function getComparisonLabel(planName: string): string {
+  if (planName === "Basic") return "1 active booking";
+  if (planName === "Plus") return "2 active bookings";
+  if (planName === "Premium") return "1 emergency visit per month";
+  if (planName === "Elite") return "1 full-day visit per month (up to 8 hours)";
+  return "";
+}
+
+function getBadgeLabel(planName: string, badge?: string): string {
+  if (planName === "Plus") return "Most Popular";
+  return badge || "";
+}
+
+function isManagedActiveStatus(status?: string | null): boolean {
+  return ["active", "trialing"].includes(String(status || "").toLowerCase());
 }
 
 export default function PlansSection() {
@@ -69,13 +89,13 @@ export default function PlansSection() {
   });
 
   const [billing, setBilling] = useState<BillingCycle>("monthly");
-  const [upgradePopupOpen, setUpgradePopupOpen] = useState(false);
-  const [upgradeTargetPlan, setUpgradeTargetPlan] = useState<PlanType | null>(null);
+  const [actionMessage, setActionMessage] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [actionLoadingPlan, setActionLoadingPlan] = useState<string | null>(null);
 
   const { user, isAuthenticated, token } = useAuth();
 
   const addresses: Address[] = ((user as any)?.addresses || []) as Address[];
-  const currentUserPlan = normalizePlanType((user as any)?.subscription || "");
 
   const defaultAddress = useMemo(() => {
     if (!user) return null;
@@ -89,7 +109,9 @@ export default function PlansSection() {
     [addresses, selectedAddressId]
   );
 
-  const [addrActiveMap, setAddrActiveMap] = useState<Record<string, boolean>>({});
+  const [addressSubscriptionMap, setAddressSubscriptionMap] = useState<
+    Record<string, ManagedSubscription | null | undefined>
+  >({});
   const [checkingAddr, setCheckingAddr] = useState(false);
 
   useEffect(() => {
@@ -98,22 +120,15 @@ export default function PlansSection() {
     }
   }, [defaultAddress, selectedAddressId]);
 
-  const checkAddressActive = async (addressId: string) => {
+  const checkAddressState = async (addressId: string) => {
     if (!token) return;
     setCheckingAddr(true);
     try {
-      const res = await fetch(
-        `https://api.profixter.com/api/subscriptions/check/address/${addressId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      const data = await res.json();
-      const active = !!data?.active;
-      setAddrActiveMap((m) => ({ ...m, [addressId]: active }));
+      const subscription = await getManagedSubscriptionForAddress(addressId);
+      setAddressSubscriptionMap((map) => ({ ...map, [addressId]: subscription }));
     } catch (e) {
-      console.error("checkAddressActive failed:", e);
-      setAddrActiveMap((m) => ({ ...m, [addressId]: false }));
+      console.error("checkAddressState failed:", e);
+      setAddressSubscriptionMap((map) => ({ ...map, [addressId]: null }));
     } finally {
       setCheckingAddr(false);
     }
@@ -121,55 +136,71 @@ export default function PlansSection() {
 
   useEffect(() => {
     if (token && selectedAddressId) {
-      if (addrActiveMap[selectedAddressId] === undefined) {
-        checkAddressActive(selectedAddressId);
+      if (addressSubscriptionMap[selectedAddressId] === undefined) {
+        checkAddressState(selectedAddressId);
       }
     }
-  }, [token, selectedAddressId, addrActiveMap]);
+  }, [token, selectedAddressId, addressSubscriptionMap]);
 
   const startCheckout = async (
     plan: PlanType,
     addressId: string,
     email: string,
-    cycle: BillingCycle
+    cycle: BillingCycle,
+    planName: string
   ) => {
-    const res = await fetch(
-      "https://api.profixter.com/api/stripe/checkout/create-checkout-session",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, addressId, email, billingCycle: cycle }),
+    try {
+      setActionLoadingPlan(planName);
+
+      const res = await fetch(
+        "https://api.profixter.com/api/stripe/checkout/create-checkout-session",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan, addressId, email, billingCycle: cycle }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (res.status === 409 && data?.code === "ADDRESS_ALREADY_SUBSCRIBED") {
+        setActionError("This address already has an active plan.");
+        setAddressSubscriptionMap((map) => ({ ...map, [addressId]: map[addressId] || null }));
+        return;
       }
-    );
 
-    const data = await res.json();
+      if (data?.url) {
+        trackInitiateCheckout({
+          plan,
+          billing_cycle: cycle,
+          address_id: addressId,
+        });
+        window.location.href = data.url;
+        return;
+      }
 
-    if (res.status === 409 && data?.code === "ADDRESS_ALREADY_SUBSCRIBED") {
-      alert("This address already has an active plan.");
-      setAddrActiveMap((m) => ({ ...m, [addressId]: true }));
-      return;
+      setActionError(data?.message || "Unable to start subscription. Please try again.");
+    } catch (error: any) {
+      setActionError(
+        error?.response?.data?.message || error?.message || "Unable to start subscription. Please try again."
+      );
+    } finally {
+      setActionLoadingPlan((current) => (current === planName ? null : current));
     }
-
-    if (data?.url) {
-      window.location.href = data.url;
-    } else {
-      alert("Unable to start subscription. Please try again.");
-    }
-  };
-
-  const openUpgradePopup = (plan: PlanType) => {
-    setUpgradeTargetPlan(plan);
-    setUpgradePopupOpen(true);
   };
 
   const getActionForPlan = (planName: string) => {
     const planType = normalizePlanType(planName);
-    const selectedAddressActive = selectedAddressId ? addrActiveMap[selectedAddressId] === true : false;
+    const selectedSubscription = selectedAddressId
+      ? addressSubscriptionMap[selectedAddressId] || null
+      : null;
+    const selectedAddressActive = isManagedActiveStatus(selectedSubscription?.status);
+    const currentPlan = normalizePlanType(selectedSubscription?.subscriptionType || "");
 
     if (!planType) {
       return {
         kind: "subscribe" as const,
-        label: "Start Membership",
+        label: "Get Started",
         disabled: false,
       };
     }
@@ -177,50 +208,63 @@ export default function PlansSection() {
     if (!selectedAddressActive) {
       return {
         kind: "subscribe" as const,
-        label: billing === "annual" ? "Start Annual & Save" : "Start Membership",
+        label: "Get Started",
         disabled: false,
       };
     }
 
-    if (!currentUserPlan) {
+    if (!currentPlan) {
       return {
         kind: "active-unknown" as const,
-        label: "Already Active",
+        label: "Manage Plan",
         disabled: true,
       };
     }
 
-    const currentRank = getPlanRank(currentUserPlan);
+    const currentRank = getPlanRank(currentPlan);
     const targetRank = getPlanRank(planType);
+    const sameCycle =
+      String(selectedSubscription?.billingCycle || "monthly") === String(billing || "monthly");
 
-    if (targetRank === currentRank) {
+    if (targetRank === currentRank && sameCycle) {
       return {
         kind: "active" as const,
-        label: "Active",
+        label: "Current Plan",
         disabled: true,
+      };
+    }
+
+    if (targetRank === currentRank && !sameCycle) {
+      return {
+        kind: "change" as const,
+        label: "Change Plan",
+        disabled: false,
       };
     }
 
     if (targetRank > currentRank) {
       return {
         kind: "upgrade" as const,
-        label: `Upgrade to ${prettyPlanName(planType)}`,
+        label: "Upgrade",
         disabled: false,
       };
     }
 
     return {
-      kind: "lower" as const,
-      label: "Active Higher Plan",
-      disabled: true,
+      kind: "downgrade" as const,
+      label: "Downgrade",
+      disabled: false,
     };
   };
 
-  const handleSubscribe = (planName: string) => {
+  const handleSubscribe = async (planName: string) => {
+    if (actionLoadingPlan) return;
     const planType = normalizePlanType(planName);
+    setActionError("");
+    setActionMessage("");
 
     if (!planType) {
-      alert("Invalid plan selected. Please refresh and try again.");
+      setActionError("Invalid plan selected. Please refresh and try again.");
       return;
     }
 
@@ -230,34 +274,55 @@ export default function PlansSection() {
     }
 
     if (!addresses.length) {
-      alert("Please add an address to your account first");
+      setActionError("Please add an address to your account first.");
       window.location.href = "/account";
       return;
     }
 
     if (!selectedAddressId || !selectedAddress) {
-      alert("Please select an address");
+      setActionError("Please select an address.");
       return;
     }
 
     const action = getActionForPlan(planName);
 
-    if (action.kind === "active" || action.kind === "lower" || action.kind === "active-unknown") {
+    if (action.kind === "active" || action.kind === "active-unknown") {
       return;
     }
 
-    if (action.kind === "upgrade") {
-      openUpgradePopup(planType);
+    if (action.kind === "subscribe") {
+      await startCheckout(planType, selectedAddress._id, (user as any).email, billing, planName);
       return;
     }
 
-    startCheckout(planType, selectedAddress._id, (user as any).email, billing);
+    try {
+      setActionLoadingPlan(planName);
+      const result = await changeSubscriptionPlan({
+        addressId: selectedAddress._id,
+        plan: planType,
+        billingCycle: billing as ManagedBillingCycle,
+      });
+      setAddressSubscriptionMap((map) => ({
+        ...map,
+        [selectedAddress._id]: result.subscription,
+      }));
+      setActionMessage(result.message || "Plan updated successfully.");
+    } catch (error: any) {
+      setActionError(
+        error?.response?.data?.message || error?.message || "Unable to update your plan right now."
+      );
+    } finally {
+      setActionLoadingPlan(null);
+    }
   };
 
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % plans.length);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + plans.length) % plans.length);
 
-  const addressIsActive = selectedAddressId ? addrActiveMap[selectedAddressId] === true : false;
+  const selectedAddressSubscription = selectedAddressId
+    ? addressSubscriptionMap[selectedAddressId] || null
+    : null;
+  const addressIsActive = isManagedActiveStatus(selectedAddressSubscription?.status);
 
   const touchStartX = useRef<number | null>(null);
   const touchLastX = useRef<number | null>(null);
@@ -367,7 +432,9 @@ export default function PlansSection() {
                   onChange={(e) => {
                     const id = e.target.value;
                     setSelectedAddressId(id);
-                    if (token && addrActiveMap[id] === undefined) checkAddressActive(id);
+                    if (token && addressSubscriptionMap[id] === undefined) {
+                      checkAddressState(id);
+                    }
                   }}
                   className="w-full h-[46px] rounded-xl px-3 bg-[#EEF2FF] text-[#313234] font-semibold outline-none focus:ring-4 focus:ring-[#306EEC]/25"
                 >
@@ -383,10 +450,10 @@ export default function PlansSection() {
 
               <div className="mt-2 text-sm">
                 {checkingAddr ? (
-                  <span className="text-[#C5CBD8]">Checking plan for this address…</span>
+                  <span className="text-[#C5CBD8]">Checking plan for this address...</span>
                 ) : addressIsActive ? (
                   <span className="text-[#FCA5A5] font-semibold">
-                    Active plan{currentUserPlan ? `: ${prettyPlanName(currentUserPlan)}` : ""}
+                    Active plan{selectedAddressSubscription?.subscriptionType ? `: ${String(selectedAddressSubscription.subscriptionType).charAt(0).toUpperCase()}${String(selectedAddressSubscription.subscriptionType).slice(1)}` : ""}
                   </span>
                 ) : (
                   <span className="text-[#86EFAC] font-semibold">No active plan</span>
@@ -421,14 +488,14 @@ export default function PlansSection() {
             "mb-6",
           ].join(" ")}
         >
-          <span className="block text-white">Stop Paying</span>
-          <span className="block text-[#86EFAC]">For Every Repair</span>
-          <span className="block text-white">Get Unlimited Help</span>
+          <span className="block text-white">Simple Monthly Plans</span>
+          <span className="block text-[#86EFAC]">For Ongoing Home Tasks</span>
+          <span className="block text-white">One Visit At A Time</span>
         </h2>
 
         <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed max-w-[520px] mx-auto">
-          Clear monthly plans for real home maintenance. Pick how many 90-minute visits you need,
-          then book them on your schedule.
+          Ongoing handyman help, one visit at a time. Pick a plan, book online, and keep home
+          maintenance predictable.
         </p>
         {!compact && (
           <p className="mt-5 text-[#C5CBD8] text-base leading-[22px]">
@@ -453,11 +520,11 @@ export default function PlansSection() {
           <div className="bg-[#86EFAC]/15 border border-[#86EFAC]/30 rounded-2xl p-3 sm:p-4 backdrop-blur-md shadow-[0_10px_40px_rgba(0,0,0,0.25)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-[#86EFAC]/25 flex items-center justify-center">
-                <span className="text-[#1F7A2E] text-lg">🎁</span>
+                <span className="text-[#1F7A2E] text-lg">ðŸŽ</span>
               </div>
               <div>
                 <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
-                  Annual Plan — Pay for 11 months, get 12 months of scheduled handyman support
+                  Annual Plan â€” Pay for 11 months, get 12 months of ongoing handyman help
                 </p>
                 <p className="text-[#C5CBD8] text-sm">Best value for long-term home maintenance.</p>
               </div>
@@ -490,6 +557,21 @@ export default function PlansSection() {
         <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
           <HeaderBlock compact />
 
+          {(actionMessage || actionError) && (
+            <div className="mb-6 space-y-3">
+              {actionMessage ? (
+                <div className="rounded-[16px] border border-[#86EFAC]/40 bg-[#86EFAC]/15 px-4 py-3 text-sm font-semibold text-white">
+                  {actionMessage}
+                </div>
+              ) : null}
+              {actionError ? (
+                <div className="rounded-[16px] border border-[#FCA5A5]/40 bg-[#7F1D1D]/35 px-4 py-3 text-sm font-semibold text-white">
+                  {actionError}
+                </div>
+              ) : null}
+            </div>
+          )}
+
           <div className="flex flex-col lg:flex-row items-start gap-8 sm:gap-10 lg:gap-12">
             <div className="hidden lg:flex flex-shrink-0 w-[360px] pt-4 flex-col justify-between min-h-[560px]">
               <HeaderBlock />
@@ -517,12 +599,12 @@ export default function PlansSection() {
                       return (
                         <div key={idx} className="w-full flex-shrink-0 px-1">
                           <div className="mx-auto max-w-[440px]">
-                            <div className="bg-[#EEF2FF] rounded-[26px] border border-[#C5CBD8] p-6 sm:p-8 flex flex-col shadow-[0_20px_80px_rgba(0,0,0,0.35)] transform transition duration-300 hover:-translate-y-1">
-                              {plan.badge && (
+                            <div className={`${plan.name === "Plus" ? "bg-white border-2 border-[#306EEC] shadow-[0_20px_90px_rgba(48,110,236,0.24)]" : "bg-[#EEF2FF] border border-[#C5CBD8] shadow-[0_20px_80px_rgba(0,0,0,0.35)]"} rounded-[26px] p-6 sm:p-8 flex flex-col min-h-[690px] sm:min-h-[720px] transform transition duration-300 hover:-translate-y-1`}>
+                              {getBadgeLabel(plan.name, plan.badge) && (
                                 <div className="mb-3 flex justify-center">
                                   <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-white/70 shadow">
                                     <span className="text-[13px] font-extrabold text-white">
-                                      {plan.badge}
+                                      {getBadgeLabel(plan.name, plan.badge)}
                                     </span>
                                   </div>
                                 </div>
@@ -532,6 +614,9 @@ export default function PlansSection() {
                                 <h3 className="text-2xl sm:text-3xl font-extrabold text-[#313234] leading-tight mb-2">
                                   {plan.name}
                                 </h3>
+                                <p className="text-[#306EEC] font-bold text-sm sm:text-base leading-relaxed mb-2">
+                                  {getPositioningLabel(plan.name)}
+                                </p>
                                 <p className="text-sm sm:text-base text-[#6A6D71] leading-relaxed">
                                   {plan.description}
                                 </p>
@@ -574,6 +659,10 @@ export default function PlansSection() {
                                 </p>
                               )}
 
+                              <div className="mb-4 text-center text-[12px] sm:text-[13px] font-semibold text-[#6A6D71]">
+                                {getComparisonLabel(plan.name)}
+                              </div>
+
                               <div className="space-y-2.5 mb-auto">
                                 {plan.features.map((feature: string, featureIdx: number) => (
                                   <div key={featureIdx} className="flex items-center gap-2.5">
@@ -595,25 +684,66 @@ export default function PlansSection() {
                                 ))}
                               </div>
 
+                              {plan.name === "Basic" && (
+                                <div className="mt-4 text-center text-[12px] sm:text-[13px] text-[#6A6D71] leading-relaxed">
+                                  Each visit covers up to 90 minutes of work.
+                                </div>
+                              )}
+
+                              {plan.name === "Basic" && (
+                                <div className="mt-2 text-center text-[12px] sm:text-[13px] text-[#6A6D71] leading-relaxed">
+                                  Book as often as availability allows.
+                                </div>
+                              )}
+
+                              {plan.name === "Premium" && (
+                                <div className="mt-4 text-center text-[12px] sm:text-[13px] text-[#6A6D71] leading-relaxed">
+                                  Emergency visits are limited to one per month and are for urgent situations only.
+                                </div>
+                              )}
+
+                              {plan.name === "Elite" && (
+                                <div className="mt-4 text-center text-[12px] sm:text-[13px] text-[#6A6D71] leading-relaxed">
+                                  Full-day visit must be scheduled in advance.
+                                </div>
+                              )}
+
                               <button
                                 onClick={() => handleSubscribe(plan.name)}
-                                disabled={action.disabled}
+                                data-track="plans-cta"
+                                disabled={action.disabled || !!actionLoadingPlan || checkingAddr}
                                 className={`w-full h-[56px] sm:h-[60px] rounded-2xl text-lg sm:text-xl font-extrabold leading-none transition-all duration-300 mt-6 flex items-center justify-center ${
-                                  action.disabled
+                                  action.disabled || !!actionLoadingPlan || checkingAddr
                                     ? "bg-gray-400 text-white cursor-not-allowed"
-                                    : action.kind === "upgrade"
+                                    : action.kind === "upgrade" || action.kind === "downgrade" || action.kind === "change"
                                     ? "bg-[#111827] hover:bg-black text-white hover:scale-[1.01]"
                                     : "bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF] hover:scale-[1.01]"
                                 }`}
                               >
-                                {action.label}
+                                {actionLoadingPlan === plan.name ? "Updating..." : action.label}
                               </button>
 
+                              <div className="mt-3 grid grid-cols-1 gap-2 text-center text-[12px] font-semibold text-[#313234] sm:grid-cols-3">
+                                <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
+                                  Secure checkout
+                                </div>
+                                <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
+                                  No estimates
+                                </div>
+                                <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
+                                  Easy online booking
+                                </div>
+                              </div>
+
+                              <div className="mt-3 text-center text-[12px] sm:text-[13px] text-[#6A6D71] leading-relaxed">
+                                You can manage your plan and book online anytime.
+                              </div>
+
                               <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
-                                Each visit up to 90 minutes • Cancel anytime • No contracts
+                                Each visit covers up to 90 minutes of work • Cancel anytime • No contracts
                                 <br />
                                 <span className="text-[#6A6D71]/80">
-                                  Materials at cost • No markup • Transparent pricing
+                                  Book as often as availability allows • Materials at cost • Transparent pricing
                                 </span>
                               </div>
                             </div>
@@ -668,12 +798,12 @@ export default function PlansSection() {
               <div className="hidden lg:block">
                 <div className="relative pb-44">
                   <div className="flex items-end gap-6">
-                    <div className="relative w-[420px] min-h-[560px] bg-[#EEF2FF] rounded-[22px] border border-[#C5CBD8] shadow-[0_20px_90px_rgba(0,0,0,0.35)] flex-shrink-0 overflow-hidden">
-                      {plans[currentSlide].badge && (
+                    <div className={`relative w-[420px] min-h-[560px] rounded-[22px] flex-shrink-0 overflow-hidden ${plans[currentSlide].name === "Plus" ? "bg-white border-2 border-[#306EEC] shadow-[0_22px_100px_rgba(48,110,236,0.28)]" : "bg-[#EEF2FF] border border-[#C5CBD8] shadow-[0_20px_90px_rgba(0,0,0,0.35)]"}`}>
+                      {getBadgeLabel(plans[currentSlide].name, plans[currentSlide].badge) && (
                         <div className="absolute top-4 left-4 z-10">
                           <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-[#EEF2FF]/70 shadow-lg">
                             <span className="text-[14px] font-extrabold text-[#EEF2FF]">
-                              {plans[currentSlide].badge}
+                              {getBadgeLabel(plans[currentSlide].name, plans[currentSlide].badge)}
                             </span>
                           </div>
                         </div>
@@ -695,13 +825,16 @@ export default function PlansSection() {
                       <div
                         className={[
                           "p-8 flex flex-col h-full",
-                          plans[currentSlide].badge ? "pt-14" : "",
+                          getBadgeLabel(plans[currentSlide].name, plans[currentSlide].badge) ? "pt-14" : "",
                         ].join(" ")}
                       >
                         <div className="text-center mb-8">
                           <h3 className="text-3xl font-extrabold text-[#313234] mb-2">
                             {plans[currentSlide].name}
                           </h3>
+                          <p className="text-[#306EEC] font-bold text-base leading-relaxed mb-2">
+                            {getPositioningLabel(plans[currentSlide].name)}
+                          </p>
                           <p className="text-base text-[#6A6D71] leading-relaxed">
                             {plans[currentSlide].description}
                           </p>
@@ -744,6 +877,10 @@ export default function PlansSection() {
                                 </p>
                               )}
 
+                              <div className="mb-4 text-center text-[12px] font-semibold text-[#6A6D71]">
+                                {getComparisonLabel(plan.name)}
+                              </div>
+
                               <div className="space-y-3 mb-auto">
                                 {plan.features.map((feature: string, idx: number) => (
                                   <div key={idx} className="flex items-center gap-3">
@@ -765,25 +902,66 @@ export default function PlansSection() {
                                 ))}
                               </div>
 
+                              {plan.name === "Basic" && (
+                                <div className="mt-4 text-center text-[12px] text-[#6A6D71] leading-relaxed">
+                                  Each visit covers up to 90 minutes of work.
+                                </div>
+                              )}
+
+                              {plan.name === "Basic" && (
+                                <div className="mt-2 text-center text-[12px] text-[#6A6D71] leading-relaxed">
+                                  Book as often as availability allows.
+                                </div>
+                              )}
+
+                              {plan.name === "Premium" && (
+                                <div className="mt-4 text-center text-[12px] text-[#6A6D71] leading-relaxed">
+                                  Emergency visits are limited to one per month and are for urgent situations only.
+                                </div>
+                              )}
+
+                              {plan.name === "Elite" && (
+                                <div className="mt-4 text-center text-[12px] text-[#6A6D71] leading-relaxed">
+                                  Full-day visit must be scheduled in advance.
+                                </div>
+                              )}
+
                               <button
                                 onClick={() => handleSubscribe(plan.name)}
-                                disabled={action.disabled}
+                                data-track="plans-cta"
+                                disabled={action.disabled || !!actionLoadingPlan || checkingAddr}
                                 className={`w-full h-[62px] rounded-[14px] text-xl font-extrabold transition-all mt-6 flex items-center justify-center ${
-                                  action.disabled
+                                  action.disabled || !!actionLoadingPlan || checkingAddr
                                     ? "bg-gray-400 text-white cursor-not-allowed"
-                                    : action.kind === "upgrade"
+                                    : action.kind === "upgrade" || action.kind === "downgrade" || action.kind === "change"
                                     ? "bg-[#111827] hover:bg-black text-white hover:scale-[1.01]"
                                     : "bg-[#306EEC] hover:bg-[#2558c9] text-[#EEF2FF] hover:scale-[1.01]"
                                 }`}
                               >
-                                {action.label}
+                                {actionLoadingPlan === plan.name ? "Updating..." : action.label}
                               </button>
 
+                              <div className="mt-3 grid grid-cols-3 gap-2 text-center text-[12px] font-semibold text-[#313234]">
+                                <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
+                                  Secure checkout
+                                </div>
+                                <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
+                                  No estimates
+                                </div>
+                                <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
+                                  Easy online booking
+                                </div>
+                              </div>
+
+                              <div className="mt-3 text-center text-[12px] text-[#6A6D71] leading-relaxed">
+                                You can manage your plan and book online anytime.
+                              </div>
+
                               <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
-                                Each visit up to 90 minutes • Cancel anytime • No contracts
+                                Each visit covers up to 90 minutes of work • Cancel anytime • No contracts
                                 <br />
                                 <span className="text-[#6A6D71]/80">
-                                  Materials at cost • No markup • Transparent pricing
+                                  Book as often as availability allows • Materials at cost • Transparent pricing
                                 </span>
                               </div>
                             </>
@@ -808,12 +986,12 @@ export default function PlansSection() {
                             onClick={() => setCurrentSlide(index)}
                             className="group relative w-[300px] min-h-[420px] flex-shrink-0 text-left"
                           >
-                            <div className="absolute inset-0 bg-[#EEF2FF] rounded-[16px] border border-[#C5CBD8] p-6 shadow-[0_12px_60px_rgba(0,0,0,0.25)] transition-transform duration-300 group-hover:-translate-y-1" />
-                            {plan.badge && (
+                            <div className={`absolute inset-0 rounded-[16px] p-6 transition-transform duration-300 group-hover:-translate-y-1 ${plan.name === "Plus" ? "bg-white border-2 border-[#306EEC] shadow-[0_14px_70px_rgba(48,110,236,0.22)]" : "bg-[#EEF2FF] border border-[#C5CBD8] shadow-[0_12px_60px_rgba(0,0,0,0.25)]"}`} />
+                            {getBadgeLabel(plan.name, plan.badge) && (
                               <div className="absolute top-3 left-3 z-20">
                                 <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-3 py-1.5 rounded-lg border border-white/70 shadow">
                                   <span className="text-[12px] font-extrabold text-white">
-                                    {plan.badge}
+                                    {getBadgeLabel(plan.name, plan.badge)}
                                   </span>
                                 </div>
                               </div>
@@ -821,6 +999,7 @@ export default function PlansSection() {
                             <div className="relative z-10 p-6 flex flex-col h-full">
                               <div className="text-center mb-6">
                                 <h3 className="text-xl font-extrabold text-[#313234] mb-2">{plan.name}</h3>
+                                <p className="text-[#306EEC] font-bold text-[13px] mb-2">{getPositioningLabel(plan.name)}</p>
                                 <p className="text-sm text-[#6A6D71] leading-relaxed">{plan.description}</p>
                               </div>
 
@@ -857,6 +1036,10 @@ export default function PlansSection() {
                                 </p>
                               )}
 
+                              <div className="mb-4 text-center text-[12px] font-semibold text-[#6A6D71]">
+                                {getComparisonLabel(plan.name)}
+                              </div>
+
                               <div className="space-y-2 mb-auto">
                                 {plan.features.slice(0, 3).map((feature: string, idx2: number) => (
                                   <div key={idx2} className="flex items-center gap-2">
@@ -878,17 +1061,23 @@ export default function PlansSection() {
                                 ))}
                               </div>
 
+                              {plan.name === "Basic" && (
+                                <div className="mt-4 text-center text-[12px] text-[#306EEC] font-semibold leading-relaxed">
+                                  Book as often as availability allows.
+                                </div>
+                              )}
+
                               <div className="mt-auto pt-4">
                                 <div
                                   className={`w-full h-[40px] rounded-[10px] text-[15px] font-extrabold flex items-center justify-center transition ${
-                                    action.kind === "upgrade"
+                                    action.kind === "upgrade" || action.kind === "downgrade" || action.kind === "change"
                                       ? "bg-[#111827] text-white"
-                                      : action.kind === "active"
+                                    : action.kind === "active"
                                       ? "bg-gray-300 text-gray-600"
                                       : "bg-[#306EEC] text-white"
                                   }`}
                                 >
-                                  {action.kind === "upgrade" ? "Upgrade" : action.kind === "active" ? "Active" : billing === "annual" ? "View Annual" : "View"}
+                                  {action.label}
                                 </div>
                               </div>
                             </div>
@@ -944,54 +1133,10 @@ export default function PlansSection() {
           </div>
         </div>
       </section>
-
-      {upgradePopupOpen && (
-        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center px-4">
-          <div className="w-full max-w-md rounded-[24px] bg-white p-6 sm:p-7 shadow-[0_20px_100px_rgba(0,0,0,0.35)]">
-            <div className="text-center">
-              <div className="mx-auto w-14 h-14 rounded-full bg-[#EEF2FF] flex items-center justify-center text-2xl mb-4">
-                📞
-              </div>
-
-              <h3 className="text-2xl font-extrabold text-[#313234]">
-                Upgrade to {prettyPlanName(upgradeTargetPlan)}
-              </h3>
-
-              <p className="mt-3 text-[#6A6D71] leading-relaxed">
-                To upgrade your current plan, please call or text Taras directly.
-              </p>
-
-              <div className="mt-5 rounded-2xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
-                <p className="text-sm text-[#6A6D71]">Taras</p>
-                <p className="text-2xl font-extrabold text-[#313234]">{TARAS_PHONE_DISPLAY}</p>
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <a
-                  href={TARAS_PHONE_LINK}
-                  className="h-[52px] rounded-[16px] bg-[#306EEC] hover:bg-[#2558c9] text-white font-extrabold inline-flex items-center justify-center transition"
-                >
-                  Call Taras
-                </a>
-                <a
-                  href={TARAS_SMS_LINK}
-                  className="h-[52px] rounded-[16px] bg-[#111827] hover:bg-black text-white font-extrabold inline-flex items-center justify-center transition"
-                >
-                  Text Taras
-                </a>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setUpgradePopupOpen(false)}
-                className="mt-4 h-[48px] px-5 rounded-[14px] border border-[#D1D5DB] bg-white hover:bg-[#F9FAFB] text-[#313234] font-bold transition"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
+
+
+
+

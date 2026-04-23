@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { checkSubscription, getNextBooking } from "@/lib/booking-service";
+import Button from "@/app/components/ui/Button";
+import { trackEvent } from "@/lib/analytics";
 
 type FixterUser = {
   defaultAddressId?: string | null;
@@ -25,11 +26,6 @@ type NextBookingResponse = {
   plan?: string;
   hasAnyBookings?: boolean;
 };
-
-const TIP_URL = "https://buy.stripe.com/eVq8wO3W98O03NL3ASawo00";
-const PHONE = "631-599-1363";
-const GOOGLE_REVIEW_URL = "https://maps.app.goo.gl/LM5fagx5GidLZfPB6";
-const YOUTUBE_ID = "HQoAkLNGI9c";
 
 function prettyPlan(p?: string) {
   const x = String(p || "").toLowerCase();
@@ -115,63 +111,38 @@ export default function ServiceInfoSection() {
     run();
   }, [isAuthenticated, typedUser?.defaultAddressId]);
 
-  const cta = useMemo(() => {
-    const isNewLoggedIn = isAuthenticated && state === "none" && hasAnyBookings === false;
+  const hero = useMemo(() => {
     const planName = prettyPlan(plan);
-
-    if (state === "guest") {
-      return {
-        title: "Trusted by Long Island homeowners",
-        sub:
-          "Most homeowners don't need vague coverage. They need clear help. Basic gives you 2 visits per month for $149, Plus gives you 4 visits per month, Premium gives you the same 4 visits per month plus 1 emergency visit, and Elite gives you unlimited visits by calendar schedule. Every visit is up to 90 minutes.",
-        primaryLabel: "View plans",
-        primaryHref: "#plans",
-        secondaryLabel: "Book a visit",
-        secondaryHref: "#pick-day",
-        badge: "Local • On-demand • Professional",
-        hint: "Pick the plan with the right number of 90-minute visits, then book from the calendar.",
-      };
-    }
+    const isNewLoggedIn = isAuthenticated && state === "none" && hasAnyBookings === false;
 
     if (state === "sub") {
       return {
-        title: `Your membership is active${planName ? ` - ${planName}` : ""}`,
-        sub: "Book your next visit in the calendar below. Upload photos so we bring the right tools and move fast.",
-        primaryLabel: "Book next visit",
-        primaryHref: "#pick-day",
-        secondaryLabel: "What's included",
-        secondaryHref: "/included",
-        badge: planName ? `${planName} member` : "Member access",
-        hint: "Pick a day -> pick a time -> describe the task -> upload photos.",
+        eyebrow: planName ? `${planName} Member` : "Active Member",
+        title: "Personal Handyman Subscription for Homeowners",
+        sub:
+          "Your membership is active. Book your next visit online with clear pricing, predictable service, and no surprise invoices.",
+        badge: planName ? `${planName} active` : "Membership active",
+      };
+    }
+
+    if (state === "none") {
+      return {
+        eyebrow: isNewLoggedIn ? "Account Ready" : "Subscription Required",
+        title: "Personal Handyman Subscription for Homeowners",
+        sub:
+          "Choose a clear monthly plan, book online, and stop paying unpredictable per-visit rates. No estimates, no surprises.",
+        badge: "Easy online booking",
       };
     }
 
     return {
-      title: isNewLoggedIn ? "Welcome - pick a plan to start today" : "Pick a plan to book a visit",
+      eyebrow: "Long Island Homeowners",
+      title: "Personal Handyman Subscription for Homeowners",
       sub:
-        "Subscription is required to book. Choose Basic for 2 visits per month, Plus for 4 visits per month, Premium for 4 visits per month plus 1 emergency visit, or Elite for unlimited visits by calendar schedule. Every visit is up to 90 minutes.",
-      primaryLabel: "View plans",
-      primaryHref: "#plans",
-      secondaryLabel: "What's included",
-      secondaryHref: "/included",
-      badge: "Subscription required",
-      hint: "Choose the plan that fits your home, then book your 90-minute visits from the calendar.",
+        "Choose a clear monthly plan, book online, and stop paying unpredictable per-visit rates. No estimates, no surprises.",
+      badge: "More affordable than per visit",
     };
   }, [state, plan, isAuthenticated, hasAnyBookings]);
-
-  const showLeaveReviewBtn = state === "sub";
-
-  const youtubeSrc = useMemo(() => {
-    const base = `https://www.youtube.com/embed/${YOUTUBE_ID}`;
-    const params = new URLSearchParams({
-      rel: "0",
-      modestbranding: "1",
-      playsinline: "1",
-      controls: "1",
-      autoplay: "0",
-    });
-    return `${base}?${params.toString()}`;
-  }, []);
 
   const scrollToHash = (hash: string) => {
     const id = hash.replace("#", "");
@@ -188,239 +159,69 @@ export default function ServiceInfoSection() {
   return (
     <section
       id="how-booking-works"
-      className="relative w-full bg-[#eaedfa] pt-10 sm:pt-12 lg:pt-14 pb-6 sm:pb-8"
+      className="relative w-full bg-[#eaedfa] py-8 sm:py-10 lg:py-12"
       aria-label="Service info"
     >
       <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
         <div className="rounded-[22px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] overflow-hidden">
-          <div className="px-5 sm:px-7 py-4 bg-[#313234] text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="text-[12px] uppercase tracking-wider text-white/70">
-              Trusted by Long Island homeowners
-            </div>
+          <div className="p-5 sm:p-6 lg:p-8">
+            <div className="max-w-[860px]">
+              <div className="inline-flex flex-wrap items-center gap-2 mb-4">
+                <span className="px-3 py-1 rounded-full bg-[#313234] text-white text-[12px] font-bold uppercase tracking-wider">
+                  {hero.eyebrow}
+                </span>
+                <span className="px-3 py-1 rounded-full bg-white border border-[#C5CBD8] text-[12px] font-semibold text-[#313234]">
+                  {hero.badge}
+                </span>
+              </div>
 
-            <div className="inline-flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[12px] font-semibold">
-                {cta.badge}
-              </span>
+              <h1 className="text-[32px] sm:text-[42px] lg:text-[56px] font-extrabold leading-[1.02] tracking-[-0.04em] text-[#313234] max-w-[820px]">
+                {hero.title}
+              </h1>
 
-              <a
-                href={`tel:${PHONE}`}
-                className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[12px] font-semibold hover:bg-white/15 transition"
-              >
-                Call: {PHONE}
-              </a>
+              <p className="mt-4 max-w-[640px] text-[15px] leading-relaxed text-[#6A6D71] sm:text-[17px]">
+                {hero.sub}
+              </p>
 
-              {showLeaveReviewBtn ? (
-                <a
-                  href={GOOGLE_REVIEW_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1 rounded-full bg-[#306EEC] hover:bg-[#2558c9] transition text-[12px] font-extrabold"
+              <div className="mt-5 flex flex-wrap gap-2 sm:gap-3">
+                {["$149", "$249", "$349", "$499"].map((price) => (
+                  <div
+                    key={price}
+                    className="px-4 py-2 rounded-[14px] bg-white border border-[#C5CBD8] text-[#313234] text-sm sm:text-base font-extrabold"
+                  >
+                    {price}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 flex flex-col sm:flex-row gap-3 max-w-[420px]">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    trackEvent("view_plans", { placement: "hero" });
+                    scrollToHash("#plans");
+                  }}
+                  data-track="hero-cta"
+                  size="md"
+                  className="h-[52px] rounded-[16px] flex-1"
                 >
-                  Leave a review
-                </a>
-              ) : null}
-            </div>
-          </div>
+                  View Plans
+                </Button>
 
-          <div className="p-5 sm:p-7">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-              <div className="lg:col-span-7">
-                <h2 className="text-[26px] sm:text-[32px] lg:text-[36px] font-extrabold leading-tight text-[#313234]">
-                  {cta.title}
-                </h2>
-
-                <p className="mt-3 text-[#6A6D71] text-[14px] sm:text-[15px] leading-relaxed max-w-[680px]">
-                  {cta.sub}
-                </p>
-
-                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
-                    <div className="text-[#313234] font-extrabold">Fast, scheduled, predictable</div>
-                    <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      You pick the <span className="font-semibold text-[#313234]">day & time</span> yourself. No waiting for callbacks,
-                      no "we'll let you know" - and every plan is easy to understand before you join.
-                    </div>
-                  </div>
-
-                  <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
-                    <div className="text-[#313234] font-extrabold">No surprise invoices</div>
-                    <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      Subscription pricing means <span className="font-semibold text-[#313234]">clear expectations</span> and
-                      simple monthly coverage - no "contractor math" after the job.
-                    </div>
-                  </div>
-
-                  <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
-                    <div className="text-[#313234] font-extrabold">Real pros, real standards</div>
-                    <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      We show up prepared, communicate clearly, and fix things the right way - not the cheap way.
-                    </div>
-                  </div>
-
-                  <div className="rounded-[18px] bg-white border border-[#E6E8EF] p-4">
-                    <div className="text-[#313234] font-extrabold">Photos = faster service</div>
-                    <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                      Upload photos when booking so we bring the right tools and plan ahead - less back-and-forth.
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-5">
-                  <div className="rounded-[18px] border border-[#c5cbd8] bg-white overflow-hidden shadow-sm">
-                    <div className="px-4 sm:px-5 py-3 bg-[#F6F7FB] border-b border-[#E6E8EF] flex items-start justify-between gap-3">
-                      <div>
-                        <div className="text-[#313234] font-extrabold text-[14px] sm:text-[15px]">
-                          Why Profixter is different?
-                        </div>
-                        <div className="text-[#6A6D71] text-[12px] mt-0.5">
-                          Here is <span className="font-semibold text-[#313234]">WHY</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="relative aspect-video bg-black">
-                      <iframe
-                        className="absolute inset-0 w-full h-full"
-                        src={youtubeSrc}
-                        title="Profixter Introduction"
-                        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-5 rounded-[18px] border border-[#C5CBD8] bg-white p-4 sm:p-5">
-                  <div className="text-[#313234] font-extrabold">How booking works</div>
-                  <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
-                      <div className="text-[#313234] font-extrabold text-[13px]">1) Pick a plan</div>
-                      <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                        Choose the monthly visit count and support level that matches your home.
-                      </div>
-                    </div>
-                    <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
-                      <div className="text-[#313234] font-extrabold text-[13px]">2) Book instantly</div>
-                      <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                        Pick your day and time right in the calendar.
-                      </div>
-                    </div>
-                    <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
-                      <div className="text-[#313234] font-extrabold text-[13px]">3) Describe + upload photos</div>
-                      <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                        Helps us prepare so the visit is efficient.
-                      </div>
-                    </div>
-                    <div className="rounded-[16px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
-                      <div className="text-[#313234] font-extrabold text-[13px]">4) We arrive & handle it</div>
-                      <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                        Each visit is up to 90 minutes, and we handle the work clearly and efficiently.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-5 rounded-[18px] border border-[#C5CBD8] bg-white p-4 sm:p-5">
-                  <div className="text-[#313234] font-extrabold">Bonus perks</div>
-                  <div className="mt-2 text-[#6A6D71] text-[13px] leading-relaxed">
-                    Refer a homeowner {"->"} get <span className="font-semibold text-[#313234]">$50 off</span> your next payment.
-                    <br />Tips go <span className="font-semibold text-[#313234]">100%</span> to your Fixter.
-                  </div>
-
-                  <div className="mt-4 flex flex-col sm:flex-row gap-3">
-                    <a
-                      href={TIP_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="h-[46px] px-5 rounded-[14px] bg-[#313234] hover:bg-black transition text-white font-extrabold text-[14px] inline-flex items-center justify-center"
-                    >
-                      Leave a tip
-                    </a>
-
-                    <a
-                      href={`tel:${PHONE}`}
-                      className="h-[46px] px-5 rounded-[14px] border border-[#C5CBD8] bg-[#F6F7FB] hover:bg-white transition text-[#313234] font-extrabold text-[14px] inline-flex items-center justify-center"
-                    >
-                      Call {PHONE}
-                    </a>
-                  </div>
-                </div>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    trackEvent("start_booking", { placement: "hero" });
+                    scrollToHash("#pick-day");
+                  }}
+                  data-track="hero-cta"
+                  variant="secondary"
+                  size="md"
+                  className="h-[52px] rounded-[16px] flex-1"
+                >
+                  Book Visit
+                </Button>
               </div>
-
-              <div className="lg:col-span-5">
-                <div className="rounded-[18px] border border-[#C5CBD8] bg-white p-5 sm:p-6">
-                  <div className="text-[12px] uppercase tracking-wider text-[#6A6D71] font-bold">
-                    Next step
-                  </div>
-
-                  <div className="mt-2 text-[#313234] text-[18px] sm:text-[20px] font-extrabold leading-tight">
-                    {state === "sub" ? "Book your next visit" : "Start today"}
-                  </div>
-
-                  <div className="mt-2 text-[#6A6D71] text-[13px] leading-relaxed">
-                    {cta.hint}
-                  </div>
-
-                  <div className="mt-5 flex flex-col gap-3">
-                    {cta.primaryHref.startsWith("#") ? (
-                      <button
-                        type="button"
-                        onClick={() => scrollToHash(cta.primaryHref)}
-                        className="h-[52px] rounded-[16px] bg-[#306EEC] hover:bg-[#2558c9] transition text-white font-extrabold text-[15px] inline-flex items-center justify-center"
-                      >
-                        {cta.primaryLabel}
-                      </button>
-                    ) : (
-                      <Link
-                        href={cta.primaryHref}
-                        className="h-[52px] rounded-[16px] bg-[#306EEC] hover:bg-[#2558c9] transition text-white font-extrabold text-[15px] inline-flex items-center justify-center"
-                      >
-                        {cta.primaryLabel}
-                      </Link>
-                    )}
-
-                    {cta.secondaryHref.startsWith("#") ? (
-                      <button
-                        type="button"
-                        onClick={() => scrollToHash(cta.secondaryHref)}
-                        className="h-[52px] rounded-[16px] border border-[#C5CBD8] bg-[#EEF2FF] hover:bg-white transition text-[#313234] font-extrabold text-[15px] inline-flex items-center justify-center"
-                      >
-                        {cta.secondaryLabel}
-                      </button>
-                    ) : (
-                      <Link
-                        href={cta.secondaryHref}
-                        className="h-[52px] rounded-[16px] border border-[#C5CBD8] bg-[#EEF2FF] hover:bg-white transition text-[#313234] font-extrabold text-[15px] inline-flex items-center justify-center"
-                      >
-                        {cta.secondaryLabel}
-                      </Link>
-                    )}
-                  </div>
-
-                  <div className="mt-5 text-[12px] text-[#6A6D71]">
-                    See details on {" "}
-                    <Link href="/included" className="text-[#306EEC] font-extrabold hover:underline">
-                      What's included
-                    </Link>
-                    .
-                  </div>
-                </div>
-
-                <div className="mt-4 rounded-[18px] border border-[#E6E8EF] bg-[#F6F7FB] p-5">
-                  <div className="text-[#313234] font-extrabold">Fast and respectful service</div>
-                  <div className="mt-1 text-[#6A6D71] text-[13px] leading-relaxed">
-                    If a prior job runs long, we'll still arrive and do it right. We're not a marketplace - we're a real local service
-                    with standards.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="px-5 sm:px-7 py-4 border-t border-[#c5cbd8] bg-white/60">
-            <div className="text-[13px] text-[#6A6D71]">
-              Next: scroll down to plans and the booking calendar.
             </div>
           </div>
         </div>

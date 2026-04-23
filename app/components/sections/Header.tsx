@@ -5,21 +5,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
-
-// Navigation items for the header. We replaced the old anchor links with
-// dedicated pages and meaningful anchors that match the new site structure.
-const NAV = [
-  // Dedicated subscription plan page where visitors can compare memberships
-  // One‑time service booking page
-  { href: "/on-demand", label: "On Demand" },
-  // Service categories. These pages explain each department in detail
-  { href: "/services/subscription", label: "Subscription" },
-  { href: "/services/general-contractor", label: "General Contractor" },
-  { href: "/services/home-improvement", label: "Home Improvement" },
-  // Anchored sections on the home page for social proof and contact
-  { href: "#testimonials", label: "Testimonials" },
-  { href: "#contact-us", label: "Contact" },
-];
+import { trackEvent } from "@/lib/analytics";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -27,49 +13,61 @@ export default function Header() {
 
   const { user, isAuthenticated, logout } = useAuth();
   const profileMenuRef = useRef<HTMLDivElement>(null);
-
   const router = useRouter();
 
   const firstName = useMemo(() => user?.name?.split(" ")[0] || "User", [user?.name]);
+  const navItems = useMemo(
+    () => [
+      { href: "#plans", label: "Plans" },
+      { href: "/included", label: "What can I book" },
+      ...(isAuthenticated ? [{ href: "#pick-day", label: "Book Visit" }, { href: "/account", label: "Account" }] : []),
+    ],
+    [isAuthenticated]
+  );
 
-  // Close profile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
         setIsProfileMenuOpen(false);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ✅ offset scroll so anchors never hide under the sticky header
   const scrollToHash = (hash: string) => {
     const id = hash.replace("#", "");
     const el = document.getElementById(id);
     if (!el) return;
 
-    const HEADER_OFFSET = window.innerWidth >= 1024 ? 120 : 100;
+    const headerOffset = window.innerWidth >= 1024 ? 120 : 100;
+    const y = el.getBoundingClientRect().top + window.scrollY - headerOffset;
 
-    const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
     window.scrollTo({ top: y, behavior: "smooth" });
     history.replaceState(null, "", hash);
   };
 
-  // Lock body scroll when mobile menu open (prevents iOS weirdness)
+  const handleTrackedHashClick = (hash: string) => {
+    if (hash === "#plans") trackEvent("view_plans", { placement: "header" });
+    if (hash === "#pick-day") trackEvent("start_booking", { placement: "header" });
+    scrollToHash(hash);
+  };
+
   useEffect(() => {
     if (isMenuOpen) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
+
     return () => {
       document.body.style.overflow = "";
     };
   }, [isMenuOpen]);
 
-  // Close mobile menu on route/hash change (helps on iOS + prevents “stuck open”)
   useEffect(() => {
     const close = () => setIsMenuOpen(false);
     window.addEventListener("hashchange", close);
     window.addEventListener("popstate", close);
+
     return () => {
       window.removeEventListener("hashchange", close);
       window.removeEventListener("popstate", close);
@@ -83,225 +81,70 @@ export default function Header() {
     router.push("/");
   };
 
-  // Esc closes mobile menu
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setIsMenuOpen(false);
     };
+
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   return (
-    <header className="w-full py-[14px] relative z-50">
-      {/* Glass wrapper */}
-      <div className="mx-3 sm:mx-5 rounded-[18px] border border-white/30 bg-white/75 backdrop-blur-md shadow-[0_10px_60px_rgba(0,0,0,0.18)]">
-        <div className="mx-auto max-w-[1240px] px-[14px] sm:px-[18px] py-[10px] flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center relative z-50">
+    <header className="relative z-50 w-full py-[14px]">
+      <div className="mx-3 rounded-[18px] border border-white/30 bg-white/75 shadow-[0_10px_60px_rgba(0,0,0,0.18)] backdrop-blur-md sm:mx-5">
+        <div className="mx-auto flex max-w-[1240px] items-center justify-between px-[14px] py-[10px] sm:px-[18px]">
+          <Link href="/" className="relative z-50 flex items-center">
             <Image src="/images/logo3.png" alt="Profixter Long Island" width={80} height={32} priority />
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-7">
-            {NAV.map((item) =>
+          <nav className="hidden items-center gap-7 lg:flex">
+            {navItems.map((item) =>
               item.href.startsWith("#") ? (
                 <button
                   key={item.href}
                   type="button"
-                  onClick={() => scrollToHash(item.href)}
-                  className="text-[#111827] hover:text-[#306EEC] transition-colors text-[15px] font-normal relative group pb-2"
+                  onClick={() => handleTrackedHashClick(item.href)}
+                  className="group relative pb-2 text-[15px] font-medium text-[#111827] transition-colors hover:text-[#306EEC]"
                 >
                   {item.label}
-                  <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-[#306eec] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                  <span className="absolute -bottom-1 left-0 h-0.5 w-full origin-left scale-x-0 bg-[#306EEC] transition-transform duration-300 group-hover:scale-x-100" />
                 </button>
               ) : (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="text-[#111827] hover:text-[#306EEC] transition-colors text-[15px] font-normal relative group pb-2"
+                  className="group relative pb-2 text-[15px] font-medium text-[#111827] transition-colors hover:text-[#306EEC]"
                 >
                   {item.label}
-                  <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-[#306eec] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                  <span className="absolute -bottom-1 left-0 h-0.5 w-full origin-left scale-x-0 bg-[#306EEC] transition-transform duration-300 group-hover:scale-x-100" />
                 </Link>
               )
             )}
           </nav>
 
-          {/* Desktop Auth / Profile */}
-          <div className="hidden lg:flex items-center gap-4">
+          <div className="hidden items-center gap-4 lg:flex">
             {isAuthenticated ? (
-              <div className="relative" ref={profileMenuRef}>
-                <button
-                  onClick={() => setIsProfileMenuOpen((v) => !v)}
-                  className="flex items-center gap-3 cursor-pointer hover:opacity-90 transition-opacity"
-                  aria-label="Open profile menu"
-                >
-                  <span className="text-[#111827] text-base">{firstName}</span>
-                  <div className="w-11 h-11 rounded-full bg-[#C5CBD8] flex items-center justify-center border border-white/40">
-                    <svg width="31" height="28" viewBox="0 0 31 28" fill="none">
-                      <path
-                        d="M15.5 14C18.5376 14 21 11.5376 21 8.5C21 5.46243 18.5376 3 15.5 3C12.4624 3 10 5.46243 10 8.5C10 11.5376 12.4624 14 15.5 14Z"
-                        fill="#EEF2FF"
-                      />
-                      <path
-                        d="M15.5 16C9.70101 16 5 19.134 5 23C5 24.1046 5.89543 25 7 25H24C25.1046 25 26 24.1046 26 23C26 19.134 21.299 16 15.5 16Z"
-                        fill="#EEF2FF"
-                      />
-                    </svg>
-                  </div>
-                </button>
-
-                {isProfileMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-[#E6E8EF] rounded-[14px] shadow-lg py-2 z-50">
-                    <Link
-                      href="/account"
-                      className="block px-4 py-3 text-base text-[#111827] hover:bg-[#EEF2FF] transition-colors"
-                      onClick={() => setIsProfileMenuOpen(false)}
-                    >
-                      My Account
-                    </Link>
-                    <div className="border-t border-[#E6E8EF] my-2" />
-                    <button
-                      className="block w-full text-left px-4 py-3 text-base text-red-600 hover:bg-[#EEF2FF] transition-colors"
-                      onClick={handleLogout}
-                    >
-                      Log out
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
               <>
-                <Link
-                  href="/signin"
-                  className="px-6 py-3 text-[#111827] hover:text-[#306EEC] border border-[#111827] rounded-[14px] text-base font-normal transition-colors hover:bg-black/5"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/signup"
-                  className="px-8 py-3 bg-[#eef2ff] text-[#111827] rounded-[14px] text-base font-normal transition-colors hover:bg-white border border-[#C5CBD8]"
-                >
-                  Sign up
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMenuOpen((v) => !v)}
-            className="lg:hidden relative z-[70] w-10 h-10 flex flex-col items-center justify-center gap-1.5"
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={isMenuOpen}
-          >
-            <span
-              className={`w-6 h-0.5 bg-[#111827] transition-all duration-300 ${
-                isMenuOpen ? "rotate-45 translate-y-2" : ""
-              }`}
-            />
-            <span
-              className={`w-6 h-0.5 bg-[#111827] transition-all duration-300 ${
-                isMenuOpen ? "opacity-0" : ""
-              }`}
-            />
-            <span
-              className={`w-6 h-0.5 bg-[#111827] transition-all duration-300 ${
-                isMenuOpen ? "-rotate-45 -translate-y-2" : ""
-              }`}
-            />
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Menu Overlay */}
-      <div
-        className={`lg:hidden fixed inset-0 z-[65] bg-white transition-all duration-300 overflow-y-auto
-    pt-[env(safe-area-inset-top)]
-    pb-[calc(env(safe-area-inset-bottom)+120px)]
-    ${isMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Mobile navigation"
-      >
-        {/* Close Button (moved down a bit so it doesn’t block sign buttons) */}
-        <button
-          onClick={() => setIsMenuOpen(false)}
-          aria-label="Close menu"
-          className="absolute top-14 right-5 w-10 h-10 rounded-full bg-white/95 border border-[#E6E8EF] shadow-[0_10px_30px_rgba(17,24,39,0.15)] flex items-center justify-center text-[#111827] text-xl font-semibold z-[80] hover:bg-[#F6F7FB] transition"
-        >
-          ×
-        </button>
-
-        {/* Optional: tap outside content closes */}
-        <button
-          aria-label="Close menu background"
-          className="absolute inset-0 w-full h-full cursor-default"
-          onClick={() => setIsMenuOpen(false)}
-        />
-
-        {/* Content */}
-        <div className="relative z-[75]">
-          <nav
-            className={[
-              "flex flex-col items-center justify-start",
-              "min-h-[100svh]",
-              "gap-7 px-8 pt-24 pb-10",
-            ].join(" ")}
-          >
-            {/* Mobile sign in / sign up at top */}
-            {!isAuthenticated && (
-              <div className="flex flex-col gap-3 w-full max-w-xs">
-                <Link
-                  href="/signin"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="w-full text-center px-6 py-3 text-[#111827] hover:text-[#306EEC] border border-[#111827] rounded-[14px] text-base font-normal transition-colors hover:bg-black/5"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/signup"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="w-full text-center px-8 py-3 bg-[#eef2ff] text-[#111827] rounded-[14px] text-base font-normal transition-colors hover:bg-white border border-[#C5CBD8]"
-                >
-                  Sign up
-                </Link>
-              </div>
-            )}
-
-            {/* Navigation items */}
-            {NAV.map((item) =>
-              item.href.startsWith("#") ? (
                 <button
-                  key={item.href}
                   type="button"
                   onClick={() => {
-                    setIsMenuOpen(false);
-                    requestAnimationFrame(() => scrollToHash(item.href));
+                    trackEvent("start_booking", { placement: "header_primary" });
+                    scrollToHash("#pick-day");
                   }}
-                  className="text-[#111827] hover:text-[#306EEC] text-[28px] font-normal transition-colors"
+                  className="rounded-[14px] bg-[#306EEC] px-6 py-3 text-base font-medium text-white transition hover:bg-[#255ed2]"
                 >
-                  {item.label}
+                  Book Visit
                 </button>
-              ) : (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setIsMenuOpen(false)}
-                  className="text-[#111827] hover:text-[#306EEC] text-[28px] font-normal transition-colors"
-                >
-                  {item.label}
-                </Link>
-              )
-            )}
-            {/* Auth buttons or profile at bottom */}
-            <div className="flex flex-col gap-4 mt-1 w-full max-w-xs">
-              {isAuthenticated ? (
-                <>
-                  <div className="flex items-center justify-center gap-3 mb-2">
-                    <div className="w-16 h-16 rounded-full bg-[#C5CBD8] flex items-center justify-center">
-                      <svg width="40" height="36" viewBox="0 0 31 28" fill="none">
+                <div className="relative" ref={profileMenuRef}>
+                  <button
+                    onClick={() => setIsProfileMenuOpen((v) => !v)}
+                    className="flex items-center gap-3 transition-opacity hover:opacity-90"
+                    aria-label="Open profile menu"
+                  >
+                    <span className="text-base text-[#111827]">{firstName}</span>
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-[#C5CBD8]">
+                      <svg width="31" height="28" viewBox="0 0 31 28" fill="none">
                         <path
                           d="M15.5 14C18.5376 14 21 11.5376 21 8.5C21 5.46243 18.5376 3 15.5 3C12.4624 3 10 5.46243 10 8.5C10 11.5376 12.4624 14 15.5 14Z"
                           fill="#EEF2FF"
@@ -312,26 +155,189 @@ export default function Header() {
                         />
                       </svg>
                     </div>
-                    <span className="text-[#111827] text-xl font-medium">{firstName}</span>
-                  </div>
-
-                  <Link
-                    href="/account"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="w-full text-center px-6 py-3 text-[#111827] hover:text-[#306EEC] border border-[#111827] rounded-[14px] text-base font-normal transition-colors hover:bg-black/5"
-                  >
-                    My Account
-                  </Link>
-
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-center px-8 py-3 bg-red-600 text-white rounded-[14px] text-base font-normal transition-colors hover:bg-red-700"
-                  >
-                    Log out
                   </button>
-                </>
-              ) : null}
+
+                  {isProfileMenuOpen && (
+                    <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-[14px] border border-[#E6E8EF] bg-white py-2 shadow-lg">
+                      <Link
+                        href="/account"
+                        className="block px-4 py-3 text-base text-[#111827] transition-colors hover:bg-[#EEF2FF]"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                      >
+                        My Account
+                      </Link>
+                      <div className="my-2 border-t border-[#E6E8EF]" />
+                      <button
+                        className="block w-full px-4 py-3 text-left text-base text-red-600 transition-colors hover:bg-[#EEF2FF]"
+                        onClick={handleLogout}
+                      >
+                        Log out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <Link
+                href="/signup"
+                onClick={() => trackEvent("start_signup", { placement: "header_primary" })}
+                className="rounded-[14px] bg-[#306EEC] px-8 py-3 text-base font-medium text-white transition hover:bg-[#255ed2]"
+              >
+                Get Started
+              </Link>
+            )}
+          </div>
+
+          <button
+            onClick={() => setIsMenuOpen((v) => !v)}
+            className="relative z-[70] flex h-10 w-10 flex-col items-center justify-center gap-1.5 lg:hidden"
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMenuOpen}
+          >
+            <span
+              className={`h-0.5 w-6 bg-[#111827] transition-all duration-300 ${
+                isMenuOpen ? "translate-y-2 rotate-45" : ""
+              }`}
+            />
+            <span className={`h-0.5 w-6 bg-[#111827] transition-all duration-300 ${isMenuOpen ? "opacity-0" : ""}`} />
+            <span
+              className={`h-0.5 w-6 bg-[#111827] transition-all duration-300 ${
+                isMenuOpen ? "-translate-y-2 -rotate-45" : ""
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      <div className="px-4 pt-3 text-center">
+        <div className="inline-flex items-center justify-center rounded-full border border-[#D9E4FF] bg-white/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#306EEC] shadow-sm">
+          Now accepting new members in Long Island
+        </div>
+        <div className="pt-2 text-[12px] font-medium uppercase tracking-[0.2em] text-[#4B5563]">
+          Serving Long Island homeowners
+        </div>
+      </div>
+
+      <div
+        className={`fixed inset-0 z-[65] overflow-y-auto bg-white pb-[calc(env(safe-area-inset-bottom)+120px)] pt-[env(safe-area-inset-top)] transition-all duration-300 lg:hidden ${
+          isMenuOpen ? "visible opacity-100" : "invisible opacity-0"
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile navigation"
+      >
+        <button
+          onClick={() => setIsMenuOpen(false)}
+          aria-label="Close menu"
+          className="absolute right-5 top-14 z-[80] flex h-10 w-10 items-center justify-center rounded-full border border-[#E6E8EF] bg-white/95 text-xl font-semibold text-[#111827] shadow-[0_10px_30px_rgba(17,24,39,0.15)] transition hover:bg-[#F6F7FB]"
+        >
+          X
+        </button>
+
+        <button
+          aria-label="Close menu background"
+          className="absolute inset-0 h-full w-full cursor-default"
+          onClick={() => setIsMenuOpen(false)}
+        />
+
+        <div className="relative z-[75]">
+          <nav className="flex min-h-[100svh] flex-col items-center justify-start gap-10 px-6 pb-10 pt-24">
+            <div className="w-full max-w-sm rounded-[24px] border border-[#D9E4FF] bg-[#F8FAFF] p-5 shadow-[0_18px_60px_rgba(48,110,236,0.08)]">
+              <p className="text-center text-[12px] font-semibold uppercase tracking-[0.2em] text-[#306EEC]">
+                Serving Long Island homeowners
+              </p>
+              <div className="mt-4 flex flex-col gap-3">
+                {isAuthenticated ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      trackEvent("start_booking", { placement: "mobile_header_primary" });
+                      requestAnimationFrame(() => scrollToHash("#pick-day"));
+                    }}
+                    className="w-full rounded-[16px] bg-[#306EEC] px-6 py-4 text-center text-base font-medium text-white transition hover:bg-[#255ed2]"
+                  >
+                    Book Visit
+                  </button>
+                ) : (
+                  <>
+                    <Link
+                      href="/signup"
+                      onClick={() => {
+                        trackEvent("start_signup", { placement: "mobile_header_primary" });
+                        setIsMenuOpen(false);
+                      }}
+                      className="w-full rounded-[16px] bg-[#306EEC] px-6 py-4 text-center text-base font-medium text-white transition hover:bg-[#255ed2]"
+                    >
+                      Get Started
+                    </Link>
+                    <Link
+                      href="/signin"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="w-full rounded-[16px] border border-[#C5CBD8] bg-white px-6 py-4 text-center text-base font-medium text-[#111827] transition hover:bg-[#F8FAFF]"
+                    >
+                      Sign in
+                    </Link>
+                  </>
+                )}
+              </div>
             </div>
+
+            <div className="flex w-full max-w-sm flex-col gap-2 rounded-[24px] border border-[#E6E8EF] bg-white p-4 shadow-[0_16px_50px_rgba(17,24,39,0.08)]">
+              {navItems.map((item) =>
+                item.href.startsWith("#") ? (
+                  <button
+                    key={item.href}
+                    type="button"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      if (item.href === "#plans") trackEvent("view_plans", { placement: "mobile_header_nav" });
+                      if (item.href === "#pick-day") trackEvent("start_booking", { placement: "mobile_header_nav" });
+                      requestAnimationFrame(() => scrollToHash(item.href));
+                    }}
+                    className="rounded-[16px] px-4 py-4 text-left text-[24px] font-medium text-[#111827] transition hover:bg-[#F4F7FF] hover:text-[#306EEC]"
+                  >
+                    {item.label}
+                  </button>
+                ) : (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsMenuOpen(false)}
+                    className="rounded-[16px] px-4 py-4 text-left text-[24px] font-medium text-[#111827] transition hover:bg-[#F4F7FF] hover:text-[#306EEC]"
+                  >
+                    {item.label}
+                  </Link>
+                )
+              )}
+            </div>
+
+            {isAuthenticated ? (
+              <div className="flex w-full max-w-sm flex-col gap-4">
+                <div className="mb-2 flex items-center justify-center gap-3">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#C5CBD8]">
+                    <svg width="40" height="36" viewBox="0 0 31 28" fill="none">
+                      <path
+                        d="M15.5 14C18.5376 14 21 11.5376 21 8.5C21 5.46243 18.5376 3 15.5 3C12.4624 3 10 5.46243 10 8.5C10 11.5376 12.4624 14 15.5 14Z"
+                        fill="#EEF2FF"
+                      />
+                      <path
+                        d="M15.5 16C9.70101 16 5 19.134 5 23C5 24.1046 5.89543 25 7 25H24C25.1046 25 26 24.1046 26 23C26 19.134 21.299 16 15.5 16Z"
+                        fill="#EEF2FF"
+                      />
+                    </svg>
+                  </div>
+                  <span className="text-xl font-medium text-[#111827]">{firstName}</span>
+                </div>
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full rounded-[16px] bg-red-600 px-8 py-3 text-center text-base font-medium text-white transition-colors hover:bg-red-700"
+                >
+                  Log out
+                </button>
+              </div>
+            ) : null}
           </nav>
         </div>
       </div>

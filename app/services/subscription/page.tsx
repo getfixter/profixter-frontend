@@ -21,7 +21,7 @@ export default function SubscriptionServicePage() {
   const benefits = [
     {
       title: "Clear monthly visit counts",
-      text: "Basic includes 2 visits per month, Plus includes 4 visits per month, and every visit is up to 90 minutes.",
+      text: "Choose the plan that fits your home, and each standard visit covers up to 90 minutes of work.",
       icon: "🔁",
     },
     {
@@ -31,7 +31,7 @@ export default function SubscriptionServicePage() {
     },
     {
       title: "Premium support options",
-      text: "Premium gives you the same 4 visits per month as Plus, plus 1 emergency visit when something urgent comes up.",
+      text: "Emergency visits are limited to one per month and are for urgent situations only.",
       icon: "⚡",
     },
     {
@@ -41,7 +41,7 @@ export default function SubscriptionServicePage() {
     },
     {
       title: "Elite flexibility",
-      text: "Elite gives you unlimited visits by calendar schedule for homes that need ongoing attention.",
+      text: "Elite includes 1 full-day visit per month (up to 8 hours). Full-day visit must be scheduled in advance.",
       icon: "📦",
     },
     {
@@ -60,7 +60,7 @@ export default function SubscriptionServicePage() {
     {
       number: "02",
       title: "Book your visits",
-      text: "Schedule your included 90-minute visits in the calendar and keep your home in shape year-round.",
+      text: "Schedule visits online and keep home maintenance handled without starting from zero every time.",
     },
     {
       number: "03",
@@ -90,8 +90,8 @@ export default function SubscriptionServicePage() {
             </h1>
 
             <p className="mt-5 text-base sm:text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
-              Choose a plan based on how many 90-minute visits you want each month.
-              Keep it simple: 2 visits, 4 visits, premium support, or unlimited scheduled visits.
+              Choose the plan that fits your home: simple ongoing tasks, more scheduling flexibility,
+              urgent situations, or larger full-day projects.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
@@ -112,9 +112,9 @@ export default function SubscriptionServicePage() {
 
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
               <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                <div className="text-white font-bold">2 or 4 visits per month</div>
+                <div className="text-white font-bold">Flexible active bookings</div>
                 <div className="mt-1 text-sm text-white/70">
-                  Straightforward plans that make it obvious what you get.
+                  Plans scale from 1 active booking up to larger project support.
                 </div>
               </div>
 
@@ -126,9 +126,9 @@ export default function SubscriptionServicePage() {
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                <div className="text-white font-bold">90-minute visits</div>
+                <div className="text-white font-bold">90-minute standard visits</div>
                 <div className="mt-1 text-sm text-white/70">
-                  Every included visit is up to 90 minutes of handyman labor.
+                  Each standard visit covers up to 90 minutes of handyman work.
                 </div>
               </div>
             </div>

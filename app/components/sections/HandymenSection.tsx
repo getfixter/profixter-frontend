@@ -43,7 +43,7 @@ export default function HandymenSection() {
   if (!TEAM?.length) return null;
 
   return (
-    <section className="relative w-full bg-[#313234] py-12 sm:py-16 lg:py-24 overflow-hidden">
+    <section className="relative w-full overflow-hidden bg-[#313234] py-10 sm:py-12 lg:py-14">
       <div className="container mx-auto px-5 sm:px-6 lg:px-5 max-w-[1240px]">
         {/* ================= TITLE (MOBILE) ================= */}
         <div className="lg:hidden text-center mb-8">
@@ -64,9 +64,8 @@ export default function HandymenSection() {
             HANDYMEN
           </h2>
 
-          <p className="mt-4 text-sm sm:text-base text-[#c5cbd8] max-w-md mx-auto">
-            Skilled professionals who bring comfort and quality to every home.
-            Reliable, friendly, and ready to tackle any task - big or small.
+          <p className="mx-auto mt-4 max-w-md text-sm text-[#c5cbd8] sm:text-base">
+            Skilled professionals who bring quality, care, and consistency to every visit.
           </p>
         </div>
 
@@ -92,9 +91,8 @@ export default function HandymenSection() {
               </div>
             </div>
 
-            <p className="text-[14px] text-[#c5cbd8] text-right max-w-[420px] pt-3">
-              Skilled professionals who bring comfort and quality to every home.
-              Reliable, friendly, and ready to tackle any task - big or small.
+            <p className="max-w-[420px] pt-3 text-right text-[14px] text-[#c5cbd8]">
+              Skilled professionals who bring quality, care, and consistency to every visit.
             </p>
           </div>
 
