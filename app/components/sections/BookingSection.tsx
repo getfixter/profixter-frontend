@@ -104,9 +104,14 @@ function TimeSlotGrid({
   onSelect: (value: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-4">
       {slotOptions.map((slot) => {
         const isSelected = slot.time === selectedTime;
+        const availabilityLabel = slot.available
+          ? slot.remaining && slot.remaining > 0
+            ? `${slot.remaining} left`
+            : "Available"
+          : "Unavailable";
         return (
           <button
             key={slot.time}
@@ -117,27 +122,54 @@ function TimeSlotGrid({
               onSelect(slot.time);
             }}
             className={[
-              "min-h-[56px] rounded-[16px] border px-3 py-3 text-left transition",
-              slot.available
-                ? "border-[#306EEC] bg-[#306EEC] text-white shadow-[0_10px_30px_rgba(48,110,236,0.28)] hover:bg-[#2558c9]"
-                : "border-[#D1D5DB] bg-white/70 text-[#9CA3AF] opacity-80",
-              isSelected ? "ring-4 ring-[#306EEC]/25 bg-[#2558c9]" : "",
+              "group relative min-h-[64px] overflow-hidden rounded-[18px] border px-3.5 py-3 text-left transition-all duration-200 ease-out active:scale-[0.99]",
+              isSelected
+                ? "scale-[1.05] border-white/85 bg-[#1242B8] text-white shadow-[0_26px_56px_rgba(18,66,184,0.44)] ring-[3px] ring-[#7EB3FF]/55"
+                : slot.available
+                  ? "border-[#2E69E3] bg-[#306EEC] text-white shadow-[0_12px_28px_rgba(48,110,236,0.24)] hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-[#2558c9] hover:shadow-[0_18px_38px_rgba(48,110,236,0.30)]"
+                  : "border-[#D1D5DB] bg-[#EEF1F5] text-[#8C94A3] opacity-95",
               !slot.available ? "cursor-not-allowed" : "",
+              isSelected ? "cursor-default" : "",
             ].join(" ")}
           >
-            <div className={`text-sm font-extrabold ${slot.available ? "" : "line-through"}`}>
-              {formatTime12(slot.time)}
+            {slot.available && (
+              <div
+                className={[
+                  "pointer-events-none absolute inset-x-0 top-0 h-[44%] transition-opacity duration-200",
+                  isSelected ? "bg-white/10 opacity-100" : "bg-white/8 opacity-80 group-hover:opacity-100",
+                ].join(" ")}
+              />
+            )}
+
+            <div className="relative z-[1] flex items-start justify-between gap-2">
+              <div
+                className={`text-[15px] font-black tracking-[-0.01em] ${
+                  slot.available ? "" : "line-through"
+                } ${isSelected ? "text-white" : ""}`}
+              >
+                {formatTime12(slot.time)}
+              </div>
+              {isSelected && (
+                <div className="inline-flex items-center gap-1 rounded-full border border-white/50 bg-white/16 px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path
+                      d="M2.5 6.2L4.8 8.5L9.5 3.7"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  Selected
+                </div>
+              )}
             </div>
             <div
-              className={`mt-1 text-[11px] font-semibold ${
-                slot.available ? "text-white/85" : "text-[#9CA3AF]"
+              className={`relative z-[1] mt-1.5 text-[11px] font-semibold ${
+                isSelected ? "text-white/95" : slot.available ? "text-white/88" : "text-[#8C94A3]"
               }`}
             >
-              {slot.available
-                ? slot.remaining && slot.remaining > 0
-                  ? `${slot.remaining} left`
-                  : "Available"
-                : "Unavailable"}
+              {availabilityLabel}
             </div>
           </button>
         );
@@ -725,6 +757,8 @@ if (info) {
     } else {
       setNote(QUICK_BOOKING_DESCRIPTIONS[taskTitle] || taskTitle);
     }
+    setService("labor_only");
+    setShowServiceMenu(false);
 
     setQuickBookOpen(false);
     setQuickBookingLoading(false);

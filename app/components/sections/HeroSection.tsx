@@ -84,19 +84,36 @@ export default function HeroSection() {
     else window.location.href = "/#pick-day";
   };
 
-  const primaryCtaLabel = useMemo(
-    () => (subState === "sub" ? "Book Visit" : "View Plans"),
-    [subState]
-  );
+  const ctaConfig = useMemo(() => {
+    if (subState === "sub") {
+      return {
+        primaryLabel: "Book Visit",
+        primaryAction: goToBooking,
+        secondaryLabel: "View Plans",
+        secondaryAction: goToPlans,
+      };
+    }
 
-  const secondaryCtaLabel = useMemo(
-    () => (subState === "sub" ? "View Plans" : "Book Visit"),
-    [subState]
-  );
+    if (isAuthenticated) {
+      return {
+        primaryLabel: "View Plans",
+        primaryAction: goToPlans,
+        secondaryLabel: "Book Visit",
+        secondaryAction: goToBooking,
+      };
+    }
+
+    return {
+      primaryLabel: "Book Visit",
+      primaryAction: goToBooking,
+      secondaryLabel: "View Plans",
+      secondaryAction: goToPlans,
+    };
+  }, [subState, isAuthenticated]);
 
   return (
-    <section className="relative w-full overflow-hidden bg-[#eef3ff]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(48,110,236,0.20),transparent_38%),radial-gradient(circle_at_85%_12%,rgba(255,255,255,0.95),transparent_34%),linear-gradient(180deg,#eff4ff_0%,#e7edfb_52%,#edf2ff_100%)]" />
+    <section className="relative w-full overflow-hidden bg-[#e7edf9]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(48,110,236,0.24),transparent_36%),radial-gradient(circle_at_84%_14%,rgba(255,255,255,0.76),transparent_30%),linear-gradient(180deg,#ebf1fd_0%,#dee7f8_54%,#e9effc_100%)]" />
 
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-y-0 right-0 w-full lg:w-[58%]">
@@ -104,67 +121,61 @@ export default function HeroSection() {
             src="/images/hero-bg.png"
             alt="Well-kept home interior"
             fill
-            className="object-cover object-center opacity-30 lg:opacity-55"
+            className="object-cover object-center opacity-36 lg:opacity-62"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#eef3ff] via-[#eef3ff]/78 to-white/12 lg:from-[#eef3ff] lg:via-[#eef3ff]/56 lg:to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/28 via-transparent to-[#eef3ff]/55" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#e7edf9] via-[#e7edf9]/72 to-black/12 lg:from-[#e7edf9] lg:via-[#e7edf9]/48 lg:to-black/22" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/12 via-transparent to-[#dbe5f8]/36" />
         </div>
       </div>
 
       <div className="relative z-10 mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-6">
         <div className="flex min-h-[700px] flex-col justify-center py-24 sm:min-h-[760px] sm:py-28 lg:min-h-[840px] lg:py-32">
-          <div className="max-w-[760px]">
-            <div className="inline-flex rounded-full border border-[#c8d5f2] bg-white/82 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#4d5566] shadow-[0_10px_35px_rgba(42,55,95,0.08)] backdrop-blur">
+          <div className="max-w-[780px]">
+            <div className="inline-flex rounded-full border border-[#b9c9ea] bg-white/78 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#364152] shadow-[0_12px_38px_rgba(42,55,95,0.10)] backdrop-blur">
               Serving Long Island homeowners
             </div>
 
-            <h1 className="mt-6 max-w-[720px] text-[42px] font-extrabold leading-[0.94] tracking-[-0.045em] text-[#101828] sm:text-[58px] lg:text-[78px]">
+            <h1 className="mt-6 max-w-[760px] text-[42px] font-black leading-[0.9] tracking-[-0.05em] text-[#0f1728] sm:text-[60px] lg:text-[84px]">
               Personal Handyman Subscription for Homeowners
             </h1>
 
-            <p className="mt-5 max-w-[620px] text-[17px] font-medium leading-[1.45] text-[#4b5565] sm:text-[20px]">
-              Book home repairs online. No estimates. No surprise pricing. Each visit up to 90 minutes.
+            <p className="mt-5 max-w-[660px] text-[17px] font-semibold leading-[1.42] text-[#334155] sm:text-[20px]">
+              Book a handyman online. No estimates. No surprise pricing. Each visit up to 90 minutes.
             </p>
 
-            <div className="mt-6 flex flex-wrap gap-2.5 sm:gap-3">
+            <div className="mt-7 flex flex-wrap gap-3 sm:gap-3.5">
               {PRICING_CHIPS.map((price) => (
                 <button
                   key={price}
                   type="button"
                   onClick={goToPlans}
-                  className="rounded-full border border-[#c9d7f6] bg-white/88 px-4 py-2 text-sm font-extrabold text-[#1f2a44] shadow-[0_12px_30px_rgba(52,73,121,0.08)] transition hover:border-[#306EEC] hover:text-[#306EEC]"
+                  className="rounded-full border border-[#bacbed] bg-white/92 px-4 py-2.5 text-sm font-extrabold text-[#172033] shadow-[0_14px_30px_rgba(39,58,99,0.10)] transition hover:-translate-y-0.5 hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] active:translate-y-0"
                 >
                   {price}
                 </button>
               ))}
             </div>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-10 flex flex-col gap-3.5 sm:flex-row sm:items-center">
               <button
                 type="button"
-                onClick={() => {
-                  if (subState === "sub") goToBooking();
-                  else goToPlans();
-                }}
-                className="inline-flex min-h-[58px] items-center justify-center rounded-[18px] bg-[#306EEC] px-7 text-base font-extrabold text-white shadow-[0_18px_45px_rgba(48,110,236,0.28)] transition hover:bg-[#2558c9] active:scale-[0.99] sm:min-w-[188px] sm:text-lg"
+                onClick={ctaConfig.primaryAction}
+                className="inline-flex min-h-[60px] w-full items-center justify-center rounded-[18px] bg-[#306EEC] px-8 text-base font-extrabold text-white shadow-[0_22px_55px_rgba(48,110,236,0.34)] transition hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99] sm:min-w-[210px] sm:w-auto sm:text-lg"
               >
-                {primaryCtaLabel}
+                {ctaConfig.primaryLabel}
               </button>
 
               <button
                 type="button"
-                onClick={() => {
-                  if (subState === "sub") goToPlans();
-                  else goToBooking();
-                }}
-                className="inline-flex min-h-[58px] items-center justify-center rounded-[18px] border border-[#c5cfe3] bg-white/84 px-7 text-base font-bold text-[#1f2937] shadow-[0_12px_35px_rgba(42,55,95,0.08)] transition hover:border-[#306EEC] hover:text-[#306EEC] active:scale-[0.99] sm:min-w-[188px] sm:text-lg"
+                onClick={ctaConfig.secondaryAction}
+                className="inline-flex min-h-[60px] w-full items-center justify-center rounded-[18px] border border-[#bcc8df] bg-white/88 px-8 text-base font-bold text-[#1f2937] shadow-[0_14px_36px_rgba(42,55,95,0.08)] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] active:scale-[0.99] sm:min-w-[188px] sm:w-auto sm:text-lg"
               >
-                {secondaryCtaLabel}
+                {ctaConfig.secondaryLabel}
               </button>
             </div>
 
-            <div className="mt-4 text-sm text-[#667085]">
+            <div className="mt-5 text-sm font-medium text-[#5d6b82]">
               {isAuthenticated && subState === "unknown"
                 ? "Checking your plan details..."
                 : "Simple monthly plans for Long Island homeowners."}
