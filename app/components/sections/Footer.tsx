@@ -2,250 +2,189 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+
+const MEMBERSHIP_LINKS = [
+  { label: "Membership Plans", href: "/membership" },
+  { label: "What's Included", href: "/included" },
+  { label: "Book a Visit", href: "/membership" },
+  { label: "My Account", href: "/account" },
+];
+
+const PROJECTS_LINKS = [
+  { label: "Home Improvement", href: "/projects" },
+  { label: "Roofing", href: "/roofing" },
+  { label: "Bathroom Remodeling", href: "/remodeling" },
+  { label: "Kitchen Remodeling", href: "/kitchen" },
+  { label: "Free Estimate", href: "/estimate" },
+];
+
+const TRUST_BADGES = [
+  "Licensed HI-71484",
+  "Fully Insured",
+  "Nassau & Suffolk County",
+];
 
 export default function Footer() {
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-  });
-
-  const [showPopup, setShowPopup] = useState(false);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((p) => ({
-      ...p,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    console.log("Contact request:", formData);
-
-    setShowPopup(true);
-
-    setFormData({
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-    });
-
-    setTimeout(() => setShowPopup(false), 5000);
-  };
-
-  const scrollToHash = (hash: string) => {
-    const id = hash.replace("#", "");
-    const el = document.getElementById(id);
-    if (!el) return;
-
-    const HEADER_OFFSET = window.innerWidth >= 1024 ? 180 : 140;
-    const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
-
-    window.scrollTo({ top: y, behavior: "smooth" });
-    history.replaceState(null, "", hash);
-  };
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowPopup(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   return (
-    <footer id="contact-us" className="relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0">
-        <Image
-          src="/images/footer-bg.png"
-          alt="Footer background"
-          fill
-          className="object-cover"
-          priority={false}
-        />
-        <div className="absolute inset-0 bg-black/65" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/40" />
-      </div>
+    <footer
+      id="contact-us"
+      className="relative overflow-hidden"
+      style={{ background: "linear-gradient(165deg, #050C18 0%, #070F1E 50%, #040A14 100%)" }}
+    >
+      {/* Subtle dot texture */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-[0.022]"
+        style={{
+          backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
+        }}
+      />
+      {/* Top edge glow */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-0 left-0 right-0 h-px"
+        style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.20), transparent)" }}
+      />
+      {/* Bottom depth */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-black/25" />
 
       {/* Content */}
-      <div className="relative mx-auto max-w-[1240px] px-5 sm:px-6 lg:px-5 py-10 sm:py-12 lg:py-14">
-        {/* TOP SECTION */}
-        <div className="grid grid-cols-1 xl:grid-cols-[1.35fr_0.7fr_0.95fr] gap-8 lg:gap-10 items-start">
-          {/* LEFT */}
-          <div className="min-w-0">
-            <div className="flex flex-col gap-5">
-              <div className="shrink-0">
-                <Image
-                  src="/images/logo-footer.svg"
-                  alt="Profixter"
-                  width={320}
-                  height={70}
-                  className="w-[220px] sm:w-[280px] lg:w-[320px] h-auto"
-                />
-              </div>
+      <div className="relative mx-auto max-w-[1240px] px-5 sm:px-6 lg:px-5 py-12 sm:py-16">
 
-              <p className="text-[#D6DBE5] text-sm sm:text-base leading-relaxed max-w-[640px]">
-                Our goal is to make home repairs and maintenance hassle-free with
-                unlimited handyman visits under one subscription, so you can stop
-                chasing contractors and keep your home handled.
-              </p>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.6fr_0.7fr_0.7fr_0.7fr] gap-10 lg:gap-8 items-start">
+
+          {/* ── Brand column ── */}
+          <div>
+            <Image
+              src="/images/logo-footer.svg"
+              alt="Profixter"
+              width={200}
+              height={48}
+              className="w-[180px] h-auto mb-5"
+            />
+
+            <p className="text-[#9AA3B2] text-[15px] leading-relaxed max-w-[400px] mb-7">
+              Licensed home services for Long Island homeowners — monthly maintenance memberships
+              and complete home improvement by the same trusted team.
+            </p>
+
+            {/* Phone */}
+            <a
+              href="tel:+16315991363"
+              className="group inline-flex items-center gap-3.5 rounded-[16px] border border-white/[0.14] bg-white/[0.06] px-5 py-3.5 transition-all hover:bg-white/[0.12] hover:border-white/[0.22]"
+            >
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#306EEC]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.37 1.9.72 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0122 16.92z"
+                    stroke="white"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">
+                  Reach Taras directly
+                </div>
+                <div className="text-[16px] font-bold text-white">
+                  631-599-1363
+                </div>
+              </div>
+            </a>
           </div>
 
-          {/* MIDDLE */}
-          <div className="min-w-0">
-            <div className="text-white font-semibold mb-4 text-base">Explore</div>
-
-            <nav className="grid grid-cols-2 gap-x-8 gap-y-3 sm:max-w-[320px] xl:max-w-none">
-              <Link
-                href="/services/subscription"
-                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
-              >
-                Subscription
-              </Link>
-
-              <Link
-                href="/on-demand"
-                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
-              >
-                On Demand
-              </Link>
-
-              <button
-                type="button"
-                onClick={() => scrollToHash("#departments")}
-                className="text-left text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
-              >
-                Services
-              </button>
-
-              <button
-                type="button"
-                onClick={() => scrollToHash("#testimonials")}
-                className="text-left text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
-              >
-                Testimonials
-              </button>
-
-              <Link
-                href="/partnerships"
-                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
-              >
-                Partnerships
-              </Link>
-
-              <Link
-                href="/careers"
-                className="text-[#EEF2FF] hover:text-[#306EEC] transition-colors"
-              >
-                Careers
-              </Link>
+          {/* ── Membership column ── */}
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 mb-5">
+              Membership
+            </div>
+            <nav className="flex flex-col gap-3.5">
+              {MEMBERSHIP_LINKS.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="text-[15px] font-medium text-[#9AA3B2] transition-colors hover:text-white"
+                >
+                  {link.label}
+                </Link>
+              ))}
             </nav>
           </div>
 
-          {/* RIGHT */}
-          <div className="min-w-0">
-            <div className="rounded-[22px] border border-white/15 bg-white/10 backdrop-blur-md p-5 sm:p-6 shadow-[0_20px_80px_rgba(0,0,0,0.35)] w-full max-w-[360px] xl:ml-auto">
-              <h3 className="text-[20px] sm:text-[22px] font-extrabold text-[#306EEC]">
-                Get in Touch
-              </h3>
-
-              <div className="mt-4 space-y-3 text-sm sm:text-base">
-                <Link
-                  href="https://instagram.com/mrfixter.ny"
-                  target="_blank"
-                  className="block text-[#93c5fd] underline underline-offset-2 hover:text-white transition break-words"
-                >
-                  Instagram: <span className="font-semibold">mrfixter.ny</span>
-                </Link>
-
-                <Link
-                  href="mailto:my@profixter.com"
-                  className="block text-[#93c5fd] underline underline-offset-2 hover:text-white transition break-all"
-                >
-                  <span className="font-semibold">my@profixter.com</span>
-                </Link>
-              </div>
-
-              <div className="mt-5 pt-4 border-t border-white/15">
-                <div className="flex flex-wrap gap-x-2 gap-y-2 text-sm">
-                  <Link
-                    href="/privacy"
-                    className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition"
-                  >
-                    Privacy Policy
-                  </Link>
-
-                  <span className="text-white/25">|</span>
-
-                  <Link
-                    href="/terms"
-                    className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition"
-                  >
-                    Terms of Service
-                  </Link>
-                </div>
-
-                <div className="mt-3 text-sm text-white/75 leading-relaxed">
-                  Have a question? Most answers are here{" "}
-                  <Link
-                    href="/included"
-                    className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition"
-                  >
-                    → What can I book?
-                  </Link>
-                </div>
-
-                <div className="mt-3 text-sm text-white/75 leading-relaxed">
-                  Love the service? Tell a neighbor.
-                </div>
-
-                <div className="mt-3 text-xs text-white/55 leading-relaxed">
-                  Serving Suffolk & Nassau. Licensed & insured.
-                </div>
-              </div>
+          {/* ── Projects column ── */}
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 mb-5">
+              Projects
             </div>
+            <nav className="flex flex-col gap-3.5">
+              {PROJECTS_LINKS.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="text-[15px] font-medium text-[#9AA3B2] transition-colors hover:text-white"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
           </div>
-        </div>
 
-        {/* BOTTOM STRIP */}
-        <div className="mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row gap-2 sm:gap-4 items-center justify-between">
-          <p className="text-[#7C8596] text-sm">© 2025 All rights reserved.</p>
-          <p className="text-[#7C8596] text-sm">License HI-71484 • Insured</p>
-        </div>
-      </div>
-
-      {/* Popup */}
-      {showPopup && (
-        <div className="fixed left-1/2 -translate-x-1/2 bottom-5 sm:left-auto sm:translate-x-0 sm:right-6 sm:bottom-6 z-[999999] w-[92vw] sm:w-[380px]">
-          <div className="bg-white text-[#111827] p-4 rounded-[16px] shadow-2xl border border-black/10">
-            <div className="flex items-start gap-3">
-              <div className="text-2xl">✅</div>
-              <div className="flex-1">
-                <p className="font-extrabold">Thank you for contacting ProFixter!</p>
-                <p className="text-sm mt-1">
-                  We received your request. Our team will call you shortly from
-                  <span className="font-semibold"> 631-599-1363</span>.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowPopup(false)}
-                className="ml-2 rounded-full w-9 h-9 grid place-items-center hover:bg-black/5 transition"
-                aria-label="Close"
+          {/* ── Contact column ── */}
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 mb-5">
+              Contact
+            </div>
+            <div className="flex flex-col gap-3.5">
+              <a
+                href="mailto:my@profixter.com"
+                className="text-[15px] font-medium text-[#9AA3B2] transition-colors hover:text-white break-all"
               >
-                ✕
-              </button>
+                my@profixter.com
+              </a>
+              <a
+                href="https://instagram.com/mrfixter.ny"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[15px] font-medium text-[#9AA3B2] transition-colors hover:text-white"
+              >
+                @mrfixter.ny
+              </a>
+
+              <div className="mt-2 flex flex-col gap-2.5">
+                <Link href="/privacy" className="text-[13px] text-white/30 transition-colors hover:text-white/55">
+                  Privacy Policy
+                </Link>
+                <Link href="/terms" className="text-[13px] text-white/30 transition-colors hover:text-white/55">
+                  Terms of Service
+                </Link>
+                <Link href="/included" className="text-[13px] text-white/30 transition-colors hover:text-white/55">
+                  What can I book?
+                </Link>
+              </div>
             </div>
           </div>
+
         </div>
-      )}
+
+        {/* ── Trust strip ── */}
+        <div className="mt-12 border-t border-white/[0.09] pt-6 flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <p className="text-[#4A5568] text-[13px]">
+            &copy; 2026 Profixter. All rights reserved. · NY State Licensed HI-71484
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+            {TRUST_BADGES.map((item) => (
+              <div key={item} className="flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#86EFAC] flex-shrink-0" />
+                <span className="text-[12px] font-semibold text-white/28">{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
     </footer>
   );
 }

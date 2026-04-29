@@ -18,9 +18,9 @@ export default function Header() {
   const firstName = useMemo(() => user?.name?.split(" ")[0] || "User", [user?.name]);
   const navItems = useMemo(
     () => [
-      { href: "#plans", label: "Plans" },
-      { href: "/included", label: "What can I book" },
-      ...(isAuthenticated ? [{ href: "#pick-day", label: "Book Visit" }, { href: "/account", label: "Account" }] : []),
+      { href: "/membership", label: "Membership" },
+      { href: "/projects", label: "Projects" },
+      ...(isAuthenticated ? [{ href: "/account", label: "Account" }] : []),
     ],
     [isAuthenticated]
   );
@@ -95,47 +95,32 @@ export default function Header() {
       <div className="mx-3 rounded-[18px] border border-white/30 bg-white/75 shadow-[0_10px_60px_rgba(0,0,0,0.18)] backdrop-blur-md sm:mx-5">
         <div className="mx-auto flex max-w-[1240px] items-center justify-between px-[14px] py-[10px] sm:px-[18px]">
           <Link href="/" className="relative z-50 flex items-center">
-            <Image src="/images/logo3.png" alt="Profixter Long Island" width={80} height={32} priority />
+            <Image src="/images/logo.svg" alt="Profixter Long Island" width={80} height={32} priority className="brightness-0" />
           </Link>
 
           <nav className="hidden items-center gap-7 lg:flex">
-            {navItems.map((item) =>
-              item.href.startsWith("#") ? (
-                <button
-                  key={item.href}
-                  type="button"
-                  onClick={() => handleTrackedHashClick(item.href)}
-                  className="group relative pb-2 text-[15px] font-medium text-[#111827] transition-colors hover:text-[#306EEC]"
-                >
-                  {item.label}
-                  <span className="absolute -bottom-1 left-0 h-0.5 w-full origin-left scale-x-0 bg-[#306EEC] transition-transform duration-300 group-hover:scale-x-100" />
-                </button>
-              ) : (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="group relative pb-2 text-[15px] font-medium text-[#111827] transition-colors hover:text-[#306EEC]"
-                >
-                  {item.label}
-                  <span className="absolute -bottom-1 left-0 h-0.5 w-full origin-left scale-x-0 bg-[#306EEC] transition-transform duration-300 group-hover:scale-x-100" />
-                </Link>
-              )
-            )}
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group relative pb-2 text-[15px] font-medium text-[#111827] transition-colors hover:text-[#306EEC]"
+              >
+                {item.label}
+                <span className="absolute -bottom-1 left-0 h-0.5 w-full origin-left scale-x-0 bg-[#306EEC] transition-transform duration-300 group-hover:scale-x-100" />
+              </Link>
+            ))}
           </nav>
 
           <div className="hidden items-center gap-4 lg:flex">
             {isAuthenticated ? (
               <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    trackEvent("start_booking", { placement: "header_primary" });
-                    scrollToHash("#pick-day");
-                  }}
-                  className="rounded-[14px] bg-[#306EEC] px-6 py-3 text-base font-medium text-white transition hover:bg-[#255ed2]"
+                <Link
+                  href="/membership"
+                  onClick={() => trackEvent("start_booking", { placement: "header_primary" })}
+                  className="rounded-[14px] bg-[#306EEC] px-6 py-3 text-base font-extrabold text-white transition hover:bg-[#255ed2]"
                 >
                   Book Visit
-                </button>
+                </Link>
                 <div className="relative" ref={profileMenuRef}>
                   <button
                     onClick={() => setIsProfileMenuOpen((v) => !v)}
@@ -181,7 +166,7 @@ export default function Header() {
               <Link
                 href="/signup"
                 onClick={() => trackEvent("start_signup", { placement: "header_primary" })}
-                className="rounded-[14px] bg-[#306EEC] px-8 py-3 text-base font-medium text-white transition hover:bg-[#255ed2]"
+                className="rounded-[14px] bg-[#306EEC] px-8 py-3 text-base font-extrabold text-white transition hover:bg-[#255ed2]"
               >
                 Get Started
               </Link>
@@ -209,12 +194,12 @@ export default function Header() {
         </div>
       </div>
 
-      <div className="px-4 pt-3 text-center">
-        <div className="inline-flex items-center justify-center rounded-full border border-[#D9E4FF] bg-white/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#306EEC] shadow-sm">
-          Now accepting new members in Long Island
-        </div>
-        <div className="pt-2 text-[12px] font-medium uppercase tracking-[0.2em] text-[#4B5563]">
-          Serving Long Island homeowners
+      <div className="flex items-center justify-center gap-5 px-4 pt-2.5">
+        <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-white/80 px-4 py-1.5 shadow-sm">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#86EFAC] flex-shrink-0" style={{ boxShadow: "0 0 6px rgba(134,239,172,0.9)" }} />
+          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#306EEC]">
+            Now accepting members &middot; Long Island
+          </span>
         </div>
       </div>
 
@@ -229,9 +214,11 @@ export default function Header() {
         <button
           onClick={() => setIsMenuOpen(false)}
           aria-label="Close menu"
-          className="absolute right-5 top-14 z-[80] flex h-10 w-10 items-center justify-center rounded-full border border-[#E6E8EF] bg-white/95 text-xl font-semibold text-[#111827] shadow-[0_10px_30px_rgba(17,24,39,0.15)] transition hover:bg-[#F6F7FB]"
+          className="absolute right-5 top-14 z-[80] flex h-10 w-10 items-center justify-center rounded-full border border-[#E6E8EF] bg-white/95 text-[#111827] shadow-[0_10px_30px_rgba(17,24,39,0.15)] transition hover:bg-[#F6F7FB]"
         >
-          X
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
 
         <button
@@ -248,17 +235,16 @@ export default function Header() {
               </p>
               <div className="mt-4 flex flex-col gap-3">
                 {isAuthenticated ? (
-                  <button
-                    type="button"
+                  <Link
+                    href="/membership"
                     onClick={() => {
                       setIsMenuOpen(false);
                       trackEvent("start_booking", { placement: "mobile_header_primary" });
-                      requestAnimationFrame(() => scrollToHash("#pick-day"));
                     }}
                     className="w-full rounded-[16px] bg-[#306EEC] px-6 py-4 text-center text-base font-medium text-white transition hover:bg-[#255ed2]"
                   >
                     Book Visit
-                  </button>
+                  </Link>
                 ) : (
                   <>
                     <Link
@@ -284,32 +270,16 @@ export default function Header() {
             </div>
 
             <div className="flex w-full max-w-sm flex-col gap-2 rounded-[24px] border border-[#E6E8EF] bg-white p-4 shadow-[0_16px_50px_rgba(17,24,39,0.08)]">
-              {navItems.map((item) =>
-                item.href.startsWith("#") ? (
-                  <button
-                    key={item.href}
-                    type="button"
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      if (item.href === "#plans") trackEvent("view_plans", { placement: "mobile_header_nav" });
-                      if (item.href === "#pick-day") trackEvent("start_booking", { placement: "mobile_header_nav" });
-                      requestAnimationFrame(() => scrollToHash(item.href));
-                    }}
-                    className="rounded-[16px] px-4 py-4 text-left text-[24px] font-medium text-[#111827] transition hover:bg-[#F4F7FF] hover:text-[#306EEC]"
-                  >
-                    {item.label}
-                  </button>
-                ) : (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setIsMenuOpen(false)}
-                    className="rounded-[16px] px-4 py-4 text-left text-[24px] font-medium text-[#111827] transition hover:bg-[#F4F7FF] hover:text-[#306EEC]"
-                  >
-                    {item.label}
-                  </Link>
-                )
-              )}
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="rounded-[16px] px-4 py-4 text-left text-[24px] font-medium text-[#111827] transition hover:bg-[#F4F7FF] hover:text-[#306EEC]"
+                >
+                  {item.label}
+                </Link>
+              ))}
             </div>
 
             {isAuthenticated ? (

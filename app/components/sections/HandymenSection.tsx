@@ -1,323 +1,165 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
 import { team as TEAM } from "@/app/data/content";
 
+function parseMember(fullName: string) {
+  const idx = fullName.indexOf(" - ");
+  if (idx === -1) return { name: fullName, role: "" };
+  return { name: fullName.slice(0, idx).trim(), role: fullName.slice(idx + 3).trim() };
+}
+
+const TRUST_ITEMS = [
+  "Background checked",
+  "Licensed & insured",
+  "9+ years together",
+  "Personally vetted by Taras",
+];
+
 export default function HandymenSection() {
-  const [idx, setIdx] = useState(0);
-  const person = TEAM[idx];
-
-  const prev = () => setIdx((i) => (i === 0 ? TEAM.length - 1 : i - 1));
-  const next = () => setIdx((i) => (i + 1) % TEAM.length);
-
-  // Desktop thumbnails strip refs (future-proof for many techs)
-  const stripRef = useRef<HTMLDivElement | null>(null);
-  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  // Keep active thumbnail visible when idx changes (thumb click OR next/prev)
-  useEffect(() => {
-  const container = stripRef.current;
-  const el = itemRefs.current[idx];
-  if (!container || !el) return;
-
-  const containerRect = container.getBoundingClientRect();
-  const elRect = el.getBoundingClientRect();
-
-  // center the thumbnail inside the strip (horizontal only)
-  const currentLeft = container.scrollLeft;
-  const elCenterInViewport = (elRect.left - containerRect.left) + elRect.width / 2;
-  const targetLeft = currentLeft + elCenterInViewport - containerRect.width / 2;
-
-  container.scrollTo({ left: targetLeft, behavior: "smooth" });
-}, [idx]);
-
-  // Close any "stuck hover" issues on iOS when tapping thumbnails
-  useEffect(() => {
-    const onTouch = () => {};
-    window.addEventListener("touchstart", onTouch, { passive: true });
-    return () => window.removeEventListener("touchstart", onTouch);
-  }, []);
-
-  // Safety (in case TEAM is empty while you load content later)
   if (!TEAM?.length) return null;
 
   return (
-    <section className="relative w-full overflow-hidden bg-[#313234] py-10 sm:py-12 lg:py-14">
-      <div className="container mx-auto px-5 sm:px-6 lg:px-5 max-w-[1240px]">
-        {/* ================= TITLE (MOBILE) ================= */}
-        <div className="lg:hidden text-center mb-8">
-          <div className="flex items-center justify-center gap-3 sm:gap-4 mb-2 sm:mb-3">
-            <h2 className="text-4xl sm:text-5xl font-bold leading-[89%] tracking-[-0.05em] text-[#eef2ff] uppercase">
-              MEET OUR
-            </h2>
-            <Image
-              src="/images/title-handymen.png"
-              alt="Handymen"
-              width={80}
-              height={60}
-              className="object-contain hidden sm:block"
-            />
+    <section
+      className="relative w-full overflow-hidden py-16 sm:py-20 lg:py-28"
+      style={{ background: "linear-gradient(160deg, #EAEDFA 0%, #E4E9F8 100%)" }}
+    >
+      {/* Top ambient glow */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 h-[400px] w-[900px] rounded-full blur-[140px] opacity-50"
+        style={{ background: "radial-gradient(circle, rgba(48,110,236,0.10), transparent 70%)" }}
+      />
+      {/* Subtle dot texture */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-[0.015]"
+        style={{
+          backgroundImage: "radial-gradient(circle, #306EEC 1px, transparent 1px)",
+          backgroundSize: "32px 32px",
+        }}
+      />
+
+      <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+
+        {/* ── Header ── */}
+        <div className="mx-auto max-w-[720px] text-center mb-14 sm:mb-16 lg:mb-20">
+          <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
+              Your Dedicated Team
+            </span>
           </div>
 
-          <h2 className="text-5xl sm:text-6xl font-bold leading-[89%] tracking-[-0.05em] -mt-1 sm:-mt-2 text-[#306eec] uppercase">
-            HANDYMEN
+          <h2 className="text-[32px] sm:text-[50px] lg:text-[64px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-5">
+            The same pros.
+            <br />
+            <span className="text-[#306EEC]">Every single visit.</span>
           </h2>
 
-          <p className="mx-auto mt-4 max-w-md text-sm text-[#c5cbd8] sm:text-base">
-            Skilled professionals who bring quality, care, and consistency to every visit.
+          <p className="mx-auto max-w-[560px] text-[15px] sm:text-[17px] leading-relaxed text-[#475569]">
+            No random contractors. No strangers in your home. The same
+            trusted professionals who learn your space and improve with
+            every visit.
           </p>
         </div>
 
-        {/* ================= DESKTOP TITLE + STRIP ================= */}
-        <div className="hidden lg:block">
-          {/* Title first (more stable than negative margin overlap) */}
-          <div className="flex items-start justify-between gap-8 mb-6">
-            <div className="max-w-[680px]">
-              <div className="flex items-center gap-4">
-                <div className="text-[64px] font-bold leading-[89%] text-[#eef2ff] uppercase tracking-[-0.05em]">
-                  MEET OUR
-                </div>
-                <Image
-                  src="/images/title-handymen.png"
-                  alt="Handymen small"
-                  width={120}
-                  height={80}
-                  className="object-contain"
-                />
-              </div>
-              <div className="text-[64px] font-bold leading-[89%] text-[#306eec] uppercase tracking-[-0.05em] -mt-2">
-                HANDYMEN
-              </div>
-            </div>
-
-            <p className="max-w-[420px] pt-3 text-right text-[14px] text-[#c5cbd8]">
-              Skilled professionals who bring quality, care, and consistency to every visit.
-            </p>
-          </div>
-
-          {/* Desktop Thumbnails Strip */}
-          <div className="flex items-center gap-3">
-            <div
-              ref={stripRef}
-              className="handy-strip flex-1 overflow-x-auto"
-              style={{
-                scrollbarWidth: "none",
-                msOverflowStyle: "none",
-                WebkitOverflowScrolling: "touch",
-              }}
-            >
-              <style jsx>{`
-                .handy-strip::-webkit-scrollbar {
-                  display: none;
-                }
-              `}</style>
-
-              <div className="flex gap-6 py-1 pr-6">
-                {TEAM.map((m, i) => (
-                  <button
-                    key={m.id}
-                    ref={(el) => {
-                      itemRefs.current[i] = el;
-                    }}
-                    type="button"
-                    onClick={() => setIdx(i)}
-                    className={[
-                      "relative shrink-0 w-[150px] h-[190px] rounded-[14px] overflow-hidden border-2 transition-all duration-200",
-                      i === idx
-                        ? "border-white shadow-[0_20px_80px_rgba(0,0,0,0.35)]"
-                        : "border-white/0 hover:border-white/40",
-                    ].join(" ")}
-                    aria-label={`Show ${m.name}`}
-                  >
-                    <Image
-                      src={m.thumb}
-                      alt={m.name}
-                      fill
-                      className="object-cover object-top"
-                      sizes="150px"
-                    />
-                    {/* subtle overlay so the border reads consistently */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/25 pointer-events-none" />
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ================= MOBILE THUMBNAILS ================= */}
-        <div className="lg:hidden mt-6 sm:mt-8 overflow-hidden">
-          <div
-            className="handy-strip flex gap-4 sm:gap-6 overflow-x-auto pb-4"
-            style={{
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-              WebkitOverflowScrolling: "touch",
-            }}
-          >
-            <style jsx>{`
-              .handy-strip::-webkit-scrollbar {
-                display: none;
-              }
-            `}</style>
-
-            {TEAM.map((m, i) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setIdx(i)}
-                className={[
-                  "relative shrink-0 w-[140px] sm:w-[160px] h-[180px] sm:h-[210px] rounded-[14px] overflow-hidden border-2 transition-all duration-200",
-                  i === idx ? "border-white" : "border-white/0",
-                ].join(" ")}
-                aria-label={`Show ${m.name}`}
+        {/* ── Team cards ── */}
+        <div className="grid sm:grid-cols-2 gap-6 lg:gap-8 max-w-[960px] mx-auto">
+          {TEAM.map((member) => {
+            const { name, role } = parseMember(member.name);
+            return (
+              <div
+                key={member.id}
+                className="group relative overflow-hidden rounded-[28px] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] transition-all duration-500 hover:shadow-[0_40px_120px_rgba(15,23,42,0.15)] hover:-translate-y-1.5"
+                style={{ border: "1px solid rgba(197,203,216,0.6)" }}
               >
-                <Image
-                  src={m.thumb}
-                  alt={m.name}
-                  fill
-                  className="object-cover object-top"
-                  sizes="160px"
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/25 pointer-events-none" />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ================= BIO SECTION ================= */}
-        <div className="pt-5">
-          {/* IMPORTANT: use 12 columns (Tailwind default), NOT 13 */}
-          <div className="mt-6 sm:mt-8 lg:mt-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-            {/* Big photo + DESKTOP arrows under photo */}
-            <div className="lg:col-span-7">
-              <div className="relative w-full rounded-[14px] overflow-hidden max-w-[520px] mx-auto bg-[#242526]">
-                <div className="relative w-full aspect-[2/3]">
+                {/* Photo with premium cinematic treatment */}
+                <div className="relative w-full overflow-hidden" style={{ aspectRatio: "3/2" }}>
                   <Image
-                    src={person.photo}
-                    alt={person.name}
+                    src={member.photo}
+                    alt={name}
                     fill
-                    className="object-cover object-center"
-                    sizes="(max-width: 1024px) 100vw, 520px"
+                    className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.05]"
+                    sizes="(max-width: 768px) 100vw, 480px"
                     priority
                   />
-                </div>
-              </div>
+                  {/* Premium dark bottom gradient — smooth into white card body */}
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: "linear-gradient(to bottom, transparent 45%, rgba(255,255,255,0.95) 100%)" }}
+                  />
+                  {/* Cinematic vignette */}
+                  <div className="absolute inset-0 shadow-[inset_0_0_60px_rgba(15,23,42,0.12)] rounded-t-[28px]" />
 
-              {/* DESKTOP ONLY: arrows aligned with the photo */}
-              <div className="hidden lg:flex max-w-[520px] mx-auto items-center justify-between mt-4">
-                <div className="flex gap-3">
-                  <button
-                    onClick={prev}
-                    type="button"
-                    className="w-[44px] h-[44px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors shadow-md active:scale-[0.99]"
-                    aria-label="Previous"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M15 18L9 12L15 6"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
+                  {/* Role badge — top left */}
+                  {role && (
+                    <div className="absolute top-5 left-5 inline-flex items-center gap-2 rounded-full bg-[#306EEC] px-3.5 py-1.5 shadow-[0_4px_20px_rgba(48,110,236,0.40)]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-white/70 flex-shrink-0" />
+                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white">
+                        {role}
+                      </span>
+                    </div>
+                  )}
 
-                  <button
-                    onClick={next}
-                    type="button"
-                    className="w-[44px] h-[44px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors shadow-md active:scale-[0.99]"
-                    aria-label="Next"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M9 6L15 12L9 18"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
+                  {/* Verified badge — top right */}
+                  <div className="absolute top-5 right-5 inline-flex items-center gap-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 px-3 py-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#86EFAC] flex-shrink-0" style={{ boxShadow: "0 0 6px rgba(134,239,172,0.8)" }} />
+                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/85">Vetted</span>
+                  </div>
                 </div>
 
-                <div className="text-right">
-                  <div className="text-sm text-[#eef2ff]">The Profixter Team:</div>
-                  <div className="text-sm text-[#c5cbd8]">
-                    We fix homes but mostly, we bring comfort
+                {/* Content */}
+                <div className="px-7 pb-8 pt-5">
+                  <h3 className="text-[22px] font-extrabold text-[#0B1628] mb-1 leading-tight">
+                    {name}
+                  </h3>
+                  {role && (
+                    <div className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#306EEC] mb-4">
+                      {role}
+                    </div>
+                  )}
+                  <p className="text-[14px] sm:text-[15px] leading-relaxed text-[#475569] line-clamp-4">
+                    {member.blurb}
+                  </p>
+
+                  {/* Bottom credential strip */}
+                  <div className="mt-5 pt-5 border-t border-[#E6E8EF] flex flex-wrap gap-3">
+                    {["Background Checked", "Licensed", "Insured"].map((cred) => (
+                      <div key={cred} className="inline-flex items-center gap-1.5">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M5 12.5l4 4 10-10" stroke="#306EEC" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span className="text-[11px] font-semibold text-[#475569]">{cred}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
-            </div>
+            );
+          })}
+        </div>
 
-            {/* Text */}
-            <div className="lg:col-span-5 flex flex-col lg:pl-6">
-              <h3 className="text-xl sm:text-2xl lg:text-[24px] font-semibold text-[#eef2ff] leading-tight">
-                {person.name}
-              </h3>
-
-              <p className="mt-4 text-base sm:text-lg lg:text-[20px] leading-relaxed text-[#c5cbd8] max-w-[420px]">
-                {person.blurb}
-              </p>
-
-              <div className="flex-1 min-h-[16px]" />
-
-              {/* Mobile arrows + quote */}
-              <div className="lg:hidden flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mt-6">
-                <div className="flex gap-3">
-                  <button
-                    onClick={prev}
-                    type="button"
-                    className="w-[40px] h-[40px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors active:scale-[0.99]"
-                    aria-label="Previous"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M15 18L9 12L15 6"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={next}
-                    type="button"
-                    className="w-[40px] h-[40px] rounded-[12px] bg-[#eef2ff] text-[#313234] grid place-items-center hover:bg-white transition-colors active:scale-[0.99]"
-                    aria-label="Next"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M9 6L15 12L9 18"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
+        {/* ── Trust strip ── */}
+        <div className="mt-14 sm:mt-16 mx-auto max-w-[960px]">
+          <div
+            className="rounded-[20px] border border-[#C5CBD8] bg-white px-6 py-5 sm:px-8 sm:py-6 shadow-[0_8px_40px_rgba(15,23,42,0.05)]"
+          >
+            <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 sm:gap-x-10">
+              {TRUST_ITEMS.map((item) => (
+                <div key={item} className="flex items-center gap-2.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M5 12.5l4 4 10-10" stroke="#306EEC" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span className="text-[13px] font-semibold text-[#0B1628]">{item}</span>
                 </div>
-
-                <div className="sm:text-right md:max-w-[240px]">
-                  <div className="text-sm sm:text-base text-[#eef2ff]">
-                    The Profixter Team:
-                  </div>
-                  <div className="text-sm sm:text-[14px] text-[#c5cbd8]">
-                    We fix homes but mostly, we bring comfort
-                  </div>
-                </div>
-              </div>
-
-              {/* Optional index indicator (tiny, helps UX) */}
-              <div className="mt-6 text-xs text-[#c5cbd8]/70">
-                {idx + 1} / {TEAM.length}
-              </div>
+              ))}
             </div>
           </div>
         </div>
+
       </div>
     </section>
   );

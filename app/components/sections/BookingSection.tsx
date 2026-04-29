@@ -949,117 +949,96 @@ const canBook =
   }, [selectedDate, config, dayAvailabilityMap, ymdSelected, displayedTimes]);
 
   return (
-<section
-  id="pick-day"
-  className="relative w-full pt-28 sm:pt-36 lg:pt-44 pb-12 sm:pb-16 lg:pb-24 bg-[#eaedfa] scroll-mt-[140px]"
->
-        <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
-        {/* Header */}
-        <div className="mb-8 sm:mb-10 lg:mb-12">
-          {/* Desktop edge labels */}
-          <div className="hidden lg:flex items-center justify-between text-[12px] font-bold text-[#313234] uppercase">
-            <span className="w-[110px] text-left whitespace-nowrap">MAKE IT DONE</span>
-            <span className="w-[200px] text-right whitespace-nowrap text-[#306EEC]">
-              WHEN<span className="text-[#313234]">&nbsp;YOU&nbsp;</span>WANT
+    <section
+      id="pick-day"
+      className="relative w-full overflow-hidden pt-20 sm:pt-28 lg:pt-36 pb-16 sm:pb-20 lg:pb-28 scroll-mt-[110px]"
+      style={{ background: "linear-gradient(160deg, #EAEDFA 0%, #E4E9F8 100%)" }}
+    >
+      {/* Ambient glow */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 h-[500px] w-[900px] rounded-full blur-[160px] opacity-35"
+        style={{ background: "radial-gradient(circle, rgba(48,110,236,0.12), transparent 70%)" }}
+      />
+
+      <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+
+        {/* ── Header ── */}
+        <div className="mb-10 sm:mb-12 lg:mb-14 max-w-[680px]">
+          <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
+            <span
+              className="h-2 w-2 flex-shrink-0 rounded-full bg-[#306EEC]"
+              style={{ boxShadow: "0 0 8px rgba(48,110,236,0.7)" }}
+            />
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
+              Your Membership &middot; Book a Visit
             </span>
           </div>
 
-          {/* Mobile / Tablet */}
-          <div className="lg:hidden text-center">
-            <h2 className="text-3xl sm:text-4xl font-extrabold leading-tight uppercase">
-              <span className="text-[#313234]">Choose your </span>
-              <span className="text-[#306EEC]">day</span>
-            </h2>
-            <h2 className="text-3xl sm:text-4xl font-extrabold leading-tight uppercase mt-1">
-              <span className="text-[#313234]">and </span>
-              <span className="text-[#306EEC]">time</span>
-            </h2>
-            <p className="text-[#6A6D71] text-sm sm:text-base mt-3 max-w-md mx-auto">
-              Select a day first, then pick an available time.
-            </p>
-          </div>
+          <h2 className="text-[36px] sm:text-[52px] lg:text-[64px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-4">
+            Pick your day
+            <br />
+            <span className="text-[#306EEC]">and time.</span>
+          </h2>
 
-          {/* Desktop title (no calc hacks) */}
-          <div className="hidden lg:block mt-6">
-            <h2 className="text-[56px] leading-[0.95] font-extrabold uppercase tracking-[-0.04em]">
-              <span className="text-[#313234]">Choose your own </span>
-              <span className="text-[#306EEC]">day</span>
-              <span className="text-[#313234]"> and </span>
-              <span className="text-[#306EEC]">time</span>
-            </h2>
-            <p className="mt-3 text-[#6A6D71] text-[16px] font-medium max-w-[560px]">
-              Control your schedule yourself. Pick a day, then choose an available time slot.
-            </p>
-          </div>
+          <p className="text-[15px] sm:text-[17px] text-[#475569] leading-relaxed max-w-[520px]">
+            Select a date, choose an available time slot, describe your task,
+            and confirm. Most members book one visit per month.
+          </p>
         </div>
 
 
-        {/* Content */}
+        {/* ── Main grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-          {/* Calendar */}
-          <div className="lg:col-span-5">
-            <div className="mb-6 rounded-[18px] border border-[#c5cbd8] bg-white p-4 sm:p-5 shadow-[0_0_200px_rgba(0,0,0,0.06)]">
-              <div className="text-sm font-semibold text-[#313234] mb-3">How booking works</div>
-              <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
-                {[
-                  "Step 1: Pick a day",
-                  "Step 2: Pick a time",
-                  "Step 3: Describe your task",
-                  "Step 4: Upload photos",
-                  "Step 5: Confirm booking",
-                ].map((step) => (
-                  <div
-                    key={step}
-                    className="rounded-[14px] border border-[#E6E8EF] bg-[#EEF2FF] px-3 py-3 text-xs sm:text-[13px] font-extrabold text-[#313234] leading-relaxed"
-                  >
-                    {step}
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            <div className="rounded-[18px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] p-4 sm:p-6">
-              <div className="flex items-center justify-between">
+          {/* ── Calendar (left) ── */}
+          <div className="lg:col-span-5">
+
+            {/* Calendar card */}
+            <div className="rounded-[24px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.06)] p-5 sm:p-6">
+              {/* Month navigation */}
+              <div className="flex items-center justify-between mb-5">
                 <button
                   aria-label="Prev month"
                   onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
-                  className="w-10 h-10 rounded-[14px] border border-[#c5cbd8] bg-white/70 grid place-items-center text-[#313234] hover:bg-white transition active:scale-95"
+                  className="w-10 h-10 rounded-[12px] border border-[#E5E9F2] bg-[#F8FAFF] grid place-items-center text-[#475569] hover:bg-[#EEF5FF] hover:border-[#D9E4FF] transition active:scale-95"
                 >
                   <ChevronLeft />
                 </button>
 
-                <div className="text-lg sm:text-xl lg:text-[22px] font-extrabold text-[#313234]">
+                <div className="text-[18px] sm:text-[20px] font-extrabold text-[#0B1628]">
                   {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 </div>
 
                 <button
                   aria-label="Next month"
                   onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
-                  className="w-10 h-10 rounded-[14px] border border-[#c5cbd8] bg-white/70 grid place-items-center text-[#313234] hover:bg-white transition active:scale-95"
+                  className="w-10 h-10 rounded-[12px] border border-[#E5E9F2] bg-[#F8FAFF] grid place-items-center text-[#475569] hover:bg-[#EEF5FF] hover:border-[#D9E4FF] transition active:scale-95"
                 >
                   <ChevronRight />
                 </button>
               </div>
 
               {loadingMonthKey === visibleMonthKey && (
-                <div className="mt-4 rounded-[14px] border border-[#D7E0F5] bg-white/70 px-3 py-2 text-xs font-semibold text-[#6A6D71]">
-                  Checking availability for this month...
+                <div className="mb-4 rounded-[12px] border border-[#D9E4FF] bg-[#F0F7FF] px-3 py-2 text-[12px] font-semibold text-[#475569]">
+                  Checking availability...
                 </div>
               )}
 
               {/* Week headers */}
-              <div className="mt-5 grid grid-cols-7 text-center text-sm sm:text-base font-semibold">
-                <div className="text-[#cf3f3f]">Su</div>
-                <div className="text-[#6a6c71]">Mo</div>
-                <div className="text-[#6a6c71]">Tu</div>
-                <div className="text-[#6a6c71]">We</div>
-                <div className="text-[#6a6c71]">Th</div>
-                <div className="text-[#6a6c71]">Fr</div>
-                <div className="text-[#6a6c71]">Sa</div>
+              <div className="grid grid-cols-7 text-center mb-2">
+                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d, i) => (
+                  <div
+                    key={d}
+                    className={`text-[12px] font-bold ${i === 0 ? "text-[#EF4444]" : "text-[#94A3B8]"}`}
+                  >
+                    {d}
+                  </div>
+                ))}
               </div>
 
-              {/* Days */}
-              <div className="mt-2 grid grid-cols-7 gap-y-2">
+              {/* Days grid */}
+              <div className="grid grid-cols-7 gap-y-1">
                 {days.map((day, i) => {
                   const disabled = day.muted || isDayDisabled(new Date(day.date));
                   const isSelected = selectedDate ? sameDay(day.date, selectedDate) : false;
@@ -1067,7 +1046,6 @@ const canBook =
                     !day.muted &&
                     !dayAvailabilityMap[formatDateYMD(day.date)] &&
                     loadingMonthKey === visibleMonthKey;
-
                   const today = new Date();
                   const isToday = sameDay(day.date, today);
 
@@ -1078,116 +1056,110 @@ const canBook =
                       onClick={() => handleDayClick(day.date, day.muted)}
                       disabled={disabled}
                       className={[
-  "mx-auto w-9 h-9 sm:w-10 sm:h-10 grid place-items-center rounded-[14px] text-sm sm:text-base font-semibold transition",
-  day.muted ? "text-[#b7bdc8] cursor-not-allowed" : "",
-  disabled && !day.muted ? "bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed" : "",
-
-  // ✅ AVAILABLE days (not disabled, not selected) => blue tint
-  !disabled && !isSelected ? "bg-[#306EEC]/15 text-[#313234] hover:bg-[#306EEC]/25" : "",
-
-  // ✅ SELECTED day => white / no fill, blue text + ring
-  isSelected ? "bg-white text-[#306EEC] ring-4 ring-[#306EEC]/25" : "",
-
-  // Today ring stays subtle
-  isToday && !disabled && !isSelected ? "ring-2 ring-[#306EEC]/20" : "",
-].join(" ")}
+                        "mx-auto w-9 h-9 sm:w-10 sm:h-10 grid place-items-center rounded-[12px] text-[14px] sm:text-[15px] font-semibold transition-all duration-150",
+                        day.muted ? "text-[#C5CBD8] cursor-not-allowed" : "",
+                        disabled && !day.muted ? "text-[#C5CBD8] cursor-not-allowed" : "",
+                        !disabled && !isSelected ? "bg-[#EEF5FF] text-[#1D4ED8] hover:bg-[#DBEAFE] hover:scale-105" : "",
+                        isSelected ? "bg-[#306EEC] text-white shadow-[0_8px_24px_rgba(48,110,236,0.35)] scale-105" : "",
+                        isToday && !disabled && !isSelected ? "ring-2 ring-[#306EEC]/30" : "",
+                      ].join(" ")}
                     >
-                      <span className={isCheckingDay ? "opacity-60" : ""}>{day.date.getDate()}</span>
+                      <span className={isCheckingDay ? "opacity-40" : ""}>{day.date.getDate()}</span>
                     </button>
                   );
                 })}
               </div>
-
             </div>
 
+            {/* Selected date label */}
             {selectedDate && (
-              <div className="mt-3 text-center text-sm sm:text-base text-[#313234] font-semibold">
-                Selected: <span className="text-[#306EEC]">{selectedDateLabel}</span>
+              <div className="mt-3 flex items-center gap-2.5 rounded-[14px] border border-[#D9E4FF] bg-white px-4 py-3">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="text-[#306EEC] flex-shrink-0" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
+                  <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+                <span className="text-[14px] font-semibold text-[#0B1628]">{selectedDateLabel}</span>
               </div>
             )}
-            <div className="mt-2 text-center text-xs sm:text-sm text-[#6a6c71]">
-              Choose any available day that works for you.
-            </div>
-          {isAuthenticated && hasSubscription && (
-  <div className="mt-4">
-    <button
-      type="button"
-      onClick={() => router.push("/account?tab=bookings")}
-      className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 rounded-[14px] bg-white border border-[#c5cbd8] text-[#313234] font-extrabold hover:bg-[#f8f9ff] transition"
-      style={{ boxShadow: "0px 0px 200px 0px rgba(0,0,0,0.06)" }}
-    >
-      Manage my bookings
-    </button>
-  </div>
-)}
+
+            {/* Manage bookings */}
+            {isAuthenticated && hasSubscription && (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => router.push("/account?tab=bookings")}
+                  className="inline-flex items-center gap-2 w-full justify-center h-[46px] rounded-[14px] border border-[#C5CBD8] bg-white text-[#475569] text-[14px] font-semibold hover:border-[#306EEC] hover:text-[#306EEC] transition"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
+                    <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                  Manage my bookings
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Right column */}
-          <div className="lg:col-span-7">
-            {/* Time + info */}
-            <div className="rounded-[18px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] p-4 sm:p-5">
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <div className="text-sm font-semibold text-[#313234]">Choose a time</div>
-                    <div className="mt-1 text-sm sm:text-base text-[#6a6c71]">
-                      Visit length: <span className="font-semibold text-[#313234]">up to 90 minutes</span>
-                    </div>
-                  </div>
+          {/* ── Right column ── */}
+          <div className="lg:col-span-7 flex flex-col gap-5">
 
-                  <button
-                    type="button"
-                    onClick={() => setQuickBookOpen(true)}
-                    disabled={checkingAccess || loadingMonthKey === visibleMonthKey}
-                    className="inline-flex h-[48px] items-center justify-center rounded-[14px] bg-[#306EEC] px-5 text-sm font-extrabold text-white shadow-[0_10px_30px_rgba(48,110,236,0.24)] transition hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Quick Booking
-                  </button>
+            {/* Time slot card */}
+            <div className="rounded-[24px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.06)] p-5 sm:p-6">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <div className="text-[16px] font-extrabold text-[#0B1628]">Choose a time</div>
+                  <div className="text-[13px] text-[#64748B] mt-0.5">Each visit is up to 90 minutes</div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setQuickBookOpen(true)}
+                  disabled={checkingAccess || loadingMonthKey === visibleMonthKey}
+                  className="inline-flex h-[40px] items-center gap-2 rounded-[12px] border border-[#306EEC] px-4 text-[13px] font-bold text-[#306EEC] hover:bg-[#EEF5FF] disabled:opacity-50 disabled:cursor-not-allowed transition flex-shrink-0"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Quick Book
+                </button>
+              </div>
 
-                {selectedDate && config ? (
-                  loadingSelectedDate && displayedTimes.length === 0 ? (
-                    <div className="rounded-[16px] border border-[#c5cbd8] bg-white/70 p-4">
-                      <div className="h-3 w-full rounded-full bg-[#D7E0F5] animate-pulse" />
-                    </div>
-                  ) : slotOptions.length > 0 ? (
-                    <TimeSlotGrid
-                      slotOptions={slotOptions}
-                      selectedTime={selectedTime}
-                      onSelect={(t) => setSelectedTime(t)}
-                    />
-                  ) : (
-                    <div className="rounded-[16px] border border-[#c5cbd8] bg-white/60 px-4 py-4 text-[#6a6c71] text-sm">
-                      No times available. Try another date or check back soon.
-                    </div>
-                  )
-                ) : (
-                  <div className="rounded-[16px] border border-[#c5cbd8] bg-white/60 px-4 py-4 text-[#6a6c71] text-sm">
-                    Select a date first
+              {selectedDate && config ? (
+                loadingSelectedDate && displayedTimes.length === 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {[1, 2, 3, 4, 5, 6].map((n) => (
+                      <div key={n} className="h-[64px] rounded-[18px] bg-[#F1F5F9] animate-pulse" />
+                    ))}
                   </div>
-                )}
-              </div>
+                ) : slotOptions.length > 0 ? (
+                  <TimeSlotGrid
+                    slotOptions={slotOptions}
+                    selectedTime={selectedTime}
+                    onSelect={(t) => setSelectedTime(t)}
+                  />
+                ) : (
+                  <div className="rounded-[16px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-5 text-[14px] text-[#64748B] text-center">
+                    No times available for this date. Try a different day.
+                  </div>
+                )
+              ) : (
+                <div className="rounded-[16px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-5 text-[14px] text-[#64748B] text-center">
+                  Select a date on the calendar to see available times.
+                </div>
+              )}
 
-              <div className="mt-3 text-xs sm:text-sm text-[#6a6c71]">
-                {loadingSelectedDate ? "Updating available times..." : "Available times depend on schedule and your plan."}
-              </div>
+              {loadingSelectedDate && displayedTimes.length > 0 && (
+                <div className="mt-3 text-[12px] text-[#94A3B8]">Updating times...</div>
+              )}
 
-              <div className="mt-2 text-xs sm:text-sm text-[#6a6c71]">
-                Bookings are scheduled in advance. Most members book one visit per month.
-              </div>
-
-              <div className="mt-2 text-xs sm:text-sm text-[#6a6c71]">
-                Service includes labor only. Materials are not included unless specified in your plan.
-              </div>
-
-              {/* Address selector if 2+ */}
+              {/* Address selector (2+ addresses) */}
               {(addresses?.length || 0) >= 2 && (
-                <div className="mt-5">
-                  <div className="text-sm font-semibold text-[#313234] mb-2">Booking address</div>
+                <div className="mt-5 pt-5 border-t border-[#E5E9F2]">
+                  <div className="text-[13px] font-semibold text-[#0B1628] mb-2">Booking address</div>
                   <select
                     value={selectedAddressId ?? defaultAddressId ?? ""}
                     onChange={(e) => setSelectedAddressId(e.target.value)}
-                    className="w-full h-[48px] rounded-[12px] border border-[#c5cbd8] bg-white px-3 text-[#313234] font-semibold outline-none focus:ring-4 focus:ring-[#306EEC]/20"
+                    className="w-full h-[46px] rounded-[14px] border border-[#C5CBD8] bg-[#F8FAFF] px-3 text-[#0B1628] text-[14px] font-semibold outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] transition"
                   >
                     {addresses.map((a: any) => (
                       <option key={a._id} value={a._id}>
@@ -1200,67 +1172,68 @@ const canBook =
               )}
             </div>
 
-            {/* Issue + service + photos */}
-            <div className="mt-5 rounded-[18px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] p-4 sm:p-5">
-              <div className="text-sm font-semibold text-[#313234] mb-2">Describe the issue</div>
-              <div className="text-xs sm:text-sm text-[#6a6c71] mb-3">
-                Describe what you need done. Most tasks fit within one visit.
+            {/* Task details card */}
+            <div className="rounded-[24px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.06)] p-5 sm:p-6">
+              <div className="text-[16px] font-extrabold text-[#0B1628] mb-1">Describe your task</div>
+              <div className="text-[13px] text-[#64748B] mb-4">
+                What needs to be done? Most tasks fit within one visit.
               </div>
 
-                <textarea
-                  value={note}
-                  onChange={(e) => {
-                    setNote(e.target.value);
-                    if (error === "Please describe your task (at least a few words)") {
-                      setError("");
-                    }
-                  }}
-                  placeholder="Briefly describe your issue (e.g. leaking faucet, light switch not working)..."
-                  className={`w-full min-h-[120px] max-h-[320px] overflow-y-auto bg-white/40 rounded-[14px] border p-4 text-sm sm:text-base text-[#313234] placeholder-[#6a6c71] resize-none focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 ${
-                    error === "Please describe your task (at least a few words)"
-                      ? "border-red-300"
-                      : "border-[#c5cbd8]"
-                  }`}
-                />
+              <textarea
+                value={note}
+                onChange={(e) => {
+                  setNote(e.target.value);
+                  if (error === "Please describe your task (at least a few words)") setError("");
+                }}
+                placeholder="E.g. leaking faucet, loose door handle, light fixture swap, shelf to hang..."
+                className={`w-full min-h-[120px] max-h-[240px] rounded-[16px] border p-4 text-[14px] sm:text-[15px] text-[#0B1628] placeholder-[#94A3B8] resize-none bg-[#F8FAFF] focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] transition ${
+                  error === "Please describe your task (at least a few words)"
+                    ? "border-red-300"
+                    : "border-[#C5CBD8]"
+                }`}
+              />
+              <div className="mt-1.5 flex items-center justify-between">
+                <span className="text-[11px] text-[#94A3B8]">Minimum 3 words</span>
+                <span className={`text-[11px] font-bold ${wordsCount >= 3 ? "text-[#16A34A]" : "text-[#DC2626]"}`}>
+                  {wordsCount} {wordsCount === 1 ? "word" : "words"}
+                </span>
+              </div>
 
-                <div className="mt-2 text-xs text-[#6a6c71]">
-                  Words: <span className={wordsCount >= 3 ? "text-green-700 font-semibold" : "text-red-700 font-semibold"}>{wordsCount}</span>{" "}
-                  (minimum 3)
-                </div>
-                {error === "Please describe your task (at least a few words)" ? (
-                  <div className="mt-2 text-xs sm:text-sm text-red-700">
-                    Please describe your task (at least a few words)
-                  </div>
-                ) : null}
-
-              <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
-                {/* Service dropdown */}
+              {/* Service selector */}
+              <div className="mt-5">
+                <div className="text-[13px] font-semibold text-[#0B1628] mb-2">Service type</div>
                 <div ref={serviceWrapRef} className="relative">
                   <button
                     type="button"
                     disabled={checkingAccess || !hasSubscription}
-onClick={() => {
-  if (checkingAccess || !hasSubscription) return;
-  setShowServiceMenu((v) => !v);
-}}
-
+                    onClick={() => {
+                      if (checkingAccess || !hasSubscription) return;
+                      setShowServiceMenu((v) => !v);
+                    }}
                     className={[
-                      "h-[46px] px-4 sm:px-5 rounded-[12px] border text-sm sm:text-base whitespace-nowrap transition flex items-center justify-between gap-3 w-full sm:w-[260px]",
-checkingAccess || !hasSubscription
-  ? "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
-  : "border-[#313234] bg-white/50 text-[#313234] hover:bg-white"
+                      "h-[46px] w-full px-4 rounded-[14px] border text-[14px] font-semibold flex items-center justify-between gap-3 transition",
+                      checkingAccess || !hasSubscription
+                        ? "border-[#E5E9F2] bg-[#F8FAFF] text-[#94A3B8] cursor-not-allowed"
+                        : "border-[#C5CBD8] bg-[#F8FAFF] text-[#0B1628] hover:border-[#306EEC] hover:bg-white",
                     ].join(" ")}
                   >
-                    <span className={service ? "font-semibold" : ""}>
-                      {service ? SERVICES.find((x) => x.key === service)?.label : "Select a service"}
+                    <span className={service ? "text-[#0B1628]" : "text-[#94A3B8]"}>
+                      {service ? SERVICES.find((x) => x.key === service)?.label : "Select service type"}
                     </span>
-                    <svg width="18" height="18" viewBox="0 0 24 24" className={`transition-transform ${showServiceMenu ? "rotate-180" : ""}`}>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      className={`flex-shrink-0 transition-transform ${showServiceMenu ? "rotate-180" : ""}`}
+                      aria-hidden="true"
+                    >
                       <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
 
                   {showServiceMenu && (
-                    <div className="absolute top-[52px] left-0 w-full sm:w-[300px] bg-white border border-[#c5cbd8] rounded-[12px] shadow-lg z-20 overflow-hidden">
+                    <div className="absolute top-[52px] left-0 w-full bg-white border border-[#C5CBD8] rounded-[16px] shadow-[0_16px_48px_rgba(15,23,42,0.12)] z-20 overflow-hidden">
                       {SERVICES.map((s) => {
                         const allowed = isServiceAllowed(s.minRank);
                         return (
@@ -1274,13 +1247,17 @@ checkingAccess || !hasSubscription
                               setShowServiceMenu(false);
                             }}
                             className={[
-                              "block w-full text-left px-4 py-3 text-sm sm:text-base transition",
-                              allowed ? "hover:bg-[#EEF2FF] text-[#313234]" : "text-gray-400 cursor-not-allowed line-through bg-white",
+                              "flex w-full items-center justify-between gap-3 px-4 py-3.5 text-[14px] text-left transition border-b border-[#F1F5F9] last:border-0",
+                              allowed
+                                ? "text-[#0B1628] font-semibold hover:bg-[#F8FAFF]"
+                                : "text-[#94A3B8] cursor-not-allowed",
                             ].join(" ")}
                           >
-                            {s.label}
+                            <span>{s.label}</span>
                             {!allowed && (
-                              <span className="ml-2 text-xs text-gray-400">(upgrade plan)</span>
+                              <span className="text-[11px] bg-[#F1F5F9] px-2 py-0.5 rounded-full text-[#94A3B8] font-normal">
+                                Upgrade plan
+                              </span>
                             )}
                           </button>
                         );
@@ -1288,26 +1265,41 @@ checkingAccess || !hasSubscription
                     </div>
                   )}
                 </div>
+              </div>
 
-                {/* Camera */}
-                <button
-                  type="button"
-                  onClick={() => cameraInputRef.current?.click()}
-                  className="h-[46px] px-4 sm:px-5 rounded-[12px] border border-[#313234] bg-white/50 text-[#313234] text-sm sm:text-base font-semibold flex items-center justify-center gap-2 hover:bg-white transition active:scale-[0.99]"
-                >
-                  Take Photo
-                </button>
+              {/* Photo upload */}
+              <div className="mt-5">
+                <div className="text-[13px] font-semibold text-[#0B1628] mb-2">
+                  Photos{" "}
+                  <span className="text-[#DC2626]">*</span>
+                  <span className="ml-1 text-[#64748B] font-normal">required — helps us prepare</span>
+                </div>
+                <div className="flex gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="flex-1 h-[46px] rounded-[14px] border border-[#C5CBD8] bg-[#F8FAFF] text-[14px] font-semibold text-[#475569] flex items-center justify-center gap-2 hover:border-[#306EEC] hover:text-[#306EEC] hover:bg-white transition"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      <circle cx="12" cy="13" r="4" stroke="currentColor" strokeWidth="1.8" />
+                    </svg>
+                    Take Photo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="flex-1 h-[46px] rounded-[14px] border border-[#C5CBD8] bg-[#F8FAFF] text-[14px] font-semibold text-[#475569] flex items-center justify-center gap-2 hover:border-[#306EEC] hover:text-[#306EEC] hover:bg-white transition"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
+                      <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="1.8" />
+                      <path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Add Photos{uploadedPhotos.length > 0 ? ` (${uploadedPhotos.length})` : ""}
+                  </button>
+                </div>
 
-                {/* Gallery */}
-                <button
-                  type="button"
-                  onClick={() => galleryInputRef.current?.click()}
-                  className="h-[46px] px-4 sm:px-5 rounded-[12px] border border-[#313234] bg-white/50 text-[#313234] text-sm sm:text-base font-semibold flex items-center justify-center gap-2 hover:bg-white transition active:scale-[0.99]"
-                >
-                  Add Photos {uploadedPhotos.length > 0 ? `(${uploadedPhotos.length})` : ""}
-                </button>
-
-                {/* hidden inputs */}
                 <input
                   ref={cameraInputRef}
                   type="file"
@@ -1324,75 +1316,67 @@ checkingAccess || !hasSubscription
                   onChange={handlePhotoUpload}
                   className="hidden"
                 />
-              </div>
 
-              <div className="mt-3 text-xs sm:text-sm text-[#6a6c71]">
-                Service includes labor only. Materials are not included unless specified in your plan.
-              </div>
-
-              {/* Photo previews */}
-              {uploadedPhotos.length > 0 && (
-                <div className="mt-5">
-                  <div className="text-sm font-semibold text-[#313234] mb-2">Photos</div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-{uploadedPhotos.map((file, idx) => {
-  const url = photoUrls[idx];
-  return (
-                        <div key={idx} className="relative rounded-[14px] overflow-hidden border border-[#c5cbd8] bg-white">
+                {/* Photo previews */}
+                {uploadedPhotos.length > 0 && (
+                  <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2.5">
+                    {uploadedPhotos.map((_file, idx) => {
+                      const url = photoUrls[idx];
+                      return (
+                        <div
+                          key={idx}
+                          className="relative rounded-[12px] overflow-hidden border border-[#E5E9F2] bg-[#F8FAFF]"
+                          style={{ aspectRatio: "1" }}
+                        >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={url || ""} alt={`Upload ${idx + 1}`} className="w-full h-[120px] object-cover" />
+                          <img
+                            src={url || ""}
+                            alt={`Photo ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
                           <button
                             type="button"
                             onClick={() => removePhoto(idx)}
-                            className="absolute top-2 right-2 bg-black/60 text-white rounded-full w-8 h-8 grid place-items-center hover:bg-black/70 transition"
+                            className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/75 transition text-[12px] font-bold leading-none"
                             aria-label="Remove photo"
                           >
-                            x
+                            &times;
                           </button>
                         </div>
                       );
                     })}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
-              <div className="mt-4 text-xs sm:text-sm text-[#6a6c71]">
-                Photos help us prepare and bring the right tools.
-              </div>
-              {error === "Photos help us prepare - please upload at least one" ? (
-                <div className="mt-2 text-xs sm:text-sm text-red-700">
-                  Photos help us prepare - please upload at least one
-                </div>
-              ) : null}
-
             {/* Subscription warning */}
-{isAuthenticated && !checkingAccess && !hasSubscription && subscriptionError && (
-              <div className="mt-4 text-red-700 text-sm bg-red-50 border border-red-200 rounded-[14px] p-4">
-                <div className="font-extrabold mb-1">No Active Subscription</div>
-                <div className="mb-3">Active plan required to book. View plans below.</div>
+            {isAuthenticated && !checkingAccess && !hasSubscription && subscriptionError && (
+              <div className="rounded-[18px] border border-red-200 bg-red-50 p-5">
+                <div className="text-[15px] font-extrabold text-red-700 mb-1">No Active Subscription</div>
+                <div className="text-[13px] text-red-600 mb-4">An active membership plan is required to book visits.</div>
                 <a
                   href="#plans"
-                  className="inline-flex px-4 py-2 bg-[#306EEC] text-white rounded-xl hover:bg-[#2558c9] transition text-sm font-bold"
+                  className="inline-flex h-[40px] items-center px-5 rounded-[12px] bg-[#306EEC] text-white text-[14px] font-bold hover:bg-[#2558c9] transition"
                 >
                   View Plans
                 </a>
               </div>
             )}
 
-            {/* Active booking limit warning */}
+            {/* Booking limit warning */}
             {isAuthenticated && hasSubscription && hasActiveBooking && (
-              <div className="mt-4 text-orange-800 text-sm bg-orange-50 border border-orange-200 rounded-[14px] p-4">
-                <div className="font-extrabold mb-1">Active booking limit reached</div>
-                <div className="text-xs mt-1">
-                  You currently have <span className="font-semibold">{activeBookingCount}</span> active booking
-                  {activeBookingCount === 1 ? "" : "s"}. Your plan allows{" "}
-                  <span className="font-semibold">{activeBookingLimit}</span> at a time.
+              <div className="rounded-[18px] border border-amber-200 bg-amber-50 p-5">
+                <div className="text-[15px] font-extrabold text-amber-800 mb-1">Visit limit reached</div>
+                <div className="text-[13px] text-amber-700 mb-2">
+                  You have{" "}
+                  <span className="font-semibold">{activeBookingCount}</span> of{" "}
+                  <span className="font-semibold">{activeBookingLimit}</span> scheduled{" "}
+                  {activeBookingLimit === 1 ? "visit" : "visits"} booked.
                 </div>
-
                 {existingBookingDate && (
-                  <div className="mt-2 text-xs">
-                    Next booking:{" "}
+                  <div className="text-[13px] text-amber-700 mb-4">
+                    Next visit:{" "}
                     <span className="font-semibold">
                       {existingBookingDate.toLocaleString("en-US", {
                         weekday: "long",
@@ -1405,188 +1389,212 @@ checkingAccess || !hasSubscription
                     </span>
                   </div>
                 )}
-
-                <div className="text-xs mt-2 mb-3">To schedule another visit, please complete or cancel an active booking.</div>
-
                 <button
                   type="button"
                   onClick={() => rebook(activeBookings[0] || null)}
-                  className="px-4 py-2 bg-[#306EEC] text-white rounded-xl text-xs font-extrabold hover:bg-[#2558c9] transition"
+                  className="inline-flex h-[40px] items-center px-5 rounded-[12px] bg-[#306EEC] text-white text-[14px] font-bold hover:bg-[#2558c9] transition"
                 >
-                  Rebook
+                  Reschedule visit
                 </button>
               </div>
             )}
 
-            {/* Error */}
+            {/* Notice / Error banners */}
             {notice && (
-              <div className="mt-4 rounded-[14px] border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+              <div className="rounded-[18px] border border-green-200 bg-green-50 px-5 py-4 text-[14px] text-green-700 font-semibold">
                 {notice}
               </div>
             )}
             {error && (
-              <div className="mt-4 text-red-700 text-sm bg-red-50 border border-red-200 rounded-[14px] p-3">
+              <div className="rounded-[18px] border border-red-200 bg-red-50 px-5 py-4 text-[14px] text-red-700">
                 {error}
               </div>
             )}
 
-            {/* Book button */}
-            <div className="mt-6">
-              <div className="mb-4 rounded-[16px] border border-[#C5CBD8] bg-white p-4 sm:p-5">
-                <div className="text-sm font-semibold text-[#313234] mb-2">Before you confirm</div>
-                <div className="space-y-1.5 text-xs sm:text-sm text-[#6a6c71] leading-relaxed">
-                  <div>Each visit is for 1 task and cannot exceed 90 minutes</div>
-                  <div>Please upload clear photos so we can prepare properly</div>
-                  <div>If your task may take longer, book a future visit for the next item</div>
-                </div>
+            {/* Confirm card */}
+            <div className="rounded-[24px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.06)] p-5 sm:p-6">
+              <div className="flex flex-wrap gap-x-6 gap-y-2 mb-5">
+                {[
+                  "1 task per visit · up to 90 min",
+                  "Upload at least one photo",
+                  "Labor only — materials not included",
+                ].map((item) => (
+                  <div key={item} className="flex items-center gap-2">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M5 12.5l4 4 10-10" stroke="#306EEC" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span className="text-[12px] text-[#64748B]">{item}</span>
+                  </div>
+                ))}
               </div>
 
               <button
                 onClick={handleBookNow}
                 data-track="booking-cta"
                 disabled={!canBook}
-                className="w-full sm:w-[280px] h-[58px] rounded-[16px] bg-[#306eec] border border-[#306eec] text-[#eef2ff] text-lg sm:text-[20px] font-extrabold hover:bg-[#2558c9] transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99]"
+                className="w-full h-[58px] rounded-[18px] bg-[#306EEC] text-white text-[16px] sm:text-[17px] font-extrabold transition-all hover:bg-[#2558c9] hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 active:scale-[0.99]"
+                style={{ boxShadow: canBook ? "0 16px 48px rgba(48,110,236,0.30)" : undefined }}
               >
-{checkingAccess ? "Checking..." : loading ? "Booking..." : hasActiveBooking ? "Limit reached" : "Book Visit"}
+                {checkingAccess
+                  ? "Checking access..."
+                  : loading
+                  ? "Booking..."
+                  : hasActiveBooking
+                  ? "Visit limit reached"
+                  : "Confirm Booking"}
               </button>
 
-              <div className="mt-2 text-xs text-[#6a6c71]">
-                You'll receive confirmation once your booking is reviewed.
+              <div className="mt-3 text-[12px] text-[#94A3B8] text-center">
+                You&rsquo;ll receive a confirmation once your booking is reviewed.
               </div>
             </div>
           </div>
         </div>
 
+        {/* ── Quick Booking Modal ── */}
         {quickBookOpen && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-            onClick={() => {
-              if (!quickBookingLoading) setQuickBookOpen(false);
-            }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-[2px] px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] sm:pb-0"
+            onClick={() => { if (!quickBookingLoading) setQuickBookOpen(false); }}
           >
             <div
-              className="w-full max-w-[720px] rounded-[24px] bg-white p-5 shadow-[0_20px_100px_rgba(0,0,0,0.32)] sm:p-6"
-              onClick={(event) => event.stopPropagation()}
+              className="w-full max-w-[700px] rounded-[28px] bg-white p-6 sm:p-7 shadow-[0_32px_100px_rgba(0,0,0,0.28)] max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start justify-between gap-4 mb-6">
                 <div>
-                  <div className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#6A6D71]">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC] mb-1">
                     Quick Booking
                   </div>
-                  <h3 className="mt-2 text-2xl font-extrabold text-[#313234]">
-                    What can we do for you?
+                  <h3 className="text-[22px] sm:text-[26px] font-extrabold text-[#0B1628] leading-tight">
+                    What can we help with?
                   </h3>
-                  <p className="mt-2 text-sm text-[#6A6D71]">
-                    Pick a task and we will fill the closest available day and time for you.
-                  </p>
-                  <p className="mt-2 text-xs text-[#6A6D71]">
-                    Labor service only. Materials may be additional.
+                  <p className="text-[13px] text-[#64748B] mt-1.5">
+                    Pick a task and we&rsquo;ll fill in the nearest available day and time.
                   </p>
                 </div>
-
                 <button
                   type="button"
                   disabled={quickBookingLoading}
                   onClick={() => setQuickBookOpen(false)}
-                  className="h-10 w-10 rounded-full border border-[#D1D5DB] text-[#313234] transition hover:bg-[#F8FAFF] disabled:opacity-60"
-                  aria-label="Close quick booking"
+                  className="flex-shrink-0 w-10 h-10 rounded-full border border-[#E5E9F2] text-[#475569] flex items-center justify-center hover:bg-[#F8FAFF] disabled:opacity-50 transition"
+                  aria-label="Close"
                 >
-                  x
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
                 </button>
               </div>
 
-              <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {POPULAR_TASKS.map((task) => (
                   <button
                     key={task.title}
                     type="button"
                     disabled={quickBookingLoading}
                     onClick={() => handleQuickBookingSelect(task.title)}
-                    className="rounded-[18px] border border-[#D7E0F5] bg-[#EEF2FF] px-4 py-4 text-left transition hover:border-[#306EEC] hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="group flex items-start gap-3 rounded-[16px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-4 text-left transition hover:border-[#306EEC] hover:bg-white disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <div className="text-sm font-extrabold text-[#313234]">{task.title}</div>
-                    <div className="mt-1 text-xs text-[#6A6D71]">{task.subtitle}</div>
+                    <div className="flex-shrink-0 w-9 h-9 rounded-[10px] border border-[#E5E9F2] bg-white flex items-center justify-center text-[#64748B] group-hover:text-[#306EEC] group-hover:border-[#D9E4FF] transition">
+                      {task.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[14px] font-semibold text-[#0B1628] leading-snug">
+                        {task.title}
+                      </div>
+                      <div className="text-[12px] text-[#64748B] mt-0.5 leading-relaxed">
+                        {task.subtitle}
+                      </div>
+                    </div>
                   </button>
                 ))}
               </div>
 
-              <div className="mt-5 text-xs text-[#6A6D71]">
+              <div className="mt-5 text-[12px] text-[#94A3B8]">
                 {quickBookingLoading
-                  ? "Choosing the nearest available booking for you..."
-                  : "Quick Booking still uses the normal booking form. Photos are still required before submission."}
+                  ? "Finding the nearest available slot..."
+                  : "Photos are still required before submitting your booking."}
               </div>
             </div>
           </div>
         )}
 
-        {/* Confirmation Modal */}
+        {/* ── Confirmation Modal ── */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4" onClick={() => setShowModal(false)}>
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center z-50 px-4"
+            onClick={() => setShowModal(false)}
+          >
             <div
-              className="bg-white rounded-[22px] p-6 sm:p-8 max-w-[560px] w-full shadow-2xl"
+              className="bg-white rounded-[28px] p-7 sm:p-9 max-w-[520px] w-full shadow-[0_32px_100px_rgba(0,0,0,0.25)] max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="text-center mb-4">
-                <div className="text-6xl">🎉</div>
+              {/* Success icon */}
+              <div className="flex items-center justify-center mb-6">
+                <div className="w-20 h-20 rounded-full bg-[#DCFCE7] flex items-center justify-center">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M5 12.5l4.5 4.5L19 8"
+                      stroke="#16A34A"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
               </div>
 
-              <h2 className="text-[28px] sm:text-[32px] font-extrabold text-[#313234] text-center mb-6">
+              <h2 className="text-[26px] sm:text-[30px] font-extrabold text-[#0B1628] text-center mb-2">
                 Booking Confirmed
               </h2>
-
-              <div className="space-y-2 mb-6 text-sm sm:text-base">
-                <div className="flex gap-2">
-                  <span className="font-semibold text-[#313234]">Booking #:</span>
-                  <span className="text-[#6A6D71]">{bookingNumber}</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="font-semibold text-[#313234]">Service:</span>
-                  <span className="text-[#6A6D71]">{confirmedService}</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="font-semibold text-[#313234]">Date:</span>
-                  <span className="text-[#6A6D71]">
-                    {confirmedDate?.toLocaleDateString("en-US", {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="font-semibold text-[#313234]">Time:</span>
-                  <span className="text-[#6A6D71]">{confirmedTime}</span>
-                </div>
-              </div>
-
-              <p className="text-[#6A6D71] text-[15px] mb-6">
-                Mr. Fixter will reach out to you shortly.
-                <br />
-                A confirmation email has been sent.
+              <p className="text-[14px] text-[#64748B] text-center mb-6">
+                We&rsquo;ll reach out to confirm your visit details.
               </p>
 
-              <div className="bg-[#EEF2FF] rounded-[14px] p-4 mb-6 border border-[#c5cbd8]">
-                <h3 className="text-[#306EEC] font-extrabold text-[18px] mb-3">Before your visit</h3>
-                <p className="text-[#6A6D71] text-[14px] mb-2">
-                  Please have all <span className="text-[#306EEC] font-semibold">materials/fixtures on-site and ready</span>{" "}
-                  (faucets, lights, shelves, hardware, etc.).
-                </p>
-                <p className="text-[#6A6D71] text-[14px] mb-2">
-                  Your Fixter may arrive <span className="text-[#306EEC] font-semibold">up to 30 minutes before or after</span>{" "}
-                  the booked time (traffic & job length).
-                </p>
-                <p className="text-[#6A6D71] text-[14px]">
-                  Emergencies or questions? Call{" "}
-                  <a href="tel:631-599-1363" className="text-[#306EEC] font-semibold hover:underline">
-                    631-599-1363
-                  </a>{" "}
-                  or email{" "}
-                  <a href="mailto:my@profixter.com" className="text-[#306EEC] font-semibold hover:underline">
-                    my@profixter.com
-                  </a>
-                  .
-                </p>
+              {/* Booking details */}
+              <div className="rounded-[18px] border border-[#E5E9F2] bg-[#F8FAFF] p-5 space-y-3 mb-5">
+                {(
+                  [
+                    ["Booking #", bookingNumber],
+                    ["Service", confirmedService],
+                    [
+                      "Date",
+                      confirmedDate?.toLocaleDateString("en-US", {
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      }),
+                    ],
+                    ["Time", formatTime12(confirmedTime)],
+                  ] as [string, string | undefined][]
+                )
+                  .filter(([, v]) => !!v)
+                  .map(([label, value]) => (
+                    <div key={label} className="flex items-start justify-between gap-4">
+                      <span className="text-[13px] font-semibold text-[#64748B] flex-shrink-0">{label}</span>
+                      <span className="text-[14px] font-semibold text-[#0B1628] text-right">{value}</span>
+                    </div>
+                  ))}
+              </div>
+
+              {/* Pre-visit checklist */}
+              <div className="rounded-[18px] border border-[#D9E4FF] bg-[#EEF5FF] p-5 mb-6">
+                <div className="text-[14px] font-extrabold text-[#1D4ED8] mb-3">Before your visit</div>
+                <div className="space-y-2.5">
+                  {[
+                    "Have all materials & fixtures on-site and ready",
+                    "Your Fixter may arrive up to 30 min early or late",
+                    "Questions? Call Taras: 631-599-1363",
+                  ].map((item) => (
+                    <div key={item} className="flex items-start gap-2.5">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="mt-0.5 flex-shrink-0" aria-hidden="true">
+                        <path d="M5 12.5l4 4 10-10" stroke="#306EEC" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <span className="text-[13px] text-[#1D4ED8]">{item}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <button
@@ -1594,13 +1602,15 @@ checkingAccess || !hasSubscription
                   setShowModal(false);
                   window.location.reload();
                 }}
-                className="w-full h-[58px] rounded-[16px] bg-[#306EEC] text-white text-[18px] sm:text-[20px] font-extrabold hover:bg-[#2558c9] transition active:scale-[0.99]"
+                className="w-full h-[56px] rounded-[16px] bg-[#306EEC] text-white text-[16px] font-extrabold hover:bg-[#2558c9] transition active:scale-[0.99]"
+                style={{ boxShadow: "0 12px 36px rgba(48,110,236,0.30)" }}
               >
-                OK
+                Done
               </button>
             </div>
           </div>
         )}
+
       </div>
     </section>
   );

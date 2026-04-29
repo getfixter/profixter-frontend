@@ -1,9 +1,11 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   cancelSubscription,
+  changeSubscriptionPlan,
+  reactivateSubscription,
   getMySubscriptions,
   type ManagedSubscription,
 } from "@/lib/subscription-service";
@@ -19,28 +21,57 @@ const PLAN_PRICES: Record<PlanKey, number> = {
 
 const PLAN_INCLUDES: Record<PlanKey, string[]> = {
   basic: [
-    "For simple ongoing home tasks",
-    "1 active booking",
+    "Home Care Membership — your home, handled",
+    "One scheduled visit each month",
     "Each visit covers up to 90 minutes of work",
   ],
   plus: [
-    "For more flexibility with scheduling",
-    "2 active bookings",
-    "Book as often as availability allows",
+    "Home Care Plus — stay ahead of your home",
+    "Two scheduled visits each month",
+    "Same trusted team, every visit",
   ],
   premium: [
-    "For urgent situations and peace of mind",
-    "2 active bookings",
-    "1 emergency visit per month",
-    "Emergency visits are limited to one per month",
+    "Home Protection — cared for and protected",
+    "Two scheduled visits each month",
+    "One emergency visit per month when something can't wait",
   ],
   elite: [
-    "For larger projects and full-day tasks",
-    "2-3 active bookings",
-    "1 full-day visit per month (up to 8 hours)",
-    "Full-day visit must be scheduled in advance",
+    "Whole-Home Care — everything about your home, handled",
+    "Two scheduled visits each month",
+    "One full project day per month (up to 8 hours)",
   ],
 };
+
+const PLAN_DISPLAY_NAMES: Record<PlanKey, string> = {
+  basic: "Home Care Membership",
+  plus: "Home Care Plus",
+  premium: "Home Protection",
+  elite: "Whole-Home Care",
+};
+
+const PLAN_RANK: Record<PlanKey, number> = {
+  basic: 1,
+  plus: 2,
+  premium: 3,
+  elite: 4,
+};
+
+function classifyChange(
+  sub: ManagedSubscription,
+  newPlan: PlanKey,
+  newCycle: "monthly" | "annual"
+): "upgrade" | "downgrade" | "same" {
+  const currentPlan = sub.subscriptionType as PlanKey;
+  const currentCycle = sub.billingCycle || "monthly";
+  const currentRank = PLAN_RANK[currentPlan] ?? 0;
+  const newRank = PLAN_RANK[newPlan] ?? 0;
+
+  if (currentRank === newRank && currentCycle === newCycle) return "same";
+  if (newRank > currentRank) return "upgrade";
+  if (newRank < currentRank) return "downgrade";
+  if (currentCycle === "monthly" && newCycle === "annual") return "upgrade";
+  return "downgrade";
+}
 
 function formatPlanName(plan: string) {
   return String(plan || "")
@@ -92,8 +123,17 @@ function statusLabel(subscription: ManagedSubscription) {
 export function PlanSection() {
   const [loading, setLoading] = useState(true);
   const [subscriptions, setSubscriptions] = useState<ManagedSubscription[]>([]);
+
   const [cancelTarget, setCancelTarget] = useState<ManagedSubscription | null>(null);
   const [canceling, setCanceling] = useState(false);
+
+  const [reactivatingId, setReactivatingId] = useState<string | null>(null);
+
+  const [planChangeTarget, setPlanChangeTarget] = useState<ManagedSubscription | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey>("plus");
+  const [selectedCycle, setSelectedCycle] = useState<"monthly" | "annual">("monthly");
+  const [planChanging, setPlanChanging] = useState(false);
+
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
@@ -179,6 +219,58 @@ export function PlanSection() {
     }
   };
 
+  const handleReactivate = async (subscription: ManagedSubscription) => {
+    if (!subscription.addressId) return;
+
+    setReactivatingId(subscription._id);
+    setError("");
+    setNotice("");
+
+    try {
+      const result = await reactivateSubscription({ addressId: subscription.addressId });
+      setSubscriptions((current) =>
+        current.map((s) => (s._id === result.subscription._id ? result.subscription : s))
+      );
+      setNotice(result.message || "Subscription reactivated successfully.");
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Unable to reactivate your subscription right now.");
+    } finally {
+      setReactivatingId(null);
+    }
+  };
+
+  const openPlanChange = (subscription: ManagedSubscription) => {
+    setSelectedPlan(subscription.subscriptionType as PlanKey);
+    setSelectedCycle((subscription.billingCycle as "monthly" | "annual") || "monthly");
+    setPlanChangeTarget(subscription);
+    setError("");
+  };
+
+  const handlePlanChange = async () => {
+    if (!planChangeTarget?.addressId) return;
+
+    setPlanChanging(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const result = await changeSubscriptionPlan({
+        addressId: planChangeTarget.addressId,
+        plan: selectedPlan,
+        billingCycle: selectedCycle,
+      });
+      setSubscriptions((current) =>
+        current.map((s) => (s._id === result.subscription._id ? result.subscription : s))
+      );
+      setNotice(result.message || "Plan updated successfully.");
+      setPlanChangeTarget(null);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Unable to change plan right now.");
+    } finally {
+      setPlanChanging(false);
+    }
+  };
+
   const Card = ({
     children,
     className = "",
@@ -193,6 +285,11 @@ export function PlanSection() {
       {children}
     </div>
   );
+
+  const planChangeType =
+    planChangeTarget
+      ? classifyChange(planChangeTarget, selectedPlan, selectedCycle)
+      : "same";
 
   return (
     <>
@@ -228,9 +325,9 @@ export function PlanSection() {
             <Card className="max-w-[620px]">
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
-                  <div className="mb-1 text-sm text-[#6A6D71]">No active subscription</div>
+                  <div className="mb-1 text-sm text-[#6A6D71]">No active membership</div>
                   <h3 className="text-lg font-semibold text-[#313234] sm:text-xl">
-                    Recommended: <span className="text-[#306EEC]">Plus</span>
+                    Recommended: <span className="text-[#306EEC]">{PLAN_DISPLAY_NAMES.plus}</span>
                   </h3>
                   <div className="mt-2 flex items-baseline gap-1">
                     <span className="text-2xl font-semibold text-[#313234]">${PLAN_PRICES.plus}</span>
@@ -239,7 +336,7 @@ export function PlanSection() {
                 </div>
 
                 <div className="shrink-0 rounded-full border border-[#C5CBD8] bg-white/70 px-3 py-2">
-                  <span className="text-xs font-semibold text-[#313234]">Most Popular</span>
+                  <span className="text-xs font-semibold text-[#313234]">Most members start here</span>
                 </div>
               </div>
 
@@ -256,7 +353,7 @@ export function PlanSection() {
               </div>
 
               <Link
-                href="/#plans"
+                href="/membership"
                 className="mt-6 block w-full rounded-[14px] bg-[#306EEC] py-3 text-center text-base font-semibold text-[#EEF2FF] transition-colors hover:bg-[#2557C7] sm:py-4 sm:text-lg"
               >
                 Get Started
@@ -286,7 +383,7 @@ export function PlanSection() {
                   What can I book?
                 </Link>
                 <Link
-                  href="/#plans"
+                  href="/membership"
                   className="inline-flex items-center justify-center rounded-[14px] border border-[#C5CBD8] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
                 >
                   View Plans
@@ -310,6 +407,7 @@ export function PlanSection() {
                   const pendingChangeDate = formatDate(
                     subscription.pendingChangeEffectiveDate || null
                   );
+                  const isReactivating = reactivatingId === subscription._id;
 
                   return (
                     <Card key={subscription._id} className="max-w-[620px]">
@@ -347,7 +445,7 @@ export function PlanSection() {
                         </div>
                         <div className="rounded-[14px] border border-[#D7E0F5] bg-white/70 px-4 py-3">
                           <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">
-                            Renewal
+                            {subscription.cancelAtPeriodEnd ? "Active Until" : "Renewal"}
                           </div>
                           <div className="mt-1 text-sm font-semibold text-[#313234]">
                             {renewalDate || "On file"}
@@ -379,14 +477,16 @@ export function PlanSection() {
 
                       {subscription.cancelAtPeriodEnd ? (
                         <div className="mt-5 rounded-[14px] border border-[#FDE68A] bg-[#FFFBEB] p-4 text-sm text-[#92400E]">
-                          <div className="font-semibold">Cancellation already scheduled</div>
+                          <div className="font-semibold">Cancellation scheduled</div>
                           <div className="mt-1">
-                            You'll keep access until {cancellationDate || renewalDate || "the end of your current billing period"}.
+                            Your plan stays active until{" "}
+                            <strong>{cancellationDate || renewalDate || "the end of your current billing period"}</strong>.
+                            No new charges will be made after that date.
                           </div>
                         </div>
                       ) : null}
 
-                      {pendingPlan ? (
+                      {pendingPlan && !subscription.cancelAtPeriodEnd ? (
                         <div className="mt-5 rounded-[14px] border border-[#BFDBFE] bg-[#EFF6FF] p-4 text-sm text-[#1D4ED8]">
                           <div className="font-semibold">Scheduled next plan: {pendingPlan}</div>
                           <div className="mt-1">
@@ -398,16 +498,28 @@ export function PlanSection() {
                       ) : null}
 
                       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                        <Link
-                          href="/#plans"
-                          className="block w-full rounded-[14px] bg-[#306EEC] py-3 text-center text-base font-semibold text-[#EEF2FF] transition-colors hover:bg-[#2557C7]"
-                        >
-                          Change plan
-                        </Link>
+                        {subscription.cancelAtPeriodEnd ? (
+                          <button
+                            type="button"
+                            disabled={isReactivating}
+                            onClick={() => handleReactivate(subscription)}
+                            className="block w-full rounded-[14px] bg-[#306EEC] py-3 text-center text-base font-semibold text-[#EEF2FF] transition-colors hover:bg-[#2557C7] disabled:opacity-60"
+                          >
+                            {isReactivating ? "Reactivating..." : "Reactivate plan"}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => openPlanChange(subscription)}
+                            className="block w-full rounded-[14px] bg-[#306EEC] py-3 text-center text-base font-semibold text-[#EEF2FF] transition-colors hover:bg-[#2557C7]"
+                          >
+                            Change plan
+                          </button>
+                        )}
 
                         <button
                           type="button"
-                          disabled={subscription.cancelAtPeriodEnd}
+                          disabled={subscription.cancelAtPeriodEnd || canceling}
                           onClick={() => setCancelTarget(subscription)}
                           className="w-full rounded-[14px] border border-[#C5CBD8] bg-white/70 py-3 text-base font-semibold text-[#313234] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                         >
@@ -417,7 +529,7 @@ export function PlanSection() {
 
                       <div className="mt-3 text-xs text-[#6A6D71]">
                         {subscription.cancelAtPeriodEnd
-                          ? `You'll keep easy booking and plan access until ${cancellationDate || renewalDate || "the end of the current period"}.`
+                          ? `Service continues until ${cancellationDate || renewalDate || "the end of the current period"}. You can reactivate anytime before that.`
                           : pendingPlan
                             ? `${pendingPlan} is scheduled for ${pendingChangeDate || renewalDate || "your next billing date"}, while your current plan stays active now.`
                             : "You can manage your plan and book online anytime."}
@@ -442,14 +554,14 @@ export function PlanSection() {
                     <span className="text-[#306EEC]">Open</span>
                   </Link>
                   <Link
-                    href="/#services"
+                    href="/membership"
                     className="flex items-center justify-between rounded-[14px] border border-[#D7E0F5] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
                   >
                     <span>How often can I book?</span>
                     <span className="text-[#306EEC]">Open</span>
                   </Link>
                   <Link
-                    href="/#pick-day"
+                    href="/membership"
                     className="flex items-center justify-between rounded-[14px] border border-[#D7E0F5] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
                   >
                     <span>Book your next visit</span>
@@ -493,6 +605,7 @@ export function PlanSection() {
         )}
       </div>
 
+      {/* ── Cancel confirmation modal ── */}
       {cancelTarget ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4"
@@ -511,15 +624,15 @@ export function PlanSection() {
 
               <h3 className="text-2xl font-extrabold text-[#313234]">Are you sure you want to cancel?</h3>
               <p className="mt-3 text-sm leading-relaxed text-[#6A6D71]">
-                You'll keep your plan until the end of the current billing period, including easy online booking and predictable monthly pricing.
+                You'll keep your membership until the end of the current billing period — your home stays in regular care until then.
               </p>
 
               <div className="mt-5 rounded-[16px] border border-[#D7E0F5] bg-[#F8FAFF] p-4 text-left">
                 <div className="text-sm font-semibold text-[#313234]">Before you cancel</div>
                 <div className="mt-2 space-y-1.5 text-sm text-[#6A6D71]">
-                  <div>Keep easy booking and no-estimate pricing in place.</div>
-                  <div>Different plans let you keep more active bookings when you need them.</div>
-                  <div>You can still keep your current plan and continue booking online.</div>
+                  <div>Keep predictable monthly billing and the same trusted team.</div>
+                  <div>Higher memberships add more scheduled visits, emergency response, or a full project day each month.</div>
+                  <div>You can keep your current membership and continue scheduling visits online.</div>
                 </div>
               </div>
 
@@ -545,7 +658,118 @@ export function PlanSection() {
           </div>
         </div>
       ) : null}
+
+      {/* ── Plan change modal ── */}
+      {planChangeTarget ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4"
+          onClick={() => {
+            if (!planChanging) setPlanChangeTarget(null);
+          }}
+        >
+          <div
+            className="w-full max-w-lg rounded-[22px] bg-white p-6 shadow-[0_20px_100px_rgba(0,0,0,0.35)] sm:p-7"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 className="mb-1 text-xl font-extrabold text-[#313234]">Change plan</h3>
+            <p className="mb-5 text-sm text-[#6A6D71]">
+              Current: {formatPlanName(planChangeTarget.subscriptionType)} &mdash;{" "}
+              {planChangeTarget.billingCycle}
+            </p>
+
+            {/* Plan selector */}
+            <div className="mb-4 space-y-2">
+              {(["basic", "plus", "premium", "elite"] as PlanKey[]).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setSelectedPlan(p)}
+                  className={`flex w-full items-center justify-between rounded-[14px] border px-4 py-3 text-left transition ${
+                    selectedPlan === p
+                      ? "border-[#306EEC] bg-[#EEF2FF]"
+                      : "border-[#D7E0F5] bg-white/70 hover:bg-white"
+                  }`}
+                >
+                  <div>
+                    <div className="text-sm font-semibold text-[#313234]">
+                      {PLAN_DISPLAY_NAMES[p]}
+                    </div>
+                    <div className="text-xs text-[#6A6D71]">{PLAN_INCLUDES[p][0]}</div>
+                  </div>
+                  <div className="ml-4 shrink-0 text-right">
+                    <div className="text-base font-semibold text-[#313234]">${PLAN_PRICES[p]}</div>
+                    <div className="text-xs text-[#6A6D71]">/mo</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Billing cycle */}
+            <div className="mb-5 flex gap-3">
+              {(["monthly", "annual"] as const).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setSelectedCycle(c)}
+                  className={`flex-1 rounded-[12px] border py-2.5 text-sm font-semibold capitalize transition ${
+                    selectedCycle === c
+                      ? "border-[#306EEC] bg-[#EEF2FF] text-[#306EEC]"
+                      : "border-[#D7E0F5] bg-white/70 text-[#313234] hover:bg-white"
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+
+            {/* Change type note */}
+            {planChangeType !== "same" ? (
+              <div
+                className={`mb-5 rounded-[12px] border p-3 text-sm ${
+                  planChangeType === "upgrade"
+                    ? "border-[#86EFAC]/50 bg-[#ECFDF3] text-[#166534]"
+                    : "border-[#BFDBFE] bg-[#EFF6FF] text-[#1D4ED8]"
+                }`}
+              >
+                {planChangeType === "upgrade"
+                  ? "Upgrade is applied immediately. A prorated charge will be made today for the difference."
+                  : "Downgrade takes effect at your next billing date. Your current plan stays active until then."}
+              </div>
+            ) : null}
+
+            {error ? (
+              <div className="mb-4 rounded-[12px] border border-[#FCA5A5]/60 bg-[#FEF2F2] px-4 py-3 text-sm font-semibold text-[#B91C1C]">
+                {error}
+              </div>
+            ) : null}
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                disabled={planChanging}
+                onClick={() => setPlanChangeTarget(null)}
+                className="flex-1 rounded-[14px] border border-[#D1D5DB] bg-white py-3 font-semibold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={planChanging || planChangeType === "same"}
+                onClick={handlePlanChange}
+                className="flex-1 rounded-[14px] bg-[#306EEC] py-3 font-semibold text-white transition hover:bg-[#2557C7] disabled:opacity-60"
+              >
+                {planChanging
+                  ? "Updating..."
+                  : planChangeType === "upgrade"
+                    ? "Upgrade now"
+                    : planChangeType === "downgrade"
+                      ? "Schedule downgrade"
+                      : "Select a different plan"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
-

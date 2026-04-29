@@ -5,8 +5,7 @@ export type AdminTabId =
   | "requests"
   | "emails"
   | "blacklist"
-  | "calendar"
-  | "techs";
+  | "calendar";
 
 export type AdminTabItem = {
   id: AdminTabId;
@@ -16,12 +15,11 @@ export type AdminTabItem = {
 };
 
 export const ADMIN_TABS: AdminTabItem[] = [
-  { id: "bookings", label: "Bookings", shortLabel: "BK", description: "Jobs" },
-  { id: "users", label: "Users", shortLabel: "US", description: "Customers" },
-  { id: "subscribed", label: "Subscribed", shortLabel: "SU", description: "Plans" },
-  { id: "requests", label: "Requests", shortLabel: "RQ", description: "Leads" },
-  { id: "emails", label: "Emails", shortLabel: "EM", description: "Campaigns" },
-  { id: "blacklist", label: "Blacklist", shortLabel: "BL", description: "Blocked" },
-  { id: "calendar", label: "Calendar", shortLabel: "CA", description: "Schedule" },
-  { id: "techs", label: "Techs", shortLabel: "TE", description: "Crew" },
+  { id: "bookings",   label: "Jobs",       shortLabel: "Jobs",    description: "Daily bookings" },
+  { id: "subscribed", label: "Members",    shortLabel: "Members", description: "Active plans" },
+  { id: "users",      label: "All Users",  shortLabel: "Users",   description: "Customer CRM" },
+  { id: "requests",   label: "Leads",      shortLabel: "Leads",   description: "Estimate requests" },
+  { id: "emails",     label: "Emails",     shortLabel: "Emails",  description: "Campaigns" },
+  { id: "blacklist",  label: "Blacklist",  shortLabel: "Block",   description: "Blocked users" },
+  { id: "calendar",   label: "Schedule",   shortLabel: "Sched",   description: "Calendar config" },
 ];

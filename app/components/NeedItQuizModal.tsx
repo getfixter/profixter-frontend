@@ -6,7 +6,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onGoToPlans: () => void;
-  ctaLabel?: string; // "Start 7-day Free Trial"
+  ctaLabel?: string;
 };
 
 type OptionId = "good" | "wrong";
@@ -122,14 +122,14 @@ const QUESTIONS: readonly Question[] = [
   },
   {
     id: "q6",
-    title: "Last one: want to see plans and start the 7-day free trial?",
-    sub: "No pressure — you can cancel anytime.",
+    title: "Last one: want to see memberships?",
+    sub: "No pressure — month-to-month, no long-term contracts.",
     options: [
       {
         id: "good",
-        label: "Yes — show me plans",
+        label: "Yes — show me memberships",
         feedback:
-          "Perfect. You’re going to pick the plan that matches your home and start the trial.",
+          "Perfect. You're going to pick the membership that matches your home.",
       },
       {
         id: "wrong",
@@ -145,7 +145,7 @@ export default function NeedItQuizModal({
   open,
   onClose,
   onGoToPlans,
-  ctaLabel = "Start 7-day Free Trial",
+  ctaLabel = "See Plans",
 }: Props) {
   const [step, setStep] = useState(0);
 
@@ -249,7 +249,7 @@ export default function NeedItQuizModal({
                 Quick questions — see if Mr. Fixter fits your home
               </div>
               <div className="text-[13px] sm:text-[14px] text-[#6A6D71] mt-2">
-                7-day free trial • cancel anytime • visits up to 90 minutes
+                Month-to-month membership • visits up to 90 minutes
               </div>
             </div>
 

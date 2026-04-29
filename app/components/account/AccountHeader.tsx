@@ -30,10 +30,9 @@ export function AccountHeader({ userName }: AccountHeaderProps) {
           </div>
         </Link>
         <nav className="hidden lg:flex items-center gap-8">
-          <Link href="#how-it-works" className="text-[#313234] text-base hover:text-[#306EEC]">How it works</Link>
-          <Link href="#plans" className="text-[#313234] text-base hover:text-[#306EEC]">Plans</Link>
-          <Link href="#pick-day" className="text-[#313234] text-base hover:text-[#306EEC]">Pick day</Link>
-          <Link href="#projects" className="text-[#313234] text-base hover:text-[#306EEC]">Projects</Link>
+          <Link href="/membership" className="text-[#313234] text-base hover:text-[#306EEC]">Membership</Link>
+          <Link href="/projects" className="text-[#313234] text-base hover:text-[#306EEC]">Projects</Link>
+          <Link href="/estimate" className="text-[#313234] text-base hover:text-[#306EEC]">Free Estimate</Link>
         </nav>
         <div className="relative" ref={menuRef}>
           <button
@@ -50,14 +49,18 @@ export function AccountHeader({ userName }: AccountHeaderProps) {
           </button>
           {isMenuOpen && (
             <div className="absolute right-0 top-full mt-2 w-48 sm:w-56 bg-white border border-[#C5CBD8] rounded-[14px] shadow-lg py-2 z-50">
-              {['how-it-works','plans','pick-day','projects'].map(anchor => (
+              {[
+                { href: "/membership", label: "Membership" },
+                { href: "/projects", label: "Projects" },
+                { href: "/estimate", label: "Free Estimate" },
+              ].map(({ href, label }) => (
                 <Link
-                  key={anchor}
-                  href={`#${anchor}`}
+                  key={href}
+                  href={href}
                   className="block px-4 py-3 text-sm sm:text-base text-[#313234] hover:bg-[#EEF2FF] transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  {anchor.replace('-', ' ').replace('pick', 'Pick').replace('how it works','How it works')}
+                  {label}
                 </Link>
               ))}
               <div className="border-t border-[#C5CBD8] my-2" />
@@ -68,12 +71,6 @@ export function AccountHeader({ userName }: AccountHeaderProps) {
               >
                 Home
               </Link>
-              <button
-                className="block w-full text-left px-4 py-3 text-sm sm:text-base text-red-600 hover:bg-[#EEF2FF] transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Log out
-              </button>
             </div>
           )}
         </div>

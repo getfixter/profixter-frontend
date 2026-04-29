@@ -15,8 +15,13 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Profixter - Long Island Home Maintenance",
-  description: "Effortless home maintenance with luxury service and honest pricing",
+  title: "Profixter | Long Island Home Services — Membership & Remodeling",
+  description: "Long Island's licensed home services team. Monthly maintenance memberships from $149/mo and complete home improvement — roofing, bathroom, and kitchen remodeling. Licensed HI-71484. Nassau & Suffolk County.",
+  openGraph: {
+    title: "Profixter | Long Island Home Services",
+    description: "Monthly handyman memberships and complete home improvement for Long Island homeowners. Licensed HI-71484. Serving Nassau & Suffolk County.",
+    type: "website",
+  },
 };
 
 const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FB_PIXEL_ID; // ✅ add this env

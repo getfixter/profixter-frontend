@@ -76,9 +76,7 @@ export default function QuickStats({
             ]
           : active === 'blacklist'
             ? [{ label: 'Blacklisted', value: blacklistCount, code: 'BL', tone: 'border-rose-200 bg-rose-50 text-rose-700' }]
-            : active === 'techs'
-              ? [{ label: 'Techs', value: 0, code: 'TE', tone: 'border-teal-200 bg-teal-50 text-teal-700' }]
-              : [];
+            : [];
 
   if (stats.length === 0) return null;
 

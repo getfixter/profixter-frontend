@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <Image src="/images/pass-bg.png" alt="Background" fill className="object-cover" priority />
+        <Image src="/images/pass-bg.webp" alt="Background" fill className="object-cover" priority />
       </div>
       <div className="absolute top-6 left-6 sm:top-8 sm:left-8 lg:top-12 lg:left-12 z-20">
         <Link href="/">

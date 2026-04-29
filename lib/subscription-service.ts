@@ -87,3 +87,12 @@ export async function cancelSubscription(params: {
   );
   return response.data;
 }
+
+export async function reactivateSubscription(params: {
+  addressId: string;
+}): Promise<{ message: string; subscription: ManagedSubscription }> {
+  const response = await API.post<{ message: string; subscription: ManagedSubscription }>(
+    `/api/subscriptions/manage/address/${params.addressId}/reactivate`
+  );
+  return response.data;
+}

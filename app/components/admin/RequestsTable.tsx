@@ -27,14 +27,15 @@ function formatDate(value?: string) {
 
 function niceServiceType(value?: string) {
   switch (value) {
-    case "on_demand":
-      return "On Demand";
-    case "general_contractor":
-      return "General Contractor";
-    case "home_improvement":
-      return "Home Improvement";
-    default:
-      return value || "-";
+    case "membership":       return "Membership";
+    case "roofing":          return "Roofing";
+    case "bathroom":         return "Bathroom Remodel";
+    case "kitchen":          return "Kitchen Remodel";
+    case "estimate":         return "Estimate";
+    case "on_demand":        return "On Demand";
+    case "general_contractor": return "General Contractor";
+    case "home_improvement": return "Home Improvement";
+    default:                 return value || "-";
   }
 }
 

@@ -91,7 +91,7 @@ export default function IncludedPage() {
                 >
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-white text-[#306EEC] shadow-sm">
-                      <task.Icon className="h-5 w-5" />
+                      {task.icon}
                     </div>
                     <div>
                       <div className="text-[15px] font-semibold text-[#313234]">{task.title}</div>
@@ -180,7 +180,7 @@ export default function IncludedPage() {
               {ctaLabel}
             </Link>
             <Link
-              href="/#plans"
+              href="/membership"
               className="inline-flex h-[54px] items-center justify-center rounded-[16px] border border-white/20 bg-white/10 px-6 text-[16px] font-semibold text-white transition-colors hover:bg-white/15"
             >
               Compare Plans

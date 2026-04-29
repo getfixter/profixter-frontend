@@ -1,11 +1,10 @@
 import Image from "next/image";
 
-// Updated steps with clearer language and emphasis on unlimited visits.
 const STEPS = [
   {
     id: "01",
     title: "Create your account & pick a plan",
-    desc: "Sign up in minutes and choose a membership that fits your needs. Cancel anytime — no contracts.",
+    desc: "Sign up in minutes and choose a membership that fits your home. Month-to-month, no contracts.",
   },
   {
     id: "02",
@@ -14,8 +13,8 @@ const STEPS = [
   },
   {
     id: "03",
-    title: "Enjoy unlimited visits",
-    desc: "Relax knowing you can book 2+ visits each month. We’ll take care of all the fixes and maintenance.",
+    title: "Your home stays maintained",
+    desc: "Relax knowing you get 2+ visits each month. We’ll take care of all the fixes and maintenance.",
   },
 ];
 

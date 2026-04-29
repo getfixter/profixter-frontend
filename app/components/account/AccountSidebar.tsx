@@ -56,7 +56,7 @@ export function AccountSidebar({
           <button
             key={item.key}
             onClick={() => setActiveTab(item.key)}
-            className="w-full text-left text-sm sm:text-base px-0 py-1 relative text-[#313234]"
+            className="w-full text-left text-sm sm:text-base px-0 py-3 relative text-[#313234]"
           >
             {item.label}
             <span
@@ -68,7 +68,7 @@ export function AccountSidebar({
         ))}
 
         <button
-          className="w-full text-left text-base px-0 py-1 text-[#FF3C3C]"
+          className="w-full text-left text-base px-0 py-3 text-[#FF3C3C]"
           onClick={onLogout}
           type="button"
         >

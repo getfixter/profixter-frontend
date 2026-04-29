@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 
 interface BookingStatusSelectProps {
   bookingId: string;
@@ -8,114 +8,76 @@ interface BookingStatusSelectProps {
   onUpdate: (bookingId: string, status: string) => Promise<void>;
 }
 
-const statusConfig = {
-  Pending: {
-    color: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    icon: '⏳',
+const STATUSES: { value: string; label: string; idle: string; active: string }[] = [
+  {
+    value: 'Pending',
     label: 'Pending',
+    idle: 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100',
+    active: 'border-amber-500 bg-amber-500 text-white shadow-[0_2px_8px_rgba(245,158,11,0.35)]',
   },
-  Confirmed: {
-    color: 'bg-green-100 text-green-800 border-green-300',
-    icon: '✓',
-    label: 'Confirmed',
+  {
+    value: 'Confirmed',
+    label: 'Confirm',
+    idle: 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+    active: 'border-emerald-500 bg-emerald-500 text-white shadow-[0_2px_8px_rgba(16,185,129,0.35)]',
   },
-  Completed: {
-    color: 'bg-blue-100 text-blue-800 border-blue-300',
-    icon: '✔',
-    label: 'Completed',
+  {
+    value: 'Completed',
+    label: 'Done',
+    idle: 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+    active: 'border-sky-500 bg-sky-500 text-white shadow-[0_2px_8px_rgba(14,165,233,0.35)]',
   },
-  Canceled: {
-    color: 'bg-gray-100 text-gray-800 border-gray-300',
-    icon: '✕',
-    label: 'Canceled',
+  {
+    value: 'Canceled',
+    label: 'Cancel',
+    idle: 'border-slate-200 bg-white text-slate-600 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700',
+    active: 'border-rose-500 bg-rose-500 text-white shadow-[0_2px_8px_rgba(239,68,68,0.35)]',
   },
-};
+];
 
 export default function BookingStatusSelect({
   bookingId,
   currentStatus,
-  onUpdate, 
+  onUpdate,
 }: BookingStatusSelectProps) {
-  const config = statusConfig[currentStatus as keyof typeof statusConfig] || statusConfig.Pending;
+  const [updating, setUpdating] = useState(false);
 
-  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newStatus = e.target.value;
+  const normalized = String(currentStatus || '').toLowerCase();
+
+  const handleSelect = async (value: string) => {
+    if (value.toLowerCase() === normalized || updating) return;
+    setUpdating(true);
     try {
-      await onUpdate(bookingId, newStatus);
-    } catch (error) {
-      console.error('Failed to update status:', error);
+      await onUpdate(bookingId, value);
+    } catch {
+      // error handled by parent
+    } finally {
+      setUpdating(false);
     }
   };
 
   return (
-    <div className="status-select-wrapper">
-      <div className={`status-indicator ${config.color}`}>
-        <span className="status-icon">{config.icon}</span>
-        <span className="status-label">{config.label}</span>
-      </div>
-      <select
-        className={`status-select ${config.color}`}
-        value={currentStatus}
-        onChange={handleChange}
-      >
-        <option value="Pending">⏳ Pending</option>
-        <option value="Confirmed">✓ Confirmed</option>
-        <option value="Completed">✔ Completed</option>
-        <option value="Canceled">✕ Canceled</option>
-      </select>
-
-      <style jsx>{`
-        .status-select-wrapper {
-          position: relative;
-          min-width: 140px;
-        }
-
-        .status-indicator {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 8px 12px;
-          border-radius: 8px;
-          border: 1px solid;
-          font-weight: 600;
-          font-size: 0.875rem;
-          pointer-events: none;
-        }
-
-        .status-icon {
-          font-size: 1rem;
-        }
-
-        .status-label {
-          flex: 1;
-        }
-
-        .status-select {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          opacity: 0;
-          cursor: pointer;
-          font-weight: 600;
-          font-size: 0.875rem;
-          border-radius: 8px;
-          border: 1px solid;
-          padding: 8px 12px;
-        }
-
-        .status-select:hover + .status-indicator,
-        .status-select:focus + .status-indicator {
-          transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .status-select option {
-          background: white;
-          color: #1f2937;
-        }
-      `}</style>
+    <div className="grid grid-cols-4 gap-1.5">
+      {STATUSES.map(({ value, label, idle, active }) => {
+        const isActive = value.toLowerCase() === normalized;
+        return (
+          <button
+            key={value}
+            type="button"
+            onClick={() => handleSelect(value)}
+            disabled={updating}
+            className={`rounded-[12px] border py-4 text-[12px] font-bold leading-none transition-all active:scale-95 disabled:opacity-60 ${
+              isActive ? active : idle
+            }`}
+          >
+            {updating && isActive ? (
+              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : (
+              label
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -16,7 +16,7 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 -z-10">
-        <Image src="/images/pass-bg.png" alt="Background" fill className="object-cover" priority />
+        <Image src="/images/pass-bg.webp" alt="Background" fill className="object-cover" priority />
         <div className="absolute inset-0 bg-black/40" />
       </div>
 

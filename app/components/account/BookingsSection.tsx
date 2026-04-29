@@ -43,14 +43,14 @@ function canCancel(status: string) {
 function statusBadge(status: string) {
   const s = normalizeStatus(status);
   const map: Record<string, string> = {
-    pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    confirmed: "bg-blue-100 text-blue-800 border-blue-200",
-    "in-progress": "bg-purple-100 text-purple-800 border-purple-200",
-    completed: "bg-green-100 text-green-800 border-green-200",
-    cancelled: "bg-red-100 text-red-800 border-red-200",
-    canceled: "bg-red-100 text-red-800 border-red-200",
+    pending: "bg-amber-50 text-amber-700 border-amber-200",
+    confirmed: "bg-[#EEF5FF] text-[#1D4ED8] border-[#C7D9FF]",
+    "in-progress": "bg-[#F3F0FF] text-[#6D28D9] border-[#DDD6FE]",
+    completed: "bg-[#F0FDF4] text-[#166534] border-[#BBF7D0]",
+    cancelled: "bg-[#FFF1F2] text-[#9F1239] border-[#FECDD3]",
+    canceled: "bg-[#FFF1F2] text-[#9F1239] border-[#FECDD3]",
   };
-  return map[s] || "bg-gray-100 text-gray-800 border-gray-200";
+  return map[s] || "bg-[#F8FAFF] text-[#475569] border-[#E2E8F0]";
 }
 
 function formatNY(iso: string) {
@@ -492,7 +492,7 @@ export default function BookingsSection() {
             </div>
 
             {active.length === 0 ? (
-              <div className="text-[#6A6D71] text-sm">No active bookings right now.</div>
+              <div className="text-[#6A6D71] text-sm">No scheduled visits right now.</div>
             ) : (
               <div className="space-y-4">
                 {active.map((b) => (
@@ -570,11 +570,11 @@ export default function BookingsSection() {
 
       {!loading && !error && (
         <div className="mt-6 text-sm text-[#6A6D71]">
-          Need a new visit? Go to{" "}
-          <a className="text-[#306EEC] font-semibold" href="/#pick-day">
-            Pick day
+          Need a new visit?{" "}
+          <a className="text-[#306EEC] font-semibold" href="/membership">
+            Book your next visit
           </a>{" "}
-          and book your next appointment.
+          on the membership page.
         </div>
       )}
 

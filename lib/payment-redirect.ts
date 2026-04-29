@@ -41,8 +41,5 @@ export function redirectToPayment({
     url.searchParams.set("prefilled_email", userEmail);
   }
 
-  console.log("🔗 Redirecting to Stripe Payment Link:", url.toString());
-
-  // Редирект
   window.location.href = url.toString();
 }

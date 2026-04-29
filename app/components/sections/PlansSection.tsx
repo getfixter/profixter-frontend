@@ -68,25 +68,48 @@ function getPlanRank(plan: PlanType | null): number {
   return 0;
 }
 
+function getDisplayName(planName: string): string {
+  if (planName === "Basic") return "Home Care Membership";
+  if (planName === "Plus") return "Home Care Plus";
+  if (planName === "Premium") return "Home Protection";
+  if (planName === "Elite") return "Whole-Home Care";
+  return planName;
+}
+
 function getPositioningLabel(planName: string): string {
-  if (planName === "Basic") return "For simple ongoing home tasks";
-  if (planName === "Plus") return "For more flexibility with scheduling";
-  if (planName === "Premium") return "For urgent situations and peace of mind";
-  if (planName === "Elite") return "For larger projects and full-day tasks";
+  if (planName === "Basic") return "Your home, handled.";
+  if (planName === "Plus") return "Stay ahead of your home, not behind it.";
+  if (planName === "Premium") return "Cared for. And protected.";
+  if (planName === "Elite") return "Everything about your home — handled.";
   return "";
 }
 
 function getComparisonLabel(planName: string): string {
-  if (planName === "Basic") return "1 active booking";
-  if (planName === "Plus") return "2 active bookings";
-  if (planName === "Premium") return "1 emergency visit per month";
-  if (planName === "Elite") return "1 full-day visit per month (up to 8 hours)";
+  if (planName === "Basic") return "One scheduled visit each month";
+  if (planName === "Plus") return "Two scheduled visits each month";
+  if (planName === "Premium") return "Two scheduled visits + emergency response";
+  if (planName === "Elite") return "Two scheduled visits + a full project day";
   return "";
 }
 
 function getBadgeLabel(planName: string, badge?: string): string {
-  if (planName === "Plus") return "Most Popular";
-  return badge || "";
+  if (planName === "Plus") return "Most members start here";
+  if (planName === "Premium") return "Most members stay here";
+  if (badge === "StartHere") return "Most members start here";
+  if (badge === "StayHere") return "Most members stay here";
+  return "";
+}
+
+function getRetentionLine(planName: string): string {
+  if (planName === "Basic")
+    return "Most members stay for the long haul — your home keeps getting better, not worse.";
+  if (planName === "Plus")
+    return "Where most homeowners with active homes start — and stay for years.";
+  if (planName === "Premium")
+    return "The plan members keep when they have kids, pets, or a finished basement.";
+  if (planName === "Elite")
+    return "The plan that replaces the contractor list in your phone.";
+  return "";
 }
 
 function isManagedActiveStatus(status?: string | null): boolean {
@@ -444,7 +467,7 @@ export default function PlansSection() {
                     <span className="text-white font-semibold">12</span>
                   </>
                 ) : (
-                  <>Flexible month-to-month coverage with no long-term contract</>
+                  <>Month-to-month membership. No long-term contracts.</>
                 )}
               </p>
             </div>
@@ -487,7 +510,7 @@ export default function PlansSection() {
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div />
-            <span className="sm:hidden text-[#C5CBD8] text-[11px]">Cancel anytime</span>
+            <span className="sm:hidden text-[#C5CBD8] text-[11px]">Month-to-month</span>
           </div>
         </div>
       </div>
@@ -529,7 +552,7 @@ export default function PlansSection() {
                   <span className="text-[#C5CBD8]">Checking plan for this address...</span>
                 ) : addressIsActive ? (
                   <div className="space-y-1">
-                    <span className="text-[#FCA5A5] font-semibold">
+                    <span className="text-[#86EFAC] font-semibold">
                       Active plan
                       {selectedAddressSubscription?.subscriptionType
                         ? `: ${String(selectedAddressSubscription.subscriptionType).charAt(0).toUpperCase()}${String(selectedAddressSubscription.subscriptionType).slice(1)}`
@@ -567,6 +590,12 @@ export default function PlansSection() {
           <Image src="/images/logo.svg" alt="Profixter" width={80} height={32} />
         </div>
 
+        <div className={`mb-5 ${compact ? "flex justify-center" : ""}`}>
+          <span className="inline-flex items-center rounded-full border border-white/20 bg-white/[0.06] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">
+            Home Care Memberships
+          </span>
+        </div>
+
         <h2
           className={[
             compact ? "text-4xl sm:text-5xl" : "text-[56px]",
@@ -575,20 +604,20 @@ export default function PlansSection() {
             "mb-6",
           ].join(" ")}
         >
-          <span className="block text-white">Simple Monthly Plans</span>
-          <span className="block text-[#86EFAC]">For Ongoing Home Tasks</span>
-          <span className="block text-white">One Visit At A Time</span>
+          <span className="block text-white">One trusted team.</span>
+          <span className="block text-[#86EFAC]">Your home, handled.</span>
+          <span className="block text-white">Every month of the year.</span>
         </h2>
 
         <p className="text-[#C5CBD8] text-base sm:text-lg leading-relaxed max-w-[520px] mx-auto">
-          Ongoing handyman help, one visit at a time. Pick a plan, book online, and keep home
-          maintenance predictable.
+          A home care membership for Long Island homeowners. The same team, every visit.
+          Predictable monthly billing. No estimates, no surprises.
         </p>
         {!compact && (
           <p className="mt-5 text-[#C5CBD8] text-base leading-[22px]">
-            Materials at cost, only if needed, with your approval.
+            Month-to-month, no long-term contracts.
             <br />
-            No markup. No contractor games. Just clear pricing.
+            Materials at cost, only when needed, with your approval.
           </p>
         )}
 
@@ -601,29 +630,49 @@ export default function PlansSection() {
     <>
       <section
         id="plans"
-        className="w-full bg-[#313234] py-12 sm:py-16 lg:py-24 relative overflow-hidden scroll-mt-[140px]"
+        className="w-full py-12 sm:py-16 lg:py-24 relative overflow-hidden scroll-mt-[140px]"
+        style={{ background: "linear-gradient(160deg, #1C1E20 0%, #242628 60%, #2A2C2E 100%)" }}
       >
-        <div className="mx-auto max-w-[1240px] px-5 lg:px-5 mb-6">
-          <div className="bg-[#86EFAC]/15 border border-[#86EFAC]/30 rounded-2xl p-3 sm:p-4 backdrop-blur-md shadow-[0_10px_40px_rgba(0,0,0,0.25)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-[#86EFAC]/25 flex items-center justify-center">
-                <span className="text-[#1F7A2E] text-lg">Gift</span>
+        {/* Background depth treatment */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-50"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 20% 50%, rgba(48,110,236,0.06) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(134,239,172,0.04) 0%, transparent 40%)",
+          }}
+        />
+
+        {/* Annual promo banner */}
+        <div className="relative mx-auto max-w-[1240px] px-5 lg:px-5 mb-8">
+          <div
+            className="rounded-[18px] border border-[#86EFAC]/25 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+            style={{ background: "linear-gradient(135deg, rgba(134,239,172,0.08) 0%, rgba(134,239,172,0.04) 100%)" }}
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-9 h-9 rounded-full bg-[#86EFAC]/15 border border-[#86EFAC]/25 flex items-center justify-center flex-shrink-0">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M20 12v10H4V12" stroke="#86EFAC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M22 7H2v5h20V7z" stroke="#86EFAC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M12 22V7" stroke="#86EFAC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z" stroke="#86EFAC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" stroke="#86EFAC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </div>
               <div>
                 <p className="text-white font-extrabold text-base sm:text-lg leading-tight">
-                  Annual Plan - Pay for 11 months, get 12 months of ongoing handyman help
+                  Annual membership — pay for 11 months, get 12
                 </p>
-                <p className="text-[#C5CBD8] text-sm">Best value for long-term home maintenance.</p>
+                <p className="text-[#C5CBD8] text-sm mt-0.5">Best value for long-term home care members.</p>
               </div>
             </div>
-
-            <div className="text-[#86EFAC] font-extrabold text-sm sm:text-base">
-              1 month FREE
+            <div className="flex-shrink-0 rounded-full bg-[#86EFAC]/15 border border-[#86EFAC]/25 px-4 py-1.5">
+              <span className="text-[#86EFAC] font-extrabold text-sm">1 month FREE</span>
             </div>
           </div>
         </div>
 
-        <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-[#306EEC]/10 blur-[120px]" />
+        <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-[#306EEC]/8 blur-[140px]" />
 
         {isAuthenticated && user && addresses.length > 0 && <AddressPicker />}
 
@@ -699,7 +748,7 @@ export default function PlansSection() {
 
                               <div className="text-center mb-4 sm:mb-5">
                                 <h3 className="text-2xl sm:text-3xl font-extrabold text-[#313234] leading-tight mb-2">
-                                  {plan.name}
+                                  {getDisplayName(plan.name)}
                                 </h3>
                                 <p className="text-[#306EEC] font-bold text-sm sm:text-base leading-relaxed mb-2">
                                   {getPositioningLabel(plan.name)}
@@ -771,27 +820,15 @@ export default function PlansSection() {
                                 ))}
                               </div>
 
-                              {plan.name === "Basic" && (
-                                <div className="mt-4 text-center text-[12px] sm:text-[13px] text-[#6A6D71] leading-relaxed">
-                                  Each visit covers up to 90 minutes of work.
-                                </div>
-                              )}
-
-                              {plan.name === "Basic" && (
-                                <div className="mt-2 text-center text-[12px] sm:text-[13px] text-[#6A6D71] leading-relaxed">
-                                  Book as often as availability allows.
-                                </div>
-                              )}
-
                               {plan.name === "Premium" && (
                                 <div className="mt-4 text-center text-[12px] sm:text-[13px] text-[#6A6D71] leading-relaxed">
-                                  Emergency visits are limited to one per month and are for urgent situations only.
+                                  Emergency visits are limited to one per month, for true urgent situations.
                                 </div>
                               )}
 
                               {plan.name === "Elite" && (
                                 <div className="mt-4 text-center text-[12px] sm:text-[13px] text-[#6A6D71] leading-relaxed">
-                                  Full-day visit must be scheduled in advance.
+                                  Full project day must be scheduled in advance.
                                 </div>
                               )}
 
@@ -812,26 +849,22 @@ export default function PlansSection() {
 
                               <div className="mt-3 grid grid-cols-1 gap-2 text-center text-[12px] font-semibold text-[#313234] sm:grid-cols-3">
                                 <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
-                                  Secure checkout
+                                  Same team every visit
                                 </div>
                                 <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
                                   No estimates
                                 </div>
                                 <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
-                                  Easy online booking
+                                  Month-to-month
                                 </div>
                               </div>
 
-                              <div className="mt-3 text-center text-[12px] sm:text-[13px] text-[#6A6D71] leading-relaxed">
-                                You can manage your plan and book online anytime.
-                              </div>
+                              <p className="mt-4 text-center text-[12px] sm:text-[13px] italic text-[#475569] leading-relaxed">
+                                {getRetentionLine(plan.name)}
+                              </p>
 
-                              <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
-                                Each visit covers up to 90 minutes of work - Cancel anytime - No contracts
-                                <br />
-                                <span className="text-[#6A6D71]/80">
-                                  Book as often as availability allows - Materials at cost - Transparent pricing
-                                </span>
+                              <div className="mt-3 text-center text-[11px] text-[#94a3b8] leading-relaxed">
+                                Each visit covers up to 90 minutes of work · Materials at cost when needed
                               </div>
                             </div>
                           </div>
@@ -917,7 +950,7 @@ export default function PlansSection() {
                       >
                         <div className="text-center mb-8">
                           <h3 className="text-3xl font-extrabold text-[#313234] mb-2">
-                            {plans[currentSlide].name}
+                            {getDisplayName(plans[currentSlide].name)}
                           </h3>
                           <p className="text-[#306EEC] font-bold text-base leading-relaxed mb-2">
                             {getPositioningLabel(plans[currentSlide].name)}
@@ -989,27 +1022,15 @@ export default function PlansSection() {
                                 ))}
                               </div>
 
-                              {plan.name === "Basic" && (
-                                <div className="mt-4 text-center text-[12px] text-[#6A6D71] leading-relaxed">
-                                  Each visit covers up to 90 minutes of work.
-                                </div>
-                              )}
-
-                              {plan.name === "Basic" && (
-                                <div className="mt-2 text-center text-[12px] text-[#6A6D71] leading-relaxed">
-                                  Book as often as availability allows.
-                                </div>
-                              )}
-
                               {plan.name === "Premium" && (
                                 <div className="mt-4 text-center text-[12px] text-[#6A6D71] leading-relaxed">
-                                  Emergency visits are limited to one per month and are for urgent situations only.
+                                  Emergency visits are limited to one per month, for true urgent situations.
                                 </div>
                               )}
 
                               {plan.name === "Elite" && (
                                 <div className="mt-4 text-center text-[12px] text-[#6A6D71] leading-relaxed">
-                                  Full-day visit must be scheduled in advance.
+                                  Full project day must be scheduled in advance.
                                 </div>
                               )}
 
@@ -1030,26 +1051,22 @@ export default function PlansSection() {
 
                               <div className="mt-3 grid grid-cols-3 gap-2 text-center text-[12px] font-semibold text-[#313234]">
                                 <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
-                                  Secure checkout
+                                  Same team every visit
                                 </div>
                                 <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
                                   No estimates
                                 </div>
                                 <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
-                                  Easy online booking
+                                  Month-to-month
                                 </div>
                               </div>
 
-                              <div className="mt-3 text-center text-[12px] text-[#6A6D71] leading-relaxed">
-                                You can manage your plan and book online anytime.
-                              </div>
+                              <p className="mt-4 text-center text-[13px] italic text-[#475569] leading-relaxed">
+                                {getRetentionLine(plan.name)}
+                              </p>
 
-                              <div className="mt-3 text-center text-[12px] text-[#6A6D71]">
-                                Each visit covers up to 90 minutes of work - Cancel anytime - No contracts
-                                <br />
-                                <span className="text-[#6A6D71]/80">
-                                  Book as often as availability allows - Materials at cost - Transparent pricing
-                                </span>
+                              <div className="mt-3 text-center text-[11px] text-[#94a3b8] leading-relaxed">
+                                Each visit covers up to 90 minutes of work · Materials at cost when needed
                               </div>
                             </>
                           );
@@ -1085,7 +1102,7 @@ export default function PlansSection() {
                             )}
                             <div className="relative z-10 p-6 flex flex-col h-full">
                               <div className="text-center mb-6">
-                                <h3 className="text-xl font-extrabold text-[#313234] mb-2">{plan.name}</h3>
+                                <h3 className="text-xl font-extrabold text-[#313234] mb-2">{getDisplayName(plan.name)}</h3>
                                 <p className="text-[#306EEC] font-bold text-[13px] mb-2">{getPositioningLabel(plan.name)}</p>
                                 <p className="text-sm text-[#6A6D71] leading-relaxed">{plan.description}</p>
                               </div>
@@ -1150,7 +1167,7 @@ export default function PlansSection() {
 
                               {plan.name === "Basic" && (
                                 <div className="mt-4 text-center text-[12px] text-[#306EEC] font-semibold leading-relaxed">
-                                  Book as often as availability allows.
+                                  Same trusted team. Every visit.
                                 </div>
                               )}
 

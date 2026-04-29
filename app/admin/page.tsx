@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import AdminHeader from "@/app/components/admin/AdminHeader";
@@ -55,11 +55,28 @@ function addDaysYMD(ymd: string, days: number) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function Toast({ message, onDone }: { message: string; onDone: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 3200);
+    return () => clearTimeout(t);
+  }, [onDone]);
+  return (
+    <div className="fixed left-1/2 z-[99999] -translate-x-1/2 max-w-[90vw] rounded-[14px] bg-[#0B1628] px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_32px_rgba(0,0,0,0.30)] animate-fadeIn" style={{ bottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+      {message}
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
   const [active, setActive] = useState("bookings");
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+  }, []);
   const [users, setUsers] = useState<User[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
@@ -144,7 +161,7 @@ export default function AdminPage() {
       fetchAll();
     } catch (error) {
       console.error("Failed to update booking:", error);
-      alert("Failed to update booking status");
+      showToast("Failed to update booking status");
     }
   };
 
@@ -155,9 +172,10 @@ export default function AdminPage() {
     try {
       await updateBookingAdmin(bookingId, patch);
       fetchAll();
+      showToast("Booking saved");
     } catch (error) {
       console.error("Failed to update booking fields:", error);
-      alert("Failed to save booking changes");
+      showToast("Failed to save booking changes");
     }
   };
 
@@ -170,7 +188,7 @@ export default function AdminPage() {
       fetchAll();
     } catch (error) {
       console.error("Failed to update request status:", error);
-      alert("Failed to update request status");
+      showToast("Failed to update request status");
     }
   };
 
@@ -182,9 +200,10 @@ export default function AdminPage() {
     try {
       await setAddressPlan(userId, addressId, plan);
       fetchAll();
+      showToast("Plan updated");
     } catch (error) {
       console.error("Failed to update plan:", error);
-      alert("Failed to update subscription plan");
+      showToast("Failed to update subscription plan");
     }
   };
 
@@ -196,9 +215,10 @@ export default function AdminPage() {
     try {
       await setAddressCancellationDate(userId, addressId, cancelOnDate);
       fetchAll();
+      showToast("Cancellation date saved");
     } catch (error) {
       console.error("Failed to update scheduled cancellation:", error);
-      alert("Failed to save cancellation date");
+      showToast("Failed to save cancellation date");
     }
   };
 
@@ -237,8 +257,6 @@ export default function AdminPage() {
         throw new Error(cleanupData?.message || "Cleanup failed");
       }
 
-      console.log("Sync result:", syncData);
-      console.log("Cleanup result:", cleanupData);
 
       alert(
         `Fix GHL finished.\n\n` +
@@ -380,76 +398,48 @@ export default function AdminPage() {
           <AdminTabs active={active} onChange={setActive} />
           <BottomNav active={active} onChange={setActive} />
 
-          <div className="mt-3 md:hidden rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  {active === "bookings" ? "Tech mode" : "Admin workspace"}
-                </div>
-                <div className="mt-1 text-sm font-semibold text-slate-900 capitalize">
-                  {active === "subscribed" ? "Subscribed users" : active}
-                </div>
-              </div>
-
-              {active === "bookings" && (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowCalendarMobile((value) => !value)}
-                    className={`rounded-xl border px-3 py-2 text-xs font-semibold ${
-                      showCalendarMobile
-                        ? "border-slate-900 bg-slate-900 text-white"
-                        : "border-slate-200 bg-white text-slate-700"
-                    }`}
-                  >
-                    Cal
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowFilters((v) => !v)}
-                    className={`rounded-xl border px-3 py-2 text-xs font-semibold ${
-                      showFilters
-                        ? "border-slate-900 bg-slate-900 text-white"
-                        : "border-slate-200 bg-white text-slate-700"
-                    }`}
-                  >
-                    Flt
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
           {active === "bookings" && (
-            <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowCalendarMobile((v) => !v)}
+                className={`md:hidden flex-shrink-0 rounded-xl border p-2.5 ${
+                  showCalendarMobile
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-slate-200 bg-white text-slate-600"
+                }`}
+                aria-label="Toggle calendar"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </button>
               <button
                 type="button"
                 onClick={() => setSelectedDate(today)}
-                className={`px-3 py-2 rounded-xl text-xs md:text-sm font-semibold border ${
+                className={`flex-shrink-0 px-3.5 py-2.5 rounded-xl text-sm font-semibold border ${
                   selectedDate === today
                     ? "bg-blue-600 text-white border-blue-600"
                     : "bg-white text-gray-800 border-gray-300"
                 }`}
               >
-                <span className="hidden sm:inline">Today (NY)</span>
-                <span className="sm:hidden">Tdy</span>
+                Today
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedDate(tomorrow)}
-                className={`px-3 py-2 rounded-xl text-xs md:text-sm font-semibold border ${
+                className={`flex-shrink-0 px-3.5 py-2.5 rounded-xl text-sm font-semibold border ${
                   selectedDate === tomorrow
                     ? "bg-blue-600 text-white border-blue-600"
                     : "bg-white text-gray-800 border-gray-300"
                 }`}
               >
-                <span className="hidden sm:inline">Tomorrow</span>
-                <span className="sm:hidden">Tmr</span>
+                Tomorrow
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedDate(null)}
-                className={`px-3 py-2 rounded-xl text-xs md:text-sm font-semibold border ${
+                className={`flex-shrink-0 px-3.5 py-2.5 rounded-xl text-sm font-semibold border ${
                   selectedDate === null
                     ? "bg-slate-900 text-white border-slate-900"
                     : "bg-white text-gray-800 border-gray-300"
@@ -460,90 +450,63 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={fetchAll}
-                className="md:hidden rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+                className="flex-shrink-0 rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 hover:bg-slate-50"
+                aria-label="Refresh"
               >
-                Ref
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
               </button>
-
               <button
                 type="button"
                 onClick={() => setShowFilters((v) => !v)}
-                className="ml-auto hidden md:inline-flex px-3 py-2 rounded-lg text-sm font-semibold border border-gray-300 bg-white text-gray-800"
+                className={`ml-auto flex-shrink-0 rounded-xl border px-3.5 py-2.5 text-sm font-semibold ${
+                  showFilters
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-gray-300 bg-white text-gray-800"
+                }`}
               >
-                {showFilters ? "Hide Filters" : "Filters"}
+                {showFilters ? "Hide" : "Filter"}
               </button>
             </div>
           )}
 
-          <div
-            className={`${
-              active === "bookings"
-                ? showFilters
-                  ? "block"
-                  : "hidden md:block"
-                : ""
-            }`}
-          >
-            <div className="grid gap-2 md:gap-3 grid-cols-1 md:grid-cols-3 mt-3 md:mt-4">
-              <div className="relative">
-                <svg
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-                <input
-                  className="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Search..."
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
+          <div className="mt-3 grid gap-2 grid-cols-1 md:grid-cols-3">
+            <div className="relative md:col-span-2">
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                 />
-              </div>
-
-              {active === "bookings" && (
-                <>
-                  <select
-                    className="px-3 md:px-4 py-2 md:py-2.5 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                  >
-                    <option value="">All statuses</option>
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="completed">Completed</option>
-                    <option value="canceled">Canceled</option>
-                  </select>
-
-                  <button
-                    className="px-4 md:px-6 py-2 md:py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm md:text-base font-medium hover:shadow-lg active:scale-95 md:hover:scale-105 transition-all flex items-center justify-center gap-2"
-                    onClick={fetchAll}
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      />
-                    </svg>
-                    <span className="hidden sm:inline">Refresh</span>
-                    <span className="sm:hidden">↻</span>
-                  </button>
-                </>
-              )}
+              </svg>
+              <input
+                className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="Search..."
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
             </div>
+
+            {active === "bookings" && showFilters && (
+              <select
+                className="px-3 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="completed">Completed</option>
+                <option value="canceled">Canceled</option>
+              </select>
+            )}
           </div>
         </div>
       </div>
@@ -628,6 +591,8 @@ export default function AdminPage() {
           </>
         )}
       </div>
+
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>
   );
 }

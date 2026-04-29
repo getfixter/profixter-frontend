@@ -134,7 +134,7 @@ export const faqs: Faq[] = [
     id: "03",
     question: "How many visits come with each plan?",
     answer:
-      "Basic supports 1 active booking. Plus supports 2 active bookings. Premium supports 2 active bookings plus 1 emergency visit per month. Elite supports 2-3 active bookings plus 1 full-day visit per month (up to 8 hours).",
+      "Home Care Membership includes one scheduled visit each month. Home Care Plus includes two scheduled visits each month. Home Protection includes two scheduled visits plus one emergency visit per month. Whole-Home Care includes two scheduled visits plus one full project day per month (up to 8 hours).",
     color: "dark",
     size: "normal",
     offset: 0,
@@ -266,7 +266,7 @@ export const homepageFaqs: Faq[] = [
     id: "05",
     question: "What if I need more flexibility?",
     answer:
-      "Higher plans let you keep more active bookings and handle more work without changing how booking works.",
+      "Higher memberships include more scheduled visits each month — and Home Protection adds emergency response, while Whole-Home Care adds a full project day for the bigger items.",
     color: "blue",
     size: "normal",
     offset: -50,
@@ -274,15 +274,31 @@ export const homepageFaqs: Faq[] = [
 ];
 
 export type Plan = {
+  // Internal name — used for Stripe links, plan-rank logic, billing actions.
+  // DO NOT change without also updating subscription-service + stripe-links.
   name: "Basic" | "Plus" | "Premium" | "Elite";
+
+  // Display name shown to homeowners — retention-first membership framing.
+  displayName: string;
+
+  // One-line outcome promise (replaces old "positioning label").
+  tagline: string;
+
+  // Short cadence line shown above features (replaces "1 active booking" framing).
+  cadence: string;
+
   description: string;
   price: number;
   subtitle?: string;
   features: string[];
   buttonText: string;
 
-  // ✅ plan badge shown on UI
-  badge?: "Popular" | "Recommended";
+  // Italic retention-prime line shown near the CTA. Plants the
+  // "this is something people keep" frame at decision time.
+  retentionLine: string;
+
+  // Card badge label — only used by 1-2 plans to anchor the ladder.
+  badge?: "StartHere" | "StayHere";
 
   stripeLink: string;
 };
@@ -290,57 +306,83 @@ export type Plan = {
 export const plans: Plan[] = [
   {
     name: "Basic",
-    description: "Ongoing handyman help, one visit at a time",
+    displayName: "Home Care Membership",
+    tagline: "Your home, handled.",
+    cadence: "One scheduled visit each month",
+    description:
+      "The easiest way to keep your home handled, year-round.",
     price: 149,
     features: [
-      "1 active booking",
-      "Each visit covers up to 90 minutes of work",
-      "Book when spots are available",
+      "One scheduled visit each month",
+      "Same trusted team — they get to know your home",
+      "Small fixes and regular maintenance, no estimates",
+      "Predictable monthly billing",
     ],
-    buttonText: "Get started",
+    buttonText: "Become a Member",
+    retentionLine:
+      "Most members stay for the long haul — your home keeps getting better, not worse.",
     stripeLink: "https://buy.stripe.com/eVqfZgeAN2pCgAxb3kawo02",
   },
   {
     name: "Plus",
-  description: "More flexibility with scheduling",
-  price: 249,
-  subtitle: "Everything in Basic",
-  features: [
-    "2 active bookings",
-    "Each visit covers up to 90 minutes of work",
-    "Book when spots are available",
-  ],
-  buttonText: "Get started",
-  badge: "Popular", // ✅ ADD
-  stripeLink: "https://buy.stripe.com/4gMaEWboB1ly3NL4EWawo03",
+    displayName: "Home Care Plus",
+    tagline: "Stay ahead of your home, not behind it.",
+    cadence: "Two scheduled visits each month",
+    description:
+      "More care, more often — for active homes with an ongoing list.",
+    price: 249,
+    subtitle: "Everything in Home Care",
+    features: [
+      "Two scheduled visits each month",
+      "Same trusted team — they remember every detail",
+      "Tackle the to-do list before it becomes a problem list",
+      "Priority on open scheduling slots",
+    ],
+    buttonText: "Become a Member",
+    badge: "StartHere",
+    retentionLine:
+      "Where most homeowners with active homes start — and stay for years.",
+    stripeLink: "https://buy.stripe.com/4gMaEWboB1ly3NL4EWawo03",
   },
   {
     name: "Premium",
-    description: "Urgent situations and peace of mind",
+    displayName: "Home Protection",
+    tagline: "Cared for. And protected.",
+    cadence: "Two scheduled visits + emergency response",
+    description:
+      "Ongoing care, plus on-call help when something can't wait.",
     price: 349,
-    subtitle: "Everything in Plus",
+    subtitle: "Everything in Home Care Plus",
     features: [
-      "2 active bookings",
-      "1 emergency visit per month",
-      "Emergency visits are limited to one per month",
-      "Each visit covers up to 90 minutes of work",
+      "Two scheduled visits each month",
+      "One emergency visit per month when something can't wait",
+      "Same trusted team — on call for the moments that matter",
+      "Direct line to Taras, the founder",
     ],
-    buttonText: "Get started",
-    badge: "Recommended", // ✅ ADD
+    buttonText: "Become a Member",
+    badge: "StayHere",
+    retentionLine:
+      "The plan members keep when they have kids, pets, or a finished basement.",
     stripeLink: "https://buy.stripe.com/9B614m78lc0c6ZXb3kawo04",
   },
   {
     name: "Elite",
-    description: "Larger projects and full-day tasks",
+    displayName: "Whole-Home Care",
+    tagline: "Everything about your home — handled.",
+    cadence: "Two scheduled visits + a full project day each month",
+    description:
+      "Ongoing care, emergency coverage, and a dedicated project day every month.",
     price: 499,
-    subtitle: "Everything in Premium",
+    subtitle: "Everything in Home Protection",
     features: [
-      "2-3 active bookings",
-      "1 full-day visit per month (up to 8 hours)",
-      "Full-day visit must be scheduled in advance",
-      "Each standard visit covers up to 90 minutes of work",
+      "Two scheduled visits each month",
+      "One full project day per month (up to 8 hours)",
+      "Emergency response when something can't wait",
+      "10% off home improvement projects (roofing, remodeling, kitchen)",
     ],
-    buttonText: "Get started",
+    buttonText: "Become a Member",
+    retentionLine:
+      "The plan that replaces the contractor list in your phone.",
     stripeLink: "https://buy.stripe.com/5kQ28qeANaW8ac93ASawo01",
   },
 ];

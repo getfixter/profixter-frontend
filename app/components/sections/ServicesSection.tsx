@@ -1,14 +1,20 @@
 "use client";
 
-import Image from "next/image";
 import { useMemo, useState } from "react";
 import { homepageFaqs } from "@/app/data/content";
 import { trackEvent } from "@/lib/analytics";
 
-function Chevron({ open }: { open: boolean }) {
+const STATS = [
+  { value: "5.0", label: "Google Rating" },
+  { value: "9+", label: "Years on Long Island" },
+  { value: "$0", label: "Estimates — ever" },
+  { value: "HI-71484", label: "NY State Licensed" },
+];
+
+function ChevronIcon({ open }: { open: boolean }) {
   return (
     <svg
-      className={`w-5 h-5 transition-transform duration-200 ${
+      className={`w-5 h-5 flex-shrink-0 transition-transform duration-300 ${
         open ? "rotate-180" : ""
       }`}
       viewBox="0 0 24 24"
@@ -26,89 +32,47 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
-function FaqCard({
-  faq,
-  isOpen,
-  onToggle,
-}: {
-  faq: (typeof homepageFaqs)[number];
-  isOpen: boolean;
-  onToggle: () => void;
-}) {
-  const bgColor =
-    faq.color === "blue"
-      ? "bg-gradient-to-b from-[#306EEC] to-[#1B3E86]"
-      : faq.color === "light"
-      ? "bg-[#EEF2FF]"
-      : "bg-[#3A3C3E]";
+type Faq = (typeof homepageFaqs)[number];
 
-  const textColor = faq.color === "light" ? "text-[#313234]" : "text-white";
-  const descColor = faq.color === "light" ? "text-[#6A6D71]" : "text-[#C5CBD8]";
-  const numberColor = faq.color === "light" ? "text-[#313234]" : "text-white";
-
+function FaqRow({ faq, isOpen, onToggle }: { faq: Faq; isOpen: boolean; onToggle: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className={[
-        bgColor,
-        "w-full rounded-[20px] p-5 sm:p-6 border border-[#C5CBD8]/70 text-left",
-        "shadow-none sm:shadow-[0_10px_60px_rgba(0,0,0,0.18)]",
-        // avoid hover scaling that can jitter on iOS/Safari; use subtle lift instead
-        "transition-[transform,box-shadow] duration-200",
-        "hover:-translate-y-[2px] hover:shadow-[0_18px_70px_rgba(0,0,0,0.25)]",
-        "active:translate-y-0",
-        "focus:outline-none focus:ring-2 focus:ring-[#306EEC]/60",
-      ].join(" ")}
-      aria-expanded={isOpen}
+    <div
+      className={`rounded-[18px] border transition-all duration-200 overflow-hidden ${
+        isOpen
+          ? "border-[#306EEC]/30 bg-[#EEF5FF]"
+          : "border-white/[0.09] bg-white/[0.04] hover:bg-white/[0.07] hover:border-white/[0.14]"
+      }`}
     >
-      <div className="flex items-start justify-between gap-4">
-        <h3
-          className={[
-            "text-lg sm:text-xl font-semibold leading-tight font-montserrat",
-            textColor,
-          ].join(" ")}
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-start justify-between gap-4 px-6 py-5 text-left focus:outline-none"
+        aria-expanded={isOpen}
+      >
+        <span
+          className={`text-[15px] sm:text-[16px] font-semibold leading-snug transition-colors ${
+            isOpen ? "text-[#1D4ED8]" : "text-white/82"
+          }`}
         >
           {faq.question}
-        </h3>
+        </span>
+        <span className={isOpen ? "text-[#306EEC]" : "text-white/35"}>
+          <ChevronIcon open={isOpen} />
+        </span>
+      </button>
 
-        <div className={`${textColor} mt-1 shrink-0`}>
-          <Chevron open={isOpen} />
-        </div>
-      </div>
-
-      {/* smoother + more consistent than grid-rows trick */}
       <div
-        className={[
-          "transition-[max-height,opacity,transform] duration-300 ease-out",
-          isOpen
-            ? "max-h-[240px] opacity-100 translate-y-0 mt-3"
-            : "max-h-0 opacity-0 -translate-y-[2px] mt-0",
-        ].join(" ")}
+        className={`grid transition-all duration-300 ease-out ${
+          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
       >
         <div className="overflow-hidden">
-          <p
-            className={[
-              "text-sm sm:text-base font-medium leading-[140%] font-montserrat",
-              descColor,
-            ].join(" ")}
-          >
+          <p className="px-6 pb-6 text-[14px] sm:text-[15px] leading-relaxed text-[#334155]">
             {faq.answer}
           </p>
         </div>
       </div>
-
-      <div className="flex justify-end mt-4">
-        <span
-          className={[
-            "text-5xl sm:text-6xl font-bold leading-none font-montserrat",
-            numberColor,
-          ].join(" ")}
-        >
-          {faq.id}
-        </span>
-      </div>
-    </button>
+    </div>
   );
 }
 
@@ -116,142 +80,217 @@ export default function ServicesSection() {
   const items = useMemo(() => homepageFaqs, []);
   const [openId, setOpenId] = useState<string | null>("01");
 
-  // ✅ Contact form state (kept for future API wiring)
-  const [contact, setContact] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-  });
+  const toggle = (id: string) =>
+    setOpenId((prev) => (prev === id ? null : id));
 
-  // ✅ two separate consents
-  const [smsServiceOptIn, setSmsServiceOptIn] = useState(false);
-  const [smsMarketingOptIn, setSmsMarketingOptIn] = useState(false);
-
-  const [showPopup, setShowPopup] = useState(false);
-
-  const onContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setContact((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const onContactSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    console.log("Contact request:", {
-      ...contact,
-      smsServiceOptIn,
-      smsMarketingOptIn,
-      consentSource: "contact_form",
-      consentAt: new Date().toISOString(),
-    });
-
-    setShowPopup(true);
-
-    setContact({ firstName: "", lastName: "", email: "", phone: "" });
-    setSmsServiceOptIn(false);
-    setSmsMarketingOptIn(false);
-
-    window.setTimeout(() => setShowPopup(false), 4500);
+  const scrollToPlans = () => {
+    trackEvent("view_plans", { placement: "faq" });
+    const el = document.getElementById("plans");
+    if (!el) return;
+    const y =
+      el.getBoundingClientRect().top +
+      window.scrollY -
+      (window.innerWidth >= 1024 ? 160 : 120);
+    window.scrollTo({ top: y, behavior: "smooth" });
+    history.replaceState(null, "", "#plans");
   };
 
   return (
     <section
       id="services"
-      className="relative w-full overflow-hidden bg-[#313234] py-10 sm:py-12 lg:py-14"
+      className="relative w-full overflow-hidden py-16 sm:py-20 lg:py-28"
+      style={{
+        background:
+          "linear-gradient(160deg, #0B1525 0%, #0D1A30 60%, #0A1220 100%)",
+      }}
     >
       {/* Background glow */}
       <div
-        className="hidden lg:block absolute -top-40 left-1/2 -translate-x-1/2 w-[1460px] h-[1460px] rounded-full z-0"
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[700px] w-[1200px] rounded-full blur-[200px] opacity-60"
         style={{
           background:
-            "radial-gradient(circle, rgba(48, 110, 236, 0.12) 0%, transparent 70%)",
+            "radial-gradient(circle, rgba(48,110,236,0.10), transparent 70%)",
+        }}
+      />
+      {/* Dot texture */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-[0.015]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, #fff 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
         }}
       />
 
-      <div className="container mx-auto px-5 sm:px-6 lg:px-5 max-w-[1240px] relative z-10">
-        <div className="grid lg:grid-cols-12 gap-8 lg:gap-10 items-start">
-          {/* Right (desktop) / top (mobile): title block */}
-          <div className="lg:col-span-4 order-1 lg:order-2">
-            <div className="relative rounded-[24px] border border-white/10 bg-white/5 p-6 sm:p-7">
-              <h2 className="text-3xl sm:text-5xl lg:text-[54px] font-bold uppercase leading-tight">
-                <span className="text-white">FAQ</span>
-                <br />
-                <span className="text-[#306eec]">Questions</span>
-              </h2>
+      <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
-              <p className="mt-3 text-base font-medium text-[#c5cbd8] sm:text-[17px]">
-                Simple answers about booking, visits, and what each plan includes.
-              </p>
-
-              <div className="mt-6 flex justify-center">
-                <Image
-                  src="/images/lampa.png"
-                  alt="Light bulb"
-                  width={420}
-                  height={220}
-                  className="object-contain drop-shadow-[0_40px_70px_rgba(42,30,15,0.25)]"
-                  priority={false}
-                />
-              </div>
-
-              {/* Optional helper text on desktop */}
-              <div className="hidden lg:block mt-4 text-sm text-[#C5CBD8]">
-                Click a card to expand.
-              </div>
-
-              {/* NOTE: contact form kept wired (not rendered here).
-                  If you want it shown inside this section, tell me and I’ll place it. */}
-            </div>
-          </div>
-
-          {/* FAQ grid */}
-          <div className="lg:col-span-8 order-2 lg:order-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
-              {items.map((faq) => (
-                <FaqCard
-                  key={faq.id}
-                  faq={faq}
-                  isOpen={openId === faq.id}
-                  onToggle={() =>
-                    setOpenId((prev) => (prev === faq.id ? null : faq.id))
-                  }
-                />
-              ))}
-            </div>
-
-            {/* CTA: encourage users to view plans */}
-            <div className="mt-8 text-center">
-              <a
-                href="#plans"
-                onClick={() => trackEvent("view_plans", { placement: "faq" })}
-                className="inline-flex px-6 py-3 bg-[#306EEC] text-white rounded-[14px] font-extrabold text-sm sm:text-base hover:bg-[#2558c9] transition"
+        {/* ── Header ── */}
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-12 sm:mb-14 lg:mb-16">
+          <div className="max-w-[600px]">
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.05] px-4 py-2 backdrop-blur-sm mb-7">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                className="text-[#86EFAC]"
+                aria-hidden="true"
               >
-                View Plans
-              </a>
+                <path
+                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60">
+                Common Questions
+              </span>
             </div>
 
-            <div className="lg:hidden mt-6 text-center">
-              <p className="text-[#C5CBD8] text-sm">
-                Tap a card to expand the answer.
+            <h2 className="text-[40px] sm:text-[56px] lg:text-[68px] font-black leading-[0.88] tracking-[-0.045em] text-white mb-5">
+              FAQ &amp;
+              <br />
+              <span
+                className="bg-clip-text text-transparent"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(90deg, #86EFAC 0%, #4ADE80 50%, #86EFAC 100%)",
+                }}
+              >
+                quick answers.
+              </span>
+            </h2>
+
+            <p className="text-[15px] sm:text-[17px] text-white/45 leading-relaxed">
+              Simple answers about booking, plans, visits, and what to
+              expect &mdash; all in one place.
+            </p>
+          </div>
+
+          {/* Stats — desktop */}
+          <div className="hidden lg:grid grid-cols-2 gap-3 flex-shrink-0 w-[280px]">
+            {STATS.map(({ value, label }) => (
+              <div
+                key={label}
+                className="rounded-[16px] border border-white/[0.09] bg-white/[0.04] px-4 py-4 text-center"
+              >
+                <div className="text-[20px] font-extrabold text-white leading-none mb-1">
+                  {value}
+                </div>
+                <div className="text-[11px] font-semibold text-white/35 leading-snug">
+                  {label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── FAQ list ── */}
+        <div className="grid lg:grid-cols-[1fr_380px] gap-6 lg:gap-10 items-start">
+
+          {/* Left: accordion */}
+          <div className="space-y-3">
+            {items.map((faq) => (
+              <FaqRow
+                key={faq.id}
+                faq={faq}
+                isOpen={openId === faq.id}
+                onToggle={() => toggle(faq.id)}
+              />
+            ))}
+          </div>
+
+          {/* Right: contact card */}
+          <div className="flex flex-col gap-4">
+            {/* Still have questions */}
+            <div
+              className="rounded-[22px] border border-white/[0.10] p-7 flex flex-col gap-5"
+              style={{
+                background:
+                  "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
+              }}
+            >
+              <div>
+                <div className="text-[13px] font-bold uppercase tracking-[0.18em] text-white/35 mb-2">
+                  Still have questions?
+                </div>
+                <p className="text-[16px] font-semibold text-white/80 leading-snug">
+                  Call Taras directly. You&rsquo;ll get a real answer from the
+                  founder, not a call center.
+                </p>
+              </div>
+
+              <a
+                href="tel:+16315991363"
+                className="flex items-center gap-3.5 rounded-[14px] border border-white/[0.12] bg-white/[0.06] px-4 py-4 hover:border-white/[0.22] hover:bg-white/[0.10] transition-all duration-200 group"
+              >
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#306EEC] group-hover:bg-[#2558c9] transition-colors">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.37 1.9.72 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0122 16.92z"
+                      stroke="white"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/35">
+                    Call or text Taras
+                  </div>
+                  <div className="text-[16px] font-bold text-white">
+                    631-599-1363
+                  </div>
+                </div>
+              </a>
+
+              <p className="text-[12px] text-white/28 leading-relaxed">
+                No sales team. No phone trees. Direct access to the founder
+                who oversees every booking.
               </p>
+            </div>
+
+            {/* CTA card */}
+            <div
+              className="rounded-[22px] border border-[#306EEC]/20 p-7 flex flex-col gap-5"
+              style={{
+                background:
+                  "linear-gradient(145deg, rgba(48,110,236,0.12) 0%, rgba(48,110,236,0.06) 100%)",
+              }}
+            >
+              <div>
+                <div className="text-[15px] font-bold text-white/80 leading-snug mb-1">
+                  Ready to see the plans?
+                </div>
+                <p className="text-[13px] text-white/45 leading-relaxed">
+                  From $149/month. Month-to-month. No contracts.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={scrollToPlans}
+                className="w-full rounded-[14px] bg-[#306EEC] py-3.5 text-[15px] font-extrabold text-white transition-all hover:-translate-y-0.5 hover:bg-[#2558c9]"
+                style={{ boxShadow: "0 12px 36px rgba(48,110,236,0.28)" }}
+              >
+                View Membership Plans
+              </button>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ✅ Professional popup */}
-      {showPopup && (
-        <div className="fixed bottom-6 right-6 z-[9999] max-w-[360px] rounded-[16px] bg-[#0B1220] text-white border border-white/10 shadow-[0_20px_80px_rgba(0,0,0,0.55)] p-4">
-          <p className="font-semibold font-montserrat text-white">
-            Thank you - we received your request.
-          </p>
-          <p className="text-sm text-[#C5CBD8] font-montserrat mt-1 leading-[140%]">
-            We’ll contact you shortly from{' '}
-            <span className="text-white font-semibold">631-599-1363</span>.
-          </p>
-        </div>
-      )}
+      </div>
     </section>
   );
 }

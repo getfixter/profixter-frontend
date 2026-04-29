@@ -1,221 +1,310 @@
 "use client";
 
-// This section showcases real project photos and encourages users to book a visit.
-// The updated copy lightly reminds visitors that, as members, they can book unlimited
-// handyman visits to tackle projects like these.  No functionality or layout was
-// changed — we simply updated a couple of sentences to reinforce the value of
-// membership without overwhelming the design.
-
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
+import { trackEvent } from "@/lib/analytics";
 
-const projects = [
-  { id: 1, image: "/images/projects/p1.jpg" },
-  { id: 2, image: "/images/projects/p2.jpg" },
-  { id: 3, image: "/images/projects/p3.jpg" },
-  { id: 4, image: "/images/projects/p4.jpg" },
-  { id: 5, image: "/images/projects/p5.jpg" },
-  { id: 6, image: "/images/projects/p6.jpg" },
-  { id: 7, image: "/images/projects/p7.jpg" },
-  { id: 8, image: "/images/projects/p8.jpg" },
-  { id: 9, image: "/images/projects/p9.jpg" },
-  { id: 10, image: "/images/projects/p10.jpg" },
+const PROJECTS = [
+  { id: 1, image: "/images/projects/p1.jpg", label: "Door Painting", category: "Painting" },
+  { id: 2, image: "/images/projects/p2.jpg", label: "Door Frame Seal", category: "Exterior" },
+  { id: 3, image: "/images/projects/p3.jpg", label: "Ceiling Repair", category: "Drywall" },
+  { id: 4, image: "/images/projects/p4.jpg", label: "Exterior Paint", category: "Exterior" },
+  { id: 5, image: "/images/projects/p5.jpg", label: "Vanity Refinish", category: "Bathroom" },
+  { id: 6, image: "/images/projects/p6.jpg", label: "Cabinet Refresh", category: "Carpentry" },
+  { id: 7, image: "/images/projects/p7.jpg", label: "Roof Repair", category: "Roofing" },
+  { id: 8, image: "/images/projects/p8.jpg", label: "Floor Replacement", category: "Flooring" },
+  { id: 9, image: "/images/projects/p9.jpg", label: "Vanity Install", category: "Bathroom" },
+  { id: 10, image: "/images/projects/p10.jpg", label: "AC Install", category: "HVAC" },
+];
+
+const AUTHORITY_STATS = [
+  { value: "10+", label: "Project types" },
+  { value: "9+ yrs", label: "On Long Island" },
+  { value: "5.0 ★", label: "Google Rating" },
 ];
 
 export default function ProjectsSection() {
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const active = PROJECTS[activeIdx];
 
-  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % projects.length);
-  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + projects.length) % projects.length);
-
-  // Smooth auto-advance
-  useEffect(() => {
-    const t = setInterval(() => {
-      setCurrentSlide((p) => (p + 1) % projects.length);
-    }, 6500);
-    return () => clearInterval(t);
-  }, []);
-
-  // ✅ scroll to BookingSection (#pick-day)
-  const goToBooking = () => {
-    const el = document.getElementById("pick-day");
+  const scrollToPlans = () => {
+    trackEvent("view_plans", { placement: "projects" });
+    const el = document.getElementById("plans");
     if (!el) return;
-
-    const HEADER_OFFSET = window.innerWidth >= 1024 ? 160 : 120;
-    const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
-
+    const y =
+      el.getBoundingClientRect().top +
+      window.scrollY -
+      (window.innerWidth >= 1024 ? 160 : 120);
     window.scrollTo({ top: y, behavior: "smooth" });
-    history.replaceState(null, "", "#pick-day");
+    history.replaceState(null, "", "#plans");
   };
-
-  const active = projects[currentSlide];
-  const next1 = projects[(currentSlide + 1) % projects.length];
-  const next2 = projects[(currentSlide + 2) % projects.length];
-
-  const ArrowBtn = ({ dir, onClick }: { dir: "prev" | "next"; onClick: () => void }) => (
-    <button
-      onClick={onClick}
-      type="button"
-      className="bg-[#EEF2FF] hover:bg-white text-[#313234] w-[52px] h-[52px] rounded-[12px] flex items-center justify-center transition-colors shadow-md active:scale-[0.99]"
-      aria-label={dir === "prev" ? "Previous project" : "Next project"}
-    >
-      {dir === "prev" ? (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      ) : (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      )}
-    </button>
-  );
 
   return (
     <section
       id="projects"
-      className="w-full bg-[#313234] py-12 sm:py-16 lg:py-20 overflow-hidden relative scroll-mt-[140px]"
+      className="w-full overflow-hidden relative scroll-mt-[110px] py-16 sm:py-20 lg:py-28"
+      style={{
+        background:
+          "linear-gradient(160deg, #080F1E 0%, #0A1421 60%, #0B1628 100%)",
+      }}
     >
-      <div className="max-w-[1240px] mx-auto px-5 sm:px-6 lg:px-5">
-        {/* ================= MOBILE / TABLET ================= */}
-        <div className="lg:hidden">
-          <div className="text-center mb-8 sm:mb-10">
-            <h2 className="text-3xl sm:text-4xl font-bold leading-[89%] uppercase mb-2 tracking-[-0.05em]">
-              <span className="text-[#EEF2FF]">OUR </span>
-              <span className="text-[#306EEC]">LATEST</span>
-            </h2>
-            <h2 className="text-3xl sm:text-4xl font-bold leading-[89%] uppercase mb-4 text-[#EEF2FF] tracking-[-0.05em]">
-              PROJECT
+      {/* Background glow */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full blur-[160px] opacity-40"
+        style={{ background: "radial-gradient(circle, rgba(48,110,236,0.12), transparent 70%)" }}
+      />
+      {/* Dot texture */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-[0.018]"
+        style={{
+          backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
+        }}
+      />
+
+      <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* ── Header ── */}
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-12 lg:mb-14">
+          <div className="max-w-[580px]">
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.05] px-4 py-2 mb-7 backdrop-blur-sm">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-[#86EFAC]" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
+                <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
+                <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
+                <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
+              </svg>
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60">
+                Our Work — Real Long Island Homes
+              </span>
+            </div>
+
+            <h2 className="text-[40px] sm:text-[56px] lg:text-[68px] font-black leading-[0.88] tracking-[-0.045em] text-white mb-5">
+              Results we&rsquo;re
+              <br />
+              <span
+                className="bg-clip-text text-transparent"
+                style={{ backgroundImage: "linear-gradient(90deg, #86EFAC 0%, #4ADE80 50%, #86EFAC 100%)" }}
+              >
+                proud of.
+              </span>
             </h2>
 
-            <p className="text-[#C5CBD8] text-sm sm:text-base leading-relaxed mb-6 max-w-md mx-auto">
-              Real examples of house maintenance work we do and more. Members can book unlimited visits to handle projects like these.
+            <p className="text-[15px] sm:text-[17px] text-white/55 leading-relaxed">
+              Real results from real Long Island homes — the craftsmanship
+              our members see visit after visit.
             </p>
-
-            <button
-              type="button"
-              onClick={goToBooking}
-              className="w-full sm:w-auto px-8 h-[56px] sm:h-[60px] bg-[#306EEC] hover:bg-[#2558c7] text-[#EEF2FF] rounded-[14px] text-lg sm:text-xl font-semibold transition-colors"
-            >
-              Fix it today
-            </button>
           </div>
 
-          {/* Carousel card */}
-          <div className="relative">
-            <div className="relative w-full aspect-square max-w-[450px] mx-auto rounded-[20px] overflow-hidden shadow-[0_10px_80px_rgba(0,0,0,0.25)]">
-              <Image src={active.image} alt="Project Image" fill className="object-cover" sizes="(max-width: 768px) 92vw, 450px" priority />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/25 pointer-events-none" />
+          {/* Stats — desktop */}
+          <div className="hidden lg:flex gap-4 flex-shrink-0">
+            {AUTHORITY_STATS.map(({ value, label }) => (
+              <div
+                key={label}
+                className="rounded-[18px] border border-white/[0.09] bg-white/[0.04] px-5 py-4 text-center min-w-[100px]"
+              >
+                <div className="text-[22px] font-extrabold text-white leading-none mb-1.5">
+                  {value}
+                </div>
+                <div className="text-[11px] font-semibold text-white/38">{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Main layout ── */}
+        <div className="grid lg:grid-cols-[1fr_300px] gap-6 lg:gap-8 items-start">
+
+          {/* ── Left: featured image + thumbnail strip ── */}
+          <div className="flex flex-col gap-4">
+
+            {/* Featured image */}
+            <div
+              className="relative w-full overflow-hidden rounded-[24px] group"
+              style={{ aspectRatio: "16/10" }}
+            >
+              {/* Main photo */}
+              <Image
+                src={active.image}
+                alt={active.label}
+                fill
+                className="object-cover transition-all duration-500"
+                sizes="(max-width: 1024px) 92vw, 780px"
+                priority
+              />
+
+              {/* Premium cinematic vignette */}
+              <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.40)] rounded-[24px]" />
+
+              {/* Bottom gradient overlay */}
+              <div
+                className="absolute inset-x-0 bottom-0 h-[55%]"
+                style={{ background: "linear-gradient(to top, rgba(8,15,30,0.85) 0%, rgba(8,15,30,0.40) 55%, transparent 100%)" }}
+              />
+
+              {/* Top-left category chip */}
+              <div className="absolute top-5 left-5 inline-flex items-center gap-2 rounded-full bg-black/50 backdrop-blur-md border border-white/15 px-3.5 py-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#86EFAC] flex-shrink-0" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/85">
+                  {active.category}
+                </span>
+              </div>
+
+              {/* Top-right: project counter */}
+              <div className="absolute top-5 right-5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 px-3 py-1.5 text-[11px] font-semibold text-white/50">
+                {activeIdx + 1} / {PROJECTS.length}
+              </div>
+
+              {/* Bottom overlay: room label + location */}
+              <div className="absolute bottom-0 left-0 right-0 px-6 pb-6 pt-8 flex items-end justify-between">
+                <div>
+                  <div className="text-[28px] sm:text-[34px] font-black text-white leading-none tracking-[-0.025em] mb-1">
+                    {active.label}
+                  </div>
+                  <div className="text-[12px] font-semibold text-white/45 uppercase tracking-[0.18em]">
+                    Long Island, NY
+                  </div>
+                </div>
+
+                {/* Navigation arrows */}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveIdx((i) => (i - 1 + PROJECTS.length) % PROJECTS.length)}
+                    aria-label="Previous project"
+                    className="w-10 h-10 rounded-full border border-white/20 bg-white/[0.10] backdrop-blur-sm flex items-center justify-center hover:bg-white/[0.20] transition-colors"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M15 18l-6-6 6-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveIdx((i) => (i + 1) % PROJECTS.length)}
+                    aria-label="Next project"
+                    className="w-10 h-10 rounded-full border border-white/20 bg-white/[0.10] backdrop-blur-sm flex items-center justify-center hover:bg-white/[0.20] transition-colors"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M9 18l6-6-6-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div className="flex gap-3 justify-center mt-6">
-              <ArrowBtn dir="prev" onClick={prevSlide} />
-              <ArrowBtn dir="next" onClick={nextSlide} />
-            </div>
-
-            <div className="flex gap-2 justify-center mt-4">
-              {projects.map((_, idx) => (
+            {/* Thumbnail strip */}
+            <div
+              className="flex gap-2.5 overflow-x-auto pb-1"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {PROJECTS.map((p, i) => (
                 <button
-                  key={idx}
-                  onClick={() => setCurrentSlide(idx)}
-                  className={[
-                    "h-2 rounded-full transition-all duration-300",
-                    idx === currentSlide ? "w-8 bg-[#306EEC]" : "w-2 bg-[#C5CBD8] hover:bg-[#306EEC]/50",
-                  ].join(" ")}
-                  aria-label={`Go to slide ${idx + 1}`}
-                />
+                  key={p.id}
+                  type="button"
+                  onClick={() => setActiveIdx(i)}
+                  aria-label={`View ${p.label}`}
+                  className={`relative flex-shrink-0 w-[72px] h-[54px] rounded-[10px] overflow-hidden border-2 transition-all duration-200 focus:outline-none ${
+                    i === activeIdx
+                      ? "border-[#86EFAC] shadow-[0_0_14px_rgba(134,239,172,0.22)]"
+                      : "border-white/[0.08] hover:border-white/25 opacity-60 hover:opacity-90"
+                  }`}
+                >
+                  <Image src={p.image} alt={p.label} fill className="object-cover" sizes="72px" />
+                  {i === activeIdx && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#86EFAC]/10 to-transparent" />
+                  )}
+                </button>
               ))}
             </div>
           </div>
 
-          <p className="text-[#C5CBD8] text-sm sm:text-base leading-relaxed text-center mt-8 max-w-md mx-auto">
-            Every project we take on is built on trust, skill, and attention to detail.
-          </p>
-        </div>
+          {/* ── Right: info + CTA ── */}
+          <div className="flex flex-col gap-4">
 
-        {/* ================= DESKTOP ================= */}
-        <div className="hidden lg:grid grid-cols-12 gap-10 items-start">
-          {/* Left Content */}
-          <div className="col-span-4 pt-3">
-            <h2 className="text-[64px] font-bold uppercase tracking-[-0.05em] leading-[0.9]">
-              <span className="text-[#EEF2FF]">OUR </span>
-              <span className="text-[#306EEC]">LATEST</span>
-            </h2>
-            <h2 className="text-[64px] font-bold uppercase tracking-[-0.05em] leading-[0.9] text-[#EEF2FF] mt-2">
-              PROJECT
-            </h2>
-
-            <p className="text-[#C5CBD8] text-base leading-[120%] mt-5 max-w-[320px]">
-              Real examples of house maintenance work we do and more. Members can book unlimited visits to handle projects like these.
-            </p>
-
-            <button
-              type="button"
-              onClick={goToBooking}
-              className="mt-6 w-[362px] h-[60px] bg-[#306EEC] hover:bg-[#2558c7] text-[#EEF2FF] rounded-[14px] text-[20px] font-semibold transition-colors"
+            {/* Trust card */}
+            <div
+              className="rounded-[22px] border border-white/[0.09] p-6 flex flex-col gap-5"
+              style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)" }}
             >
-              Fix it today
-            </button>
-
-            <p className="text-[#C5CBD8] text-[15px] leading-[120%] max-w-[320px] mt-10">
-              Every project we take on is built on trust, skill, and attention to detail.
-            </p>
-          </div>
-
-          {/* Right Side */}
-          <div className="col-span-8">
-            <div className="relative">
-              <div className="flex items-start gap-6">
-                {/* Main column = image + arrows underneath */}
-                <div className="w-[450px] flex-shrink-0">
-                  <div className="relative w-[450px] h-[450px] rounded-[20px] overflow-hidden shadow-[0_10px_80px_rgba(0,0,0,0.25)]">
-                    <Image src={active.image} alt="Project Image" fill className="object-cover" sizes="450px" priority />
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/25 pointer-events-none" />
-                  </div>
-
-                  {/* ✅ arrows OUTSIDE image (never fights with BEFORE/AFTER text) */}
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="text-[#C5CBD8] text-sm">
-                      {currentSlide + 1} / {projects.length}
-                    </div>
-                    <div className="flex gap-3">
-                      <ArrowBtn dir="prev" onClick={prevSlide} />
-                      <ArrowBtn dir="next" onClick={nextSlide} />
-                    </div>
-                  </div>
-
-                  {/* Dots (desktop) */}
-                  <div className="flex gap-2 mt-4">
-                    {projects.map((_, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setCurrentSlide(idx)}
-                        className={[
-                          "h-2 rounded-full transition-all duration-300",
-                          idx === currentSlide ? "w-8 bg-[#306EEC]" : "w-2 bg-[#C5CBD8] hover:bg-[#306EEC]/50",
-                        ].join(" ")}
-                        aria-label={`Go to slide ${idx + 1}`}
-                      />
-                    ))}
-                  </div>
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 mb-2">
+                  Why members stay
                 </div>
-
-                {/* Previews */}
-                <div className="flex gap-6 pt-2">
-                  {[next1, next2].map((p) => (
-                    <div
-                      key={p.id}
-                      className="relative w-[300px] h-[300px] rounded-[12px] overflow-hidden flex-shrink-0"
-                    >
-                      <Image src={p.image} alt="Project Preview" fill className="object-cover" sizes="300px" />
-                      <div className="absolute inset-0 bg-[#313234]/30 backdrop-blur-[3px] pointer-events-none" />
-                    </div>
-                  ))}
-                </div>
+                <p className="text-[15px] font-semibold text-white/80 leading-snug">
+                  The same trusted team who already knows your home.
+                </p>
               </div>
+
+              <div className="space-y-3">
+                {[
+                  { icon: "★", text: "5.0 Google Rating" },
+                  { icon: "✓", text: "Same team, every visit" },
+                  { icon: "✓", text: "No estimates — ever" },
+                  { icon: "✓", text: "Licensed HI-71484" },
+                  { icon: "✓", text: "9+ years on Long Island" },
+                ].map(({ icon, text }) => (
+                  <div key={text} className="flex items-center gap-3">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M5 12.5l4 4 10-10" stroke="#86EFAC" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span className="text-[13px] text-white/60">{text}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Member quote */}
+              <div className="pt-1 border-t border-white/[0.07]">
+                <p className="text-[12px] text-white/35 leading-relaxed italic">
+                  &ldquo;They remembered exactly how we like things done.
+                  That&rsquo;s rare.&rdquo;
+                </p>
+                <p className="mt-1.5 text-[11px] font-bold text-white/25 uppercase tracking-[0.15em]">
+                  — Long Island homeowner
+                </p>
+              </div>
+            </div>
+
+            {/* CTA card */}
+            <div
+              className="rounded-[22px] border border-[#306EEC]/20 p-6 flex flex-col gap-4"
+              style={{ background: "linear-gradient(145deg, rgba(48,110,236,0.12) 0%, rgba(48,110,236,0.06) 100%)" }}
+            >
+              <div>
+                <p className="text-[16px] font-bold text-white mb-1">
+                  Your home could look like this.
+                </p>
+                <p className="text-[13px] text-white/45 leading-relaxed">
+                  Members get the same trusted team — every single visit. Your
+                  home gets better, not just fixed.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={scrollToPlans}
+                className="w-full min-h-[52px] rounded-[14px] bg-[#306EEC] text-white text-[15px] font-extrabold transition-all hover:bg-[#2558c9] active:scale-[0.99]"
+                style={{ boxShadow: "0 12px 36px rgba(48,110,236,0.30)" }}
+              >
+                See Membership Plans
+              </button>
+            </div>
+
+            {/* Mobile stats */}
+            <div className="lg:hidden grid grid-cols-3 gap-3">
+              {AUTHORITY_STATS.map(({ value, label }) => (
+                <div
+                  key={label}
+                  className="rounded-[14px] border border-white/[0.09] bg-white/[0.04] p-3 text-center"
+                >
+                  <div className="text-[18px] font-extrabold text-white leading-none mb-1">{value}</div>
+                  <div className="text-[10px] font-semibold text-white/38 leading-tight">{label}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
+
       </div>
     </section>
   );

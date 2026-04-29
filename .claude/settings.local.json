@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx|js\\)$\")",
+      "Bash(node --check \"c:\\\\Users\\\\Taras\\\\OneDrive\\\\Fixter\\\\BackEnd\\\\routes\\\\subscriptions.js\")",
+      "Bash(node --check \"c:\\\\Users\\\\Taras\\\\OneDrive\\\\Fixter\\\\BackEnd\\\\routes\\\\webhook.js\")",
+      "Bash(grep -n \"^export const team\\\\|^  {$\\\\|id:\\\\|name:\\\\|thumb:\\\\|photo:\\\\|blurb:\\\\|specialty:\\\\|role:\" \"c:/Users/Taras/OneDrive/Fixter/FrontEnd/app/data/content.ts\")",
+      "Bash(awk '{print $5, $9}')",
+      "Bash(node --check routes/estimates.js)",
+      "Bash(node --check models/EstimateLead.js)",
+      "Bash(node --check utils/emailService.js)",
+      "Bash([ ! -f \"/c/Users/Taras/OneDrive/Fixter/FrontEnd/public$img\" ])",
+      "Bash(node -e \"require\\('sharp'\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(sed -i 's|/images/hero-bg\\\\.png|/images/hero-bg.webp|g' c:/Users/Taras/OneDrive/Fixter/FrontEnd/app/projects/page.tsx c:/Users/Taras/OneDrive/Fixter/FrontEnd/app/components/sections/EntryHeroSection.tsx c:/Users/Taras/OneDrive/Fixter/FrontEnd/app/components/sections/HeroSection.tsx)",
+      "Bash(sed -i 's|/images/pass-bg\\\\.png|/images/pass-bg.webp|g' 'c:/Users/Taras/OneDrive/Fixter/FrontEnd/app/\\(auth\\)/layout.tsx' c:/Users/Taras/OneDrive/Fixter/FrontEnd/app/components/auth/AuthLayout.tsx)",
+      "Bash(npx next *)",
+      "Bash(node -e \"require\\('./jobs/bookingReminders'\\); console.log\\('✅ bookingReminders loads without error'\\)\")",
+      "Bash(node -e \"require\\('./utils/emailService'\\); console.log\\('✅ emailService loads without error'\\)\")"
+    ]
+  }
+}

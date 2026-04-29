@@ -61,7 +61,7 @@ export default function BookingImageGallery({
         const url = resolveImageURL(images[i]);
         
         if (isHEICFile(url)) {
-          console.log(`🔄 Detected HEIC file at index ${i}:`, url);
+
           try {
             const convertedUrl = await fetchAndConvertHEIC(url);
             setConvertedImages((prev) => new Map(prev).set(i, convertedUrl));
@@ -70,7 +70,6 @@ export default function BookingImageGallery({
               next.delete(i);
               return next;
             });
-            console.log(`✅ Successfully converted HEIC at index ${i}`);
           } catch (error) {
             console.warn(`⚠️ Could not convert HEIC at index ${i}, will show placeholder:`, error);
             // Не додаємо в errorImages, просто прибираємо loading

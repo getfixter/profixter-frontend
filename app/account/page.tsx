@@ -152,13 +152,13 @@ export default function AccountPage() {
                   What can I book?
                 </a>
                 <a
-                  href="/#services"
+                  href="/membership"
                   className="inline-flex items-center justify-center rounded-[14px] border border-[#C5CBD8] bg-[#EEF2FF] px-4 py-3 text-[14px] font-semibold text-[#313234] transition hover:bg-white"
                 >
                   How often can I book?
                 </a>
                 <a
-                  href="/#pick-day"
+                  href="/membership"
                   className="inline-flex items-center justify-center rounded-[14px] border border-[#C5CBD8] bg-[#EEF2FF] px-4 py-3 text-[14px] font-semibold text-[#313234] transition hover:bg-white"
                 >
                   Book your next visit
