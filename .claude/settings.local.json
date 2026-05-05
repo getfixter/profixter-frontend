@@ -17,7 +17,28 @@
       "Bash(sed -i 's|/images/pass-bg\\\\.png|/images/pass-bg.webp|g' 'c:/Users/Taras/OneDrive/Fixter/FrontEnd/app/\\(auth\\)/layout.tsx' c:/Users/Taras/OneDrive/Fixter/FrontEnd/app/components/auth/AuthLayout.tsx)",
       "Bash(npx next *)",
       "Bash(node -e \"require\\('./jobs/bookingReminders'\\); console.log\\('✅ bookingReminders loads without error'\\)\")",
-      "Bash(node -e \"require\\('./utils/emailService'\\); console.log\\('✅ emailService loads without error'\\)\")"
+      "Bash(node -e \"require\\('./utils/emailService'\\); console.log\\('✅ emailService loads without error'\\)\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Taras\\\\OneDrive\\\\Fixter\" -Recurse -Filter \"*.env\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Taras\\\\OneDrive\\\\Fixter\" -Recurse -Filter \".env*\" -ErrorAction SilentlyContinue)",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(node __audit.js)",
+      "Bash(Remove-Item \"c:\\\\Users\\\\Taras\\\\OneDrive\\\\Fixter\\\\BackEnd\\\\__audit.js\" -Force)",
+      "Bash(node --check \"c:/Users/Taras/OneDrive/Fixter/BackEnd/scripts/repair_subscriptions.js\")",
+      "Bash(node --check \"c:/Users/Taras/OneDrive/Fixter/BackEnd/models/Subscription.js\")",
+      "Bash(node --check \"c:/Users/Taras/OneDrive/Fixter/BackEnd/utils/subscriptionManagement.js\")",
+      "Bash(node --check \"c:/Users/Taras/OneDrive/Fixter/BackEnd/routes/admin.js\")",
+      "Bash(node --check \"c:/Users/Taras/OneDrive/Fixter/BackEnd/routes/subscriptions.js\")",
+      "Bash(node --check \"c:/Users/Taras/OneDrive/Fixter/BackEnd/routes/stripe.js\")",
+      "Bash(node -e \"const s = require\\('c:/Users/Taras/OneDrive/Fixter/BackEnd/models/Subscription.js'\\); const e = s.schema.path\\('status'\\).enumValues; console.log\\(JSON.stringify\\(e\\)\\);\")",
+      "Bash(Select-Object Name)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\Taras\\\\OneDrive\\\\Fixter\\\\BackEnd\" -Force | ForEach-Object { $_.Name })",
+      "PowerShell($env:STRIPE_SECRET_KEY)",
+      "Bash(find \"c:/Users/Taras/OneDrive/Fixter\" -name \".env\" -not -path \"*/node_modules/*\" 2>/dev/null)",
+      "Read(//c/Users/Taras/OneDrive/Fixter/**)",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\Taras\\\\OneDrive\\\\Fixter\\\\BackEnd\\\\routes\" | ForEach-Object { $_.Name })",
+      "Bash(Find c:\\\\Users\\\\Taras\\\\OneDrive\\\\Fixter\\\\BackEnd\\\\jobs -name \"*.js\" -type f)"
     ]
   }
 }

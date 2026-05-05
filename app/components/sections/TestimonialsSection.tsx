@@ -26,7 +26,7 @@ export default function TestimonialsSection() {
       name: "Lisa R.",
       location: "Babylon",
       quote:
-        "We used their general contractor services for our kitchen remodel and couldn’t be happier with the results.",
+        "Having the same team show up every month means they know my house. Things get fixed before they become bigger problems.",
     },
   ];
   return (

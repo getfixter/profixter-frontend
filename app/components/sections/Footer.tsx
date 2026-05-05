@@ -10,14 +10,6 @@ const MEMBERSHIP_LINKS = [
   { label: "My Account", href: "/account" },
 ];
 
-const PROJECTS_LINKS = [
-  { label: "Home Improvement", href: "/projects" },
-  { label: "Roofing", href: "/roofing" },
-  { label: "Bathroom Remodeling", href: "/remodeling" },
-  { label: "Kitchen Remodeling", href: "/kitchen" },
-  { label: "Free Estimate", href: "/estimate" },
-];
-
 const TRUST_BADGES = [
   "Licensed HI-71484",
   "Fully Insured",
@@ -52,7 +44,7 @@ export default function Footer() {
       {/* Content */}
       <div className="relative mx-auto max-w-[1240px] px-5 sm:px-6 lg:px-5 py-12 sm:py-16">
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.6fr_0.7fr_0.7fr_0.7fr] gap-10 lg:gap-8 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.6fr_0.7fr_0.7fr] gap-10 lg:gap-8 items-start">
 
           {/* ── Brand column ── */}
           <div>
@@ -65,8 +57,7 @@ export default function Footer() {
             />
 
             <p className="text-[#9AA3B2] text-[15px] leading-relaxed max-w-[400px] mb-7">
-              Licensed home services for Long Island homeowners — monthly maintenance memberships
-              and complete home improvement by the same trusted team.
+              Monthly handyman membership for Long Island homeowners. One trusted team, regular visits, and everything handled — year after year.
             </p>
 
             {/* Phone */}
@@ -103,24 +94,6 @@ export default function Footer() {
             </div>
             <nav className="flex flex-col gap-3.5">
               {MEMBERSHIP_LINKS.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="text-[15px] font-medium text-[#9AA3B2] transition-colors hover:text-white"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-
-          {/* ── Projects column ── */}
-          <div>
-            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 mb-5">
-              Projects
-            </div>
-            <nav className="flex flex-col gap-3.5">
-              {PROJECTS_LINKS.map((link) => (
                 <Link
                   key={link.label}
                   href={link.href}

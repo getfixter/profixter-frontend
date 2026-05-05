@@ -12,6 +12,7 @@ import { PersonalInfoForm } from "../components/account/PersonalInfoForm";
 import { PlanSection } from "../components/account/PlanSection";
 import { PasswordForm } from "../components/account/PasswordForm";
 import BookingsSection from "../components/account/BookingsSection";
+import ReferralSection from "../components/sections/ReferralSection";
 
 import { useAuth } from "@/lib/useAuth";
 
@@ -177,6 +178,8 @@ export default function AccountPage() {
           </div>
         </div>
       </main>
+
+      <ReferralSection />
     </div>
   );
 }

@@ -96,10 +96,18 @@ export default function FinalCTASection() {
           </h2>
 
           {/* ── Subhead ── */}
-          <p className="text-[18px] sm:text-[22px] font-semibold text-white/50 leading-[1.4] max-w-[640px] mx-auto mb-10 sm:mb-12">
+          <p className="text-[18px] sm:text-[22px] font-semibold text-white/50 leading-[1.4] max-w-[640px] mx-auto mb-5 sm:mb-6">
             One trusted team. Regular monthly visits. No estimates, no
             surprises &mdash; the steady home care your property deserves.
           </p>
+
+          {/* Risk reversal */}
+          <div className="inline-flex items-center gap-2.5 rounded-full border border-white/12 bg-white/[0.05] px-5 py-2 mb-10 sm:mb-12">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12.5l4 4 10-10" stroke="#86EFAC" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="text-[13px] font-semibold text-white/55">Cancel anytime · No long-term contracts · No setup fees</span>
+          </div>
 
           {/* ── CTAs ── */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-stretch sm:items-center mb-6">
@@ -111,7 +119,7 @@ export default function FinalCTASection() {
               className="inline-flex min-h-[66px] items-center justify-center rounded-[18px] bg-[#306EEC] px-10 text-[17px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99]"
               style={{ boxShadow: "0 20px 60px rgba(48,110,236,0.45)" }}
             >
-              Get Started &mdash; from $149/mo
+              Start My Membership &mdash; from $149/mo
             </Link>
             <a
               href="tel:+16315991363"
@@ -142,7 +150,7 @@ export default function FinalCTASection() {
             onClick={handlePlansClick}
             className="text-[14px] font-semibold text-white/35 hover:text-white/60 transition-colors underline underline-offset-4 mb-12 sm:mb-14"
           >
-            View membership plans
+            See Plans &amp; Pricing
           </button>
 
           {/* ── Trust strip ── */}

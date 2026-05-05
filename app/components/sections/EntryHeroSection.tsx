@@ -56,7 +56,7 @@ export default function EntryHeroSection() {
         {/* Sub */}
         <p className="text-[17px] sm:text-[20px] font-medium leading-[1.6] text-white/55 max-w-[560px] mx-auto mb-10">
           One licensed, insured team for everything your home needs —
-          monthly maintenance memberships or complete renovations.
+          regular visits, covered tasks, and everything handled on a simple monthly membership.
         </p>
 
         {/* Trust chips */}

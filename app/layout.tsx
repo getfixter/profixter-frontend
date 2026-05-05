@@ -15,11 +15,11 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Profixter | Long Island Home Services — Membership & Remodeling",
-  description: "Long Island's licensed home services team. Monthly maintenance memberships from $149/mo and complete home improvement — roofing, bathroom, and kitchen remodeling. Licensed HI-71484. Nassau & Suffolk County.",
+  title: "Profixter | Handyman Membership for Long Island Homeowners",
+  description: "Monthly handyman membership for Long Island homeowners. One trusted team, regular visits, and everything handled — from $149/mo. Licensed HI-71484. Nassau & Suffolk County.",
   openGraph: {
-    title: "Profixter | Long Island Home Services",
-    description: "Monthly handyman memberships and complete home improvement for Long Island homeowners. Licensed HI-71484. Serving Nassau & Suffolk County.",
+    title: "Profixter | Handyman Membership — Long Island",
+    description: "Monthly handyman membership for Long Island homeowners. One trusted team, regular visits, and everything handled. Licensed HI-71484. Serving Nassau & Suffolk County.",
     type: "website",
   },
 };

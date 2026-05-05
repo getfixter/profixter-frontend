@@ -17,7 +17,7 @@ const HOW_VISITS_WORK = [
 
 const NOT_INCLUDED = [
   "Large projects",
-  "Full renovations",
+  "Structural or permit-required work",
   "Anything exceeding visit scope",
 ];
 

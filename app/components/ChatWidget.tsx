@@ -24,10 +24,9 @@ const PHONE = '631-599-1363';
 const PHONE_TEL = 'tel:6315991363';
 
 const WELCOME_CHIPS: ChipDef[] = [
-  { label: 'Home Care Membership', message: 'Tell me about the Home Care Membership' },
-  { label: '1-Day Roof Replacement', message: 'Tell me about 1-day roof replacement' },
-  { label: 'Bathroom or Kitchen', message: 'Tell me about bathroom or kitchen remodeling' },
-  { label: 'Get a free estimate', href: '/estimate' },
+  { label: 'How does it work?', message: 'How does the handyman membership work?' },
+  { label: "What's included?", message: 'What tasks are included in the membership?' },
+  { label: 'See plans & pricing', href: '/membership' },
   { label: '📞 Call Taras', phone: true },
 ];
 

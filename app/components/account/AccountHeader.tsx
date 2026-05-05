@@ -30,9 +30,8 @@ export function AccountHeader({ userName }: AccountHeaderProps) {
           </div>
         </Link>
         <nav className="hidden lg:flex items-center gap-8">
-          <Link href="/membership" className="text-[#313234] text-base hover:text-[#306EEC]">Membership</Link>
-          <Link href="/projects" className="text-[#313234] text-base hover:text-[#306EEC]">Projects</Link>
-          <Link href="/estimate" className="text-[#313234] text-base hover:text-[#306EEC]">Free Estimate</Link>
+          <Link href="/membership" className="text-[#313234] text-base hover:text-[#306EEC]">Plans</Link>
+          <Link href="/included" className="text-[#313234] text-base hover:text-[#306EEC]">What&apos;s Included</Link>
         </nav>
         <div className="relative" ref={menuRef}>
           <button
@@ -50,9 +49,8 @@ export function AccountHeader({ userName }: AccountHeaderProps) {
           {isMenuOpen && (
             <div className="absolute right-0 top-full mt-2 w-48 sm:w-56 bg-white border border-[#C5CBD8] rounded-[14px] shadow-lg py-2 z-50">
               {[
-                { href: "/membership", label: "Membership" },
-                { href: "/projects", label: "Projects" },
-                { href: "/estimate", label: "Free Estimate" },
+                { href: "/membership", label: "Plans" },
+                { href: "/included", label: "What's Included" },
               ].map(({ href, label }) => (
                 <Link
                   key={href}

@@ -18,8 +18,8 @@ export default function Header() {
   const firstName = useMemo(() => user?.name?.split(" ")[0] || "User", [user?.name]);
   const navItems = useMemo(
     () => [
-      { href: "/membership", label: "Membership" },
-      { href: "/projects", label: "Projects" },
+      { href: "/membership", label: "Plans" },
+      { href: "/included", label: "What's Included" },
       ...(isAuthenticated ? [{ href: "/account", label: "Account" }] : []),
     ],
     [isAuthenticated]
@@ -168,7 +168,7 @@ export default function Header() {
                 onClick={() => trackEvent("start_signup", { placement: "header_primary" })}
                 className="rounded-[14px] bg-[#306EEC] px-8 py-3 text-base font-extrabold text-white transition hover:bg-[#255ed2]"
               >
-                Get Started
+                Start My Membership
               </Link>
             )}
           </div>
@@ -255,7 +255,7 @@ export default function Header() {
                       }}
                       className="w-full rounded-[16px] bg-[#306EEC] px-6 py-4 text-center text-base font-medium text-white transition hover:bg-[#255ed2]"
                     >
-                      Get Started
+                      Start My Membership
                     </Link>
                     <Link
                       href="/signin"

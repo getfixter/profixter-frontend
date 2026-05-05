@@ -7,6 +7,7 @@ import {
   changeSubscriptionPlan,
   reactivateSubscription,
   getMySubscriptions,
+  createBillingPortalSession,
   type ManagedSubscription,
 } from "@/lib/subscription-service";
 
@@ -136,6 +137,7 @@ export function PlanSection() {
 
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [billingPortalLoadingId, setBillingPortalLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -236,6 +238,20 @@ export function PlanSection() {
       setError(err?.response?.data?.message || "Unable to reactivate your subscription right now.");
     } finally {
       setReactivatingId(null);
+    }
+  };
+
+  const handleManageBilling = async (subscription: ManagedSubscription) => {
+    setBillingPortalLoadingId(subscription._id);
+    setError("");
+    try {
+      const { url } = await createBillingPortalSession({
+        addressId: subscription.addressId ?? undefined,
+      });
+      window.location.href = url;
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Unable to open billing portal right now.");
+      setBillingPortalLoadingId(null);
     }
   };
 
@@ -526,6 +542,17 @@ export function PlanSection() {
                           {subscription.cancelAtPeriodEnd ? "Cancellation scheduled" : "Cancel subscription"}
                         </button>
                       </div>
+
+                      {subscription.stripeManaged ? (
+                        <button
+                          type="button"
+                          disabled={billingPortalLoadingId === subscription._id}
+                          onClick={() => handleManageBilling(subscription)}
+                          className="mt-1 w-full rounded-[14px] border border-[#D7E0F5] bg-white/70 py-2.5 text-sm font-semibold text-[#306EEC] transition hover:bg-white disabled:opacity-60"
+                        >
+                          {billingPortalLoadingId === subscription._id ? "Opening..." : "Manage Billing"}
+                        </button>
+                      ) : null}
 
                       <div className="mt-3 text-xs text-[#6A6D71]">
                         {subscription.cancelAtPeriodEnd

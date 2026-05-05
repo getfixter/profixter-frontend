@@ -96,3 +96,13 @@ export async function reactivateSubscription(params: {
   );
   return response.data;
 }
+
+export async function createBillingPortalSession(params?: {
+  addressId?: string;
+}): Promise<{ url: string }> {
+  const response = await API.post<{ url: string }>(
+    "/api/subscriptions/create-billing-portal-session",
+    params || {}
+  );
+  return response.data;
+}

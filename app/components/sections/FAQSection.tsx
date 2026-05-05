@@ -32,8 +32,8 @@ const FAQS = [
     a: "With a one-time call, you search for someone, explain your home from scratch each time, and pay retail rates for every visit. With a membership, you have a team that learns your home, visits on a regular schedule, and keeps things maintained before they become problems — all at a predictable monthly rate.",
   },
   {
-    q: "Do members get discounts on home improvement projects?",
-    a: "Yes. Active members receive 10% off qualifying home improvement projects — including roofing, bathroom remodeling, and kitchen renovation. This is an exclusive member benefit, not a public promotion. Your discount is applied when you book your project through us as an active member.",
+    q: "What if I need work that's outside the membership?",
+    a: "For larger repairs or home improvement work that goes beyond a regular handyman visit, call Taras directly at 631-599-1363. We'll talk through the project and figure out the right approach together.",
   },
   {
     q: "Are you licensed and insured?",

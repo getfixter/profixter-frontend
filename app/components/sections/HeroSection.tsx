@@ -27,10 +27,10 @@ const TRUST_ITEMS = [
   "Fully Insured",
 ];
 
-const HIGH_TICKET_SERVICES = [
-  { label: "1-Day Roof Replacement", anchor: "/roofing" },
-  { label: "Full Bathroom Remodeling", anchor: "/remodeling" },
-  { label: "Full Kitchen Remodeling", anchor: "/kitchen" },
+const MEMBERSHIP_QUICK_LINKS = [
+  { label: "See what's included", anchor: "/included" },
+  { label: "How it works", anchor: "#how-it-works" },
+  { label: "View all plans", anchor: "#plans" },
 ];
 
 export default function HeroSection() {
@@ -109,24 +109,24 @@ export default function HeroSection() {
   const ctaConfig = useMemo(() => {
     if (subState === "sub") {
       return {
-        primaryLabel: "Book a Visit",
+        primaryLabel: "Book My Next Visit",
         primaryAction: goToBooking,
-        secondaryLabel: "View Plans",
+        secondaryLabel: "See Plans & Pricing",
         secondaryAction: goToPlans,
       };
     }
     if (isAuthenticated) {
       return {
-        primaryLabel: "See Memberships",
+        primaryLabel: "Start My Membership",
         primaryAction: goToPlans,
-        secondaryLabel: "Book a Visit",
+        secondaryLabel: "Book My First Visit",
         secondaryAction: goToBooking,
       };
     }
     return {
-      primaryLabel: "See Memberships",
+      primaryLabel: "Start My Membership",
       primaryAction: goToPlans,
-      secondaryLabel: "How It Works",
+      secondaryLabel: "See Plans & Pricing",
       secondaryAction: goToHowItWorks,
     };
   }, [subState, isAuthenticated]);
@@ -197,13 +197,13 @@ export default function HeroSection() {
                 style={{ boxShadow: "0 0 10px rgba(134,239,172,0.9)" }}
               />
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/80">
-                Long Island&rsquo;s Premier Home Care Membership
+                Long Island&rsquo;s Handyman Membership
               </span>
             </div>
 
             {/* Headline */}
-            <h1 className="text-[58px] font-black leading-[0.87] tracking-[-0.048em] text-white sm:text-[80px] lg:text-[104px] mb-7">
-              Your Home,
+            <h1 className="text-[44px] font-black leading-[0.92] tracking-[-0.04em] text-white sm:text-[60px] lg:text-[78px] mb-7">
+              Stop Calling Handymen
               <br />
               <span
                 className="bg-clip-text text-transparent"
@@ -212,19 +212,34 @@ export default function HeroSection() {
                     "linear-gradient(90deg, #86EFAC 0%, #4ADE80 50%, #86EFAC 100%)",
                 }}
               >
-                Handled.
+                Every Time Something Breaks.
               </span>
             </h1>
 
             {/* Sub-headline */}
-            <p className="text-[20px] sm:text-[23px] font-bold leading-[1.28] text-white/90 mb-4 max-w-[560px]">
-              The membership Long Island homeowners keep.
+            <p className="text-[18px] sm:text-[21px] font-bold leading-[1.32] text-white/90 mb-4 max-w-[560px]">
+              Get a reliable handyman every month. Book visits for repairs, maintenance, and small projects — all in one simple membership.
             </p>
 
-            {/* Description */}
-            <p className="text-[16px] sm:text-[17px] leading-[1.72] text-white/48 max-w-[510px] mb-10">
-              One trusted team. Regular monthly visits. Predictable care &mdash;
-              no estimates, no surprises, year after year.
+            {/* Clarity bullets */}
+            <ul className="space-y-2.5 mb-9">
+              {[
+                "90-minute visits you can book online",
+                "Month-to-month. Cancel anytime.",
+                "Perfect for ongoing home maintenance (not emergencies)",
+              ].map((item) => (
+                <li key={item} className="flex items-center gap-3">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="flex-shrink-0">
+                    <path d="M5 12.5l4 4 10-10" stroke="#86EFAC" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span className="text-[15px] sm:text-[16px] font-semibold text-white/80">{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            {/* Supporting line */}
+            <p className="text-[14px] sm:text-[15px] italic text-white/38 mb-8 max-w-[500px]">
+              Built for homeowners who want control over their home — not chaos.
             </p>
 
             {/* CTAs */}
@@ -247,35 +262,29 @@ export default function HeroSection() {
               </button>
             </div>
 
-            {/* Subtle hint */}
-            <p className="text-[13px] text-white/30 mb-9">
-              {isAuthenticated && subState === "unknown"
-                ? "Checking your plan details…"
-                : "Memberships from $149/mo · Month-to-month · Long Island"}
-            </p>
+            {/* Risk reversal + urgency */}
+            <div className="mt-4 flex flex-col gap-2">
+              <p className="text-[13px] text-white/35">
+                {isAuthenticated && subState === "unknown"
+                  ? "Checking your plan details…"
+                  : "From $149/mo · Cancel anytime · No long-term contracts"}
+              </p>
+              <p className="text-[12px] text-white/25 italic">
+                Limited monthly capacity — we keep team sizes small to maintain quality.
+              </p>
+            </div>
 
-            {/* Trust strip */}
-            <div className="flex flex-wrap items-center gap-x-7 gap-y-3">
-              {TRUST_ITEMS.map((text) => (
+            {/* Trust boost strip */}
+            <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2.5">
+              {[
+                { icon: "🛡️", text: "Licensed & insured" },
+                { icon: "📍", text: "Local Long Island team" },
+                { icon: "👤", text: "Consistent technician" },
+                { icon: "⭐", text: "5.0 Google Rating" },
+              ].map(({ icon, text }) => (
                 <div key={text} className="flex items-center gap-2">
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M5 12.5l4 4 10-10"
-                      stroke="#86EFAC"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <span className="text-[13px] font-semibold text-white/58">
-                    {text}
-                  </span>
+                  <span className="text-[14px]">{icon}</span>
+                  <span className="text-[13px] font-semibold text-white/55">{text}</span>
                 </div>
               ))}
             </div>
@@ -405,9 +414,9 @@ export default function HeroSection() {
               ))}
             </div>
 
-            {/* High-ticket service links */}
+            {/* Membership quick links */}
             <div className="flex flex-col gap-2">
-              {HIGH_TICKET_SERVICES.map(({ label, anchor }) => (
+              {MEMBERSHIP_QUICK_LINKS.map(({ label, anchor }) => (
                 <button
                   key={label}
                   type="button"
@@ -435,24 +444,6 @@ export default function HeroSection() {
                   </svg>
                 </button>
               ))}
-              {/* Estimate CTA */}
-              <Link
-                href="/estimate"
-                className="group w-full rounded-[14px] border border-[#306EEC]/22 bg-[#306EEC]/[0.06] px-4 py-3 flex items-center justify-between hover:bg-[#306EEC]/[0.13] hover:border-[#306EEC]/40 transition-all duration-200"
-              >
-                <div className="flex items-center gap-2.5">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="text-[#7BAEFF]/70" aria-hidden="true">
-                    <rect x="4" y="2" width="16" height="20" rx="2" stroke="currentColor" strokeWidth="1.8" />
-                    <path d="M8 9h8M8 13h6M8 17h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
-                  <span className="text-[13px] font-semibold text-[#7BAEFF]/75 group-hover:text-[#7BAEFF] transition-colors">
-                    Get Free Project Estimate
-                  </span>
-                </div>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-[#7BAEFF]/30 group-hover:text-[#7BAEFF]/70 transition-colors flex-shrink-0" aria-hidden="true">
-                  <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </Link>
             </div>
           </div>
 
@@ -484,7 +475,7 @@ export default function HeroSection() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             {/* Services — hidden on xs to prevent overflow */}
             <div className="hidden sm:flex flex-wrap items-center gap-5 sm:gap-8">
-              {HIGH_TICKET_SERVICES.map(({ label, anchor }, i, arr) => (
+              {MEMBERSHIP_QUICK_LINKS.map(({ label, anchor }, i, arr) => (
                 <span key={label} className="flex items-center gap-5 sm:gap-8">
                   <button
                     type="button"

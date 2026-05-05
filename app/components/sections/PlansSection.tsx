@@ -77,10 +77,17 @@ function getDisplayName(planName: string): string {
 }
 
 function getPositioningLabel(planName: string): string {
-  if (planName === "Basic") return "Your home, handled.";
-  if (planName === "Plus") return "Stay ahead of your home, not behind it.";
-  if (planName === "Premium") return "Cared for. And protected.";
+  if (planName === "Basic") return "For simple ongoing home tasks";
+  if (planName === "Plus") return "Most popular — best balance";
+  if (planName === "Premium") return "For faster progress & priority scheduling";
   if (planName === "Elite") return "Everything about your home — handled.";
+  return "";
+}
+
+function getPriceValueNote(planName: string): string {
+  if (planName === "Basic") return "Less than the cost of one typical handyman visit";
+  if (planName === "Plus") return "Costs less than calling a handyman twice";
+  if (planName === "Premium") return "For homeowners who want things done faster";
   return "";
 }
 
@@ -93,7 +100,7 @@ function getComparisonLabel(planName: string): string {
 }
 
 function getBadgeLabel(planName: string, badge?: string): string {
-  if (planName === "Plus") return "Most members start here";
+  if (planName === "Plus") return "Most Popular";
   if (planName === "Premium") return "Most members stay here";
   if (badge === "StartHere") return "Most members start here";
   if (badge === "StayHere") return "Most members stay here";
@@ -252,7 +259,7 @@ export default function PlansSection() {
     if (!planType) {
       return {
         kind: "subscribe" as ChangeActionKind,
-        label: "Get Started",
+        label: "Start My Membership",
         disabled: false,
       };
     }
@@ -260,7 +267,7 @@ export default function PlansSection() {
     if (!selectedAddressActive) {
       return {
         kind: "subscribe" as ChangeActionKind,
-        label: "Get Started",
+        label: "Start My Membership",
         disabled: false,
       };
     }
@@ -592,7 +599,7 @@ export default function PlansSection() {
 
         <div className={`mb-5 ${compact ? "flex justify-center" : ""}`}>
           <span className="inline-flex items-center rounded-full border border-white/20 bg-white/[0.06] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">
-            Home Care Memberships
+            Monthly Membership Plans
           </span>
         </div>
 
@@ -620,6 +627,60 @@ export default function PlansSection() {
             Materials at cost, only when needed, with your approval.
           </p>
         )}
+        {/* Price anchoring table */}
+        <div className="mt-5 rounded-[16px] border border-white/12 bg-white/[0.05] px-5 py-4">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/35 mb-3">
+            What homeowners usually pay
+          </p>
+          <div className="space-y-2 mb-3">
+            {[
+              { label: "1 handyman visit", cost: "$150–$300" },
+              { label: "2 visits", cost: "$300–$600" },
+              { label: "3 visits", cost: "$450–$900" },
+            ].map(({ label, cost }) => (
+              <div key={label} className="flex items-center justify-between">
+                <span className="text-[13px] text-white/50">{label}</span>
+                <span className="text-[13px] font-extrabold text-white/70">{cost}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[13px] text-[#86EFAC] font-semibold leading-snug border-t border-white/10 pt-3">
+            With Profixter, you&rsquo;re covered every month — without starting from scratch every time.
+          </p>
+        </div>
+
+        {/* Cost control */}
+        <p className="mt-4 text-[13px] text-white/45 leading-relaxed">
+          No surprise invoices. No per-job pricing. Just one predictable monthly cost.
+        </p>
+
+        {/* Value stack */}
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {[
+            "Consistent technician",
+            "No small-job estimates",
+            "Priority scheduling (Plus+)",
+            "Ongoing home care",
+          ].map((item) => (
+            <div key={item} className="flex items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.04] px-3 py-2">
+              <svg width="10" height="8" viewBox="0 0 10 8" fill="none" aria-hidden="true" className="flex-shrink-0">
+                <path d="M1 4l2.5 2.5L9 1" stroke="#86EFAC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="text-[11px] font-semibold text-white/55 leading-tight">{item}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Expectation control */}
+        <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-4 py-1.5">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.45)" strokeWidth="1.8" />
+            <path d="M12 8v4M12 16h.01" stroke="rgba(255,255,255,0.45)" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <span className="text-[12px] font-semibold text-white/45">
+            Not unlimited labor — a structured way to maintain your home over time.
+          </span>
+        </div>
 
         <BillingToggle compact={compact} />
       </div>
@@ -735,7 +796,7 @@ export default function PlansSection() {
                       return (
                         <div key={idx} className="w-full flex-shrink-0 px-1">
                           <div className="mx-auto max-w-[440px]">
-                            <div className={`${plan.name === "Plus" ? "bg-white border-2 border-[#306EEC] shadow-[0_20px_90px_rgba(48,110,236,0.24)]" : "bg-[#EEF2FF] border border-[#C5CBD8] shadow-[0_20px_80px_rgba(0,0,0,0.35)]"} rounded-[26px] p-6 sm:p-8 flex flex-col min-h-[690px] sm:min-h-[720px] transform transition duration-300 hover:-translate-y-1`}>
+                            <div className={`${plan.name === "Plus" ? "bg-white border-2 border-[#306EEC] shadow-[0_28px_110px_rgba(48,110,236,0.38)] ring-4 ring-[#306EEC]/10" : "bg-[#EEF2FF] border border-[#C5CBD8] shadow-[0_20px_80px_rgba(0,0,0,0.35)]"} rounded-[26px] p-6 sm:p-8 flex flex-col min-h-[690px] sm:min-h-[720px] transform transition duration-300 hover:-translate-y-1`}>
                               {getBadgeLabel(plan.name, plan.badge) && (
                                 <div className="mb-3 flex justify-center">
                                   <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-white/70 shadow">
@@ -786,6 +847,12 @@ export default function PlansSection() {
                                     </span>
                                     /mo billed annually
                                   </div>
+                                )}
+
+                                {getPriceValueNote(plan.name) && (
+                                  <p className="mt-2 text-[12px] font-semibold text-[#306EEC]">
+                                    {getPriceValueNote(plan.name)}
+                                  </p>
                                 )}
                               </div>
 
@@ -847,12 +914,15 @@ export default function PlansSection() {
                                 {actionLoadingPlan === plan.name ? "Updating..." : action.label}
                               </button>
 
-                              <div className="mt-3 grid grid-cols-1 gap-2 text-center text-[12px] font-semibold text-[#313234] sm:grid-cols-3">
+                              <div className="mt-3 grid grid-cols-2 gap-2 text-center text-[11px] font-semibold text-[#313234]">
                                 <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
-                                  Same team every visit
+                                  Consistent technician
                                 </div>
                                 <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
                                   No estimates
+                                </div>
+                                <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
+                                  Ongoing home care
                                 </div>
                                 <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
                                   Month-to-month
@@ -918,7 +988,7 @@ export default function PlansSection() {
               <div className="hidden lg:block">
                 <div className="relative pb-44">
                   <div className="flex items-end gap-6">
-                    <div className={`relative w-[420px] min-h-[560px] rounded-[22px] flex-shrink-0 overflow-hidden ${plans[currentSlide].name === "Plus" ? "bg-white border-2 border-[#306EEC] shadow-[0_22px_100px_rgba(48,110,236,0.28)]" : "bg-[#EEF2FF] border border-[#C5CBD8] shadow-[0_20px_90px_rgba(0,0,0,0.35)]"}`}>
+                    <div className={`relative w-[420px] min-h-[560px] rounded-[22px] flex-shrink-0 overflow-hidden ${plans[currentSlide].name === "Plus" ? "bg-white border-2 border-[#306EEC] shadow-[0_32px_120px_rgba(48,110,236,0.42)] ring-4 ring-[#306EEC]/12" : "bg-[#EEF2FF] border border-[#C5CBD8] shadow-[0_20px_90px_rgba(0,0,0,0.35)]"}`}>
                       {getBadgeLabel(plans[currentSlide].name, plans[currentSlide].badge) && (
                         <div className="absolute top-4 left-4 z-10">
                           <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-4 py-2 rounded-xl border border-[#EEF2FF]/70 shadow-lg">
@@ -989,6 +1059,12 @@ export default function PlansSection() {
                                     /mo billed annually
                                   </div>
                                 )}
+
+                                {getPriceValueNote(plan.name) && (
+                                  <p className="mt-2 text-center text-[13px] font-semibold text-[#306EEC]">
+                                    {getPriceValueNote(plan.name)}
+                                  </p>
+                                )}
                               </div>
 
                               {plan.subtitle && (
@@ -1049,12 +1125,15 @@ export default function PlansSection() {
                                 {actionLoadingPlan === plan.name ? "Updating..." : action.label}
                               </button>
 
-                              <div className="mt-3 grid grid-cols-3 gap-2 text-center text-[12px] font-semibold text-[#313234]">
+                              <div className="mt-3 grid grid-cols-2 gap-2 text-center text-[11px] font-semibold text-[#313234]">
                                 <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
-                                  Same team every visit
+                                  Consistent technician
                                 </div>
                                 <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
                                   No estimates
+                                </div>
+                                <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
+                                  Ongoing home care
                                 </div>
                                 <div className="rounded-[12px] border border-[#D9E2F6] bg-white/70 px-3 py-2">
                                   Month-to-month
@@ -1090,7 +1169,7 @@ export default function PlansSection() {
                             onClick={() => setCurrentSlide(index)}
                             className="group relative w-[300px] min-h-[420px] flex-shrink-0 text-left"
                           >
-                            <div className={`absolute inset-0 rounded-[16px] p-6 transition-transform duration-300 group-hover:-translate-y-1 ${plan.name === "Plus" ? "bg-white border-2 border-[#306EEC] shadow-[0_14px_70px_rgba(48,110,236,0.22)]" : "bg-[#EEF2FF] border border-[#C5CBD8] shadow-[0_12px_60px_rgba(0,0,0,0.25)]"}`} />
+                            <div className={`absolute inset-0 rounded-[16px] p-6 transition-transform duration-300 group-hover:-translate-y-1 ${plan.name === "Plus" ? "bg-white border-2 border-[#306EEC] shadow-[0_18px_80px_rgba(48,110,236,0.30)] ring-2 ring-[#306EEC]/10" : "bg-[#EEF2FF] border border-[#C5CBD8] shadow-[0_12px_60px_rgba(0,0,0,0.25)]"}`} />
                             {getBadgeLabel(plan.name, plan.badge) && (
                               <div className="absolute top-3 left-3 z-20">
                                 <div className="bg-gradient-to-b from-[#306EEC] to-[#1B3E86] px-3 py-1.5 rounded-lg border border-white/70 shadow">
