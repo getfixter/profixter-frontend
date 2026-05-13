@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/useAuth";
 import type { PlanType } from "@/lib/stripe-links";
 import { trackInitiateCheckout } from "@/lib/analytics";
 import {
+  createBillingPortalSession,
   changeSubscriptionPlan,
   getSubscriptionActionErrorMessage,
   getManagedSubscriptionForAddress,
@@ -531,6 +532,22 @@ export default function PlansSection() {
     }
   };
 
+  const openBillingPortalForSelectedAddress = async (planName: string) => {
+    if (!selectedAddress) return;
+    try {
+      setActionLoadingPlan(planName);
+      setActionError("");
+      const { url } = await createBillingPortalSession({
+        addressId: selectedAddress._id,
+      });
+      window.location.href = url;
+    } catch (error: any) {
+      setActionError(getSubscriptionActionErrorMessage(error));
+    } finally {
+      setActionLoadingPlan(null);
+    }
+  };
+
   const handleSubscribe = async (planName: string) => {
     if (actionLoadingPlan) return;
     const planType = normalizePlanType(planName);
@@ -583,11 +600,7 @@ export default function PlansSection() {
       return;
     }
 
-    setConfirmAction({
-      planName,
-      planType,
-      kind: action.kind === "upgrade" ? "upgrade" : "downgrade",
-    });
+    await openBillingPortalForSelectedAddress(planName);
   };
 
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % plans.length);

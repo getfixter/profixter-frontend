@@ -552,10 +552,13 @@ export function PlanSection() {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => openPlanChange(subscription)}
+                            disabled={billingPortalLoadingId === subscription._id}
+                            onClick={() => handleManageBilling(subscription)}
                             className="block w-full rounded-[14px] bg-[#306EEC] py-3 text-center text-base font-semibold text-[#EEF2FF] transition-colors hover:bg-[#2557C7]"
                           >
-                            Change plan
+                            {billingPortalLoadingId === subscription._id
+                              ? "Opening Stripe..."
+                              : "Manage plan in Stripe"}
                           </button>
                         )}
 
@@ -570,14 +573,9 @@ export function PlanSection() {
                       </div>
 
                       {subscription.stripeManaged ? (
-                        <button
-                          type="button"
-                          disabled={billingPortalLoadingId === subscription._id}
-                          onClick={() => handleManageBilling(subscription)}
-                          className="mt-1 w-full rounded-[14px] border border-[#D7E0F5] bg-white/70 py-2.5 text-sm font-semibold text-[#306EEC] transition hover:bg-white disabled:opacity-60"
-                        >
-                          {billingPortalLoadingId === subscription._id ? "Opening..." : "Manage Billing"}
-                        </button>
+                        <div className="mt-1 text-xs font-semibold text-[#6A6D71]">
+                          Stripe handles plan changes, payment methods, invoices, and cancellation review.
+                        </div>
                       ) : null}
 
                       <div className="mt-3 text-xs text-[#6A6D71]">
