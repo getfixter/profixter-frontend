@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { plans, type Plan } from "@/app/data/content";
+import API from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
 import type { PlanType } from "@/lib/stripe-links";
 import { trackInitiateCheckout } from "@/lib/analytics";
@@ -24,6 +25,13 @@ type Address = {
 };
 
 type BillingCycle = "monthly" | "annual";
+type CheckoutResponse = {
+  url?: string;
+  eventId?: string;
+  code?: string;
+  message?: string;
+  details?: Record<string, unknown>;
+};
 
 function toNumberPrice(v: any): number {
   if (typeof v === "number") return v;
@@ -204,24 +212,84 @@ export default function PlansSection() {
     cycle: BillingCycle,
     planName: string
   ) => {
-    try {
-      setActionLoadingPlan(planName);
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "https://api.profixter.com";
+    const authToken = token || localStorage.getItem("token");
+    const endpointPath = "/api/stripe/checkout/create-checkout-session";
+    const endpointUrl = `${apiBase.replace(/\/$/, "")}${endpointPath}`;
+    const preservePlanUrl = `/membership?plan=${encodeURIComponent(plan)}&billingCycle=${encodeURIComponent(cycle)}`;
 
-      const res = await fetch(
-        "https://api.profixter.com/api/stripe/checkout/create-checkout-session",
+    if (!authToken) {
+      console.error("[checkout] Missing auth token before checkout request", {
+        tokenExists: false,
+        authHeaderAttached: false,
+        endpointUrl,
+        plan,
+        addressId,
+        billingCycle: cycle,
+      });
+      sessionStorage.setItem(
+        "pendingCheckoutPlan",
+        JSON.stringify({ plan, billingCycle: cycle, planName })
+      );
+      window.location.href = `/signin?redirect=${encodeURIComponent(preservePlanUrl)}`;
+      return;
+    }
+
+    const requestCheckoutSession = async (): Promise<{
+      status: number;
+      data: CheckoutResponse;
+    }> => {
+      console.info("[checkout] Checkout request prepared", {
+        tokenExists: !!authToken,
+        authHeaderAttached: true,
+        endpointUrl,
+      });
+
+      const res = await API.post<CheckoutResponse>(
+        endpointPath,
+        { plan, addressId, email, billingCycle: cycle },
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ plan, addressId, email, billingCycle: cycle }),
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+          validateStatus: () => true,
         }
       );
 
-      const data = await res.json();
+      console.info("[checkout] Checkout response received", {
+        tokenExists: !!authToken,
+        authHeaderAttached: true,
+        endpointUrl,
+        responseStatus: res.status,
+      });
 
-      if (res.status === 409 && data?.code === "ADDRESS_ALREADY_SUBSCRIBED") {
+      return { status: res.status, data: res.data || {} };
+    };
+
+    try {
+      setActionLoadingPlan(planName);
+      setActionError("");
+
+      let { status, data } = await requestCheckoutSession();
+
+      if (status === 409 && data?.code === "ADDRESS_ALREADY_SUBSCRIBED") {
         setActionError("This address already has an active plan.");
         setAddressSubscriptionMap((map) => ({ ...map, [addressId]: map[addressId] || null }));
         return;
+      }
+
+      if (!data?.url && status >= 200 && status < 300) {
+        console.error("[checkout] Checkout session response missing redirect URL; retrying once", {
+          tokenExists: !!authToken,
+          authHeaderAttached: true,
+          endpointUrl,
+          responseStatus: status,
+          response: data,
+          plan,
+          addressId,
+          billingCycle: cycle,
+        });
+        ({ status, data } = await requestCheckoutSession());
       }
 
       if (data?.url) {
@@ -234,10 +302,45 @@ export default function PlansSection() {
         return;
       }
 
-      setActionError(data?.message || "Unable to start subscription. Please try again.");
-    } catch (error: any) {
+      console.error("[checkout] Checkout session creation failed", {
+        tokenExists: !!authToken,
+        authHeaderAttached: true,
+        endpointUrl,
+        responseStatus: status,
+        response: data,
+        plan,
+        addressId,
+        billingCycle: cycle,
+      });
+
+      if (status === 401) {
+        sessionStorage.setItem(
+          "pendingCheckoutPlan",
+          JSON.stringify({ plan, billingCycle: cycle, planName })
+        );
+        window.location.href = `/signin?redirect=${encodeURIComponent(preservePlanUrl)}`;
+        return;
+      }
+
       setActionError(
-        error?.response?.data?.message || error?.message || "Unable to start subscription. Please try again."
+        status >= 400
+          ? "We could not open secure checkout right now. Please try again in a moment."
+          : data?.message ||
+          "We could not open secure checkout right now. Please try again in a moment."
+      );
+    } catch (error: any) {
+      console.error("[checkout] Checkout request crashed", {
+        tokenExists: !!authToken,
+        authHeaderAttached: true,
+        endpointUrl,
+        responseStatus: error?.response?.status || null,
+        message: error?.message || "Unknown checkout error",
+        plan,
+        addressId,
+        billingCycle: cycle,
+      });
+      setActionError(
+        "We could not open secure checkout right now. Please try again in a moment."
       );
     } finally {
       setActionLoadingPlan((current) => (current === planName ? null : current));
@@ -378,7 +481,13 @@ export default function PlansSection() {
     }
 
     if (!isAuthenticated || !user) {
-      window.location.href = "/signin?redirect=/";
+      sessionStorage.setItem(
+        "pendingCheckoutPlan",
+        JSON.stringify({ plan: planType, billingCycle: billing, planName })
+      );
+      window.location.href = `/signin?redirect=${encodeURIComponent(
+        `/membership?plan=${encodeURIComponent(planType)}&billingCycle=${encodeURIComponent(billing)}`
+      )}`;
       return;
     }
 
@@ -1390,4 +1499,3 @@ export default function PlansSection() {
     </>
   );
 }
-
