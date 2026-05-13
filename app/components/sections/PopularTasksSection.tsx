@@ -297,7 +297,7 @@ export default function PopularTasksSection() {
             className="flex-shrink-0 inline-flex items-center gap-2.5 rounded-[14px] bg-[#306EEC] px-6 py-3.5 text-[14px] font-extrabold text-white transition-all duration-300 hover:bg-[#2558c9] hover:-translate-y-0.5 active:scale-[0.99]"
             style={{ boxShadow: "0 12px 36px rgba(48,110,236,0.30)" }}
           >
-            {isSubscribed ? "Book a Visit" : "See Membership Plans"}
+            {isSubscribed ? "Book Visit" : "Get Subscription"}
             <svg
               width="14"
               height="14"

@@ -38,7 +38,10 @@
       "Bash(find \"c:/Users/Taras/OneDrive/Fixter\" -name \".env\" -not -path \"*/node_modules/*\" 2>/dev/null)",
       "Read(//c/Users/Taras/OneDrive/Fixter/**)",
       "PowerShell(Get-ChildItem \"c:\\\\Users\\\\Taras\\\\OneDrive\\\\Fixter\\\\BackEnd\\\\routes\" | ForEach-Object { $_.Name })",
-      "Bash(Find c:\\\\Users\\\\Taras\\\\OneDrive\\\\Fixter\\\\BackEnd\\\\jobs -name \"*.js\" -type f)"
+      "Bash(Find c:\\\\Users\\\\Taras\\\\OneDrive\\\\Fixter\\\\BackEnd\\\\jobs -name \"*.js\" -type f)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Taras\\\\OneDrive\\\\Fixter\\\\FrontEnd\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)"
     ]
   }
 }

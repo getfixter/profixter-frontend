@@ -114,7 +114,7 @@ export default function PathSplitSection() {
                   className="w-full min-h-[54px] rounded-[16px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                   style={{ background: "linear-gradient(135deg, #306EEC 0%, #1D4ED8 100%)", boxShadow: "0 12px 40px rgba(48,110,236,0.32)" }}
                 >
-                  See Membership Plans
+                  Get Subscription
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -167,7 +167,7 @@ export default function PathSplitSection() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.37 1.9.72 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              Call Taras — 631-599-1363
+              Call 631-599-1363
             </a>
           </div>
         </div>

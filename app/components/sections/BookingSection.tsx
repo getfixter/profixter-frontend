@@ -1359,7 +1359,7 @@ const canBook =
                   href="#plans"
                   className="inline-flex h-[40px] items-center px-5 rounded-[12px] bg-[#306EEC] text-white text-[14px] font-bold hover:bg-[#2558c9] transition"
                 >
-                  View Plans
+                  Get Subscription
                 </a>
               </div>
             )}
@@ -1615,4 +1615,3 @@ const canBook =
     </section>
   );
 }
-

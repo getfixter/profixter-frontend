@@ -119,7 +119,7 @@ export default function FinalCTASection() {
               className="inline-flex min-h-[66px] items-center justify-center rounded-[18px] bg-[#306EEC] px-10 text-[17px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99]"
               style={{ boxShadow: "0 20px 60px rgba(48,110,236,0.45)" }}
             >
-              Start My Membership &mdash; from $149/mo
+              Get Subscription &mdash; from $149/mo
             </Link>
             <a
               href="tel:+16315991363"
@@ -140,7 +140,7 @@ export default function FinalCTASection() {
                   strokeLinejoin="round"
                 />
               </svg>
-              Call Taras: 631-599-1363
+              Call 631-599-1363
             </a>
           </div>
 
@@ -150,7 +150,7 @@ export default function FinalCTASection() {
             onClick={handlePlansClick}
             className="text-[14px] font-semibold text-white/35 hover:text-white/60 transition-colors underline underline-offset-4 mb-12 sm:mb-14"
           >
-            See Plans &amp; Pricing
+            Get Subscription
           </button>
 
           {/* ── Trust strip ── */}

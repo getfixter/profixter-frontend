@@ -428,7 +428,7 @@ export default function PlansSection() {
     if (!planType) {
       return {
         kind: "subscribe" as ChangeActionKind,
-        label: "Start My Membership",
+        label: "Get Subscription",
         disabled: false,
       };
     }
@@ -436,7 +436,7 @@ export default function PlansSection() {
     if (!selectedAddressActive) {
       return {
         kind: "subscribe" as ChangeActionKind,
-        label: "Start My Membership",
+        label: "Get Subscription",
         disabled: false,
       };
     }

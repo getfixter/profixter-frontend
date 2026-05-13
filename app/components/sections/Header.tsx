@@ -16,9 +16,17 @@ export default function Header() {
   const router = useRouter();
 
   const firstName = useMemo(() => user?.name?.split(" ")[0] || "User", [user?.name]);
+  const isSubscribed = useMemo(
+    () =>
+      !!isAuthenticated &&
+      !!user?.addresses?.some((address: { hasActiveSubscription?: boolean }) => address.hasActiveSubscription),
+    [isAuthenticated, user?.addresses]
+  );
   const navItems = useMemo(
     () => [
       { href: "/membership", label: "Plans" },
+      { href: "/roofing", label: "Roofing" },
+      { href: "/siding", label: "Siding" },
       { href: "/included", label: "What's Included" },
       ...(isAuthenticated ? [{ href: "/account", label: "Account" }] : []),
     ],
@@ -115,11 +123,15 @@ export default function Header() {
             {isAuthenticated ? (
               <>
                 <Link
-                  href="/membership"
-                  onClick={() => trackEvent("start_booking", { placement: "header_primary" })}
+                  href={isSubscribed ? "/membership#pick-day" : "/membership#plans"}
+                  onClick={() =>
+                    trackEvent(isSubscribed ? "start_booking" : "view_plans", {
+                      placement: "header_primary",
+                    })
+                  }
                   className="rounded-[14px] bg-[#306EEC] px-6 py-3 text-base font-extrabold text-white transition hover:bg-[#255ed2]"
                 >
-                  Book Visit
+                  {isSubscribed ? "Book Visit" : "Get Subscription"}
                 </Link>
                 <div className="relative" ref={profileMenuRef}>
                   <button
@@ -163,13 +175,21 @@ export default function Header() {
                 </div>
               </>
             ) : (
-              <Link
-                href="/signup"
-                onClick={() => trackEvent("start_signup", { placement: "header_primary" })}
-                className="rounded-[14px] bg-[#306EEC] px-8 py-3 text-base font-extrabold text-white transition hover:bg-[#255ed2]"
-              >
-                Start My Membership
-              </Link>
+              <>
+                <Link
+                  href="/signin"
+                  className="rounded-[14px] border border-[#C5CBD8] bg-white/90 px-5 py-3 text-base font-bold text-[#111827] transition hover:bg-white"
+                >
+                  Register / Login
+                </Link>
+                <Link
+                  href="/membership#plans"
+                  onClick={() => trackEvent("view_plans", { placement: "header_primary" })}
+                  className="rounded-[14px] bg-[#306EEC] px-8 py-3 text-base font-extrabold text-white transition hover:bg-[#255ed2]"
+                >
+                  Get Subscription
+                </Link>
+              </>
             )}
           </div>
 
@@ -236,33 +256,37 @@ export default function Header() {
               <div className="mt-4 flex flex-col gap-3">
                 {isAuthenticated ? (
                   <Link
-                    href="/membership"
+                    href={isSubscribed ? "/membership#pick-day" : "/membership#plans"}
                     onClick={() => {
                       setIsMenuOpen(false);
-                      trackEvent("start_booking", { placement: "mobile_header_primary" });
+                      trackEvent(isSubscribed ? "start_booking" : "view_plans", {
+                        placement: "mobile_header_primary",
+                      });
                     }}
                     className="w-full rounded-[16px] bg-[#306EEC] px-6 py-4 text-center text-base font-medium text-white transition hover:bg-[#255ed2]"
                   >
-                    Book Visit
+                    {isSubscribed ? "Book Visit" : "Get Subscription"}
                   </Link>
                 ) : (
                   <>
                     <Link
-                      href="/signup"
+                      href="/signin"
                       onClick={() => {
-                        trackEvent("start_signup", { placement: "mobile_header_primary" });
+                        setIsMenuOpen(false);
+                      }}
+                      className="w-full rounded-[16px] border border-[#C5CBD8] bg-white px-6 py-4 text-center text-base font-medium text-[#111827] transition hover:bg-[#F8FAFF]"
+                    >
+                      Register / Login
+                    </Link>
+                    <Link
+                      href="/membership#plans"
+                      onClick={() => {
+                        trackEvent("view_plans", { placement: "mobile_header_primary" });
                         setIsMenuOpen(false);
                       }}
                       className="w-full rounded-[16px] bg-[#306EEC] px-6 py-4 text-center text-base font-medium text-white transition hover:bg-[#255ed2]"
                     >
-                      Start My Membership
-                    </Link>
-                    <Link
-                      href="/signin"
-                      onClick={() => setIsMenuOpen(false)}
-                      className="w-full rounded-[16px] border border-[#C5CBD8] bg-white px-6 py-4 text-center text-base font-medium text-[#111827] transition hover:bg-[#F8FAFF]"
-                    >
-                      Sign in
+                      Get Subscription
                     </Link>
                   </>
                 )}

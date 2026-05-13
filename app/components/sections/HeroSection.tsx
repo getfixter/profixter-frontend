@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getNextBooking } from "@/lib/booking-service";
 import { useAuth } from "@/lib/useAuth";
@@ -100,34 +99,30 @@ export default function HeroSection() {
     else window.location.href = "/#pick-day";
   };
 
-  const goToHowItWorks = () => {
-    const el = document.getElementById("how-it-works");
-    if (el) scrollToHash("#how-it-works");
-    else window.location.href = "/#how-it-works";
-  };
-
   const ctaConfig = useMemo(() => {
     if (subState === "sub") {
       return {
-        primaryLabel: "Book My Next Visit",
+        primaryLabel: "Book Visit",
         primaryAction: goToBooking,
-        secondaryLabel: "See Plans & Pricing",
+        secondaryLabel: "Get Subscription",
         secondaryAction: goToPlans,
       };
     }
     if (isAuthenticated) {
       return {
-        primaryLabel: "Start My Membership",
+        primaryLabel: "Get Subscription",
         primaryAction: goToPlans,
-        secondaryLabel: "Book My First Visit",
+        secondaryLabel: "Book Visit",
         secondaryAction: goToBooking,
       };
     }
     return {
-      primaryLabel: "Start My Membership",
+      primaryLabel: "Get Subscription",
       primaryAction: goToPlans,
-      secondaryLabel: "See Plans & Pricing",
-      secondaryAction: goToHowItWorks,
+      secondaryLabel: "Register / Login",
+      secondaryAction: () => {
+        window.location.href = "/signin";
+      },
     };
   }, [subState, isAuthenticated]);
 
@@ -288,6 +283,40 @@ export default function HeroSection() {
                 </div>
               ))}
             </div>
+
+            <div className="mt-7 rounded-[22px] border border-[#D4A574]/25 bg-white/[0.06] p-4 backdrop-blur-sm sm:p-5 lg:max-w-[620px]">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="max-w-[390px]">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#E8C49A]/85">
+                    Also Available
+                  </div>
+                  <div className="mt-2 text-[17px] font-extrabold leading-snug text-white sm:text-[18px]">
+                    Need a new roof or siding? We also handle full exterior projects.
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-[12px] font-semibold">
+                    <a href="/roofing" className="text-[#E8C49A]/80 underline-offset-2 hover:text-[#E8C49A] hover:underline transition-colors">Roofing</a>
+                    <a href="/siding" className="text-[#E8C49A]/80 underline-offset-2 hover:text-[#E8C49A] hover:underline transition-colors">Siding</a>
+                    <span className="text-white/55">50-year warranty</span>
+                    <span className="text-white/55">Financing available</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:w-[190px]">
+                  <a
+                    href="/roofing"
+                    className="inline-flex min-h-[48px] items-center justify-center rounded-[14px] bg-[#D4A574] px-4 text-[14px] font-extrabold text-[#111827] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
+                  >
+                    Roofing Estimate
+                  </a>
+                  <a
+                    href="/siding"
+                    className="inline-flex min-h-[48px] items-center justify-center rounded-[14px] border border-[#D4A574]/30 bg-[#D4A574]/10 px-4 text-[14px] font-extrabold text-[#E8C49A] transition hover:bg-[#D4A574]/18 hover:border-[#D4A574]/45"
+                  >
+                    Siding Estimate
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* ── RIGHT: Premium Visual Panel (desktop) ────── */}
@@ -444,6 +473,29 @@ export default function HeroSection() {
                   </svg>
                 </button>
               ))}
+            </div>
+
+            <div className="rounded-[20px] border border-[#D4A574]/20 bg-white/[0.04] p-4 backdrop-blur-sm">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E8C49A]/75">
+                Exterior Projects
+              </div>
+              <div className="mt-2 text-[14px] font-semibold leading-snug text-white/75">
+                Roof replacement and siding — licensed, insured, Long Island local.
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <a
+                  href="/roofing"
+                  className="flex items-center justify-center rounded-[11px] border border-[#D4A574]/28 bg-[#D4A574]/10 px-3 py-2 text-[12px] font-bold text-[#E8C49A] transition hover:bg-[#D4A574]/20"
+                >
+                  Roofing →
+                </a>
+                <a
+                  href="/siding"
+                  className="flex items-center justify-center rounded-[11px] border border-white/12 bg-white/[0.05] px-3 py-2 text-[12px] font-bold text-white/65 transition hover:bg-white/[0.10]"
+                >
+                  Siding →
+                </a>
+              </div>
             </div>
           </div>
 

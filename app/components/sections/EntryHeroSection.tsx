@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 
 const TRUST = [
   { label: "5.0 Google Rating", icon: "star" },
@@ -71,20 +72,20 @@ export default function EntryHeroSection() {
           ))}
         </div>
 
-        {/* Phone CTA */}
-        <a
-          href="tel:+16315991363"
-          className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-white/[0.05] px-6 py-3 hover:bg-white/[0.09] hover:border-white/20 transition-all"
-        >
-          <div className="w-7 h-7 rounded-full bg-[#306EEC]/20 flex items-center justify-center flex-shrink-0">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" stroke="#7BAEFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <span className="text-[14px] font-semibold text-white/60">
-            Questions? Call <span className="text-white/85 font-bold">631-599-1363</span>
-          </span>
-        </a>
+        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link
+            href="/membership#plans"
+            className="inline-flex min-h-[58px] items-center justify-center rounded-[18px] bg-[#306EEC] px-8 text-[16px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9]"
+          >
+            Get Subscription
+          </Link>
+          <a
+            href="tel:+16315991363"
+            className="inline-flex min-h-[58px] items-center justify-center rounded-[18px] border border-white/12 bg-white/[0.05] px-6 text-[15px] font-bold text-white/80 transition hover:border-white/20 hover:bg-white/[0.09]"
+          >
+            Call 631-599-1363
+          </a>
+        </div>
       </div>
 
       {/* Scroll cue */}
