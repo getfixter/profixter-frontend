@@ -135,6 +135,7 @@ export function PlanSection() {
   const [selectedPlan, setSelectedPlan] = useState<PlanKey>("plus");
   const [selectedCycle, setSelectedCycle] = useState<"monthly" | "annual">("monthly");
   const [planChanging, setPlanChanging] = useState(false);
+  const [planChangeConfirmOpen, setPlanChangeConfirmOpen] = useState(false);
 
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -260,7 +261,18 @@ export function PlanSection() {
     setSelectedPlan(subscription.subscriptionType as PlanKey);
     setSelectedCycle((subscription.billingCycle as "monthly" | "annual") || "monthly");
     setPlanChangeTarget(subscription);
+    setPlanChangeConfirmOpen(false);
     setError("");
+  };
+
+  const reviewPlanChange = () => {
+    if (!planChangeTarget) return;
+    if (planChangeType === "same") {
+      setError("You're already on this plan.");
+      return;
+    }
+    setError("");
+    setPlanChangeConfirmOpen(true);
   };
 
   const handlePlanChange = async () => {
@@ -279,8 +291,13 @@ export function PlanSection() {
       setSubscriptions((current) =>
         current.map((s) => (s._id === result.subscription._id ? result.subscription : s))
       );
-      setNotice(result.message || "Plan updated successfully.");
+      setNotice(
+        planChangeType === "downgrade"
+          ? "Your downgrade has been scheduled."
+          : "Your plan has been updated."
+      );
       setPlanChangeTarget(null);
+      setPlanChangeConfirmOpen(false);
     } catch (err: any) {
       setError(getSubscriptionActionErrorMessage(err));
     } finally {
@@ -307,6 +324,14 @@ export function PlanSection() {
     planChangeTarget
       ? classifyChange(planChangeTarget, selectedPlan, selectedCycle)
       : "same";
+  const planChangeCurrentPlan = planChangeTarget?.subscriptionType as PlanKey | undefined;
+  const planChangeCurrentPrice = planChangeTarget
+    ? planChangeTarget.planPrice || PLAN_PRICES[planChangeCurrentPlan || "plus"]
+    : null;
+  const planChangeNextPrice = PLAN_PRICES[selectedPlan];
+  const planChangeRenewalDate = formatDate(
+    planChangeTarget?.currentPeriodEnd || planChangeTarget?.nextPaymentDate || null
+  );
 
   return (
     <>
@@ -763,7 +788,11 @@ export function PlanSection() {
                   ? "Upgrade is applied immediately. A prorated charge will be made today for the difference."
                   : "Downgrade takes effect at your next billing date. Your current plan stays active until then."}
               </div>
-            ) : null}
+            ) : (
+              <div className="mb-5 rounded-[12px] border border-[#D7E0F5] bg-[#F8FAFF] p-3 text-sm font-semibold text-[#313234]">
+                You're already on this plan.
+              </div>
+            )}
 
             {error ? (
               <div className="mb-4 rounded-[12px] border border-[#FCA5A5]/60 bg-[#FEF2F2] px-4 py-3 text-sm font-semibold text-[#B91C1C]">
@@ -783,16 +812,95 @@ export function PlanSection() {
               <button
                 type="button"
                 disabled={planChanging || planChangeType === "same"}
-                onClick={handlePlanChange}
+                onClick={reviewPlanChange}
                 className="flex-1 rounded-[14px] bg-[#306EEC] py-3 font-semibold text-white transition hover:bg-[#2557C7] disabled:opacity-60"
+              >
+                {planChangeType === "upgrade"
+                  ? "Review Upgrade"
+                  : planChangeType === "downgrade"
+                    ? "Review Downgrade"
+                    : "You're already on this plan."}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {planChangeTarget && planChangeConfirmOpen ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4"
+          onClick={() => {
+            if (!planChanging) setPlanChangeConfirmOpen(false);
+          }}
+        >
+          <div
+            className="w-full max-w-lg rounded-[22px] bg-white p-6 shadow-[0_20px_100px_rgba(0,0,0,0.35)] sm:p-7"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 className="text-2xl font-extrabold text-[#313234]">
+              {planChangeType === "upgrade"
+                ? `You're upgrading from ${formatPlanName(planChangeCurrentPlan || "")} to ${formatPlanName(selectedPlan)}.`
+                : `You're scheduling a downgrade from ${formatPlanName(planChangeCurrentPlan || "")} to ${formatPlanName(selectedPlan)}.`}
+            </h3>
+
+            <div className="mt-5 grid gap-3 rounded-[16px] border border-[#D7E0F5] bg-[#F8FAFF] p-4 text-sm text-[#313234] sm:grid-cols-2">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">Current plan</div>
+                <div className="mt-1 font-semibold">{formatPlanName(planChangeCurrentPlan || "")}</div>
+                <div className="text-[#6A6D71]">
+                  ${planChangeCurrentPrice ?? 0}/month
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">New plan</div>
+                <div className="mt-1 font-semibold">{formatPlanName(selectedPlan)}</div>
+                <div className="text-[#6A6D71]">
+                  ${planChangeNextPrice}/month
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">Billing cycle</div>
+                <div className="mt-1 font-semibold capitalize">{selectedCycle}</div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">Effective timing</div>
+                <div className="mt-1 font-semibold">
+                  {planChangeType === "upgrade"
+                    ? "Starts immediately"
+                    : "Starts on your next billing date"}
+                </div>
+                {planChangeType === "downgrade" && planChangeRenewalDate ? (
+                  <div className="text-[#6A6D71]">{planChangeRenewalDate}</div>
+                ) : null}
+              </div>
+            </div>
+
+            <p className="mt-4 text-sm leading-relaxed text-[#6A6D71]">
+              {planChangeType === "upgrade"
+                ? "Stripe may charge a prorated amount today based on the time left in your billing period."
+                : "You'll keep your current plan until the end of this billing period."}
+            </p>
+
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                disabled={planChanging}
+                onClick={() => setPlanChangeConfirmOpen(false)}
+                className="h-[52px] rounded-[16px] border border-[#D1D5DB] bg-white font-extrabold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
+              >
+                Go Back
+              </button>
+              <button
+                type="button"
+                disabled={planChanging}
+                onClick={handlePlanChange}
+                className="h-[52px] rounded-[16px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
               >
                 {planChanging
                   ? "Updating..."
                   : planChangeType === "upgrade"
-                    ? "Upgrade now"
-                    : planChangeType === "downgrade"
-                      ? "Schedule downgrade"
-                      : "Select a different plan"}
+                    ? "Confirm Upgrade"
+                    : "Schedule Downgrade"}
               </button>
             </div>
           </div>

@@ -128,6 +128,19 @@ function getRetentionLine(planName: string): string {
   return "";
 }
 
+function getPlanDisplayLabel(plan: PlanType | null): string {
+  if (plan === "basic") return "Basic";
+  if (plan === "plus") return "Plus";
+  if (plan === "premium") return "Premium";
+  if (plan === "elite") return "Elite";
+  return "Current";
+}
+
+function getMonthlyPlanPrice(plan: PlanType | null): number {
+  const matched = plans.find((candidate) => normalizePlanType(candidate.name) === plan);
+  return matched ? toNumberPrice(matched.price) : 0;
+}
+
 function isManagedActiveStatus(status?: string | null): boolean {
   return ["active", "trialing"].includes(String(status || "").toLowerCase());
 }
@@ -506,10 +519,9 @@ export default function PlansSection() {
         [selectedAddress._id]: result.subscription,
       }));
       setActionMessage(
-        result.message ||
-          (kind === "upgrade"
-            ? "Your plan was updated successfully."
-            : "Your downgrade is scheduled for the next billing date.")
+        kind === "upgrade"
+          ? "Your plan has been updated."
+          : "Your downgrade has been scheduled."
       );
       setConfirmAction(null);
     } catch (error: any) {
@@ -560,6 +572,9 @@ export default function PlansSection() {
       action.kind === "scheduled" ||
       action.kind === "cancel-scheduled"
     ) {
+      if (action.kind === "active") {
+        setActionMessage("You're already on this plan.");
+      }
       return;
     }
 
@@ -588,6 +603,14 @@ export default function PlansSection() {
       ).slice(1)}`
     : null;
   const scheduledChangeDate = formatDate(selectedAddressSubscription?.pendingChangeEffectiveDate);
+  const selectedAddressCurrentPlan = normalizePlanType(
+    selectedAddressSubscription?.subscriptionType || ""
+  );
+  const selectedAddressRenewalDate = formatDate(
+    selectedAddressSubscription?.currentPeriodEnd ||
+      selectedAddressSubscription?.nextPaymentDate ||
+      null
+  );
 
   const touchStartX = useRef<number | null>(null);
   const touchLastX = useRef<number | null>(null);
@@ -1493,24 +1516,60 @@ export default function PlansSection() {
               </div>
 
               <h3 className="text-2xl font-extrabold text-[#313234]">
-                {confirmAction.kind === "upgrade" ? "Upgrade plan?" : "Schedule downgrade?"}
-              </h3>
-              <p className="mt-3 text-sm leading-relaxed text-[#6A6D71]">
                 {confirmAction.kind === "upgrade"
-                  ? "Your plan will update immediately and Stripe will charge the prorated difference now."
-                  : "Your current plan stays active until your next billing date. The lower plan will begin after that."}
-              </p>
+                  ? `You're upgrading from ${getPlanDisplayLabel(selectedAddressCurrentPlan)} to ${confirmAction.planName}.`
+                  : `You're scheduling a downgrade from ${getPlanDisplayLabel(selectedAddressCurrentPlan)} to ${confirmAction.planName}.`}
+              </h3>
 
               <div className="mt-5 rounded-[16px] border border-[#D7E0F5] bg-[#F8FAFF] p-4 text-left">
-                <div className="text-sm font-semibold text-[#313234]">
-                  {confirmAction.kind === "upgrade" ? "What happens next" : "Scheduled for renewal"}
-                </div>
-                <div className="mt-2 text-sm text-[#6A6D71]">
-                  {confirmAction.kind === "upgrade"
-                    ? `${confirmAction.planName} starts right away once Stripe confirms the change.`
-                    : `${confirmAction.planName} begins after your current billing period ends.`}
+                <div className="grid gap-3 text-sm text-[#313234] sm:grid-cols-2">
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">
+                      Current plan
+                    </div>
+                    <div className="mt-1 font-semibold">
+                      {getPlanDisplayLabel(selectedAddressCurrentPlan)}
+                    </div>
+                    <div className="text-[#6A6D71]">
+                      ${selectedAddressSubscription?.planPrice || getMonthlyPlanPrice(selectedAddressCurrentPlan)}/month
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">
+                      New plan
+                    </div>
+                    <div className="mt-1 font-semibold">{confirmAction.planName}</div>
+                    <div className="text-[#6A6D71]">
+                      ${getMonthlyPlanPrice(confirmAction.planType)}/month
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">
+                      Billing cycle
+                    </div>
+                    <div className="mt-1 font-semibold capitalize">{billing}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">
+                      Effective timing
+                    </div>
+                    <div className="mt-1 font-semibold">
+                      {confirmAction.kind === "upgrade"
+                        ? "Starts immediately"
+                        : "Starts on your next billing date"}
+                    </div>
+                    {confirmAction.kind === "downgrade" && selectedAddressRenewalDate ? (
+                      <div className="text-[#6A6D71]">{selectedAddressRenewalDate}</div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
+
+              <p className="mt-4 text-sm leading-relaxed text-[#6A6D71]">
+                {confirmAction.kind === "upgrade"
+                  ? "Stripe may charge a prorated amount today based on the time left in your billing period."
+                  : "You'll keep your current plan until the end of this billing period."}
+              </p>
 
               <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <button
@@ -1519,7 +1578,7 @@ export default function PlansSection() {
                   onClick={() => setConfirmAction(null)}
                   className="h-[52px] rounded-[16px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
                 >
-                  Keep current plan
+                  Go Back
                 </button>
                 <button
                   type="button"
@@ -1538,7 +1597,7 @@ export default function PlansSection() {
                       ? "Upgrading..."
                       : "Scheduling..."
                     : confirmAction.kind === "upgrade"
-                      ? "Upgrade now"
+                      ? "Confirm Upgrade"
                       : "Schedule downgrade"}
                 </button>
               </div>
