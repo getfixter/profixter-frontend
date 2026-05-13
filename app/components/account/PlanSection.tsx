@@ -8,6 +8,7 @@ import {
   reactivateSubscription,
   getMySubscriptions,
   createBillingPortalSession,
+  getSubscriptionActionErrorMessage,
   type ManagedSubscription,
 } from "@/lib/subscription-service";
 
@@ -163,7 +164,7 @@ export function PlanSection() {
         setSubscriptions(ranked);
       } catch (err: any) {
         if (!alive) return;
-        setError(err?.response?.data?.message || "Unable to load your plan details right now.");
+        setError(getSubscriptionActionErrorMessage(err));
       } finally {
         if (alive) setLoading(false);
       }
@@ -215,7 +216,7 @@ export function PlanSection() {
       setNotice(result.message || "Cancellation scheduled successfully.");
       setCancelTarget(null);
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to cancel your subscription right now.");
+      setError(getSubscriptionActionErrorMessage(err));
     } finally {
       setCanceling(false);
     }
@@ -235,7 +236,7 @@ export function PlanSection() {
       );
       setNotice(result.message || "Subscription reactivated successfully.");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to reactivate your subscription right now.");
+      setError(getSubscriptionActionErrorMessage(err));
     } finally {
       setReactivatingId(null);
     }
@@ -250,7 +251,7 @@ export function PlanSection() {
       });
       window.location.href = url;
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to open billing portal right now.");
+      setError(getSubscriptionActionErrorMessage(err));
       setBillingPortalLoadingId(null);
     }
   };
@@ -281,7 +282,7 @@ export function PlanSection() {
       setNotice(result.message || "Plan updated successfully.");
       setPlanChangeTarget(null);
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to change plan right now.");
+      setError(getSubscriptionActionErrorMessage(err));
     } finally {
       setPlanChanging(false);
     }

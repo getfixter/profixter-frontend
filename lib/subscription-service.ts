@@ -50,6 +50,51 @@ export type ManagedSubscription = {
   stripeManaged?: boolean;
 };
 
+type SubscriptionActionErrorShape = {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+      error?: string;
+    };
+  };
+  message?: string;
+};
+
+export function getSubscriptionActionErrorMessage(error: unknown): string {
+  const candidate = error as SubscriptionActionErrorShape;
+  const status = Number(candidate?.response?.status || 0);
+  const backendMessage = String(
+    candidate?.response?.data?.message ||
+      candidate?.response?.data?.error ||
+      candidate?.message ||
+      ""
+  ).toLowerCase();
+
+  if (
+    status === 401 ||
+    backendMessage.includes("no token") ||
+    backendMessage.includes("invalid token") ||
+    backendMessage.includes("jwt")
+  ) {
+    return "Please log in or create an account to continue.";
+  }
+
+  if (status === 402) {
+    return "Your payment needs attention. Please update your payment method.";
+  }
+
+  if (status === 409) {
+    return "This address already has an active membership. Refresh your account or contact support.";
+  }
+
+  if (status === 502 || status === 503 || status === 504) {
+    return "Billing is temporarily unavailable. Please call (631) 599-1363 or try again in a few minutes.";
+  }
+
+  return "Something went wrong. Please try again or call (631) 599-1363.";
+}
+
 export async function getMySubscriptions(): Promise<{ subscriptions: ManagedSubscription[] }> {
   const response = await API.get<{ subscriptions: ManagedSubscription[] }>("/api/subscriptions/my");
   return response.data;

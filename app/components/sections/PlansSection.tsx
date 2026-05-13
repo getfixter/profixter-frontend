@@ -9,6 +9,7 @@ import type { PlanType } from "@/lib/stripe-links";
 import { trackInitiateCheckout } from "@/lib/analytics";
 import {
   changeSubscriptionPlan,
+  getSubscriptionActionErrorMessage,
   getManagedSubscriptionForAddress,
   type BillingCycle as ManagedBillingCycle,
   type ManagedSubscription,
@@ -183,6 +184,53 @@ export default function PlansSection() {
     }
   }, [defaultAddress, selectedAddressId]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const pendingRaw = sessionStorage.getItem("pendingCheckoutPlan");
+    let pending: {
+      plan?: string;
+      billingCycle?: BillingCycle;
+      planName?: string;
+      addressId?: string;
+    } | null = null;
+
+    if (pendingRaw) {
+      try {
+        pending = JSON.parse(pendingRaw);
+      } catch {
+        pending = null;
+      }
+    }
+
+    const requestedPlan = normalizePlanType(params.get("plan") || pending?.plan || "");
+    const requestedBilling = String(
+      params.get("billingCycle") || pending?.billingCycle || ""
+    ).toLowerCase();
+    const requestedAddressId = params.get("addressId") || pending?.addressId || "";
+
+    if (requestedBilling === "monthly" || requestedBilling === "annual") {
+      setBilling(requestedBilling);
+    }
+
+    if (requestedPlan) {
+      const matchingPlanIndex = plans.findIndex(
+        (candidate) => normalizePlanType(candidate.name) === requestedPlan
+      );
+      if (matchingPlanIndex >= 0) {
+        setCurrentSlide(matchingPlanIndex);
+      }
+    }
+
+    if (
+      requestedAddressId &&
+      addresses.some((address) => String(address._id) === String(requestedAddressId))
+    ) {
+      setSelectedAddressId(String(requestedAddressId));
+    }
+  }, [addresses]);
+
   const checkAddressState = async (addressId: string) => {
     if (!token) return;
     setCheckingAddr(true);
@@ -212,11 +260,13 @@ export default function PlansSection() {
     cycle: BillingCycle,
     planName: string
   ) => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || "https://api.profixter.com";
+    const apiBase = String(API.defaults.baseURL || process.env.NEXT_PUBLIC_API_URL || "");
     const authToken = token || localStorage.getItem("token");
     const endpointPath = "/api/stripe/checkout/create-checkout-session";
     const endpointUrl = `${apiBase.replace(/\/$/, "")}${endpointPath}`;
-    const preservePlanUrl = `/membership?plan=${encodeURIComponent(plan)}&billingCycle=${encodeURIComponent(cycle)}`;
+    const preservePlanUrl = `/membership?plan=${encodeURIComponent(plan)}&billingCycle=${encodeURIComponent(
+      cycle
+    )}&addressId=${encodeURIComponent(addressId)}`;
 
     if (!authToken) {
       console.error("[checkout] Missing auth token before checkout request", {
@@ -229,7 +279,7 @@ export default function PlansSection() {
       });
       sessionStorage.setItem(
         "pendingCheckoutPlan",
-        JSON.stringify({ plan, billingCycle: cycle, planName })
+        JSON.stringify({ plan, billingCycle: cycle, planName, addressId })
       );
       window.location.href = `/signin?redirect=${encodeURIComponent(preservePlanUrl)}`;
       return;
@@ -273,7 +323,9 @@ export default function PlansSection() {
       let { status, data } = await requestCheckoutSession();
 
       if (status === 409 && data?.code === "ADDRESS_ALREADY_SUBSCRIBED") {
-        setActionError("This address already has an active plan.");
+        setActionError(
+          "This address already has an active membership. Refresh your account or contact support."
+        );
         setAddressSubscriptionMap((map) => ({ ...map, [addressId]: map[addressId] || null }));
         return;
       }
@@ -316,17 +368,19 @@ export default function PlansSection() {
       if (status === 401) {
         sessionStorage.setItem(
           "pendingCheckoutPlan",
-          JSON.stringify({ plan, billingCycle: cycle, planName })
+          JSON.stringify({ plan, billingCycle: cycle, planName, addressId })
         );
         window.location.href = `/signin?redirect=${encodeURIComponent(preservePlanUrl)}`;
         return;
       }
 
       setActionError(
-        status >= 400
-          ? "We could not open secure checkout right now. Please try again in a moment."
-          : data?.message ||
-          "We could not open secure checkout right now. Please try again in a moment."
+        getSubscriptionActionErrorMessage({
+          response: {
+            status,
+            data,
+          },
+        })
       );
     } catch (error: any) {
       console.error("[checkout] Checkout request crashed", {
@@ -339,9 +393,7 @@ export default function PlansSection() {
         addressId,
         billingCycle: cycle,
       });
-      setActionError(
-        "We could not open secure checkout right now. Please try again in a moment."
-      );
+      setActionError(getSubscriptionActionErrorMessage(error));
     } finally {
       setActionLoadingPlan((current) => (current === planName ? null : current));
     }
@@ -461,9 +513,7 @@ export default function PlansSection() {
       );
       setConfirmAction(null);
     } catch (error: any) {
-      setActionError(
-        error?.response?.data?.message || error?.message || "Unable to update your plan right now."
-      );
+      setActionError(getSubscriptionActionErrorMessage(error));
     } finally {
       setActionLoadingPlan(null);
     }
