@@ -187,15 +187,6 @@ function MembershipCrossSell() {
               <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </Link>
-          <Link
-            href="/included"
-            className="inline-flex items-center justify-center gap-2 text-[13px] font-semibold text-white/40 hover:text-white/65 transition-colors"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            See what's included →
-          </Link>
         </div>
       </div>
     </section>

@@ -27,7 +27,6 @@ export default function Header() {
       { href: "/membership", label: "Plans" },
       { href: "/roofing", label: "Roofing" },
       { href: "/siding", label: "Siding" },
-      { href: "/included", label: "What's Included" },
       ...(isAuthenticated ? [{ href: "/account", label: "Account" }] : []),
     ],
     [isAuthenticated]

@@ -7,21 +7,17 @@ import axios from "axios";
 type Booking = {
   _id: string;
   bookingNumber?: string;
-
-  date: string; // ISO
+  date: string;
   status: string;
   service?: string;
   note?: string;
-
   phone?: string;
-
   address?: string;
   city?: string;
   state?: string;
   zip?: string;
-
   subscription?: string;
-  images?: string[]; // URLs
+  images?: string[];
 };
 
 type MeResponse = {
@@ -31,6 +27,8 @@ type MeResponse = {
   subscription?: string | null;
 };
 
+type FilterKey = "all" | "active" | "completed" | "cancelled";
+
 function normalizeStatus(status: string) {
   return String(status || "").trim().toLowerCase();
 }
@@ -38,6 +36,20 @@ function normalizeStatus(status: string) {
 function canCancel(status: string) {
   const s = normalizeStatus(status);
   return s === "pending" || s === "confirmed";
+}
+
+function isActiveStatus(status: string) {
+  const s = normalizeStatus(status);
+  return s === "pending" || s === "confirmed" || s === "in-progress";
+}
+
+function isCompletedStatus(status: string) {
+  return normalizeStatus(status) === "completed";
+}
+
+function isCancelledStatus(status: string) {
+  const s = normalizeStatus(status);
+  return s === "cancelled" || s === "canceled";
 }
 
 function statusBadge(status: string) {
@@ -51,6 +63,12 @@ function statusBadge(status: string) {
     canceled: "bg-[#FFF1F2] text-[#9F1239] border-[#FECDD3]",
   };
   return map[s] || "bg-[#F8FAFF] text-[#475569] border-[#E2E8F0]";
+}
+
+function statusLabel(status: string) {
+  const s = normalizeStatus(status);
+  if (s === "in-progress") return "In Progress";
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function formatNY(iso: string) {
@@ -86,13 +104,13 @@ function Gallery({ images = [] }: { images?: string[] }) {
 
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {safe.slice(0, 9).map((src, i) => (
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+        {safe.slice(0, 8).map((src, i) => (
           <button
             key={src + i}
             type="button"
             onClick={() => setOpen(src)}
-            className="relative w-full aspect-square rounded-[12px] overflow-hidden border border-[#C5CBD8] bg-white active:scale-[0.98] transition"
+            className="relative w-full aspect-square rounded-[10px] overflow-hidden border border-[#E0E6F5] bg-white active:scale-[0.97] transition"
             title="View photo"
           >
             <Image
@@ -100,7 +118,7 @@ function Gallery({ images = [] }: { images?: string[] }) {
               alt={`Photo ${i + 1}`}
               fill
               className="object-cover"
-              sizes="(max-width: 640px) 50vw, 33vw"
+              sizes="(max-width: 640px) 33vw, 25vw"
             />
           </button>
         ))}
@@ -108,22 +126,22 @@ function Gallery({ images = [] }: { images?: string[] }) {
 
       {open && (
         <div
-          className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center p-3 sm:p-6"
+          className="fixed inset-0 z-[9999] bg-black/75 flex items-center justify-center p-3 sm:p-6"
           onClick={() => setOpen(null)}
         >
           <div
-            className="relative w-full max-w-[920px] bg-black rounded-[16px] overflow-hidden"
+            className="relative w-full max-w-[900px] bg-black rounded-[16px] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative w-full h-[70vh] bg-black">
+            <div className="relative w-full h-[72vh]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={open} alt="Photo" className="w-full h-full object-contain" />
             </div>
-            <div className="p-3 flex justify-end">
+            <div className="p-3 flex justify-end bg-black/60">
               <button
                 type="button"
                 onClick={() => setOpen(null)}
-                className="px-4 py-2 rounded-[12px] bg-white text-[#313234] font-semibold"
+                className="px-4 py-2 rounded-[10px] bg-white text-[#313234] font-semibold text-sm"
               >
                 Close
               </button>
@@ -139,12 +157,14 @@ function CancelModal({
   open,
   booking,
   loading,
+  error,
   onClose,
   onConfirm,
 }: {
   open: boolean;
   booking: Booking | null;
   loading: boolean;
+  error: string;
   onClose: () => void;
   onConfirm: () => void;
 }) {
@@ -152,18 +172,21 @@ function CancelModal({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[9999] bg-black/55 flex items-end sm:items-center justify-center sm:p-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[460px] bg-white rounded-[16px] border border-[#C5CBD8] p-5 sm:p-6"
+        className="w-full sm:max-w-[460px] bg-white rounded-t-[24px] sm:rounded-[20px] border border-[#E0E6F5] p-5 sm:p-6"
         onClick={(e) => e.stopPropagation()}
-        style={{ boxShadow: "0px 0px 200px 0px rgba(0,0,0,0.16)" }}
+        style={{ boxShadow: "0 -8px 60px rgba(0,0,0,0.18)" }}
       >
-        <div className="text-xl font-semibold text-[#313234]">Cancel booking?</div>
-        <div className="mt-2 text-sm text-[#6A6D71]">
-          This will cancel your appointment.
-          <div className="mt-2">
+        <div className="flex justify-center mb-4 sm:hidden">
+          <div className="w-10 h-1 rounded-full bg-[#E2E8F0]" />
+        </div>
+
+        <div className="text-[18px] font-bold text-[#313234] mb-1">Cancel this booking?</div>
+        <div className="text-[14px] text-[#6A6D71] mb-4">
+          <div className="mt-1.5">
             <span className="font-semibold text-[#313234]">When:</span>{" "}
             {formatNY(booking.date)}
           </div>
@@ -173,28 +196,34 @@ function CancelModal({
           </div>
         </div>
 
-        <div className="mt-5 flex gap-3">
+        {error && (
+          <div className="mb-3 rounded-[12px] bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-[13px]">
+            {error}
+          </div>
+        )}
+
+        <div className="flex gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-3 rounded-[14px] border border-[#C5CBD8] bg-white text-[#313234] font-semibold hover:bg-[#f8f9ff] transition"
             disabled={loading}
+            className="flex-1 py-3 rounded-[14px] border border-[#E0E6F5] bg-white text-[#313234] font-semibold text-[14px] hover:bg-[#F8FAFF] transition disabled:opacity-60"
           >
             Keep booking
           </button>
-
           <button
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className="w-full py-3 rounded-[14px] bg-[#ef4444] text-white font-semibold hover:bg-[#dc2626] transition disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex-1 py-3 rounded-[14px] bg-red-500 text-white font-semibold text-[14px] hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? "Canceling..." : "Yes, cancel"}
+            {loading ? "Canceling…" : "Yes, cancel"}
           </button>
         </div>
 
-        <div className="mt-3 text-xs text-[#6A6D71]">
-          Need help? Call 631-599-1363.
+        <div className="mt-3 text-[12px] text-[#9CA3AF] text-center">
+          Need help? Call{" "}
+          <a className="text-[#306EEC] font-semibold" href="tel:631-599-1363">631-599-1363</a>
         </div>
       </div>
     </div>
@@ -202,13 +231,11 @@ function CancelModal({
 }
 
 function BookingCard({
-  title,
   booking,
   me,
   onCancelClick,
   cancelLoading,
 }: {
-  title: string;
   booking: Booking;
   me: MeResponse | null;
   onCancelClick: (b: Booking) => void;
@@ -216,113 +243,146 @@ function BookingCard({
 }) {
   const addr = formatAddress(booking);
   const phone = booking.phone || me?.phone;
-
   const showCancel = canCancel(booking.status);
+  const bookingId = booking.bookingNumber || booking._id.slice(-6).toUpperCase();
 
   return (
-    <div
-      className="bg-[#EEF2FF] border border-[#C5CBD8] rounded-[14px] p-4 sm:p-5"
-      style={{ boxShadow: "0px 0px 200px 0px rgba(0,0,0,0.06)" }}
-    >
-      <div className="flex items-start justify-between gap-3">
+    <div className="bg-white border border-[#E0E6F5] rounded-[16px] overflow-hidden transition hover:border-[#C7D9FF]">
+      {/* Card header */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#F0F4FF]">
         <div>
-          <div className="font-semibold text-[#313234]">
-            {title} #{booking.bookingNumber || booking._id.slice(-6)}
+          <div className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">
+            Booking #{bookingId}
           </div>
-          <div className="text-sm text-[#6A6D71] mt-1">{formatNY(booking.date)}</div>
+          <div className="text-[14px] font-semibold text-[#313234] mt-0.5">
+            {formatNY(booking.date)}
+          </div>
+        </div>
+        <span className={`px-2.5 py-1 rounded-[10px] text-[11px] font-bold border ${statusBadge(booking.status)}`}>
+          {statusLabel(booking.status)}
+        </span>
+      </div>
+
+      {/* Card body */}
+      <div className="p-4 space-y-2.5">
+        {/* Service */}
+        <div className="flex items-start gap-2.5">
+          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#EEF2FF] flex items-center justify-center mt-0.5">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#306EEC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+            </svg>
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-[0.08em]">Service</div>
+            <div className="text-[13px] font-semibold text-[#313234] leading-snug">{booking.service || "—"}</div>
+          </div>
         </div>
 
-        <div className="flex flex-col items-end gap-2">
-          <span
-            className={`shrink-0 px-3 py-1 rounded-[12px] text-xs font-semibold border ${statusBadge(
-              booking.status
-            )}`}
-          >
-            {booking.status}
-          </span>
+        {/* Address */}
+        {addr && (
+          <div className="flex items-start gap-2.5">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#EEF2FF] flex items-center justify-center mt-0.5">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#306EEC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+            </div>
+            <div>
+              <div className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-[0.08em]">Address</div>
+              <div className="text-[13px] text-[#313234] leading-snug">{addr}</div>
+            </div>
+          </div>
+        )}
 
+        {/* Note */}
+        {booking.note && (
+          <div className="flex items-start gap-2.5">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#EEF2FF] flex items-center justify-center mt-0.5">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#306EEC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+            </div>
+            <div>
+              <div className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-[0.08em]">Note</div>
+              <div className="text-[13px] text-[#313234] whitespace-pre-wrap leading-snug">{booking.note}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Photos */}
+        {!!booking.images?.length && (
+          <div>
+            <div className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-[0.08em] mb-2">
+              Photos ({booking.images.length})
+            </div>
+            <Gallery images={booking.images} />
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-1">
           {showCancel && (
             <button
               type="button"
               onClick={() => onCancelClick(booking)}
               disabled={cancelLoading}
-              className="px-3 py-2 rounded-[12px] text-xs font-semibold border border-[#ef4444] text-[#ef4444] bg-white hover:bg-red-50 transition disabled:opacity-60 disabled:cursor-not-allowed"
-              title="Cancel booking"
+              className="flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {cancelLoading ? "..." : "Cancel"}
+              {cancelLoading ? "…" : "Cancel booking"}
             </button>
+          )}
+          {isCompletedStatus(booking.status) && (
+            <>
+              <a
+                href="https://buy.stripe.com/eVq8wO3W98O03NL3ASawo00"
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold border border-[#E0E6F5] text-[#313234] bg-white hover:bg-[#F8FAFF] transition text-center"
+              >
+                Tip ❤️
+              </a>
+              <a
+                href="https://maps.app.goo.gl/Zgf97uUDCh6HBK5o8"
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold bg-[#306EEC] text-white hover:bg-[#2557C7] transition text-center"
+              >
+                Review ⭐
+              </a>
+            </>
+          )}
+          {phone && (
+            <a
+              href={`tel:${sanitizeTel(phone)}`}
+              className="flex-shrink-0 w-10 h-10 rounded-[12px] border border-[#E0E6F5] bg-white flex items-center justify-center hover:bg-[#F8FAFF] transition"
+              title={`Call ${phone}`}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#306EEC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 3h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8 10.91a16 16 0 0 0 6 6l1.27-.85a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 18.09z" />
+              </svg>
+            </a>
           )}
         </div>
       </div>
-
-      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="bg-white rounded-[12px] border border-[#C5CBD8] p-3">
-          <div className="text-[11px] font-semibold text-[#6A6D71] uppercase">
-            Service
-          </div>
-          <div className="font-semibold text-[#313234] leading-snug">
-            {booking.service || "—"}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-[12px] border border-[#C5CBD8] p-3">
-          <div className="text-[11px] font-semibold text-[#6A6D71] uppercase">
-            Plan
-          </div>
-          <div className="font-semibold text-[#313234] capitalize">
-            {(booking.subscription || me?.subscription || "—") as any}
-          </div>
-        </div>
-      </div>
-
-      {addr && (
-        <div className="mt-3 bg-white rounded-[12px] border border-[#C5CBD8] p-3">
-          <div className="text-[11px] font-semibold text-[#6A6D71] uppercase">
-            Address
-          </div>
-          <div className="text-sm text-[#313234] mt-1 leading-snug">{addr}</div>
-        </div>
-      )}
-
-      {booking.note && (
-        <div className="mt-3 bg-white rounded-[12px] border border-[#C5CBD8] p-3">
-          <div className="text-[11px] font-semibold text-[#6A6D71] uppercase">
-            Note
-          </div>
-          <div className="text-sm text-[#313234] mt-1 whitespace-pre-wrap leading-snug">
-            {booking.note}
-          </div>
-        </div>
-      )}
-
-      {!!booking.images?.length && (
-        <div className="mt-3 bg-white rounded-[12px] border border-[#C5CBD8] p-3">
-          <div className="text-[11px] font-semibold text-[#6A6D71] uppercase mb-2">
-            Photos ({booking.images.length})
-          </div>
-          <Gallery images={booking.images} />
-        </div>
-      )}
-
-      {phone && (
-        <div className="mt-3 text-sm text-[#6A6D71]">
-          Need help? Call{" "}
-          <a className="text-[#306EEC] font-semibold" href={`tel:${sanitizeTel(phone)}`}>
-            {phone}
-          </a>
-        </div>
-      )}
     </div>
   );
 }
+
+const FILTER_TABS: { key: FilterKey; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "active", label: "Active" },
+  { key: "completed", label: "Completed" },
+  { key: "cancelled", label: "Cancelled" },
+];
 
 export default function BookingsSection() {
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState<MeResponse | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [error, setError] = useState("");
+  const [filter, setFilter] = useState<FilterKey>("all");
 
-  // cancel state
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelError, setCancelError] = useState("");
@@ -330,7 +390,7 @@ export default function BookingsSection() {
   const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
 
   const authHeaders = () => {
-    const token = localStorage.getItem("token");
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     return token ? { Authorization: `Bearer ${token}` } : null;
   };
 
@@ -347,12 +407,22 @@ export default function BookingsSection() {
         setLoading(true);
         setError("");
 
-        const meRes = await axios.get(`${apiBase}/api/auth/me`, { headers });
+        const [meRes, bRes] = await Promise.all([
+          axios.get(`${apiBase}/api/auth/me`, { headers }),
+          axios.get(`${apiBase}/api/bookings`, { headers }),
+        ]);
+
         setMe(meRes.data || null);
 
-        const bRes = await axios.get(`${apiBase}/api/bookings`, { headers });
-        const list: Booking[] = Array.isArray(bRes.data) ? bRes.data : bRes.data?.bookings || [];
-        setBookings(list);
+        const list: Booking[] = Array.isArray(bRes.data)
+          ? bRes.data
+          : bRes.data?.bookings || [];
+
+        // Sort newest first
+        const sorted = [...list].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        setBookings(sorted);
       } catch (e) {
         console.error("Bookings load failed:", e);
         setError("Could not load your bookings. Please try again.");
@@ -362,20 +432,19 @@ export default function BookingsSection() {
     })();
   }, [apiBase]);
 
-  const { active, lastCompleted } = useMemo(() => {
-    const sorted = [...bookings].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+  const filtered = useMemo(() => {
+    if (filter === "active") return bookings.filter((b) => isActiveStatus(b.status));
+    if (filter === "completed") return bookings.filter((b) => isCompletedStatus(b.status));
+    if (filter === "cancelled") return bookings.filter((b) => isCancelledStatus(b.status));
+    return bookings;
+  }, [bookings, filter]);
 
-    const activeStatuses = new Set(["pending", "confirmed", "in-progress"]);
-    const activeList = sorted
-      .filter((b) => activeStatuses.has(normalizeStatus(b.status)))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    const completed = sorted.find((b) => normalizeStatus(b.status) === "completed") || null;
-
-    return { active: activeList, lastCompleted: completed };
-  }, [bookings]);
+  const counts = useMemo(() => ({
+    all: bookings.length,
+    active: bookings.filter((b) => isActiveStatus(b.status)).length,
+    completed: bookings.filter((b) => isCompletedStatus(b.status)).length,
+    cancelled: bookings.filter((b) => isCancelledStatus(b.status)).length,
+  }), [bookings]);
 
   const openCancel = (b: Booking) => {
     setCancelError("");
@@ -395,27 +464,17 @@ export default function BookingsSection() {
     setCancelError("");
 
     try {
-      // ✅ uses same endpoint style you already use elsewhere
-      await axios.post(`${apiBase}/api/bookings/cancel/${cancelTarget._id}`, null, {
-        headers,
-      });
+      await axios.post(`${apiBase}/api/bookings/cancel/${cancelTarget._id}`, null, { headers });
 
-      // ✅ update status in UI
       setBookings((prev) =>
         prev.map((b) =>
-          b._id === cancelTarget._id
-            ? { ...b, status: "cancelled" }
-            : b
+          b._id === cancelTarget._id ? { ...b, status: "cancelled" } : b
         )
       );
-
       setCancelTarget(null);
     } catch (e: any) {
-      console.error("Cancel failed:", e);
       const msg =
-        e?.response?.data?.message ||
-        e?.message ||
-        "Failed to cancel booking. Please call us.";
+        e?.response?.data?.message || e?.message || "Failed to cancel. Please call us.";
       setCancelError(msg);
     } finally {
       setCancelLoading(false);
@@ -424,187 +483,143 @@ export default function BookingsSection() {
 
   return (
     <div className="w-full">
-      <div className="flex items-start justify-between gap-4 mb-5 sm:mb-8">
-        <h2 className="text-xl sm:text-2xl font-semibold text-[#313234]">My bookings</h2>
+      {/* Header */}
+      <div className="mb-5">
+        <h2 className="text-[22px] font-bold text-[#313234]">My Bookings</h2>
+        <p className="text-[13px] text-[#6A6D71] mt-0.5">Your full visit history</p>
       </div>
 
-      <div
-        className="w-full bg-[#EEF2FF] border border-[#C5CBD8] rounded-[14px] p-4 sm:p-6 mb-6"
-        style={{ boxShadow: "0px 0px 200px 0px rgba(0,0,0,0.08)" }}
-      >
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <div className="text-[#313234] font-semibold text-base sm:text-lg">
-              Questions or changes?
-            </div>
-            <div className="text-[#6A6D71] text-sm sm:text-base">
-              Call{" "}
-              <a className="text-[#306EEC] font-semibold" href="tel:631-599-1363">
-                631-599-1363
-              </a>{" "}
-              and we’ll help right away.
-            </div>
-            <div className="mt-2 text-xs text-[#6A6D71]">
-              Thank you for supporting your Fixter tech — tips and reviews help a lot.
-            </div>
+      {/* CTA strip */}
+      <div className="bg-white border border-[#E0E6F5] rounded-[16px] p-4 mb-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+        <div>
+          <div className="text-[14px] font-semibold text-[#313234]">Questions or changes?</div>
+          <div className="text-[13px] text-[#6A6D71] mt-0.5">
+            Call{" "}
+            <a className="text-[#306EEC] font-semibold" href="tel:631-599-1363">
+              631-599-1363
+            </a>{" "}
+            — we'll help right away.
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 sm:flex gap-3">
-            <a
-              href="https://buy.stripe.com/eVq8wO3W98O03NL3ASawo00"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center px-3 sm:px-4 py-3 rounded-[14px] bg-white border border-[#C5CBD8] text-[#313234] font-semibold hover:bg-[#f8f9ff] transition text-sm"
-            >
-              Leave a tip ❤️
-            </a>
-            <a
-              href="https://maps.app.goo.gl/Zgf97uUDCh6HBK5o8"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center px-3 sm:px-4 py-3 rounded-[14px] bg-[#306EEC] text-white font-semibold hover:bg-[#2557C7] transition text-sm"
-            >
-              Google review ⭐
-            </a>
-          </div>
+        <div className="flex gap-2.5 flex-shrink-0">
+          <a
+            href="https://buy.stripe.com/eVq8wO3W98O03NL3ASawo00"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center px-4 py-2.5 rounded-[12px] bg-white border border-[#E0E6F5] text-[#313234] font-semibold text-[13px] hover:bg-[#F8FAFF] transition"
+          >
+            Leave a tip ❤️
+          </a>
+          <a
+            href="https://maps.app.goo.gl/Zgf97uUDCh6HBK5o8"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center px-4 py-2.5 rounded-[12px] bg-[#306EEC] text-white font-semibold text-[13px] hover:bg-[#2557C7] transition"
+          >
+            Google review ⭐
+          </a>
         </div>
       </div>
 
-      {loading && <div className="text-[#6A6D71] text-sm">Loading your bookings...</div>}
+      {/* Status filter tabs */}
+      {!loading && !error && (
+        <div className="flex gap-1.5 mb-4 overflow-x-auto scrollbar-none pb-0.5">
+          {FILTER_TABS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setFilter(t.key)}
+              className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-[13px] font-semibold transition ${
+                filter === t.key
+                  ? "bg-[#306EEC] text-white"
+                  : "bg-white border border-[#E0E6F5] text-[#6A6D71] hover:text-[#313234] hover:border-[#C7D9FF]"
+              }`}
+            >
+              {t.label}
+              <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-[6px] ${
+                filter === t.key ? "bg-white/20 text-white" : "bg-[#EEF2FF] text-[#6A6D71]"
+              }`}>
+                {counts[t.key]}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* States */}
+      {loading && (
+        <div className="flex items-center gap-3 py-12 justify-center text-[#6A6D71]">
+          <div className="w-5 h-5 border-2 border-[#306EEC] border-t-transparent rounded-full animate-spin" />
+          <span className="text-[14px]">Loading your bookings…</span>
+        </div>
+      )}
 
       {!loading && error && (
-        <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg p-3">
+        <div className="bg-red-50 border border-red-200 rounded-[14px] p-4 text-[14px] text-red-700">
           {error}
         </div>
       )}
 
-      {!loading && !error && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
-          <div
-            className="bg-white border border-[#C5CBD8] rounded-[14px] p-4 sm:p-6"
-            style={{ boxShadow: "0px 0px 200px 0px rgba(0,0,0,0.08)" }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg sm:text-xl font-semibold text-[#313234]">
-                Active bookings
-              </h3>
-              <span className="text-sm text-[#6A6D71]">{active.length} total</span>
-            </div>
-
-            {active.length === 0 ? (
-              <div className="text-[#6A6D71] text-sm">No scheduled visits right now.</div>
-            ) : (
-              <div className="space-y-4">
-                {active.map((b) => (
-                  <BookingCard
-                    key={b._id}
-                    title="Booking"
-                    booking={b}
-                    me={me}
-                    onCancelClick={openCancel}
-                    cancelLoading={cancelLoading && cancelTarget?._id === b._id}
-                  />
-                ))}
-              </div>
-            )}
+      {!loading && !error && filtered.length === 0 && (
+        <div className="bg-white border border-[#E0E6F5] rounded-[16px] p-8 text-center">
+          <div className="text-[32px] mb-3">📅</div>
+          <div className="text-[15px] font-semibold text-[#313234] mb-1">
+            {filter === "all" ? "No bookings yet" : `No ${filter} bookings`}
           </div>
-
-          <div
-            className="bg-white border border-[#C5CBD8] rounded-[14px] p-4 sm:p-6"
-            style={{ boxShadow: "0px 0px 200px 0px rgba(0,0,0,0.08)" }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg sm:text-xl font-semibold text-[#313234]">
-                Last completed
-              </h3>
-              {lastCompleted && (
-                <span
-                  className={`px-3 py-1 rounded-[12px] text-xs font-semibold border ${statusBadge(
-                    lastCompleted.status
-                  )}`}
-                >
-                  {lastCompleted.status}
-                </span>
-              )}
-            </div>
-
-            {!lastCompleted ? (
-              <div className="text-[#6A6D71] text-sm">No completed bookings yet.</div>
-            ) : (
-              <div className="space-y-3">
-                <BookingCard
-                  title="Booking"
-                  booking={lastCompleted}
-                  me={me}
-                  onCancelClick={openCancel}
-                  cancelLoading={false}
-                />
-
-                <div className="grid grid-cols-2 gap-3">
-                  <a
-                    href="https://buy.stripe.com/eVq8wO3W98O03NL3ASawo00"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center px-3 py-3 rounded-[14px] bg-white border border-[#C5CBD8] text-[#313234] font-semibold hover:bg-[#f8f9ff] transition text-sm"
-                  >
-                    Tip ❤️
-                  </a>
-                  <a
-                    href="https://maps.app.goo.gl/Zgf97uUDCh6HBK5o8"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center px-3 py-3 rounded-[14px] bg-[#306EEC] text-white font-semibold hover:bg-[#2557C7] transition text-sm"
-                  >
-                    Review ⭐
-                  </a>
-                </div>
-
-                <div className="text-xs text-[#6A6D71]">
-                  Thank you for choosing Mr. Fixter — we appreciate you.
-                </div>
-              </div>
-            )}
+          <div className="text-[13px] text-[#6A6D71]">
+            {filter === "all"
+              ? "Your visit history will appear here once you book."
+              : `Switch to \"All\" to see your full history.`}
           </div>
+          {filter === "all" && (
+            <a
+              href="/membership"
+              className="inline-flex items-center justify-center mt-4 px-5 py-2.5 rounded-[12px] bg-[#306EEC] text-white font-semibold text-[13px] hover:bg-[#2557C7] transition"
+            >
+              Book a visit
+            </a>
+          )}
         </div>
       )}
 
-      {!loading && !error && (
-        <div className="mt-6 text-sm text-[#6A6D71]">
+      {!loading && !error && filtered.length > 0 && (
+        <div className="space-y-3">
+          {filtered.map((b) => (
+            <BookingCard
+              key={b._id}
+              booking={b}
+              me={me}
+              onCancelClick={openCancel}
+              cancelLoading={cancelLoading && cancelTarget?._id === b._id}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Book new visit footer */}
+      {!loading && !error && bookings.length > 0 && (
+        <div className="mt-5 text-[13px] text-[#6A6D71] text-center">
           Need a new visit?{" "}
-          <a className="text-[#306EEC] font-semibold" href="/membership">
-            Book your next visit
-          </a>{" "}
-          on the membership page.
+          <a className="text-[#306EEC] font-semibold hover:underline" href="/membership">
+            Book on the membership page →
+          </a>
         </div>
       )}
 
-      {/* Cancel confirm modal */}
       <CancelModal
         open={!!cancelTarget}
         booking={cancelTarget}
         loading={cancelLoading}
+        error={cancelError}
         onClose={() => {
-          if (!cancelLoading) setCancelTarget(null);
-          setCancelError("");
+          if (!cancelLoading) {
+            setCancelTarget(null);
+            setCancelError("");
+          }
         }}
         onConfirm={cancelBooking}
       />
-
-      {/* Cancel error toast-ish */}
-      {!!cancelError && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9999] w-[92%] max-w-[520px]">
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded-[14px] p-3 text-sm flex items-start justify-between gap-3">
-            <div>{cancelError}</div>
-            <button
-              type="button"
-              className="px-3 py-1 rounded-[12px] bg-white border border-red-200 font-semibold"
-              onClick={() => setCancelError("")}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

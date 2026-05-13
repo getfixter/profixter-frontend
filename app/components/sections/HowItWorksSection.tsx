@@ -7,26 +7,26 @@ import { trackEvent } from "@/lib/analytics";
 const HOW_CARDS = [
   {
     n: "01",
-    title: "You pay monthly",
-    body: "One simple monthly price. No hunting for contractors, no separate estimate for every small task. Just a predictable bill.",
+    title: "One simple monthly price",
+    body: "No hunting for contractors, no estimate for every small job. Pay once a month — and your home is covered. You always know exactly what you're spending.",
     accent: "#306EEC",
   },
   {
     n: "02",
-    title: "You book visits",
-    body: "Each visit is 90 minutes. Log in, pick a time slot, and tell us what to tackle. Use it for repairs, installs, or regular maintenance.",
+    title: "Book any time you're ready",
+    body: "Each visit is 90 minutes. Log in, pick a day that works, and tell us what to tackle. No phone tag, no waiting around. You're in control.",
     accent: "#4ADE80",
   },
   {
     n: "03",
-    title: "We handle your home over time",
-    body: "Instead of trying to fix everything at once, we help you stay on top of your home month by month — before small things become expensive problems.",
+    title: "Same team. Every single visit.",
+    body: "No rotating strangers. The same trusted pros show up each time — they learn your home, your preferences, your running list. It gets better the longer you're a member.",
     accent: "#86EFAC",
   },
   {
     n: "04",
-    title: "Need more time?",
-    body: "Book additional visits between your regular ones, or upgrade your plan anytime. Your home, your pace.",
+    title: "Your home improves over time",
+    body: "Instead of scrambling when things break, you stay ahead of it — month by month. Small issues handled before they become expensive ones.",
     accent: "#D4A574",
   },
 ] as const;
@@ -49,23 +49,20 @@ export default function HowItWorksSection() {
         {/* ── Header ── */}
         <div className="mx-auto max-w-[720px] text-center mb-14 sm:mb-16 lg:mb-20">
           <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-              <path d="M12 8v4l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <span className="h-1.5 w-1.5 rounded-full bg-[#306EEC] flex-shrink-0" />
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
-              How It Actually Works
+              Simple by Design
             </span>
           </div>
 
-          <h2 className="text-[32px] sm:text-[50px] lg:text-[64px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-5">
-            How the Membership
+          <h2 className="text-[32px] sm:text-[50px] lg:text-[60px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-5">
+            One team. One bill.
             <br />
-            <span className="text-[#306EEC]">Really Works</span>
+            <span className="text-[#306EEC]">No surprises.</span>
           </h2>
 
-          <p className="mx-auto max-w-[560px] text-[15px] sm:text-[17px] leading-relaxed text-[#475569]">
-            Most homeowners haven&rsquo;t seen this model before. Here&rsquo;s exactly what you&rsquo;re getting — no guesswork.
+          <p className="mx-auto max-w-[540px] text-[15px] sm:text-[17px] leading-relaxed text-[#475569]">
+            Most homeowners haven&rsquo;t seen this model before. Here&rsquo;s exactly what to expect — clear and simple.
           </p>
         </div>
 

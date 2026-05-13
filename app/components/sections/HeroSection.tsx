@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getNextBooking } from "@/lib/booking-service";
 import { useAuth } from "@/lib/useAuth";
@@ -27,7 +28,6 @@ const TRUST_ITEMS = [
 ];
 
 const MEMBERSHIP_QUICK_LINKS = [
-  { label: "See what's included", anchor: "/included" },
   { label: "How it works", anchor: "#how-it-works" },
   { label: "View all plans", anchor: "#plans" },
 ];
@@ -192,13 +192,13 @@ export default function HeroSection() {
                 style={{ boxShadow: "0 0 10px rgba(134,239,172,0.9)" }}
               />
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/80">
-                Long Island&rsquo;s Handyman Membership
+                Long Island&rsquo;s Home Care Membership
               </span>
             </div>
 
             {/* Headline */}
             <h1 className="text-[44px] font-black leading-[0.92] tracking-[-0.04em] text-white sm:text-[60px] lg:text-[78px] mb-7">
-              Stop Calling Handymen
+              One Trusted Team.
               <br />
               <span
                 className="bg-clip-text text-transparent"
@@ -207,21 +207,21 @@ export default function HeroSection() {
                     "linear-gradient(90deg, #86EFAC 0%, #4ADE80 50%, #86EFAC 100%)",
                 }}
               >
-                Every Time Something Breaks.
+                Your Home, Handled.
               </span>
             </h1>
 
             {/* Sub-headline */}
-            <p className="text-[18px] sm:text-[21px] font-bold leading-[1.32] text-white/90 mb-4 max-w-[560px]">
-              Get a reliable handyman every month. Book visits for repairs, maintenance, and small projects — all in one simple membership.
+            <p className="text-[18px] sm:text-[20px] font-semibold leading-[1.38] text-white/75 mb-7 max-w-[560px]">
+              Long Island&rsquo;s monthly home care membership. The same trusted pros show up every month — no searching, no estimates, no surprises.
             </p>
 
             {/* Clarity bullets */}
             <ul className="space-y-2.5 mb-9">
               {[
-                "90-minute visits you can book online",
-                "Month-to-month. Cancel anytime.",
-                "Perfect for ongoing home maintenance (not emergencies)",
+                "90-minute visits you book online, on your schedule",
+                "Same technician every visit — they know your home",
+                "Ongoing maintenance, not one-time emergencies",
               ].map((item) => (
                 <li key={item} className="flex items-center gap-3">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="flex-shrink-0">
@@ -234,7 +234,7 @@ export default function HeroSection() {
 
             {/* Supporting line */}
             <p className="text-[14px] sm:text-[15px] italic text-white/38 mb-8 max-w-[500px]">
-              Built for homeowners who want control over their home — not chaos.
+              Finally — one company your home can count on, month after month.
             </p>
 
             {/* CTAs */}
@@ -294,26 +294,26 @@ export default function HeroSection() {
                     Need a new roof or siding? We also handle full exterior projects.
                   </div>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-[12px] font-semibold">
-                    <a href="/roofing" className="text-[#E8C49A]/80 underline-offset-2 hover:text-[#E8C49A] hover:underline transition-colors">Roofing</a>
-                    <a href="/siding" className="text-[#E8C49A]/80 underline-offset-2 hover:text-[#E8C49A] hover:underline transition-colors">Siding</a>
+                    <Link href="/roofing" className="text-[#E8C49A]/80 underline-offset-2 hover:text-[#E8C49A] hover:underline transition-colors">Roofing</Link>
+                    <Link href="/siding" className="text-[#E8C49A]/80 underline-offset-2 hover:text-[#E8C49A] hover:underline transition-colors">Siding</Link>
                     <span className="text-white/55">50-year warranty</span>
                     <span className="text-white/55">Financing available</span>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-2 sm:w-[190px]">
-                  <a
+                  <Link
                     href="/roofing"
                     className="inline-flex min-h-[48px] items-center justify-center rounded-[14px] bg-[#D4A574] px-4 text-[14px] font-extrabold text-[#111827] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
                   >
                     Roofing Estimate
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/siding"
                     className="inline-flex min-h-[48px] items-center justify-center rounded-[14px] border border-[#D4A574]/30 bg-[#D4A574]/10 px-4 text-[14px] font-extrabold text-[#E8C49A] transition hover:bg-[#D4A574]/18 hover:border-[#D4A574]/45"
                   >
                     Siding Estimate
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -483,18 +483,18 @@ export default function HeroSection() {
                 Roof replacement and siding — licensed, insured, Long Island local.
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <a
+                <Link
                   href="/roofing"
                   className="flex items-center justify-center rounded-[11px] border border-[#D4A574]/28 bg-[#D4A574]/10 px-3 py-2 text-[12px] font-bold text-[#E8C49A] transition hover:bg-[#D4A574]/20"
                 >
                   Roofing →
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/siding"
                   className="flex items-center justify-center rounded-[11px] border border-white/12 bg-white/[0.05] px-3 py-2 text-[12px] font-bold text-white/65 transition hover:bg-white/[0.10]"
                 >
                   Siding →
-                </a>
+                </Link>
               </div>
             </div>
           </div>

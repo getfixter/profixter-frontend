@@ -257,14 +257,6 @@ export function PlanSection() {
     }
   };
 
-  const openPlanChange = (subscription: ManagedSubscription) => {
-    setSelectedPlan(subscription.subscriptionType as PlanKey);
-    setSelectedCycle((subscription.billingCycle as "monthly" | "annual") || "monthly");
-    setPlanChangeTarget(subscription);
-    setPlanChangeConfirmOpen(false);
-    setError("");
-  };
-
   const reviewPlanChange = () => {
     if (!planChangeTarget) return;
     if (planChangeType === "same") {
@@ -419,12 +411,6 @@ export function PlanSection() {
 
               <div className="mt-6 flex flex-col gap-3">
                 <Link
-                  href="/included"
-                  className="inline-flex items-center justify-center rounded-[14px] border border-[#C5CBD8] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
-                >
-                  What can I book?
-                </Link>
-                <Link
                   href="/membership"
                   className="inline-flex items-center justify-center rounded-[14px] border border-[#C5CBD8] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
                 >
@@ -564,11 +550,15 @@ export function PlanSection() {
 
                         <button
                           type="button"
-                          disabled={subscription.cancelAtPeriodEnd || canceling}
-                          onClick={() => setCancelTarget(subscription)}
+                          disabled={billingPortalLoadingId === subscription._id}
+                          onClick={() => handleManageBilling(subscription)}
                           className="w-full rounded-[14px] border border-[#C5CBD8] bg-white/70 py-3 text-base font-semibold text-[#313234] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {subscription.cancelAtPeriodEnd ? "Cancellation scheduled" : "Cancel subscription"}
+                          {subscription.cancelAtPeriodEnd
+                            ? "Cancellation scheduled"
+                            : billingPortalLoadingId === subscription._id
+                            ? "Opening Stripe…"
+                            : "Cancel via Stripe"}
                         </button>
                       </div>
 
@@ -597,13 +587,6 @@ export function PlanSection() {
                 </p>
 
                 <div className="mt-5 space-y-3">
-                  <Link
-                    href="/included"
-                    className="flex items-center justify-between rounded-[14px] border border-[#D7E0F5] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
-                  >
-                    <span>What can I book?</span>
-                    <span className="text-[#306EEC]">Open</span>
-                  </Link>
                   <Link
                     href="/membership"
                     className="flex items-center justify-between rounded-[14px] border border-[#D7E0F5] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"

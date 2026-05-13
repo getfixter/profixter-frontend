@@ -11,6 +11,7 @@ import PlansSection from "@/app/components/sections/PlansSection";
 import HowItWorksSection from "@/app/components/sections/HowItWorksSection";
 import PopularTasksSection from "@/app/components/sections/PopularTasksSection";
 import TrustSection from "@/app/components/sections/TrustSection";
+import ExteriorPromoSection from "@/app/components/sections/ExteriorPromoSection";
 import FAQSection from "@/app/components/sections/FAQSection";
 import FinalCTASection from "@/app/components/sections/FinalCTASection";
 import Footer from "@/app/components/sections/Footer";
@@ -59,6 +60,7 @@ export default function MembershipExperience() {
             <PopularTasksSection />
             <TrustSection />
             <ReferralSection />
+            <ExteriorPromoSection />
             <FAQSection />
             <FinalCTASection />
             <Footer />
@@ -69,9 +71,8 @@ export default function MembershipExperience() {
           <>
             <PlansSection />
             <PopularTasksSection />
-            <HowItWorksSection />
             <TrustSection />
-            <ReferralSection />
+            <ExteriorPromoSection />
             <FAQSection />
             <FinalCTASection />
             <Footer />
@@ -80,10 +81,11 @@ export default function MembershipExperience() {
 
         {!isAuthenticated && (
           <>
-            <PlansSection />
-            <PopularTasksSection />
             <HowItWorksSection />
+            <PopularTasksSection />
+            <PlansSection />
             <TrustSection />
+            <ExteriorPromoSection />
             <FAQSection />
             <FinalCTASection />
             <Footer />

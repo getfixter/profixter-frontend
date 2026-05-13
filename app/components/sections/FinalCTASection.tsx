@@ -81,8 +81,8 @@ export default function FinalCTASection() {
           </div>
 
           {/* ── Headline ── */}
-          <h2 className="text-[52px] sm:text-[76px] lg:text-[104px] font-black leading-[0.87] tracking-[-0.048em] text-white mb-6">
-            Stop searching.
+          <h2 className="text-[38px] sm:text-[72px] lg:text-[96px] font-black leading-[0.9] sm:leading-[0.87] tracking-[-0.04em] sm:tracking-[-0.048em] text-white mb-6">
+            Your home deserves
             <br />
             <span
               className="bg-clip-text text-transparent"
@@ -91,14 +91,13 @@ export default function FinalCTASection() {
                   "linear-gradient(90deg, #86EFAC 0%, #4ADE80 50%, #86EFAC 100%)",
               }}
             >
-              Start handled.
+              someone who shows up.
             </span>
           </h2>
 
           {/* ── Subhead ── */}
-          <p className="text-[18px] sm:text-[22px] font-semibold text-white/50 leading-[1.4] max-w-[640px] mx-auto mb-5 sm:mb-6">
-            One trusted team. Regular monthly visits. No estimates, no
-            surprises &mdash; the steady home care your property deserves.
+          <p className="text-[17px] sm:text-[20px] font-semibold text-white/48 leading-[1.45] max-w-[600px] mx-auto mb-5 sm:mb-6">
+            Monthly visits. Same trusted team. No searching, no estimates, no surprises — just your home getting the steady care it deserves.
           </p>
 
           {/* Risk reversal */}
@@ -106,21 +105,22 @@ export default function FinalCTASection() {
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M5 12.5l4 4 10-10" stroke="#86EFAC" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span className="text-[13px] font-semibold text-white/55">Cancel anytime · No long-term contracts · No setup fees</span>
+            <span className="text-[13px] font-semibold text-white/55">From $149/mo · Cancel anytime · No contracts · No setup fees</span>
           </div>
 
           {/* ── CTAs ── */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-stretch sm:items-center mb-6">
-            <Link
-              href="/signup"
-              onClick={() =>
-                trackEvent("start_signup", { placement: "final_cta" })
-              }
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-stretch sm:items-center mb-12 sm:mb-14">
+            <button
+              type="button"
+              onClick={() => {
+                trackEvent("start_signup", { placement: "final_cta" });
+                handlePlansClick();
+              }}
               className="inline-flex min-h-[66px] items-center justify-center rounded-[18px] bg-[#306EEC] px-10 text-[17px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99]"
               style={{ boxShadow: "0 20px 60px rgba(48,110,236,0.45)" }}
             >
               Get Subscription &mdash; from $149/mo
-            </Link>
+            </button>
             <a
               href="tel:+16315991363"
               className="inline-flex min-h-[66px] items-center justify-center gap-3 rounded-[18px] border border-white/20 bg-white/[0.07] px-10 text-[17px] font-bold text-white/85 backdrop-blur-sm transition-all duration-300 hover:border-white/35 hover:bg-white/[0.13] hover:text-white active:scale-[0.99]"
@@ -143,15 +143,6 @@ export default function FinalCTASection() {
               Call 631-599-1363
             </a>
           </div>
-
-          {/* ── View plans link ── */}
-          <button
-            type="button"
-            onClick={handlePlansClick}
-            className="text-[14px] font-semibold text-white/35 hover:text-white/60 transition-colors underline underline-offset-4 mb-12 sm:mb-14"
-          >
-            Get Subscription
-          </button>
 
           {/* ── Trust strip ── */}
           <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-3.5 pt-8 sm:pt-10 border-t border-white/[0.08]">

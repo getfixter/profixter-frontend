@@ -5,7 +5,6 @@ import Link from "next/link";
 
 const MEMBERSHIP_LINKS = [
   { label: "Membership Plans", href: "/membership" },
-  { label: "What's Included", href: "/included" },
   { label: "Book a Visit", href: "/membership" },
   { label: "My Account", href: "/account" },
 ];
@@ -132,9 +131,6 @@ export default function Footer() {
                 </Link>
                 <Link href="/terms" className="text-[13px] text-white/30 transition-colors hover:text-white/55">
                   Terms of Service
-                </Link>
-                <Link href="/included" className="text-[13px] text-white/30 transition-colors hover:text-white/55">
-                  What can I book?
                 </Link>
               </div>
             </div>

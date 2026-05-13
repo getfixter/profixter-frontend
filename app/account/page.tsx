@@ -12,14 +12,10 @@ import { PersonalInfoForm } from "../components/account/PersonalInfoForm";
 import { PlanSection } from "../components/account/PlanSection";
 import { PasswordForm } from "../components/account/PasswordForm";
 import BookingsSection from "../components/account/BookingsSection";
-import ReferralSection from "../components/sections/ReferralSection";
+import OverviewSection from "../components/account/OverviewSection";
 
 import { useAuth } from "@/lib/useAuth";
 
-/**
- * ✅ IMPORTANT (Next.js App Router):
- * useSearchParams MUST be used inside a component wrapped with <Suspense>.
- */
 function TabSync({ onTab }: { onTab: (tab: string) => void }) {
   const searchParams = useSearchParams();
 
@@ -31,35 +27,41 @@ function TabSync({ onTab }: { onTab: (tab: string) => void }) {
   return null;
 }
 
+const MOBILE_TABS: { key: ActiveTab; label: string }[] = [
+  { key: "overview", label: "Overview" },
+  { key: "bookings", label: "Bookings" },
+  { key: "plan", label: "My Plan" },
+  { key: "personal", label: "Profile" },
+  { key: "password", label: "Security" },
+];
+
 export default function AccountPage() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("personal");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
   const [formData, setFormData] = useState<AccountFormData>(initialAccountFormData);
 
   const router = useRouter();
   const { user, isAuthenticated, isLoading, logout, refreshUser } = useAuth();
 
   const applyTab = (tab: string) => {
-    if (tab === "bookings") setActiveTab("bookings");
+    if (tab === "overview") setActiveTab("overview");
+    else if (tab === "bookings") setActiveTab("bookings");
     else if (tab === "plan") setActiveTab("plan");
     else if (tab === "password") setActiveTab("password");
-    else setActiveTab("personal");
+    else if (tab === "personal") setActiveTab("personal");
+    else setActiveTab("overview");
   };
 
-  // Redirect to signin if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push("/signin");
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // ✅ Keep support for /account#my-bookings
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const applyHash = () => {
-      if (window.location.hash === "#my-bookings") {
-        setActiveTab("bookings");
-      }
+      if (window.location.hash === "#my-bookings") setActiveTab("bookings");
     };
 
     applyHash();
@@ -67,14 +69,12 @@ export default function AccountPage() {
     return () => window.removeEventListener("hashchange", applyHash);
   }, []);
 
-  // Ensure we always have fresh user data (addresses/defaultAddressId)
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       refreshUser().catch(() => {});
     }
   }, [isLoading, isAuthenticated, refreshUser]);
 
-  // Load user data when authenticated
   useEffect(() => {
     if (!user) return;
 
@@ -83,18 +83,12 @@ export default function AccountPage() {
       name: user.name || "",
       email: user.email || "",
       phone: user.phone || "",
-
-      // Legacy address
       address: (user as any).address || "",
       city: (user as any).city || "",
       state: (user as any).state || "",
       zip: (user as any).zip || "",
       county: (user as any).county || "",
-
-      // New multi-address support
       addresses: (user as any).addresses || [],
-
-      // ✅ Needed for pick day / booking pages
       defaultAddressId: (user as any).defaultAddressId || null,
     });
   }, [user]);
@@ -106,67 +100,63 @@ export default function AccountPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <p className="text-[#313234] text-xl">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#EEF2FF]">
+        <div className="text-center">
+          <div className="w-10 h-10 border-[3px] border-[#306EEC] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-[#6A6D71] text-[14px] font-medium">Loading your account…</p>
+        </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return null; // will redirect
-  }
+  if (!isAuthenticated) return null;
 
   return (
     <div className="min-h-screen bg-[#EEF2FF]">
       <AccountHeader userName={formData.name} />
 
-      {/* ✅ Query param support: /account?tab=bookings */}
       <Suspense fallback={null}>
         <TabSync onTab={applyTab} />
       </Suspense>
 
-      <main className="max-w-[1240px] mx-auto px-[20px] py-6 sm:py-10">
-        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+      {/* Mobile horizontal tab bar */}
+      <div className="lg:hidden bg-white border-b border-[#E0E6F5] overflow-x-auto scrollbar-none">
+        <div className="flex min-w-max">
+          {MOBILE_TABS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setActiveTab(t.key)}
+              className={`px-5 py-3.5 text-[13px] font-semibold whitespace-nowrap transition-all border-b-2 ${
+                activeTab === t.key
+                  ? "border-[#306EEC] text-[#306EEC]"
+                  : "border-transparent text-[#6A6D71] hover:text-[#313234]"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <main className="max-w-[1240px] mx-auto px-4 sm:px-5 py-5 sm:py-8 lg:py-10">
+        <div className="flex flex-col lg:flex-row gap-5 lg:gap-6">
+
           <AccountSidebar
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             userName={formData.name}
+            userEmail={formData.email}
             onLogout={handleLogout}
           />
 
-          <div
-            className="flex-1 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[11px] p-6 sm:p-8 lg:p-12"
-            style={{ boxShadow: "0px 0px 200px 0px rgba(0, 0, 0, 0.1)" }}
-          >
-            <div className="mb-6 rounded-[18px] border border-[#C5CBD8] bg-white p-5 shadow-[0_0_120px_rgba(0,0,0,0.04)] sm:mb-8">
-              <h2 className="text-[20px] font-extrabold text-[#313234]">
-                Need help before reaching out?
-              </h2>
-              <p className="mt-2 text-[14px] leading-relaxed text-[#6A6D71]">
-                Most answers are available in your booking and plan details.
-              </p>
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                <a
-                  href="/included"
-                  className="inline-flex items-center justify-center rounded-[14px] border border-[#C5CBD8] bg-[#EEF2FF] px-4 py-3 text-[14px] font-semibold text-[#313234] transition hover:bg-white"
-                >
-                  What can I book?
-                </a>
-                <a
-                  href="/membership"
-                  className="inline-flex items-center justify-center rounded-[14px] border border-[#C5CBD8] bg-[#EEF2FF] px-4 py-3 text-[14px] font-semibold text-[#313234] transition hover:bg-white"
-                >
-                  How often can I book?
-                </a>
-                <a
-                  href="/membership"
-                  className="inline-flex items-center justify-center rounded-[14px] border border-[#C5CBD8] bg-[#EEF2FF] px-4 py-3 text-[14px] font-semibold text-[#313234] transition hover:bg-white"
-                >
-                  Book your next visit
-                </a>
-              </div>
-            </div>
-
+          <div className="flex-1 min-w-0">
+            {activeTab === "overview" && (
+              <OverviewSection
+                formData={formData}
+                onSwitchTab={setActiveTab}
+              />
+            )}
             {activeTab === "personal" && <PersonalInfoForm formData={formData} />}
             {activeTab === "plan" && <PlanSection />}
             {activeTab === "bookings" && (
@@ -176,10 +166,9 @@ export default function AccountPage() {
             )}
             {activeTab === "password" && <PasswordForm />}
           </div>
+
         </div>
       </main>
-
-      <ReferralSection />
     </div>
   );
 }

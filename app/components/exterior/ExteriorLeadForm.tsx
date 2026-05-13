@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 
-type ProjectType = "roofing" | "siding" | "roofing_siding";
+type ProjectType = "roofing" | "siding" | "both";
 
 type Props = {
   defaultProject: ProjectType;
@@ -180,7 +180,7 @@ export default function ExteriorLeadForm({ defaultProject, accentLabel }: Props)
           >
             <option value="roofing">{projectLabel("roofing")}</option>
             <option value="siding">{projectLabel("siding")}</option>
-            <option value="roofing_siding">{projectLabel("roofing_siding")}</option>
+            <option value="both">{projectLabel("both")}</option>
           </select>
           <svg
             className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/35"

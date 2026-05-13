@@ -1,4 +1,4 @@
-export type ActiveTab = "personal" | "plan" | "bookings" | "password";
+export type ActiveTab = "overview" | "personal" | "plan" | "bookings" | "password";
 
 export interface AccountAddress {
   _id: string;

@@ -1522,91 +1522,102 @@ const canBook =
         {/* ── Confirmation Modal ── */}
         {showModal && (
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center z-50 px-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-[2px] flex items-end sm:items-center justify-center z-50 sm:px-4"
             onClick={() => setShowModal(false)}
           >
             <div
-              className="bg-white rounded-[28px] p-7 sm:p-9 max-w-[520px] w-full shadow-[0_32px_100px_rgba(0,0,0,0.25)] max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-t-[32px] sm:rounded-[28px] w-full sm:max-w-[520px] shadow-[0_-8px_60px_rgba(0,0,0,0.18)] sm:shadow-[0_32px_100px_rgba(0,0,0,0.25)] max-h-[92vh] overflow-y-auto"
+              style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))" }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Success icon */}
-              <div className="flex items-center justify-center mb-6">
-                <div className="w-20 h-20 rounded-full bg-[#DCFCE7] flex items-center justify-center">
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path
-                      d="M5 12.5l4.5 4.5L19 8"
-                      stroke="#16A34A"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
+              {/* Drag handle — mobile only */}
+              <div className="flex justify-center pt-3 pb-1 sm:hidden" aria-hidden="true">
+                <div className="h-1 w-10 rounded-full bg-[#E2E8F0]" />
               </div>
 
-              <h2 className="text-[26px] sm:text-[30px] font-extrabold text-[#0B1628] text-center mb-2">
-                Booking Confirmed
-              </h2>
-              <p className="text-[14px] text-[#64748B] text-center mb-6">
-                We&rsquo;ll reach out to confirm your visit details.
-              </p>
-
-              {/* Booking details */}
-              <div className="rounded-[18px] border border-[#E5E9F2] bg-[#F8FAFF] p-5 space-y-3 mb-5">
-                {(
-                  [
-                    ["Booking #", bookingNumber],
-                    ["Service", confirmedService],
-                    [
-                      "Date",
-                      confirmedDate?.toLocaleDateString("en-US", {
-                        weekday: "long",
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      }),
-                    ],
-                    ["Time", formatTime12(confirmedTime)],
-                  ] as [string, string | undefined][]
-                )
-                  .filter(([, v]) => !!v)
-                  .map(([label, value]) => (
-                    <div key={label} className="flex items-start justify-between gap-4">
-                      <span className="text-[13px] font-semibold text-[#64748B] flex-shrink-0">{label}</span>
-                      <span className="text-[14px] font-semibold text-[#0B1628] text-right">{value}</span>
-                    </div>
-                  ))}
-              </div>
-
-              {/* Pre-visit checklist */}
-              <div className="rounded-[18px] border border-[#D9E4FF] bg-[#EEF5FF] p-5 mb-6">
-                <div className="text-[14px] font-extrabold text-[#1D4ED8] mb-3">Before your visit</div>
-                <div className="space-y-2.5">
-                  {[
-                    "Have all materials & fixtures on-site and ready",
-                    "Your Fixter may arrive up to 30 min early or late",
-                    "Questions? Call Taras: 631-599-1363",
-                  ].map((item) => (
-                    <div key={item} className="flex items-start gap-2.5">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="mt-0.5 flex-shrink-0" aria-hidden="true">
-                        <path d="M5 12.5l4 4 10-10" stroke="#306EEC" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              <div className="px-6 pt-5 pb-2 sm:px-9 sm:pt-9 sm:pb-9">
+                {/* Success icon with pulse ring */}
+                <div className="flex items-center justify-center mb-6">
+                  <div className="relative">
+                    <span className="absolute inset-0 rounded-full bg-[#DCFCE7] animate-ping opacity-60" />
+                    <div className="relative w-20 h-20 rounded-full bg-[#DCFCE7] flex items-center justify-center">
+                      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path
+                          d="M5 12.5l4.5 4.5L19 8"
+                          stroke="#16A34A"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
-                      <span className="text-[13px] text-[#1D4ED8]">{item}</span>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
 
-              <button
-                onClick={() => {
-                  setShowModal(false);
-                  window.location.reload();
-                }}
-                className="w-full h-[56px] rounded-[16px] bg-[#306EEC] text-white text-[16px] font-extrabold hover:bg-[#2558c9] transition active:scale-[0.99]"
-                style={{ boxShadow: "0 12px 36px rgba(48,110,236,0.30)" }}
-              >
-                Done
-              </button>
+                <h2 className="text-[26px] sm:text-[30px] font-extrabold text-[#0B1628] text-center mb-2">
+                  Booking Confirmed
+                </h2>
+                <p className="text-[14px] text-[#64748B] text-center mb-6">
+                  We&rsquo;ll reach out to confirm your visit details.
+                </p>
+
+                {/* Booking details */}
+                <div className="rounded-[18px] border border-[#E5E9F2] bg-[#F8FAFF] p-5 space-y-3 mb-5">
+                  {(
+                    [
+                      ["Booking #", bookingNumber],
+                      ["Service", confirmedService],
+                      [
+                        "Date",
+                        confirmedDate?.toLocaleDateString("en-US", {
+                          weekday: "long",
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        }),
+                      ],
+                      ["Time", formatTime12(confirmedTime)],
+                    ] as [string, string | undefined][]
+                  )
+                    .filter(([, v]) => !!v)
+                    .map(([label, value]) => (
+                      <div key={label} className="flex items-start justify-between gap-4">
+                        <span className="text-[13px] font-semibold text-[#64748B] flex-shrink-0">{label}</span>
+                        <span className="text-[14px] font-semibold text-[#0B1628] text-right">{value}</span>
+                      </div>
+                    ))}
+                </div>
+
+                {/* Pre-visit checklist */}
+                <div className="rounded-[18px] border border-[#D9E4FF] bg-[#EEF5FF] p-5 mb-6">
+                  <div className="text-[14px] font-extrabold text-[#1D4ED8] mb-3">Before your visit</div>
+                  <div className="space-y-2.5">
+                    {[
+                      "Have all materials & fixtures on-site and ready",
+                      "Your Fixter may arrive up to 30 min early or late",
+                      "Questions? Call Taras: 631-599-1363",
+                    ].map((item) => (
+                      <div key={item} className="flex items-start gap-2.5">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="mt-0.5 flex-shrink-0" aria-hidden="true">
+                          <path d="M5 12.5l4 4 10-10" stroke="#306EEC" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span className="text-[13px] text-[#1D4ED8]">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setShowModal(false);
+                    window.location.reload();
+                  }}
+                  className="w-full h-[58px] sm:h-[56px] rounded-[16px] bg-[#306EEC] text-white text-[16px] font-extrabold hover:bg-[#2558c9] transition active:scale-[0.99]"
+                  style={{ boxShadow: "0 12px 36px rgba(48,110,236,0.30)" }}
+                >
+                  Done
+                </button>
+              </div>
             </div>
           </div>
         )}
