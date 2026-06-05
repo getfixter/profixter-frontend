@@ -7,7 +7,6 @@ import Image from "next/image";
 import { login } from "@/lib/auth-service";
 import { useAuth } from "@/lib/useAuth";
 import { trackEvent } from "@/lib/analytics";
-import { GoogleButton } from "../../components/auth/GoogleButton";
 
 function PasswordToggle({
   value,
@@ -57,7 +56,10 @@ function PasswordToggle({
 }
 
 export default function SignInPage() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("rememberedEmail") || "";
+  });
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -66,8 +68,6 @@ export default function SignInPage() {
 
   useEffect(() => {
     trackEvent("view_login", { page: "/signin" });
-    const saved = localStorage.getItem("rememberedEmail");
-    if (saved) setEmail(saved);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,8 +83,9 @@ export default function SignInPage() {
       localStorage.setItem("rememberedEmail", email);
       if (user.email.toLowerCase() === "getfixter@gmail.com") router.replace("/admin");
       else router.replace("/");
-    } catch (err: any) {
-      const message = err.response?.data?.message || "Invalid email or password";
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      const message = error.response?.data?.message || "Invalid email or password";
       setError(message);
       setLoading(false);
     }
@@ -120,18 +121,6 @@ export default function SignInPage() {
               Sign in to manage your home visits
             </p>
           </div>
-
-          {/* Google OAuth */}
-          <GoogleButton className="mb-5" spanClassName="text-[15px] font-semibold" />
-
-          {/* Divider */}
-          {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex-1 h-px bg-white/[0.09]" />
-              <span className="text-[12px] font-medium text-white/28">or continue with email</span>
-              <div className="flex-1 h-px bg-white/[0.09]" />
-            </div>
-          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">

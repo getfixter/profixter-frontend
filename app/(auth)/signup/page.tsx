@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { register } from "@/lib/auth-service";
 import { trackEvent } from "@/lib/analytics";
-import { GoogleButton } from "../../components/auth/GoogleButton";
 
 type Step = 1 | 2;
 
@@ -248,18 +247,6 @@ export default function SignUpPage() {
           {/* â”€â”€ STEP 1 â”€â”€ */}
           {step === 1 && (
             <>
-              {/* Google OAuth */}
-              <GoogleButton className="mb-5" spanClassName="text-[15px] font-semibold" />
-
-              {/* Divider */}
-              {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="flex-1 h-px bg-white/[0.09]" />
-                  <span className="text-[12px] font-medium text-white/28">or sign up with email</span>
-                  <div className="flex-1 h-px bg-white/[0.09]" />
-                </div>
-              )}
-
               <form
                 onSubmit={(e) => { e.preventDefault(); handleNextStep(); }}
                 className="space-y-3 sm:space-y-4"
