@@ -16,7 +16,6 @@ import FAQSection from "@/app/components/sections/FAQSection";
 import Footer from "@/app/components/sections/Footer";
 import { ChatWidget } from "@/app/components/ChatWidget";
 import StickyMobileCTA from "@/app/components/StickyMobileCTA";
-import ReferralSection from "@/app/components/sections/ReferralSection";
 
 const ADMIN_EMAIL = "getfixter@gmail.com";
 
@@ -77,7 +76,7 @@ export default function MembershipExperience() {
         )}
 
         {!isAuthenticated && (
-          <>
+          <><BookingSection />
             <HowItWorksSection />
             <PopularTasksSection />
             <IncludedVisitsSection />
