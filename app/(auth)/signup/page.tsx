@@ -226,6 +226,13 @@ export default function SignUpPage() {
             </button>
           )}
 
+          <Link
+            href="/"
+            className="mb-5 inline-flex min-h-[40px] items-center rounded-[12px] border border-white/[0.10] bg-white/[0.04] px-3.5 text-[13px] font-semibold text-white/60 transition hover:border-white/[0.18] hover:bg-white/[0.07] hover:text-white sm:mb-6"
+          >
+            ← Back to Home
+          </Link>
+
           {/* Heading */}
           <div className="mb-5 text-center sm:mb-7">
             <h1 className="mb-1.5 text-[27px] font-black tracking-[-0.02em] text-white sm:text-[36px]">
