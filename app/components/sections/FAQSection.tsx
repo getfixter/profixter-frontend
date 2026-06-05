@@ -5,39 +5,43 @@ import { useState } from "react";
 const FAQS = [
   {
     q: "What's included in the membership?",
-    a: "Your membership covers a wide range of common home maintenance tasks — from leaky faucets and loose fixtures to caulking, door adjustments, minor electrical, and seasonal prep. Covered tasks are handled during your scheduled visit with no separate estimate needed for included work. A full list is at fixter.co/included.",
+    a: "Your membership includes small and medium home tasks that fit within your visit time: electrical, plumbing, repairs, installations, maintenance, drywall patches, caulking, paint touch-ups, doors, locks, shelves, fixtures, and more. Large remodels, full-room painting, roofing, siding, and major trade work are handled separately.",
+  },
+  {
+    q: "Are there limits per month?",
+    a: "There are no monthly visit limits. Your plan controls how many active appointments you can have at one time, plus benefits like basic materials, emergency visits, and project time.",
+  },
+  {
+    q: "What does “active appointment” mean?",
+    a: "An active appointment is a visit that is currently booked, pending, or scheduled. Once that visit is completed, you can book the next one. Basic includes 1 active appointment at a time. Plus, Premium, and Elite include 2 active appointments at a time.",
+  },
+  {
+    q: "How long is each visit?",
+    a: "Each standard visit is up to 90 minutes. It is designed for small and medium tasks, punch lists, repairs, installations, and maintenance items that can usually be completed during that visit.",
+  },
+  {
+    q: "Are materials included?",
+    a: "Basic includes labor only. Plus and Premium include basic materials for small tasks. Larger materials, special-order items, fixtures, appliances, and project materials are quoted or approved separately.",
   },
   {
     q: "Can I cancel anytime?",
-    a: "Yes. All plans are month-to-month with no long-term contracts. When you cancel, your membership stays active through the end of your current billing period — you won't be charged again after that. If a payment fails or goes unpaid, access to membership services will pause until the payment is resolved.",
+    a: "Yes. Plans are month-to-month with no long-term contract. If you cancel, your membership stays active through the end of the current billing period and you will not be charged again.",
   },
   {
     q: "What areas do you serve?",
-    a: "We serve Long Island homeowners across Nassau and Suffolk County. If you're unsure whether we cover your area, call us at 631-599-1363 — we'll confirm right away.",
-  },
-  {
-    q: "How often will you visit?",
-    a: "Visit frequency depends on your plan and scheduling availability. The Basic plan (Home Care Membership) includes one scheduled visit per month. The Plus plan (Home Care Plus) includes two scheduled visits per month. Higher plans include additional services on top of that. All visits are scheduled based on availability at the time of booking.",
-  },
-  {
-    q: "What if I need something between scheduled visits?",
-    a: "Members get priority access to request additional visits between their regular appointments, subject to availability. To request a visit, log in to your account and submit a request — our team will confirm a time that works.",
+    a: "Profixter is based near Babylon and serves homeowners across Nassau and Suffolk Counties.",
   },
   {
     q: "Do I need to be home during the visit?",
-    a: "You're welcome to be home, but it's not required. Many members provide access and trust us to complete the work. We document every visit and share notes directly to your account.",
+    a: "You can be home if you prefer, but it is not always required. Many members provide access instructions. We document the visit and keep notes so the same trusted team can continue learning your home.",
   },
   {
-    q: "What's the difference between membership and a one-time call?",
-    a: "With a one-time call, you search for someone, explain your home from scratch each time, and pay retail rates for every visit. With a membership, you have a team that learns your home, visits on a regular schedule, and keeps things maintained before they become problems — all at a predictable monthly rate.",
-  },
-  {
-    q: "What if I need work that's outside the membership?",
-    a: "For larger repairs or home improvement work that goes beyond a regular handyman visit, call Taras directly at 631-599-1363. We'll talk through the project and figure out the right approach together.",
+    q: "What if my job is bigger than a regular visit?",
+    a: "Larger projects like roofing, siding, bathroom remodeling, kitchen work, full-room painting, major electrical, major plumbing, or longer repairs are handled as separate project estimates.",
   },
   {
     q: "Are you licensed and insured?",
-    a: "Yes. We hold NY State Home Improvement Contractor License HI-71484 and carry full liability insurance and workers' compensation. Copies are available on request.",
+    a: "Yes. Profixter is licensed as a New York Home Improvement Contractor under license HI-71484 and is fully insured.",
   },
 ] as const;
 
@@ -67,14 +71,10 @@ export default function FAQSection() {
             </span>
           </div>
           <h2 className="text-[30px] sm:text-[42px] font-extrabold text-white leading-[1.1] tracking-[-0.03em]">
-            Everything you need to know.
+            Questions Homeowners Ask
           </h2>
           <p className="text-[15px] sm:text-[16px] text-white/42 mt-4 max-w-[520px] mx-auto leading-relaxed">
-            Still have a question? Call us at{" "}
-            <a href="tel:+16315991363" className="text-white/65 hover:text-white transition-colors font-semibold">
-              631-599-1363
-            </a>{" "}
-            — we pick up.
+            Simple answers before you choose a plan.
           </p>
         </div>
 
@@ -128,21 +128,6 @@ export default function FAQSection() {
             );
           })}
         </div>
-
-        {/* Bottom CTA */}
-        <div className="mt-12 text-center">
-          <p className="text-[13px] text-white/30 mb-3">Still not sure? We&rsquo;re happy to walk you through it.</p>
-          <a
-            href="tel:+16315991363"
-            className="inline-flex items-center gap-2.5 rounded-full border border-white/12 bg-white/[0.04] px-6 py-3 hover:bg-white/[0.08] hover:border-white/20 transition-all"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" stroke="rgba(255,255,255,0.50)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="text-[14px] font-semibold text-white/55">631-599-1363</span>
-          </a>
-        </div>
-
       </div>
     </section>
   );

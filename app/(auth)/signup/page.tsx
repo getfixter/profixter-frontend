@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { register } from "@/lib/auth-service";
 import { trackEvent } from "@/lib/analytics";
 import { GoogleButton } from "../../components/auth/GoogleButton";
-import AuthLeftPanel from "../../components/auth/AuthLeftPanel";
 
 type Step = 1 | 2;
 
@@ -32,7 +32,7 @@ function PasswordToggle({
         onChange={onChange}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className="w-full rounded-[12px] border border-white/[0.12] bg-white/[0.06] px-4 py-3.5 text-[15px] text-white placeholder-white/25 focus:outline-none focus:border-[#306EEC]/80 focus:bg-white/[0.09] transition-all backdrop-blur-sm pr-12"
+        className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all pr-12"
       />
       <button
         type="button"
@@ -58,47 +58,6 @@ function PasswordToggle({
   );
 }
 
-function InputField({
-  label,
-  id,
-  type = "text",
-  value,
-  onChange,
-  placeholder,
-  autoComplete,
-  error,
-  children,
-}: {
-  label: string;
-  id: string;
-  type?: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder: string;
-  autoComplete?: string;
-  error?: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label htmlFor={id} className="block text-[11px] font-bold uppercase tracking-[0.14em] text-white/38 mb-2">
-        {label}
-      </label>
-      <input
-        id={id}
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        className="w-full rounded-[12px] border border-white/[0.12] bg-white/[0.06] px-4 py-3.5 text-[15px] text-white placeholder-white/25 focus:outline-none focus:border-[#306EEC]/80 focus:bg-white/[0.09] transition-all backdrop-blur-sm"
-      />
-      {error && <p className="mt-1.5 text-[11px] text-red-400">{error}</p>}
-      {children}
-    </div>
-  );
-}
-
 function detectCounty(zip: string): string {
   const prefix = zip.substring(0, 3);
   if (prefix === "115") return "Nassau";
@@ -108,7 +67,7 @@ function detectCounty(zip: string): string {
 
 export default function SignUpPage() {
   const [step, setStep] = useState<Step>(1);
-  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(true);
   const [consentError, setConsentError] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; phone?: string }>({});
   const [loading, setLoading] = useState(false);
@@ -231,49 +190,52 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="relative z-10 min-h-screen flex flex-col lg:flex-row">
-
-      {/* ── Left value panel (desktop only) ── */}
-      <div className="hidden lg:block flex-1 min-h-screen">
-        <AuthLeftPanel />
-      </div>
-
-      {/* ── Right form panel ── */}
-      <div className="flex flex-col justify-center min-h-screen w-full lg:w-[520px] xl:w-[560px] px-6 py-24 sm:px-10 lg:px-12 xl:px-14 flex-shrink-0">
-        <div className="w-full max-w-[460px] mx-auto lg:mx-0">
-
-          {/* Back to site (mobile only) */}
-          <Link
-            href="/"
-            className="lg:hidden inline-flex items-center gap-1.5 text-[12px] text-white/35 hover:text-white/60 transition mb-10"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Back to site
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f42] to-[#0f1429] flex flex-col items-center justify-center px-6 py-12">
+      {/* Container */}
+      <div className="w-full max-w-[520px]">
+        
+        {/* Logo */}
+        <div className="text-center mb-12">
+          <Link href="/" className="inline-block">
+            <Image
+              src="/images/logo.svg"
+              alt="Fixter"
+              width={120}
+              height={40}
+              className="h-10 w-auto"
+            />
           </Link>
+        </div>
 
-          {/* Step progress */}
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h1 className="text-[28px] sm:text-[32px] font-black tracking-[-0.03em] text-white">
-                {step === 1 ? "Create your account" : "Your service address"}
-              </h1>
-              <p className="text-[13px] text-white/38 mt-1">
-                {step === 1
-                  ? "Takes less than 2 minutes. No spam."
-                  : "Membership is tied to one service address."}
-              </p>
-            </div>
-            <div className="shrink-0 text-right ml-4">
-              <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/28">
-                Step {step} / 2
-              </span>
-            </div>
+        {/* Card */}
+        <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-8 sm:p-10">
+          
+          {/* Step Progress */}
+          {step === 2 && (
+            <button
+              type="button"
+              onClick={handleBackStep}
+              className="flex items-center gap-2 text-[13px] font-medium text-white/50 hover:text-white/70 transition mb-8"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Back
+            </button>
+          )}
+
+          {/* Heading */}
+          <div className="mb-8 text-center">
+            <h1 className="text-[32px] sm:text-[36px] font-black tracking-[-0.02em] text-white mb-2">
+              {step === 1 ? "Create Your Account" : "Your Service Address"}
+            </h1>
+            <p className="text-[15px] text-white/50">
+              {step === 1 ? "It takes less than a minute." : "We deliver to one address per account."}
+            </p>
           </div>
 
           {/* Progress bar */}
-          <div className="h-1.5 w-full rounded-full bg-white/[0.08] mb-8 overflow-hidden">
+          <div className="h-1 w-full rounded-full bg-white/[0.08] mb-8 overflow-hidden">
             <div
               className="h-full rounded-full bg-[#306EEC] transition-all duration-500"
               style={{ width: step === 1 ? "50%" : "100%" }}
@@ -287,52 +249,72 @@ export default function SignUpPage() {
               <GoogleButton className="mb-5" spanClassName="text-[15px] font-semibold" />
 
               {/* Divider */}
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex-1 h-px bg-white/[0.09]" />
-                <span className="text-[12px] font-medium text-white/28">or sign up with email</span>
-                <div className="flex-1 h-px bg-white/[0.09]" />
-              </div>
+              {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="flex-1 h-px bg-white/[0.09]" />
+                  <span className="text-[12px] font-medium text-white/28">or sign up with email</span>
+                  <div className="flex-1 h-px bg-white/[0.09]" />
+                </div>
+              )}
 
               <form
                 onSubmit={(e) => { e.preventDefault(); handleNextStep(); }}
                 className="space-y-4"
               >
+                {/* Name & Email */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <InputField
-                    label="Full Name"
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => handleChange("name", e.target.value)}
-                    placeholder="John Smith"
-                    autoComplete="name"
-                  />
-                  <InputField
-                    label="Email"
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleChange("email", e.target.value)}
-                    placeholder="your@email.com"
-                    autoComplete="email"
-                    error={fieldErrors.email}
-                  />
-                  <InputField
-                    label="Phone"
+                  <div>
+                    <label htmlFor="name" className="block text-[12px] font-semibold text-white/60 mb-2">
+                      Full Name
+                    </label>
+                    <input
+                      id="name"
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => handleChange("name", e.target.value)}
+                      placeholder="John Smith"
+                      autoComplete="name"
+                      className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="email" className="block text-[12px] font-semibold text-white/60 mb-2">
+                      Email
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleChange("email", e.target.value)}
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                      className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all"
+                    />
+                    {fieldErrors.email && <p className="mt-1.5 text-[11px] text-red-400">{fieldErrors.email}</p>}
+                  </div>
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <label htmlFor="phone" className="block text-[12px] font-semibold text-white/60 mb-2">
+                    Phone
+                  </label>
+                  <input
                     id="phone"
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => handleChange("phone", formatPhone(e.target.value))}
                     placeholder="(631) 000-0000"
                     autoComplete="tel"
-                    error={fieldErrors.phone}
+                    className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all"
                   />
-                  {/* spacer on sm+ */}
-                  <div className="hidden sm:block" />
+                  {fieldErrors.phone && <p className="mt-1.5 text-[11px] text-red-400">{fieldErrors.phone}</p>}
                 </div>
 
+                {/* Password & Confirm */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="password" className="block text-[11px] font-bold uppercase tracking-[0.14em] text-white/38 mb-2">
+                    <label htmlFor="password" className="block text-[12px] font-semibold text-white/60 mb-2">
                       Password
                     </label>
                     <PasswordToggle
@@ -343,14 +325,14 @@ export default function SignUpPage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="repeat-password" className="block text-[11px] font-bold uppercase tracking-[0.14em] text-white/38 mb-2">
-                      Repeat Password
+                    <label htmlFor="confirm-password" className="block text-[12px] font-semibold text-white/60 mb-2">
+                      Confirm Password
                     </label>
                     <PasswordToggle
-                      id="repeat-password"
+                      id="confirm-password"
                       value={formData.repeatPassword}
                       onChange={(e) => handleChange("repeatPassword", e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="Repeat password"
                       autoComplete="new-password"
                     />
                     {passwordsDoNotMatch && (
@@ -359,18 +341,20 @@ export default function SignUpPage() {
                   </div>
                 </div>
 
+                {/* Error */}
                 {error && (
                   <div className="rounded-[10px] border border-red-500/20 bg-red-500/[0.08] px-4 py-3 text-[13px] text-red-400 text-center">
                     {error}
                   </div>
                 )}
 
+                {/* Submit */}
                 <button
                   type="submit"
-                  className="w-full h-[52px] rounded-[14px] bg-[#306EEC] text-white text-[15px] font-extrabold hover:bg-[#2558c9] transition-all mt-2"
+                  className="w-full h-12 rounded-[12px] bg-[#306EEC] text-white text-[15px] font-bold hover:bg-[#2558c9] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-3"
                   style={{ boxShadow: "0 12px 32px rgba(48,110,236,0.28)" }}
                 >
-                  Continue →
+                  Continue
                 </button>
               </form>
             </>
@@ -380,34 +364,40 @@ export default function SignUpPage() {
           {step === 2 && (
             <form onSubmit={handleSubmit} className="space-y-4">
 
-              {/* Info banner */}
-              <div className="rounded-[12px] border border-[#86EFAC]/15 bg-[#86EFAC]/[0.06] px-4 py-3.5 mb-2">
-                <p className="text-[13px] font-semibold text-white/70">
-                  <span className="text-[#86EFAC]">Why we need this:</span>{" "}
-                  Your membership, bookings, and scheduling are tied to your home address.
-                </p>
+              {/* Address */}
+              <div>
+                <label htmlFor="address" className="block text-[12px] font-semibold text-white/60 mb-2">
+                  Street Address
+                </label>
+                <input
+                  id="address"
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => handleChange("address", e.target.value)}
+                  placeholder="123 Main St"
+                  autoComplete="street-address"
+                  className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all"
+                />
               </div>
 
-              <InputField
-                label="Street Address"
-                id="address"
-                value={formData.address}
-                onChange={(e) => handleChange("address", e.target.value)}
-                placeholder="123 Main St"
-                autoComplete="street-address"
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <InputField
-                  label="City"
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => handleChange("city", e.target.value)}
-                  placeholder="Hicksville"
-                  autoComplete="address-level2"
-                />
+              {/* City & Zip */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="zip" className="block text-[11px] font-bold uppercase tracking-[0.14em] text-white/38 mb-2">
+                  <label htmlFor="city" className="block text-[12px] font-semibold text-white/60 mb-2">
+                    City
+                  </label>
+                  <input
+                    id="city"
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) => handleChange("city", e.target.value)}
+                    placeholder="Hicksville"
+                    autoComplete="address-level2"
+                    className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="zip" className="block text-[12px] font-semibold text-white/60 mb-2">
                     Zip Code
                   </label>
                   <input
@@ -418,34 +408,35 @@ export default function SignUpPage() {
                     placeholder="11801"
                     autoComplete="postal-code"
                     maxLength={5}
-                    className="w-full rounded-[12px] border border-white/[0.12] bg-white/[0.06] px-4 py-3.5 text-[15px] text-white placeholder-white/25 focus:outline-none focus:border-[#306EEC]/80 focus:bg-white/[0.09] transition-all backdrop-blur-sm"
+                    className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* County & State */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="county" className="block text-[11px] font-bold uppercase tracking-[0.14em] text-white/38 mb-2">
+                  <label htmlFor="county" className="block text-[12px] font-semibold text-white/60 mb-2">
                     County
                   </label>
                   <select
                     id="county"
                     value={formData.county}
                     onChange={(e) => handleChange("county", e.target.value)}
-                    className="w-full rounded-[12px] border border-white/[0.12] bg-[#0D1A30] px-4 py-3.5 text-[15px] text-white focus:outline-none focus:border-[#306EEC]/80 transition-all"
+                    className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-black focus:outline-none focus:border-[#306EEC]/60 transition-all"
                   >
-                    <option value="">Select County</option>
-                    <option value="Nassau">Nassau</option>
-                    <option value="Suffolk">Suffolk</option>
+                    <option value="" className="text-black">Select County</option>
+                    <option value="Nassau" className="text-black">Nassau</option>
+                    <option value="Suffolk" className="text-black">Suffolk</option>
                   </select>
                   {formData.zip.length === 5 && formData.county && (
                     <p className="mt-1.5 text-[11px] text-[#86EFAC]/70">
-                      Auto-detected from zip ✓
+                      Auto-detected ✓
                     </p>
                   )}
                 </div>
                 <div>
-                  <label htmlFor="state" className="block text-[11px] font-bold uppercase tracking-[0.14em] text-white/38 mb-2">
+                  <label htmlFor="state" className="block text-[12px] font-semibold text-white/60 mb-2">
                     State
                   </label>
                   <input
@@ -455,7 +446,7 @@ export default function SignUpPage() {
                     onChange={(e) => handleChange("state", e.target.value)}
                     placeholder="NY"
                     autoComplete="address-level1"
-                    className="w-full rounded-[12px] border border-white/[0.12] bg-white/[0.06] px-4 py-3.5 text-[15px] text-white placeholder-white/25 focus:outline-none focus:border-[#306EEC]/80 focus:bg-white/[0.09] transition-all backdrop-blur-sm"
+                    className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all"
                   />
                 </div>
               </div>
@@ -469,7 +460,7 @@ export default function SignUpPage() {
                     onChange={(e) => { setAgreeTerms(e.target.checked); if (consentError) setConsentError(false); }}
                     className="sr-only peer"
                   />
-                  <div className="w-4 h-4 rounded-[4px] border border-white/25 flex items-center justify-center peer-checked:bg-[#306EEC] peer-checked:border-[#306EEC] transition">
+                  <div className="w-4 h-4 rounded-[4px] border border-white/25 flex items-center justify-center peer-checked:bg-[#306EEC] peer-checked:border-[#306EEC] transition flex-shrink-0">
                     {agreeTerms && (
                       <svg width="9" height="7" viewBox="0 0 9 7" fill="none" aria-hidden="true">
                         <path d="M1 3.5l2 2L8 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -479,48 +470,67 @@ export default function SignUpPage() {
                 </div>
                 <span className="text-[13px] text-white/50 leading-relaxed">
                   I agree to the{" "}
-                  <Link href="/terms" className="text-white/75 underline hover:text-white transition">Terms of Service</Link>{" "}
-                  and{" "}
-                  <Link href="/privacy" className="text-white/75 underline hover:text-white transition">Privacy Policy</Link>.
+                  <Link href="/terms" className="text-white/75 underline hover:text-white transition">
+                    Terms of Service
+                  </Link>
+                  {" "}and{" "}
+                  <Link href="/privacy" className="text-white/75 underline hover:text-white transition">
+                    Privacy Policy
+                  </Link>.
                 </span>
               </label>
 
-              {(error || consentError) && (
+              {/* Error */}
+              {error && (
                 <div className="rounded-[10px] border border-red-500/20 bg-red-500/[0.08] px-4 py-3 text-[13px] text-red-400 text-center">
-                  {error || "Please agree to the Terms and Privacy Policy to continue."}
+                  {error}
                 </div>
               )}
 
-              {/* Buttons */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={handleBackStep}
-                  disabled={loading}
-                  className="h-[52px] px-6 rounded-[14px] border border-white/[0.12] bg-white/[0.05] text-[14px] font-semibold text-white/60 hover:bg-white/[0.09] hover:text-white/80 transition disabled:opacity-50 flex-shrink-0"
-                >
-                  ← Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 h-[52px] rounded-[14px] bg-[#306EEC] text-white text-[15px] font-extrabold hover:bg-[#2558c9] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ boxShadow: "0 12px 32px rgba(48,110,236,0.28)" }}
-                >
-                  {loading ? "Creating account…" : "Create Account"}
-                </button>
-              </div>
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 rounded-[12px] bg-[#306EEC] text-white text-[15px] font-bold hover:bg-[#2558c9] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-3"
+                style={{ boxShadow: "0 12px 32px rgba(48,110,236,0.28)" }}
+              >
+                {loading ? "Creating Account…" : "Create Account"}
+              </button>
             </form>
           )}
 
           {/* Sign in link */}
-          <p className="mt-7 text-center text-[13px] text-white/32">
+          <p className="mt-6 text-center text-[14px] text-white/50">
             Already have an account?{" "}
-            <Link href="/signin" className="font-semibold text-white/60 hover:text-white transition">
-              Sign in →
+            <Link
+              href="/signin"
+              className="font-semibold text-white hover:text-white/80 transition"
+            >
+              Sign In
             </Link>
           </p>
+        </div>
 
+        {/* Trust Strip */}
+        <div className="mt-12 grid grid-cols-3 gap-4 text-center">
+          <div className="flex flex-col items-center gap-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white/40">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
+            </svg>
+            <p className="text-[12px] font-medium text-white/50">Licensed HI-71484</p>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white/40">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
+            </svg>
+            <p className="text-[12px] font-medium text-white/50">Fully Insured</p>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white/40">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
+            </svg>
+            <p className="text-[12px] font-medium text-white/50">Long Island Local</p>
+          </div>
         </div>
       </div>
     </div>

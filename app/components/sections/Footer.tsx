@@ -22,7 +22,6 @@ export default function Footer() {
       className="relative overflow-hidden"
       style={{ background: "linear-gradient(165deg, #050C18 0%, #070F1E 50%, #040A14 100%)" }}
     >
-      {/* Subtle dot texture */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-[0.022]"
@@ -31,38 +30,32 @@ export default function Footer() {
           backgroundSize: "28px 28px",
         }}
       />
-      {/* Top edge glow */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-0 left-0 right-0 h-px"
+        className="pointer-events-none absolute left-0 right-0 top-0 h-px"
         style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.20), transparent)" }}
       />
-      {/* Bottom depth */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-black/25" />
 
-      {/* Content */}
-      <div className="relative mx-auto max-w-[1240px] px-5 sm:px-6 lg:px-5 py-12 sm:py-16">
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.6fr_0.7fr_0.7fr] gap-10 lg:gap-8 items-start">
-
-          {/* ── Brand column ── */}
+      <div className="relative mx-auto max-w-[1240px] px-5 py-12 sm:px-6 sm:py-16 lg:px-5">
+        <div className="grid grid-cols-1 items-start gap-10 sm:grid-cols-2 lg:grid-cols-[1.6fr_0.7fr_0.7fr] lg:gap-8">
           <div>
             <Image
               src="/images/logo-footer.svg"
               alt="Profixter"
               width={200}
               height={48}
-              className="w-[180px] h-auto mb-5"
+              className="mb-5 h-auto w-[180px]"
             />
 
-            <p className="text-[#9AA3B2] text-[15px] leading-relaxed max-w-[400px] mb-7">
-              Monthly handyman membership for Long Island homeowners. One trusted team, regular visits, and everything handled — year after year.
+            <p className="mb-7 max-w-[400px] text-[15px] leading-relaxed text-[#9AA3B2]">
+              Regular handyman visits for Long Island homeowners. No estimates. No surprise invoices. Just one trusted
+              team that gets to know your home.
             </p>
 
-            {/* Phone */}
             <a
               href="tel:+16315991363"
-              className="group inline-flex items-center gap-3.5 rounded-[16px] border border-white/[0.14] bg-white/[0.06] px-5 py-3.5 transition-all hover:bg-white/[0.12] hover:border-white/[0.22]"
+              className="group inline-flex items-center gap-3.5 rounded-[16px] border border-white/[0.14] bg-white/[0.06] px-5 py-3.5 transition-all hover:border-white/[0.22] hover:bg-white/[0.12]"
             >
               <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#306EEC]">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -77,7 +70,7 @@ export default function Footer() {
               </div>
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">
-                  Reach Taras directly
+                  Call Profixter
                 </div>
                 <div className="text-[16px] font-bold text-white">
                   631-599-1363
@@ -86,9 +79,8 @@ export default function Footer() {
             </a>
           </div>
 
-          {/* ── Membership column ── */}
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 mb-5">
+            <div className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35">
               Membership
             </div>
             <nav className="flex flex-col gap-3.5">
@@ -104,15 +96,14 @@ export default function Footer() {
             </nav>
           </div>
 
-          {/* ── Contact column ── */}
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 mb-5">
+            <div className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35">
               Contact
             </div>
             <div className="flex flex-col gap-3.5">
               <a
                 href="mailto:my@profixter.com"
-                className="text-[15px] font-medium text-[#9AA3B2] transition-colors hover:text-white break-all"
+                className="break-all text-[15px] font-medium text-[#9AA3B2] transition-colors hover:text-white"
               >
                 my@profixter.com
               </a>
@@ -135,24 +126,21 @@ export default function Footer() {
               </div>
             </div>
           </div>
-
         </div>
 
-        {/* ── Trust strip ── */}
-        <div className="mt-12 border-t border-white/[0.09] pt-6 flex flex-col sm:flex-row gap-3 items-center justify-between">
-          <p className="text-[#4A5568] text-[13px]">
-            &copy; 2026 Profixter. All rights reserved. · NY State Licensed HI-71484
+        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-white/[0.09] pt-6 sm:flex-row">
+          <p className="text-[13px] text-[#4A5568]">
+            &copy; 2026 Profixter. All rights reserved. &middot; NY State Licensed HI-71484
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
             {TRUST_BADGES.map((item) => (
               <div key={item} className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#86EFAC] flex-shrink-0" />
+                <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#86EFAC]" />
                 <span className="text-[12px] font-semibold text-white/28">{item}</span>
               </div>
             ))}
           </div>
         </div>
-
       </div>
     </footer>
   );

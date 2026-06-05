@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { getNextBooking } from "@/lib/booking-service";
 import { useAuth } from "@/lib/useAuth";
 
@@ -14,25 +15,20 @@ type NextBookingResponse = {
   hasSubscription?: boolean;
 };
 
-const HERO_PROOF = [
-  { value: "5.0 ★", label: "Google Rating" },
-  { value: "9+ yrs", label: "On Long Island" },
-  { value: "HI-71484", label: "Licensed" },
+const BENEFITS = [
+  "90-minute visits",
+  "Same trusted team",
+  "One monthly price",
 ];
 
-const TRUST_ITEMS = [
-  "5.0 Google Rating",
-  "Licensed HI-71484",
-  "9+ Years on Long Island",
-  "Fully Insured",
-];
-
-const MEMBERSHIP_QUICK_LINKS = [
-  { label: "How it works", anchor: "#how-it-works" },
-  { label: "View all plans", anchor: "#plans" },
+const TRUST_ROW = [
+  "5.0 Google rating",
+  "Long Island local",
+  "Cancel anytime",
 ];
 
 export default function HeroSection() {
+  const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const typedUser = user as FixterUser;
 
@@ -90,486 +86,144 @@ export default function HeroSection() {
   const goToPlans = () => {
     const el = document.getElementById("plans");
     if (el) scrollToHash("#plans");
-    else window.location.href = "/#plans";
+    else router.push("/#plans");
   };
 
   const goToBooking = () => {
     const el = document.getElementById("pick-day");
     if (el) scrollToHash("#pick-day");
-    else window.location.href = "/#pick-day";
+    else router.push("/#pick-day");
   };
 
-  const ctaConfig = useMemo(() => {
-    if (subState === "sub") {
-      return {
-        primaryLabel: "Book Visit",
-        primaryAction: goToBooking,
-        secondaryLabel: "Get Subscription",
-        secondaryAction: goToPlans,
-      };
-    }
-    if (isAuthenticated) {
-      return {
-        primaryLabel: "Get Subscription",
-        primaryAction: goToPlans,
-        secondaryLabel: "Book Visit",
-        secondaryAction: goToBooking,
-      };
-    }
-    return {
-      primaryLabel: "Get Subscription",
-      primaryAction: goToPlans,
-      secondaryLabel: "Register / Login",
-      secondaryAction: () => {
-        window.location.href = "/signin";
-      },
-    };
-  }, [subState, isAuthenticated]);
-
-  const handleServiceClick = (anchor: string) => {
-    if (anchor.startsWith("/")) {
-      window.location.href = anchor;
-      return;
-    }
-    const el = document.getElementById(anchor.replace("#", ""));
-    if (el) scrollToHash(anchor);
-    else window.location.href = `/${anchor}`;
-  };
+  const ctaConfig =
+    subState === "sub"
+      ? {
+          primaryLabel: "Book Visit",
+          primaryAction: goToBooking,
+          secondaryLabel: "Get Subscription",
+          secondaryAction: goToPlans,
+        }
+      : isAuthenticated
+        ? {
+            primaryLabel: "Get Subscription",
+            primaryAction: goToPlans,
+            secondaryLabel: "Book Visit",
+            secondaryAction: goToBooking,
+          }
+        : {
+            primaryLabel: "Create Account",
+            primaryAction: () => {
+              router.push("/signup");
+            },
+            secondaryLabel: "Login",
+            secondaryAction: () => {
+              router.push("/signin");
+            },
+          };
 
   return (
-    <section className="relative w-full overflow-hidden bg-[#080F1E] min-h-screen">
-
-      {/* ── Background ─────────────────────────────────────── */}
-      <div className="absolute inset-0 z-0">
+    <section className="relative w-full max-w-[100vw] overflow-hidden bg-[#080F1E]">
+      <div className="absolute inset-0">
         <Image
           src="/images/hero-bg.webp"
-          alt="Well-kept Long Island home"
+          alt="Warm Long Island home cared for by Profixter"
           fill
-          className="object-cover object-center"
-          style={{ opacity: 0.38 }}
           priority
+          sizes="100vw"
+          className="object-cover object-center"
         />
-        {/* Strong left-side overlay keeps text readable; right side reveals the home */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#080F1E] via-[#080F1E]/94 lg:via-[#080F1E]/72 to-[#080F1E]/18" />
-        {/* Bottom fade for seamless section transition */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#080F1E]/35 via-transparent to-[#080F1E]/92" />
-        {/* Subtle dot-matrix texture */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 opacity-[0.025]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, #fff 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#07101F]/91 via-[#07101F]/72 to-[#07101F]/24" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#07101F]/18 via-transparent to-[#07101F]/66" />
       </div>
 
-      {/* ── Ambient glows ──────────────────────────────────── */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-60 -left-60 h-[900px] w-[900px] rounded-full bg-[#306EEC]/7 blur-[220px]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 right-[-80px] h-[700px] w-[700px] rounded-full bg-[#1A3A7A]/9 blur-[200px]"
-      />
+      <div className="relative mx-auto flex min-h-[calc(100svh-104px)] max-w-[1180px] items-center px-4 py-16 sm:px-6 sm:py-20 lg:min-h-[calc(100svh-116px)] lg:px-8">
+        <div className="w-full max-w-[680px] text-left">
+          <h1 className="max-w-[350px] text-[40px] font-black leading-[0.98] tracking-[-0.025em] text-white sm:max-w-[680px] sm:text-[60px] sm:leading-[0.98] sm:tracking-[-0.028em] lg:text-[66px]">
+            <span className="block">Smart People</span>
+            <span className="block">Use</span>
+            <span className="block">Handyman Monthly</span>
+          </h1>
 
-      {/* ── Main grid ──────────────────────────────────────── */}
-      <div className="relative z-10 mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-        <div
-          className="flex flex-col lg:flex-row lg:items-center gap-10 lg:gap-16 py-28 sm:py-32 lg:py-36 pb-44 sm:pb-48"
-          style={{ minHeight: "calc(100svh - 72px)" }}
-        >
+          <p className="mt-6 max-w-[350px] text-[17px] font-semibold leading-[1.55] text-white/76 sm:max-w-[590px] sm:text-[20px]">
+            Same trusted team. One monthly price. No estimates. No surprise invoices.
+          </p>
 
-          {/* ── LEFT: Copy ───────────────────────────────── */}
-          <div className="flex-1 max-w-[660px]">
-
-            {/* Eyebrow */}
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-white/[0.06] px-4 py-2 backdrop-blur-sm mb-8">
-              <span
-                className="h-2 w-2 flex-shrink-0 rounded-full bg-[#86EFAC]"
-                style={{ boxShadow: "0 0 10px rgba(134,239,172,0.9)" }}
-              />
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/80">
-                Long Island&rsquo;s Home Care Membership
-              </span>
-            </div>
-
-            {/* Headline */}
-            <h1 className="text-[44px] font-black leading-[0.92] tracking-[-0.04em] text-white sm:text-[60px] lg:text-[78px] mb-7">
-              One Trusted Team.
-              <br />
-              <span
-                className="bg-clip-text text-transparent"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(90deg, #86EFAC 0%, #4ADE80 50%, #86EFAC 100%)",
-                }}
-              >
-                Your Home, Handled.
-              </span>
-            </h1>
-
-            {/* Sub-headline */}
-            <p className="text-[18px] sm:text-[20px] font-semibold leading-[1.38] text-white/75 mb-7 max-w-[560px]">
-              Long Island&rsquo;s monthly home care membership. The same trusted pros show up every month — no searching, no estimates, no surprises.
-            </p>
-
-            {/* Clarity bullets */}
-            <ul className="space-y-2.5 mb-9">
-              {[
-                "90-minute visits you book online, on your schedule",
-                "Same technician every visit — they know your home",
-                "Ongoing maintenance, not one-time emergencies",
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-3">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="flex-shrink-0">
-                    <path d="M5 12.5l4 4 10-10" stroke="#86EFAC" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <span className="text-[15px] sm:text-[16px] font-semibold text-white/80">{item}</span>
-                </li>
-              ))}
-            </ul>
-
-            {/* Supporting line */}
-            <p className="text-[14px] sm:text-[15px] italic text-white/38 mb-8 max-w-[500px]">
-              Finally — one company your home can count on, month after month.
-            </p>
-
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-3.5 mb-5">
-              <button
-                type="button"
-                onClick={ctaConfig.primaryAction}
-                className="inline-flex min-h-[64px] w-full sm:w-auto items-center justify-center rounded-[18px] bg-[#306EEC] px-10 text-[17px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99]"
-                style={{ boxShadow: "0 20px 60px rgba(48,110,236,0.40)" }}
-              >
-                {ctaConfig.primaryLabel}
-              </button>
-
-              <button
-                type="button"
-                onClick={ctaConfig.secondaryAction}
-                className="inline-flex min-h-[64px] w-full sm:w-auto items-center justify-center rounded-[18px] border border-white/20 bg-white/[0.07] px-10 text-[17px] font-bold text-white/88 backdrop-blur-sm transition-all duration-300 hover:border-white/35 hover:bg-white/[0.13] hover:text-white active:scale-[0.99]"
-              >
-                {ctaConfig.secondaryLabel}
-              </button>
-            </div>
-
-            {/* Risk reversal + urgency */}
-            <div className="mt-4 flex flex-col gap-2">
-              <p className="text-[13px] text-white/35">
-                {isAuthenticated && subState === "unknown"
-                  ? "Checking your plan details…"
-                  : "From $149/mo · Cancel anytime · No long-term contracts"}
-              </p>
-              <p className="text-[12px] text-white/25 italic">
-                Limited monthly capacity — we keep team sizes small to maintain quality.
-              </p>
-            </div>
-
-            {/* Trust boost strip */}
-            <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2.5">
-              {[
-                { icon: "🛡️", text: "Licensed & insured" },
-                { icon: "📍", text: "Local Long Island team" },
-                { icon: "👤", text: "Consistent technician" },
-                { icon: "⭐", text: "5.0 Google Rating" },
-              ].map(({ icon, text }) => (
-                <div key={text} className="flex items-center gap-2">
-                  <span className="text-[14px]">{icon}</span>
-                  <span className="text-[13px] font-semibold text-white/55">{text}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-7 rounded-[22px] border border-[#D4A574]/25 bg-white/[0.06] p-4 backdrop-blur-sm sm:p-5 lg:max-w-[620px]">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="max-w-[390px]">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#E8C49A]/85">
-                    Also Available
-                  </div>
-                  <div className="mt-2 text-[17px] font-extrabold leading-snug text-white sm:text-[18px]">
-                    Need a new roof or siding? We also handle full exterior projects.
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-[12px] font-semibold">
-                    <Link href="/roofing" className="text-[#E8C49A]/80 underline-offset-2 hover:text-[#E8C49A] hover:underline transition-colors">Roofing</Link>
-                    <Link href="/siding" className="text-[#E8C49A]/80 underline-offset-2 hover:text-[#E8C49A] hover:underline transition-colors">Siding</Link>
-                    <span className="text-white/55">50-year warranty</span>
-                    <span className="text-white/55">Financing available</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2 sm:w-[190px]">
-                  <Link
-                    href="/roofing"
-                    className="inline-flex min-h-[48px] items-center justify-center rounded-[14px] bg-[#D4A574] px-4 text-[14px] font-extrabold text-[#111827] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
-                  >
-                    Roofing Estimate
-                  </Link>
-                  <Link
-                    href="/siding"
-                    className="inline-flex min-h-[48px] items-center justify-center rounded-[14px] border border-[#D4A574]/30 bg-[#D4A574]/10 px-4 text-[14px] font-extrabold text-[#E8C49A] transition hover:bg-[#D4A574]/18 hover:border-[#D4A574]/45"
-                  >
-                    Siding Estimate
-                  </Link>
-                </div>
-              </div>
-            </div>
+          <div className="mt-7 inline-flex max-w-[350px] items-center gap-3 rounded-full border border-white/12 bg-white/8 px-4 py-2.5 text-[13px] font-extrabold text-white/78 backdrop-blur-md sm:max-w-none">
+            <span>Book visit</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="text-[#86EFAC]" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>We show up</span>
           </div>
 
-          {/* ── RIGHT: Premium Visual Panel (desktop) ────── */}
-          <div className="hidden lg:flex flex-col gap-4 flex-shrink-0 w-[400px] xl:w-[430px]">
-
-            {/* Premium Membership Card */}
-            <div
-              className="relative rounded-[28px] p-7 overflow-hidden"
-              style={{
-                background:
-                  "linear-gradient(135deg, #0D1F42 0%, #0F2558 50%, #0A1835 100%)",
-                boxShadow:
-                  "0 48px 120px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.09)",
-              }}
-            >
-              {/* Card shine */}
+          <div className="mt-7 flex max-w-[350px] flex-col gap-3 sm:max-w-none sm:flex-row sm:flex-wrap">
+            {BENEFITS.map((benefit) => (
               <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 rounded-[28px]"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(255,255,255,0.09) 0%, transparent 55%)",
-                }}
-              />
-              {/* Top accent line */}
-              <div
-                aria-hidden="true"
-                className="absolute top-0 left-10 right-10 h-px"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent)",
-                }}
-              />
-
-              <div className="relative">
-                {/* Card header */}
-                <div className="flex items-center justify-between mb-10">
-                  <Image
-                    src="/images/logo.svg"
-                    alt="Profixter"
-                    width={120}
-                    height={36}
-                    className="brightness-0 invert opacity-90"
-                  />
-                  <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/30">
-                    Membership
-                  </div>
-                </div>
-
-                {/* Plan */}
-                <div className="mb-8">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/32 mb-1.5">
-                    Membership
-                  </div>
-                  <div className="text-[28px] font-black text-white tracking-[-0.025em] leading-tight">
-                    Home Care Plus
-                  </div>
-                  <div className="text-[14px] text-white/48 mt-1.5 leading-snug">
-                    Two scheduled visits per month
-                  </div>
-                </div>
-
-                {/* Coverage preview */}
-                <div className="mb-7 rounded-[16px] bg-white/[0.06] border border-white/[0.08] p-4">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/32 mb-3">
-                    What&rsquo;s included
-                  </div>
-                  <div className="space-y-2">
-                    {[
-                      "Same trusted team, every visit",
-                      "No estimates — book and we handle it",
-                      "Priority scheduling slots",
-                    ].map((item) => (
-                      <div key={item} className="flex items-center gap-2.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#86EFAC] flex-shrink-0" />
-                        <span className="text-[13px] text-white/65 leading-snug">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Card footer */}
-                <div className="flex items-center justify-between pt-5 border-t border-white/[0.09]">
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 mb-1">
-                      Status
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="h-2 w-2 rounded-full bg-[#86EFAC]"
-                        style={{ boxShadow: "0 0 7px rgba(134,239,172,0.85)" }}
-                      />
-                      <span className="text-[13px] font-bold text-[#86EFAC]">
-                        Member
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 mb-1">
-                      License
-                    </div>
-                    <div className="font-mono text-[13px] font-bold text-white/75">
-                      HI-71484
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Proof stats row */}
-            <div className="grid grid-cols-3 gap-3">
-              {HERO_PROOF.map(({ value, label }) => (
-                <div
-                  key={label}
-                  className="rounded-[18px] border border-white/[0.09] bg-white/[0.04] p-4 text-center backdrop-blur-sm"
-                >
-                  <div className="text-[19px] font-extrabold text-white leading-none mb-1.5">
-                    {value}
-                  </div>
-                  <div className="text-[10px] font-semibold text-white/38 leading-tight">
-                    {label}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Membership quick links */}
-            <div className="flex flex-col gap-2">
-              {MEMBERSHIP_QUICK_LINKS.map(({ label, anchor }) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => handleServiceClick(anchor)}
-                  className="group w-full rounded-[14px] border border-white/[0.07] bg-white/[0.03] px-4 py-3 flex items-center justify-between hover:bg-white/[0.07] hover:border-white/[0.14] transition-all duration-200"
-                >
-                  <span className="text-[13px] font-semibold text-white/58 group-hover:text-white/82 transition-colors">
-                    {label}
-                  </span>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    className="text-white/22 group-hover:text-white/50 transition-colors flex-shrink-0"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M9 5l7 7-7 7"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                key={benefit}
+                className="flex items-center gap-2.5 text-[15px] font-extrabold text-white/86"
+              >
+                <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#86EFAC]/18 text-[#86EFAC]">
+                  <svg width="11" height="9" viewBox="0 0 11 9" fill="none" aria-hidden="true">
+                    <path d="M1 4.5L4 7.5L10 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                </button>
-              ))}
-            </div>
-
-            <div className="rounded-[20px] border border-[#D4A574]/20 bg-white/[0.04] p-4 backdrop-blur-sm">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E8C49A]/75">
-                Exterior Projects
-              </div>
-              <div className="mt-2 text-[14px] font-semibold leading-snug text-white/75">
-                Roof replacement and siding — licensed, insured, Long Island local.
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <Link
-                  href="/roofing"
-                  className="flex items-center justify-center rounded-[11px] border border-[#D4A574]/28 bg-[#D4A574]/10 px-3 py-2 text-[12px] font-bold text-[#E8C49A] transition hover:bg-[#D4A574]/20"
-                >
-                  Roofing →
-                </Link>
-                <Link
-                  href="/siding"
-                  className="flex items-center justify-center rounded-[11px] border border-white/12 bg-white/[0.05] px-3 py-2 text-[12px] font-bold text-white/65 transition hover:bg-white/[0.10]"
-                >
-                  Siding →
-                </Link>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* ── Mobile proof stats (shown below fold on mobile) ── */}
-      <div className="relative z-10 lg:hidden mx-auto max-w-[1280px] px-4 sm:px-6 -mt-28 mb-16">
-        <div className="grid grid-cols-3 gap-3">
-          {HERO_PROOF.map(({ value, label }) => (
-            <div
-              key={label}
-              className="rounded-[16px] border border-white/[0.09] bg-white/[0.05] p-3.5 text-center backdrop-blur-sm"
-            >
-              <div className="text-[17px] font-extrabold text-white leading-none mb-1">
-                {value}
-              </div>
-              <div className="text-[10px] font-semibold text-white/38 leading-tight">
-                {label}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Bottom premium services strip ──────────────────── */}
-      <div className="absolute bottom-0 left-0 right-0 border-t border-white/[0.07] bg-black/28 backdrop-blur-md">
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            {/* Services — hidden on xs to prevent overflow */}
-            <div className="hidden sm:flex flex-wrap items-center gap-5 sm:gap-8">
-              {MEMBERSHIP_QUICK_LINKS.map(({ label, anchor }, i, arr) => (
-                <span key={label} className="flex items-center gap-5 sm:gap-8">
-                  <button
-                    type="button"
-                    onClick={() => handleServiceClick(anchor)}
-                    className="text-[12px] sm:text-[13px] font-semibold text-white/50 hover:text-white/80 transition-colors"
-                  >
-                    {label}
-                  </button>
-                  {i < arr.length - 1 && (
-                    <span
-                      aria-hidden="true"
-                      className="h-3 w-px bg-white/15 flex-shrink-0"
-                    />
-                  )}
                 </span>
-              ))}
-            </div>
-            {/* License badge */}
-            <div className="flex items-center gap-2.5">
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                className="text-white/28"
-                aria-hidden="true"
+                {benefit}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-9 flex max-w-[350px] flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={ctaConfig.primaryAction}
+              className="inline-flex min-h-[58px] items-center justify-center rounded-[16px] bg-[#306EEC] px-8 text-[16px] font-extrabold text-white shadow-[0_16px_42px_rgba(48,110,236,0.32)] transition hover:bg-[#2558c9] active:scale-[0.99] sm:min-w-[190px]"
+            >
+              {ctaConfig.primaryLabel}
+            </button>
+
+            <button
+              type="button"
+              onClick={ctaConfig.secondaryAction}
+              className="inline-flex min-h-[58px] items-center justify-center rounded-[16px] border border-white/20 bg-white/10 px-8 text-[16px] font-extrabold text-white shadow-[0_14px_36px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:bg-white/16 active:scale-[0.99] sm:min-w-[190px]"
+            >
+              {ctaConfig.secondaryLabel}
+            </button>
+          </div>
+
+          <div className="mt-7 flex max-w-[350px] flex-col gap-3 sm:max-w-none sm:flex-row sm:items-center">
+            <p className="text-[14px] font-bold text-white/50">
+              Need roofing or siding?
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:w-[210px]">
+              <Link
+                href="/roofing"
+                className="inline-flex h-[40px] items-center justify-center rounded-[12px] border border-[#D4A574]/28 bg-[#D4A574]/12 px-4 text-[14px] font-extrabold text-[#E8C49A] transition hover:bg-[#D4A574]/18"
               >
-                <path
-                  d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/28">
-                Licensed
-              </span>
-              <span className="text-white/15 text-[10px]">·</span>
-              <span className="font-mono text-[12px] text-white/35">HI-71484</span>
+                Roofing
+              </Link>
+              <Link
+                href="/siding"
+                className="inline-flex h-[40px] items-center justify-center rounded-[12px] border border-white/16 bg-white/8 px-4 text-[14px] font-extrabold text-white/78 transition hover:bg-white/13 hover:text-white"
+              >
+                Siding
+              </Link>
             </div>
           </div>
+
+          <div className="mt-8 flex max-w-[350px] flex-wrap items-center gap-x-4 gap-y-2 text-white/48 sm:max-w-none sm:gap-x-5">
+            {TRUST_ROW.map((item) => (
+              <div key={item} className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#43A047]" />
+                <span className="text-[13px] font-bold">{item}</span>
+              </div>
+            ))}
+          </div>
+
+          {isAuthenticated && subState === "unknown" ? (
+            <p className="mt-4 text-[12px] font-semibold text-[#94A3B8]">
+              Checking your plan details...
+            </p>
+          ) : null}
         </div>
       </div>
     </section>

@@ -16,15 +16,9 @@ export default function Header() {
   const router = useRouter();
 
   const firstName = useMemo(() => user?.name?.split(" ")[0] || "User", [user?.name]);
-  const isSubscribed = useMemo(
-    () =>
-      !!isAuthenticated &&
-      !!user?.addresses?.some((address: { hasActiveSubscription?: boolean }) => address.hasActiveSubscription),
-    [isAuthenticated, user?.addresses]
-  );
   const navItems = useMemo(
     () => [
-      { href: "/membership", label: "Plans" },
+      { href: "/membership", label: "Membership" },
       { href: "/roofing", label: "Roofing" },
       { href: "/siding", label: "Siding" },
       ...(isAuthenticated ? [{ href: "/account", label: "Account" }] : []),
@@ -120,75 +114,53 @@ export default function Header() {
 
           <div className="hidden items-center gap-4 lg:flex">
             {isAuthenticated ? (
-              <>
-                <Link
-                  href={isSubscribed ? "/membership#pick-day" : "/membership#plans"}
-                  onClick={() =>
-                    trackEvent(isSubscribed ? "start_booking" : "view_plans", {
-                      placement: "header_primary",
-                    })
-                  }
-                  className="rounded-[14px] bg-[#306EEC] px-6 py-3 text-base font-extrabold text-white transition hover:bg-[#255ed2]"
+              <div className="relative" ref={profileMenuRef}>
+                <button
+                  onClick={() => setIsProfileMenuOpen((v) => !v)}
+                  className="flex items-center gap-3 transition-opacity hover:opacity-90"
+                  aria-label="Open profile menu"
                 >
-                  {isSubscribed ? "Book Visit" : "Get Subscription"}
-                </Link>
-                <div className="relative" ref={profileMenuRef}>
-                  <button
-                    onClick={() => setIsProfileMenuOpen((v) => !v)}
-                    className="flex items-center gap-3 transition-opacity hover:opacity-90"
-                    aria-label="Open profile menu"
-                  >
-                    <span className="text-base text-[#111827]">{firstName}</span>
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-[#C5CBD8]">
-                      <svg width="31" height="28" viewBox="0 0 31 28" fill="none">
-                        <path
-                          d="M15.5 14C18.5376 14 21 11.5376 21 8.5C21 5.46243 18.5376 3 15.5 3C12.4624 3 10 5.46243 10 8.5C10 11.5376 12.4624 14 15.5 14Z"
-                          fill="#EEF2FF"
-                        />
-                        <path
-                          d="M15.5 16C9.70101 16 5 19.134 5 23C5 24.1046 5.89543 25 7 25H24C25.1046 25 26 24.1046 26 23C26 19.134 21.299 16 15.5 16Z"
-                          fill="#EEF2FF"
-                        />
-                      </svg>
-                    </div>
-                  </button>
+                  <span className="text-base text-[#111827]">{firstName}</span>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-[#C5CBD8]">
+                    <svg width="31" height="28" viewBox="0 0 31 28" fill="none">
+                      <path
+                        d="M15.5 14C18.5376 14 21 11.5376 21 8.5C21 5.46243 18.5376 3 15.5 3C12.4624 3 10 5.46243 10 8.5C10 11.5376 12.4624 14 15.5 14Z"
+                        fill="#EEF2FF"
+                      />
+                      <path
+                        d="M15.5 16C9.70101 16 5 19.134 5 23C5 24.1046 5.89543 25 7 25H24C25.1046 25 26 24.1046 26 23C26 19.134 21.299 16 15.5 16Z"
+                        fill="#EEF2FF"
+                      />
+                    </svg>
+                  </div>
+                </button>
 
-                  {isProfileMenuOpen && (
-                    <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-[14px] border border-[#E6E8EF] bg-white py-2 shadow-lg">
-                      <Link
-                        href="/account"
-                        className="block px-4 py-3 text-base text-[#111827] transition-colors hover:bg-[#EEF2FF]"
-                        onClick={() => setIsProfileMenuOpen(false)}
-                      >
-                        My Account
-                      </Link>
-                      <div className="my-2 border-t border-[#E6E8EF]" />
-                      <button
-                        className="block w-full px-4 py-3 text-left text-base text-red-600 transition-colors hover:bg-[#EEF2FF]"
-                        onClick={handleLogout}
-                      >
-                        Log out
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </>
+                {isProfileMenuOpen && (
+                  <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-[14px] border border-[#E6E8EF] bg-white py-2 shadow-lg">
+                    <Link
+                      href="/account"
+                      className="block px-4 py-3 text-base text-[#111827] transition-colors hover:bg-[#EEF2FF]"
+                      onClick={() => setIsProfileMenuOpen(false)}
+                    >
+                      My Account
+                    </Link>
+                    <div className="my-2 border-t border-[#E6E8EF]" />
+                    <button
+                      className="block w-full px-4 py-3 text-left text-base text-red-600 transition-colors hover:bg-[#EEF2FF]"
+                      onClick={handleLogout}
+                    >
+                      Log out
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
-              <>
-                <Link
-                  href="/signin"
-                  className="rounded-[14px] border border-[#C5CBD8] bg-white/90 px-5 py-3 text-base font-bold text-[#111827] transition hover:bg-white"
-                >
-                  Register / Login
-                </Link>
-                <Link
-                  href="/membership#plans"
-                  onClick={() => trackEvent("view_plans", { placement: "header_primary" })}
-                  className="rounded-[14px] bg-[#306EEC] px-8 py-3 text-base font-extrabold text-white transition hover:bg-[#255ed2]"
-                >
-                  Get Subscription
-                </Link>
-              </>
+              <Link
+                href="/signin"
+                className="rounded-[14px] border border-[#C5CBD8] bg-white/90 px-5 py-3 text-base font-bold text-[#111827] transition hover:bg-white"
+              >
+                Register / Login
+              </Link>
             )}
           </div>
 
@@ -217,7 +189,7 @@ export default function Header() {
         <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-white/80 px-4 py-1.5 shadow-sm">
           <span className="h-1.5 w-1.5 rounded-full bg-[#86EFAC] flex-shrink-0" style={{ boxShadow: "0 0 6px rgba(134,239,172,0.9)" }} />
           <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#306EEC]">
-            Now accepting members &middot; Long Island
+            Based in Babylon · Serving Nassau & Suffolk Counties
           </span>
         </div>
       </div>
@@ -247,49 +219,46 @@ export default function Header() {
         />
 
         <div className="relative z-[75]">
-          <nav className="flex min-h-[100svh] flex-col items-center justify-start gap-10 px-6 pb-10 pt-24">
-            <div className="w-full max-w-sm rounded-[24px] border border-[#D9E4FF] bg-[#F8FAFF] p-5 shadow-[0_18px_60px_rgba(48,110,236,0.08)]">
-              <p className="text-center text-[12px] font-semibold uppercase tracking-[0.2em] text-[#306EEC]">
-                Serving Long Island homeowners
-              </p>
-              <div className="mt-4 flex flex-col gap-3">
-                {isAuthenticated ? (
-                  <Link
-                    href={isSubscribed ? "/membership#pick-day" : "/membership#plans"}
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      trackEvent(isSubscribed ? "start_booking" : "view_plans", {
-                        placement: "mobile_header_primary",
-                      });
-                    }}
-                    className="w-full rounded-[16px] bg-[#306EEC] px-6 py-4 text-center text-base font-medium text-white transition hover:bg-[#255ed2]"
+          <nav className="flex min-h-[100svh] flex-col items-center justify-start gap-8 px-6 pb-10 pt-24">
+            <div className="flex w-full max-w-sm flex-col gap-4 rounded-[24px] border border-[#E6E8EF] bg-white p-4 shadow-[0_16px_50px_rgba(17,24,39,0.08)]">
+              {isAuthenticated ? (
+                <>
+                  <div className="mb-2 flex items-center justify-between gap-3 rounded-[20px] border border-[#E6E8EF] bg-[#F8FAFF] p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#C5CBD8]">
+                        <svg width="30" height="26" viewBox="0 0 31 28" fill="none">
+                          <path
+                            d="M15.5 14C18.5376 14 21 11.5376 21 8.5C21 5.46243 18.5376 3 15.5 3C12.4624 3 10 5.46243 10 8.5C10 11.5376 12.4624 14 15.5 14Z"
+                            fill="#EEF2FF"
+                          />
+                          <path
+                            d="M15.5 16C9.70101 16 5 19.134 5 23C5 24.1046 5.89543 25 7 25H24C25.1046 25 26 24.1046 26 23C26 19.134 21.299 16 15.5 16Z"
+                            fill="#EEF2FF"
+                          />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-base font-semibold text-[#111827]">{firstName}</p>
+                        <p className="text-sm text-[#6B7280]">Member dashboard</p>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="rounded-[16px] bg-red-600 px-6 py-4 text-base font-medium text-white transition hover:bg-red-700"
                   >
-                    {isSubscribed ? "Book Visit" : "Get Subscription"}
-                  </Link>
-                ) : (
-                  <>
-                    <Link
-                      href="/signin"
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                      }}
-                      className="w-full rounded-[16px] border border-[#C5CBD8] bg-white px-6 py-4 text-center text-base font-medium text-[#111827] transition hover:bg-[#F8FAFF]"
-                    >
-                      Register / Login
-                    </Link>
-                    <Link
-                      href="/membership#plans"
-                      onClick={() => {
-                        trackEvent("view_plans", { placement: "mobile_header_primary" });
-                        setIsMenuOpen(false);
-                      }}
-                      className="w-full rounded-[16px] bg-[#306EEC] px-6 py-4 text-center text-base font-medium text-white transition hover:bg-[#255ed2]"
-                    >
-                      Get Subscription
-                    </Link>
-                  </>
-                )}
-              </div>
+                    Log out
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/signin"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="w-full rounded-[16px] border border-[#C5CBD8] bg-white px-6 py-4 text-center text-base font-medium text-[#111827] transition hover:bg-[#F8FAFF]"
+                >
+                  Register / Login
+                </Link>
+              )}
             </div>
 
             <div className="flex w-full max-w-sm flex-col gap-2 rounded-[24px] border border-[#E6E8EF] bg-white p-4 shadow-[0_16px_50px_rgba(17,24,39,0.08)]">
@@ -304,33 +273,6 @@ export default function Header() {
                 </Link>
               ))}
             </div>
-
-            {isAuthenticated ? (
-              <div className="flex w-full max-w-sm flex-col gap-4">
-                <div className="mb-2 flex items-center justify-center gap-3">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#C5CBD8]">
-                    <svg width="40" height="36" viewBox="0 0 31 28" fill="none">
-                      <path
-                        d="M15.5 14C18.5376 14 21 11.5376 21 8.5C21 5.46243 18.5376 3 15.5 3C12.4624 3 10 5.46243 10 8.5C10 11.5376 12.4624 14 15.5 14Z"
-                        fill="#EEF2FF"
-                      />
-                      <path
-                        d="M15.5 16C9.70101 16 5 19.134 5 23C5 24.1046 5.89543 25 7 25H24C25.1046 25 26 24.1046 26 23C26 19.134 21.299 16 15.5 16Z"
-                        fill="#EEF2FF"
-                      />
-                    </svg>
-                  </div>
-                  <span className="text-xl font-medium text-[#111827]">{firstName}</span>
-                </div>
-
-                <button
-                  onClick={handleLogout}
-                  className="w-full rounded-[16px] bg-red-600 px-8 py-3 text-center text-base font-medium text-white transition-colors hover:bg-red-700"
-                >
-                  Log out
-                </button>
-              </div>
-            ) : null}
           </nav>
         </div>
       </div>
