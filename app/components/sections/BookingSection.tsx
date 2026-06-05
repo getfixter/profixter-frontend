@@ -1018,13 +1018,13 @@ const canBook =
 
 
         {/* ── Main grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 lg:gap-6">
 
           {/* ── Calendar (left) ── */}
           <div className="order-2 lg:order-1 lg:col-span-5">
 
             {/* Calendar card */}
-            <div className="rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-5 sm:p-6">
+            <div className="rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-4 sm:p-5">
               {/* Month navigation */}
               <div className="flex items-center justify-between mb-5">
                 <button
@@ -1133,7 +1133,7 @@ const canBook =
           {/* ── Right column ── */}
           <div className="contents lg:order-2 lg:col-span-7 lg:flex lg:flex-col lg:gap-5">
 
-            <div className="order-1 rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-5 sm:p-6 lg:order-none">
+            <div className="order-1 rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-4 sm:p-5 lg:order-none">
               <div className="text-[16px] font-extrabold text-[#0B1628] mb-1">Visit details</div>
               <div className="text-[13px] text-[#64748B] mb-5">
                 Confirm the home and type of help before choosing your time.
@@ -1291,7 +1291,7 @@ const canBook =
             </div>
 
             {/* Task details card */}
-            <div className="order-4 rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-5 sm:p-6 lg:order-none">
+            <div className="order-4 rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-4 sm:p-5 lg:order-none">
               <div className="text-[16px] font-extrabold text-[#0B1628] mb-1">Describe your task</div>
               <div className="text-[13px] text-[#64748B] mb-4">
                 What needs to be done? Most tasks fit within one visit.
@@ -1322,7 +1322,7 @@ const canBook =
                 <div className="text-[13px] font-semibold text-[#0B1628] mb-2">
                   Photos{" "}
                   <span className="text-[#DC2626]">*</span>
-                  <span className="ml-1 text-[#64748B] font-normal">required - helps us prepare</span>
+                  <span className="ml-1 text-[#64748B] font-normal">required - helps us prepare. Without photos, we may not be able to accurately assess the task.</span>
                 </div>
                 <div className="flex gap-2.5">
                   <button
