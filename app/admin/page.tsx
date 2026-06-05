@@ -37,22 +37,13 @@ import AdminCalendarSettings from "@/app/components/admin/AdminCalendarSettings"
 
 const ADMIN_EMAIL = "getfixter@gmail.com";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+type BookingQuickFilter = "today" | "upcoming" | "pending" | "confirmed" | "completed" | "custom";
 
 // ✅ NY "today" helper (YYYY-MM-DD)
 function todayNY() {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/New_York",
   }).format(new Date());
-}
-
-function addDaysYMD(ymd: string, days: number) {
-  const [y, m, d] = ymd.split("-").map(Number);
-  const dt = new Date(y, m - 1, d);
-  dt.setDate(dt.getDate() + days);
-  const yyyy = dt.getFullYear();
-  const mm = String(dt.getMonth() + 1).padStart(2, "0");
-  const dd = String(dt.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
 }
 
 function Toast({ message, onDone }: { message: string; onDone: () => void }) {
@@ -85,6 +76,7 @@ export default function AdminPage() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedDate, setSelectedDate] = useState<string | null>(() => todayNY());
+  const [bookingQuickFilter, setBookingQuickFilter] = useState<BookingQuickFilter>("today");
 
   const [showFilters, setShowFilters] = useState(false);
   const [showCalendarMobile, setShowCalendarMobile] = useState(false);
@@ -323,6 +315,15 @@ export default function AdminPage() {
       );
     }
 
+    if (bookingQuickFilter === "upcoming") {
+      const today = todayNY();
+      list = list.filter((b) => {
+        const status = String(b.status || "").toLowerCase();
+        const ymd = toYMDNY(new Date(b.date));
+        return ymd >= today && !["completed", "canceled", "cancelled"].includes(status);
+      });
+    }
+
     if (statusFilter) {
       list = list.filter(
         (b) => String(b.status || "").toLowerCase() === statusFilter
@@ -336,7 +337,7 @@ export default function AdminPage() {
     return list.sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
-  }, [bookings, qlc, statusFilter, selectedDate]);
+  }, [bookings, qlc, statusFilter, selectedDate, bookingQuickFilter]);
 
   const filteredRequests = useMemo(() => {
     let list = requests;
@@ -387,7 +388,29 @@ export default function AdminPage() {
   }
 
   const today = todayNY();
-  const tomorrow = addDaysYMD(today, 1);
+  const pendingCount = bookings.filter((booking) => String(booking.status || "").toLowerCase() === "pending").length;
+  const confirmedCount = bookings.filter((booking) => String(booking.status || "").toLowerCase() === "confirmed").length;
+  const completedCount = bookings.filter((booking) => String(booking.status || "").toLowerCase() === "completed").length;
+  const upcomingCount = bookings.filter((booking) => {
+    const status = String(booking.status || "").toLowerCase();
+    return toYMDNY(new Date(booking.date)) >= today && !["completed", "canceled", "cancelled"].includes(status);
+  }).length;
+
+  const selectQuickFilter = (filter: BookingQuickFilter) => {
+    setBookingQuickFilter(filter);
+
+    if (filter === "today") {
+      setSelectedDate(today);
+      setStatusFilter("");
+      return;
+    }
+
+    setSelectedDate(null);
+    if (filter === "pending") setStatusFilter("pending");
+    else if (filter === "confirmed") setStatusFilter("confirmed");
+    else if (filter === "completed") setStatusFilter("completed");
+    else setStatusFilter("");
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -399,7 +422,7 @@ export default function AdminPage() {
           <BottomNav active={active} onChange={setActive} />
 
           {active === "bookings" && (
-            <div className="mt-3 flex items-center gap-2">
+            <div className="sticky top-0 z-30 -mx-3 mt-3 flex items-center gap-2 overflow-x-auto border-y border-slate-100 bg-white px-3 py-2 md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
               <button
                 type="button"
                 onClick={() => setShowCalendarMobile((v) => !v)}
@@ -416,9 +439,9 @@ export default function AdminPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setSelectedDate(today)}
+                onClick={() => selectQuickFilter("today")}
                 className={`flex-shrink-0 px-3.5 py-2.5 rounded-xl text-sm font-semibold border ${
-                  selectedDate === today
+                  bookingQuickFilter === "today" && selectedDate === today
                     ? "bg-blue-600 text-white border-blue-600"
                     : "bg-white text-gray-800 border-gray-300"
                 }`}
@@ -427,25 +450,47 @@ export default function AdminPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setSelectedDate(tomorrow)}
+                onClick={() => selectQuickFilter("upcoming")}
                 className={`flex-shrink-0 px-3.5 py-2.5 rounded-xl text-sm font-semibold border ${
-                  selectedDate === tomorrow
+                  bookingQuickFilter === "upcoming"
                     ? "bg-blue-600 text-white border-blue-600"
                     : "bg-white text-gray-800 border-gray-300"
                 }`}
               >
-                Tomorrow
+                Upcoming ({upcomingCount})
               </button>
               <button
                 type="button"
-                onClick={() => setSelectedDate(null)}
+                onClick={() => selectQuickFilter("pending")}
+                className={`flex-shrink-0 rounded-xl border px-3.5 py-2.5 text-sm font-black shadow-sm ${
+                  bookingQuickFilter === "pending"
+                    ? "border-amber-500 bg-amber-500 text-white"
+                    : "border-amber-200 bg-amber-50 text-amber-800"
+                }`}
+              >
+                All Pending ({pendingCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => selectQuickFilter("confirmed")}
                 className={`flex-shrink-0 px-3.5 py-2.5 rounded-xl text-sm font-semibold border ${
-                  selectedDate === null
-                    ? "bg-slate-900 text-white border-slate-900"
+                  bookingQuickFilter === "confirmed"
+                    ? "bg-emerald-600 text-white border-emerald-600"
                     : "bg-white text-gray-800 border-gray-300"
                 }`}
               >
-                All
+                Confirmed ({confirmedCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => selectQuickFilter("completed")}
+                className={`flex-shrink-0 px-3.5 py-2.5 rounded-xl text-sm font-semibold border ${
+                  bookingQuickFilter === "completed"
+                    ? "bg-sky-600 text-white border-sky-600"
+                    : "bg-white text-gray-800 border-gray-300"
+                }`}
+              >
+                Completed ({completedCount})
               </button>
               <button
                 type="button"
@@ -498,7 +543,10 @@ export default function AdminPage() {
               <select
                 className="px-3 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => {
+                  setBookingQuickFilter("custom");
+                  setStatusFilter(e.target.value);
+                }}
               >
                 <option value="">All statuses</option>
                 <option value="pending">Pending</option>
@@ -565,7 +613,10 @@ export default function AdminPage() {
                   <BookingsCalendar
                     bookings={bookings}
                     selectedDate={selectedDate}
-                    onChange={setSelectedDate}
+                    onChange={(date) => {
+                      setBookingQuickFilter("custom");
+                      setSelectedDate(date);
+                    }}
                   />
                 </div>
 
