@@ -54,7 +54,7 @@ export default function MembershipExperience() {
 
         {isSubscribed && (
           <>
-            
+            <BookingSection />
             <PopularTasksSection />
             <IncludedVisitsSection />
             <PlansSection />
