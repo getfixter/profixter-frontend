@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
@@ -184,7 +184,7 @@ function CancelModal({
           <div className="w-10 h-1 rounded-full bg-[#E2E8F0]" />
         </div>
 
-        <div className="text-[18px] font-bold text-[#313234] mb-1">Cancel this booking?</div>
+        <div className="text-[18px] font-bold text-[#313234] mb-1">Cancel this visit?</div>
         <div className="text-[14px] text-[#6A6D71] mb-4">
           <div className="mt-1.5">
             <span className="font-semibold text-[#313234]">When:</span>{" "}
@@ -192,7 +192,7 @@ function CancelModal({
           </div>
           <div className="mt-1">
             <span className="font-semibold text-[#313234]">Service:</span>{" "}
-            {booking.service || "—"}
+            {booking.service || "-"}
           </div>
         </div>
 
@@ -209,7 +209,7 @@ function CancelModal({
             disabled={loading}
             className="flex-1 py-3 rounded-[14px] border border-[#E0E6F5] bg-white text-[#313234] font-semibold text-[14px] hover:bg-[#F8FAFF] transition disabled:opacity-60"
           >
-            Keep booking
+            Keep visit
           </button>
           <button
             type="button"
@@ -217,7 +217,7 @@ function CancelModal({
             disabled={loading}
             className="flex-1 py-3 rounded-[14px] bg-red-500 text-white font-semibold text-[14px] hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? "Canceling…" : "Yes, cancel"}
+            {loading ? "Canceling..." : "Yes, cancel"}
           </button>
         </div>
 
@@ -252,7 +252,7 @@ function BookingCard({
       <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#F0F4FF]">
         <div>
           <div className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">
-            Booking #{bookingId}
+            Visit #{bookingId}
           </div>
           <div className="text-[14px] font-semibold text-[#313234] mt-0.5">
             {formatNY(booking.date)}
@@ -274,7 +274,7 @@ function BookingCard({
           </div>
           <div>
             <div className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-[0.08em]">Service</div>
-            <div className="text-[13px] font-semibold text-[#313234] leading-snug">{booking.service || "—"}</div>
+            <div className="text-[13px] font-semibold text-[#313234] leading-snug">{booking.service || "-"}</div>
           </div>
         </div>
 
@@ -304,7 +304,7 @@ function BookingCard({
               </svg>
             </div>
             <div>
-              <div className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-[0.08em]">Note</div>
+              <div className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-[0.08em]">Notes</div>
               <div className="text-[13px] text-[#313234] whitespace-pre-wrap leading-snug">{booking.note}</div>
             </div>
           </div>
@@ -329,7 +329,7 @@ function BookingCard({
               disabled={cancelLoading}
               className="flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {cancelLoading ? "…" : "Cancel booking"}
+              {cancelLoading ? "..." : "Cancel visit"}
             </button>
           )}
           {isCompletedStatus(booking.status) && (
@@ -338,17 +338,17 @@ function BookingCard({
                 href="https://buy.stripe.com/eVq8wO3W98O03NL3ASawo00"
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold border border-[#E0E6F5] text-[#313234] bg-white hover:bg-[#F8FAFF] transition text-center"
+                className="flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold border border-[#E0E6F5] text-[#6A6D71] bg-white hover:bg-[#F8FAFF] transition text-center"
               >
-                Tip ❤️
+                Leave a tip
               </a>
               <a
                 href="https://maps.app.goo.gl/Zgf97uUDCh6HBK5o8"
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold bg-[#306EEC] text-white hover:bg-[#2557C7] transition text-center"
+                className="flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold border border-[#E0E6F5] bg-white text-[#6A6D71] hover:bg-[#F8FAFF] transition text-center"
               >
-                Review ⭐
+                Leave a review
               </a>
             </>
           )}
@@ -418,14 +418,21 @@ export default function BookingsSection() {
           ? bRes.data
           : bRes.data?.bookings || [];
 
-        // Sort newest first
-        const sorted = [...list].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
+        const now = Date.now();
+        const sorted = [...list].sort((a, b) => {
+          const aTime = new Date(a.date).getTime();
+          const bTime = new Date(b.date).getTime();
+          const aUpcoming = isActiveStatus(a.status) && aTime >= now;
+          const bUpcoming = isActiveStatus(b.status) && bTime >= now;
+
+          if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1;
+          if (aUpcoming && bUpcoming) return aTime - bTime;
+          return bTime - aTime;
+        });
         setBookings(sorted);
       } catch (e) {
         console.error("Bookings load failed:", e);
-        setError("Could not load your bookings. Please try again.");
+        setError("Could not load your visits. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -499,27 +506,8 @@ export default function BookingsSection() {
             <a className="text-[#306EEC] font-semibold" href="tel:631-599-1363">
               631-599-1363
             </a>{" "}
-            — we&apos;ll help right away.
+            - we&apos;ll help right away.
           </div>
-        </div>
-
-        <div className="flex gap-2.5 flex-shrink-0">
-          <a
-            href="https://buy.stripe.com/eVq8wO3W98O03NL3ASawo00"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center px-4 py-2.5 rounded-[12px] bg-white border border-[#E0E6F5] text-[#313234] font-semibold text-[13px] hover:bg-[#F8FAFF] transition"
-          >
-            Leave a tip ❤️
-          </a>
-          <a
-            href="https://maps.app.goo.gl/Zgf97uUDCh6HBK5o8"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center px-4 py-2.5 rounded-[12px] bg-[#306EEC] text-white font-semibold text-[13px] hover:bg-[#2557C7] transition"
-          >
-            Google review ⭐
-          </a>
         </div>
       </div>
 
@@ -552,7 +540,7 @@ export default function BookingsSection() {
       {loading && (
         <div className="flex items-center gap-3 py-12 justify-center text-[#6A6D71]">
           <div className="w-5 h-5 border-2 border-[#306EEC] border-t-transparent rounded-full animate-spin" />
-          <span className="text-[14px]">Loading your bookings…</span>
+          <span className="text-[14px]">Loading your visits...</span>
         </div>
       )}
 
@@ -564,9 +552,9 @@ export default function BookingsSection() {
 
       {!loading && !error && filtered.length === 0 && (
         <div className="bg-white border border-[#E0E6F5] rounded-[16px] p-8 text-center">
-          <div className="text-[32px] mb-3">📅</div>
+          <div className="mb-3 text-[28px] text-[#306EEC]">Visit</div>
           <div className="text-[15px] font-semibold text-[#313234] mb-1">
-            {filter === "all" ? "No bookings yet" : `No ${filter} bookings`}
+            {filter === "all" ? "No visits yet" : `No ${filter} visits`}
           </div>
           <div className="text-[13px] text-[#6A6D71]">
             {filter === "all"
@@ -603,7 +591,7 @@ export default function BookingsSection() {
         <div className="mt-5 text-[13px] text-[#6A6D71] text-center">
           Need a new visit?{" "}
           <a className="text-[#306EEC] font-semibold hover:underline" href="/membership">
-            Book another visit →
+            Book another visit
           </a>
         </div>
       )}

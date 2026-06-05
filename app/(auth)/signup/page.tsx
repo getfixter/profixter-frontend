@@ -12,7 +12,7 @@ type Step = 1 | 2;
 function PasswordToggle({
   value,
   onChange,
-  placeholder = "••••••••",
+  placeholder = "â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢",
   id,
   autoComplete = "new-password",
 }: {
@@ -165,7 +165,7 @@ export default function SignUpPage() {
     if (!validateStep2()) return;
     setLoading(true);
     try {
-      const { token, user } = await register({
+      const registrationPayload = {
         name: formData.name.trim(),
         email: formData.email.trim(),
         password: formData.password,
@@ -178,31 +178,34 @@ export default function SignUpPage() {
         termsAccepted: true,
         consentSource: "website_signup",
         consentAt: new Date().toISOString(),
-      } as any);
+      };
+
+      const { token, user } = await register(registrationPayload);
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
       window.location.href = "/";
-    } catch (err: any) {
-      const message = err?.response?.data?.message || "Registration failed. Please try again.";
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      const message = error?.response?.data?.message || "Registration failed. Please try again.";
       setError(message);
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f42] to-[#0f1429] flex flex-col items-center justify-center px-6 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f42] to-[#0f1429] flex flex-col items-center justify-center px-4 py-5 sm:px-6 sm:py-10">
       {/* Container */}
       <div className="w-full max-w-[520px]">
         
         {/* Logo */}
-        <div className="text-center mb-12">
+        <div className="mb-5 text-center sm:mb-8">
           <Link href="/" className="inline-block">
             <Image
               src="/images/logo.svg"
               alt="Fixter"
               width={120}
               height={40}
-              className="h-10 w-auto"
+              className="h-8 w-auto sm:h-10"
             />
           </Link>
         </div>
@@ -215,7 +218,7 @@ export default function SignUpPage() {
             <button
               type="button"
               onClick={handleBackStep}
-              className="flex items-center gap-2 text-[13px] font-medium text-white/50 hover:text-white/70 transition mb-8"
+              className="mb-5 flex items-center gap-2 text-[13px] font-medium text-white/50 transition hover:text-white/70 sm:mb-8"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
@@ -225,24 +228,24 @@ export default function SignUpPage() {
           )}
 
           {/* Heading */}
-          <div className="mb-8 text-center">
-            <h1 className="text-[32px] sm:text-[36px] font-black tracking-[-0.02em] text-white mb-2">
+          <div className="mb-5 text-center sm:mb-7">
+            <h1 className="mb-1.5 text-[27px] font-black tracking-[-0.02em] text-white sm:text-[36px]">
               {step === 1 ? "Create Your Account" : "Your Service Address"}
             </h1>
-            <p className="text-[15px] text-white/50">
+            <p className="text-[14px] text-white/50 sm:text-[15px]">
               {step === 1 ? "It takes less than a minute." : "We deliver to one address per account."}
             </p>
           </div>
 
           {/* Progress bar */}
-          <div className="h-1 w-full rounded-full bg-white/[0.08] mb-8 overflow-hidden">
+          <div className="mb-5 h-1 w-full overflow-hidden rounded-full bg-white/[0.08] sm:mb-8">
             <div
               className="h-full rounded-full bg-[#306EEC] transition-all duration-500"
               style={{ width: step === 1 ? "50%" : "100%" }}
             />
           </div>
 
-          {/* ── STEP 1 ── */}
+          {/* â”€â”€ STEP 1 â”€â”€ */}
           {step === 1 && (
             <>
               {/* Google OAuth */}
@@ -259,10 +262,10 @@ export default function SignUpPage() {
 
               <form
                 onSubmit={(e) => { e.preventDefault(); handleNextStep(); }}
-                className="space-y-4"
+                className="space-y-3 sm:space-y-4"
               >
                 {/* Name & Email */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                   <div>
                     <label htmlFor="name" className="block text-[12px] font-semibold text-white/60 mb-2">
                       Full Name
@@ -312,7 +315,7 @@ export default function SignUpPage() {
                 </div>
 
                 {/* Password & Confirm */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                   <div>
                     <label htmlFor="password" className="block text-[12px] font-semibold text-white/60 mb-2">
                       Password
@@ -351,7 +354,7 @@ export default function SignUpPage() {
                 {/* Submit */}
                 <button
                   type="submit"
-                  className="w-full h-12 rounded-[12px] bg-[#306EEC] text-white text-[15px] font-bold hover:bg-[#2558c9] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-3"
+                  className="mt-2 h-12 w-full rounded-[12px] bg-[#306EEC] text-[15px] font-bold text-white transition-all hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50"
                   style={{ boxShadow: "0 12px 32px rgba(48,110,236,0.28)" }}
                 >
                   Continue
@@ -360,9 +363,9 @@ export default function SignUpPage() {
             </>
           )}
 
-          {/* ── STEP 2 ── */}
+          {/* â”€â”€ STEP 2 â”€â”€ */}
           {step === 2 && (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
 
               {/* Address */}
               <div>
@@ -381,7 +384,7 @@ export default function SignUpPage() {
               </div>
 
               {/* City & Zip */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                 <div>
                   <label htmlFor="city" className="block text-[12px] font-semibold text-white/60 mb-2">
                     City
@@ -414,7 +417,7 @@ export default function SignUpPage() {
               </div>
 
               {/* County & State */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                 <div>
                   <label htmlFor="county" className="block text-[12px] font-semibold text-white/60 mb-2">
                     County
@@ -431,7 +434,7 @@ export default function SignUpPage() {
                   </select>
                   {formData.zip.length === 5 && formData.county && (
                     <p className="mt-1.5 text-[11px] text-[#86EFAC]/70">
-                      Auto-detected ✓
+                      Auto-detected âœ“
                     </p>
                   )}
                 </div>
@@ -491,16 +494,16 @@ export default function SignUpPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 rounded-[12px] bg-[#306EEC] text-white text-[15px] font-bold hover:bg-[#2558c9] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-3"
+                className="mt-2 h-12 w-full rounded-[12px] bg-[#306EEC] text-[15px] font-bold text-white transition-all hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50"
                 style={{ boxShadow: "0 12px 32px rgba(48,110,236,0.28)" }}
               >
-                {loading ? "Creating Account…" : "Create Account"}
+                {loading ? "Creating Account..." : "Create Account"}
               </button>
             </form>
           )}
 
           {/* Sign in link */}
-          <p className="mt-6 text-center text-[14px] text-white/50">
+          <p className="mt-5 text-center text-[14px] text-white/50">
             Already have an account?{" "}
             <Link
               href="/signin"
@@ -512,7 +515,7 @@ export default function SignUpPage() {
         </div>
 
         {/* Trust Strip */}
-        <div className="mt-12 grid grid-cols-3 gap-4 text-center">
+        <div className="mt-7 grid grid-cols-3 gap-3 text-center sm:mt-12 sm:gap-4">
           <div className="flex flex-col items-center gap-2">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white/40">
               <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />

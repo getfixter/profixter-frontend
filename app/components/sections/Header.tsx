@@ -18,7 +18,7 @@ export default function Header() {
   const firstName = useMemo(() => user?.name?.split(" ")[0] || "User", [user?.name]);
   const navItems = useMemo(
     () => [
-      { href: "/membership", label: "Membership" },
+      { href: "/membership-info", label: "Membership" },
       { href: "/roofing", label: "Roofing" },
       { href: "/siding", label: "Siding" },
       ...(isAuthenticated ? [{ href: "/account", label: "Account" }] : []),

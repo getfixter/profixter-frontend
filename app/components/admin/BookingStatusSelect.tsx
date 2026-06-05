@@ -46,6 +46,13 @@ export default function BookingStatusSelect({
 
   const handleSelect = async (value: string) => {
     if (value.toLowerCase() === normalized || updating) return;
+    if (
+      value.toLowerCase() === "canceled" &&
+      !window.confirm("Cancel this booking? This will update the customer-facing visit status.")
+    ) {
+      return;
+    }
+
     setUpdating(true);
     try {
       await onUpdate(bookingId, value);

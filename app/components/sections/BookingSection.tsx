@@ -202,6 +202,26 @@ function TimeSlotGrid({
   );
 }
 
+function StepHeader({
+  step,
+  title,
+  subtitle,
+}: {
+  step: string;
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <div className="mb-3 sm:mb-4">
+      <div className="mb-1.5 inline-flex items-center rounded-full bg-[#EEF5FF] px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-[#306EEC]">
+        {step}
+      </div>
+      <div className="text-[16px] font-extrabold text-[#0B1628]">{title}</div>
+      {subtitle && <div className="mt-0.5 text-[13px] leading-snug text-[#64748B]">{subtitle}</div>}
+    </div>
+  );
+}
+
 // ---------- Booking Section ----------
 export default function BookingSection() {
   const router = useRouter();
@@ -987,13 +1007,13 @@ const canBook =
   return (
     <section
       id="pick-day"
-      className="relative w-full overflow-hidden bg-[#F6F8FC] pt-14 sm:pt-20 lg:pt-24 pb-14 sm:pb-18 lg:pb-24 scroll-mt-[110px]"
+      className="relative w-full overflow-hidden bg-[#F6F8FC] pt-8 pb-8 scroll-mt-[96px] sm:pt-16 sm:pb-16 lg:pt-20 lg:pb-20"
     >
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
         {/* ── Header ── */}
-        <div className="mb-8 sm:mb-10 max-w-[720px]">
-          <div className="inline-flex items-center gap-2.5 rounded-[8px] border border-[#D9E4FF] bg-white px-3 py-2 mb-5">
+        <div className="mb-5 max-w-[720px] sm:mb-8">
+          <div className="mb-3 inline-flex items-center gap-2.5 rounded-[8px] border border-[#D9E4FF] bg-white px-3 py-2">
             <span
               className="h-2 w-2 flex-shrink-0 rounded-full bg-[#306EEC]"
               style={{ boxShadow: "0 0 8px rgba(48,110,236,0.7)" }}
@@ -1003,22 +1023,22 @@ const canBook =
             </span>
           </div>
 
-          <h2 className="text-[34px] sm:text-[42px] lg:text-[52px] font-black leading-[1] text-[#0B1628] mb-3">
+          <h2 className="mb-2 text-[30px] font-black leading-[1.02] text-[#0B1628] sm:text-[40px] lg:text-[48px]">
             Book Your Next Visit
           </h2>
 
-          <p className="text-[15px] sm:text-[17px] text-[#475569] leading-relaxed max-w-[520px] mb-2">
+          <p className="mb-1.5 max-w-[520px] text-[14px] leading-relaxed text-[#475569] sm:text-[16px]">
             Choose a time, tell us what you need, and we&rsquo;ll handle the rest.
           </p>
 
-          <p className="text-[13px] leading-relaxed text-[#64748B] max-w-[560px]">
+          <p className="max-w-[560px] text-[12px] leading-relaxed text-[#64748B] sm:text-[13px]">
             Your visit includes up to 90 minutes of handyman labor. Add notes and photos so our team can come prepared.
           </p>
         </div>
 
 
         {/* ── Main grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 lg:gap-6">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-12 lg:gap-6">
 
           {/* ── Calendar (left) ── */}
           <div className="order-2 lg:order-1 lg:col-span-5">
@@ -1124,7 +1144,7 @@ const canBook =
                     <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                     <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
-                  Manage my bookings
+                  Manage my visits
                 </button>
               </div>
             )}
@@ -1133,13 +1153,14 @@ const canBook =
           {/* ── Right column ── */}
           <div className="contents lg:order-2 lg:col-span-7 lg:flex lg:flex-col lg:gap-5">
 
-            <div className="order-1 rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-4 sm:p-5 lg:order-none">
-              <div className="text-[16px] font-extrabold text-[#0B1628] mb-1">Visit details</div>
-              <div className="text-[13px] text-[#64748B] mb-5">
-                Confirm the home and type of help before choosing your time.
-              </div>
+            <div className="order-1 rounded-[12px] border border-[#D7DEE9] bg-white p-4 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5 lg:order-none">
+              <StepHeader
+                step="1 Details"
+                title="Visit details"
+                subtitle="Confirm the home and type of help."
+              />
 
-              <div className="space-y-5">
+              <div className="space-y-4">
                 <div>
                   <div className="text-[13px] font-semibold text-[#0B1628] mb-2">Booking address</div>
                   {(addresses?.length || 0) >= 2 ? (
@@ -1241,17 +1262,18 @@ const canBook =
             </div>
 
             {/* Time slot card */}
-            <div className="order-3 rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-5 sm:p-6 lg:order-none">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <div className="text-[16px] font-extrabold text-[#0B1628]">Choose a time</div>
-                  <div className="text-[13px] text-[#64748B] mt-0.5">Each visit is up to 90 minutes</div>
-                </div>
+            <div className="order-3 rounded-[12px] border border-[#D7DEE9] bg-white p-4 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5 lg:order-none">
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <StepHeader
+                  step="2 Time"
+                  title="Choose a time"
+                  subtitle="Each visit is up to 90 minutes."
+                />
                 <button
                   type="button"
                   onClick={() => setQuickBookOpen(true)}
                   disabled={checkingAccess || loadingMonthKey === visibleMonthKey}
-                  className="inline-flex h-[40px] items-center gap-2 rounded-[12px] border border-[#306EEC] px-4 text-[13px] font-bold text-[#306EEC] hover:bg-[#EEF5FF] disabled:opacity-50 disabled:cursor-not-allowed transition flex-shrink-0"
+                  className="inline-flex h-[38px] flex-shrink-0 items-center gap-2 rounded-[12px] border border-[#306EEC] px-3 text-[12px] font-bold text-[#306EEC] transition hover:bg-[#EEF5FF] disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-[13px]"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -1291,11 +1313,12 @@ const canBook =
             </div>
 
             {/* Task details card */}
-            <div className="order-4 rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-4 sm:p-5 lg:order-none">
-              <div className="text-[16px] font-extrabold text-[#0B1628] mb-1">Describe your task</div>
-              <div className="text-[13px] text-[#64748B] mb-4">
-                What needs to be done? Most tasks fit within one visit.
-              </div>
+            <div className="order-4 rounded-[12px] border border-[#D7DEE9] bg-white p-4 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5 lg:order-none">
+              <StepHeader
+                step="3 Notes / Photos"
+                title="Tell us what you need"
+                subtitle="Add a short note and at least one photo."
+              />
 
               <textarea
                 value={note}
@@ -1304,7 +1327,7 @@ const canBook =
                   if (error === "Describe the task in at least a few words.") setError("");
                 }}
                 placeholder="E.g. leaking faucet, loose door handle, light fixture swap, shelf to hang..."
-                className={`w-full min-h-[120px] max-h-[240px] rounded-[16px] border p-4 text-[14px] sm:text-[15px] text-[#0B1628] placeholder-[#94A3B8] resize-none bg-[#F8FAFF] focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] transition ${
+                className={`w-full min-h-[96px] max-h-[220px] rounded-[16px] border bg-[#F8FAFF] p-3.5 text-[14px] text-[#0B1628] placeholder-[#94A3B8] resize-none transition focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] sm:min-h-[120px] sm:p-4 sm:text-[15px] ${
                   error === "Describe the task in at least a few words."
                     ? "border-red-300"
                     : "border-[#C5CBD8]"
@@ -1318,11 +1341,11 @@ const canBook =
               </div>
 
               {/* Photo upload */}
-              <div className="mt-5">
+              <div className="mt-4">
                 <div className="text-[13px] font-semibold text-[#0B1628] mb-2">
                   Photos{" "}
                   <span className="text-[#DC2626]">*</span>
-                  <span className="ml-1 text-[#64748B] font-normal">required - helps us prepare. Without photos, we may not be able to accurately assess the task.</span>
+                  <span className="ml-1 text-[#64748B] font-normal">required - helps us prepare.</span>
                 </div>
                 <div className="flex gap-2.5">
                   <button
@@ -1462,8 +1485,9 @@ const canBook =
             )}
 
             {/* Confirm card */}
-            <div className="order-7 rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-5 sm:p-6 lg:order-none">
-              <div className="flex flex-wrap gap-x-6 gap-y-2 mb-5">
+            <div className="order-7 rounded-[12px] border border-[#D7DEE9] bg-white p-4 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5 lg:order-none">
+              <StepHeader step="4 Confirm" title="Ready to book" />
+              <div className="mb-4 flex flex-wrap gap-x-4 gap-y-2">
                 {[
                   "1 task per visit, up to 90 min",
                   "Upload at least one photo",
@@ -1482,7 +1506,7 @@ const canBook =
                 onClick={handleBookNow}
                 data-track="booking-cta"
                 disabled={!canBook}
-                className="w-full h-[58px] rounded-[18px] bg-[#306EEC] text-white text-[16px] sm:text-[17px] font-extrabold transition-all hover:bg-[#2558c9] hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 active:scale-[0.99]"
+                className="h-[52px] w-full rounded-[16px] bg-[#306EEC] text-[16px] font-extrabold text-white transition-all hover:bg-[#2558c9] hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-y-0 active:scale-[0.99] sm:h-[58px] sm:text-[17px]"
                 style={{ boxShadow: canBook ? "0 16px 48px rgba(48,110,236,0.30)" : undefined }}
               >
                 {checkingAccess
@@ -1495,7 +1519,7 @@ const canBook =
               </button>
 
               <div className="mt-3 text-[12px] text-[#94A3B8] text-center">
-                You&rsquo;ll receive a confirmation once your booking is reviewed.
+                You&rsquo;ll receive a confirmation once your visit is reviewed.
               </div>
             </div>
           </div>
@@ -1615,7 +1639,7 @@ const canBook =
                 <div className="rounded-[18px] border border-[#E5E9F2] bg-[#F8FAFF] p-5 space-y-3 mb-5">
                   {(
                     [
-                      ["Booking #", bookingNumber],
+                      ["Visit #", bookingNumber],
                       ["Service", confirmedService],
                       [
                         "Date",

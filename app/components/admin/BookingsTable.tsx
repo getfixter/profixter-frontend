@@ -93,6 +93,7 @@ export default function BookingsTable({
   const [draftNote, setDraftNote] = useState("");
   const [draftDT, setDraftDT] = useState("");
   const [saving, setSaving] = useState(false);
+  const [quickActionId, setQuickActionId] = useState<string | null>(null);
 
   const userMap = useMemo(
     () =>
@@ -191,6 +192,15 @@ export default function BookingsTable({
     }
   };
 
+  const confirmPending = async (booking: Booking) => {
+    setQuickActionId(booking._id);
+    try {
+      await updateStatus(booking._id, "Confirmed");
+    } finally {
+      setQuickActionId(null);
+    }
+  };
+
   return (
     <div className="space-y-5 bookings-table-section">
       {bookings.length > 0 && (
@@ -207,7 +217,7 @@ export default function BookingsTable({
           <button
             type="button"
             onClick={exportCSV}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             Export
           </button>
@@ -275,8 +285,12 @@ export default function BookingsTable({
               {dayBookings.map((booking) => {
                 const user = userMap[booking.userId];
                 const phone = booking.phone || user?.phone || "";
+                const email = booking.email || user?.email || "";
                 const fullAddress = formatAddress(booking.address, booking.city, booking.state, booking.zip);
                 const isEditing = editingId === booking._id;
+                const status = String(booking.status || "Pending").toLowerCase();
+                const isPending = status === "pending" || !booking.status;
+                const hasPhotos = !!booking.images?.length;
 
                 return (
                   <article
@@ -301,12 +315,17 @@ export default function BookingsTable({
                           <h3 className="mt-2 truncate text-base font-semibold text-slate-900">
                             {booking.name || user?.name || "Unknown user"}
                           </h3>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
+                            {booking.note && <span>Notes</span>}
+                            {hasPhotos && <span>Photos ({booking.images?.length})</span>}
+                            {email && <span className="truncate">{email}</span>}
+                          </div>
                         </div>
 
                         <button
                           type="button"
                           onClick={() => (isEditing ? cancelEdit() : startEdit(booking))}
-                          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                          className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                         >
                           {isEditing ? "Close edit" : "Edit"}
                         </button>
@@ -346,11 +365,32 @@ export default function BookingsTable({
                         </div>
                       </div>
 
-                      <BookingStatusSelect
-                        bookingId={booking._id}
-                        currentStatus={booking.status}
-                        onUpdate={updateStatus}
-                      />
+                      {isPending && (
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
+                          <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-amber-700">
+                            Pending review
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => confirmPending(booking)}
+                            disabled={quickActionId === booking._id}
+                            className="flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-emerald-600 px-4 text-base font-black text-white shadow-[0_10px_24px_rgba(16,185,129,0.22)] active:bg-emerald-700 disabled:opacity-60"
+                          >
+                            {quickActionId === booking._id ? "Confirming..." : "Confirm / Approve"}
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="rounded-2xl border border-slate-200 bg-white p-2">
+                        <div className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          Status actions
+                        </div>
+                        <BookingStatusSelect
+                          bookingId={booking._id}
+                          currentStatus={booking.status}
+                          onUpdate={updateStatus}
+                        />
+                      </div>
 
                       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
                         <div className="mb-2 flex items-center justify-between gap-3">
@@ -396,7 +436,7 @@ export default function BookingsTable({
                       </div>
 
                       {phone && (
-                        <div className="grid grid-cols-[1fr_auto] gap-2">
+                        <div className={`grid gap-2 ${email ? "grid-cols-[1fr_auto_auto]" : "grid-cols-[1fr_auto]"}`}>
                           <a
                             href={`tel:${sanitizeTel(phone)}`}
                             className="flex items-center gap-2.5 rounded-2xl bg-emerald-500 px-4 py-3.5 text-sm font-bold text-white active:bg-emerald-600"
@@ -415,6 +455,17 @@ export default function BookingsTable({
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h8m-8 4h5m8 5l-3.5-3.5M19 4H5a2 2 0 00-2 2v8a2 2 0 002 2h4l4 4 4-4h2a2 2 0 002-2V6a2 2 0 00-2-2z" />
                             </svg>
                           </a>
+                          {email && (
+                            <a
+                              href={`mailto:${email}`}
+                              className="flex h-[50px] w-[50px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 active:bg-slate-100"
+                              title="Email"
+                            >
+                              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-18 8h18a2 2 0 002-2V8a2 2 0 00-2-2H3a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                              </svg>
+                            </a>
+                          )}
                         </div>
                       )}
 

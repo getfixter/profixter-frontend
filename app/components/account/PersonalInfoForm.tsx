@@ -1,92 +1,61 @@
-// FINAL VERSION — Static personal info pulled from DB
-// Shows User ID, Name, Email, Phone, Address (default address preferred)
-// + Addresses list + Add address inside Personal info
-
-import type { AccountFormData } from "./types";
+import type { AccountAddress, AccountFormData } from "./types";
 import { AddressesPanel } from "./AddressesPanel";
 
 interface PersonalInfoFormProps {
   formData: AccountFormData;
 }
 
-function formatAddress(a?: { line1?: string; city?: string; state?: string; zip?: string }): string {
-  if (!a) return "—";
-  const line1 = a.line1?.trim() || "";
-  const city = a.city?.trim() || "";
-  const state = a.state?.trim() || "";
-  const zip = a.zip?.trim() || "";
-
-  const parts: string[] = [];
-  if (line1) parts.push(line1);
-
-  const cityStateZip = [city || "", state || "", zip || ""]
-    .filter(Boolean)
-    .join(state && city ? ", " : " ");
-
-  if (cityStateZip.trim()) parts.push(cityStateZip.trim());
-  return parts.length ? parts.join(", ") : "—";
+function AccountDetail({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | null;
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm text-[#6A6D71]">{label}</label>
+      <div className="w-full rounded-[14px] border border-[#C5CBD8] bg-[#EEF2FF] px-4 py-2.5 text-sm font-medium text-[#313234] opacity-90 sm:px-5 sm:py-3 sm:text-base">
+        {value || "-"}
+      </div>
+    </div>
+  );
 }
 
 export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
-  const addresses = (formData?.addresses || []) as any[];
-
-  const defaultAddr =
-    (formData?.defaultAddressId
-      ? addresses.find((a) => String(a._id) === String(formData.defaultAddressId))
-      : null) || null;
-
-  const primaryAddr = defaultAddr || addresses[0] || null;
-
-  const finalAddress = primaryAddr
-    ? formatAddress(primaryAddr)
-    : formatAddress({
-        line1: formData?.address,
-        city: formData?.city,
-        state: formData?.state,
-        zip: formData?.zip,
-      });
+  const addresses = (formData?.addresses || []) as AccountAddress[];
 
   return (
     <div>
-      <h2 className="text-xl sm:text-2xl font-semibold text-[#313234] mb-6 sm:mb-8">
-        Personal information
-      </h2>
+      <div className="mb-4 sm:mb-6">
+        <h2 className="text-xl font-semibold text-[#313234] sm:text-2xl">
+          Profile and addresses
+        </h2>
+        <p className="mt-1 text-sm text-[#6A6D71]">
+          Manage where visits happen first. Account details are below.
+        </p>
+      </div>
 
-      {/* ✅ Addresses section first */}
       <AddressesPanel
-        addresses={addresses as any}
+        addresses={addresses}
         defaultAddressId={formData?.defaultAddressId ? String(formData.defaultAddressId) : null}
       />
 
-      {/* Then account info (without User ID) */}
-      <div className="space-y-4 sm:space-y-5 mt-6 sm:mt-8">
-        <div>
-          <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
-            Name
-          </label>
-          <div className="w-full px-4 sm:px-5 py-2.5 sm:py-3 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[14px] text-[#313234] text-sm sm:text-base font-medium opacity-90">
-            {formData?.name || "—"}
-          </div>
-        </div>
+      <details className="mt-5 rounded-[18px] border border-[#E0E6F5] bg-white">
+        <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between px-4 py-3 text-[15px] font-bold text-[#313234]">
+          Account details
+          <span className="text-[12px] font-semibold text-[#6A6D71]">Show</span>
+        </summary>
 
-        <div>
-          <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
-            Email
-          </label>
-          <div className="w-full px-4 sm:px-5 py-2.5 sm:py-3 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[14px] text-[#313234] text-sm sm:text-base font-medium opacity-90">
-            {formData?.email || "—"}
-          </div>
+        <div className="space-y-4 border-t border-[#EEF2FF] px-4 py-4 sm:space-y-5 sm:px-5">
+          <AccountDetail label="Name" value={formData?.name} />
+          <AccountDetail label="Email" value={formData?.email} />
+          <AccountDetail label="Phone" value={formData?.phone} />
+          <p className="text-xs text-[#6A6D71]">
+            Need to change your name, email, or phone? Call 631-599-1363 and we&apos;ll help.
+          </p>
         </div>
-
-        <div>
-          <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
-            Phone
-          </label>
-          <div className="w-full px-4 sm:px-5 py-2.5 sm:py-3 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[14px] text-[#313234] text-sm sm:text-base font-medium opacity-90">
-            {formData?.phone || "—"}
-          </div>
-        </div>
-      </div>
+      </details>
     </div>
   );
 }

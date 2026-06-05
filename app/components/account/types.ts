@@ -2,12 +2,12 @@ export type ActiveTab = "overview" | "personal" | "plan" | "bookings" | "passwor
 
 export interface AccountAddress {
   _id: string;
-  label: string;
+  label?: string;
   line1: string;
   city: string;
   state: string;
   zip: string;
-  county: string;
+  county?: string;
   hasActiveSubscription?: boolean;
   plan?: string | null;
 }
@@ -24,7 +24,7 @@ export interface AccountFormData {
   zip: string;
   county: string;
 
-  addresses: any[];
+  addresses: AccountAddress[];
 
   // ✅ add this
   defaultAddressId?: string | null;
@@ -37,4 +37,3 @@ export interface BookingItem {
   date: string;
   time: string;
 }
-

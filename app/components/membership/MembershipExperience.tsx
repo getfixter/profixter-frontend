@@ -102,6 +102,20 @@ function SubscribedCustomerFlow() {
     <>
       <BookingSection />
 
+      <section className="bg-[#F6F8FC] px-4 pb-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1180px]">
+          <Link
+            href="/membership-info"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[#D7DEE9] bg-white px-4 text-[13px] font-bold text-[#306EEC] transition hover:border-[#306EEC] hover:bg-[#F8FAFF]"
+          >
+            View membership details
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+        </div>
+      </section>
+
       <CustomerPortalSection id="my-visits">
         <BookingsSection />
       </CustomerPortalSection>

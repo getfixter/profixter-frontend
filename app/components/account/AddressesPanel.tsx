@@ -13,6 +13,10 @@ type Address = {
   county?: string;
 };
 
+type ApiErrorBody = {
+  message?: string;
+};
+
 export function AddressesPanel({
   addresses,
   defaultAddressId,
@@ -58,7 +62,7 @@ export function AddressesPanel({
         }
       );
 
-      const data = await res.json().catch(() => ({}));
+      const data = (await res.json().catch(() => ({}))) as ApiErrorBody;
       if (!res.ok) {
         alert(data?.message || "Failed to set default address.");
         return;
@@ -85,7 +89,7 @@ export function AddressesPanel({
         }
       );
 
-      const data = await res.json().catch(() => ({}));
+      const data = (await res.json().catch(() => ({}))) as ApiErrorBody;
       if (!res.ok) {
         alert(data?.message || "Failed to delete address.");
         return;
@@ -100,12 +104,12 @@ export function AddressesPanel({
   const addAddress = async () => {
     if (!token) return;
 
-const missing: string[] = [];
-if (!line1.trim()) missing.push("Street address");
-if (!city.trim()) missing.push("City");
-if (!state.trim()) missing.push("State");
-if (!zip.trim()) missing.push("ZIP");
-if (!county.trim()) missing.push("County");
+    const missing: string[] = [];
+    if (!line1.trim()) missing.push("Street address");
+    if (!city.trim()) missing.push("City");
+    if (!state.trim()) missing.push("State");
+    if (!zip.trim()) missing.push("ZIP");
+    if (!county.trim()) missing.push("County");
 
     if (missing.length) {
       alert(`Please fill: ${missing.join(", ")}`);
@@ -131,13 +135,15 @@ if (!county.trim()) missing.push("County");
       });
 
       const text = await res.text();
-let data: any = {};
-try { data = text ? JSON.parse(text) : {}; } catch {}
+      let data: ApiErrorBody = {};
+      try {
+        data = text ? (JSON.parse(text) as ApiErrorBody) : {};
+      } catch {}
 
-if (!res.ok) {
-  alert(data?.message || `Failed to add address. (${res.status})\n${text || ""}`);
-  return;
-}
+      if (!res.ok) {
+        alert(data?.message || `Failed to add address. (${res.status})\n${text || ""}`);
+        return;
+      }
 
 
       await refreshUser();
@@ -149,8 +155,8 @@ if (!res.ok) {
   };
 
   return (
-    <div className="mt-10">
-      <div className="flex items-center justify-between gap-4 mb-4">
+    <div>
+      <div className="mb-4 flex items-center justify-between gap-3">
         <h3 className="text-lg sm:text-xl font-semibold text-[#313234]">Addresses</h3>
 
         <button
@@ -161,7 +167,7 @@ if (!res.ok) {
         </button>
       </div>
 
-      {/* ✅ Inline Add Form */}
+      {/* Inline Add Form */}
       {showAdd && (
         <div className="bg-white border border-[#C5CBD8] rounded-[20px] p-4 sm:p-5 mb-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -171,18 +177,18 @@ if (!res.ok) {
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-[#C5CBD8]"
-                placeholder="Primary / Rental / Mom’s house"
+                placeholder="Primary / Rental / Parent's house"
               />
             </div>
 
             <div>
               <label className="block text-[#6A6D71] text-sm mb-2">County</label>
               <input
-  value={county}
-  onChange={(e) => setCounty(e.target.value)}
-  required
-  className="w-full px-4 py-3 rounded-xl border border-[#C5CBD8]"
-/>
+                value={county}
+                onChange={(e) => setCounty(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-xl border border-[#C5CBD8]"
+              />
 
             </div>
 
@@ -225,7 +231,7 @@ if (!res.ok) {
             </div>
           </div>
 
-          <div className="flex gap-3 mt-4">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <button
               onClick={() => {
                 resetForm();
@@ -277,7 +283,7 @@ if (!res.ok) {
                 </p>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 {!isDefault && (
                   <button
                     onClick={() => setDefault(a._id)}
@@ -302,7 +308,7 @@ if (!res.ok) {
 
         {addresses.length === 0 && (
           <div className="text-sm text-[#6A6D71] italic">
-            No addresses yet. Click “Add address”.
+            No addresses yet. Tap Add address.
           </div>
         )}
       </div>
