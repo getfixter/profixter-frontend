@@ -54,12 +54,11 @@ export default function MembershipExperience() {
 
         {isSubscribed && (
           <>
-            <BookingSection />
+            
             <PopularTasksSection />
             <IncludedVisitsSection />
             <PlansSection />
             <TrustSection />
-            <ReferralSection />
             <FAQSection />
             <Footer />
           </>
@@ -67,6 +66,7 @@ export default function MembershipExperience() {
 
         {isAuthenticated && !isSubscribed && (
           <>
+          <BookingSection />
             <PopularTasksSection />
             <IncludedVisitsSection />
             <PlansSection />
