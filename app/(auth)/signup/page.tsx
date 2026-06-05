@@ -208,7 +208,7 @@ export default function SignUpPage() {
         </div>
 
         {/* Card */}
-        <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-8 sm:p-10">
+        <div className="rounded-[16px] border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-5 sm:p-8">
           
           {/* Step Progress */}
           {step === 2 && (

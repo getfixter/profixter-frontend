@@ -48,25 +48,23 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
 
   return (
     <div>
-      <h2 className="text-xl sm:text-2xl font-semibold text-[#313234] mb-8 sm:mb-10">
+      <h2 className="text-xl sm:text-2xl font-semibold text-[#313234] mb-6 sm:mb-8">
         Personal information
       </h2>
 
-      <div className="space-y-6 sm:space-y-6">
-        <div>
-          <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
-            Your ID
-          </label>
-          <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
-            {formData?.userId || "—"}
-          </div>
-        </div>
+      {/* ✅ Addresses section first */}
+      <AddressesPanel
+        addresses={addresses as any}
+        defaultAddressId={formData?.defaultAddressId ? String(formData.defaultAddressId) : null}
+      />
 
+      {/* Then account info (without User ID) */}
+      <div className="space-y-4 sm:space-y-5 mt-6 sm:mt-8">
         <div>
           <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
             Name
           </label>
-          <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
+          <div className="w-full px-4 sm:px-5 py-2.5 sm:py-3 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[14px] text-[#313234] text-sm sm:text-base font-medium opacity-90">
             {formData?.name || "—"}
           </div>
         </div>
@@ -75,7 +73,7 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
           <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
             Email
           </label>
-          <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
+          <div className="w-full px-4 sm:px-5 py-2.5 sm:py-3 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[14px] text-[#313234] text-sm sm:text-base font-medium opacity-90">
             {formData?.email || "—"}
           </div>
         </div>
@@ -84,30 +82,11 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
           <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
             Phone
           </label>
-          <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
+          <div className="w-full px-4 sm:px-5 py-2.5 sm:py-3 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[14px] text-[#313234] text-sm sm:text-base font-medium opacity-90">
             {formData?.phone || "—"}
           </div>
         </div>
-
-        <div>
-          <label className="block text-[#6A6D71] text-sm sm:text-base mb-2 sm:mb-3">
-            Address
-          </label>
-          <div className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] text-[#313234] text-base sm:text-xl font-medium opacity-90">
-            {finalAddress}
-          </div>
-        </div>
-
-        <p className="text-sm text-[#6A6D71] italic -mt-2">
-          This information is pulled directly from your stored account details.
-        </p>
       </div>
-
-      {/* ✅ Addresses inside Personal info */}
-      <AddressesPanel
-        addresses={addresses as any}
-        defaultAddressId={formData?.defaultAddressId ? String(formData.defaultAddressId) : null}
-      />
     </div>
   );
 }
