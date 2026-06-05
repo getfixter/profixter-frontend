@@ -163,7 +163,7 @@ export function PlanSection() {
         });
 
         setSubscriptions(ranked);
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!alive) return;
         setError(getSubscriptionActionErrorMessage(err));
       } finally {
@@ -216,7 +216,7 @@ export function PlanSection() {
       );
       setNotice(result.message || "Cancellation scheduled successfully.");
       setCancelTarget(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(getSubscriptionActionErrorMessage(err));
     } finally {
       setCanceling(false);
@@ -236,7 +236,7 @@ export function PlanSection() {
         current.map((s) => (s._id === result.subscription._id ? result.subscription : s))
       );
       setNotice(result.message || "Subscription reactivated successfully.");
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(getSubscriptionActionErrorMessage(err));
     } finally {
       setReactivatingId(null);
@@ -251,7 +251,7 @@ export function PlanSection() {
         addressId: subscription.addressId ?? undefined,
       });
       window.location.href = url;
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(getSubscriptionActionErrorMessage(err));
       setBillingPortalLoadingId(null);
     }
@@ -290,7 +290,7 @@ export function PlanSection() {
       );
       setPlanChangeTarget(null);
       setPlanChangeConfirmOpen(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(getSubscriptionActionErrorMessage(err));
     } finally {
       setPlanChanging(false);
@@ -543,8 +543,8 @@ export function PlanSection() {
                             className="block w-full rounded-[14px] bg-[#306EEC] py-3 text-center text-base font-semibold text-[#EEF2FF] transition-colors hover:bg-[#2557C7]"
                           >
                             {billingPortalLoadingId === subscription._id
-                              ? "Opening Stripe..."
-                              : "Manage plan in Stripe"}
+                              ? "Opening billing..."
+                              : "Manage Billing"}
                           </button>
                         )}
 
@@ -557,14 +557,14 @@ export function PlanSection() {
                           {subscription.cancelAtPeriodEnd
                             ? "Cancellation scheduled"
                             : billingPortalLoadingId === subscription._id
-                            ? "Opening Stripe…"
-                            : "Cancel via Stripe"}
+                            ? "Opening billing..."
+                            : "Cancel Plan"}
                         </button>
                       </div>
 
                       {subscription.stripeManaged ? (
                         <div className="mt-1 text-xs font-semibold text-[#6A6D71]">
-                          Stripe handles plan changes, payment methods, invoices, and cancellation review.
+                          Billing settings include plan changes, payment methods, invoices, and cancellation review.
                         </div>
                       ) : null}
 
@@ -658,7 +658,7 @@ export function PlanSection() {
 
               <h3 className="text-2xl font-extrabold text-[#313234]">Are you sure you want to cancel?</h3>
               <p className="mt-3 text-sm leading-relaxed text-[#6A6D71]">
-                You'll keep your membership until the end of the current billing period — your home stays in regular care until then.
+                You&apos;ll keep your membership until the end of the current billing period — your home stays in regular care until then.
               </p>
 
               <div className="mt-5 rounded-[16px] border border-[#D7E0F5] bg-[#F8FAFF] p-4 text-left">
@@ -771,7 +771,7 @@ export function PlanSection() {
               </div>
             ) : (
               <div className="mb-5 rounded-[12px] border border-[#D7E0F5] bg-[#F8FAFF] p-3 text-sm font-semibold text-[#313234]">
-                You're already on this plan.
+                You&apos;re already on this plan.
               </div>
             )}
 
