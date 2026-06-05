@@ -472,9 +472,10 @@ export default function BookingsSection() {
         )
       );
       setCancelTarget(null);
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const error = e as { response?: { data?: { message?: string } }; message?: string };
       const msg =
-        e?.response?.data?.message || e?.message || "Failed to cancel. Please call us.";
+        error?.response?.data?.message || error?.message || "Failed to cancel. Please call us.";
       setCancelError(msg);
     } finally {
       setCancelLoading(false);
@@ -485,8 +486,8 @@ export default function BookingsSection() {
     <div className="w-full">
       {/* Header */}
       <div className="mb-5">
-        <h2 className="text-[22px] font-bold text-[#313234]">My Bookings</h2>
-        <p className="text-[13px] text-[#6A6D71] mt-0.5">Your full visit history</p>
+        <h2 className="text-[22px] font-bold text-[#313234]">My Visits</h2>
+        <p className="text-[13px] text-[#6A6D71] mt-0.5">Upcoming and past home visits</p>
       </div>
 
       {/* CTA strip */}
@@ -498,7 +499,7 @@ export default function BookingsSection() {
             <a className="text-[#306EEC] font-semibold" href="tel:631-599-1363">
               631-599-1363
             </a>{" "}
-            — we'll help right away.
+            — we&apos;ll help right away.
           </div>
         </div>
 
@@ -602,7 +603,7 @@ export default function BookingsSection() {
         <div className="mt-5 text-[13px] text-[#6A6D71] text-center">
           Need a new visit?{" "}
           <a className="text-[#306EEC] font-semibold hover:underline" href="/membership">
-            Book on the membership page →
+            Book another visit →
           </a>
         </div>
       )}

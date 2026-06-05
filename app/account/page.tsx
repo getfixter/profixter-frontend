@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { ActiveTab, AccountFormData } from "../components/account/types";
@@ -8,6 +8,7 @@ import { initialAccountFormData } from "../data/account";
 
 import { AccountHeader } from "../components/account/AccountHeader";
 import { AccountSidebar } from "../components/account/AccountSidebar";
+import CustomerMobileNav from "../components/account/CustomerMobileNav";
 import { PersonalInfoForm } from "../components/account/PersonalInfoForm";
 import { PlanSection } from "../components/account/PlanSection";
 import { PasswordForm } from "../components/account/PasswordForm";
@@ -29,7 +30,7 @@ function TabSync({ onTab }: { onTab: (tab: string) => void }) {
 
 const MOBILE_TABS: { key: ActiveTab; label: string }[] = [
   { key: "overview", label: "Overview" },
-  { key: "bookings", label: "Bookings" },
+  { key: "bookings", label: "Visits" },
   { key: "plan", label: "My Plan" },
   { key: "personal", label: "Profile" },
   { key: "password", label: "Security" },
@@ -37,10 +38,12 @@ const MOBILE_TABS: { key: ActiveTab; label: string }[] = [
 
 export default function AccountPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
-  const [formData, setFormData] = useState<AccountFormData>(initialAccountFormData);
 
   const router = useRouter();
   const { user, isAuthenticated, isLoading, logout, refreshUser } = useAuth();
+  const isSubscribed =
+    !!isAuthenticated &&
+    !!user?.addresses?.some((addr: { hasActiveSubscription?: boolean }) => addr.hasActiveSubscription);
 
   const applyTab = (tab: string) => {
     if (tab === "overview") setActiveTab("overview");
@@ -75,22 +78,22 @@ export default function AccountPage() {
     }
   }, [isLoading, isAuthenticated, refreshUser]);
 
-  useEffect(() => {
-    if (!user) return;
+  const formData = useMemo<AccountFormData>(() => {
+    if (!user) return initialAccountFormData;
 
-    setFormData({
-      userId: user.userId || (user as any).id || "",
+    return {
+      userId: user.userId || user.id || "",
       name: user.name || "",
       email: user.email || "",
       phone: user.phone || "",
-      address: (user as any).address || "",
-      city: (user as any).city || "",
-      state: (user as any).state || "",
-      zip: (user as any).zip || "",
-      county: (user as any).county || "",
-      addresses: (user as any).addresses || [],
-      defaultAddressId: (user as any).defaultAddressId || null,
-    });
+      address: user.address || "",
+      city: user.city || "",
+      state: user.state || "",
+      zip: user.zip || "",
+      county: user.county || "",
+      addresses: user.addresses || [],
+      defaultAddressId: user.defaultAddressId || null,
+    };
   }, [user]);
 
   const handleLogout = () => {
@@ -112,7 +115,11 @@ export default function AccountPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen bg-[#EEF2FF]">
+    <div
+      className={`min-h-screen bg-[#EEF2FF] ${
+        isSubscribed ? "pb-[calc(86px+env(safe-area-inset-bottom,0px))] lg:pb-0" : ""
+      }`}
+    >
       <AccountHeader userName={formData.name} />
 
       <Suspense fallback={null}>
@@ -169,6 +176,8 @@ export default function AccountPage() {
 
         </div>
       </main>
+
+      {isSubscribed && <CustomerMobileNav />}
     </div>
   );
 }

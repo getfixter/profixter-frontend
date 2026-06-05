@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import axios from "axios";
-import { useAuth } from "@/lib/useAuth";
 import {
   getMySubscriptions,
   createBillingPortalSession,
   getSubscriptionActionErrorMessage,
   type ManagedSubscription,
 } from "@/lib/subscription-service";
-import type { AccountFormData } from "./types";
+import type { AccountAddress, AccountFormData } from "./types";
 
 type Booking = {
   _id: string;
@@ -43,11 +41,11 @@ const FAQS = [
   },
   {
     q: "Can I cancel anytime?",
-    a: "Yes — month-to-month, no contracts, no cancellation fees. Go to My Plan → Manage in Stripe. Your service continues until the end of the current billing period.",
+    a: "Yes — month-to-month, no contracts, no cancellation fees. Go to My Plan → Manage Billing. Your service continues until the end of the current billing period.",
   },
   {
     q: "How do I get a copy of my invoice or receipt?",
-    a: "Open the Stripe portal from My Plan. All invoices, receipts, and payment history are available there. You can also update your payment method from the same place.",
+    a: "Open Manage Billing from My Plan. All invoices, receipts, and payment history are available there. You can also update your payment method from the same place.",
   },
   {
     q: "What if 90 minutes isn't enough for my task list?",
@@ -129,7 +127,6 @@ export default function OverviewSection({
   formData: AccountFormData;
   onSwitchTab: (tab: "plan" | "bookings" | "personal" | "password") => void;
 }) {
-  const { user } = useAuth();
   const [subs, setSubs] = useState<ManagedSubscription[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -175,8 +172,8 @@ export default function OverviewSection({
         .toUpperCase()
         .concat(String(activeSub.subscriptionType || "").slice(1))
     : (() => {
-        const addr = (formData.addresses || []).find(
-          (a: any) => a.hasActiveSubscription && a.plan
+        const addr = ((formData.addresses || []) as AccountAddress[]).find(
+          (a) => a.hasActiveSubscription && a.plan
         );
         return addr
           ? String(addr.plan).charAt(0).toUpperCase() + String(addr.plan).slice(1)
@@ -211,7 +208,7 @@ export default function OverviewSection({
         addressId: activeSub?.addressId ?? undefined,
       });
       window.location.href = url;
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(getSubscriptionActionErrorMessage(err));
       setBillingLoading(false);
     }
