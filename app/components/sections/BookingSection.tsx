@@ -27,6 +27,30 @@ type DayAvailability = {
   capacity: number;
   slots: string[];
 };
+
+type BookingAddress = {
+  _id: string;
+  label?: string;
+  line1?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+};
+
+type BookingAccessItem = {
+  _id?: string;
+  date?: string;
+  status?: string;
+  service?: string;
+  bookingNumber?: string;
+  addressId?: string;
+  time?: string;
+};
+
+type BookingUser = {
+  addresses?: BookingAddress[];
+  defaultAddressId?: string;
+};
 const QUICK_BOOKING_DESCRIPTIONS: Record<string, string> = {
   "TV Mounting": "TV mounting help",
   "Light Fixtures": "Light fixture replacement",
@@ -40,7 +64,7 @@ const QUICK_BOOKING_DESCRIPTIONS: Record<string, string> = {
   "Home Maintenance Punch Lists": "Home maintenance tasks",
 };
 
-// Fallback 9–17 every 30 min
+// Fallback 9-17 every 30 min
 const FALLBACK_HOURS: string[] = (() => {
   const list: string[] = [];
   for (let h = 9; h < 17; h++) {
@@ -122,12 +146,12 @@ function TimeSlotGrid({
               onSelect(slot.time);
             }}
             className={[
-              "group relative min-h-[64px] overflow-hidden rounded-[18px] border px-3.5 py-3 text-left transition-all duration-200 ease-out active:scale-[0.99]",
+              "group relative min-h-[60px] overflow-hidden rounded-[12px] border px-3.5 py-3 text-left transition-all duration-150 ease-out active:scale-[0.99]",
               isSelected
-                ? "scale-[1.05] border-white/85 bg-[#1242B8] text-white shadow-[0_26px_56px_rgba(18,66,184,0.44)] ring-[3px] ring-[#7EB3FF]/55"
+                ? "border-[#306EEC] bg-[#EEF5FF] text-[#0B1628] ring-2 ring-[#306EEC]/20"
                 : slot.available
-                  ? "border-[#2E69E3] bg-[#306EEC] text-white shadow-[0_12px_28px_rgba(48,110,236,0.24)] hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-[#2558c9] hover:shadow-[0_18px_38px_rgba(48,110,236,0.30)]"
-                  : "border-[#D1D5DB] bg-[#EEF1F5] text-[#8C94A3] opacity-95",
+                  ? "border-[#D7DEE9] bg-white text-[#0B1628] hover:border-[#306EEC] hover:bg-[#F8FAFF]"
+                  : "border-[#E2E8F0] bg-[#F1F5F9] text-[#94A3B8]",
               !slot.available ? "cursor-not-allowed" : "",
               isSelected ? "cursor-default" : "",
             ].join(" ")}
@@ -136,7 +160,7 @@ function TimeSlotGrid({
               <div
                 className={[
                   "pointer-events-none absolute inset-x-0 top-0 h-[44%] transition-opacity duration-200",
-                  isSelected ? "bg-white/10 opacity-100" : "bg-white/8 opacity-80 group-hover:opacity-100",
+                  isSelected ? "bg-[#306EEC]/5 opacity-100" : "bg-[#306EEC]/0 opacity-0 group-hover:opacity-100",
                 ].join(" ")}
               />
             )}
@@ -150,7 +174,7 @@ function TimeSlotGrid({
                 {formatTime12(slot.time)}
               </div>
               {isSelected && (
-                <div className="inline-flex items-center gap-1 rounded-full border border-white/50 bg-white/16 px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+                <div className="inline-flex items-center gap-1 rounded-full border border-[#306EEC]/20 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-[#306EEC]">
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                     <path
                       d="M2.5 6.2L4.8 8.5L9.5 3.7"
@@ -166,7 +190,7 @@ function TimeSlotGrid({
             </div>
             <div
               className={`relative z-[1] mt-1.5 text-[11px] font-semibold ${
-                isSelected ? "text-white/95" : slot.available ? "text-white/88" : "text-[#8C94A3]"
+                isSelected ? "text-[#306EEC]" : slot.available ? "text-[#64748B]" : "text-[#8C94A3]"
               }`}
             >
               {availabilityLabel}
@@ -183,8 +207,9 @@ export default function BookingSection() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
 
-  const addresses = ((user as any)?.addresses || []) as any[];
-  const defaultAddressId = (user as any)?.defaultAddressId as string | undefined;
+  const bookingUser = user as BookingUser | null;
+  const addresses = bookingUser?.addresses || [];
+  const defaultAddressId = bookingUser?.defaultAddressId;
 
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
@@ -246,11 +271,11 @@ export default function BookingSection() {
   const [existingBookingService, setExistingBookingService] = useState("");
   const [existingBookingTime, setExistingBookingTime] = useState("");
   const [existingBookingId, setExistingBookingId] = useState<string | null>(null);
-  const [activeBookings, setActiveBookings] = useState<any[]>([]);
+  const [activeBookings, setActiveBookings] = useState<BookingAccessItem[]>([]);
 
   // Subscription / access (per address)
   const [hasSubscription, setHasSubscription] = useState(false);
-  const [freeFirstVisitAvailable, setFreeFirstVisitAvailable] = useState(false);
+  const [, setFreeFirstVisitAvailable] = useState(false);
   const [subscriptionError, setSubscriptionError] = useState("");
   const [checkingAccess, setCheckingAccess] = useState(false);
 
@@ -492,7 +517,7 @@ setFreeFirstVisitAvailable(false); // keep if you want, but always false
 setPlan(String(data?.plan || ""));
 
 if (!hasSub) {
-  setSubscriptionError("This address does not have an active subscription. Purchase a subscription to book a visit.");
+  setSubscriptionError("This address does not have an active membership for booking.");
 } else {
   setSubscriptionError("");
 }
@@ -505,7 +530,7 @@ if (!hasSub) {
 
       // ✅ ALL active bookings list (pending + confirmed)
 // Prefer array from API, fallback to single `future`
-const list = Array.isArray(data?.activeBookings)
+const list: BookingAccessItem[] = Array.isArray(data?.activeBookings)
   ? data.activeBookings
   : data?.future
   ? [data.future]
@@ -513,13 +538,13 @@ const list = Array.isArray(data?.activeBookings)
 
 setActiveBookings(
   list
-    .filter((b: any) => b?.date)
-    .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .filter((b) => b?.date)
+    .sort((a, b) => new Date(a.date || "").getTime() - new Date(b.date || "").getTime())
 );
       // ✅ keep legacy "existingBooking*" in sync using earliest booking
 const sorted = list
-  .filter((b: any) => b?.date)
-  .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  .filter((b) => b?.date)
+  .sort((a, b) => new Date(a.date || "").getTime() - new Date(b.date || "").getTime());
 
 const next = sorted[0];
 
@@ -547,7 +572,7 @@ if (next?.date) {
       setHasActiveBooking(safeCount >= safeLimit);
 
       
-    } catch (e) {
+    } catch {
       setHasSubscription(false);
       setFreeFirstVisitAvailable(false);
       setPlan("");
@@ -712,7 +737,7 @@ if (info) {
     }
 
     setUploadedPhotos((prev) => [...prev, ...compressed].slice(0, 10));
-    if (error === "Photos help us prepare - please upload at least one") {
+    if (error === "Add at least one photo so our team can prepare.") {
       setError("");
     }
     e.target.value = ""; // allow re-select same file
@@ -748,7 +773,7 @@ if (info) {
     const selected = selectClosestAvailableDateAndTime();
     if (!selected) {
       setQuickBookingLoading(false);
-      setError("We are still checking nearby availability. Please try Quick Booking again in a moment.");
+      setError("We are still checking nearby availability. Try Quick Book again in a moment.");
       return;
     }
 
@@ -789,25 +814,25 @@ if (info) {
     }
 
     if (!hasSubscription) {
-  setError("This address does not have an active subscription. Purchase a subscription to book a visit.");
+  setError("This address does not have an active membership for booking.");
   return;
 }
 
 
     if (!service) {
-      setError("Please select a service");
+      setError("Choose a service type.");
       return;
     }
     if (!selectedDate || !selectedTime) {
-      setError("Please select date and time");
+      setError("Choose a date and time.");
       return;
     }
     if (note.trim().split(/\s+/).filter(Boolean).length < 3) {
-      setError("Please describe your task (at least a few words)");
+      setError("Describe the task in at least a few words.");
       return;
     }
     if (uploadedPhotos.length === 0) {
-      setError("Photos help us prepare - please upload at least one");
+      setError("Add at least one photo so our team can prepare.");
       return;
     }
 
@@ -848,15 +873,20 @@ if (info) {
       setUploadedPhotos([]);
 
       setShowModal(true);
-    } catch (err: any) {
-      const message = err?.response?.data?.message || "Failed to create booking. Please try again.";
+    } catch (err: unknown) {
+      const responseMessage =
+        typeof err === "object" && err !== null && "response" in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      const errorMessage = err instanceof Error ? err.message : undefined;
+      const message = responseMessage || errorMessage || "We could not create the booking. Please try again.";
       setError(message);
     } finally {
       setLoading(false);
     }
   };
 
-  const rebook = async (booking: any) => {
+  const rebook = async (booking: BookingAccessItem | null) => {
   const id = booking?._id || existingBookingId;
   if (!id) return;
 
@@ -887,7 +917,7 @@ if (info) {
 
     if (svc) {
       const key = SERVICES.find((s) => s.label === svc)?.key || "";
-      setService(key as any);
+      setService(key as ServiceKey | "");
     }
 
     if (dtRaw) {
@@ -930,6 +960,12 @@ const canBook =
   const wordsCount = note.trim().split(/\s+/).filter(Boolean).length;
 
   const ymdSelected = selectedDate ? formatDateYMD(selectedDate) : "";
+  const selectedAddress = addresses.find(
+    (address) => String(address._id) === String(selectedAddressId ?? defaultAddressId ?? "")
+  );
+  const selectedAddressLabel = selectedAddress
+    ? `${selectedAddress.label ? `${selectedAddress.label}: ` : ""}${selectedAddress.line1}, ${selectedAddress.city} ${selectedAddress.state} ${selectedAddress.zip}`
+    : "";
   const visibleMonthKey = getMonthKey(currentMonth);
   const slotOptions = useMemo(() => {
     if (!selectedDate || !config) return [];
@@ -951,39 +987,32 @@ const canBook =
   return (
     <section
       id="pick-day"
-      className="relative w-full overflow-hidden pt-20 sm:pt-28 lg:pt-36 pb-16 sm:pb-20 lg:pb-28 scroll-mt-[110px]"
-      style={{ background: "linear-gradient(160deg, #EAEDFA 0%, #E4E9F8 100%)" }}
+      className="relative w-full overflow-hidden bg-[#F6F8FC] pt-14 sm:pt-20 lg:pt-24 pb-14 sm:pb-18 lg:pb-24 scroll-mt-[110px]"
     >
-      {/* Ambient glow */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 h-[500px] w-[900px] rounded-full blur-[160px] opacity-35"
-        style={{ background: "radial-gradient(circle, rgba(48,110,236,0.12), transparent 70%)" }}
-      />
-
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
         {/* ── Header ── */}
-        <div className="mb-10 sm:mb-12 lg:mb-14 max-w-[680px]">
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
+        <div className="mb-8 sm:mb-10 max-w-[720px]">
+          <div className="inline-flex items-center gap-2.5 rounded-[8px] border border-[#D9E4FF] bg-white px-3 py-2 mb-5">
             <span
               className="h-2 w-2 flex-shrink-0 rounded-full bg-[#306EEC]"
               style={{ boxShadow: "0 0 8px rgba(48,110,236,0.7)" }}
             />
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
-              Your Membership &middot; Book a Visit
+              Member booking
             </span>
           </div>
 
-          <h2 className="text-[36px] sm:text-[52px] lg:text-[64px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-4">
-            Pick your day
-            <br />
-            <span className="text-[#306EEC]">and time.</span>
+          <h2 className="text-[34px] sm:text-[42px] lg:text-[52px] font-black leading-[1] text-[#0B1628] mb-3">
+            Book Your Next Visit
           </h2>
 
-          <p className="text-[15px] sm:text-[17px] text-[#475569] leading-relaxed max-w-[520px]">
-            Select a date, choose an available time slot, describe your task,
-            and confirm. Most members book one visit per month.
+          <p className="text-[15px] sm:text-[17px] text-[#475569] leading-relaxed max-w-[520px] mb-2">
+            Choose a time, tell us what you need, and we&rsquo;ll handle the rest.
+          </p>
+
+          <p className="text-[13px] leading-relaxed text-[#64748B] max-w-[560px]">
+            Your visit includes up to 90 minutes of handyman labor. Add notes and photos so our team can come prepared.
           </p>
         </div>
 
@@ -992,10 +1021,10 @@ const canBook =
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
 
           {/* ── Calendar (left) ── */}
-          <div className="lg:col-span-5">
+          <div className="order-2 lg:order-1 lg:col-span-5">
 
             {/* Calendar card */}
-            <div className="rounded-[24px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.06)] p-5 sm:p-6">
+            <div className="rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-5 sm:p-6">
               {/* Month navigation */}
               <div className="flex items-center justify-between mb-5">
                 <button
@@ -1102,10 +1131,117 @@ const canBook =
           </div>
 
           {/* ── Right column ── */}
-          <div className="lg:col-span-7 flex flex-col gap-5">
+          <div className="contents lg:order-2 lg:col-span-7 lg:flex lg:flex-col lg:gap-5">
+
+            <div className="order-1 rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-5 sm:p-6 lg:order-none">
+              <div className="text-[16px] font-extrabold text-[#0B1628] mb-1">Visit details</div>
+              <div className="text-[13px] text-[#64748B] mb-5">
+                Confirm the home and type of help before choosing your time.
+              </div>
+
+              <div className="space-y-5">
+                <div>
+                  <div className="text-[13px] font-semibold text-[#0B1628] mb-2">Booking address</div>
+                  {(addresses?.length || 0) >= 2 ? (
+                    <select
+                      value={selectedAddressId ?? defaultAddressId ?? ""}
+                      onChange={(e) => setSelectedAddressId(e.target.value)}
+                      className="w-full min-h-[48px] rounded-[12px] border border-[#C5CBD8] bg-[#F8FAFF] px-3 py-2 text-[#0B1628] text-[14px] font-semibold outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] transition"
+                    >
+                      {addresses.map((a) => (
+                        <option key={a._id} value={a._id}>
+                          {a.label ? `${a.label}: ` : ""}
+                          {a.line1}, {a.city} {a.state} {a.zip}
+                        </option>
+                      ))}
+                    </select>
+                  ) : selectedAddressLabel ? (
+                    <div className="rounded-[12px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-3 text-[14px] font-semibold text-[#0B1628]">
+                      {selectedAddressLabel}
+                    </div>
+                  ) : (
+                    <div className="rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] font-semibold text-amber-800">
+                      Add a service address in your account before booking.
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <div className="text-[13px] font-semibold text-[#0B1628] mb-2">Service type</div>
+                  <div ref={serviceWrapRef} className="relative">
+                    <button
+                      type="button"
+                      disabled={checkingAccess || !hasSubscription}
+                      onClick={() => {
+                        if (checkingAccess || !hasSubscription) return;
+                        setShowServiceMenu((v) => !v);
+                      }}
+                      className={[
+                        "min-h-[48px] w-full px-4 py-2 rounded-[12px] border text-[14px] font-semibold flex items-center justify-between gap-3 transition",
+                        checkingAccess || !hasSubscription
+                          ? "border-[#E5E9F2] bg-[#F8FAFF] text-[#94A3B8] cursor-not-allowed"
+                          : "border-[#C5CBD8] bg-[#F8FAFF] text-[#0B1628] hover:border-[#306EEC] hover:bg-white",
+                      ].join(" ")}
+                    >
+                      <span className={service ? "text-[#0B1628]" : "text-[#94A3B8]"}>
+                        {service ? SERVICES.find((x) => x.key === service)?.label : "Select service type"}
+                      </span>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        className={`flex-shrink-0 transition-transform ${showServiceMenu ? "rotate-180" : ""}`}
+                        aria-hidden="true"
+                      >
+                        <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+
+                    {showServiceMenu && (
+                      <div className="absolute top-[54px] left-0 w-full bg-white border border-[#C5CBD8] rounded-[12px] shadow-[0_16px_48px_rgba(15,23,42,0.12)] z-20 overflow-hidden">
+                        {SERVICES.map((s) => {
+                          const allowed = isServiceAllowed(s.minRank);
+                          return (
+                            <button
+                              key={s.key}
+                              type="button"
+                              disabled={!allowed}
+                              onClick={() => {
+                                if (!allowed) return;
+                                setService(s.key);
+                                setShowServiceMenu(false);
+                              }}
+                              className={[
+                                "flex w-full items-center justify-between gap-3 px-4 py-3.5 text-[14px] text-left transition border-b border-[#F1F5F9] last:border-0",
+                                allowed
+                                  ? "text-[#0B1628] font-semibold hover:bg-[#F8FAFF]"
+                                  : "text-[#94A3B8] cursor-not-allowed",
+                              ].join(" ")}
+                            >
+                              <span>{s.label}</span>
+                              {!allowed && (
+                                <span className="text-[11px] bg-[#F1F5F9] px-2 py-0.5 rounded-full text-[#94A3B8] font-normal">
+                                  Not available
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  {!hasSubscription && isAuthenticated && !checkingAccess && (
+                    <div className="mt-2 text-[12px] text-[#64748B]">
+                      Booking opens when this address has an active membership.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
             {/* Time slot card */}
-            <div className="rounded-[24px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.06)] p-5 sm:p-6">
+            <div className="order-3 rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-5 sm:p-6 lg:order-none">
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <div className="text-[16px] font-extrabold text-[#0B1628]">Choose a time</div>
@@ -1152,28 +1288,10 @@ const canBook =
                 <div className="mt-3 text-[12px] text-[#94A3B8]">Updating times...</div>
               )}
 
-              {/* Address selector (2+ addresses) */}
-              {(addresses?.length || 0) >= 2 && (
-                <div className="mt-5 pt-5 border-t border-[#E5E9F2]">
-                  <div className="text-[13px] font-semibold text-[#0B1628] mb-2">Booking address</div>
-                  <select
-                    value={selectedAddressId ?? defaultAddressId ?? ""}
-                    onChange={(e) => setSelectedAddressId(e.target.value)}
-                    className="w-full h-[46px] rounded-[14px] border border-[#C5CBD8] bg-[#F8FAFF] px-3 text-[#0B1628] text-[14px] font-semibold outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] transition"
-                  >
-                    {addresses.map((a: any) => (
-                      <option key={a._id} value={a._id}>
-                        {a.label ? `${a.label}: ` : ""}
-                        {a.line1}, {a.city} {a.state} {a.zip}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
             </div>
 
             {/* Task details card */}
-            <div className="rounded-[24px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.06)] p-5 sm:p-6">
+            <div className="order-4 rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-5 sm:p-6 lg:order-none">
               <div className="text-[16px] font-extrabold text-[#0B1628] mb-1">Describe your task</div>
               <div className="text-[13px] text-[#64748B] mb-4">
                 What needs to be done? Most tasks fit within one visit.
@@ -1183,11 +1301,11 @@ const canBook =
                 value={note}
                 onChange={(e) => {
                   setNote(e.target.value);
-                  if (error === "Please describe your task (at least a few words)") setError("");
+                  if (error === "Describe the task in at least a few words.") setError("");
                 }}
                 placeholder="E.g. leaking faucet, loose door handle, light fixture swap, shelf to hang..."
                 className={`w-full min-h-[120px] max-h-[240px] rounded-[16px] border p-4 text-[14px] sm:text-[15px] text-[#0B1628] placeholder-[#94A3B8] resize-none bg-[#F8FAFF] focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] transition ${
-                  error === "Please describe your task (at least a few words)"
+                  error === "Describe the task in at least a few words."
                     ? "border-red-300"
                     : "border-[#C5CBD8]"
                 }`}
@@ -1199,80 +1317,12 @@ const canBook =
                 </span>
               </div>
 
-              {/* Service selector */}
-              <div className="mt-5">
-                <div className="text-[13px] font-semibold text-[#0B1628] mb-2">Service type</div>
-                <div ref={serviceWrapRef} className="relative">
-                  <button
-                    type="button"
-                    disabled={checkingAccess || !hasSubscription}
-                    onClick={() => {
-                      if (checkingAccess || !hasSubscription) return;
-                      setShowServiceMenu((v) => !v);
-                    }}
-                    className={[
-                      "h-[46px] w-full px-4 rounded-[14px] border text-[14px] font-semibold flex items-center justify-between gap-3 transition",
-                      checkingAccess || !hasSubscription
-                        ? "border-[#E5E9F2] bg-[#F8FAFF] text-[#94A3B8] cursor-not-allowed"
-                        : "border-[#C5CBD8] bg-[#F8FAFF] text-[#0B1628] hover:border-[#306EEC] hover:bg-white",
-                    ].join(" ")}
-                  >
-                    <span className={service ? "text-[#0B1628]" : "text-[#94A3B8]"}>
-                      {service ? SERVICES.find((x) => x.key === service)?.label : "Select service type"}
-                    </span>
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      className={`flex-shrink-0 transition-transform ${showServiceMenu ? "rotate-180" : ""}`}
-                      aria-hidden="true"
-                    >
-                      <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-
-                  {showServiceMenu && (
-                    <div className="absolute top-[52px] left-0 w-full bg-white border border-[#C5CBD8] rounded-[16px] shadow-[0_16px_48px_rgba(15,23,42,0.12)] z-20 overflow-hidden">
-                      {SERVICES.map((s) => {
-                        const allowed = isServiceAllowed(s.minRank);
-                        return (
-                          <button
-                            key={s.key}
-                            type="button"
-                            disabled={!allowed}
-                            onClick={() => {
-                              if (!allowed) return;
-                              setService(s.key);
-                              setShowServiceMenu(false);
-                            }}
-                            className={[
-                              "flex w-full items-center justify-between gap-3 px-4 py-3.5 text-[14px] text-left transition border-b border-[#F1F5F9] last:border-0",
-                              allowed
-                                ? "text-[#0B1628] font-semibold hover:bg-[#F8FAFF]"
-                                : "text-[#94A3B8] cursor-not-allowed",
-                            ].join(" ")}
-                          >
-                            <span>{s.label}</span>
-                            {!allowed && (
-                              <span className="text-[11px] bg-[#F1F5F9] px-2 py-0.5 rounded-full text-[#94A3B8] font-normal">
-                                Upgrade plan
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {/* Photo upload */}
               <div className="mt-5">
                 <div className="text-[13px] font-semibold text-[#0B1628] mb-2">
                   Photos{" "}
                   <span className="text-[#DC2626]">*</span>
-                  <span className="ml-1 text-[#64748B] font-normal">required — helps us prepare</span>
+                  <span className="ml-1 text-[#64748B] font-normal">required - helps us prepare</span>
                 </div>
                 <div className="flex gap-2.5">
                   <button
@@ -1304,9 +1354,9 @@ const canBook =
                   ref={cameraInputRef}
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   onChange={handlePhotoUpload}
                   className="hidden"
-                  {...({ capture: "environment" } as any)}
                 />
                 <input
                   ref={galleryInputRef}
@@ -1352,21 +1402,21 @@ const canBook =
 
             {/* Subscription warning */}
             {isAuthenticated && !checkingAccess && !hasSubscription && subscriptionError && (
-              <div className="rounded-[18px] border border-red-200 bg-red-50 p-5">
-                <div className="text-[15px] font-extrabold text-red-700 mb-1">No Active Subscription</div>
-                <div className="text-[13px] text-red-600 mb-4">An active membership plan is required to book visits.</div>
+              <div className="order-5 rounded-[12px] border border-red-200 bg-red-50 p-5 lg:order-none">
+                <div className="text-[15px] font-extrabold text-red-700 mb-1">Booking unavailable for this address</div>
+                <div className="text-[13px] text-red-600 mb-4">{subscriptionError}</div>
                 <a
-                  href="#plans"
+                  href="/account"
                   className="inline-flex h-[40px] items-center px-5 rounded-[12px] bg-[#306EEC] text-white text-[14px] font-bold hover:bg-[#2558c9] transition"
                 >
-                  Get Subscription
+                  Open account
                 </a>
               </div>
             )}
 
             {/* Booking limit warning */}
             {isAuthenticated && hasSubscription && hasActiveBooking && (
-              <div className="rounded-[18px] border border-amber-200 bg-amber-50 p-5">
+              <div className="order-5 rounded-[12px] border border-amber-200 bg-amber-50 p-5 lg:order-none">
                 <div className="text-[15px] font-extrabold text-amber-800 mb-1">Visit limit reached</div>
                 <div className="text-[13px] text-amber-700 mb-2">
                   You have{" "}
@@ -1401,23 +1451,23 @@ const canBook =
 
             {/* Notice / Error banners */}
             {notice && (
-              <div className="rounded-[18px] border border-green-200 bg-green-50 px-5 py-4 text-[14px] text-green-700 font-semibold">
+              <div className="order-6 rounded-[12px] border border-green-200 bg-green-50 px-5 py-4 text-[14px] text-green-700 font-semibold lg:order-none">
                 {notice}
               </div>
             )}
             {error && (
-              <div className="rounded-[18px] border border-red-200 bg-red-50 px-5 py-4 text-[14px] text-red-700">
+              <div className="order-6 rounded-[12px] border border-red-200 bg-red-50 px-5 py-4 text-[14px] text-red-700 lg:order-none">
                 {error}
               </div>
             )}
 
             {/* Confirm card */}
-            <div className="rounded-[24px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.06)] p-5 sm:p-6">
+            <div className="order-7 rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-5 sm:p-6 lg:order-none">
               <div className="flex flex-wrap gap-x-6 gap-y-2 mb-5">
                 {[
-                  "1 task per visit · up to 90 min",
+                  "1 task per visit, up to 90 min",
                   "Upload at least one photo",
-                  "Labor only — materials not included",
+                  "Materials are not included",
                 ].map((item) => (
                   <div key={item} className="flex items-center gap-2">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1441,7 +1491,7 @@ const canBook =
                   ? "Booking..."
                   : hasActiveBooking
                   ? "Visit limit reached"
-                  : "Confirm Booking"}
+                  : "Book Your Visit"}
               </button>
 
               <div className="mt-3 text-[12px] text-[#94A3B8] text-center">
