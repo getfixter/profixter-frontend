@@ -111,6 +111,12 @@ export default function SignInPage() {
 
         {/* Card */}
         <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-8 sm:p-10">
+          <Link
+            href="/"
+            className="mb-6 inline-flex min-h-[40px] items-center rounded-[12px] border border-white/[0.10] bg-white/[0.04] px-3.5 text-[13px] font-semibold text-white/60 transition hover:border-white/[0.18] hover:bg-white/[0.07] hover:text-white sm:mb-7"
+          >
+            ← Back to Home
+          </Link>
           
           {/* Heading */}
           <div className="mb-8 text-center">
