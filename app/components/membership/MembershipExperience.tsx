@@ -10,10 +10,9 @@ import BookingSection from "@/app/components/sections/BookingSection";
 import PlansSection from "@/app/components/sections/PlansSection";
 import HowItWorksSection from "@/app/components/sections/HowItWorksSection";
 import PopularTasksSection from "@/app/components/sections/PopularTasksSection";
+import IncludedVisitsSection from "@/app/components/sections/IncludedVisitsSection";
 import TrustSection from "@/app/components/sections/TrustSection";
-import ExteriorPromoSection from "@/app/components/sections/ExteriorPromoSection";
 import FAQSection from "@/app/components/sections/FAQSection";
-import FinalCTASection from "@/app/components/sections/FinalCTASection";
 import Footer from "@/app/components/sections/Footer";
 import { ChatWidget } from "@/app/components/ChatWidget";
 import StickyMobileCTA from "@/app/components/StickyMobileCTA";
@@ -56,25 +55,23 @@ export default function MembershipExperience() {
         {isSubscribed && (
           <>
             <BookingSection />
-            <PlansSection />
             <PopularTasksSection />
+            <IncludedVisitsSection />
+            <PlansSection />
             <TrustSection />
             <ReferralSection />
-            <ExteriorPromoSection />
             <FAQSection />
-            <FinalCTASection />
             <Footer />
           </>
         )}
 
         {isAuthenticated && !isSubscribed && (
           <>
-            <PlansSection />
             <PopularTasksSection />
+            <IncludedVisitsSection />
+            <PlansSection />
             <TrustSection />
-            <ExteriorPromoSection />
             <FAQSection />
-            <FinalCTASection />
             <Footer />
           </>
         )}
@@ -83,11 +80,10 @@ export default function MembershipExperience() {
           <>
             <HowItWorksSection />
             <PopularTasksSection />
+            <IncludedVisitsSection />
             <PlansSection />
             <TrustSection />
-            <ExteriorPromoSection />
             <FAQSection />
-            <FinalCTASection />
             <Footer />
           </>
         )}

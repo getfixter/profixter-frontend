@@ -1,0 +1,27 @@
+{
+  "folders": [
+	{
+		"path": "../.."
+	},
+	{
+		"path": "../../../BackEnd"
+	}
+],
+  "settings": {
+    "mcp": {
+      "servers": {
+        "Mongo": {
+          "type": "stdio",
+          "command": "npx",
+          "args": [
+            "-y",
+            "mongodb-mcp-server",
+            "--connectionString",
+            "mongodb+srv://premiumislandconstruction:sUDk6Ojr6CSTv73m@handyman-cluster.47vd4ym.mongodb.net/test?retryWrites=true&w=majority&appName=handyman-cluster"
+          ]
+        }
+      },
+      "inputs": []
+    }
+  }
+}

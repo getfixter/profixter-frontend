@@ -22,11 +22,16 @@ export function GoogleButton({
 
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
+  // If Google OAuth is not configured, don't render anything
+  if (!clientId) {
+    return null;
+  }
+
   // NOTE:
   // Some versions of @react-oauth/google don't type "clientId" in useGoogleLogin options,
   // even though it works at runtime. We pass it safely with `as any` to avoid TS errors.
   const login = useGoogleLogin({
-    ...(clientId ? ({ clientId } as any) : {}),
+    clientId: clientId as any,
     scope: "openid email profile",
 
     onSuccess: async (tokenResponse: TokenResponse) => {
