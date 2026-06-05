@@ -146,9 +146,9 @@ function TimeSlotGrid({
               onSelect(slot.time);
             }}
             className={[
-              "group relative min-h-[60px] overflow-hidden rounded-[12px] border px-3.5 py-3 text-left transition-all duration-150 ease-out active:scale-[0.99]",
+              "group relative min-h-[72px] overflow-hidden rounded-[12px] border px-3.5 py-3 text-left transition-all duration-150 ease-out active:scale-[0.99]",
               isSelected
-                ? "border-[#306EEC] bg-[#EEF5FF] text-[#0B1628] ring-2 ring-[#306EEC]/20"
+                ? "border-[#306EEC] bg-[#EEF5FF] text-[#0B1628] shadow-[0_8px_24px_rgba(48,110,236,0.12)] ring-2 ring-[#306EEC]/20"
                 : slot.available
                   ? "border-[#D7DEE9] bg-white text-[#0B1628] hover:border-[#306EEC] hover:bg-[#F8FAFF]"
                   : "border-[#E2E8F0] bg-[#F1F5F9] text-[#94A3B8]",
@@ -165,17 +165,17 @@ function TimeSlotGrid({
               />
             )}
 
-            <div className="relative z-[1] flex items-start justify-between gap-2">
+            <div className="relative z-[1] flex flex-col gap-1">
               <div
-                className={`text-[15px] font-black tracking-[-0.01em] ${
+                className={`text-[16px] font-black leading-tight tracking-[-0.01em] ${
                   slot.available ? "" : "line-through"
-                } ${isSelected ? "text-white" : ""}`}
+                } ${isSelected ? "text-[#0B1628]" : ""}`}
               >
                 {formatTime12(slot.time)}
               </div>
               {isSelected && (
-                <div className="inline-flex items-center gap-1 rounded-full border border-[#306EEC]/20 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-[#306EEC]">
-                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <div className="inline-flex items-center gap-1 text-[11px] font-black leading-tight text-[#306EEC]">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" className="flex-shrink-0">
                     <path
                       d="M2.5 6.2L4.8 8.5L9.5 3.7"
                       stroke="currentColor"
@@ -189,7 +189,7 @@ function TimeSlotGrid({
               )}
             </div>
             <div
-              className={`relative z-[1] mt-1.5 text-[11px] font-semibold ${
+              className={`relative z-[1] mt-1 text-[11px] font-semibold ${
                 isSelected ? "text-[#306EEC]" : slot.available ? "text-[#64748B]" : "text-[#8C94A3]"
               }`}
             >
