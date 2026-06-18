@@ -399,24 +399,36 @@ export default function July4Page() {
           </div>
 
           <aside className="rounded-[28px] border-2 border-[#2F6FED] bg-white p-6 shadow-[0_24px_70px_rgba(47,111,237,0.15)] sm:p-8 lg:sticky lg:top-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#2F6FED]">
-                  JULY4 eligible
-                </p>
-                <h3 className="mt-2 text-2xl font-bold">Profixter Basic</h3>
+            <div className="text-center">
+              <p className="text-[12px] font-extrabold uppercase tracking-[0.18em] text-[#2F6FED]">
+                Profixter Basic
+              </p>
+              <p className="mt-4 text-[18px] font-extrabold uppercase tracking-[0.08em] text-[#166534]">
+                First month
+              </p>
+              <div className="mt-1 flex items-end justify-center gap-3">
+                <span className="text-[62px] font-bold leading-none tracking-[-0.06em] text-[#101828] sm:text-[72px]">
+                  FREE
+                </span>
+                <span className="mb-1.5 rounded-full bg-[#DCFCE7] px-3 py-1.5 text-[13px] font-extrabold text-[#166534]">
+                  $0
+                </span>
               </div>
-              <span className="rounded-full bg-[#DCFCE7] px-3 py-2 text-[11px] font-extrabold text-[#166534]">
-                First month $0
-              </span>
+              <div className="mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-[#C9D7FA] bg-[#F2F6FF] px-4 py-2 text-[12px] font-bold text-[#344054]">
+                Use code <span className="font-extrabold tracking-[0.08em] text-[#2F6FED]">JULY4</span>
+              </div>
             </div>
 
-            <div className="mt-6 flex items-end gap-2 border-b border-[#E4E7EC] pb-6">
-              <span className="text-5xl font-bold tracking-[-0.05em]">$149</span>
-              <span className="pb-1 text-[13px] font-semibold text-[#667085]">/month after free month</span>
+            <CTA className="mt-6 w-full" />
+
+            <div className="mt-4 rounded-[14px] bg-[#F8F9FC] px-4 py-3 text-center">
+              <p className="text-[11px] font-semibold leading-5 text-[#667085]">
+                Basic renews at <span className="font-bold text-[#344054]">$149/month</span> unless canceled before
+                renewal.
+              </p>
             </div>
 
-            <ul className="mt-6 space-y-4">
+            <ul className="mt-6 space-y-4 border-t border-[#E4E7EC] pt-6">
               {planBenefits.map((benefit) => (
                 <li key={benefit} className="flex items-center gap-3 text-[14px] font-semibold text-[#344054]">
                   <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[#EAF8EE] text-[#15803D]">
@@ -427,7 +439,6 @@ export default function July4Page() {
               ))}
             </ul>
 
-            <CTA className="mt-7 w-full" />
             <div className="mt-4 flex items-center justify-center gap-2 text-[11px] font-semibold text-[#667085]">
               <CreditCardIcon className="h-4 w-4" />
               Secure Stripe checkout · Card required
