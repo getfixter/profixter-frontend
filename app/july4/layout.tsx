@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Basic Plan First Month Free | Profixter",
+  title: "One Less Thing to Worry About | Profixter Basic",
   description:
-    "Babylon-area homeowners can get the first month of the Profixter Basic Plan free with promo code JULY4. Then $149/month unless canceled.",
+    "Reliable local handyman help for Babylon-area homeowners. Try Profixter Basic free for your first month with JULY4, then $149/month. Cancel anytime.",
   openGraph: {
-    title: "Get Your First Month of Profixter Basic Free",
+    title: "One Trusted Solution for Your Home To-Do List",
     description:
-      "A local handyman membership for Babylon and surrounding communities. Use promo code JULY4 for the Basic Plan.",
+      "Stop chasing contractors for every small job. Try Profixter Basic free for your first month with JULY4.",
     type: "website",
   },
 };

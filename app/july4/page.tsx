@@ -9,6 +9,7 @@ import {
   CreditCardIcon,
   HomeModernIcon,
   MapPinIcon,
+  PhoneIcon,
   ShieldCheckIcon,
   SparklesIcon,
   WrenchScrewdriverIcon,
@@ -17,33 +18,51 @@ import {
 
 const signupHref = "/signup?promo=JULY4";
 
+const planBenefits = [
+  "90-minute handyman visits",
+  "No monthly visit limit",
+  "One active appointment at a time",
+  "Easy online scheduling",
+];
+
+const frustrations = [
+  {
+    title: "No more contractor chase",
+    text: "Skip the calls, unanswered messages, and searching for someone willing to take a small job.",
+  },
+  {
+    title: "Get your weekends back",
+    text: "Stop spending Saturday watching repair videos or making another trip to the hardware store.",
+  },
+  {
+    title: "Keep small problems small",
+    text: "Handle the loose, leaky, cracked, and unfinished things before they turn into bigger headaches.",
+  },
+];
+
 const steps = [
   {
-    title: "Create your account",
-    text: "Tell us who you are and where you need service.",
+    title: "Join online",
+    text: "Create your account and choose Profixter Basic. Your JULY4 code comes with you.",
   },
   {
-    title: "Select the Basic Plan",
-    text: "The JULY4 offer is exclusively for Profixter Basic.",
+    title: "Tell us what needs attention",
+    text: "Schedule a visit through your account—no estimate appointment for everyday handyman tasks.",
   },
   {
-    title: "JULY4 is applied",
-    text: "We carry the promo code into your secure checkout.",
-  },
-  {
-    title: "Book your first visit",
-    text: "Once activated, schedule service through your account.",
+    title: "Cross it off your list",
+    text: "A local Profixter handyman arrives for your 90-minute visit and gets to work.",
   },
 ];
 
 const services = [
-  "TV mounting",
-  "Door repairs",
-  "Light fixtures",
-  "Faucet replacements",
-  "Drywall patches",
-  "Shelving installation",
-  "Caulking and sealing",
+  "TV & picture mounting",
+  "Door adjustments & repairs",
+  "Light fixture replacement",
+  "Faucet replacement",
+  "Small drywall patches",
+  "Shelves & curtain rods",
+  "Caulking & sealing",
   "General home maintenance",
 ];
 
@@ -58,71 +77,52 @@ const serviceAreas = [
   "Islip",
 ];
 
-const comparison = {
-  without: [
-    "Finding contractors",
-    "Waiting for callbacks",
-    "Paying minimum service charges",
-  ],
-  with: [
-    "Simple membership",
-    "Easy online scheduling",
-    "Trusted local handyman service",
-  ],
-};
-
-const upgradePlans = [
-  { name: "Plus", price: 249 },
-  { name: "Premium", price: 349 },
-  { name: "Elite", price: 499 },
-];
-
 const faqs = [
   {
     question: "Is the first month really free?",
     answer:
-      "Yes. Promo code JULY4 makes your first month of the Profixter Basic Plan $0. Normal Basic Plan rules, appointment availability, and charges for items outside the membership still apply.",
+      "Yes. Promo code JULY4 makes the first month of the Profixter Basic membership $0. A card is required to activate your membership. After the free month, Basic renews at $149 per month unless you cancel before renewal.",
   },
   {
-    question: "Does the JULY4 promotion apply to all plans?",
+    question: "What is included with the Basic Plan?",
     answer:
-      "No. The JULY4 promotion applies to the Profixter Basic Plan only. Plus, Premium, and Elite are available separately at their regular prices.",
+      "Basic includes 90-minute handyman visits, no monthly visit limit, and one active appointment at a time. It is designed for common small and medium home-maintenance tasks that can be completed within the visit time. Materials and work outside the membership scope may cost extra.",
   },
   {
-    question: "Why are you offering a free month?",
+    question: "Can I really book more than one visit per month?",
     answer:
-      "We want local homeowners to experience Profixter before deciding if a membership is right for them.",
+      "Yes. Basic has no monthly visit limit. You may keep one active appointment at a time, then schedule your next visit after that appointment is completed, subject to availability.",
   },
   {
-    question: "Do I need a credit card?",
+    question: "Do I need to schedule an estimate first?",
     answer:
-      "Yes. A card is required when you activate the Basic Plan through our secure Stripe checkout, even though JULY4 makes the first month’s membership charge $0.",
+      "Not for the everyday handyman tasks covered by the membership. You can describe the work and schedule through your account. Larger projects or work outside the membership scope may require a separate evaluation.",
   },
   {
     question: "Can I cancel anytime?",
     answer:
-      "Yes. Profixter memberships are month-to-month with no long-term contract. You can manage your membership from your account. Cancel before your next renewal if you do not want the following month charged.",
+      "Yes. The membership is month-to-month with no long-term contract. Cancel before your next renewal if you do not want the following month charged.",
   },
   {
-    question: "What areas do you serve?",
+    question: "Why do you require a credit card for a free month?",
+    answer:
+      "Your card activates the month-to-month membership through secure Stripe checkout. The first Basic membership charge is $0 with JULY4, then the plan renews at $149 per month unless canceled.",
+  },
+  {
+    question: "What areas does this offer cover?",
     answer:
       "This promotion is for homeowners in Babylon, West Babylon, North Babylon, Lindenhurst, Copiague, Amityville, West Islip, and Islip. Service is subject to route and appointment availability.",
   },
   {
-    question: "What kind of work is included?",
+    question: "Does JULY4 work on every plan?",
     answer:
-      "Basic Plan visits cover common handyman repairs and home-maintenance tasks such as mounting, fixture replacements, small patches, caulking, shelving, and door repairs. Visit length, materials, project scope, and exclusions follow the Basic Plan rules.",
-  },
-  {
-    question: "What happens after the first month?",
-    answer:
-      "After the free first month, the Basic Plan continues at $149 per month unless you cancel before renewal. You may choose a different plan separately at its regular price.",
+      "No. JULY4 applies to the Profixter Basic Plan only. Other Profixter plans are available separately at their regular prices.",
   },
 ];
 
 function CTA({
   className = "",
-  label = "Start Free Basic Plan",
+  label = "Start My Free Month",
 }: {
   className?: string;
   label?: string;
@@ -130,7 +130,7 @@ function CTA({
   return (
     <Link
       href={signupHref}
-      className={`group inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-[#306EEC] px-7 text-[15px] font-bold text-white shadow-[0_16px_40px_rgba(48,110,236,0.32)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#2558C9] hover:shadow-[0_20px_46px_rgba(48,110,236,0.4)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#306EEC] ${className}`}
+      className={`group inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-[#2F6FED] px-7 text-[15px] font-bold text-white shadow-[0_14px_34px_rgba(47,111,237,0.3)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#2459C4] hover:shadow-[0_18px_42px_rgba(47,111,237,0.38)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2F6FED] ${className}`}
     >
       {label}
       <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -138,12 +138,42 @@ function CTA({
   );
 }
 
+function SectionHeading({
+  eyebrow,
+  title,
+  description,
+  centered = true,
+}: {
+  eyebrow: string;
+  title: string;
+  description?: string;
+  centered?: boolean;
+}) {
+  return (
+    <div className={centered ? "mx-auto max-w-[760px] text-center" : "max-w-[680px]"}>
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#2F6FED] sm:text-[12px]">
+        {eyebrow}
+      </p>
+      <h2 className="mt-3 text-[30px] font-bold leading-[1.08] tracking-[-0.035em] text-[#101828] sm:text-[42px]">
+        {title}
+      </h2>
+      {description ? (
+        <p className="mt-4 text-[15px] leading-7 text-[#667085] sm:text-[17px]">{description}</p>
+      ) : null}
+    </div>
+  );
+}
+
 export default function July4Page() {
   return (
-    <main className="min-h-screen overflow-hidden bg-[#F7F8FC] text-[#111827]">
+    <main className="min-h-screen overflow-hidden bg-[#F8F9FC] text-[#101828]">
       <header className="absolute inset-x-0 top-0 z-30">
         <div className="mx-auto flex max-w-[1240px] items-center justify-between px-5 py-5 sm:px-7 lg:px-8">
-          <Link href="/" aria-label="Profixter home" className="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+          <Link
+            href="/"
+            aria-label="Profixter home"
+            className="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+          >
             <Image
               src="/images/logo-footer.svg"
               alt="Profixter"
@@ -153,218 +183,291 @@ export default function July4Page() {
               className="h-auto w-[126px] sm:w-[150px]"
             />
           </Link>
-          <Link
-            href="/"
-            className="rounded-full border border-white/25 bg-black/20 px-3.5 py-2.5 text-[11px] font-bold text-white backdrop-blur-md transition hover:border-white/45 hover:bg-black/30 sm:px-5 sm:text-[13px]"
+          <a
+            href="tel:+16315991363"
+            className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/20 px-3.5 py-2.5 text-[11px] font-bold text-white backdrop-blur-md transition hover:border-white/45 hover:bg-black/30 sm:px-5 sm:text-[13px]"
           >
-            Main Website
-          </Link>
+            <PhoneIcon className="h-4 w-4" />
+            <span className="sm:hidden">Call us</span>
+            <span className="hidden sm:inline">631-599-1363</span>
+          </a>
         </div>
       </header>
 
-      <section className="relative flex min-h-[720px] items-end bg-[#07111F] pb-10 pt-24 sm:min-h-[800px] sm:items-center sm:pb-16 lg:min-h-[780px]">
+      <section className="relative bg-[#08111F] pb-10 pt-24 text-white sm:pb-16 sm:pt-32 lg:min-h-[780px] lg:py-32">
         <Image
           src="/images/hero-bg.webp"
-          alt="A Profixter handyman servicing a light fixture in a Long Island home"
+          alt="A handyman taking care of a light fixture in a comfortable home"
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[64%_center] sm:object-center"
+          className="object-cover object-[58%_center] lg:object-center"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,10,20,0.35)_0%,rgba(4,10,20,0.15)_28%,rgba(4,10,20,0.88)_82%,#07111F_100%)] sm:bg-[linear-gradient(90deg,rgba(4,10,20,0.94)_0%,rgba(4,10,20,0.76)_44%,rgba(4,10,20,0.16)_78%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_34%,rgba(255,190,80,0.12),transparent_32%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,10,20,0.34)_0%,rgba(4,10,20,0.82)_49%,#08111F_100%)] lg:bg-[linear-gradient(90deg,rgba(4,10,20,0.97)_0%,rgba(4,10,20,0.9)_42%,rgba(4,10,20,0.3)_73%,rgba(4,10,20,0.16)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_35%,rgba(246,184,75,0.16),transparent_34%)]" />
 
-        <div className="relative z-10 mx-auto w-full max-w-[1240px] px-5 sm:px-7 lg:px-8">
-          <div className="max-w-[680px]">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#FFD78A]/30 bg-[#F59E0B]/15 px-4 py-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#FFE4A8] backdrop-blur-md sm:mb-5 sm:text-[12px]">
-              <SparklesIcon className="h-4 w-4" />
-              Babylon-area offer · Code JULY4
+        <div className="relative z-10 mx-auto grid w-full max-w-[1240px] gap-9 px-5 sm:px-7 lg:grid-cols-[1.25fr_0.75fr] lg:items-center lg:gap-16 lg:px-8">
+          <div className="max-w-[700px] pt-[38vh] sm:pt-[32vh] lg:pt-0">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#FFD98F]/30 bg-[#F59E0B]/15 px-4 py-2 text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#FFE8B6] backdrop-blur-md sm:text-[12px]">
+              <MapPinIcon className="h-4 w-4" />
+              Local help for Babylon-area homeowners
             </div>
 
-            <h1 className="max-w-[650px] text-[39px] font-bold leading-[1.04] tracking-[-0.04em] text-white sm:text-[58px] lg:text-[68px]">
-              Get your first month of Profixter Basic FREE
+            <h1 className="mt-5 max-w-[690px] text-[42px] font-bold leading-[1.01] tracking-[-0.045em] sm:text-[62px] lg:text-[68px]">
+              One less thing to worry about at home.
             </h1>
-            <p className="mt-4 max-w-[620px] text-[15px] leading-6 text-white/78 sm:mt-5 sm:text-[19px] sm:leading-8">
-              Homeowners in Babylon and nearby communities can try our local handyman membership with promo code
-              JULY4. Your first month of the Basic Plan is $0, then $149/month unless you cancel before renewal.
+            <p className="mt-5 max-w-[640px] text-[16px] leading-7 text-white/78 sm:text-[19px] sm:leading-8">
+              Stop chasing contractors for every loose door, leaky faucet, or project that has waited too long.
+              Profixter gives you one reliable local team for the jobs that keep piling up.
             </p>
 
-            <div className="mt-6 flex flex-col gap-3 sm:mt-7 sm:flex-row sm:items-center">
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
               <CTA className="w-full sm:w-auto" />
-              <Link
-                href="/"
-                className="inline-flex min-h-14 items-center justify-center rounded-full border border-white/25 bg-white/10 px-6 text-[14px] font-bold text-white backdrop-blur-md transition hover:bg-white/18 sm:w-auto"
+              <a
+                href="#how-it-works"
+                className="inline-flex min-h-14 items-center justify-center rounded-full border border-white/25 bg-white/10 px-6 text-[14px] font-bold text-white backdrop-blur-md transition hover:bg-white/15"
               >
-                View Main Website
-              </Link>
+                See How It Works
+              </a>
             </div>
 
-            <p className="mt-3 text-center text-[11px] font-semibold text-white/55 sm:text-left sm:text-[12px]">
-              JULY4 promotion applies to the Basic Plan only. Upgrade options are available separately.
-            </p>
-
-            <div className="mt-5 grid grid-cols-3 gap-2 text-[10px] font-semibold text-white/68 sm:mt-7 sm:flex sm:flex-wrap sm:gap-x-5 sm:gap-y-3 sm:text-[13px]">
+            <div className="mt-5 flex flex-wrap gap-x-5 gap-y-3 text-[12px] font-semibold text-white/66 sm:text-[13px]">
               <span className="flex items-center gap-2">
                 <ShieldCheckIcon className="h-4 w-4 text-[#86EFAC]" />
-                <span>No setup fee</span>
+                Licensed & insured
               </span>
               <span className="flex items-center gap-2">
                 <ClockIcon className="h-4 w-4 text-[#86EFAC]" />
-                <span>Month-to-month</span>
+                No long-term contract
               </span>
               <span className="flex items-center gap-2">
                 <MapPinIcon className="h-4 w-4 text-[#86EFAC]" />
-                <span>Local service</span>
+                Based in Babylon
               </span>
             </div>
-            <p className="mt-3 text-[11px] font-semibold text-white/45 sm:text-[12px]">
-              Based in Babylon and serving Long Island homeowners. · Licensed HI-71484 · Fully insured
+          </div>
+
+          <aside className="rounded-[26px] border border-white/15 bg-white/[0.1] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:p-6 lg:p-7">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#9DB9FF]">
+                  JULY4 offer
+                </p>
+                <h2 className="mt-2 text-2xl font-bold">Try Basic for $0</h2>
+              </div>
+              <span className="rounded-full bg-[#DCFCE7] px-3 py-1.5 text-[11px] font-extrabold text-[#166534]">
+                First month free
+              </span>
+            </div>
+
+            <ul className="mt-6 space-y-3.5">
+              {planBenefits.map((benefit) => (
+                <li key={benefit} className="flex items-center gap-3 text-[14px] font-semibold text-white/82">
+                  <CheckCircleIcon className="h-5 w-5 flex-none text-[#86EFAC]" />
+                  {benefit}
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-6 rounded-[18px] bg-black/20 p-4">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/48">Today</p>
+                  <p className="mt-1 text-3xl font-bold">$0</p>
+                </div>
+                <p className="pb-1 text-right text-[12px] font-semibold leading-5 text-white/58">
+                  Then $149/month
+                  <br />
+                  Cancel anytime
+                </p>
+              </div>
+            </div>
+
+            <CTA className="mt-5 w-full" label="Claim My Free Month" />
+            <p className="mt-3 text-center text-[10px] font-semibold leading-4 text-white/48">
+              Basic Plan only. Card required. Renews at $149/month unless canceled before renewal.
+            </p>
+          </aside>
+        </div>
+      </section>
+
+      <section className="border-b border-[#E4E7EC] bg-white px-5 py-5 sm:px-7 lg:px-8">
+        <div className="mx-auto grid max-w-[1120px] grid-cols-2 gap-4 sm:grid-cols-4">
+          {[
+            ["Local", "Babylon-based company"],
+            ["Protected", "Licensed HI-71484"],
+            ["Responsible", "Fully insured"],
+            ["Flexible", "Month-to-month"],
+          ].map(([title, text]) => (
+            <div key={title} className="text-center sm:border-l sm:border-[#E4E7EC] sm:first:border-l-0">
+              <p className="text-[12px] font-extrabold text-[#101828] sm:text-[13px]">{title}</p>
+              <p className="mt-1 text-[10px] font-medium text-[#667085] sm:text-[11px]">{text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="px-5 py-16 sm:px-7 sm:py-24 lg:px-8">
+        <div className="mx-auto max-w-[1120px]">
+          <SectionHeading
+            eyebrow="The home list never really ends"
+            title="You should not need a new search every time something breaks."
+            description="Small repairs are easy to postpone and strangely hard to hire for. Profixter replaces that recurring hassle with one dependable way to get help."
+          />
+
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            {frustrations.map((item, index) => {
+              const icons = [PhoneIcon, CalendarDaysIcon, ShieldCheckIcon];
+              const Icon = icons[index];
+              return (
+                <article
+                  key={item.title}
+                  className="rounded-[24px] border border-[#E4E7EC] bg-white p-6 shadow-[0_14px_45px_rgba(16,24,40,0.05)] sm:p-7"
+                >
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EEF3FF] text-[#2F6FED]">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-5 text-[18px] font-bold">{item.title}</h3>
+                  <p className="mt-2 text-[14px] leading-6 text-[#667085]">{item.text}</p>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="mt-8 rounded-[24px] bg-[#101828] px-6 py-7 text-center text-white sm:px-10 sm:py-9">
+            <p className="text-[21px] font-bold leading-8 tracking-[-0.02em] sm:text-[27px]">
+              The real benefit is not “a handyman visit.”
+              <span className="text-[#9DB9FF]"> It is knowing who to call.</span>
             </p>
           </div>
         </div>
       </section>
 
-      <section className="border-b border-[#E5E7EB] bg-white px-5 py-12 sm:px-7 sm:py-20 lg:px-8">
+      <section id="how-it-works" className="border-y border-[#E4E7EC] bg-white px-5 py-16 sm:px-7 sm:py-24 lg:px-8">
         <div className="mx-auto max-w-[1120px]">
-          <div className="mx-auto mb-14 grid max-w-[900px] gap-3 rounded-[24px] border border-[#DCE5FA] bg-[#F6F8FF] p-4 shadow-[0_16px_50px_rgba(15,23,42,0.06)] sm:grid-cols-3 sm:p-5">
-            <div className="rounded-[17px] bg-white p-4">
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#667085]">First month</p>
-              <p className="mt-1 text-xl font-bold text-[#166534]">Basic Plan: $0</p>
-            </div>
-            <div className="rounded-[17px] bg-white p-4">
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#667085]">At signup</p>
-              <p className="mt-1 flex items-center gap-2 text-[15px] font-bold">
-                <CreditCardIcon className="h-5 w-5 text-[#306EEC]" />
-                Card required
-              </p>
-            </div>
-            <div className="rounded-[17px] bg-white p-4">
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#667085]">After month one</p>
-              <p className="mt-1 text-[15px] font-bold">Basic renews at $149/mo</p>
-              <p className="mt-1 text-[11px] text-[#667085]">Unless you cancel before renewal</p>
-            </div>
-          </div>
+          <SectionHeading
+            eyebrow="Simple by design"
+            title="From “we need to fix that” to handled."
+            description="No repeated search. No waiting around for callbacks. No separate estimate visit for ordinary membership tasks."
+          />
 
-          <div className="mx-auto max-w-[680px] text-center">
-            <p className="text-[12px] font-extrabold uppercase tracking-[0.2em] text-[#306EEC]">Simple from day one</p>
-            <h2 className="mt-3 text-3xl font-bold tracking-[-0.03em] sm:text-4xl">How your free month works</h2>
-          </div>
-
-          <ol className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ol className="mt-11 grid gap-4 lg:grid-cols-3">
             {steps.map((step, index) => (
-              <li
-                key={step.title}
-                className="group relative rounded-[22px] border border-[#E5E7EB] bg-[#FAFBFF] p-5 transition duration-200 hover:-translate-y-1 hover:border-[#C8D7FF] hover:shadow-[0_18px_45px_rgba(15,23,42,0.08)]"
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E8EFFF] text-sm font-extrabold text-[#306EEC]">
+              <li key={step.title} className="relative rounded-[24px] border border-[#E4E7EC] bg-[#F9FAFB] p-6 sm:p-7">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2F6FED] text-sm font-extrabold text-white">
                   {index + 1}
                 </span>
-                <p className="mt-5 text-[16px] font-bold leading-6">{step.title}</p>
-                <p className="mt-2 text-[13px] leading-5 text-[#667085]">{step.text}</p>
+                <h3 className="mt-5 text-[18px] font-bold">{step.title}</h3>
+                <p className="mt-2 text-[14px] leading-6 text-[#667085]">{step.text}</p>
+                {index < steps.length - 1 ? (
+                  <ArrowRightIcon className="absolute -right-7 top-1/2 z-10 hidden h-5 w-5 text-[#98A2B3] lg:block" />
+                ) : null}
               </li>
             ))}
           </ol>
         </div>
       </section>
 
-      <section className="bg-[#EEF3FF] px-5 py-14 sm:px-7 sm:py-20 lg:px-8">
-        <div className="mx-auto max-w-[1120px]">
-          <div className="mx-auto max-w-[760px] text-center">
-            <p className="text-[12px] font-extrabold uppercase tracking-[0.2em] text-[#306EEC]">Local service area</p>
-            <h2 className="mt-3 text-3xl font-bold tracking-[-0.03em] sm:text-4xl">
-              Proudly Serving Babylon and Surrounding Communities
-            </h2>
-            <p className="mt-4 text-[15px] leading-7 text-[#667085]">
-              Based in Babylon and serving Long Island homeowners.
+      <section className="bg-[#EEF3FF] px-5 py-16 sm:px-7 sm:py-24 lg:px-8">
+        <div className="mx-auto grid max-w-[1120px] items-start gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+          <div>
+            <SectionHeading
+              centered={false}
+              eyebrow="Built for the everyday jobs"
+              title="Finally take care of the things that keep getting pushed to next weekend."
+              description="If it is a common handyman task that fits within your visit, there is a good chance Profixter can help."
+            />
+            <div className="mt-8 grid grid-cols-2 gap-3">
+              {services.map((service, index) => (
+                <div
+                  key={service}
+                  className="flex min-h-[76px] items-center gap-3 rounded-[18px] border border-[#D7E2FC] bg-white px-4 py-3 text-[12px] font-bold shadow-[0_8px_24px_rgba(47,111,237,0.05)] sm:text-[14px]"
+                >
+                  {index % 2 === 0 ? (
+                    <HomeModernIcon className="h-5 w-5 flex-none text-[#2F6FED]" />
+                  ) : (
+                    <WrenchScrewdriverIcon className="h-5 w-5 flex-none text-[#2F6FED]" />
+                  )}
+                  {service}
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-[12px] leading-5 text-[#667085]">
+              Larger projects, major electrical or plumbing work, and work exceeding visit time are outside standard
+              membership visits. Materials may cost extra.
             </p>
           </div>
-          <div className="mt-9 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {serviceAreas.map((area) => (
-              <div
-                key={area}
-                className="flex min-h-20 items-center justify-center gap-2 rounded-[18px] border border-[#D7E2FC] bg-white px-3 text-center text-[14px] font-bold shadow-[0_8px_24px_rgba(48,110,236,0.06)] sm:text-[15px]"
-              >
-                <MapPinIcon className="h-4 w-4 flex-none text-[#306EEC]" />
-                {area}
+
+          <aside className="rounded-[28px] border-2 border-[#2F6FED] bg-white p-6 shadow-[0_24px_70px_rgba(47,111,237,0.15)] sm:p-8 lg:sticky lg:top-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#2F6FED]">
+                  JULY4 eligible
+                </p>
+                <h3 className="mt-2 text-2xl font-bold">Profixter Basic</h3>
+              </div>
+              <span className="rounded-full bg-[#DCFCE7] px-3 py-2 text-[11px] font-extrabold text-[#166534]">
+                First month $0
+              </span>
+            </div>
+
+            <div className="mt-6 flex items-end gap-2 border-b border-[#E4E7EC] pb-6">
+              <span className="text-5xl font-bold tracking-[-0.05em]">$149</span>
+              <span className="pb-1 text-[13px] font-semibold text-[#667085]">/month after free month</span>
+            </div>
+
+            <ul className="mt-6 space-y-4">
+              {planBenefits.map((benefit) => (
+                <li key={benefit} className="flex items-center gap-3 text-[14px] font-semibold text-[#344054]">
+                  <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[#EAF8EE] text-[#15803D]">
+                    <CheckCircleIcon className="h-4 w-4" />
+                  </span>
+                  {benefit}
+                </li>
+              ))}
+            </ul>
+
+            <CTA className="mt-7 w-full" />
+            <div className="mt-4 flex items-center justify-center gap-2 text-[11px] font-semibold text-[#667085]">
+              <CreditCardIcon className="h-4 w-4" />
+              Secure Stripe checkout · Card required
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section className="bg-white px-5 py-16 sm:px-7 sm:py-24 lg:px-8">
+        <div className="mx-auto max-w-[960px]">
+          <SectionHeading
+            eyebrow="A better default"
+            title="Trade the handyman hunt for one trusted solution."
+          />
+
+          <div className="mt-10 overflow-hidden rounded-[26px] border border-[#E4E7EC]">
+            <div className="grid grid-cols-2 bg-[#101828] text-white">
+              <div className="p-4 text-center text-[13px] font-bold sm:p-5 sm:text-[16px]">The usual way</div>
+              <div className="border-l border-white/15 bg-[#17325E] p-4 text-center text-[13px] font-bold sm:p-5 sm:text-[16px]">
+                With Profixter
+              </div>
+            </div>
+            {[
+              ["Search for someone each time", "One local team to contact"],
+              ["Wait and hope for a callback", "Schedule through your account"],
+              ["Small jobs get deprioritized", "Membership built for everyday tasks"],
+              ["Give up another weekend", "Get the list moving"],
+              ["Wonder what happens next", "Clear plan and monthly price"],
+            ].map(([without, withProfixter]) => (
+              <div key={without} className="grid grid-cols-2 border-t border-[#E4E7EC] bg-white">
+                <div className="flex items-start gap-2 p-4 text-[12px] font-semibold leading-5 text-[#667085] sm:items-center sm:p-5 sm:text-[14px]">
+                  <XMarkIcon className="mt-0.5 h-4 w-4 flex-none text-[#D92D20] sm:mt-0" />
+                  {without}
+                </div>
+                <div className="flex items-start gap-2 border-l border-[#E4E7EC] bg-[#F7FAFF] p-4 text-[12px] font-bold leading-5 text-[#344054] sm:items-center sm:p-5 sm:text-[14px]">
+                  <CheckCircleIcon className="mt-0.5 h-4 w-4 flex-none text-[#15803D] sm:mt-0" />
+                  {withProfixter}
+                </div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="px-5 py-16 sm:px-7 sm:py-24 lg:px-8">
-        <div className="mx-auto max-w-[1120px]">
-          <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-            <div className="max-w-[650px]">
-              <p className="text-[12px] font-extrabold uppercase tracking-[0.2em] text-[#306EEC]">One trusted team</p>
-              <h2 className="mt-3 text-3xl font-bold tracking-[-0.03em] sm:text-4xl">Help with the jobs that keep piling up</h2>
-            </div>
-            <p className="max-w-[350px] text-[15px] leading-6 text-[#667085]">
-              Schedule everyday repairs and maintenance without starting a new handyman search every time.
-            </p>
-          </div>
-
-          <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-            {services.map((service, index) => (
-              <article
-                key={service}
-                className="rounded-[20px] border border-[#E2E6EE] bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.04)] transition duration-200 hover:border-[#B8CCFF] hover:shadow-[0_16px_40px_rgba(15,23,42,0.08)] sm:p-5"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EEF3FF] text-[#306EEC]">
-                  {index % 3 === 0 ? (
-                    <HomeModernIcon className="h-5 w-5" />
-                  ) : index % 3 === 1 ? (
-                    <WrenchScrewdriverIcon className="h-5 w-5" />
-                  ) : (
-                    <CheckCircleIcon className="h-5 w-5" />
-                  )}
-                </div>
-                <h3 className="mt-4 text-[14px] font-bold leading-5 sm:text-[15px]">{service}</h3>
-              </article>
-            ))}
-          </div>
-
-          <p className="mt-7 text-center text-[13px] leading-6 text-[#667085]">
-            Visits are subject to normal Profixter membership rules and availability.
-          </p>
-        </div>
-      </section>
-
-      <section className="border-y border-[#E5E7EB] bg-white px-5 py-16 sm:px-7 sm:py-24 lg:px-8">
-        <div className="mx-auto max-w-[960px]">
-          <div className="mx-auto max-w-[700px] text-center">
-            <p className="text-[12px] font-extrabold uppercase tracking-[0.2em] text-[#306EEC]">A simpler way to get help</p>
-            <h2 className="mt-3 text-3xl font-bold tracking-[-0.03em] sm:text-4xl">
-              Less chasing. More getting things done.
-            </h2>
-          </div>
-          <div className="mt-10 grid gap-4 md:grid-cols-2">
-            <article className="rounded-[24px] border border-[#F1D4D4] bg-[#FFF8F8] p-6 sm:p-8">
-              <h3 className="text-xl font-bold text-[#7F1D1D]">Without Profixter</h3>
-              <ul className="mt-6 space-y-4">
-                {comparison.without.map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-[15px] font-semibold text-[#667085]">
-                    <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[#FEE2E2] text-[#B91C1C]">
-                      <XMarkIcon className="h-4 w-4" />
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </article>
-            <article className="rounded-[24px] border border-[#BFE5CB] bg-[#F4FBF6] p-6 shadow-[0_16px_45px_rgba(22,101,52,0.06)] sm:p-8">
-              <h3 className="text-xl font-bold text-[#166534]">With Profixter</h3>
-              <ul className="mt-6 space-y-4">
-                {comparison.with.map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-[15px] font-semibold text-[#344054]">
-                    <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[#DCFCE7] text-[#15803D]">
-                      <CheckCircleIcon className="h-4 w-4" />
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </article>
           </div>
         </div>
       </section>
@@ -372,7 +475,7 @@ export default function July4Page() {
       <section className="bg-[#0A1424] px-5 py-16 text-white sm:px-7 sm:py-24 lg:px-8">
         <div className="mx-auto grid max-w-[1080px] items-center gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
           <div className="relative mx-auto w-full max-w-[390px]">
-            <div className="absolute -inset-3 rounded-[32px] bg-[#306EEC]/25 blur-2xl" />
+            <div className="absolute -inset-3 rounded-[32px] bg-[#2F6FED]/25 blur-2xl" />
             <div className="relative aspect-[4/3] overflow-hidden rounded-[28px] border border-white/10 bg-[#14233A] lg:aspect-[4/5]">
               <Image
                 src="/images/Taras.png"
@@ -384,18 +487,27 @@ export default function July4Page() {
             </div>
           </div>
           <div>
-            <p className="text-[12px] font-extrabold uppercase tracking-[0.2em] text-[#86A9FF]">Local and accountable</p>
-            <h2 className="mt-3 text-3xl font-bold tracking-[-0.03em] sm:text-4xl">
-              A local service built for homeowners
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#9DB9FF] sm:text-[12px]">
+              Local means accountable
+            </p>
+            <h2 className="mt-3 text-[30px] font-bold leading-[1.08] tracking-[-0.035em] sm:text-[42px]">
+              Built here, for the way local homeowners actually need help.
             </h2>
             <p className="mt-6 text-[16px] leading-8 text-white/72 sm:text-[18px]">
-              My name is Taras, founder of Profixter. I created this service to make small home repairs easier for local
-              homeowners in Babylon and surrounding communities. Instead of searching for a handyman every time
-              something breaks, members can schedule help through one simple membership.
+              I&apos;m Taras, founder of Profixter. I started this company because getting a small home repair handled
+              should not require days of searching, chasing, and rearranging your schedule. Profixter gives our
+              neighbors one reliable place to turn when the home list starts growing.
+            </p>
+            <p className="mt-5 text-[16px] font-bold leading-7 text-white">
+              We are not a lead marketplace. We are a local service company with a name, a license, and a reputation to
+              stand behind.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              {["Based in Babylon", "Licensed HI-71484", "Fully insured"].map((item) => (
-                <span key={item} className="rounded-full border border-white/12 bg-white/[0.06] px-4 py-2 text-[12px] font-bold text-white/70">
+              {["Based in Babylon", "Licensed HI-71484", "Fully insured", "631-599-1363"].map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full border border-white/12 bg-white/[0.06] px-4 py-2 text-[11px] font-bold text-white/72 sm:text-[12px]"
+                >
                   {item}
                 </span>
               ))}
@@ -404,78 +516,46 @@ export default function July4Page() {
         </div>
       </section>
 
-      <section className="bg-white px-5 py-16 sm:px-7 sm:py-24 lg:px-8">
+      <section className="bg-[#F8F9FC] px-5 py-16 sm:px-7 sm:py-24 lg:px-8">
         <div className="mx-auto max-w-[1120px]">
-          <div className="mx-auto max-w-[760px] text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF3FF] text-[#306EEC]">
-              <CalendarDaysIcon className="h-6 w-6" />
-            </div>
-            <h2 className="mt-5 text-3xl font-bold tracking-[-0.03em] sm:text-4xl">See the price before you start</h2>
-            <p className="mt-4 text-[16px] leading-7 text-[#667085]">
-              JULY4 makes your first month of the Profixter Basic Plan $0. Basic renews at $149 per month after the
-              free month unless you cancel before renewal.
-            </p>
-          </div>
-
-          <div className="mx-auto mt-10 max-w-[700px] rounded-[28px] border-2 border-[#306EEC] bg-[#F5F7FF] p-6 shadow-[0_22px_60px_rgba(48,110,236,0.14)] sm:p-8">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#306EEC]">JULY4 eligible plan</p>
-                <h3 className="mt-2 text-2xl font-bold">Profixter Basic</h3>
-                <p className="mt-2 text-[14px] leading-6 text-[#667085]">Ongoing handyman help, one visit at a time.</p>
+          <SectionHeading
+            eyebrow="Your neighborhood is our service area"
+            title="Local help for Babylon and nearby communities."
+            description="Keeping the service area focused helps us provide a more dependable experience for local members."
+          />
+          <div className="mt-9 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {serviceAreas.map((area) => (
+              <div
+                key={area}
+                className="flex min-h-20 items-center justify-center gap-2 rounded-[18px] border border-[#DCE3EF] bg-white px-3 text-center text-[12px] font-bold shadow-[0_8px_24px_rgba(16,24,40,0.04)] sm:text-[14px]"
+              >
+                <MapPinIcon className="h-4 w-4 flex-none text-[#2F6FED]" />
+                {area}
               </div>
-              <div className="sm:text-right">
-                <p className="text-[13px] font-bold text-[#166534]">First month FREE</p>
-                <p className="mt-1 text-4xl font-bold tracking-[-0.04em]">
-                  $149<span className="text-[13px] font-semibold text-[#667085]">/mo after</span>
-                </p>
-              </div>
-            </div>
-            <div className="mt-6 border-t border-[#D8E1F7] pt-5">
-              <p className="text-[13px] font-semibold leading-6 text-[#475467]">
-                JULY4 promotion applies to the Basic Plan only. Upgrade options are available separately.
-              </p>
-            </div>
-          </div>
-
-          <div className="mx-auto mt-5 max-w-[700px] rounded-[20px] border border-[#E5E7EB] bg-[#FAFAFB] p-5">
-            <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#667085]">Other plans available separately</p>
-            <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-[13px] font-semibold text-[#475467]">
-              {upgradePlans.map((plan) => (
-                <span key={plan.name}>
-                  {plan.name} ${plan.price}/mo
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-9 text-center">
-            <CTA />
-            <p className="mt-3 text-[12px] font-semibold text-[#667085]">
-              Code JULY4 is saved when you start from this page and applies to Basic only.
-            </p>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="border-y border-[#E5E7EB] bg-[#F7F8FC] px-5 py-16 sm:px-7 sm:py-24 lg:px-8">
+      <section className="border-y border-[#E4E7EC] bg-white px-5 py-16 sm:px-7 sm:py-24 lg:px-8">
         <div className="mx-auto max-w-[820px]">
-          <div className="text-center">
-            <p className="text-[12px] font-extrabold uppercase tracking-[0.2em] text-[#306EEC]">Questions, answered</p>
-            <h2 className="mt-3 text-3xl font-bold tracking-[-0.03em] sm:text-4xl">Before you get started</h2>
-          </div>
+          <SectionHeading
+            eyebrow="Straight answers"
+            title="Know exactly what you are signing up for."
+            description="A clear offer earns more trust than fine print. Here are the questions homeowners ask most."
+          />
 
           <div className="mt-9 space-y-3">
             {faqs.map((faq) => (
               <details
                 key={faq.question}
-                className="group rounded-[18px] border border-[#E1E5ED] bg-white shadow-[0_8px_28px_rgba(15,23,42,0.035)] open:border-[#BED0FF]"
+                className="group rounded-[18px] border border-[#E1E5ED] bg-[#FCFCFD] shadow-[0_8px_28px_rgba(15,23,42,0.025)] open:border-[#B9CBF8] open:bg-white"
               >
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-5 px-5 py-5 text-[15px] font-bold marker:content-none sm:px-6 sm:text-[16px]">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-5 px-5 py-5 text-[14px] font-bold marker:content-none sm:px-6 sm:text-[16px]">
                   {faq.question}
                   <ChevronDownIcon className="h-5 w-5 flex-none text-[#667085] transition-transform duration-200 group-open:rotate-180" />
                 </summary>
-                <p className="px-5 pb-5 text-[14px] leading-7 text-[#667085] sm:px-6 sm:pb-6 sm:text-[15px]">
+                <p className="px-5 pb-5 text-[13px] leading-7 text-[#667085] sm:px-6 sm:pb-6 sm:text-[15px]">
                   {faq.answer}
                 </p>
               </details>
@@ -485,21 +565,25 @@ export default function July4Page() {
       </section>
 
       <section className="relative overflow-hidden bg-[#07111F] px-5 py-16 text-center text-white sm:px-7 sm:py-24 lg:px-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(48,110,236,0.32),transparent_46%)]" />
-        <div className="relative mx-auto max-w-[760px]">
-          <span className="inline-flex rounded-full border border-[#FFD78A]/25 bg-[#F59E0B]/12 px-4 py-2 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#FFE4A8]">
-            Basic Plan · First month free
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(47,111,237,0.34),transparent_48%)]" />
+        <div className="relative mx-auto max-w-[780px]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#FFD98F]/25 bg-[#F59E0B]/12 px-4 py-2 text-[10px] font-extrabold uppercase tracking-[0.17em] text-[#FFE8B6] sm:text-[11px]">
+            <SparklesIcon className="h-4 w-4" />
+            JULY4 · Basic first month free
           </span>
-          <h2 className="mt-5 text-3xl font-bold tracking-[-0.03em] sm:text-5xl">Ready to try Profixter Basic free?</h2>
-          <p className="mx-auto mt-4 max-w-[580px] text-[15px] leading-7 text-white/65 sm:text-[17px]">
-            Create an account, select the Basic Plan, and confirm the JULY4 discount in secure checkout before you activate.
+          <h2 className="mt-5 text-[34px] font-bold leading-[1.05] tracking-[-0.04em] sm:text-[52px]">
+            Your home will keep making a list. You do not have to handle it alone.
+          </h2>
+          <p className="mx-auto mt-5 max-w-[620px] text-[15px] leading-7 text-white/68 sm:text-[17px]">
+            Try Profixter Basic for one month at $0 and see what it feels like to finally have a reliable answer for the
+            small jobs around your home.
           </p>
-          <CTA className="mt-8 w-full sm:w-auto" />
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12px] font-semibold text-white/45">
-            <span>Basic first month $0</span>
-            <span>•</span>
-            <span>No long-term contract</span>
-            <span>•</span>
+          <CTA className="mt-8 w-full sm:w-auto" label="Get One Less Thing to Worry About" />
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] font-semibold text-white/48 sm:text-[12px]">
+            <span>First month $0</span>
+            <span aria-hidden="true">•</span>
+            <span>Then $149/month</span>
+            <span aria-hidden="true">•</span>
             <span>Cancel anytime</span>
           </div>
         </div>
@@ -508,21 +592,33 @@ export default function July4Page() {
       <footer className="bg-[#050B14] px-5 pb-28 pt-8 text-white sm:px-7 sm:pb-8 lg:px-8">
         <div className="mx-auto flex max-w-[1120px] flex-col items-center justify-between gap-5 sm:flex-row">
           <Link href="/">
-            <Image src="/images/logo-footer.svg" alt="Profixter" width={135} height={36} className="h-auto w-[125px]" />
+            <Image
+              src="/images/logo-footer.svg"
+              alt="Profixter"
+              width={135}
+              height={36}
+              className="h-auto w-[125px]"
+            />
           </Link>
           <div className="flex flex-wrap items-center justify-center gap-5 text-[12px] font-semibold text-white/45">
-            <Link href="/terms" className="transition hover:text-white">Terms</Link>
-            <Link href="/privacy" className="transition hover:text-white">Privacy</Link>
-            <a href="tel:+16315991363" className="transition hover:text-white">631-599-1363</a>
+            <Link href="/terms" className="transition hover:text-white">
+              Terms
+            </Link>
+            <Link href="/privacy" className="transition hover:text-white">
+              Privacy
+            </Link>
+            <a href="tel:+16315991363" className="transition hover:text-white">
+              631-599-1363
+            </a>
           </div>
           <p className="text-[11px] text-white/30">© 2026 Profixter</p>
         </div>
       </footer>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#DDE3EE] bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-2.5 shadow-[0_-12px_35px_rgba(15,23,42,0.12)] backdrop-blur-lg sm:hidden">
-        <CTA className="min-h-12 w-full" label="Start Free Basic Plan" />
-        <p className="mt-1.5 text-center text-[10px] font-bold text-[#667085]">
-          JULY4 applies to Basic only · Then $149/mo
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#DDE3EE] bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+9px)] pt-2.5 shadow-[0_-12px_35px_rgba(15,23,42,0.12)] backdrop-blur-lg sm:hidden">
+        <CTA className="min-h-12 w-full" label="Start My Free Month" />
+        <p className="mt-1.5 text-center text-[9px] font-bold text-[#667085]">
+          Basic only · First month $0 · Then $149/mo · Cancel anytime
         </p>
       </div>
     </main>
