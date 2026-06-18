@@ -95,6 +95,10 @@ export default function SignUpPage() {
 
   useEffect(() => {
     trackEvent("view_signup", { page: "/signup" });
+    const code = new URLSearchParams(window.location.search).get("promo")?.trim().toUpperCase() || "";
+    if (code) {
+      sessionStorage.setItem("pendingPromoCode", code);
+    }
   }, []);
 
   const handleChange = (field: keyof typeof formData, value: string) => {
@@ -182,7 +186,13 @@ export default function SignUpPage() {
       const { token, user } = await register(registrationPayload);
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
-      window.location.href = "/";
+      const checkoutPromo =
+        new URLSearchParams(window.location.search).get("promo")?.trim().toUpperCase() ||
+        sessionStorage.getItem("pendingPromoCode") ||
+        "";
+      window.location.href = checkoutPromo
+        ? `/?promo=${encodeURIComponent(checkoutPromo)}#plans`
+        : "/";
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       const message = error?.response?.data?.message || "Registration failed. Please try again.";

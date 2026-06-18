@@ -119,6 +119,7 @@ function getDisplayPrice(plan: Plan, billing: BillingCycle): number {
 
 export default function PlansSection() {
   const [billing, setBilling] = useState<BillingCycle>("monthly");
+  const [promoCode, setPromoCode] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [actionError, setActionError] = useState("");
   const [actionLoadingPlan, setActionLoadingPlan] = useState<string | null>(null);
@@ -216,6 +217,11 @@ export default function PlansSection() {
     if (typeof window === "undefined") return;
 
     const params = new URLSearchParams(window.location.search);
+    const requestedPromo = String(
+      params.get("promo") || sessionStorage.getItem("pendingPromoCode") || ""
+    )
+      .trim()
+      .toUpperCase();
     const pendingRaw = sessionStorage.getItem("pendingCheckoutPlan");
     let pending: {
       plan?: string;
@@ -239,6 +245,11 @@ export default function PlansSection() {
 
     if (requestedBilling === "monthly" || requestedBilling === "annual") {
       setBilling(requestedBilling);
+    }
+
+    if (requestedPromo) {
+      setPromoCode(requestedPromo);
+      sessionStorage.setItem("pendingPromoCode", requestedPromo);
     }
 
     if (
@@ -307,7 +318,13 @@ export default function PlansSection() {
     }> => {
       const res = await API.post<CheckoutResponse>(
         endpointPath,
-        { plan, addressId, email, billingCycle: cycle },
+        {
+          plan,
+          addressId,
+          email,
+          billingCycle: cycle,
+          ...(promoCode ? { code: promoCode } : {}),
+        },
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
@@ -628,6 +645,11 @@ export default function PlansSection() {
           <p className="mt-4 text-base leading-7 text-[#6E6E73] sm:text-lg">
             Start with the plan that fits your home today. Upgrade or downgrade anytime.
           </p>
+          {promoCode ? (
+            <div className="mt-5 inline-flex rounded-full border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm font-semibold text-[#166534]">
+              Promo code {promoCode} will be applied at checkout
+            </div>
+          ) : null}
           <BillingToggle />
         </div>
 
