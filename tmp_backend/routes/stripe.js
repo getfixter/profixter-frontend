@@ -103,7 +103,7 @@ router.post("/create-checkout-session", async (req, res) => {
     );
 
     const stripeCustomerId = await resolveUserStripeCustomerId(user);
-    const sessionPayload = {
+    const sessionConfig = {
       mode: "subscription",
       payment_method_types: ["card"],
       client_reference_id: String(addressId),
@@ -134,16 +134,17 @@ router.post("/create-checkout-session", async (req, res) => {
     };
 
     if (promoCodeId) {
-      sessionPayload.discounts = [{ promotion_code: promoCodeId }];
+      sessionConfig.discounts = [{ promotion_code: promoCodeId }];
     }
 
     if (stripeCustomerId) {
-      sessionPayload.customer = stripeCustomerId;
+      sessionConfig.customer = stripeCustomerId;
     } else {
-      sessionPayload.customer_email = email;
+      sessionConfig.customer_email = email;
     }
 
-    const session = await stripe.checkout.sessions.create(sessionPayload);
+    console.log('STRIPE_SESSION_CONFIG', JSON.stringify(sessionConfig, null, 2));
+    const session = await stripe.checkout.sessions.create(sessionConfig);
     return res.status(200).json({ url: session.url, eventId });
   } catch (error) {
     console.error("Stripe Session Error:", error);
