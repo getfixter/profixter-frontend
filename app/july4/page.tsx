@@ -15,6 +15,7 @@ import {
   WrenchScrewdriverIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import CopyCouponButton from "./CopyCouponButton";
 
 const signupHref = "/signup?promo=JULY4";
 
@@ -414,8 +415,12 @@ export default function July4Page() {
                   $0
                 </span>
               </div>
-              <div className="mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-[#C9D7FA] bg-[#F2F6FF] px-4 py-2 text-[12px] font-bold text-[#344054]">
-                Use code <span className="font-extrabold tracking-[0.08em] text-[#2F6FED]">JULY4</span>
+              <div className="mx-auto mt-5 flex max-w-[330px] items-center justify-between gap-3 rounded-[18px] border border-[#C9D7FA] bg-[#F2F6FF] p-2 pl-4 text-left">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#667085]">Coupon code</p>
+                  <p className="mt-0.5 text-[18px] font-extrabold tracking-[0.12em] text-[#2F6FED]">JULY4</p>
+                </div>
+                <CopyCouponButton />
               </div>
             </div>
 

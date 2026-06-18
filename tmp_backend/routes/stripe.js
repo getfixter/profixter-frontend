@@ -65,7 +65,7 @@ router.post("/create-checkout-session", async (req, res) => {
       });
     }
 
-    let discounts = [];
+    let promoCodeId = null;
     if (code) {
       const promo = await stripe.promotionCodes.list({
         code,
@@ -73,7 +73,7 @@ router.post("/create-checkout-session", async (req, res) => {
         limit: 1,
       });
       if (promo.data[0]) {
-        discounts = [{ promotion_code: promo.data[0].id }];
+        promoCodeId = promo.data[0].id;
       }
     }
 
@@ -108,8 +108,6 @@ router.post("/create-checkout-session", async (req, res) => {
       payment_method_types: ["card"],
       client_reference_id: String(addressId),
       line_items: [{ price: priceId, quantity: 1 }],
-      allow_promotion_codes: true,
-      discounts,
       metadata: {
         plan,
         billingCycle: cycle,
@@ -134,6 +132,10 @@ router.post("/create-checkout-session", async (req, res) => {
       success_url: `${CLIENT_URL}/confirmationpage?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${CLIENT_URL}/?canceled=true&plan=${plan}&billingCycle=${cycle}`,
     };
+
+    if (promoCodeId) {
+      sessionPayload.discounts = [{ promotion_code: promoCodeId }];
+    }
 
     if (stripeCustomerId) {
       sessionPayload.customer = stripeCustomerId;
