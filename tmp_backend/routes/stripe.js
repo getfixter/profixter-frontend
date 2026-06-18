@@ -26,7 +26,7 @@ function getCookie(req, name) {
 }
 
 router.post("/create-checkout-session", async (req, res) => {
-  const { plan, email, addressId, code, billingCycle } = req.body;
+  const { plan, email, addressId, billingCycle } = req.body;
   const cycle = normalizeBillingCycle(billingCycle, "monthly");
   const priceId = getPriceId(plan, cycle);
 
@@ -65,18 +65,6 @@ router.post("/create-checkout-session", async (req, res) => {
       });
     }
 
-    let promoCodeId = null;
-    if (code) {
-      const promo = await stripe.promotionCodes.list({
-        code,
-        active: true,
-        limit: 1,
-      });
-      if (promo.data[0]) {
-        promoCodeId = promo.data[0].id;
-      }
-    }
-
     const fbp = getCookie(req, "_fbp");
     const fbc = getCookie(req, "_fbc");
     const sourceUrl = req.headers.referer || `${CLIENT_URL}/`;
@@ -108,6 +96,7 @@ router.post("/create-checkout-session", async (req, res) => {
       payment_method_types: ["card"],
       client_reference_id: String(addressId),
       line_items: [{ price: priceId, quantity: 1 }],
+      allow_promotion_codes: true,
       metadata: {
         plan,
         billingCycle: cycle,
@@ -133,17 +122,12 @@ router.post("/create-checkout-session", async (req, res) => {
       cancel_url: `${CLIENT_URL}/?canceled=true&plan=${plan}&billingCycle=${cycle}`,
     };
 
-    if (promoCodeId) {
-      sessionConfig.discounts = [{ promotion_code: promoCodeId }];
-    }
-
     if (stripeCustomerId) {
       sessionConfig.customer = stripeCustomerId;
     } else {
       sessionConfig.customer_email = email;
     }
 
-    console.log('STRIPE_SESSION_CONFIG', JSON.stringify(sessionConfig, null, 2));
     const session = await stripe.checkout.sessions.create(sessionConfig);
     return res.status(200).json({ url: session.url, eventId });
   } catch (error) {
