@@ -48,6 +48,10 @@ export interface Booking {
   state?: string;
   zip?: string;
   images?: Array<{ key: string; url: string }>;
+  assignedFixterId?: string | null;
+  assignedFixterName?: string;
+  assignedFixterEmail?: string;
+  assignedFixterPosition?: EmployeePosition | "";
 }
 
 export interface BlacklistEntry {
@@ -66,6 +70,7 @@ export interface BlacklistEntry {
 
 export interface SegmentCounts {
   all: number;
+  subscribed: number;
   not_subscribed: number;
   basic: number;
   plus: number;
@@ -77,17 +82,48 @@ export interface CampaignRequest {
   segment: string;
   subject: string;
   body: string;
-  useTemplate: boolean;
   ctaText?: string;
   ctaUrl?: string;
-  testOnly: boolean;
 }
 
 export interface CampaignResponse {
+  campaignId: string;
   segment: string;
   total: number;
   sent: number;
+  failed: number;
+  skipped: number;
+  adminCopySent: boolean;
+  status: string;
   errors: Array<{ email: string; error: string }>;
+}
+
+export interface CampaignPreview {
+  segment: string;
+  recipientCount: number;
+  subject: string;
+  html: string;
+  text: string;
+  sampleValues: Record<string, string>;
+}
+
+export interface CampaignVariable {
+  key: string;
+  tag: string;
+  description: string;
+}
+
+export interface CampaignVariableGroup {
+  id: string;
+  label: string;
+  variables: CampaignVariable[];
+}
+
+export interface CampaignTestResponse {
+  testOnly: true;
+  recipient: string;
+  estimatedRecipientCount: number;
+  providerMessageId: string;
 }
 
 export interface RequestLead {
@@ -102,6 +138,27 @@ export interface RequestLead {
   createdAt?: string;
 }
 
+export interface BookingHistoryChange {
+  field: string;
+  label: string;
+  oldValue: string;
+  newValue: string;
+}
+
+export interface BookingHistoryEntry {
+  _id: string;
+  bookingId: string;
+  actorUserId: string | null;
+  actorName: string;
+  actorEmail: string;
+  actorRole: string;
+  actorPosition: string;
+  actionType: string;
+  changes: BookingHistoryChange[];
+  summary: string;
+  createdAt: string;
+}
+
 export type EmployeePosition = "Fixter" | "General Fixter";
 
 export interface FixterAccount {
@@ -114,6 +171,7 @@ export interface FixterAccount {
   employeePosition: EmployeePosition;
   isActive: boolean;
   mustChangePassword: boolean;
+  isDefaultFixter: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -259,6 +317,16 @@ export const setFixterActive = async (
   return response.data.fixter;
 };
 
+export const setDefaultFixter = async (
+  id: string,
+  isDefault: boolean
+): Promise<FixterAccount[]> => {
+  const response = await API.patch(`/api/admin/fixters/${id}/default`, {
+    isDefault,
+  });
+  return response.data.fixters;
+};
+
 export const updateUser = async (
   userId: string,
   data: { name?: string; phone?: string; subscription?: string }
@@ -299,17 +367,43 @@ export const setAddressCancellationDate = async (
 };
 
 // Bookings
-export const getAllBookings = async (): Promise<Booking[]> => {
-  const response = await API.get('/api/admin/bookings');
+export interface BookingAssignee {
+  id: string;
+  name: string;
+  email: string;
+  employeePosition: EmployeePosition;
+  isDefaultFixter: boolean;
+}
+
+export const getAllBookings = async (
+  assigned: "all" | "me" = "all"
+): Promise<Booking[]> => {
+  const response = await API.get('/api/admin/bookings', {
+    params: assigned === "me" ? { assigned: "me" } : undefined,
+  });
   return response.data;
+};
+
+export const getBookingAssignees = async (): Promise<BookingAssignee[]> => {
+  const response = await API.get("/api/admin/booking-assignees");
+  return response.data.fixters;
+};
+
+export const getBookingHistory = async (
+  bookingId: string
+): Promise<BookingHistoryEntry[]> => {
+  const response = await API.get(`/api/admin/bookings/${bookingId}/history`);
+  return response.data.history;
 };
 
 export const updateBookingStatus = async (
   bookingId: string,
-  status: string
+  status: string,
+  assignedFixterId?: string | null
 ): Promise<Booking> => {
   const response = await API.put(`/api/admin/bookings/${bookingId}/status`, {
     status,
+    ...(assignedFixterId !== undefined ? { assignedFixterId } : {}),
   });
   return response.data.booking;
 };
@@ -317,7 +411,7 @@ export const updateBookingStatus = async (
 
 export const updateBookingAdmin = async (
   bookingId: string,
-  patch: { note?: string; date?: string }
+  patch: { note?: string; date?: string; assignedFixterId?: string | null }
 ): Promise<Booking> => {
   const response = await API.put(`/api/admin/bookings/${bookingId}`, patch);
   return response.data.booking;
@@ -352,8 +446,31 @@ export const getSegmentCounts = async (): Promise<SegmentCounts> => {
 export const sendCampaign = async (
   data: CampaignRequest
 ): Promise<CampaignResponse> => {
-  const response = await API.post('/api/admin/campaigns/send', data);
+  const response = await API.post('/api/admin/campaigns/send', data, {
+    timeout: 300000,
+  });
   return response.data;
+};
+
+export const sendCampaignTest = async (
+  data: CampaignRequest
+): Promise<CampaignTestResponse> => {
+  const response = await API.post('/api/admin/campaigns/test', data, {
+    timeout: 60000,
+  });
+  return response.data;
+};
+
+export const previewCampaign = async (
+  data: CampaignRequest
+): Promise<CampaignPreview> => {
+  const response = await API.post('/api/admin/campaigns/preview', data);
+  return response.data;
+};
+
+export const getCampaignVariables = async (): Promise<CampaignVariableGroup[]> => {
+  const response = await API.get('/api/admin/campaigns/variables');
+  return response.data.groups;
 };
 
 // Calendar Config

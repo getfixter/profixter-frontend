@@ -15,13 +15,13 @@ import EmailComposer from "@/app/components/admin/EmailComposer";
 import RequestsTable from "@/app/components/admin/RequestsTable";
 import ProjectsModule from "@/app/components/admin/ProjectsModule";
 import FixtersModule from "@/app/components/admin/FixtersModule";
-import MembersReadOnly from "@/app/components/admin/MembersReadOnly";
 import { tabsForUser } from "@/app/components/admin/admin-tabs-config";
 import { toYMDNY } from "@/lib/utils/timezone-helpers";
 import {
   getAllUsers,
   getMembers,
   getAllBookings,
+  getBookingAssignees,
   getBlacklist,
   getAllRequests,
   updateBookingStatus,
@@ -37,6 +37,7 @@ import type {
   Booking,
   BlacklistEntry,
   RequestLead,
+  BookingAssignee,
 } from "@/lib/admin-service";
 import AdminCalendarSettings from "@/app/components/admin/AdminCalendarSettings";
 
@@ -75,6 +76,7 @@ export default function AdminPage() {
   }, []);
   const [users, setUsers] = useState<User[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookingAssignees, setBookingAssignees] = useState<BookingAssignee[]>([]);
   const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
   const [requests, setRequests] = useState<RequestLead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,10 +87,14 @@ export default function AdminPage() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [showCalendarMobile, setShowCalendarMobile] = useState(false);
+  const [assignmentScope, setAssignmentScope] = useState<"me" | "all">(
+    user?.employeePosition === "Fixter" ? "me" : "all"
+  );
 
   const isAdmin = user?.role === "admin" || user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
   const isEmployee = user?.role === "employee";
   const hasWorkspaceAccess = isAdmin || isEmployee;
+  const canAssignBookings = isAdmin || user?.employeePosition === "General Fixter";
   const allowedTabs = useMemo(
     () => tabsForUser(isAdmin ? "admin" : user?.role, user?.employeePosition || undefined),
     [isAdmin, user?.role, user?.employeePosition]
@@ -97,22 +103,24 @@ export default function AdminPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [usersData, bookingsData, blacklistData, requestsData] =
+      const [usersData, bookingsData, blacklistData, requestsData, assigneesData] =
         await Promise.all([
           isAdmin
             ? getAllUsers()
             : user?.employeePosition === "General Fixter"
               ? getMembers()
               : Promise.resolve([]),
-          getAllBookings(),
+          getAllBookings(assignmentScope),
           isAdmin ? getBlacklist().catch(() => []) : Promise.resolve([]),
           isAdmin ? getAllRequests().catch(() => []) : Promise.resolve([]),
+          canAssignBookings ? getBookingAssignees().catch(() => []) : Promise.resolve([]),
         ]);
 
       setUsers(usersData);
       setBookings(bookingsData);
       setBlacklist(blacklistData);
       setRequests(requestsData);
+      setBookingAssignees(assigneesData);
     } catch (error: unknown) {
       console.error("Failed to fetch admin data:", error);
       const status =
@@ -127,7 +135,7 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [router, isAdmin, user?.employeePosition]);
+  }, [router, isAdmin, user?.employeePosition, assignmentScope, canAssignBookings]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -151,6 +159,12 @@ export default function AdminPage() {
   }, [user, hasWorkspaceAccess, authLoading, router, fetchAll, allowedTabs, active]);
 
   useEffect(() => {
+    if (user?.employeePosition === "Fixter") {
+      setAssignmentScope("me");
+    }
+  }, [user?.employeePosition]);
+
+  useEffect(() => {
     let lastY = window.scrollY;
     const onScroll = () => {
       const y = window.scrollY;
@@ -164,10 +178,11 @@ export default function AdminPage() {
 
   const handleUpdateBookingStatus = async (
     bookingId: string,
-    status: string
+    status: string,
+    assignedFixterId?: string | null
   ) => {
     try {
-      await updateBookingStatus(bookingId, status);
+      await updateBookingStatus(bookingId, status, assignedFixterId);
       fetchAll();
     } catch (error) {
       console.error("Failed to update booking:", error);
@@ -177,7 +192,7 @@ export default function AdminPage() {
 
   const handleUpdateBooking = async (
     bookingId: string,
-    patch: { note?: string; date?: string }
+    patch: { note?: string; date?: string; assignedFixterId?: string | null }
   ) => {
     try {
       await updateBookingAdmin(bookingId, patch);
@@ -441,6 +456,20 @@ export default function AdminPage() {
 
           {active === "bookings" && (
             <div className="sticky top-0 z-30 -mx-3 mt-3 flex items-center gap-2 overflow-x-auto border-y border-slate-100 bg-white px-3 py-2 md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
+              <div className="flex flex-shrink-0 rounded-xl border border-slate-200 bg-slate-100 p-1">
+                {(["me", "all"] as const).map((scope) => (
+                  <button
+                    key={scope}
+                    type="button"
+                    onClick={() => setAssignmentScope(scope)}
+                    className={`rounded-lg px-3 py-2 text-xs font-bold ${
+                      assignmentScope === scope ? "bg-white text-blue-700 shadow-sm" : "text-slate-500"
+                    }`}
+                  >
+                    {scope === "me" ? "Assigned to me" : "All"}
+                  </button>
+                ))}
+              </div>
               <button
                 type="button"
                 onClick={() => setShowCalendarMobile((v) => !v)}
@@ -607,7 +636,7 @@ export default function AdminPage() {
             )}
 
             {active === "subscribed" && (
-              isAdmin ? <UsersTable
+              <UsersTable
                 users={subscribedUsers}
                 onSetAddressPlan={handleSetAddressPlan}
                 onSetAddressCancellationDate={handleSetAddressCancellationDate}
@@ -615,7 +644,8 @@ export default function AdminPage() {
                 onBlacklist={handleBlacklist}
                 onUnblacklist={handleUnblacklist}
                 onRunSubscriptionCleanup={handleRunSubscriptionCleanup}
-              /> : <MembersReadOnly users={subscribedUsers} />
+                readOnly={!isAdmin}
+              />
             )}
 
             {active === "requests" && (
@@ -645,7 +675,13 @@ export default function AdminPage() {
                   updateStatus={handleUpdateBookingStatus}
                   users={users}
                   onUpdateBooking={handleUpdateBooking}
-                  readOnly={!isAdmin}
+                  assignees={bookingAssignees}
+                  canAssign={canAssignBookings}
+                  emptyMessage={
+                    assignmentScope === "me"
+                      ? "No bookings are assigned to you"
+                      : "No bookings in this view"
+                  }
                 />
               </div>
             )}
@@ -659,7 +695,7 @@ export default function AdminPage() {
               />
             )}
 
-            {active === "calendar" && <AdminCalendarSettings readOnly={!isAdmin} />}
+            {active === "calendar" && <AdminCalendarSettings readOnly={false} />}
             {active === "fixters" && isAdmin && <FixtersModule />}
           </>
         )}

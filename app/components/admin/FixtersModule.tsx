@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   createFixter,
   getFixters,
+  setDefaultFixter,
   setFixterActive,
   updateFixter,
   type EmployeePosition,
@@ -120,13 +121,25 @@ export default function FixtersModule() {
             <div>
               <h3 className="font-bold text-slate-950">{row.firstName} {row.lastName}</h3>
               <p className="text-sm text-slate-500">{row.email} · {row.phone}</p>
+              {row.isDefaultFixter && <span className="mt-2 mr-2 inline-block rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">Default</span>}
               {row.mustChangePassword && <span className="mt-2 inline-block rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">Password change required</span>}
             </div>
             <strong className="text-sm">{row.employeePosition}</strong>
             <span className={row.isActive ? "text-sm font-bold text-emerald-700" : "text-sm font-bold text-rose-700"}>{row.isActive ? "Active" : "Inactive"}</span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => { setEditing(row); setForm({ firstName: row.firstName, lastName: row.lastName, email: row.email, phone: row.phone, employeePosition: row.employeePosition }); }} className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-bold">Edit</button>
               <button type="button" onClick={async () => { await setFixterActive(row.id, !row.isActive); await load(); }} className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-bold text-white">{row.isActive ? "Deactivate" : "Activate"}</button>
+              {row.isActive && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setRows(await setDefaultFixter(row.id, !row.isDefaultFixter));
+                  }}
+                  className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700"
+                >
+                  {row.isDefaultFixter ? "Remove Default" : "Set Default"}
+                </button>
+              )}
             </div>
           </section>
         ))}

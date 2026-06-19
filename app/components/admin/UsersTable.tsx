@@ -18,6 +18,7 @@ interface UsersTableProps {
   onBlacklist: (userId: string) => void;
   onUnblacklist: (blacklistId: string) => void;
   onRunSubscriptionCleanup: () => Promise<void> | void;
+  readOnly?: boolean;
 }
 
 type FlattenedRow = {
@@ -118,6 +119,7 @@ export default function UsersTable({
   onBlacklist,
   onUnblacklist,
   onRunSubscriptionCleanup,
+  readOnly = false,
 }: UsersTableProps) {
   const [search, setSearch] = useState('');
   const [planFilter, setPlanFilter] = useState<PlanFilter>('all');
@@ -440,7 +442,7 @@ export default function UsersTable({
               <span className="font-semibold text-slate-900">{formatPlanLabel(planFilter)}</span>
             </div>
 
-            <button
+            {!readOnly && <button
               type="button"
               onClick={handleRunCleanup}
               disabled={isRunningCleanup}
@@ -451,9 +453,9 @@ export default function UsersTable({
               }`}
             >
               {isRunningCleanup ? 'Fixing GHL...' : 'Fix GHL'}
-            </button>
+            </button>}
 
-            {filteredRows.length > 0 && (
+            {!readOnly && filteredRows.length > 0 && (
               <button
                 type="button"
                 onClick={exportCSV}
@@ -476,7 +478,7 @@ export default function UsersTable({
                   <th className="px-4 py-4 text-left text-sm font-semibold">Address</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold">Plan</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold">Created</th>
-                  <th className="px-4 py-4 text-left text-sm font-semibold">Actions</th>
+                  {!readOnly && <th className="px-4 py-4 text-left text-sm font-semibold">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -553,7 +555,7 @@ export default function UsersTable({
                             <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${planMeta.pillClass}`}>
                               {formatPlanLabel(rowPlan)}
                             </span>
-                            <select
+                            {!readOnly && <select
                               className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                               value={rowPlan}
                               onChange={(event) =>
@@ -565,8 +567,8 @@ export default function UsersTable({
                               <option value="premium">Premium</option>
                               <option value="elite">Elite</option>
                               <option value="cancel">Cancel</option>
-                            </select>
-                            {rowPlan !== 'cancel' && renderCancellationControls(user, address)}
+                            </select>}
+                            {!readOnly && rowPlan !== 'cancel' && renderCancellationControls(user, address)}
                           </div>
                         ) : (
                           <span className="text-sm text-slate-400">No address record</span>
@@ -575,7 +577,7 @@ export default function UsersTable({
                       <td className="px-4 py-4 text-sm text-slate-600">
                         {user.createdAt ? new Date(user.createdAt).toLocaleString() : 'Not available'}
                       </td>
-                      <td className="px-4 py-4">
+                      {!readOnly && <td className="px-4 py-4">
                         {isBlacklisted && blacklistId ? (
                           <button
                             type="button"
@@ -593,7 +595,7 @@ export default function UsersTable({
                             Block
                           </button>
                         )}
-                      </td>
+                      </td>}
                     </tr>
                   );
                 })}
@@ -696,7 +698,7 @@ export default function UsersTable({
                     </div>
                     {address ? (
                       <>
-                        <select
+                        {!readOnly && <select
                           className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                           value={rowPlan}
                           onChange={(event) =>
@@ -708,15 +710,15 @@ export default function UsersTable({
                           <option value="premium">Premium</option>
                           <option value="elite">Elite</option>
                           <option value="cancel">Cancel</option>
-                        </select>
-                        {rowPlan !== 'cancel' && renderCancellationControls(user, address, true)}
+                        </select>}
+                        {!readOnly && rowPlan !== 'cancel' && renderCancellationControls(user, address, true)}
                       </>
                     ) : (
                       <div className="text-sm text-slate-400">No address record</div>
                     )}
                   </div>
 
-                  {isBlacklisted && blacklistId ? (
+                  {!readOnly && (isBlacklisted && blacklistId ? (
                     <button
                       type="button"
                       onClick={() => onUnblacklist(blacklistId)}
@@ -732,7 +734,7 @@ export default function UsersTable({
                     >
                       Block user
                     </button>
-                  )}
+                  ))}
                 </div>
               </article>
             );

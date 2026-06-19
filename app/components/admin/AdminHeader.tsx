@@ -4,10 +4,16 @@ import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/useAuth';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import API from '@/lib/api';
 
 export default function AdminHeader() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordMessage, setPasswordMessage] = useState('');
 
   const handleLogout = () => {
     logout();
@@ -60,6 +66,12 @@ export default function AdminHeader() {
             </div>
 
             <button
+              onClick={() => setShowPassword(true)}
+              className="px-3 py-2 bg-[#1e293b] hover:bg-[#2d3b4f] text-white rounded-lg font-medium text-sm"
+            >
+              Password
+            </button>
+            <button
               onClick={handleLogout}
               className="px-4 py-2 bg-[#1e293b] hover:bg-[#2d3b4f] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
             >
@@ -80,6 +92,36 @@ export default function AdminHeader() {
           </div>
         </div>
       </div>
+      {showPassword && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/70 p-4">
+          <form
+            onSubmit={async (event) => {
+              event.preventDefault();
+              setPasswordMessage('');
+              try {
+                await API.post('/api/auth/change-password', { currentPassword, newPassword });
+                await refreshUser();
+                setPasswordMessage('Password updated.');
+                setCurrentPassword('');
+                setNewPassword('');
+              } catch (error) {
+                const response = error as { response?: { data?: { message?: string } } };
+                setPasswordMessage(response.response?.data?.message || 'Password update failed.');
+              }
+            }}
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"
+          >
+            <h2 className="text-xl font-bold text-slate-950">Change Password</h2>
+            <input type="password" required value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} placeholder="Current password" className="mt-4 w-full rounded-xl border border-slate-300 px-3 py-3" />
+            <input type="password" required minLength={8} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="New password (8+ characters)" className="mt-3 w-full rounded-xl border border-slate-300 px-3 py-3" />
+            {passwordMessage && <p className="mt-3 text-sm text-slate-600">{passwordMessage}</p>}
+            <div className="mt-4 flex gap-2">
+              <button className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white">Update</button>
+              <button type="button" onClick={() => setShowPassword(false)} className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700">Close</button>
+            </div>
+          </form>
+        </div>
+      )}
     </header>
   );
 }

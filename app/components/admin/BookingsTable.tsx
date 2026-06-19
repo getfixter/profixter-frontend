@@ -1,17 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Booking, User } from "@/lib/admin-service";
+import type { Booking, BookingAssignee, User } from "@/lib/admin-service";
 import BookingStatusSelect from "./BookingStatusSelect";
 import BookingImageGallery from "./BookingImageGallery";
+import BookingHistory from "./BookingHistory";
 import { formatAddress, sanitizeTel, formatTimeNY } from "@/lib/utils/timezone-helpers";
 
 interface BookingsTableProps {
   bookings: Booking[];
-  updateStatus: (bookingId: string, status: string) => Promise<void>;
+  updateStatus: (bookingId: string, status: string, assignedFixterId?: string | null) => Promise<void>;
   users: User[];
-  onUpdateBooking: (bookingId: string, patch: { note?: string; date?: string }) => Promise<void>;
+  onUpdateBooking: (bookingId: string, patch: { note?: string; date?: string; assignedFixterId?: string | null }) => Promise<void>;
   readOnly?: boolean;
+  assignees?: BookingAssignee[];
+  canAssign?: boolean;
+  emptyMessage?: string;
 }
 
 type BookingGroups = Record<string, Booking[]>;
@@ -90,12 +94,17 @@ export default function BookingsTable({
   users,
   onUpdateBooking,
   readOnly = false,
+  assignees = [],
+  canAssign = false,
+  emptyMessage = "No bookings in this view",
 }: BookingsTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftNote, setDraftNote] = useState("");
   const [draftDT, setDraftDT] = useState("");
   const [saving, setSaving] = useState(false);
   const [quickActionId, setQuickActionId] = useState<string | null>(null);
+  const [draftAssigneeId, setDraftAssigneeId] = useState("");
+  const [confirmAssignees, setConfirmAssignees] = useState<Record<string, string>>({});
 
   const userMap = useMemo(
     () =>
@@ -170,12 +179,18 @@ export default function BookingsTable({
     setEditingId(booking._id);
     setDraftNote(String(booking.note || ""));
     setDraftDT(nyDateTimeLocalValue(booking.date));
+    setDraftAssigneeId(
+      booking.assignedFixterId ||
+        assignees.find((assignee) => assignee.isDefaultFixter)?.id ||
+        ""
+    );
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setDraftNote("");
     setDraftDT("");
+    setDraftAssigneeId("");
     setSaving(false);
   };
 
@@ -185,6 +200,7 @@ export default function BookingsTable({
       await onUpdateBooking(booking._id, {
         note: draftNote,
         date: nyLocalToISOString(draftDT),
+        ...(canAssign ? { assignedFixterId: draftAssigneeId || null } : {}),
       });
       cancelEdit();
     } catch (error) {
@@ -197,7 +213,12 @@ export default function BookingsTable({
   const confirmPending = async (booking: Booking) => {
     setQuickActionId(booking._id);
     try {
-      await updateStatus(booking._id, "Confirmed");
+      const assigneeId =
+        confirmAssignees[booking._id] ||
+        booking.assignedFixterId ||
+        assignees.find((assignee) => assignee.isDefaultFixter)?.id ||
+        undefined;
+      await updateStatus(booking._id, "Confirmed", canAssign ? assigneeId : undefined);
     } finally {
       setQuickActionId(null);
     }
@@ -321,6 +342,9 @@ export default function BookingsTable({
                             {booking.note && <span>Notes</span>}
                             {hasPhotos && <span>Photos ({booking.images?.length})</span>}
                             {email && <span className="truncate">{email}</span>}
+                            <span className="rounded-full bg-blue-50 px-2 py-1 font-bold text-blue-700">
+                              {booking.assignedFixterName || "Unassigned"}
+                            </span>
                           </div>
                         </div>
 
@@ -332,6 +356,25 @@ export default function BookingsTable({
                           {isEditing ? "Close edit" : "Edit"}
                         </button>}
                       </div>
+
+                      {isEditing && canAssign && (
+                        <label className="block rounded-2xl border border-blue-200 bg-blue-50 p-3 text-xs font-bold uppercase tracking-wide text-blue-700">
+                          Assigned employee
+                          <select
+                            value={draftAssigneeId}
+                            onChange={(event) => setDraftAssigneeId(event.target.value)}
+                            className="mt-2 w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm font-semibold normal-case text-slate-900"
+                          >
+                            <option value="">Unassigned</option>
+                            {assignees.map((assignee) => (
+                              <option key={assignee.id} value={assignee.id}>
+                                {assignee.name} — {assignee.employeePosition}
+                                {assignee.isDefaultFixter ? " (Default)" : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
                     </div>
 
                     <div className="space-y-3 p-4">
@@ -372,6 +415,31 @@ export default function BookingsTable({
                           <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-amber-700">
                             Pending review
                           </div>
+                          {canAssign && (
+                            <select
+                              value={
+                                confirmAssignees[booking._id] ??
+                                booking.assignedFixterId ??
+                                assignees.find((assignee) => assignee.isDefaultFixter)?.id ??
+                                ""
+                              }
+                              onChange={(event) =>
+                                setConfirmAssignees((current) => ({
+                                  ...current,
+                                  [booking._id]: event.target.value,
+                                }))
+                              }
+                              className="mb-3 w-full rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900"
+                            >
+                              <option value="">Unassigned</option>
+                              {assignees.map((assignee) => (
+                                <option key={assignee.id} value={assignee.id}>
+                                  {assignee.name} — {assignee.employeePosition}
+                                  {assignee.isDefaultFixter ? " (Default)" : ""}
+                                </option>
+                              ))}
+                            </select>
+                          )}
                           <button
                             type="button"
                             onClick={() => confirmPending(booking)}
@@ -521,6 +589,8 @@ export default function BookingsTable({
                           No photos
                         </div>
                       )}
+
+                      <BookingHistory bookingId={booking._id} />
                     </div>
                   </article>
                 );
@@ -532,7 +602,7 @@ export default function BookingsTable({
 
       {bookings.length === 0 && (
         <div className="rounded-[24px] border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
-          <div className="text-lg font-semibold text-slate-900">No bookings in this view</div>
+          <div className="text-lg font-semibold text-slate-900">{emptyMessage}</div>
           <p className="mt-2 text-sm text-slate-500">
             Change the date or filters to widen the tech queue.
           </p>
