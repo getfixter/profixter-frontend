@@ -160,6 +160,13 @@ export interface BookingHistoryEntry {
 }
 
 export type EmployeePosition = "Fixter" | "General Fixter";
+export type EmployeeAvailabilityStatus =
+  | "Available"
+  | "Busy"
+  | "Vacation"
+  | "Sick"
+  | "Training"
+  | "Inactive";
 
 export interface FixterAccount {
   id: string;
@@ -172,6 +179,7 @@ export interface FixterAccount {
   isActive: boolean;
   mustChangePassword: boolean;
   isDefaultFixter: boolean;
+  employeeAvailabilityStatus: EmployeeAvailabilityStatus;
   createdAt: string;
   updatedAt: string;
 }
@@ -314,6 +322,17 @@ export const setFixterActive = async (
   isActive: boolean
 ): Promise<FixterAccount> => {
   const response = await API.patch(`/api/admin/fixters/${id}/status`, { isActive });
+  return response.data.fixter;
+};
+
+export const setFixterAvailabilityStatus = async (
+  id: string,
+  employeeAvailabilityStatus: EmployeeAvailabilityStatus
+): Promise<FixterAccount> => {
+  const response = await API.patch(
+    `/api/admin/fixters/${id}/availability-status`,
+    { employeeAvailabilityStatus }
+  );
   return response.data.fixter;
 };
 
