@@ -695,7 +695,7 @@ export default function AdminPage() {
               />
             )}
 
-            {active === "calendar" && <AdminCalendarSettings readOnly={false} />}
+            {active === "calendar" && <AdminCalendarSettings isAdmin={isAdmin} />}
             {active === "fixters" && isAdmin && <FixtersModule />}
           </>
         )}
