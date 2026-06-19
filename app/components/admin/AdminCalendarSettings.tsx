@@ -1,818 +1,1317 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 
-import React, { useState, useEffect, useMemo } from "react";
-import Calendar from "react-calendar";
-import "react-calendar/dist/Calendar.css";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
+import {
+  bootstrapCalendarFoundation,
+  cancelShadowTimeOff,
+  createShadowTimeOff,
+  deleteShadowDayNote,
+  getCalendarFoundationStatus,
+  getShadowCalendarDay,
+  getShadowCalendarSummary,
+  getShadowCompanyTemplate,
+  getShadowTechnicianTemplate,
+  getShadowTechnicians,
+  getShadowTimeOff,
+  restoreShadowDay,
+  runShadowSlotAction,
+  saveShadowDayNote,
+  saveShadowDayOverride,
+  updateShadowCompanyTemplate,
+  updateShadowTechnicianTemplate,
+  updateShadowTimeOff,
+} from "@/lib/admin-service";
+import type {
+  CalendarFoundationStatus,
+  CalendarScope,
+  CalendarWeeklyDay,
+  ShadowCalendarDay,
+  ShadowCalendarDaySummary,
+  ShadowCompanyTemplate,
+  ShadowTechnician,
+  ShadowTechnicianTemplate,
+  ShadowTimeOff,
+} from "@/lib/admin-service";
 
-type CalendarConfigState = {
-  timezone: string;
-  slotMinutes: number;
-  closedWeekdays: number[];
-  minLeadDays: number;
-  defaultHours: string[];
-  overrides: Record<string, string[]>; 
-  holidays: string[];
-  handymanCapacity: number;
-};
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const LONG_WEEKDAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+const TIME_OFF_TYPES = [
+  "vacation",
+  "sick",
+  "personal",
+  "training",
+  "other",
+] as const;
+type TimeOffType = (typeof TIME_OFF_TYPES)[number];
 
-export default function AdminCalendarSettings({ readOnly = false }: { readOnly?: boolean }) {
-  const api =
-    typeof window !== "undefined" &&
-    window.location.hostname === "localhost" &&
-    window.location.port === "3000"
-      ? "http://localhost:5000"
-      : "";
+function todayNY() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+  }).format(new Date());
+}
 
-  const [cfg, setCfg] = useState<CalendarConfigState | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [log, setLog] = useState("");
-  const [selectedDate, setSelectedDate] = useState<string>("");
+function monthKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
 
+function formatTime(value: string) {
+  const [hours, minutes] = value.split(":").map(Number);
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(2000, 0, 1, hours, minutes));
+}
 
- // 30-minute increments from 07:00 to 22:00
-const HOURS = useMemo(() => {
-  const list: string[] = [];
-  for (let h = 7; h <= 22; h++) {
-    for (let m = 0; m < 60; m += 30) {
-      list.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-    }
+function nextDate(value: string) {
+  const date = new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function previousDate(value: string) {
+  const date = new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() - 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function messageFrom(error: unknown) {
+  if (
+    typeof error === "object" &&
+    error &&
+    "response" in error &&
+    typeof error.response === "object" &&
+    error.response &&
+    "data" in error.response
+  ) {
+    const data = error.response.data as { message?: string };
+    if (data.message) return data.message;
   }
-  return list;
-}, []);
+  return error instanceof Error ? error.message : "Something went wrong";
+}
 
-  // Helpers
-  const toYMD = (d: Date, tz = "America/New_York") => {
-    const parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone: tz,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).formatToParts(d);
-
-    const o: any = {};
-    parts.forEach((p) => (o[p.type] = p.value));
-    return `${o.year}-${o.month}-${o.day}`;
-  };
-
-  const uniqSorted = (arr: string[]) =>
-    Array.from(new Set(arr)).sort((a, b) => (a > b ? 1 : -1));
-
-  const authHeader = (): HeadersInit => {
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem("token")
-        : null;
-
-    return {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
-  };
-
-  // Build a range of hours from HOURS list
-  const buildRange = (start: string, end: string) =>
-    HOURS.filter((t) => t >= start && t < end);
-
-  // --------------------------
-  // LOAD CALENDAR CONFIG
-  // --------------------------
-  const load = async () => {
-    try {
-      setLoading(true);
-      setLog("");
-
-      const res = await fetch(
-  `${process.env.NEXT_PUBLIC_API_URL}/api/admin/calendar`,
-  { headers: authHeader() }
-);
-
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.message || `HTTP ${res.status}`);
+function normalizeWeek(schedule: CalendarWeeklyDay[]) {
+  return Array.from({ length: 7 }, (_, weekday) => {
+    const existing = schedule.find((day) => day.weekday === weekday);
+    return (
+      existing || {
+        weekday,
+        enabled: false,
+        intervals: [],
       }
+    );
+  });
+}
 
-      setCfg({
-        timezone: data.timezone || "America/New_York",
-        slotMinutes: data.slotMinutes || 60,
-        closedWeekdays: data.closedWeekdays || [],
-        minLeadDays: data.minLeadDays ?? 2,
-        defaultHours: uniqSorted(data.defaultHours || []),
-        overrides: data.overrides || {},
-        holidays: data.holidays || [],
-        handymanCapacity: data.handymanCapacity ?? 1,
-      });
-    } catch (err: any) {
-      console.error("Admin calendar load error:", err);
-      setLog("⚠️ Using fallback config. " + err.message);
-      setCfg({
-        timezone: "America/New_York",
-        slotMinutes: 60,
-        closedWeekdays: [0],
-        minLeadDays: 2,
-        defaultHours: buildRange("09:00", "17:00"),
-        overrides: {},
-        holidays: [],
-        handymanCapacity: 1,
-      });
+function WeeklyScheduleEditor({
+  value,
+  onChange,
+  capacity,
+}: {
+  value: CalendarWeeklyDay[];
+  onChange: (value: CalendarWeeklyDay[]) => void;
+  capacity: boolean;
+}) {
+  const days = normalizeWeek(value);
+  const updateDay = (weekday: number, patch: Partial<CalendarWeeklyDay>) => {
+    onChange(
+      days.map((day) => (day.weekday === weekday ? { ...day, ...patch } : day))
+    );
+  };
+
+  return (
+    <div className="space-y-3">
+      {days.map((day) => (
+        <div key={day.weekday} className="rounded-xl border border-slate-200 p-3">
+          <label className="flex items-center justify-between gap-3 font-semibold text-slate-800">
+            {LONG_WEEKDAYS[day.weekday]}
+            <input
+              type="checkbox"
+              checked={day.enabled}
+              onChange={(event) =>
+                updateDay(day.weekday, {
+                  enabled: event.target.checked,
+                  intervals:
+                    event.target.checked && day.intervals.length === 0
+                      ? [{ startTime: "09:00", endTime: "17:00" }]
+                      : day.intervals,
+                })
+              }
+              className="h-5 w-5"
+            />
+          </label>
+          {day.enabled && (
+            <div className="mt-3 space-y-2">
+              {day.intervals.map((interval, index) => (
+                <div
+                  key={`${day.weekday}-${index}`}
+                  className="grid grid-cols-[1fr_1fr_auto] gap-2"
+                >
+                  <input
+                    type="time"
+                    value={interval.startTime}
+                    onChange={(event) => {
+                      const intervals = [...day.intervals];
+                      intervals[index] = {
+                        ...interval,
+                        startTime: event.target.value,
+                      };
+                      updateDay(day.weekday, { intervals });
+                    }}
+                    className="min-w-0 rounded-lg border border-slate-300 px-2 py-2"
+                  />
+                  <input
+                    type="time"
+                    value={interval.endTime}
+                    onChange={(event) => {
+                      const intervals = [...day.intervals];
+                      intervals[index] = {
+                        ...interval,
+                        endTime: event.target.value,
+                      };
+                      updateDay(day.weekday, { intervals });
+                    }}
+                    className="min-w-0 rounded-lg border border-slate-300 px-2 py-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateDay(day.weekday, {
+                        intervals: day.intervals.filter((_, item) => item !== index),
+                      })
+                    }
+                    className="rounded-lg border border-slate-200 px-3 text-slate-500"
+                    aria-label="Remove interval"
+                  >
+                    ×
+                  </button>
+                  {capacity && (
+                    <input
+                      type="number"
+                      min={0}
+                      value={interval.capacity ?? ""}
+                      onChange={(event) => {
+                        const intervals = [...day.intervals];
+                        intervals[index] = {
+                          ...interval,
+                          capacity:
+                            event.target.value === ""
+                              ? null
+                              : Number(event.target.value),
+                        };
+                        updateDay(day.weekday, { intervals });
+                      }}
+                      className="col-span-2 rounded-lg border border-slate-300 px-3 py-2"
+                      placeholder="Optional capacity for this interval"
+                    />
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() =>
+                  updateDay(day.weekday, {
+                    intervals: [
+                      ...day.intervals,
+                      { startTime: "09:00", endTime: "17:00" },
+                    ],
+                  })
+                }
+                className="text-sm font-semibold text-blue-700"
+              >
+                + Add hours
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function AdminCalendarSettings({
+  isAdmin,
+}: {
+  isAdmin: boolean;
+}) {
+  const [status, setStatus] = useState<CalendarFoundationStatus | null>(null);
+  const [technicians, setTechnicians] = useState<ShadowTechnician[]>([]);
+  const [month, setMonth] = useState(() => {
+    const today = todayNY().split("-").map(Number);
+    return new Date(today[0], today[1] - 1, 1);
+  });
+  const [scopeValue, setScopeValue] = useState("company");
+  const [summary, setSummary] = useState<ShadowCalendarDaySummary[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [day, setDay] = useState<ShadowCalendarDay | null>(null);
+  const [timeOff, setTimeOff] = useState<ShadowTimeOff[]>([]);
+  const [company, setCompany] = useState<ShadowCompanyTemplate | null>(null);
+  const [techTemplate, setTechTemplate] =
+    useState<ShadowTechnicianTemplate | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTechId, setSettingsTechId] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState("");
+
+  const scope: CalendarScope =
+    scopeValue === "company" ? "company" : "technician";
+  const technicianId = scope === "technician" ? scopeValue : null;
+  const foundationReady =
+    !!status?.companyTemplateReady &&
+    !!status?.technicianTemplatesReady &&
+    !!status?.importedLegacyOverridesReady;
+
+  const loadFoundation = useCallback(async () => {
+    const [nextStatus, nextTechnicians] = await Promise.all([
+      getCalendarFoundationStatus(),
+      getShadowTechnicians(),
+    ]);
+    setStatus(nextStatus);
+    setTechnicians(nextTechnicians.filter((technician) => technician.isActive));
+  }, []);
+
+  const loadMonth = useCallback(async () => {
+    if (!foundationReady) return;
+    setLoading(true);
+    try {
+      setSummary(
+        await getShadowCalendarSummary(
+          monthKey(month),
+          scope,
+          technicianId
+        )
+      );
+    } catch (error) {
+      setNotice(messageFrom(error));
     } finally {
       setLoading(false);
     }
+  }, [foundationReady, month, scope, technicianId]);
+
+  const loadDay = useCallback(async () => {
+    if (!selectedDate || !foundationReady) return;
+    setBusy(true);
+    try {
+      const [nextDay, nextTimeOff] = await Promise.all([
+        getShadowCalendarDay(selectedDate, scope, technicianId),
+        getShadowTimeOff(selectedDate, selectedDate, technicianId),
+      ]);
+      setDay(nextDay);
+      setNote(nextDay.note || "");
+      setTimeOff(nextTimeOff);
+    } catch (error) {
+      setNotice(messageFrom(error));
+    } finally {
+      setBusy(false);
+    }
+  }, [foundationReady, scope, selectedDate, technicianId]);
+
+  useEffect(() => {
+    loadFoundation()
+      .catch((error) => setNotice(messageFrom(error)))
+      .finally(() => setLoading(false));
+  }, [loadFoundation]);
+
+  useEffect(() => {
+    void loadMonth();
+  }, [loadMonth]);
+
+  useEffect(() => {
+    void loadDay();
+  }, [loadDay]);
+
+  const refresh = async () => {
+    await Promise.all([loadMonth(), loadDay()]);
   };
 
-  // --------------------------
-  // SAVE CONFIG
-  // --------------------------
-  const saveAll = async () => {
-    if (!cfg) return;
+  const mutate = async (action: () => Promise<unknown>, success: string) => {
+    setBusy(true);
+    setNotice("");
     try {
-      setLoading(true);
-      setLog("Saving…");
-
-      const body = {
-        timezone: cfg.timezone,
-        slotMinutes: cfg.slotMinutes,
-        closedWeekdays: cfg.closedWeekdays,
-        minLeadDays: cfg.minLeadDays,
-        defaultHours: cfg.defaultHours,
-        overrides: cfg.overrides,
-        holidays: cfg.holidays,
-        handymanCapacity: cfg.handymanCapacity,
-      };
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/calendar`, {
-   method: "PUT",
-   headers: authHeader(),
-   body: JSON.stringify(body),
-});
-
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.message || "Save failed");
-
-      setLog("✅ Saved!");
-    } catch (err: any) {
-      console.error("Admin calendar save error:", err);
-      setLog("❌ " + err.message);
+      await action();
+      setNotice(success);
+      await refresh();
+    } catch (error) {
+      setNotice(messageFrom(error));
     } finally {
-      setLoading(false);
+      setBusy(false);
+    }
+  };
+
+  const openSettings = async () => {
+    setSettingsOpen(true);
+    setBusy(true);
+    try {
+      setCompany(await getShadowCompanyTemplate());
+      if (!settingsTechId && technicians[0]) setSettingsTechId(technicians[0].id);
+    } catch (error) {
+      setNotice(messageFrom(error));
+    } finally {
+      setBusy(false);
     }
   };
 
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!settingsOpen || !settingsTechId) return;
+    getShadowTechnicianTemplate(settingsTechId)
+      .then(setTechTemplate)
+      .catch((error) => setNotice(messageFrom(error)));
+  }, [settingsOpen, settingsTechId]);
 
-  if (!cfg) {
+  const calendarCells = useMemo(() => {
+    const first = new Date(month.getFullYear(), month.getMonth(), 1);
+    const count = new Date(
+      month.getFullYear(),
+      month.getMonth() + 1,
+      0
+    ).getDate();
+    return [
+      ...Array.from({ length: first.getDay() }, () => null),
+      ...Array.from({ length: count }, (_, index) => summary[index] || null),
+    ];
+  }, [month, summary]);
+
+  if (!status) {
     return (
-      <div className="bg-white p-6 rounded-xl shadow text-center">
-        Loading settings…
+      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">
+        Loading calendar foundation…
       </div>
     );
   }
 
-  const tz = cfg.timezone;
-
-  const overrideHours = (ymd: string) => cfg.overrides?.[ymd] || [];
-  const hasOverride = (ymd: string) =>
-    Object.hasOwn(cfg.overrides || {}, ymd);
-  const isOverrideClosed = (ymd: string) =>
-    hasOverride(ymd) && overrideHours(ymd).length === 0;
-  const isHoliday = (ymd: string) => cfg.holidays.includes(ymd);
-  const isClosedWeekday = (d: Date) =>
-    cfg.closedWeekdays.includes(
-      new Date(
-        d.toLocaleString("en-US", { timeZone: tz })
-      ).getDay()
-    );
-
-  // Calendar tile coloring
-  const tileClassName = ({ date }: any) => {
-    const ymd = toYMD(date, tz);
-    if (selectedDate === ymd)
-      return "bg-blue-600 text-white rounded-md";
-    if (isHoliday(ymd))
-      return "bg-red-200 text-red-700 rounded-md";
-    if (isOverrideClosed(ymd))
-      return "bg-gray-300 text-gray-700 rounded-md";
-    if (hasOverride(ymd))
-      return "bg-yellow-200 text-yellow-700 rounded-md";
-    if (isClosedWeekday(date))
-      return "bg-gray-200 text-gray-600 rounded-md";
-    return "bg-white";
-  };
-
-  // Toggle weekly closed weekday
-  const toggleWeekday = (idx: number) =>
-    setCfg((p) => ({
-      ...p!,
-      closedWeekdays: p!.closedWeekdays.includes(idx)
-        ? p!.closedWeekdays.filter((x) => x !== idx)
-        : [...p!.closedWeekdays, idx].sort(),
-    }));
-
-  // Mark a specific date CLOSED
-  const markClosed = () => {
-    if (!selectedDate) return;
-    setCfg((p) => ({
-      ...p!,
-      overrides: { ...p!.overrides, [selectedDate]: [] },
-    }));
-  };
-
-  // Use default hours for selected date
-  const useDefault = () => {
-    if (!selectedDate) return;
-    setCfg((p) => {
-      const next = { ...p!.overrides };
-      delete next[selectedDate];
-      return { ...p!, overrides: next };
-    });
-  };
-
-  // Toggle override hour
-  const toggleOverrideHour = (hh: string) => {
-    if (!selectedDate) return;
-    setCfg((p) => {
-      const cur = overrideHours(selectedDate);
-      const next = cur.includes(hh)
-        ? cur.filter((x) => x !== hh)
-        : [...cur, hh];
-      return {
-        ...p!,
-        overrides: {
-          ...p!.overrides,
-          [selectedDate]: uniqSorted(next),
-        },
-      };
-    });
-  };
-
-  // Toggle default daily hour
-  const toggleDefaultHour = (hh: string) =>
-    setCfg((p) => {
-      const has = p!.defaultHours.includes(hh);
-      const next = has
-        ? p!.defaultHours.filter((x) => x !== hh)
-        : [...p!.defaultHours, hh];
-      return { ...p!, defaultHours: uniqSorted(next) };
-    });
-
-  const addHoliday = (d: string) =>
-    setCfg((p) => ({
-      ...p!,
-      holidays: uniqSorted([...p!.holidays, d]),
-    }));
-
-  const removeHoliday = (d: string) =>
-    setCfg((p) => ({
-      ...p!,
-      holidays: p!.holidays.filter((x) => x !== d),
-    }));
-
-  // Apply templates to DEFAULT hours
-  const setDefaultTemplate = (template: "9-5" | "morning" | "afternoon" | "full" | "clear") => {
-    setCfg((p) => {
-      if (!p) return p;
-      let hours: string[] = [];
-      switch (template) {
-        case "9-5":
-          hours = buildRange("09:00", "17:00");
-          break;
-        case "morning":
-          hours = buildRange("08:00", "12:00");
-          break;
-        case "afternoon":
-          hours = buildRange("13:00", "18:00");
-          break;
-        case "full":
-          hours = buildRange("08:00", "20:00");
-          break;
-        case "clear":
-          hours = [];
-          break;
-      }
-      return { ...p, defaultHours: hours };
-    });
-  };
-
-  // Apply templates to OVERRIDE hours for selected date
-  const setOverrideTemplate = (
-    template: "9-5" | "morning" | "afternoon" | "full" | "clear"
-  ) => {
-    if (!selectedDate) return;
-    setCfg((p) => {
-      if (!p) return p;
-      const next = { ...p.overrides };
-      let hours: string[] = [];
-      switch (template) {
-        case "9-5":
-          hours = buildRange("09:00", "17:00");
-          break;
-        case "morning":
-          hours = buildRange("08:00", "12:00");
-          break;
-        case "afternoon":
-          hours = buildRange("13:00", "18:00");
-          break;
-        case "full":
-          hours = buildRange("08:00", "20:00");
-          break;
-        case "clear":
-          hours = [];
-          break;
-      }
-      next[selectedDate] = hours;
-      return { ...p, overrides: next };
-    });
-  };
-
-  // Copy this day's override to all same weekdays THIS MONTH
-  const copyOverrideToSameWeekday = () => {
-    if (!selectedDate) return;
-    const base = new Date(selectedDate + "T12:00:00");
-    const weekday = base.getDay();
-    const year = base.getFullYear();
-    const month = base.getMonth();
-
-    const curHours = overrideHours(selectedDate);
-    const closed = isOverrideClosed(selectedDate);
-
-    setCfg((p) => {
-      if (!p) return p;
-      const overrides = { ...p.overrides };
-      const lastDay = new Date(year, month + 1, 0).getDate();
-
-      for (let d = 1; d <= lastDay; d++) {
-        const dt = new Date(year, month, d);
-        if (dt.getDay() !== weekday) continue;
-        const ymd = toYMD(dt, tz);
-        overrides[ymd] = closed ? [] : [...curHours];
-      }
-      return { ...p, overrides };
-    });
-  };
-
-  // Summary helpers
-  const overridesCount = Object.keys(cfg.overrides || {}).length;
-  const holidaysCount = cfg.holidays.length;
-
-  // ---- UI RENDER ----
-  return (
-    <div className="space-y-4 max-w-[1200px] mx-auto">
-      {readOnly && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-semibold text-blue-700">
-          Schedule access is read-only.
-        </div>
-      )}
-      <div className={readOnly ? "pointer-events-none space-y-8 opacity-90" : "space-y-8"}>
-      {/* SUMMARY CARD */}
-      <div className="bg-white p-6 rounded-xl shadow border border-gray-200 flex flex-col md:flex-row gap-6 justify-between">
-        <div>
-          <h2 className="text-2xl font-bold mb-2">
-            Calendar Settings Overview
-          </h2>
-          <p className="text-gray-600 text-sm">
-            Control when customers can book a visit. Defaults +
-            overrides define all availability.
+  if (!foundationReady) {
+    return (
+      <section className="mx-auto max-w-3xl rounded-2xl border border-amber-200 bg-white p-5 shadow-sm">
+        <p className="text-xs font-bold uppercase tracking-widest text-amber-700">
+          Shadow calendar
+        </p>
+        <h2 className="mt-2 text-2xl font-black text-slate-900">
+          Calendar foundation is not ready
+        </h2>
+        <p className="mt-2 text-sm text-slate-600">
+          Customer booking remains on the legacy calendar. Initialize the new
+          foundation before using this control center.
+        </p>
+        {!!status?.warnings?.length && (
+          <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-amber-800">
+            {status.warnings.map((warning) => (
+              <li key={warning}>{warning}</li>
+            ))}
+          </ul>
+        )}
+        {isAdmin ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              mutate(async () => {
+                await bootstrapCalendarFoundation();
+                await loadFoundation();
+              }, "Calendar foundation initialized")
+            }
+            className="mt-5 rounded-xl bg-slate-900 px-5 py-3 font-bold text-white disabled:opacity-50"
+          >
+            {busy ? "Initializing…" : "Initialize Calendar Foundation"}
+          </button>
+        ) : (
+          <p className="mt-5 rounded-xl bg-slate-100 p-3 text-sm font-semibold text-slate-700">
+            An Admin must initialize the calendar foundation.
           </p>
-          {log && (
-            <p className="mt-2 text-sm text-gray-700">
-              <strong>Status:</strong> {log}
+        )}
+        {notice && <p className="mt-3 text-sm text-slate-700">{notice}</p>}
+      </section>
+    );
+  }
+
+  return (
+    <section className="mx-auto max-w-7xl space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-blue-700">
+              Shadow mode
             </p>
-          )}
+            <h2 className="text-2xl font-black text-slate-900">
+              Calendar Control Center
+            </h2>
+            <p className="text-sm text-slate-500">
+              These controls do not affect customer booking yet.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={openSettings}
+            className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-800"
+          >
+            Templates & Settings
+          </button>
         </div>
-        <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
-          <div>
-            <div className="font-semibold">Timezone</div>
-            <div>{cfg.timezone}</div>
-          </div>
-          <div>
-            <div className="font-semibold">Slot length</div>
-            <div>{cfg.slotMinutes} min</div>
-          </div>
-          <div>
-            <div className="font-semibold">Min lead days</div>
-            <div>{cfg.minLeadDays} day(s)</div>
-          </div>
-          <div>
-            <div className="font-semibold">Capacity / slot</div>
-            <div>{cfg.handymanCapacity}</div>
-          </div>
-          <div>
-            <div className="font-semibold">Closed weekdays</div>
-            <div>
-              {cfg.closedWeekdays.length === 0
-                ? "None"
-                : cfg.closedWeekdays.join(", ")}
-            </div>
-          </div>
-          <div>
-            <div className="font-semibold">Overrides / Holidays</div>
-            <div>
-              {overridesCount} overrides, {holidaysCount} holidays
-            </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+          <select
+            value={scopeValue}
+            onChange={(event) => {
+              setScopeValue(event.target.value);
+              setSelectedDate(null);
+            }}
+            className="rounded-xl border border-slate-300 bg-white px-3 py-3 font-semibold"
+          >
+            <option value="company">All Company</option>
+            {technicians.map((technician) => (
+              <option key={technician.id} value={technician.id}>
+                {technician.name} — {technician.position}
+              </option>
+            ))}
+          </select>
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                setMonth(
+                  new Date(month.getFullYear(), month.getMonth() - 1, 1)
+                )
+              }
+              className="rounded-xl border border-slate-300 px-4 py-3"
+              aria-label="Previous month"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const [year, monthNumber] = todayNY().split("-").map(Number);
+                setMonth(new Date(year, monthNumber - 1, 1));
+              }}
+              className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-bold"
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setMonth(
+                  new Date(month.getFullYear(), month.getMonth() + 1, 1)
+                )
+              }
+              className="rounded-xl border border-slate-300 px-4 py-3"
+              aria-label="Next month"
+            >
+              ›
+            </button>
           </div>
         </div>
       </div>
 
-      {/* MAIN SETTINGS CARD */}
-      <div className="bg-white p-6 rounded-xl shadow border border-gray-200">
-        <h2 className="text-2xl font-bold mb-4">Base Rules</h2>
-
-        {/* Timezone + slot length */}
-        <div className="grid md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="font-medium block mb-1">
-              Timezone:
-            </label>
-            <input
-              type="text"
-              value={cfg.timezone}
-              onChange={(e) =>
-                setCfg((p) => ({
-                  ...p!,
-                  timezone: e.target.value,
-                }))
-              }
-              className="p-2 border rounded-lg w-full"
-              placeholder="America/New_York"
-            />
-          </div>
-          <div>
-            <label className="font-medium block mb-1">
-              Slot length (minutes):
-            </label>
-            <select
-              value={cfg.slotMinutes}
-              onChange={(e) =>
-                setCfg((p) => ({
-                  ...p!,
-                  slotMinutes: Number(e.target.value),
-                }))
-              }
-              className="p-2 border rounded-lg w-full"
-            >
-              <option value={30}>30</option>
-              <option value={60}>60</option>
-              <option value={90}>90</option>
-            </select>
-          </div>
+      {notice && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+          {notice}
         </div>
+      )}
 
-        {/* Closed weekdays */}
-        <div className="mb-4">
-          <p className="font-medium mb-2">Closed Weekdays:</p>
-          <div className="flex gap-4 flex-wrap">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
-              (lbl, idx) => (
-                <label key={idx} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={cfg.closedWeekdays.includes(idx)}
-                    onChange={() => toggleWeekday(idx)}
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 p-4 text-center text-lg font-black text-slate-900">
+          {month.toLocaleDateString("en-US", {
+            month: "long",
+            year: "numeric",
+          })}
+        </div>
+        <div className="grid grid-cols-7 bg-slate-50">
+          {WEEKDAYS.map((weekday) => (
+            <div
+              key={weekday}
+              className="py-2 text-center text-[10px] font-bold uppercase text-slate-500 sm:text-xs"
+            >
+              {weekday}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7">
+          {calendarCells.map((item, index) =>
+            item ? (
+              <button
+                key={item.date}
+                type="button"
+                onClick={() => setSelectedDate(item.date)}
+                className={`min-h-24 border-r border-t border-slate-100 p-1.5 text-left transition hover:bg-blue-50 sm:min-h-32 sm:p-2 ${
+                  item.date === todayNY() ? "bg-blue-50" : "bg-white"
+                }`}
+              >
+                <div className="font-black text-slate-900">
+                  {Number(item.date.slice(-2))}
+                </div>
+                <div className="mt-1 space-y-1 text-[10px] leading-tight sm:text-xs">
+                  <div className="font-semibold text-slate-700">
+                    {item.bookingCount} booking{item.bookingCount === 1 ? "" : "s"}
+                  </div>
+                  <div className="text-slate-500">
+                    {item.usedCapacity}/{item.totalCapacity} used
+                  </div>
+                  <div className="font-semibold text-emerald-700">
+                    {item.openSlotCount} open
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {item.closed && <span title="Closed">🔒</span>}
+                    {item.reducedCapacity && <span title="Reduced capacity">−</span>}
+                    {item.hasOverrides && <span title="Custom settings">⚙</span>}
+                    {item.hasTimeOff && <span title="Time off">☂</span>}
+                    {item.hasNote && <span title="Note">●</span>}
+                  </div>
+                </div>
+              </button>
+            ) : (
+              <div key={`blank-${index}`} className="min-h-24 bg-slate-50 sm:min-h-32" />
+            )
+          )}
+        </div>
+        {loading && (
+          <div className="border-t border-slate-200 p-3 text-center text-sm text-slate-500">
+            Loading calendar…
+          </div>
+        )}
+      </div>
+
+      {selectedDate && (
+        <div className="fixed inset-0 z-50 flex items-end bg-slate-950/40 lg:items-stretch lg:justify-end">
+          <button
+            type="button"
+            aria-label="Close day details"
+            onClick={() => setSelectedDate(null)}
+            className="absolute inset-0"
+          />
+          <div className="relative max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-white p-4 shadow-2xl lg:h-full lg:max-h-none lg:max-w-xl lg:rounded-none lg:p-6">
+            <div className="sticky top-0 z-10 -mx-4 -mt-4 flex items-start justify-between border-b border-slate-200 bg-white p-4 lg:-mx-6 lg:-mt-6 lg:p-6">
+              <div>
+                <p className="text-sm font-semibold text-blue-700">
+                  {scope === "company"
+                    ? "All Company"
+                    : technicians.find((item) => item.id === technicianId)?.name}
+                </p>
+                <h3 className="text-xl font-black text-slate-900">
+                  {new Date(`${selectedDate}T12:00:00`).toLocaleDateString(
+                    "en-US",
+                    { weekday: "long", month: "long", day: "numeric" }
+                  )}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedDate(null)}
+                className="rounded-full bg-slate-100 px-3 py-2 font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            {!day ? (
+              <p className="py-10 text-center text-slate-500">Loading day…</p>
+            ) : (
+              <div className="space-y-5 pt-4">
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    ["Bookings", day.bookingCount],
+                    ["Capacity", `${day.usedCapacity}/${day.totalCapacity}`],
+                    ["Open slots", day.openSlotCount],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-xl bg-slate-100 p-3">
+                      <div className="text-xs text-slate-500">{label}</div>
+                      <div className="text-lg font-black text-slate-900">{value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() =>
+                      mutate(
+                        () =>
+                          saveShadowDayOverride({
+                            scopeType: scope,
+                            technicianId,
+                            date: selectedDate,
+                            mode: "closed",
+                          }),
+                        "Day closed in shadow calendar"
+                      )
+                    }
+                    className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700"
+                  >
+                    Close whole day
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() =>
+                      mutate(
+                        () =>
+                          restoreShadowDay({
+                            scopeType: scope,
+                            technicianId,
+                            date: selectedDate,
+                          }),
+                        "Default day restored"
+                      )
+                    }
+                    className="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700"
+                  >
+                    Restore day
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      const start = window.prompt("Custom start time (HH:MM)", "09:00");
+                      const end = window.prompt("Custom end time (HH:MM)", "17:00");
+                      if (!start || !end) return;
+                      void mutate(
+                        () =>
+                          saveShadowDayOverride({
+                            scopeType: scope,
+                            technicianId,
+                            date: selectedDate,
+                            mode: "custom_hours",
+                            intervals: [{ startTime: start, endTime: end }],
+                          }),
+                        "Custom hours saved"
+                      );
+                    }}
+                    className="rounded-xl bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700"
+                  >
+                    Custom hours
+                  </button>
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-slate-800">Day note</label>
+                  <textarea
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    rows={2}
+                    className="mt-2 w-full rounded-xl border border-slate-300 p-3"
+                    placeholder="Add a note for the team"
                   />
-                  {lbl}
-                </label>
-              )
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() =>
+                        mutate(
+                          () => saveShadowDayNote(selectedDate, note),
+                          "Note saved"
+                        )
+                      }
+                      className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-bold text-white"
+                    >
+                      Save note
+                    </button>
+                    {day.note && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() =>
+                          mutate(
+                            () => deleteShadowDayNote(selectedDate),
+                            "Note removed"
+                          )
+                        }
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <details className="rounded-xl border border-slate-200 p-3">
+                  <summary className="cursor-pointer font-bold text-slate-900">
+                    Add technician time off
+                  </summary>
+                  <TimeOffForm
+                    key={`${selectedDate}-${technicianId || "company"}`}
+                    date={selectedDate}
+                    technicians={technicians}
+                    initialTechnicianId={technicianId || technicians[0]?.id || ""}
+                    onCreate={(input) =>
+                      mutate(() => createShadowTimeOff(input), "Time off added")
+                    }
+                  />
+                  {timeOff.length > 0 && (
+                    <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
+                      {timeOff.map((entry) => {
+                        const technician =
+                          typeof entry.technicianId === "object"
+                            ? entry.technicianId
+                            : technicians.find(
+                                (item) => item.id === entry.technicianId
+                              );
+                        return (
+                          <TimeOffEditor
+                            key={entry._id}
+                            entry={entry}
+                            technicianName={technician?.name || "Technician"}
+                            timezone={company?.timezone || "America/New_York"}
+                            busy={busy}
+                            onSave={(input) =>
+                              mutate(
+                                () => updateShadowTimeOff(entry._id, input),
+                                "Time off updated"
+                              )
+                            }
+                            onRemove={() =>
+                              mutate(
+                                () => cancelShadowTimeOff(entry._id),
+                                "Time off removed"
+                              )
+                            }
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                </details>
+
+                <div className="space-y-3">
+                  {day.slots.length === 0 ? (
+                    <div className="rounded-xl bg-slate-100 p-4 text-center text-slate-600">
+                      No slots on this day.
+                    </div>
+                  ) : (
+                    day.slots.map((slot) => (
+                      <div
+                        key={slot.time}
+                        className="rounded-2xl border border-slate-200 p-4"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="text-lg font-black text-slate-900">
+                              {formatTime(slot.time)}
+                            </div>
+                            <div className="text-sm text-slate-500">
+                              {slot.usedCapacity} / {slot.totalCapacity} booked ·{" "}
+                              {slot.remainingCapacity} open
+                            </div>
+                          </div>
+                          <span
+                            className={`rounded-full px-2 py-1 text-xs font-bold ${
+                              slot.open
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            {slot.open ? "Open" : "Closed"}
+                          </span>
+                        </div>
+                        <div className="mt-3 space-y-1">
+                          {slot.technicians.map((technician) => (
+                            <div
+                              key={technician.id}
+                              className="flex justify-between text-sm"
+                            >
+                              <span>{technician.name}</span>
+                              <span
+                                className={
+                                  technician.booked
+                                    ? "font-semibold text-blue-700"
+                                    : technician.available
+                                      ? "text-emerald-700"
+                                      : "text-slate-500"
+                                }
+                              >
+                                {technician.booked
+                                  ? "Booked"
+                                  : technician.available
+                                    ? "Available"
+                                    : technician.unavailableReason || "Unavailable"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                          {[
+                            ["Close", "close"],
+                            ["Open", "open"],
+                            ["− 1 spot", "remove_spot"],
+                            ["+ 1 spot", "add_spot"],
+                          ].map(([label, action]) => (
+                            <button
+                              key={action}
+                              type="button"
+                              disabled={busy}
+                              onClick={() =>
+                                mutate(
+                                  () =>
+                                    runShadowSlotAction({
+                                      scopeType: scope,
+                                      technicianId,
+                                      date: selectedDate,
+                                      startTime: slot.time,
+                                      endTime: slot.endTime,
+                                      action: action as
+                                        | "close"
+                                        | "open"
+                                        | "remove_spot"
+                                        | "add_spot",
+                                    }),
+                                  `${label} applied`
+                                )
+                              }
+                              className="rounded-lg border border-slate-300 px-2 py-2 text-xs font-bold"
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                        {slot.bookings.length > 0 && (
+                          <details className="mt-3 rounded-lg bg-slate-50 p-2 text-sm">
+                            <summary className="cursor-pointer font-bold">
+                              View bookings ({slot.bookings.length})
+                            </summary>
+                            <div className="mt-2 space-y-2">
+                              {slot.bookings.map((booking) => (
+                                <div key={booking.id}>
+                                  {booking.customerName || "Customer"} ·{" "}
+                                  {booking.service || "Service"}
+                                  {booking.assignedFixterName
+                                    ? ` · ${booking.assignedFixterName}`
+                                    : ""}
+                                </div>
+                              ))}
+                            </div>
+                          </details>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>
+      )}
 
-        {/* Lead days */}
-        <div className="mb-4">
-          <label className="font-medium">Min lead days:</label>
-          <input
-            type="number"
-            min={0}
-            max={30}
-            className="ml-3 p-2 border rounded-lg w-24"
-            value={cfg.minLeadDays}
-            onChange={(e) =>
-              setCfg((p) => ({
-                ...p!,
-                minLeadDays: Number(e.target.value),
-              }))
-            }
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Customers cannot book sooner than this many days in
-            advance.
-          </p>
-        </div>
+      {settingsOpen && company && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 p-3 sm:p-6">
+          <div className="mx-auto max-w-3xl rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-black text-slate-900">
+                  Templates & Settings
+                </h3>
+                <p className="text-sm text-slate-500">Shadow calendar only</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(false)}
+                className="rounded-full bg-slate-100 px-3 py-2 font-bold"
+              >
+                ×
+              </button>
+            </div>
 
-        {/* Capacity */}
-        <div className="mb-4">
-          <label className="font-medium">
-            Handyman capacity per time slot:
-          </label>
-          <input
-            type="number"
-            min={1}
-            className="ml-3 p-2 border rounded-lg w-24"
-            value={cfg.handymanCapacity}
-            onChange={(e) =>
-              setCfg((p) => ({
-                ...p!,
-                handymanCapacity:
-                  Number(e.target.value) > 0
-                    ? Number(e.target.value)
-                    : 1,
-              }))
-            }
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            How many visits can happen at the same time.
-          </p>
-        </div>
+            <details open className="mt-5 rounded-2xl border border-slate-200 p-4">
+              <summary className="cursor-pointer text-lg font-black">
+                Company Schedule
+              </summary>
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <NumberField
+                  label="Slot minutes"
+                  value={company.slotMinutes}
+                  onChange={(value) => setCompany({ ...company, slotMinutes: value })}
+                />
+                <NumberField
+                  label="Lead minutes"
+                  value={company.minLeadMinutes}
+                  onChange={(value) =>
+                    setCompany({ ...company, minLeadMinutes: value })
+                  }
+                />
+                <NumberField
+                  label="Advance days"
+                  value={company.maxAdvanceDays}
+                  onChange={(value) =>
+                    setCompany({ ...company, maxAdvanceDays: value })
+                  }
+                />
+                <NumberField
+                  label="Default capacity"
+                  value={company.defaultCapacity}
+                  onChange={(value) =>
+                    setCompany({ ...company, defaultCapacity: value })
+                  }
+                />
+              </div>
+              <div className="mt-4">
+                <WeeklyScheduleEditor
+                  value={company.weeklySchedule}
+                  capacity
+                  onChange={(weeklySchedule) =>
+                    setCompany({ ...company, weeklySchedule })
+                  }
+                />
+              </div>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  mutate(
+                    async () => {
+                      const saved = await updateShadowCompanyTemplate(company);
+                      setCompany(saved);
+                    },
+                    "Company schedule saved"
+                  )
+                }
+                className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-3 font-bold text-white"
+              >
+                Save company schedule
+              </button>
+            </details>
 
-        {/* Default daily hours */}
-        <div className="mb-6">
-          <p className="font-medium mb-2">Default Hours:</p>
-          <div className="flex gap-2 flex-wrap">
-            {HOURS.map((hh) => {
-              const on = cfg.defaultHours.includes(hh);
-              return (
-                <button
-                  key={hh}
-                  type="button"
-                  className={`px-3 py-1 rounded-lg border text-xs ${
-                    on
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-700"
-                  }`}
-                  onClick={() => toggleDefaultHour(hh)}
-                >
-                  {hh}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex flex-wrap gap-3 mt-3 text-sm">
-            <button
-              type="button"
-              className="px-4 py-2 bg-gray-200 rounded-lg"
-              onClick={() => setDefaultTemplate("9-5")}
-            >
-              9–5 default
-            </button>
-
-            <button
-              type="button"
-              className="px-4 py-2 bg-gray-200 rounded-lg"
-              onClick={() => setDefaultTemplate("morning")}
-            >
-              Morning (8–12)
-            </button>
-
-            <button
-              type="button"
-              className="px-4 py-2 bg-gray-200 rounded-lg"
-              onClick={() => setDefaultTemplate("afternoon")}
-            >
-              Afternoon (13–18)
-            </button>
-
-            <button
-              type="button"
-              className="px-4 py-2 bg-gray-200 rounded-lg"
-              onClick={() => setDefaultTemplate("full")}
-            >
-              Full day (8–20)
-            </button>
-
-            <button
-              type="button"
-              className="px-4 py-2 bg-gray-200 rounded-lg"
-              onClick={() => setDefaultTemplate("clear")}
-            >
-              Clear all
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* CALENDAR CARD */}
-      <div className="bg-white p-6 rounded-xl shadow border border-gray-200">
-        <h3 className="text-xl font-bold mb-4">
-          Calendar Override Editor
-        </h3>
-
-        {/* Selected date */}
-        <div className="flex flex-wrap items-center gap-4 mb-4">
-          <label className="font-medium">Selected:</label>
-          <span className="px-3 py-1 bg-gray-100 rounded-lg">
-            {selectedDate || "—"}
-          </span>
-
-          <button
-            className="px-3 py-1 bg-gray-200 rounded-lg"
-            onClick={() => setSelectedDate("")}
-          >
-            Clear
-          </button>
-
-          <button
-            className="px-3 py-1 bg-blue-100 text-blue-600 rounded-lg"
-            onClick={() =>
-              setSelectedDate(toYMD(new Date(), tz))
-            }
-          >
-            Today
-          </button>
-        </div>
-
-        {/* Calendar UI */}
-        <Calendar
-          onClickDay={(d) => setSelectedDate(toYMD(d, tz))}
-          value={
-            selectedDate
-              ? new Date(selectedDate + "T12:00:00")
-              : new Date()
-          }
-          tileClassName={tileClassName}
-          showNeighboringMonth={false}
-        />
-
-        {/* Holidays list */}
-        <div className="mt-6">
-          <p className="font-medium mb-2">Holidays / blocked dates:</p>
-          {cfg.holidays.length === 0 ? (
-            <p className="text-sm text-gray-500">
-              No holidays added yet.
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {cfg.holidays.map((d) => (
-                <span
-                  key={d}
-                  className="inline-flex items-center gap-2 px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm"
-                >
-                  {d}
+            <details className="mt-4 rounded-2xl border border-slate-200 p-4">
+              <summary className="cursor-pointer text-lg font-black">
+                Technician Schedule
+              </summary>
+              <select
+                value={settingsTechId}
+                onChange={(event) => setSettingsTechId(event.target.value)}
+                className="mt-4 w-full rounded-xl border border-slate-300 px-3 py-3"
+              >
+                {technicians.map((technician) => (
+                  <option key={technician.id} value={technician.id}>
+                    {technician.name} — {technician.position}
+                  </option>
+                ))}
+              </select>
+              {techTemplate && (
+                <div className="mt-4">
+                  <label className="flex items-center justify-between rounded-xl bg-slate-100 p-3 font-bold">
+                    Inherit company hours
+                    <input
+                      type="checkbox"
+                      checked={techTemplate.inheritCompanyHours}
+                      onChange={(event) =>
+                        setTechTemplate({
+                          ...techTemplate,
+                          inheritCompanyHours: event.target.checked,
+                        })
+                      }
+                      className="h-5 w-5"
+                    />
+                  </label>
+                  {!techTemplate.inheritCompanyHours && (
+                    <div className="mt-4">
+                      <WeeklyScheduleEditor
+                        value={techTemplate.weeklySchedule}
+                        capacity={false}
+                        onChange={(weeklySchedule) =>
+                          setTechTemplate({ ...techTemplate, weeklySchedule })
+                        }
+                      />
+                    </div>
+                  )}
                   <button
                     type="button"
-                    onClick={() => removeHoliday(d)}
+                    disabled={busy}
+                    onClick={() =>
+                      mutate(
+                        async () => {
+                          const saved = await updateShadowTechnicianTemplate(
+                            settingsTechId,
+                            techTemplate
+                          );
+                          setTechTemplate(saved);
+                        },
+                        "Technician schedule saved"
+                      )
+                    }
+                    className="mt-4 w-full rounded-xl bg-blue-700 px-4 py-3 font-bold text-white"
                   >
-                    ×
+                    Save technician schedule
                   </button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Per date editor */}
-        {selectedDate ? (
-          <div className="mt-6">
-            <div className="flex flex-wrap gap-3 mb-4">
-              <button
-                className="px-3 py-2 bg-red-200 text-red-700 rounded-lg"
-                onClick={markClosed}
-                type="button"
-              >
-                Mark CLOSED (no bookings)
-              </button>
-
-              <button
-                className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg"
-                onClick={useDefault}
-                type="button"
-              >
-                Use Default Hours
-              </button>
-
-              <button
-                className="px-3 py-2 bg-yellow-200 text-yellow-700 rounded-lg"
-                onClick={() => addHoliday(selectedDate)}
-                type="button"
-              >
-                Add Holiday
-              </button>
-
-              {isHoliday(selectedDate) && (
-                <button
-                  className="px-3 py-2 bg-gray-300 rounded-lg"
-                  onClick={() => removeHoliday(selectedDate)}
-                  type="button"
-                >
-                  Remove Holiday
-                </button>
-              )}
-
-              <button
-                className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg"
-                onClick={copyOverrideToSameWeekday}
-                type="button"
-              >
-                Copy this day → all same weekdays this month
-              </button>
-            </div>
-
-            {/* Override templates */}
-            <div className="flex flex-wrap gap-3 mb-4 text-sm">
-              <span className="font-medium mr-2">
-                Quick templates:
-              </span>
-              <button
-                type="button"
-                className="px-3 py-1 bg-gray-200 rounded-lg"
-                onClick={() => setOverrideTemplate("9-5")}
-              >
-                9–5
-              </button>
-              <button
-                type="button"
-                className="px-3 py-1 bg-gray-200 rounded-lg"
-                onClick={() => setOverrideTemplate("morning")}
-              >
-                Morning (8–12)
-              </button>
-              <button
-                type="button"
-                className="px-3 py-1 bg-gray-200 rounded-lg"
-                onClick={() => setOverrideTemplate("afternoon")}
-              >
-                Afternoon (13–18)
-              </button>
-              <button
-                type="button"
-                className="px-3 py-1 bg-gray-200 rounded-lg"
-                onClick={() => setOverrideTemplate("full")}
-              >
-                Full day (8–20)
-              </button>
-              <button
-                type="button"
-                className="px-3 py-1 bg-gray-200 rounded-lg"
-                onClick={() => setOverrideTemplate("clear")}
-              >
-                Clear hours
-              </button>
-            </div>
-
-            {/* Custom hours editor */}
-            {!isOverrideClosed(selectedDate) && (
-              <>
-                <p className="font-medium mb-2">
-                  Custom Hours for {selectedDate}:
-                </p>
-                <div className="flex gap-2 flex-wrap">
-                  {HOURS.map((hh) => {
-                    const on = overrideHours(selectedDate).includes(
-                      hh
-                    );
-                    return (
-                      <button
-                        key={hh}
-                        type="button"
-                        className={`px-3 py-1 rounded-lg border text-xs ${
-                          on
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-100 text-gray-700"
-                        }`}
-                        onClick={() => toggleOverrideHour(hh)}
-                      >
-                        {hh}
-                      </button>
-                    );
-                  })}
                 </div>
+              )}
+            </details>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function NumberField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="text-xs font-bold text-slate-600">
+      {label}
+      <input
+        type="number"
+        min={0}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-base text-slate-900"
+      />
+    </label>
+  );
+}
+
+function TimeOffEditor({
+  entry,
+  technicianName,
+  timezone,
+  busy,
+  onSave,
+  onRemove,
+}: {
+  entry: ShadowTimeOff;
+  technicianName: string;
+  timezone: string;
+  busy: boolean;
+  onSave: (input: {
+    type: TimeOffType;
+    startAt: string;
+    endAt: string;
+    allDay: boolean;
+    reason: string;
+  }) => Promise<void>;
+  onRemove: () => Promise<void>;
+}) {
+  const initialStartDate = formatInTimeZone(
+    entry.startAt,
+    timezone,
+    "yyyy-MM-dd"
+  );
+  const storedEndDate = formatInTimeZone(entry.endAt, timezone, "yyyy-MM-dd");
+  const [editing, setEditing] = useState(false);
+  const [type, setType] = useState<TimeOffType>(entry.type);
+  const [allDay, setAllDay] = useState(entry.allDay);
+  const [startDate, setStartDate] = useState(initialStartDate);
+  const [endDate, setEndDate] = useState(
+    entry.allDay ? previousDate(storedEndDate) : storedEndDate
+  );
+  const [startTime, setStartTime] = useState(
+    formatInTimeZone(entry.startAt, timezone, "HH:mm")
+  );
+  const [endTime, setEndTime] = useState(
+    formatInTimeZone(entry.endAt, timezone, "HH:mm")
+  );
+  const [reason, setReason] = useState(entry.reason || "");
+
+  const validRange =
+    endDate > startDate ||
+    (endDate === startDate && (allDay || endTime > startTime));
+
+  const save = async () => {
+    const startAt = fromZonedTime(
+      `${startDate}T${allDay ? "00:00" : startTime}:00`,
+      timezone
+    ).toISOString();
+    const endAt = fromZonedTime(
+      `${allDay ? nextDate(endDate) : endDate}T${allDay ? "00:00" : endTime}:00`,
+      timezone
+    ).toISOString();
+    await onSave({ type, startAt, endAt, allDay, reason });
+    setEditing(false);
+  };
+
+  return (
+    <div className="rounded-lg bg-slate-50 p-3 text-sm">
+      <div className="flex items-center justify-between gap-3">
+        <span>
+          <b>{technicianName}</b> — {entry.type}
+        </span>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => setEditing((value) => !value)}
+            className="font-bold text-blue-700"
+          >
+            {editing ? "Cancel" : "Edit"}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onRemove}
+            className="font-bold text-rose-700 disabled:opacity-50"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+      {editing && (
+        <div className="mt-3 grid gap-3 border-t border-slate-200 pt-3">
+          <select
+            value={type}
+            onChange={(event) => setType(event.target.value as TimeOffType)}
+            className="rounded-lg border border-slate-300 px-3 py-2"
+          >
+            {TIME_OFF_TYPES.map((value) => (
+              <option key={value} value={value}>
+                {value[0].toUpperCase() + value.slice(1)}
+              </option>
+            ))}
+          </select>
+          <label className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 font-semibold">
+            All day
+            <input
+              type="checkbox"
+              checked={allDay}
+              onChange={(event) => setAllDay(event.target.checked)}
+              className="h-5 w-5"
+            />
+          </label>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <label className="text-xs font-bold text-slate-600">
+              Start date
+              <input
+                type="date"
+                value={startDate}
+                onChange={(event) => setStartDate(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-base text-slate-900"
+              />
+            </label>
+            <label className="text-xs font-bold text-slate-600">
+              End date
+              <input
+                type="date"
+                value={endDate}
+                min={startDate}
+                onChange={(event) => setEndDate(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-base text-slate-900"
+              />
+            </label>
+            {!allDay && (
+              <>
+                <label className="text-xs font-bold text-slate-600">
+                  Start time
+                  <input
+                    type="time"
+                    value={startTime}
+                    onChange={(event) => setStartTime(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-base text-slate-900"
+                  />
+                </label>
+                <label className="text-xs font-bold text-slate-600">
+                  End time
+                  <input
+                    type="time"
+                    value={endTime}
+                    onChange={(event) => setEndTime(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-base text-slate-900"
+                  />
+                </label>
               </>
             )}
           </div>
-        ) : (
-          <p className="text-gray-500 mt-4">Select a date above.</p>
-        )}
-
-        {/* Save / reload */}
-        <div className="flex flex-wrap gap-3 mt-8 items-center">
+          <input
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            className="rounded-lg border border-slate-300 px-3 py-2"
+            placeholder="Optional reason"
+          />
           <button
-            className="px-5 py-3 bg-blue-600 text-white font-medium rounded-lg shadow hover:bg-blue-700 disabled:opacity-50"
-            onClick={saveAll}
-            disabled={loading}
+            type="button"
+            disabled={busy || !validRange}
+            onClick={() => void save()}
+            className="rounded-lg bg-blue-700 px-3 py-2 font-bold text-white disabled:opacity-50"
           >
-            Save
+            Save time off
           </button>
-
-          <button
-            className="px-5 py-3 bg-gray-200 rounded-lg font-medium disabled:opacity-50"
-            onClick={load}
-            disabled={loading}
-          >
-            Reload
-          </button>
-
-          {log && (
-            <span className="text-gray-600 text-sm mt-2 md:mt-0">
-              {log}
-            </span>
+          {!validRange && (
+            <p className="text-xs font-semibold text-rose-700">
+              End must be after start.
+            </p>
           )}
         </div>
-      </div>
-      </div>
+      )}
+    </div>
+  );
+}
+
+function TimeOffForm({
+  date,
+  technicians,
+  initialTechnicianId,
+  onCreate,
+}: {
+  date: string;
+  technicians: ShadowTechnician[];
+  initialTechnicianId: string;
+  onCreate: (input: {
+    technicianId: string;
+    type: "vacation" | "sick" | "personal" | "training" | "other";
+    date: string;
+    allDay: boolean;
+    reason: string;
+  }) => Promise<void>;
+}) {
+  const [technicianId, setTechnicianId] = useState(initialTechnicianId);
+  const [type, setType] = useState<TimeOffType>("vacation");
+  const [reason, setReason] = useState("");
+
+  return (
+    <div className="mt-3 grid gap-2">
+      <select
+        value={technicianId}
+        onChange={(event) => setTechnicianId(event.target.value)}
+        className="rounded-lg border border-slate-300 px-3 py-2"
+      >
+        {technicians.map((technician) => (
+          <option key={technician.id} value={technician.id}>
+            {technician.name}
+          </option>
+        ))}
+      </select>
+      <select
+        value={type}
+        onChange={(event) => setType(event.target.value as typeof type)}
+        className="rounded-lg border border-slate-300 px-3 py-2"
+      >
+        <option value="vacation">Vacation</option>
+        <option value="sick">Sick day</option>
+        <option value="personal">Personal day</option>
+        <option value="training">Training</option>
+        <option value="other">Other</option>
+      </select>
+      <input
+        value={reason}
+        onChange={(event) => setReason(event.target.value)}
+        className="rounded-lg border border-slate-300 px-3 py-2"
+        placeholder="Optional reason"
+      />
+      <button
+        type="button"
+        disabled={!technicianId}
+        onClick={() =>
+          onCreate({
+            technicianId,
+            type,
+            date,
+            allDay: true,
+            reason,
+          })
+        }
+        className="rounded-lg bg-blue-700 px-3 py-2 font-bold text-white disabled:opacity-50"
+      >
+        Add full-day time off
+      </button>
     </div>
   );
 }

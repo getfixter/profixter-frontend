@@ -515,6 +515,289 @@ export const updateCalendarConfig = async (
   await API.put('/api/admin/calendar', config);
 };
 
+export type CalendarScope = "company" | "technician";
+export type CalendarInterval = {
+  startTime: string;
+  endTime: string;
+  capacity?: number | null;
+};
+export type CalendarWeeklyDay = {
+  weekday: number;
+  enabled: boolean;
+  intervals: CalendarInterval[];
+};
+export interface ShadowCompanyTemplate {
+  _id: string;
+  timezone: string;
+  slotMinutes: number;
+  minLeadMinutes: number;
+  maxAdvanceDays: number;
+  defaultCapacity: number;
+  weeklySchedule: CalendarWeeklyDay[];
+  version: number;
+}
+export interface ShadowTechnician {
+  id: string;
+  name: string;
+  email: string;
+  position: "Fixter" | "General Fixter";
+  isActive: boolean;
+  visibilityStatus: string;
+  template?: ShadowTechnicianTemplate | null;
+}
+export interface ShadowTechnicianTemplate {
+  _id: string;
+  technicianId: string;
+  inheritCompanyHours: boolean;
+  weeklySchedule: CalendarWeeklyDay[];
+}
+export interface CalendarFoundationStatus {
+  shadowMode: true;
+  companyTemplateReady: boolean;
+  technicianTemplatesReady: boolean;
+  importedLegacyOverridesReady: boolean;
+  warnings: string[];
+  errors: string[];
+  missingTechnicians?: Array<{ id?: string; name?: string; email?: string }>;
+}
+export interface ShadowCalendarDaySummary {
+  date: string;
+  bookingCount: number;
+  openSlotCount: number;
+  usedCapacity: number;
+  totalCapacity: number;
+  closed: boolean;
+  reducedCapacity: boolean;
+  hasOverrides: boolean;
+  hasTimeOff: boolean;
+  hasNote: boolean;
+}
+export interface ShadowCalendarSlot {
+  time: string;
+  endTime: string;
+  configuredCapacity: number;
+  totalCapacity: number;
+  usedCapacity: number;
+  remainingCapacity: number;
+  open: boolean;
+  technicians: Array<{
+    id: string;
+    name: string;
+    position: string;
+    visibilityStatus: string;
+    available: boolean;
+    unavailableReason?: string;
+    booked: boolean;
+  }>;
+  bookings: Array<{
+    id: string;
+    bookingNumber?: string;
+    customerName?: string;
+    service?: string;
+    status?: string;
+    assignedFixterName?: string;
+  }>;
+}
+export interface ShadowCalendarDay {
+  date: string;
+  timezone: string;
+  scope: CalendarScope;
+  technicianId: string | null;
+  bookingCount: number;
+  openSlotCount: number;
+  usedCapacity: number;
+  totalCapacity: number;
+  closed: boolean;
+  reducedCapacity: boolean;
+  hasOverrides: boolean;
+  hasTimeOff: boolean;
+  note: string;
+  slots: ShadowCalendarSlot[];
+  technicians: ShadowTechnician[];
+}
+
+const calendarScopeParams = (
+  scope: CalendarScope,
+  technicianId?: string | null
+) => ({
+  scope,
+  ...(scope === "technician" && technicianId ? { technicianId } : {}),
+});
+
+export const getCalendarFoundationStatus =
+  async (): Promise<CalendarFoundationStatus> => {
+    const response = await API.get("/api/admin/calendar/foundation-status");
+    return response.data;
+  };
+
+export const bootstrapCalendarFoundation = async () => {
+  const response = await API.post("/api/admin/calendar/foundation/bootstrap");
+  return response.data as CalendarFoundationStatus & { ok: boolean };
+};
+
+export const getShadowCalendarSummary = async (
+  month: string,
+  scope: CalendarScope,
+  technicianId?: string | null
+): Promise<ShadowCalendarDaySummary[]> => {
+  const response = await API.get("/api/admin/calendar/summary", {
+    params: { month, ...calendarScopeParams(scope, technicianId) },
+  });
+  return response.data.days;
+};
+
+export const getShadowCalendarDay = async (
+  date: string,
+  scope: CalendarScope,
+  technicianId?: string | null
+): Promise<ShadowCalendarDay> => {
+  const response = await API.get("/api/admin/calendar/day", {
+    params: { date, ...calendarScopeParams(scope, technicianId) },
+  });
+  return response.data;
+};
+
+export const getShadowCompanyTemplate =
+  async (): Promise<ShadowCompanyTemplate> => {
+    const response = await API.get("/api/admin/calendar/company-template");
+    return response.data.template;
+  };
+
+export const updateShadowCompanyTemplate = async (
+  input: Partial<ShadowCompanyTemplate>
+): Promise<ShadowCompanyTemplate> => {
+  const response = await API.put("/api/admin/calendar/company-template", input);
+  return response.data.template;
+};
+
+export const getShadowTechnicians = async (): Promise<ShadowTechnician[]> => {
+  const response = await API.get("/api/admin/calendar/technicians");
+  return response.data.technicians;
+};
+
+export const getShadowTechnicianTemplate = async (
+  technicianId: string
+): Promise<ShadowTechnicianTemplate | null> => {
+  const response = await API.get(
+    `/api/admin/calendar/technicians/${technicianId}/template`
+  );
+  return response.data.template;
+};
+
+export const updateShadowTechnicianTemplate = async (
+  technicianId: string,
+  input: Pick<
+    ShadowTechnicianTemplate,
+    "inheritCompanyHours" | "weeklySchedule"
+  >
+): Promise<ShadowTechnicianTemplate> => {
+  const response = await API.put(
+    `/api/admin/calendar/technicians/${technicianId}/template`,
+    input
+  );
+  return response.data.template;
+};
+
+export const saveShadowDayOverride = async (input: {
+  scopeType: CalendarScope;
+  technicianId?: string | null;
+  date: string;
+  mode: "closed" | "custom_hours" | "open";
+  intervals?: CalendarInterval[];
+  reason?: string;
+}) => {
+  const response = await API.put("/api/admin/calendar/overrides/day", input);
+  return response.data.override;
+};
+
+export const restoreShadowDay = async (input: {
+  scopeType: CalendarScope;
+  technicianId?: string | null;
+  date: string;
+}) => {
+  await API.delete("/api/admin/calendar/overrides/day", { params: input });
+};
+
+export const runShadowSlotAction = async (input: {
+  scopeType: CalendarScope;
+  technicianId?: string | null;
+  date: string;
+  startTime: string;
+  endTime: string;
+  action: "close" | "open" | "add_spot" | "remove_spot" | "restore";
+}) => {
+  const response = await API.post(
+    "/api/admin/calendar/capacity-overrides/slot-action",
+    input
+  );
+  return response.data;
+};
+
+export const createShadowTimeOff = async (input: {
+  technicianId: string;
+  type: "vacation" | "sick" | "personal" | "training" | "other";
+  date?: string;
+  startAt?: string;
+  endAt?: string;
+  allDay: boolean;
+  reason?: string;
+}) => {
+  const response = await API.post("/api/admin/calendar/time-off", input);
+  return response.data.timeOff;
+};
+
+export interface ShadowTimeOff {
+  _id: string;
+  technicianId:
+    | string
+    | { _id: string; name: string; email: string; employeePosition: string };
+  type: "vacation" | "sick" | "personal" | "training" | "other";
+  startAt: string;
+  endAt: string;
+  allDay: boolean;
+  reason?: string;
+  status: "approved" | "canceled";
+}
+
+export const getShadowTimeOff = async (
+  from: string,
+  to: string,
+  technicianId?: string | null
+): Promise<ShadowTimeOff[]> => {
+  const response = await API.get("/api/admin/calendar/time-off", {
+    params: { from, to, ...(technicianId ? { technicianId } : {}) },
+  });
+  return response.data.timeOff;
+};
+
+export const cancelShadowTimeOff = async (id: string) => {
+  await API.delete(`/api/admin/calendar/time-off/${id}`);
+};
+
+export const updateShadowTimeOff = async (
+  id: string,
+  input: Partial<{
+    technicianId: string;
+    type: "vacation" | "sick" | "personal" | "training" | "other";
+    startAt: string;
+    endAt: string;
+    allDay: boolean;
+    reason: string;
+  }>
+) => {
+  const response = await API.put(`/api/admin/calendar/time-off/${id}`, input);
+  return response.data.timeOff as ShadowTimeOff;
+};
+
+export const saveShadowDayNote = async (date: string, note: string) => {
+  const response = await API.put(`/api/admin/calendar/notes/${date}`, { note });
+  return response.data.note;
+};
+
+export const deleteShadowDayNote = async (date: string) => {
+  await API.delete(`/api/admin/calendar/notes/${date}`);
+};
+
 // Referrals
 export interface Referral {
   _id: string;
