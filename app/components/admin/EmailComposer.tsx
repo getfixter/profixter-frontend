@@ -1,195 +1,418 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { getSegmentCounts, sendCampaign } from '@/lib/admin-service';
-import type { SegmentCounts } from '@/lib/admin-service';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  getCampaignVariables,
+  getSegmentCounts,
+  previewCampaign,
+  sendCampaign,
+  sendCampaignTest,
+} from '@/lib/admin-service';
+import type {
+  CampaignPreview,
+  CampaignRequest,
+  CampaignVariableGroup,
+  SegmentCounts,
+} from '@/lib/admin-service';
+
+const SEGMENTS = [
+  { id: 'all', label: 'All Customers' },
+  { id: 'subscribed', label: 'Subscribed' },
+  { id: 'not_subscribed', label: 'Not Subscribed' },
+  { id: 'basic', label: 'Basic' },
+  { id: 'plus', label: 'Plus' },
+  { id: 'premium', label: 'Premium' },
+  { id: 'elite', label: 'Elite' },
+] as const;
+
+function errorMessage(error: unknown) {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'response' in error
+  ) {
+    const response = (error as { response?: { data?: { message?: string } } })
+      .response;
+    if (response?.data?.message) return response.data.message;
+  }
+  return error instanceof Error ? error.message : 'Request failed';
+}
 
 export default function EmailComposer() {
-  const [segmentCounts, setSegmentCounts] = useState<SegmentCounts | null>(
-    null
-  );
-  const [loading, setLoading] = useState(false);
+  const [counts, setCounts] = useState<SegmentCounts | null>(null);
   const [segment, setSegment] = useState('not_subscribed');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [useTemplate, setUseTemplate] = useState(true);
   const [ctaText, setCtaText] = useState('View Plans');
   const [ctaUrl, setCtaUrl] = useState('https://profixter.com/subscription');
-  const [sending, setSending] = useState(false);
-  const [log, setLog] = useState('');
+  const [loadingCounts, setLoadingCounts] = useState(false);
+  const [busy, setBusy] = useState<'preview' | 'test' | 'send' | null>(null);
+  const [notice, setNotice] = useState('');
+  const [noticeType, setNoticeType] = useState<'success' | 'error' | 'info'>('info');
+  const [preview, setPreview] = useState<CampaignPreview | null>(null);
+  const [variableGroups, setVariableGroups] = useState<CampaignVariableGroup[]>([]);
+  const [variablesOpen, setVariablesOpen] = useState(false);
+  const [copiedTag, setCopiedTag] = useState('');
 
-  useEffect(() => {
-    loadCounts();
-  }, []);
+  const selectedCount = counts?.[segment as keyof SegmentCounts] ?? 0;
+  const payload = useMemo<CampaignRequest>(
+    () => ({ segment, subject, body, ctaText, ctaUrl }),
+    [segment, subject, body, ctaText, ctaUrl]
+  );
 
   async function loadCounts() {
     try {
-      setLoading(true);
-      const data = await getSegmentCounts();
-      setSegmentCounts(data);
+      setLoadingCounts(true);
+      setCounts(await getSegmentCounts());
     } catch (error) {
-      console.error('Failed to load segments:', error);
+      setNoticeType('error');
+      setNotice(errorMessage(error));
     } finally {
-      setLoading(false);
+      setLoadingCounts(false);
     }
   }
 
-  const recipientCount = segmentCounts
-    ? segment === 'all'
-      ? segmentCounts.all
-      : segment === 'subscribed'
-      ? (segmentCounts.basic || 0) +
-        (segmentCounts.plus || 0) +
-        (segmentCounts.premium || 0) +
-        (segmentCounts.elite || 0)
-      : segmentCounts[segment as keyof SegmentCounts] || 0
-    : '...';
- 
-  async function send(testOnly: boolean) {
-    if (!subject || !body) {
-      setLog('Subject and message are required.');
-      return;
+  useEffect(() => {
+    void loadCounts();
+    void getCampaignVariables()
+      .then(setVariableGroups)
+      .catch((error) => {
+        setNoticeType('error');
+        setNotice(errorMessage(error));
+      });
+  }, []);
+
+  async function copyVariable(tag: string) {
+    try {
+      await navigator.clipboard.writeText(tag);
+    } catch {
+      const input = document.createElement('textarea');
+      input.value = tag;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      input.remove();
     }
+    setCopiedTag(tag);
+    window.setTimeout(() => setCopiedTag(''), 1400);
+  }
+
+  function validate() {
+    if (!subject.trim() || !body.trim()) {
+      setNoticeType('error');
+      setNotice('Subject and message are required.');
+      return false;
+    }
+    return true;
+  }
+
+  async function handlePreview() {
+    if (!validate()) return;
+    try {
+      setBusy('preview');
+      setNotice('');
+      setPreview(await previewCampaign(payload));
+    } catch (error) {
+      setNoticeType('error');
+      setNotice(errorMessage(error));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleTest() {
+    if (!validate()) return;
+    try {
+      setBusy('test');
+      const result = await sendCampaignTest(payload);
+      setNoticeType('success');
+      setNotice(
+        `Test sent only to ${result.recipient}. Estimated audience: ${result.estimatedRecipientCount}.`
+      );
+    } catch (error) {
+      setNoticeType('error');
+      setNotice(errorMessage(error));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleSend() {
+    if (!validate()) return;
+    const confirmed = window.confirm(
+      `Send this campaign to ${selectedCount} ${SEGMENTS.find((item) => item.id === segment)?.label ?? segment} recipient(s)? An admin copy will also be sent to getfixter@gmail.com.`
+    );
+    if (!confirmed) return;
 
     try {
-      setSending(true);
-      setLog(testOnly ? 'Sending test...' : 'Sending...');
-
-      const data = await sendCampaign({
-        testOnly,
-        segment,
-        subject,
-        body,
-        useTemplate,
-        ctaText,
-        ctaUrl,
-      });
-
-      setLog(
-        testOnly
-          ? '✅ Test sent.'
-          : `✅ Sent ${data.sent}/${data.total} emails.`
+      setBusy('send');
+      const result = await sendCampaign(payload);
+      setNoticeType(result.failed || !result.adminCopySent ? 'error' : 'success');
+      setNotice(
+        `${result.campaignId}: sent ${result.sent}/${result.total}; failed ${result.failed}; admin copy ${
+          result.adminCopySent ? 'sent' : 'failed'
+        }.`
       );
-    } catch (error: any) {
-      setLog(`❌ ${error.message}`);
+      await loadCounts();
+    } catch (error) {
+      setNoticeType('error');
+      setNotice(errorMessage(error));
     } finally {
-      setSending(false);
+      setBusy(null);
     }
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-2xl">
-          ✉️
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <header className="border-b border-slate-200 bg-slate-950 px-5 py-5 text-white md:px-7">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+          Customer communications
+        </p>
+        <h2 className="mt-1 text-2xl font-semibold">Email campaign</h2>
+        <p className="mt-1 max-w-2xl text-sm text-slate-300">
+          Audiences use current subscription access, account status, blacklist,
+          and email suppression records.
+        </p>
+      </header>
+
+      <div className="space-y-6 p-4 md:p-7">
+        <div className="rounded-xl border border-blue-200 bg-blue-50">
+          <button
+            type="button"
+            onClick={() => setVariablesOpen((open) => !open)}
+            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+            aria-expanded={variablesOpen}
+          >
+            <span>
+              <span className="block text-sm font-semibold text-blue-950">
+                Variables and help
+              </span>
+              <span className="block text-xs text-blue-700">
+                Personalize the subject, message, button text, and button URL.
+              </span>
+            </span>
+            <span className="text-sm font-semibold text-blue-800">
+              {variablesOpen ? 'Hide' : 'Show'}
+            </span>
+          </button>
+
+          {variablesOpen && (
+            <div className="border-t border-blue-200 px-4 py-4">
+              <p className="mb-4 text-sm leading-6 text-slate-700">
+                Copy a variable and paste it wherever you want the customer value
+                to appear. Missing and unknown values become blank and never stop
+                a campaign.
+              </p>
+              <div className="grid gap-4 lg:grid-cols-3">
+                {variableGroups.map((group) => (
+                  <section
+                    key={group.id}
+                    className="rounded-xl border border-slate-200 bg-white p-3"
+                  >
+                    <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                      {group.label}
+                    </h3>
+                    <div className="divide-y divide-slate-100">
+                      {group.variables.map((variable) => (
+                        <div
+                          key={variable.key}
+                          className="flex items-start justify-between gap-3 py-3"
+                        >
+                          <div className="min-w-0">
+                            <code className="break-all text-sm font-semibold text-blue-700">
+                              {variable.tag}
+                            </code>
+                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                              {variable.description}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => void copyVariable(variable.tag)}
+                            className="shrink-0 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                          >
+                            {copiedTag === variable.tag ? 'Copied' : 'Copy'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+
         <div>
-          <h3 className="text-xl font-bold text-gray-900">Email Composer</h3>
-          <p className="text-sm text-gray-600">Send targeted email campaigns</p>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <label className="text-sm font-semibold text-slate-900">Audience</label>
+            <button
+              type="button"
+              onClick={() => void loadCounts()}
+              disabled={loadingCounts || busy !== null}
+              className="text-sm font-semibold text-blue-700 disabled:opacity-50"
+            >
+              {loadingCounts ? 'Refreshing…' : 'Refresh counts'}
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+            {SEGMENTS.map((item) => {
+              const active = segment === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSegment(item.id)}
+                  className={`rounded-xl border p-3 text-left transition ${
+                    active
+                      ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600'
+                      : 'border-slate-200 hover:border-slate-400'
+                  }`}
+                >
+                  <span className="block text-xs font-medium text-slate-500">
+                    {item.label}
+                  </span>
+                  <span className="mt-1 block text-xl font-semibold text-slate-950">
+                    {counts ? counts[item.id] : '—'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      <div className="flex items-center gap-3 flex-wrap mb-4">
-        <label className="font-medium">Segment:</label>
-        <select
-          className="px-3 py-2 border border-[#e5e7eb] rounded-lg"
-          value={segment}
-          onChange={(e) => setSegment(e.target.value)}
-        >
-          <option value="not_subscribed">Not Subscribed</option>
-          <option value="subscribed">All Subscribed</option>
-          <option value="basic">Basic</option>
-          <option value="plus">Plus</option>
-          <option value="premium">Premium</option>
-          <option value="elite">Elite</option>
-          <option value="all">All</option>
-        </select>
+        <div className="grid gap-5">
+          <label className="grid gap-2">
+            <span className="text-sm font-semibold text-slate-900">Subject</span>
+            <input
+              value={subject}
+              maxLength={180}
+              onChange={(event) => setSubject(event.target.value)}
+              placeholder="A clear, useful subject"
+              className="rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
 
-        <button
-          className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-full font-bold hover:shadow-md transition-all"
-          onClick={loadCounts}
-          disabled={loading}
-        >
-          {loading ? 'Loading...' : 'Refresh counts'}
-        </button>
+          <label className="grid gap-2">
+            <span className="text-sm font-semibold text-slate-900">Message</span>
+            <textarea
+              value={body}
+              maxLength={30000}
+              onChange={(event) => setBody(event.target.value)}
+              rows={10}
+              placeholder="Example: Hello {{firstName}}, thank you for being a {{planName}} member."
+              className="resize-y rounded-xl border border-slate-300 px-4 py-3 leading-7 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
 
-        <span className="px-2.5 py-1 rounded-full bg-[#eef2ff] text-[#1e40af] border border-[#c7d2fe] font-bold text-xs">
-          Recipients: {recipientCount}
-        </span>
-      </div>
-
-      <label className="flex items-center gap-2 mb-4 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={useTemplate}
-          onChange={(e) => setUseTemplate(e.target.checked)}
-          className="w-4 h-4"
-        />
-        <span className="font-medium">Use default template</span>
-      </label>
-
-      <input
-        className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg mb-4"
-        placeholder="Subject"
-        value={subject}
-        onChange={(e) => setSubject(e.target.value)}
-      />
-
-      <textarea
-        className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg mb-4"
-        rows={10}
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        placeholder="Message (supports {{name}}, {{userId}}, {{plan}})"
-      />
-
-      {useTemplate && (
-        <div className="flex gap-3 mb-4">
-          <input
-            className="flex-1 px-3 py-2 border border-[#e5e7eb] rounded-lg"
-            placeholder="CTA text"
-            value={ctaText}
-            onChange={(e) => setCtaText(e.target.value)}
-          />
-          <input
-            className="flex-1 px-3 py-2 border border-[#e5e7eb] rounded-lg"
-            placeholder="CTA URL"
-            value={ctaUrl}
-            onChange={(e) => setCtaUrl(e.target.value)}
-          />
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+            <label className="grid gap-2">
+              <span className="text-sm font-semibold text-slate-900">Button text</span>
+              <input
+                value={ctaText}
+                maxLength={80}
+                onChange={(event) => setCtaText(event.target.value)}
+                className="rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-600"
+              />
+            </label>
+            <label className="grid gap-2">
+              <span className="text-sm font-semibold text-slate-900">Button URL</span>
+              <input
+                value={ctaUrl}
+                onChange={(event) => setCtaUrl(event.target.value)}
+                placeholder="https://profixter.com/..."
+                className="rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-600"
+              />
+            </label>
+          </div>
         </div>
-      )}
 
-      <div className="flex gap-3 mb-4">
-        <button
-          className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-full font-bold hover:shadow-md transition-all"
-          onClick={() => send(true)}
-          disabled={sending}
-        >
-          {sending ? 'Sending...' : 'Send test to me'}
-        </button>
-        <button
-          className="px-4 py-2 bg-[#306EEC] text-white border border-[#306EEC] rounded-full font-bold hover:shadow-md transition-all"
-          onClick={() => send(false)}
-          disabled={sending}
-        >
-          {sending ? 'Sending...' : 'Send to segment'}
-        </button>
-      </div>
-
-      {log && (
-        <div
-          className={`text-sm ${
-            log.startsWith('❌') ? 'text-[#b00020]' : 'text-[#0B5CAB]'
-          }`}
-        >
-          {log}
+        <div className="flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => void handlePreview()}
+            disabled={busy !== null}
+            className="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-800 disabled:opacity-50"
+          >
+            {busy === 'preview' ? 'Building preview…' : 'Preview'}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleTest()}
+            disabled={busy !== null}
+            className="rounded-xl border border-slate-900 px-5 py-3 font-semibold text-slate-950 disabled:opacity-50"
+          >
+            {busy === 'test' ? 'Sending test…' : 'Send test to admin only'}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleSend()}
+            disabled={busy !== null || !counts}
+            className="rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white shadow-sm disabled:opacity-50 sm:ml-auto"
+          >
+            {busy === 'send'
+              ? 'Sending campaign…'
+              : `Send to ${selectedCount} recipient${selectedCount === 1 ? '' : 's'}`}
+          </button>
         </div>
-      )}
 
-      <div className="text-sm text-[#64748b] mt-4">
-        Use {'{{name}}'} {'{{userId}}'} {'{{plan}}'} for personalization
+        {notice && (
+          <div
+            className={`rounded-xl border px-4 py-3 text-sm ${
+              noticeType === 'success'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                : noticeType === 'error'
+                  ? 'border-red-200 bg-red-50 text-red-800'
+                  : 'border-blue-200 bg-blue-50 text-blue-800'
+            }`}
+          >
+            {notice}
+          </div>
+        )}
+
+        {preview && (
+          <div className="space-y-3 border-t border-slate-200 pt-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="font-semibold text-slate-950">Customer preview</h3>
+                <p className="text-sm text-slate-500">
+                  Representative rendering · {preview.recipientCount} recipients
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreview(null)}
+                className="text-sm font-semibold text-slate-600"
+              >
+                Close
+              </button>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                Sample values used
+              </p>
+              <div className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                {Object.entries(preview.sampleValues).map(([key, value]) => (
+                  <div key={key} className="min-w-0">
+                    <span className="text-slate-500">{`{{${key}}}`}</span>
+                    <span className="ml-2 break-words font-medium text-slate-900">
+                      {value || '(blank)'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <iframe
+              title="Campaign email preview"
+              srcDoc={preview.html}
+              sandbox=""
+              className="h-[640px] w-full rounded-xl border border-slate-300 bg-white"
+            />
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   );
 }
