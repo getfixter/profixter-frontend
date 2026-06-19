@@ -6,8 +6,10 @@ import {
   getFixters,
   setDefaultFixter,
   setFixterActive,
+  setFixterAvailabilityStatus,
   updateFixter,
   type EmployeePosition,
+  type EmployeeAvailabilityStatus,
   type FixterAccount,
 } from "@/lib/admin-service";
 
@@ -18,6 +20,15 @@ const EMPTY = {
   phone: "",
   employeePosition: "Fixter" as EmployeePosition,
 };
+
+const AVAILABILITY_STATUSES: EmployeeAvailabilityStatus[] = [
+  "Available",
+  "Busy",
+  "Vacation",
+  "Sick",
+  "Training",
+  "Inactive",
+];
 
 export default function FixtersModule() {
   const [rows, setRows] = useState<FixterAccount[]>([]);
@@ -117,7 +128,7 @@ export default function FixtersModule() {
 
       <div className="grid gap-3">
         {rows.map((row) => (
-          <section key={row.id} className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_180px_130px_180px] md:items-center">
+          <section key={row.id} className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_150px_150px_180px_180px] md:items-center">
             <div>
               <h3 className="font-bold text-slate-950">{row.firstName} {row.lastName}</h3>
               <p className="text-sm text-slate-500">{row.email} · {row.phone}</p>
@@ -126,6 +137,26 @@ export default function FixtersModule() {
             </div>
             <strong className="text-sm">{row.employeePosition}</strong>
             <span className={row.isActive ? "text-sm font-bold text-emerald-700" : "text-sm font-bold text-rose-700"}>{row.isActive ? "Active" : "Inactive"}</span>
+            <label className="grid gap-1 text-xs font-semibold text-slate-500">
+              Visibility status
+              <select
+                value={row.employeeAvailabilityStatus || "Available"}
+                onChange={async (event) => {
+                  await setFixterAvailabilityStatus(
+                    row.id,
+                    event.target.value as EmployeeAvailabilityStatus
+                  );
+                  await load();
+                }}
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+              >
+                {AVAILABILITY_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => { setEditing(row); setForm({ firstName: row.firstName, lastName: row.lastName, email: row.email, phone: row.phone, employeePosition: row.employeePosition }); }} className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-bold">Edit</button>
               <button type="button" onClick={async () => { await setFixterActive(row.id, !row.isActive); await load(); }} className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-bold text-white">{row.isActive ? "Deactivate" : "Activate"}</button>
