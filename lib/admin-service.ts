@@ -530,6 +530,7 @@ export interface ShadowCompanyTemplate {
   _id: string;
   timezone: string;
   slotMinutes: number;
+  visitDurationMinutes: number;
   minLeadMinutes: number;
   maxAdvanceDays: number;
   defaultCapacity: number;

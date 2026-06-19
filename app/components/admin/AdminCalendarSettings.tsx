@@ -266,6 +266,8 @@ export default function AdminCalendarSettings({
   const scope: CalendarScope =
     scopeValue === "company" ? "company" : "technician";
   const technicianId = scope === "technician" ? scopeValue : null;
+  const selectedDateIsPast =
+    selectedDate !== null && selectedDate < todayNY();
   const foundationReady =
     !!status?.companyTemplateReady &&
     !!status?.technicianTemplatesReady &&
@@ -546,19 +548,22 @@ export default function AdminCalendarSettings({
                   item.date === todayNY() ? "bg-blue-50" : "bg-white"
                 }`}
               >
-                <div className="font-black text-slate-900">
-                  {Number(item.date.slice(-2))}
+                <div className="flex items-start justify-between gap-1">
+                  <span className="font-black text-slate-900">
+                    {Number(item.date.slice(-2))}
+                  </span>
+                  {item.bookingCount > 0 && (
+                    <span
+                      title={`${item.bookingCount} booking${
+                        item.bookingCount === 1 ? "" : "s"
+                      }`}
+                      className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-black text-white shadow-sm sm:h-6 sm:min-w-6 sm:text-xs"
+                    >
+                      {item.bookingCount}
+                    </span>
+                  )}
                 </div>
-                <div className="mt-1 space-y-1 text-[10px] leading-tight sm:text-xs">
-                  <div className="font-semibold text-slate-700">
-                    {item.bookingCount} booking{item.bookingCount === 1 ? "" : "s"}
-                  </div>
-                  <div className="text-slate-500">
-                    {item.usedCapacity}/{item.totalCapacity} used
-                  </div>
-                  <div className="font-semibold text-emerald-700">
-                    {item.openSlotCount} open
-                  </div>
+                <div className="mt-2 text-[10px] leading-tight text-slate-400 sm:text-xs">
                   <div className="flex flex-wrap gap-1">
                     {item.closed && <span title="Closed">🔒</span>}
                     {item.reducedCapacity && <span title="Reduced capacity">−</span>}
@@ -566,6 +571,11 @@ export default function AdminCalendarSettings({
                     {item.hasTimeOff && <span title="Time off">☂</span>}
                     {item.hasNote && <span title="Note">●</span>}
                   </div>
+                  {!item.closed && item.openSlotCount > 0 && (
+                    <span className="mt-1 block text-emerald-600/70">
+                      {item.openSlotCount} open
+                    </span>
+                  )}
                 </div>
               </button>
             ) : (
@@ -616,6 +626,11 @@ export default function AdminCalendarSettings({
               <p className="py-10 text-center text-slate-500">Loading day…</p>
             ) : (
               <div className="space-y-5 pt-4">
+                {selectedDateIsPast && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">
+                    Past days are read-only.
+                  </div>
+                )}
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     ["Bookings", day.bookingCount],
@@ -629,6 +644,7 @@ export default function AdminCalendarSettings({
                   ))}
                 </div>
 
+                {!selectedDateIsPast && (
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -691,16 +707,19 @@ export default function AdminCalendarSettings({
                     Custom hours
                   </button>
                 </div>
+                )}
 
                 <div>
                   <label className="text-sm font-bold text-slate-800">Day note</label>
                   <textarea
                     value={note}
                     onChange={(event) => setNote(event.target.value)}
+                    readOnly={selectedDateIsPast}
                     rows={2}
                     className="mt-2 w-full rounded-xl border border-slate-300 p-3"
                     placeholder="Add a note for the team"
                   />
+                  {!selectedDateIsPast && (
                   <div className="mt-2 flex gap-2">
                     <button
                       type="button"
@@ -731,21 +750,26 @@ export default function AdminCalendarSettings({
                       </button>
                     )}
                   </div>
+                  )}
                 </div>
 
                 <details className="rounded-xl border border-slate-200 p-3">
                   <summary className="cursor-pointer font-bold text-slate-900">
-                    Add technician time off
+                    {selectedDateIsPast
+                      ? "Technician time off"
+                      : "Add technician time off"}
                   </summary>
-                  <TimeOffForm
-                    key={`${selectedDate}-${technicianId || "company"}`}
-                    date={selectedDate}
-                    technicians={technicians}
-                    initialTechnicianId={technicianId || technicians[0]?.id || ""}
-                    onCreate={(input) =>
-                      mutate(() => createShadowTimeOff(input), "Time off added")
-                    }
-                  />
+                  {!selectedDateIsPast && (
+                    <TimeOffForm
+                      key={`${selectedDate}-${technicianId || "company"}`}
+                      date={selectedDate}
+                      technicians={technicians}
+                      initialTechnicianId={technicianId || technicians[0]?.id || ""}
+                      onCreate={(input) =>
+                        mutate(() => createShadowTimeOff(input), "Time off added")
+                      }
+                    />
+                  )}
                   {timeOff.length > 0 && (
                     <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
                       {timeOff.map((entry) => {
@@ -762,6 +786,7 @@ export default function AdminCalendarSettings({
                             technicianName={technician?.name || "Technician"}
                             timezone={company?.timezone || "America/New_York"}
                             busy={busy}
+                            readOnly={selectedDateIsPast}
                             onSave={(input) =>
                               mutate(
                                 () => updateShadowTimeOff(entry._id, input),
@@ -795,11 +820,11 @@ export default function AdminCalendarSettings({
                         <div className="flex items-start justify-between">
                           <div>
                             <div className="text-lg font-black text-slate-900">
-                              {formatTime(slot.time)}
+                              {formatTime(slot.time)}–{formatTime(slot.endTime)}
                             </div>
                             <div className="text-sm text-slate-500">
-                              {slot.usedCapacity} / {slot.totalCapacity} booked ·{" "}
-                              {slot.remainingCapacity} open
+                              90-minute visit · {slot.usedCapacity} /{" "}
+                              {slot.totalCapacity} booked · {slot.remainingCapacity} open
                             </div>
                           </div>
                           <span
@@ -837,6 +862,7 @@ export default function AdminCalendarSettings({
                             </div>
                           ))}
                         </div>
+                        {!selectedDateIsPast && (
                         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                           {[
                             ["Close", "close"],
@@ -872,6 +898,7 @@ export default function AdminCalendarSettings({
                             </button>
                           ))}
                         </div>
+                        )}
                         {slot.bookings.length > 0 && (
                           <details className="mt-3 rounded-lg bg-slate-50 p-2 text-sm">
                             <summary className="cursor-pointer font-bold">
@@ -925,9 +952,15 @@ export default function AdminCalendarSettings({
               </summary>
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <NumberField
-                  label="Slot minutes"
+                  label="Start interval (minutes)"
                   value={company.slotMinutes}
                   onChange={(value) => setCompany({ ...company, slotMinutes: value })}
+                />
+                <NumberField
+                  label="Visit duration (minutes)"
+                  value={company.visitDurationMinutes || 90}
+                  onChange={() => undefined}
+                  disabled
                 />
                 <NumberField
                   label="Lead minutes"
@@ -951,6 +984,10 @@ export default function AdminCalendarSettings({
                   }
                 />
               </div>
+              <p className="mt-2 text-xs text-slate-500">
+                Start interval controls how often appointment starts appear.
+                Every visit lasts 90 minutes.
+              </p>
               <div className="mt-4">
                 <WeeklyScheduleEditor
                   value={company.weeklySchedule}
@@ -1053,10 +1090,12 @@ function NumberField({
   label,
   value,
   onChange,
+  disabled = false,
 }: {
   label: string;
   value: number;
   onChange: (value: number) => void;
+  disabled?: boolean;
 }) {
   return (
     <label className="text-xs font-bold text-slate-600">
@@ -1065,8 +1104,9 @@ function NumberField({
         type="number"
         min={0}
         value={value}
+        disabled={disabled}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-base text-slate-900"
+        className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-base text-slate-900 disabled:bg-slate-100 disabled:text-slate-500"
       />
     </label>
   );
@@ -1077,6 +1117,7 @@ function TimeOffEditor({
   technicianName,
   timezone,
   busy,
+  readOnly,
   onSave,
   onRemove,
 }: {
@@ -1084,6 +1125,7 @@ function TimeOffEditor({
   technicianName: string;
   timezone: string;
   busy: boolean;
+  readOnly: boolean;
   onSave: (input: {
     type: TimeOffType;
     startAt: string;
@@ -1137,6 +1179,7 @@ function TimeOffEditor({
         <span>
           <b>{technicianName}</b> — {entry.type}
         </span>
+        {!readOnly && (
         <div className="flex gap-3">
           <button
             type="button"
@@ -1154,6 +1197,7 @@ function TimeOffEditor({
             Remove
           </button>
         </div>
+        )}
       </div>
       {editing && (
         <div className="mt-3 grid gap-3 border-t border-slate-200 pt-3">
