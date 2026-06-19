@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 
 import React, { useState, useEffect, useMemo } from "react";
 import Calendar from "react-calendar";
@@ -15,7 +16,7 @@ type CalendarConfigState = {
   handymanCapacity: number;
 };
 
-export default function AdminCalendarSettings() {
+export default function AdminCalendarSettings({ readOnly = false }: { readOnly?: boolean }) {
   const api =
     typeof window !== "undefined" &&
     window.location.hostname === "localhost" &&
@@ -360,7 +361,13 @@ const HOURS = useMemo(() => {
 
   // ---- UI RENDER ----
   return (
-    <div className="space-y-8 max-w-[1200px] mx-auto">
+    <div className="space-y-4 max-w-[1200px] mx-auto">
+      {readOnly && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-semibold text-blue-700">
+          Schedule access is read-only.
+        </div>
+      )}
+      <div className={readOnly ? "pointer-events-none space-y-8 opacity-90" : "space-y-8"}>
       {/* SUMMARY CARD */}
       <div className="bg-white p-6 rounded-xl shadow border border-gray-200 flex flex-col md:flex-row gap-6 justify-between">
         <div>
@@ -804,6 +811,7 @@ const HOURS = useMemo(() => {
             </span>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

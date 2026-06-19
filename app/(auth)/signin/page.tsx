@@ -81,7 +81,7 @@ export default function SignInPage() {
       });
       authLogin(token, user);
       localStorage.setItem("rememberedEmail", email);
-      if (user.email.toLowerCase() === "getfixter@gmail.com") router.replace("/admin");
+      if (user.role === "admin" || user.role === "employee" || user.email.toLowerCase() === "getfixter@gmail.com") router.replace("/admin");
       else router.replace("/");
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };

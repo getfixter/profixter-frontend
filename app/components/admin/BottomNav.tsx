@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
-import { ADMIN_TABS } from './admin-tabs-config';
+import { ADMIN_TABS, type AdminTabItem } from './admin-tabs-config';
 
 interface BottomNavProps {
   active: string;
   onChange: (tab: string) => void;
+  tabs?: AdminTabItem[];
 }
 
 const TAB_ICONS: Record<string, React.ReactNode> = {
@@ -53,16 +54,21 @@ const TAB_ICONS: Record<string, React.ReactNode> = {
       <circle cx="12" cy="12" r="3" /><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M4.93 19.07l1.41-1.41M19.07 19.07l-1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2" />
     </svg>
   ),
+  fixters: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <circle cx="12" cy="7" r="4" /><path d="M5 21v-2a7 7 0 0114 0v2" />
+    </svg>
+  ),
 };
 
-export default function BottomNav({ active, onChange }: BottomNavProps) {
+export default function BottomNav({ active, onChange, tabs = ADMIN_TABS }: BottomNavProps) {
   return (
     <div className="md:hidden">
       <div
         className="flex gap-1.5 overflow-x-auto pb-0.5"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {ADMIN_TABS.map((tab) => {
+        {tabs.map((tab) => {
           const isActive = active === tab.id;
           return (
             <button

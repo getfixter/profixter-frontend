@@ -14,9 +14,13 @@ import BlacklistTable from "@/app/components/admin/BlacklistTable";
 import EmailComposer from "@/app/components/admin/EmailComposer";
 import RequestsTable from "@/app/components/admin/RequestsTable";
 import ProjectsModule from "@/app/components/admin/ProjectsModule";
+import FixtersModule from "@/app/components/admin/FixtersModule";
+import MembersReadOnly from "@/app/components/admin/MembersReadOnly";
+import { tabsForUser } from "@/app/components/admin/admin-tabs-config";
 import { toYMDNY } from "@/lib/utils/timezone-helpers";
 import {
   getAllUsers,
+  getMembers,
   getAllBookings,
   getBlacklist,
   getAllRequests,
@@ -82,17 +86,27 @@ export default function AdminPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [showCalendarMobile, setShowCalendarMobile] = useState(false);
 
-  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  const isAdmin = user?.role === "admin" || user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  const isEmployee = user?.role === "employee";
+  const hasWorkspaceAccess = isAdmin || isEmployee;
+  const allowedTabs = useMemo(
+    () => tabsForUser(isAdmin ? "admin" : user?.role, user?.employeePosition || undefined),
+    [isAdmin, user?.role, user?.employeePosition]
+  );
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
       const [usersData, bookingsData, blacklistData, requestsData] =
         await Promise.all([
-          getAllUsers(),
+          isAdmin
+            ? getAllUsers()
+            : user?.employeePosition === "General Fixter"
+              ? getMembers()
+              : Promise.resolve([]),
           getAllBookings(),
-          getBlacklist().catch(() => []),
-          getAllRequests().catch(() => []),
+          isAdmin ? getBlacklist().catch(() => []) : Promise.resolve([]),
+          isAdmin ? getAllRequests().catch(() => []) : Promise.resolve([]),
         ]);
 
       setUsers(usersData);
@@ -113,7 +127,7 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, isAdmin, user?.employeePosition]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -123,15 +137,18 @@ export default function AdminPage() {
       return;
     }
 
-    if (!isAdmin) {
-      alert("Access denied. Admin only.");
+    if (!hasWorkspaceAccess) {
+      alert("Access denied.");
       router.push("/");
       return;
     }
 
+    if (allowedTabs.length && !allowedTabs.some((tab) => tab.id === active)) {
+      setActive(allowedTabs[0].id);
+    }
     setSelectedDate((prev) => prev || todayNY());
     fetchAll();
-  }, [user, isAdmin, authLoading, router, fetchAll]);
+  }, [user, hasWorkspaceAccess, authLoading, router, fetchAll, allowedTabs, active]);
 
   useEffect(() => {
     let lastY = window.scrollY;
@@ -380,7 +397,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!isAdmin) {
+  if (!hasWorkspaceAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Access Denied</div>
@@ -419,8 +436,8 @@ export default function AdminPage() {
 
       <div className="border-b border-slate-200 bg-white shadow-sm">
         <div className="px-3 md:px-8 py-3 md:py-4">
-          <AdminTabs active={active} onChange={setActive} />
-          <BottomNav active={active} onChange={setActive} />
+          <AdminTabs active={active} onChange={setActive} tabs={allowedTabs} />
+          <BottomNav active={active} onChange={setActive} tabs={allowedTabs} />
 
           {active === "bookings" && (
             <div className="sticky top-0 z-30 -mx-3 mt-3 flex items-center gap-2 overflow-x-auto border-y border-slate-100 bg-white px-3 py-2 md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
@@ -590,7 +607,7 @@ export default function AdminPage() {
             )}
 
             {active === "subscribed" && (
-              <UsersTable
+              isAdmin ? <UsersTable
                 users={subscribedUsers}
                 onSetAddressPlan={handleSetAddressPlan}
                 onSetAddressCancellationDate={handleSetAddressCancellationDate}
@@ -598,7 +615,7 @@ export default function AdminPage() {
                 onBlacklist={handleBlacklist}
                 onUnblacklist={handleUnblacklist}
                 onRunSubscriptionCleanup={handleRunSubscriptionCleanup}
-              />
+              /> : <MembersReadOnly users={subscribedUsers} />
             )}
 
             {active === "requests" && (
@@ -628,6 +645,7 @@ export default function AdminPage() {
                   updateStatus={handleUpdateBookingStatus}
                   users={users}
                   onUpdateBooking={handleUpdateBooking}
+                  readOnly={!isAdmin}
                 />
               </div>
             )}
@@ -641,7 +659,8 @@ export default function AdminPage() {
               />
             )}
 
-            {active === "calendar" && <AdminCalendarSettings />}
+            {active === "calendar" && <AdminCalendarSettings readOnly={!isAdmin} />}
+            {active === "fixters" && isAdmin && <FixtersModule />}
           </>
         )}
       </div>
