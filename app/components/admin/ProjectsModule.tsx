@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ProjectEstimates from "@/app/components/admin/ProjectEstimates";
 import {
   PROJECT_STATUSES,
   PROJECT_TYPES,
@@ -15,6 +16,7 @@ import {
 } from "@/lib/admin-service";
 
 type View = "list" | "create" | "details" | "edit";
+type ProjectDetailTab = "overview" | "estimates";
 
 const EMPTY_PROJECT: ProjectInput = {
   status: "Lead",
@@ -186,6 +188,7 @@ export default function ProjectsModule() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [view, setView] = useState<View>("list");
   const [selected, setSelected] = useState<Project | null>(null);
+  const [detailTab, setDetailTab] = useState<ProjectDetailTab>("overview");
   const [status, setStatus] = useState("");
   const [projectType, setProjectType] = useState("");
   const [customer, setCustomer] = useState("");
@@ -220,6 +223,8 @@ export default function ProjectsModule() {
 
   const openDetails = (project: Project) => {
     setSelected(project);
+    setDetailTab("overview");
+    setError("");
     setView("details");
   };
 
@@ -234,6 +239,7 @@ export default function ProjectsModule() {
           const project = await createProject(data);
           setProjects((current) => [project, ...current]);
           setSelected(project);
+          setDetailTab("overview");
           setView("details");
         }}
       />
@@ -282,47 +288,81 @@ export default function ProjectsModule() {
             <p className="mt-1 text-sm text-slate-500">Created {date(selected.createdAt)} · Updated {date(selected.updatedAt)}</p>
           </div>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setView("edit")} className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white">Edit</button>
-            <button
-              type="button"
-              onClick={async () => {
-                if (!window.confirm(`Delete ${selected.projectNumber}? This cannot be undone.`)) return;
-                await deleteProject(selected._id);
-                setProjects((current) => current.filter((project) => project._id !== selected._id));
-                setSelected(null);
-                setView("list");
-              }}
-              className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700"
-            >
-              Delete
-            </button>
+            {detailTab === "overview" && (
+              <button type="button" onClick={() => setView("edit")} className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white">Edit</button>
+            )}
+            {detailTab === "overview" && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!window.confirm(`Delete ${selected.projectNumber}? This cannot be undone.`)) return;
+                  setError("");
+                  try {
+                    await deleteProject(selected._id);
+                    setProjects((current) => current.filter((project) => project._id !== selected._id));
+                    setSelected(null);
+                    setView("list");
+                  } catch (deleteError) {
+                    setError(errorMessage(deleteError));
+                  }
+                }}
+                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700"
+              >
+                Delete
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Customer</p>
-            <h3 className="mt-2 text-xl font-bold text-slate-950">{selected.customerName}</h3>
-            <div className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
-              <div><p className="text-slate-400">Phone</p><p className="mt-1 font-semibold text-slate-800">{selected.phone || "—"}</p></div>
-              <div><p className="text-slate-400">Email</p><p className="mt-1 break-all font-semibold text-slate-800">{selected.email || "—"}</p></div>
-              <div className="sm:col-span-2"><p className="text-slate-400">Address</p><p className="mt-1 font-semibold text-slate-800">{selected.address}</p></div>
-              <div><p className="text-slate-400">Project type</p><p className="mt-1 font-semibold text-slate-800">{selected.projectType}</p></div>
-            </div>
-          </section>
-          <section className="rounded-2xl bg-slate-950 p-6 text-white shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Financials</p>
-            <div className="mt-5 space-y-4">
-              <div className="flex justify-between"><span className="text-slate-400">Estimate</span><strong>{money(selected.estimateAmount)}</strong></div>
-              <div className="flex justify-between"><span className="text-slate-400">Deposit</span><strong>{money(selected.depositAmount)}</strong></div>
-              <div className="border-t border-white/10 pt-4 flex justify-between text-lg"><span>Balance due</span><strong>{money(selected.balanceDue)}</strong></div>
-            </div>
-          </section>
+        {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">{error}</div>}
+
+        <div className="flex gap-2 overflow-x-auto border-b border-slate-200">
+          {(["overview", "estimates"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setDetailTab(tab)}
+              className={`border-b-2 px-4 py-3 text-sm font-bold capitalize ${
+                detailTab === tab
+                  ? "border-blue-600 text-blue-700"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Notes</p>
-          <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">{selected.notes || "No notes yet."}</p>
-        </section>
+
+        {detailTab === "overview" ? (
+          <>
+            <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Customer</p>
+                <h3 className="mt-2 text-xl font-bold text-slate-950">{selected.customerName}</h3>
+                <div className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
+                  <div><p className="text-slate-400">Phone</p><p className="mt-1 font-semibold text-slate-800">{selected.phone || "—"}</p></div>
+                  <div><p className="text-slate-400">Email</p><p className="mt-1 break-all font-semibold text-slate-800">{selected.email || "—"}</p></div>
+                  <div className="sm:col-span-2"><p className="text-slate-400">Address</p><p className="mt-1 font-semibold text-slate-800">{selected.address}</p></div>
+                  <div><p className="text-slate-400">Project type</p><p className="mt-1 font-semibold text-slate-800">{selected.projectType}</p></div>
+                </div>
+              </section>
+              <section className="rounded-2xl bg-slate-950 p-6 text-white shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Financials</p>
+                <div className="mt-5 space-y-4">
+                  <div className="flex justify-between"><span className="text-slate-400">Estimate</span><strong>{money(selected.estimateAmount)}</strong></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Deposit</span><strong>{money(selected.depositAmount)}</strong></div>
+                  <div className="flex justify-between border-t border-white/10 pt-4 text-lg"><span>Balance due</span><strong>{money(selected.balanceDue)}</strong></div>
+                </div>
+              </section>
+            </div>
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Notes</p>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">{selected.notes || "No notes yet."}</p>
+            </section>
+          </>
+        ) : (
+          <ProjectEstimates project={selected} />
+        )}
       </div>
     );
   }

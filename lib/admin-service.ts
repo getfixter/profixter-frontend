@@ -146,6 +146,55 @@ export type ProjectInput = Omit<
   "_id" | "projectNumber" | "createdAt" | "updatedAt"
 >;
 
+export const ESTIMATE_STATUSES = [
+  "Draft",
+  "Sent",
+  "Accepted",
+  "Rejected",
+  "Expired",
+] as const;
+
+export type EstimateStatus = (typeof ESTIMATE_STATUSES)[number];
+
+export interface EstimateLineItem {
+  _id?: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface Estimate {
+  _id: string;
+  estimateNumber: string;
+  projectId: string;
+  status: EstimateStatus;
+  title: string;
+  description: string;
+  lineItems: EstimateLineItem[];
+  subtotal: number;
+  tax: number;
+  discount: number;
+  total: number;
+  notes: string;
+  expirationDate: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EstimateInput {
+  projectId: string;
+  status: EstimateStatus;
+  title: string;
+  description: string;
+  lineItems: Array<Omit<EstimateLineItem, "_id" | "total">>;
+  tax: number;
+  discount: number;
+  notes: string;
+  expirationDate: string | null;
+}
+
 // Users
 export const getAllUsers = async (): Promise<User[]> => {
   const response = await API.get('/api/admin/users');
@@ -327,6 +376,46 @@ export const updateProject = async (
 
 export const deleteProject = async (projectId: string): Promise<void> => {
   await API.delete(`/api/admin/projects/${projectId}`);
+};
+
+// Estimates
+export const getEstimates = async (filters?: {
+  projectId?: string;
+  status?: string;
+}): Promise<Estimate[]> => {
+  const response = await API.get("/api/admin/estimates", { params: filters });
+  return response.data.estimates;
+};
+
+export const getProjectEstimates = async (
+  projectId: string
+): Promise<Estimate[]> => {
+  const response = await API.get(`/api/admin/projects/${projectId}/estimates`);
+  return response.data.estimates;
+};
+
+export const getEstimate = async (estimateId: string): Promise<Estimate> => {
+  const response = await API.get(`/api/admin/estimates/${estimateId}`);
+  return response.data.estimate;
+};
+
+export const createEstimate = async (
+  data: EstimateInput
+): Promise<Estimate> => {
+  const response = await API.post("/api/admin/estimates", data);
+  return response.data.estimate;
+};
+
+export const updateEstimate = async (
+  estimateId: string,
+  data: Partial<EstimateInput>
+): Promise<Estimate> => {
+  const response = await API.put(`/api/admin/estimates/${estimateId}`, data);
+  return response.data.estimate;
+};
+
+export const deleteEstimate = async (estimateId: string): Promise<void> => {
+  await API.delete(`/api/admin/estimates/${estimateId}`);
 };
 
 export const getReferrals = async (): Promise<Referral[]> => {
