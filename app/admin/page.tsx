@@ -13,6 +13,7 @@ import BookingsCalendar from "@/app/components/admin/BookingsCalendar";
 import BlacklistTable from "@/app/components/admin/BlacklistTable";
 import EmailComposer from "@/app/components/admin/EmailComposer";
 import RequestsTable from "@/app/components/admin/RequestsTable";
+import ProjectsModule from "@/app/components/admin/ProjectsModule";
 import { toYMDNY } from "@/lib/utils/timezone-helpers";
 import {
   getAllUsers,
@@ -606,6 +607,8 @@ export default function AdminPage() {
                 onUpdateStatus={handleUpdateRequestStatus}
               />
             )}
+
+            {active === "projects" && <ProjectsModule />}
 
             {active === "bookings" && (
               <div className="space-y-6">

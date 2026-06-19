@@ -102,6 +102,50 @@ export interface RequestLead {
   createdAt?: string;
 }
 
+export const PROJECT_TYPES = [
+  "Roofing",
+  "Siding",
+  "Bathroom",
+  "Kitchen",
+  "Handyman",
+  "Other",
+] as const;
+
+export const PROJECT_STATUSES = [
+  "Lead",
+  "Estimate Sent",
+  "Follow Up",
+  "Won",
+  "In Progress",
+  "Completed",
+  "Lost",
+] as const;
+
+export type ProjectType = (typeof PROJECT_TYPES)[number];
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+
+export interface Project {
+  _id: string;
+  projectNumber: string;
+  status: ProjectStatus;
+  customerName: string;
+  phone: string;
+  email: string;
+  address: string;
+  projectType: ProjectType;
+  estimateAmount: number;
+  depositAmount: number;
+  balanceDue: number;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ProjectInput = Omit<
+  Project,
+  "_id" | "projectNumber" | "createdAt" | "updatedAt"
+>;
+
 // Users
 export const getAllUsers = async (): Promise<User[]> => {
   const response = await API.get('/api/admin/users');
@@ -251,6 +295,38 @@ export const updateRequestStatus = async (
     status,
   });
   return response.data.request;
+};
+
+// Projects
+export const getProjects = async (filters?: {
+  status?: string;
+  projectType?: string;
+  customer?: string;
+}): Promise<Project[]> => {
+  const response = await API.get("/api/admin/projects", { params: filters });
+  return response.data.projects;
+};
+
+export const getProject = async (projectId: string): Promise<Project> => {
+  const response = await API.get(`/api/admin/projects/${projectId}`);
+  return response.data.project;
+};
+
+export const createProject = async (data: ProjectInput): Promise<Project> => {
+  const response = await API.post("/api/admin/projects", data);
+  return response.data.project;
+};
+
+export const updateProject = async (
+  projectId: string,
+  data: Partial<ProjectInput>
+): Promise<Project> => {
+  const response = await API.put(`/api/admin/projects/${projectId}`, data);
+  return response.data.project;
+};
+
+export const deleteProject = async (projectId: string): Promise<void> => {
+  await API.delete(`/api/admin/projects/${projectId}`);
 };
 
 export const getReferrals = async (): Promise<Referral[]> => {
