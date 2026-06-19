@@ -11,6 +11,7 @@ interface BookingsTableProps {
   updateStatus: (bookingId: string, status: string) => Promise<void>;
   users: User[];
   onUpdateBooking: (bookingId: string, patch: { note?: string; date?: string }) => Promise<void>;
+  readOnly?: boolean;
 }
 
 type BookingGroups = Record<string, Booking[]>;
@@ -88,6 +89,7 @@ export default function BookingsTable({
   updateStatus,
   users,
   onUpdateBooking,
+  readOnly = false,
 }: BookingsTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftNote, setDraftNote] = useState("");
@@ -322,13 +324,13 @@ export default function BookingsTable({
                           </div>
                         </div>
 
-                        <button
+                        {!readOnly && <button
                           type="button"
                           onClick={() => (isEditing ? cancelEdit() : startEdit(booking))}
                           className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                         >
                           {isEditing ? "Close edit" : "Edit"}
-                        </button>
+                        </button>}
                       </div>
                     </div>
 
@@ -365,7 +367,7 @@ export default function BookingsTable({
                         </div>
                       </div>
 
-                      {isPending && (
+                      {!readOnly && isPending && (
                         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
                           <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-amber-700">
                             Pending review
@@ -381,7 +383,7 @@ export default function BookingsTable({
                         </div>
                       )}
 
-                      <div className="rounded-2xl border border-slate-200 bg-white p-2">
+                      {!readOnly && <div className="rounded-2xl border border-slate-200 bg-white p-2">
                         <div className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                           Status actions
                         </div>
@@ -390,7 +392,7 @@ export default function BookingsTable({
                           currentStatus={booking.status}
                           onUpdate={updateStatus}
                         />
-                      </div>
+                      </div>}
 
                       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
                         <div className="mb-2 flex items-center justify-between gap-3">

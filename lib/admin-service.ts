@@ -102,6 +102,22 @@ export interface RequestLead {
   createdAt?: string;
 }
 
+export type EmployeePosition = "Fixter" | "General Fixter";
+
+export interface FixterAccount {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  role: "employee";
+  employeePosition: EmployeePosition;
+  isActive: boolean;
+  mustChangePassword: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const PROJECT_TYPES = [
   "Roofing",
   "Siding",
@@ -199,6 +215,48 @@ export interface EstimateInput {
 export const getAllUsers = async (): Promise<User[]> => {
   const response = await API.get('/api/admin/users');
   return response.data;
+};
+
+export const getMembers = async (): Promise<User[]> => {
+  const response = await API.get("/api/admin/members");
+  return response.data;
+};
+
+export const getFixters = async (): Promise<FixterAccount[]> => {
+  const response = await API.get("/api/admin/fixters");
+  return response.data.fixters;
+};
+
+export const createFixter = async (data: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  employeePosition: EmployeePosition;
+}): Promise<FixterAccount> => {
+  const response = await API.post("/api/admin/fixters", data);
+  return response.data.fixter;
+};
+
+export const updateFixter = async (
+  id: string,
+  data: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    employeePosition: EmployeePosition;
+  }
+): Promise<FixterAccount> => {
+  const response = await API.put(`/api/admin/fixters/${id}`, data);
+  return response.data.fixter;
+};
+
+export const setFixterActive = async (
+  id: string,
+  isActive: boolean
+): Promise<FixterAccount> => {
+  const response = await API.patch(`/api/admin/fixters/${id}/status`, { isActive });
+  return response.data.fixter;
 };
 
 export const updateUser = async (

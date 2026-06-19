@@ -6,7 +6,8 @@ export type AdminTabId =
   | "requests"
   | "emails"
   | "blacklist"
-  | "calendar";
+  | "calendar"
+  | "fixters";
 
 export type AdminTabItem = {
   id: AdminTabId;
@@ -24,4 +25,18 @@ export const ADMIN_TABS: AdminTabItem[] = [
   { id: "emails",     label: "Emails",     shortLabel: "Emails",  description: "Campaigns" },
   { id: "blacklist",  label: "Blacklist",  shortLabel: "Block",   description: "Blocked users" },
   { id: "calendar",   label: "Schedule",   shortLabel: "Sched",   description: "Calendar config" },
+  { id: "fixters",    label: "Fixters",    shortLabel: "Fixters", description: "Employee accounts" },
 ];
+
+export function tabsForUser(role?: string, position?: string) {
+  if (role === "admin") return ADMIN_TABS;
+  if (role === "employee" && position === "General Fixter") {
+    return ADMIN_TABS.filter((tab) =>
+      ["bookings", "subscribed", "calendar"].includes(tab.id)
+    );
+  }
+  if (role === "employee") {
+    return ADMIN_TABS.filter((tab) => tab.id === "bookings");
+  }
+  return [];
+}

@@ -42,6 +42,11 @@ export interface User {
 
   createdAt?: string;
   updatedAt?: string;
+  role?: "customer" | "employee" | "admin";
+  employeePosition?: "Fixter" | "General Fixter" | null;
+  isActive?: boolean;
+  mustChangePassword?: boolean;
+  permissions?: string[];
 }
 
 export interface AuthResponse {

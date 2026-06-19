@@ -1,19 +1,20 @@
 'use client';
 
 import React from 'react';
-import { ADMIN_TABS } from './admin-tabs-config';
+import { ADMIN_TABS, type AdminTabItem } from './admin-tabs-config';
 
 interface AdminTabsProps {
   active: string;
   onChange: (tab: string) => void;
+  tabs?: AdminTabItem[];
 }
 
-export default function AdminTabs({ active, onChange }: AdminTabsProps) {
+export default function AdminTabs({ active, onChange, tabs = ADMIN_TABS }: AdminTabsProps) {
   return (
     <div className="hidden md:block">
       <div className="overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="flex min-w-max gap-2">
-          {ADMIN_TABS.map((tab) => {
+          {tabs.map((tab) => {
             const isActive = active === tab.id;
 
             return (
