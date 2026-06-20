@@ -1,7 +1,7 @@
 "use client";
 
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import {
   getCalendarConfig,
@@ -255,6 +255,8 @@ export default function BookingSection() {
   const dayRequestCacheRef = useRef<Record<string, Promise<DayAvailability | null>>>({});
   const loadedMonthsRef = useRef<Record<string, boolean>>({});
   const autoSelectedDateRef = useRef(false);
+  const dayAvailabilityMapRef = useRef(dayAvailabilityMap);
+  dayAvailabilityMapRef.current = dayAvailabilityMap;
 
   const [service, setService] = useState<ServiceKey | "">("");
   const [note, setNote] = useState<string>("");
@@ -339,7 +341,7 @@ export default function BookingSection() {
     setNote("");
   }, [selectedAddressId]);
 
-  const getHoursForDate = (date: Date) => {
+  const getHoursForDate = useCallback((date: Date) => {
     if (!config) return [];
     const ymd = formatDateYMD(date);
     if (config.engine === "reservation" && dayAvailabilityMap[ymd]) {
@@ -347,18 +349,66 @@ export default function BookingSection() {
     }
     const overrideHours = config.overrides[ymd];
     return overrideHours?.length ? overrideHours : config.defaultHours;
-  };
+  }, [config, dayAvailabilityMap]);
 
   const getMonthKey = (date: Date) =>
     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
-  const isDateSelectable = (date: Date) => {
+  const isDayDisabled = useCallback((date: Date): boolean => {
+    if (!config) return true;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+
+    const ymd = formatDateYMD(d);
+
+    if (d < today) return true;
+
+    const diffDays = Math.floor(
+      (d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (diffDays < config.minLeadDays) return true;
+
+    if (config.engine !== "reservation") {
+      if (config.closedWeekdays.includes(d.getDay())) return true;
+      if (config.holidays.includes(ymd)) return true;
+      if (
+        config.overrides[ymd] !== undefined &&
+        config.overrides[ymd].length === 0
+      ) {
+        return true;
+      }
+    }
+
+    const info = dayAvailabilityMap[ymd];
+    const hours = getHoursForDate(d);
+
+    if (config.engine === "reservation" && info) {
+      return info.slots.length === 0;
+    }
+
+    if (!hours || hours.length === 0) return true;
+
+    if (info) {
+      const allFull = hours.every(
+        (hour) => (info.taken[hour] || 0) >= info.capacity
+      );
+      if (allFull) return true;
+    }
+
+    return false;
+  }, [config, dayAvailabilityMap, getHoursForDate]);
+
+  const isDateSelectable = useCallback((date: Date) => {
     const normalized = new Date(date);
     normalized.setHours(0, 0, 0, 0);
     return !isDayDisabled(normalized);
-  };
+  }, [isDayDisabled]);
 
-  const getClosestAvailableDate = () => {
+  const getClosestAvailableDate = useCallback(() => {
     const entries = Object.entries(dayAvailabilityMap)
       .filter(([, info]) => Array.isArray(info?.slots) && info.slots.length > 0)
       .map(([ymd]) => {
@@ -369,10 +419,14 @@ export default function BookingSection() {
       .sort((a, b) => a.getTime() - b.getTime());
 
     return entries[0] || null;
-  };
+  }, [dayAvailabilityMap, isDateSelectable]);
 
-  const fetchDayAvailability = async (ymd: string): Promise<DayAvailability | null> => {
-    if (dayAvailabilityMap[ymd]) return dayAvailabilityMap[ymd];
+  const fetchDayAvailability = useCallback(async (
+    ymd: string
+  ): Promise<DayAvailability | null> => {
+    if (dayAvailabilityMapRef.current[ymd]) {
+      return dayAvailabilityMapRef.current[ymd];
+    }
 
     const existingRequest = dayRequestCacheRef.current[ymd];
     if (existingRequest) return existingRequest;
@@ -388,7 +442,9 @@ export default function BookingSection() {
 
         setDayAvailabilityMap((prev) => {
           if (prev[ymd]) return prev;
-          return { ...prev, [ymd]: nextAvailability };
+          const next = { ...prev, [ymd]: nextAvailability };
+          dayAvailabilityMapRef.current = next;
+          return next;
         });
 
         return nextAvailability;
@@ -403,7 +459,7 @@ export default function BookingSection() {
 
     dayRequestCacheRef.current[ymd] = request;
     return request;
-  };
+  }, []);
 
   // Load calendar config
   useEffect(() => {
@@ -463,7 +519,7 @@ useEffect(() => {
         if (config.holidays.includes(ymd)) continue;
         if (overrideHours !== undefined && overrideHours.length === 0) continue;
       }
-      if (dayAvailabilityMap[ymd]) continue;
+      if (dayAvailabilityMapRef.current[ymd]) continue;
 
       datesToFetch.push(ymd);
     }
@@ -483,6 +539,7 @@ useEffect(() => {
                   remaining: day.remaining || {},
                 };
               }
+              dayAvailabilityMapRef.current = next;
               return next;
             });
           }
@@ -507,7 +564,7 @@ useEffect(() => {
   return () => {
     cancelled = true;
   };
-}, [config, currentMonth, dayAvailabilityMap]);
+}, [config, currentMonth, fetchDayAvailability]);
 
   useEffect(() => {
     if (!config) return;
@@ -521,7 +578,12 @@ useEffect(() => {
     setCurrentMonth(new Date(closest.getFullYear(), closest.getMonth(), 1));
     setSelectedDate(closest);
     setSelectedTime("");
-  }, [config, dayAvailabilityMap, selectedDate]);
+  }, [
+    config,
+    getClosestAvailableDate,
+    isDateSelectable,
+    selectedDate,
+  ]);
 
 
 
@@ -665,53 +727,7 @@ if (next?.date) {
     return () => {
       cancelled = true;
     };
-  }, [selectedDate, dayAvailabilityMap]);
-
-const isDayDisabled = (date: Date): boolean => {
-  if (!config) return true;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-
-    const ymd = formatDateYMD(d);
-
-    // Past days
-    if (d < today) return true;
-
-    // Lead time
-    const diffDays = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays < config.minLeadDays) return true;
-
-    if (config.engine !== "reservation") {
-      if (config.closedWeekdays.includes(d.getDay())) return true;
-      if (config.holidays.includes(ymd)) return true;
-      if (config.overrides[ymd] !== undefined && config.overrides[ymd].length === 0) return true;
-    }
-
-    // Fully booked OR no available slots day
-const info = dayAvailabilityMap[ymd];
-const hours = getHoursForDate(d);
-
-if (config.engine === "reservation" && info) {
-  return info.slots.length === 0;
-}
-
-// If no hours configured at all => disable
-if (!hours || hours.length === 0) return true;
-
-// If we have capacity info and all are full => disable
-if (info) {
-  const allFull = hours.every((h) => (info.taken[h] || 0) >= info.capacity);
-  if (allFull) return true;
-}
-
-
-
-    return false;
-  };
+  }, [selectedDate, dayAvailabilityMap, fetchDayAvailability]);
 
   const handleDayClick = async (dayDate: Date, muted: boolean) => {
     if (muted) return;
@@ -938,6 +954,7 @@ if (info) {
         setDayAvailabilityMap((prev) => {
           const next = { ...prev };
           delete next[ymd];
+          dayAvailabilityMapRef.current = next;
           return next;
         });
         delete dayRequestCacheRef.current[ymd];
@@ -1066,7 +1083,14 @@ const canBook =
           : null,
       };
     });
-  }, [selectedDate, config, dayAvailabilityMap, ymdSelected, displayedTimes]);
+  }, [
+    selectedDate,
+    config,
+    dayAvailabilityMap,
+    ymdSelected,
+    displayedTimes,
+    getHoursForDate,
+  ]);
 
   return (
     <section
