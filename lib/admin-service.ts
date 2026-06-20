@@ -561,6 +561,51 @@ export interface CalendarFoundationStatus {
   errors: string[];
   missingTechnicians?: Array<{ id?: string; name?: string; email?: string }>;
 }
+export interface CalendarCutoverStatus {
+  generatedAt: string;
+  featureFlags: {
+    reservationEngineEnabled: boolean;
+    availabilityPreviewEnabled: boolean;
+    mongoTransactionsVerified: boolean;
+  };
+  transactionProbe: {
+    status: "passed" | "not_verified";
+    verified: boolean;
+    command: string;
+  };
+  audit: { status: string; command: string };
+  backfillDryRun: { status: string; command: string };
+  readinessPreview: { status: "available" | "disabled"; endpoint: string };
+  instructions: string[];
+}
+export interface CalendarCutoverReadiness {
+  generatedAt: string;
+  safeToCutOver: boolean;
+  decision: "YES" | "NO";
+  reservationEngineEnabled: boolean;
+  mongoTransactionsVerified: boolean;
+  range: {
+    from: string;
+    to: string;
+    days: number;
+    timezone: string;
+  };
+  blockers: Array<{ category: string; count: number }>;
+  warnings: Array<{ category: string; count: number }>;
+  mismatchCounts: Record<string, number>;
+  backfillReadiness: {
+    dryRun: boolean;
+    activeFutureBookings: number;
+    alreadyReserved: number;
+    canReserve: number;
+    noEligibleTechnician: number;
+    conflicts: number;
+    outsideWorkingHours: number;
+    missingFoundation: number;
+    errors: Array<{ bookingId?: string; message: string }>;
+  };
+  reservationAudit: Record<string, unknown>;
+}
 export interface ShadowCalendarDaySummary {
   date: string;
   bookingCount: number;
@@ -630,6 +675,24 @@ export const getCalendarFoundationStatus =
     const response = await API.get("/api/admin/calendar/foundation-status");
     return response.data;
   };
+
+export const getCalendarCutoverStatus =
+  async (): Promise<CalendarCutoverStatus> => {
+    const response = await API.get(
+      "/api/admin/calendar/customer-cutover-status"
+    );
+    return response.data;
+  };
+
+export const getCalendarCutoverReadiness = async (
+  days = 60
+): Promise<CalendarCutoverReadiness> => {
+  const response = await API.get(
+    "/api/admin/calendar/customer-availability-preview",
+    { params: { days } }
+  );
+  return response.data;
+};
 
 export const bootstrapCalendarFoundation = async () => {
   const response = await API.post("/api/admin/calendar/foundation/bootstrap");

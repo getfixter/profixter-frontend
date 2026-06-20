@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/useAuth";
 import {
   getCalendarConfig,
   getTimeSlots,
+  getMonthAvailability,
   createBooking,
   getNextBooking,
   CalendarConfig,
@@ -26,6 +27,7 @@ type DayAvailability = {
   taken: Record<string, number>;
   capacity: number;
   slots: string[];
+  remaining?: Record<string, number>;
 };
 
 type BookingAddress = {
@@ -340,6 +342,9 @@ export default function BookingSection() {
   const getHoursForDate = (date: Date) => {
     if (!config) return [];
     const ymd = formatDateYMD(date);
+    if (config.engine === "reservation" && dayAvailabilityMap[ymd]) {
+      return dayAvailabilityMap[ymd].slots;
+    }
     const overrideHours = config.overrides[ymd];
     return overrideHours?.length ? overrideHours : config.defaultHours;
   };
@@ -378,6 +383,7 @@ export default function BookingSection() {
           taken: data.taken || {},
           capacity: data.capacityPerSlot ?? 1,
           slots: data.slots || [],
+          remaining: data.remaining || {},
         };
 
         setDayAvailabilityMap((prev) => {
@@ -452,15 +458,40 @@ useEffect(() => {
 
       if (date < today) continue;
       if (diffDays < config.minLeadDays) continue;
-      if (config.closedWeekdays.includes(date.getDay())) continue;
-      if (config.holidays.includes(ymd)) continue;
-      if (overrideHours !== undefined && overrideHours.length === 0) continue;
+      if (config.engine !== "reservation") {
+        if (config.closedWeekdays.includes(date.getDay())) continue;
+        if (config.holidays.includes(ymd)) continue;
+        if (overrideHours !== undefined && overrideHours.length === 0) continue;
+      }
       if (dayAvailabilityMap[ymd]) continue;
 
       datesToFetch.push(ymd);
     }
 
     try {
+      if (config.engine === "reservation") {
+        try {
+          const monthData = await getMonthAvailability(monthKey);
+          if (!cancelled) {
+            setDayAvailabilityMap((prev) => {
+              const next = { ...prev };
+              for (const day of monthData.days) {
+                next[day.date] = {
+                  taken: day.taken || {},
+                  capacity: day.capacityPerSlot ?? 1,
+                  slots: day.slots || [],
+                  remaining: day.remaining || {},
+                };
+              }
+              return next;
+            });
+          }
+          loadedMonthsRef.current[monthKey] = true;
+          return;
+        } catch (error) {
+          console.error("Failed to load month availability:", error);
+        }
+      }
       await Promise.all(datesToFetch.map((ymd) => fetchDayAvailability(ymd)));
       loadedMonthsRef.current[monthKey] = true;
     } finally {
@@ -654,18 +685,19 @@ const isDayDisabled = (date: Date): boolean => {
     const diffDays = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays < config.minLeadDays) return true;
 
-    // Closed weekdays
-    if (config.closedWeekdays.includes(d.getDay())) return true;
-
-    // Holiday
-    if (config.holidays.includes(ymd)) return true;
-
-    // Override closed
-    if (config.overrides[ymd] !== undefined && config.overrides[ymd].length === 0) return true;
+    if (config.engine !== "reservation") {
+      if (config.closedWeekdays.includes(d.getDay())) return true;
+      if (config.holidays.includes(ymd)) return true;
+      if (config.overrides[ymd] !== undefined && config.overrides[ymd].length === 0) return true;
+    }
 
     // Fully booked OR no available slots day
 const info = dayAvailabilityMap[ymd];
 const hours = getHoursForDate(d);
+
+if (config.engine === "reservation" && info) {
+  return info.slots.length === 0;
+}
 
 // If no hours configured at all => disable
 if (!hours || hours.length === 0) return true;
@@ -875,6 +907,8 @@ if (info) {
         note: note.trim(),
         addressId,
         images: uploadedPhotos,
+        requestedDate: formatDateYMD(selectedDate),
+        requestedTime: selectedTime,
       });
 
       setBookingNumber(result.booking.bookingNumber);
@@ -894,12 +928,35 @@ if (info) {
 
       setShowModal(true);
     } catch (err: unknown) {
+      const bookingError = err as Error & {
+        code?: string;
+        suggestions?: Array<{ date: string; time: string }>;
+      };
+      if (bookingError?.code === "SLOT_UNAVAILABLE" && selectedDate) {
+        const ymd = formatDateYMD(selectedDate);
+        setSelectedTime("");
+        setDayAvailabilityMap((prev) => {
+          const next = { ...prev };
+          delete next[ymd];
+          return next;
+        });
+        delete dayRequestCacheRef.current[ymd];
+        void fetchDayAvailability(ymd);
+      }
       const responseMessage =
         typeof err === "object" && err !== null && "response" in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
           : undefined;
       const errorMessage = err instanceof Error ? err.message : undefined;
-      const message = responseMessage || errorMessage || "We could not create the booking. Please try again.";
+      const suggestionText = bookingError?.suggestions?.length
+        ? ` Try ${bookingError.suggestions
+            .slice(0, 3)
+            .map((item) => `${item.date} at ${item.time}`)
+            .join(", ")}.`
+        : "";
+      const message =
+        (responseMessage || errorMessage || "We could not create the booking. Please try again.") +
+        suggestionText;
       setError(message);
     } finally {
       setLoading(false);
@@ -993,13 +1050,20 @@ const canBook =
     const capacity = dayAvailabilityMap[ymdSelected]?.capacity || 1;
     const availableSet = new Set(displayedTimes);
 
-    return getHoursForDate(selectedDate).map((time) => {
+    const times =
+      config.engine === "reservation"
+        ? displayedTimes
+        : getHoursForDate(selectedDate);
+    return times.map((time) => {
       const used = taken[time] || 0;
       const available = availableSet.has(time);
       return {
         time,
         available,
-        remaining: available ? Math.max(capacity - used, 0) : null,
+        remaining: available
+          ? dayAvailabilityMap[ymdSelected]?.remaining?.[time] ??
+            Math.max(capacity - used, 0)
+          : null,
       };
     });
   }, [selectedDate, config, dayAvailabilityMap, ymdSelected, displayedTimes]);

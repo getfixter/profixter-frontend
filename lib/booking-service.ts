@@ -13,6 +13,9 @@ export interface CalendarConfig {
   defaultHours: string[];
   overrides: Record<string, string[]>;
   holidays: string[];
+  engine?: "legacy" | "reservation";
+  visitDurationMinutes?: number;
+  maxAdvanceDays?: number;
 }
 
 export interface TimeSlot {
@@ -20,6 +23,23 @@ export interface TimeSlot {
   slots: string[];
   taken: Record<string, number>;
   capacityPerSlot: number;
+  remaining?: Record<string, number>;
+  engine?: "legacy" | "reservation";
+}
+
+export interface MonthAvailability {
+  month: string;
+  engine: "reservation";
+  visitDurationMinutes: number;
+  days: Array<{
+    date: string;
+    open: boolean;
+    slotCount: number;
+    slots: string[];
+    taken: Record<string, number>;
+    remaining: Record<string, number>;
+    capacityPerSlot: number;
+  }>;
 }
 
 export interface BookingData {
@@ -28,6 +48,8 @@ export interface BookingData {
   note: string;
   addressId: string;
   images: File[];
+  requestedDate?: string;
+  requestedTime?: string;
 }
 
 export interface Booking {
@@ -97,6 +119,16 @@ export interface SubscriptionResponse {
   message?: string;
 }
 
+interface SubscriptionRecord {
+  addressId?: string;
+  subscriptionType?: string;
+  plan?: string;
+  status?: string;
+  currentPeriodEnd?: string;
+  nextPaymentDate?: string;
+  expiresAt?: string;
+}
+
 export const getCalendarConfig = async (): Promise<CalendarConfig> => {
   const response = await API.get<CalendarConfig>("/api/calendar/config");
   return response.data;
@@ -104,6 +136,14 @@ export const getCalendarConfig = async (): Promise<CalendarConfig> => {
 export const getTimeSlots = async (date: string): Promise<TimeSlot> => {
   const response = await API.get<TimeSlot>("/api/calendar/slots", {
     params: { date },
+  });
+  return response.data;
+};
+export const getMonthAvailability = async (
+  month: string
+): Promise<MonthAvailability> => {
+  const response = await API.get<MonthAvailability>("/api/calendar/month", {
+    params: { month },
   });
   return response.data;
 };
@@ -115,8 +155,8 @@ export const getNextBooking = async (addressId: string): Promise<NextBookingResp
   return response.data;
 };
 
-export const getMySubscriptions = async (): Promise<{ subscriptions: any[] }> => {
-  const response = await API.get<{ subscriptions: any[] }>("/api/subscriptions/my");
+export const getMySubscriptions = async (): Promise<{ subscriptions: SubscriptionRecord[] }> => {
+  const response = await API.get<{ subscriptions: SubscriptionRecord[] }>("/api/subscriptions/my");
   return response.data;
 };
 
@@ -137,7 +177,7 @@ export const checkSubscription = async (
       return { hasSubscription: false, message: "You don't have any active subscriptions yet." };
     }
 
-    const activeSubs = allSubs.filter((s: any) =>
+    const activeSubs = allSubs.filter((s) =>
       ["active", "trialing"].includes(String(s.status || "").toLowerCase())
     );
 
@@ -148,10 +188,10 @@ export const checkSubscription = async (
       };
     }
 
-    let matched: any | undefined;
+    let matched: SubscriptionRecord | undefined;
 
     if (addressId) {
-      matched = activeSubs.find((s: any) => String(s.addressId) === String(addressId));
+      matched = activeSubs.find((s) => String(s.addressId) === String(addressId));
     }
 
     // No fallback - subscription must belong to this address
@@ -166,8 +206,8 @@ export const checkSubscription = async (
     return {
       hasSubscription: true,
       subscription: {
-        plan: matched.subscriptionType || matched.plan,
-        status: matched.status,
+        plan: matched.subscriptionType || matched.plan || "",
+        status: matched.status || "",
         expiresAt: matched.currentPeriodEnd || matched.nextPaymentDate || matched.expiresAt || "",
       },
     };
@@ -183,6 +223,8 @@ export const createBooking = async (data: BookingData): Promise<BookingResponse>
   formData.append("date", data.date);
   formData.append("note", data.note);
   formData.append("addressId", data.addressId);
+  if (data.requestedDate) formData.append("requestedDate", data.requestedDate);
+  if (data.requestedTime) formData.append("requestedTime", data.requestedTime);
 
   data.images.forEach((img) => formData.append("images", img));
 
@@ -198,7 +240,13 @@ export const createBooking = async (data: BookingData): Promise<BookingResponse>
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err.message || "Failed to create booking");
+    const error = new Error(err.message || "Failed to create booking") as Error & {
+      code?: string;
+      suggestions?: Array<{ date: string; time: string; start: string }>;
+    };
+    error.code = err.code;
+    error.suggestions = err.suggestions;
+    throw error;
   }
 
   return response.json();

@@ -8,6 +8,8 @@ import {
   createShadowTimeOff,
   deleteShadowDayNote,
   getCalendarFoundationStatus,
+  getCalendarCutoverReadiness,
+  getCalendarCutoverStatus,
   getShadowCalendarDay,
   getShadowCalendarSummary,
   getShadowCompanyTemplate,
@@ -24,6 +26,8 @@ import {
 } from "@/lib/admin-service";
 import type {
   CalendarFoundationStatus,
+  CalendarCutoverReadiness,
+  CalendarCutoverStatus,
   CalendarScope,
   CalendarWeeklyDay,
   ShadowCalendarDay,
@@ -262,6 +266,11 @@ export default function AdminCalendarSettings({
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
+  const [cutoverStatus, setCutoverStatus] =
+    useState<CalendarCutoverStatus | null>(null);
+  const [cutoverReadiness, setCutoverReadiness] =
+    useState<CalendarCutoverReadiness | null>(null);
+  const [cutoverLoading, setCutoverLoading] = useState(false);
 
   const scope: CalendarScope =
     scopeValue === "company" ? "company" : "technician";
@@ -325,6 +334,13 @@ export default function AdminCalendarSettings({
   }, [loadFoundation]);
 
   useEffect(() => {
+    if (!isAdmin) return;
+    getCalendarCutoverStatus()
+      .then(setCutoverStatus)
+      .catch((error) => setNotice(messageFrom(error)));
+  }, [isAdmin]);
+
+  useEffect(() => {
     void loadMonth();
   }, [loadMonth]);
 
@@ -360,6 +376,23 @@ export default function AdminCalendarSettings({
       setNotice(messageFrom(error));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const runCutoverReadiness = async () => {
+    setCutoverLoading(true);
+    setNotice("");
+    try {
+      const [nextStatus, readiness] = await Promise.all([
+        getCalendarCutoverStatus(),
+        getCalendarCutoverReadiness(60),
+      ]);
+      setCutoverStatus(nextStatus);
+      setCutoverReadiness(readiness);
+    } catch (error) {
+      setNotice(messageFrom(error));
+    } finally {
+      setCutoverLoading(false);
     }
   };
 
@@ -401,8 +434,8 @@ export default function AdminCalendarSettings({
           Calendar foundation is not ready
         </h2>
         <p className="mt-2 text-sm text-slate-600">
-          Customer booking remains on the legacy calendar. Initialize the new
-          foundation before using this control center.
+          Initialize the new foundation before using this control center or
+          enabling reservation-backed customer booking.
         </p>
         {!!status?.warnings?.length && (
           <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-amber-800">
@@ -447,7 +480,8 @@ export default function AdminCalendarSettings({
               Calendar Control Center
             </h2>
             <p className="text-sm text-slate-500">
-              These controls do not affect customer booking yet.
+              These controls power customer availability when the reservation
+              engine feature flag is enabled.
             </p>
           </div>
           <button
@@ -513,6 +547,169 @@ export default function AdminCalendarSettings({
           </div>
         </div>
       </div>
+
+      {isAdmin && cutoverStatus && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                Customer calendar cutover
+              </p>
+              <h3 className="mt-1 text-xl font-black text-slate-900">
+                Production readiness
+              </h3>
+              <p className="mt-1 text-sm text-slate-600">
+                Read-only checks. Running this panel does not enable the engine
+                or write reservations.
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={
+                cutoverLoading ||
+                !cutoverStatus.featureFlags.availabilityPreviewEnabled
+              }
+              onClick={runCutoverReadiness}
+              className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {cutoverLoading ? "Checking…" : "Run 60-day readiness"}
+            </button>
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+            {[
+              [
+                "Transaction probe",
+                cutoverStatus.transactionProbe.verified
+                  ? "Passed"
+                  : "Not verified",
+                cutoverStatus.transactionProbe.verified,
+              ],
+              [
+                "Reservation engine",
+                cutoverStatus.featureFlags.reservationEngineEnabled
+                  ? "Enabled"
+                  : "Disabled",
+                !cutoverStatus.featureFlags.reservationEngineEnabled,
+              ],
+              [
+                "Readiness preview",
+                cutoverStatus.featureFlags.availabilityPreviewEnabled
+                  ? "Enabled"
+                  : "Disabled",
+                cutoverStatus.featureFlags.availabilityPreviewEnabled,
+              ],
+              [
+                "Audit",
+                cutoverReadiness
+                  ? cutoverReadiness.blockers.some(
+                      (item) => item.category === "reservationAuditIssues"
+                    )
+                    ? "Issues found"
+                    : "Clean"
+                  : "Not run",
+                !!cutoverReadiness &&
+                  !cutoverReadiness.blockers.some(
+                    (item) => item.category === "reservationAuditIssues"
+                  ),
+              ],
+              [
+                "Backfill dry-run",
+                cutoverReadiness
+                  ? cutoverReadiness.blockers.some(
+                      (item) =>
+                        item.category === "reservationBackfillReadiness"
+                    )
+                    ? "Blocked"
+                    : "Ready"
+                  : "Not run",
+                !!cutoverReadiness &&
+                  !cutoverReadiness.blockers.some(
+                    (item) =>
+                      item.category === "reservationBackfillReadiness"
+                  ),
+              ],
+            ].map(([label, value, ok]) => (
+              <div
+                key={String(label)}
+                className={`rounded-xl border p-3 ${
+                  ok
+                    ? "border-emerald-200 bg-emerald-50"
+                    : "border-amber-200 bg-amber-50"
+                }`}
+              >
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  {String(label)}
+                </p>
+                <p className="mt-1 font-black text-slate-900">
+                  {String(value)}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {cutoverReadiness ? (
+            <div
+              className={`mt-4 rounded-xl border p-4 ${
+                cutoverReadiness.safeToCutOver
+                  ? "border-emerald-300 bg-emerald-50"
+                  : "border-rose-300 bg-rose-50"
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-black text-slate-900">
+                  Safe to cut over: {cutoverReadiness.decision}
+                </p>
+                <p className="text-sm font-semibold text-slate-600">
+                  {cutoverReadiness.range.from}–{cutoverReadiness.range.to}
+                </p>
+              </div>
+              {!!cutoverReadiness.blockers.length && (
+                <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-rose-900">
+                  {cutoverReadiness.blockers.map((item) => (
+                    <li key={item.category}>
+                      {item.category}: {item.count}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {!!cutoverReadiness.warnings.length && (
+                <p className="mt-3 text-sm text-amber-900">
+                  Warnings:{" "}
+                  {cutoverReadiness.warnings
+                    .map((item) => `${item.category} (${item.count})`)
+                    .join(", ")}
+                </p>
+              )}
+              <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+                {Object.entries(cutoverReadiness.mismatchCounts).map(
+                  ([key, count]) => (
+                    <div
+                      key={key}
+                      className="rounded-lg bg-white/80 px-3 py-2"
+                    >
+                      <span className="block text-xs text-slate-500">{key}</span>
+                      <strong>{count}</strong>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
+              {cutoverStatus.featureFlags.availabilityPreviewEnabled
+                ? "Run readiness to load audit, backfill, and mismatch results."
+                : "Set ENABLE_CUSTOMER_AVAILABILITY_PREVIEW=true while keeping ENABLE_RESERVATION_ENGINE=false to run readiness."}
+            </p>
+          )}
+
+          <ol className="mt-4 list-decimal space-y-1 pl-5 text-sm text-slate-600">
+            {cutoverStatus.instructions.map((instruction) => (
+              <li key={instruction}>{instruction}</li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {notice && (
         <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
