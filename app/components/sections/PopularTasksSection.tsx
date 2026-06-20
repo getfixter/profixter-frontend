@@ -121,12 +121,12 @@ export const POPULAR_TASKS: Task[] = [
 ];
 
 const PROJECT_CATEGORIES = [
-  "Roofing",
-  "Siding",
-  "Bathroom Remodeling",
-  "Kitchen Remodeling",
-  "Basement Finishing",
-  "Interior Renovations",
+  { label: "Roofing", href: "/roofing" },
+  { label: "Siding", href: "/siding" },
+  { label: "Bathroom Remodeling", href: "/estimate?type=bathroom" },
+  { label: "Kitchen Remodeling", href: "/estimate?type=kitchen" },
+  { label: "Basement Finishing", href: "/estimate?type=basement" },
+  { label: "Interior Renovations", href: "/estimate?type=interior" },
 ] as const;
 
 const PROJECT_BENEFITS = [
@@ -201,13 +201,14 @@ export default function PopularTasksSection() {
             </div>
 
             <h2 className="text-[38px] font-black leading-[0.95] tracking-[-0.04em] text-[#0B1628] sm:text-[54px] lg:text-[64px]">
-              Do a project with us.
-              <br />
-              <span className="text-[#306EEC]">Get up to 12 months free.</span>
+              Planning a larger project?
             </h2>
 
             <p className="mt-6 max-w-[560px] text-[16px] leading-relaxed text-[#475569] sm:text-[18px]">
-              When you hire us for a larger project, we&apos;ll include up to 12 months of Profixter membership at no additional cost.
+              Roofing, siding, bathrooms, kitchens, basements, and interior renovations — request an estimate and we&apos;ll help you plan the next step.
+            </p>
+            <p className="mt-4 max-w-[560px] text-[15px] font-bold leading-relaxed text-[#0B1628] sm:text-[16px]">
+              Get up to 12 months of Profixter membership included with eligible larger projects.
             </p>
 
             <div className="mt-8 rounded-[24px] border border-white/70 bg-white/70 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.07)] backdrop-blur-sm sm:p-6">
@@ -237,10 +238,10 @@ export default function PopularTasksSection() {
                 Get Project Estimate
               </Link>
               <Link
-                href="/roofing"
+                href="/siding"
                 className="inline-flex h-[54px] items-center justify-center rounded-[16px] border border-[#CBD5E1] bg-white/65 px-7 text-[15px] font-extrabold text-[#0B1628] transition-all hover:-translate-y-0.5 hover:border-[#94A3B8] hover:bg-white"
               >
-                View Roofing &amp; Siding
+                View Siding
               </Link>
             </div>
           </div>
@@ -276,16 +277,20 @@ export default function PopularTasksSection() {
 
                 <div className="grid gap-px bg-[#DDE4F0] sm:grid-cols-2">
                   {PROJECT_CATEGORIES.map((project) => (
-                    <div key={project} className="bg-white px-5 py-4">
+                    <Link
+                      key={project.label}
+                      href={project.href}
+                      className="group bg-white px-5 py-4 transition hover:bg-[#F7FAFF]"
+                    >
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-[14px] font-extrabold text-[#0B1628]">
-                          {project}
+                          {project.label}
                         </span>
-                        <span className="rounded-full bg-[#EFF6FF] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#306EEC]">
-                          Project
+                        <span className="rounded-full bg-[#EFF6FF] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#306EEC] transition group-hover:bg-[#306EEC] group-hover:text-white">
+                          View
                         </span>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>

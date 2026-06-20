@@ -131,9 +131,11 @@ export interface RequestLead {
   name: string;
   email: string;
   phone?: string;
+  address?: string;
   message?: string;
   serviceType?: string;
   sourcePage?: string;
+  leadSource?: string;
   status?: "new" | "contacted" | "won" | "lost";
   createdAt?: string;
 }

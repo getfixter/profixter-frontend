@@ -35,11 +35,13 @@ const PLAN_INCLUDES: Record<PlanKey, string[]> = {
   premium: [
     "Home Protection — cared for and protected",
     "Two scheduled visits each month",
-    "One emergency visit per month when something can't wait",
+    "One Rush Visit per month",
+    "Rush Visits don't require waiting for the next standard appointment slot",
   ],
   elite: [
     "Whole-Home Care — everything about your home, handled",
     "Two scheduled visits each month",
+    "Two Rush Visits per month",
     "One full project day per month (up to 8 hours)",
   ],
 };
@@ -665,7 +667,7 @@ export function PlanSection() {
                 <div className="text-sm font-semibold text-[#313234]">Before you cancel</div>
                 <div className="mt-2 space-y-1.5 text-sm text-[#6A6D71]">
                   <div>Keep predictable monthly billing and the same trusted team.</div>
-                  <div>Higher memberships add more scheduled visits, emergency response, or a full project day each month.</div>
+                  <div>Higher memberships add more scheduled visits, Rush Visits, or a full project day each month.</div>
                   <div>You can keep your current membership and continue scheduling visits online.</div>
                 </div>
               </div>

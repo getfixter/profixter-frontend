@@ -58,12 +58,13 @@ const planDisplayContent: Record<
     ],
   },
   Premium: {
-    description: "Extra peace of mind when things can't wait.",
+    description: "Faster scheduling when something can't wait.",
     features: [
       "No limits per month",
       "2 active appointments at a time",
       "Basic materials included",
-      "1 free emergency visit per month",
+      "1 Rush Visit per month",
+      "Need help sooner? Rush Visits don't require waiting for the next standard appointment slot.",
     ],
   },
   Elite: {
@@ -72,7 +73,8 @@ const planDisplayContent: Record<
       "No limits per month",
       "2 active appointments at a time",
       "1 full project day per month (up to 8 hours)",
-      "2 free emergency visits per month",
+      "2 Rush Visits per month",
+      "Need help sooner? Rush Visits don't require waiting for the next standard appointment slot.",
     ],
   },
 };

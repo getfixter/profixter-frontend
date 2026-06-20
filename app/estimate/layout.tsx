@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Free Home Improvement Estimate | Long Island | Profixter",
-  description: "Get a free estimate for roofing, bathroom remodeling, or kitchen renovation on Long Island. Licensed HI-71484, fully insured. No obligation. Nassau & Suffolk County.",
+  title: "Larger Project Estimate | Long Island | Profixter",
+  description: "Request an estimate for roofing, siding, bathroom or kitchen remodeling, basement finishing, and interior renovations. Licensed and insured in Nassau and Suffolk Counties.",
   openGraph: {
-    title: "Free Home Improvement Estimate | Profixter Long Island",
-    description: "Free estimate for roofing, bathroom, or kitchen renovation. Licensed HI-71484, fully insured. No obligation. Long Island.",
+    title: "Larger Project Estimate | Profixter Long Island",
+    description: "Tell us what you are planning. Profixter reviews larger projects across Nassau and Suffolk Counties.",
     type: "website",
   },
 };

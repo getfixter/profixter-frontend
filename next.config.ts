@@ -18,7 +18,6 @@ const nextConfig: NextConfig = {
       { source: "/remodeling", destination: "/membership", permanent: true },
       { source: "/kitchen", destination: "/membership", permanent: true },
       { source: "/projects", destination: "/membership", permanent: true },
-      { source: "/estimate", destination: "/membership", permanent: true },
       { source: "/on-demand", destination: "/membership", permanent: true },
     ];
   },

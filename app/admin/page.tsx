@@ -15,6 +15,7 @@ import EmailComposer from "@/app/components/admin/EmailComposer";
 import RequestsTable from "@/app/components/admin/RequestsTable";
 import ProjectsModule from "@/app/components/admin/ProjectsModule";
 import FixtersModule from "@/app/components/admin/FixtersModule";
+import PromotionPopupEditor from "@/app/components/admin/PromotionPopupEditor";
 import { tabsForUser } from "@/app/components/admin/admin-tabs-config";
 import { toYMDNY } from "@/lib/utils/timezone-helpers";
 import {
@@ -687,6 +688,7 @@ export default function AdminPage() {
             )}
 
             {active === "emails" && <EmailComposer />}
+            {active === "promotion" && isAdmin && <PromotionPopupEditor />}
 
             {active === "blacklist" && (
               <BlacklistTable

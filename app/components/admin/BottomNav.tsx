@@ -44,6 +44,11 @@ const TAB_ICONS: Record<string, React.ReactNode> = {
       <polyline points="22,6 12,13 2,6" />
     </svg>
   ),
+  promotion: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 4h16v12H5.5L4 17.5V4z" /><path d="M8 8h8M8 12h5" />
+    </svg>
+  ),
   blacklist: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
