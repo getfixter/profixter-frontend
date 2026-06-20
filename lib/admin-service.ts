@@ -653,6 +653,22 @@ export interface ReservationAutoAssignmentReport {
       available: boolean;
       rejectionCode?: string | null;
       reason?: string;
+      availabilityDiagnostics?: {
+        weekday?: number;
+        companyDayEnabled?: boolean;
+        configuredCompanyStarts?: string[];
+        configuredCompanyIntervals?: Array<{
+          startTime: string;
+          endTime: string;
+        }>;
+        generatedCompanyStarts?: string[];
+        generatedCompanySlots?: Array<{
+          time: string;
+          endTime: string;
+        }>;
+        requestedStart?: string;
+        requestedEnd?: string;
+      } | null;
     }>;
   }>;
   errors: Array<{ bookingId?: string; message: string }>;
