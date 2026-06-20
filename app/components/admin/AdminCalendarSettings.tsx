@@ -396,6 +396,22 @@ export default function AdminCalendarSettings({
     }
   };
 
+  const reconcileFoundation = async () => {
+    setBusy(true);
+    setNotice("");
+    try {
+      await bootstrapCalendarFoundation();
+      await loadFoundation();
+      setCutoverReadiness(null);
+      setNotice("Imported schedule reconciled. Run readiness again.");
+      await refresh();
+    } catch (error) {
+      setNotice(messageFrom(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   useEffect(() => {
     if (!settingsOpen || !settingsTechId) return;
     getShadowTechnicianTemplate(settingsTechId)
@@ -428,7 +444,7 @@ export default function AdminCalendarSettings({
     return (
       <section className="mx-auto max-w-3xl rounded-2xl border border-amber-200 bg-white p-5 shadow-sm">
         <p className="text-xs font-bold uppercase tracking-widest text-amber-700">
-          Shadow calendar
+          Scheduling system
         </p>
         <h2 className="mt-2 text-2xl font-black text-slate-900">
           Calendar foundation is not ready
@@ -474,7 +490,7 @@ export default function AdminCalendarSettings({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-blue-700">
-              Shadow mode
+              Scheduling engine
             </p>
             <h2 className="text-2xl font-black text-slate-900">
               Calendar Control Center
@@ -563,17 +579,27 @@ export default function AdminCalendarSettings({
                 or write reservations.
               </p>
             </div>
-            <button
-              type="button"
-              disabled={
-                cutoverLoading ||
-                !cutoverStatus.featureFlags.availabilityPreviewEnabled
-              }
-              onClick={runCutoverReadiness}
-              className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              {cutoverLoading ? "Checking…" : "Run 60-day readiness"}
-            </button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                disabled={busy || cutoverLoading}
+                onClick={reconcileFoundation}
+                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-800 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                Reconcile imported schedule
+              </button>
+              <button
+                type="button"
+                disabled={
+                  cutoverLoading ||
+                  !cutoverStatus.featureFlags.availabilityPreviewEnabled
+                }
+                onClick={runCutoverReadiness}
+                className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {cutoverLoading ? "Checking…" : "Run 60-day readiness"}
+              </button>
+            </div>
           </div>
 
           <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
@@ -675,11 +701,32 @@ export default function AdminCalendarSettings({
               )}
               {!!cutoverReadiness.warnings.length && (
                 <p className="mt-3 text-sm text-amber-900">
-                  Warnings:{" "}
-                  {cutoverReadiness.warnings
+                  Legacy migration differences:{" "}
+                  {(cutoverReadiness.migrationDifferences ||
+                    cutoverReadiness.warnings)
                     .map((item) => `${item.category} (${item.count})`)
                     .join(", ")}
                 </p>
+              )}
+              {!!cutoverReadiness.backfillReadiness.issues?.length && (
+                <details className="mt-3 rounded-lg border border-rose-200 bg-white/80 p-3 text-sm">
+                  <summary className="cursor-pointer font-bold text-rose-900">
+                    Backfill bookings needing attention (
+                    {cutoverReadiness.backfillReadiness.issues.length})
+                  </summary>
+                  <ul className="mt-2 space-y-1 text-slate-700">
+                    {cutoverReadiness.backfillReadiness.issues
+                      .slice(0, 10)
+                      .map((issue) => (
+                        <li key={`${issue.category}-${issue.bookingId}`}>
+                          {issue.category}: booking {issue.bookingId}
+                          {issue.slotStart
+                            ? ` at ${new Date(issue.slotStart).toLocaleString()}`
+                            : ""}
+                        </li>
+                      ))}
+                  </ul>
+                </details>
               )}
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
                 {Object.entries(cutoverReadiness.mismatchCounts).map(
@@ -762,11 +809,15 @@ export default function AdminCalendarSettings({
                 </div>
                 <div className="mt-2 text-[10px] leading-tight text-slate-400 sm:text-xs">
                   <div className="flex flex-wrap gap-1">
-                    {item.closed && <span title="Closed">🔒</span>}
-                    {item.reducedCapacity && <span title="Reduced capacity">−</span>}
-                    {item.hasOverrides && <span title="Custom settings">⚙</span>}
-                    {item.hasTimeOff && <span title="Time off">☂</span>}
-                    {item.hasNote && <span title="Note">●</span>}
+                    {item.closed && <span title="Closed">Closed</span>}
+                    {item.reducedCapacity && (
+                      <span title="Reduced capacity">-Cap</span>
+                    )}
+                    {item.hasOverrides && (
+                      <span title="Custom settings">Custom</span>
+                    )}
+                    {item.hasTimeOff && <span title="Time off">Off</span>}
+                    {item.hasNote && <span title="Note">Note</span>}
                   </div>
                   {!item.closed && item.openSlotCount > 0 && (
                     <span className="mt-1 block text-emerald-600/70">
@@ -855,7 +906,7 @@ export default function AdminCalendarSettings({
                             date: selectedDate,
                             mode: "closed",
                           }),
-                        "Day closed in shadow calendar"
+                        "Day closed"
                       )
                     }
                     className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700"
@@ -1031,7 +1082,13 @@ export default function AdminCalendarSettings({
                                 : "bg-slate-100 text-slate-600"
                             }`}
                           >
-                            {slot.open ? "Open" : "Closed"}
+                            {slot.open
+                              ? "Open"
+                              : slot.totalCapacity === 0
+                                ? "Closed"
+                                : slot.remainingCapacity === 0
+                                  ? "Full"
+                                  : "Unavailable"}
                           </span>
                         </div>
                         <div className="mt-3 space-y-1">
@@ -1062,10 +1119,10 @@ export default function AdminCalendarSettings({
                         {!selectedDateIsPast && (
                         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                           {[
-                            ["Close", "close"],
-                            ["Open", "open"],
-                            ["− 1 spot", "remove_spot"],
-                            ["+ 1 spot", "add_spot"],
+                            ["Close slot", "close"],
+                            ["Open slot", "open"],
+                            ["Remove 1 spot", "remove_spot"],
+                            ["Add 1 spot", "add_spot"],
                           ].map(([label, action]) => (
                             <button
                               key={action}
@@ -1132,7 +1189,9 @@ export default function AdminCalendarSettings({
                 <h3 className="text-xl font-black text-slate-900">
                   Templates & Settings
                 </h3>
-                <p className="text-sm text-slate-500">Shadow calendar only</p>
+                <p className="text-sm text-slate-500">
+                  Customer availability and technician schedules
+                </p>
               </div>
               <button
                 type="button"

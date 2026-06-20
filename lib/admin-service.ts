@@ -592,6 +592,8 @@ export interface CalendarCutoverReadiness {
   };
   blockers: Array<{ category: string; count: number }>;
   warnings: Array<{ category: string; count: number }>;
+  migrationDifferences: Array<{ category: string; count: number }>;
+  migrationDifferenceCounts: Record<string, number>;
   mismatchCounts: Record<string, number>;
   backfillReadiness: {
     dryRun: boolean;
@@ -602,6 +604,12 @@ export interface CalendarCutoverReadiness {
     conflicts: number;
     outsideWorkingHours: number;
     missingFoundation: number;
+    issues: Array<{
+      category: string;
+      bookingId: string;
+      slotStart?: string;
+      message?: string;
+    }>;
     errors: Array<{ bookingId?: string; message: string }>;
   };
   reservationAudit: Record<string, unknown>;
