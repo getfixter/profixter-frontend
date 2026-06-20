@@ -59,6 +59,7 @@ const TIME_OFF_TYPES = [
   "other",
 ] as const;
 type TimeOffType = (typeof TIME_OFF_TYPES)[number];
+const DEFAULT_APPOINTMENT_STARTS = ["08:00", "10:30", "13:00", "15:30"];
 
 function todayNY() {
   return new Intl.DateTimeFormat("en-CA", {
@@ -105,16 +106,54 @@ function messageFrom(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong";
 }
 
-function normalizeWeek(schedule: CalendarWeeklyDay[]) {
+function timeToMinutes(value: string) {
+  const [hours, minutes] = value.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function minutesToTime(value: number) {
+  return `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(
+    value % 60
+  ).padStart(2, "0")}`;
+}
+
+function startsFromIntervals(
+  intervals: CalendarWeeklyDay["intervals"],
+  stepMinutes: number
+) {
+  return intervals.flatMap((interval) => {
+    const starts = [];
+    const start = timeToMinutes(interval.startTime);
+    const end = timeToMinutes(interval.endTime);
+    for (let minute = start; minute + 90 <= end; minute += stepMinutes) {
+      starts.push({
+        time: minutesToTime(minute),
+        capacity: interval.capacity,
+      });
+    }
+    return starts;
+  });
+}
+
+function normalizeWeek(
+  schedule: CalendarWeeklyDay[],
+  fallbackStepMinutes: number
+) {
   return Array.from({ length: 7 }, (_, weekday) => {
     const existing = schedule.find((day) => day.weekday === weekday);
-    return (
-      existing || {
-        weekday,
-        enabled: false,
-        intervals: [],
-      }
-    );
+    if (!existing) {
+      return { weekday, enabled: false, starts: [], intervals: [] };
+    }
+    return {
+      ...existing,
+      starts:
+        existing.starts?.length
+          ? existing.starts
+          : startsFromIntervals(
+              existing.intervals || [],
+              fallbackStepMinutes
+            ),
+    };
   });
 }
 
@@ -122,12 +161,14 @@ function WeeklyScheduleEditor({
   value,
   onChange,
   capacity,
+  fallbackStepMinutes,
 }: {
   value: CalendarWeeklyDay[];
   onChange: (value: CalendarWeeklyDay[]) => void;
   capacity: boolean;
+  fallbackStepMinutes: number;
 }) {
-  const days = normalizeWeek(value);
+  const days = normalizeWeek(value, fallbackStepMinutes);
   const updateDay = (weekday: number, patch: Partial<CalendarWeeklyDay>) => {
     onChange(
       days.map((day) => (day.weekday === weekday ? { ...day, ...patch } : day))
@@ -146,10 +187,11 @@ function WeeklyScheduleEditor({
               onChange={(event) =>
                 updateDay(day.weekday, {
                   enabled: event.target.checked,
-                  intervals:
-                    event.target.checked && day.intervals.length === 0
-                      ? [{ startTime: "09:00", endTime: "17:00" }]
-                      : day.intervals,
+                  starts:
+                    event.target.checked && day.starts.length === 0
+                      ? DEFAULT_APPOINTMENT_STARTS.map((time) => ({ time }))
+                      : day.starts,
+                  intervals: [],
                 })
               }
               className="h-5 w-5"
@@ -157,34 +199,21 @@ function WeeklyScheduleEditor({
           </label>
           {day.enabled && (
             <div className="mt-3 space-y-2">
-              {day.intervals.map((interval, index) => (
+              {day.starts.map((start, index) => (
                 <div
                   key={`${day.weekday}-${index}`}
-                  className="grid grid-cols-[1fr_1fr_auto] gap-2"
+                  className="grid grid-cols-[1fr_auto] gap-2"
                 >
                   <input
                     type="time"
-                    value={interval.startTime}
+                    value={start.time}
                     onChange={(event) => {
-                      const intervals = [...day.intervals];
-                      intervals[index] = {
-                        ...interval,
-                        startTime: event.target.value,
+                      const starts = [...day.starts];
+                      starts[index] = {
+                        ...start,
+                        time: event.target.value,
                       };
-                      updateDay(day.weekday, { intervals });
-                    }}
-                    className="min-w-0 rounded-lg border border-slate-300 px-2 py-2"
-                  />
-                  <input
-                    type="time"
-                    value={interval.endTime}
-                    onChange={(event) => {
-                      const intervals = [...day.intervals];
-                      intervals[index] = {
-                        ...interval,
-                        endTime: event.target.value,
-                      };
-                      updateDay(day.weekday, { intervals });
+                      updateDay(day.weekday, { starts, intervals: [] });
                     }}
                     className="min-w-0 rounded-lg border border-slate-300 px-2 py-2"
                   />
@@ -192,11 +221,14 @@ function WeeklyScheduleEditor({
                     type="button"
                     onClick={() =>
                       updateDay(day.weekday, {
-                        intervals: day.intervals.filter((_, item) => item !== index),
+                        starts: day.starts.filter(
+                          (_, item) => item !== index
+                        ),
+                        intervals: [],
                       })
                     }
                     className="rounded-lg border border-slate-200 px-3 text-slate-500"
-                    aria-label="Remove interval"
+                    aria-label="Remove appointment start"
                   >
                     ×
                   </button>
@@ -204,20 +236,20 @@ function WeeklyScheduleEditor({
                     <input
                       type="number"
                       min={0}
-                      value={interval.capacity ?? ""}
+                      value={start.capacity ?? ""}
                       onChange={(event) => {
-                        const intervals = [...day.intervals];
-                        intervals[index] = {
-                          ...interval,
+                        const starts = [...day.starts];
+                        starts[index] = {
+                          ...start,
                           capacity:
                             event.target.value === ""
                               ? null
                               : Number(event.target.value),
                         };
-                        updateDay(day.weekday, { intervals });
+                        updateDay(day.weekday, { starts, intervals: [] });
                       }}
-                      className="col-span-2 rounded-lg border border-slate-300 px-3 py-2"
-                      placeholder="Optional capacity for this interval"
+                      className="rounded-lg border border-slate-300 px-3 py-2"
+                      placeholder="Optional capacity"
                     />
                   )}
                 </div>
@@ -226,15 +258,13 @@ function WeeklyScheduleEditor({
                 type="button"
                 onClick={() =>
                   updateDay(day.weekday, {
-                    intervals: [
-                      ...day.intervals,
-                      { startTime: "09:00", endTime: "17:00" },
-                    ],
+                    starts: [...day.starts, { time: "08:00" }],
+                    intervals: [],
                   })
                 }
                 className="text-sm font-semibold text-blue-700"
               >
-                + Add hours
+                + Add appointment start
               </button>
             </div>
           )}
@@ -1081,9 +1111,16 @@ export default function AdminCalendarSettings({
                     type="button"
                     disabled={busy}
                     onClick={() => {
-                      const start = window.prompt("Custom start time (HH:MM)", "09:00");
-                      const end = window.prompt("Custom end time (HH:MM)", "17:00");
-                      if (!start || !end) return;
+                      const input = window.prompt(
+                        "Appointment starts, comma separated (HH:MM)",
+                        DEFAULT_APPOINTMENT_STARTS.join(", ")
+                      );
+                      const starts = String(input || "")
+                        .split(",")
+                        .map((time) => time.trim())
+                        .filter(Boolean)
+                        .map((time) => ({ time }));
+                      if (!starts.length) return;
                       void mutate(
                         () =>
                           saveShadowDayOverride({
@@ -1091,14 +1128,15 @@ export default function AdminCalendarSettings({
                             technicianId,
                             date: selectedDate,
                             mode: "custom_hours",
-                            intervals: [{ startTime: start, endTime: end }],
+                            starts,
+                            intervals: [],
                           }),
-                        "Custom hours saved"
+                        "Custom appointment starts saved"
                       );
                     }}
                     className="rounded-xl bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700"
                   >
-                    Custom hours
+                    Custom starts
                   </button>
                 </div>
                 )}
@@ -1354,11 +1392,6 @@ export default function AdminCalendarSettings({
               </summary>
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <NumberField
-                  label="Start interval (minutes)"
-                  value={company.slotMinutes}
-                  onChange={(value) => setCompany({ ...company, slotMinutes: value })}
-                />
-                <NumberField
                   label="Visit duration (minutes)"
                   value={company.visitDurationMinutes || 90}
                   onChange={() => undefined}
@@ -1387,13 +1420,15 @@ export default function AdminCalendarSettings({
                 />
               </div>
               <p className="mt-2 text-xs text-slate-500">
-                Start interval controls how often appointment starts appear.
-                Every visit lasts 90 minutes.
+                Add the exact appointment starts customers may book. The
+                standard Profixter starts are 8:00 AM, 10:30 AM, 1:00 PM, and
+                3:30 PM. Every visit lasts 90 minutes.
               </p>
               <div className="mt-4">
                 <WeeklyScheduleEditor
                   value={company.weeklySchedule}
                   capacity
+                  fallbackStepMinutes={company.slotMinutes}
                   onChange={(weeklySchedule) =>
                     setCompany({ ...company, weeklySchedule })
                   }
@@ -1453,6 +1488,7 @@ export default function AdminCalendarSettings({
                       <WeeklyScheduleEditor
                         value={techTemplate.weeklySchedule}
                         capacity={false}
+                        fallbackStepMinutes={company.slotMinutes}
                         onChange={(weeklySchedule) =>
                           setTechTemplate({ ...techTemplate, weeklySchedule })
                         }
