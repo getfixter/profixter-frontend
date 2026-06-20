@@ -304,6 +304,7 @@ export default function AdminCalendarSettings({
   const [cutoverReadiness, setCutoverReadiness] =
     useState<CalendarCutoverReadiness | null>(null);
   const [cutoverLoading, setCutoverLoading] = useState(false);
+  const [cutoverOpen, setCutoverOpen] = useState(false);
   const [assignmentPreview, setAssignmentPreview] =
     useState<ReservationAutoAssignmentReport | null>(null);
   const [assignmentLoading, setAssignmentLoading] = useState(false);
@@ -555,6 +556,62 @@ export default function AdminCalendarSettings({
     );
   }
 
+  const cutoverHeaderPills = cutoverStatus
+    ? [
+        {
+          label: "Transaction Probe",
+          value: cutoverStatus.transactionProbe.verified
+            ? "Passed"
+            : "Not verified",
+          ok: cutoverStatus.transactionProbe.verified,
+        },
+        {
+          label: "Reservation Engine",
+          value: cutoverStatus.featureFlags.reservationEngineEnabled
+            ? "Enabled"
+            : "Disabled",
+          ok: cutoverStatus.featureFlags.reservationEngineEnabled,
+        },
+        {
+          label: "Readiness Preview",
+          value: cutoverStatus.featureFlags.availabilityPreviewEnabled
+            ? "Enabled"
+            : "Disabled",
+          ok: cutoverStatus.featureFlags.availabilityPreviewEnabled,
+        },
+        {
+          label: "Audit",
+          value: cutoverReadiness
+            ? cutoverReadiness.blockers.some(
+                (item) => item.category === "reservationAuditIssues"
+              )
+              ? "Issues"
+              : "Clean"
+            : "Not run",
+          ok:
+            !!cutoverReadiness &&
+            !cutoverReadiness.blockers.some(
+              (item) => item.category === "reservationAuditIssues"
+            ),
+        },
+        {
+          label: "Backfill Dry-run",
+          value: cutoverReadiness
+            ? cutoverReadiness.blockers.some(
+                (item) => item.category === "reservationBackfillReadiness"
+              )
+              ? "Blocked"
+              : "Ready"
+            : "Not run",
+          ok:
+            !!cutoverReadiness &&
+            !cutoverReadiness.blockers.some(
+              (item) => item.category === "reservationBackfillReadiness"
+            ),
+        },
+      ]
+    : [];
+
   return (
     <section className="mx-auto max-w-7xl space-y-4">
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -636,7 +693,59 @@ export default function AdminCalendarSettings({
       </div>
 
       {isAdmin && cutoverStatus && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <button
+            type="button"
+            aria-expanded={cutoverOpen}
+            aria-controls="customer-calendar-cutover-content"
+            onClick={() => setCutoverOpen((current) => !current)}
+            className="flex w-full flex-wrap items-center gap-2 px-4 py-3 text-left transition hover:bg-slate-50"
+          >
+            <span className="mr-1 shrink-0 text-sm font-black text-slate-900 sm:text-base">
+              Customer Calendar Cutover
+            </span>
+            <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+              {cutoverHeaderPills.map((pill) => (
+                <span
+                  key={pill.label}
+                  className={`whitespace-nowrap rounded-full border px-2 py-1 text-[10px] font-bold leading-none ${
+                    pill.ok
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                      : "border-slate-200 bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {pill.label}: {pill.value}
+                </span>
+              ))}
+            </div>
+            <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-xs font-bold text-blue-700">
+              {cutoverOpen ? "Hide" : "Show"}
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+                className={`shrink-0 transition-transform ${
+                  cutoverOpen ? "rotate-180" : ""
+                }`}
+              >
+                <path
+                  d="M6 9L12 15L18 9"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+          </button>
+
+          {cutoverOpen && (
+            <div
+              id="customer-calendar-cutover-content"
+              className="border-t border-slate-200 p-4"
+            >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
@@ -948,6 +1057,8 @@ export default function AdminCalendarSettings({
               <li key={instruction}>{instruction}</li>
             ))}
           </ol>
+            </div>
+          )}
         </section>
       )}
 

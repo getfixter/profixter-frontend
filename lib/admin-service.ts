@@ -180,6 +180,18 @@ export interface FixterAccount {
   mustChangePassword: boolean;
   isDefaultFixter: boolean;
   employeeAvailabilityStatus: EmployeeAvailabilityStatus;
+  completedBookingsCount: number;
+  offDaysSummary: {
+    upcomingCount: number;
+    pastCount: number;
+    recent: Array<{
+      date: string;
+      endDate?: string;
+      reason: string;
+      type?: string;
+      status: string;
+    }>;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -344,6 +356,10 @@ export const setDefaultFixter = async (
     isDefault,
   });
   return response.data.fixters;
+};
+
+export const deleteFixter = async (id: string): Promise<void> => {
+  await API.delete(`/api/admin/fixters/${id}`);
 };
 
 export const updateUser = async (
