@@ -521,9 +521,14 @@ export type CalendarInterval = {
   endTime: string;
   capacity?: number | null;
 };
+export type CalendarStart = {
+  time: string;
+  capacity?: number | null;
+};
 export type CalendarWeeklyDay = {
   weekday: number;
   enabled: boolean;
+  starts: CalendarStart[];
   intervals: CalendarInterval[];
 };
 export interface ShadowCompanyTemplate {
@@ -833,6 +838,7 @@ export const saveShadowDayOverride = async (input: {
   technicianId?: string | null;
   date: string;
   mode: "closed" | "custom_hours" | "open";
+  starts?: CalendarStart[];
   intervals?: CalendarInterval[];
   reason?: string;
 }) => {
