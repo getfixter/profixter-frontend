@@ -749,6 +749,23 @@ export default function AdminCalendarSettings({
                                 {technician.scheduleSource
                                   ? ` (${technician.scheduleSource})`
                                   : ""}
+                                {technician.availabilityDiagnostics
+                                  ? ` · configured: ${
+                                      technician.availabilityDiagnostics
+                                        .configuredCompanyStarts?.length
+                                        ? technician.availabilityDiagnostics
+                                            .configuredCompanyStarts
+                                            .join(", ")
+                                        : "none"
+                                    }; generated: ${
+                                      technician.availabilityDiagnostics
+                                        .generatedCompanyStarts?.length
+                                        ? technician.availabilityDiagnostics
+                                            .generatedCompanyStarts
+                                            .join(", ")
+                                        : "none"
+                                    }`
+                                  : ""}
                               </li>
                             )
                           )}
