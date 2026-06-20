@@ -29,8 +29,14 @@ function niceServiceType(value?: string) {
   switch (value) {
     case "membership":       return "Membership";
     case "roofing":          return "Roofing";
+    case "siding":           return "Siding";
+    case "roofing_siding":
+    case "both":             return "Roofing & Siding";
     case "bathroom":         return "Bathroom Remodel";
     case "kitchen":          return "Kitchen Remodel";
+    case "basement":         return "Basement Finishing";
+    case "interior":         return "Interior Renovation";
+    case "other":            return "Other Larger Project";
     case "estimate":         return "Estimate";
     case "on_demand":        return "On Demand";
     case "general_contractor": return "General Contractor";
@@ -79,6 +85,11 @@ export default function RequestsTable({
                 <div>
                   <strong>Phone:</strong> {request.phone || "-"}
                 </div>
+                {request.address ? (
+                  <div>
+                    <strong>Address:</strong> {request.address}
+                  </div>
+                ) : null}
                 <div>
                   <strong>Source:</strong> {request.sourcePage || "-"}
                 </div>

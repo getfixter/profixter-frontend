@@ -9,7 +9,7 @@ const FAQS = [
   },
   {
     q: "Are there limits per month?",
-    a: "There are no monthly visit limits. Your plan controls how many active appointments you can have at one time, plus benefits like basic materials, emergency visits, and project time.",
+    a: "There are no monthly standard-visit limits. Your plan controls how many active appointments you can have at one time, plus benefits like basic materials, Rush Visits, and project time. Need help sooner? Rush Visits don't require waiting for the next standard appointment slot.",
   },
   {
     q: "What does “active appointment” mean?",

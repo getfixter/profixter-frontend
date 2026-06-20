@@ -57,9 +57,9 @@ export const services: Service[] = [
   },
   {
     id: "06",
-    title: "24/7 emergency help",
+    title: "Rush scheduling support",
     description:
-      "Reach us anytime for urgent issues that can’t wait. Call 631-599-1363.",
+      "Need help sooner? Rush Visits don't require waiting for the next standard appointment slot.",
     color: "dark",
     size: "small",
     offset: -100,
@@ -68,7 +68,7 @@ export const services: Service[] = [
     id: "07",
     title: "Second pro when needed",
     description:
-      "Emergency visits are limited to one per month and are for urgent situations only.",
+      "Rush Visits let eligible members schedule without waiting for the next standard appointment slot.",
     color: "dark",
     size: "normal",
     offset: 10,
@@ -134,7 +134,7 @@ export const faqs: Faq[] = [
     id: "03",
     question: "How many visits come with each plan?",
     answer:
-      "Home Care Membership includes one scheduled visit each month. Home Care Plus includes two scheduled visits each month. Home Protection includes two scheduled visits plus one emergency visit per month. Whole-Home Care includes two scheduled visits plus one full project day per month (up to 8 hours).",
+      "Home Care Membership includes one scheduled visit each month. Home Care Plus includes two scheduled visits each month. Home Protection includes two scheduled visits plus one Rush Visit per month. Whole-Home Care includes two scheduled visits, two Rush Visits, and one full project day per month (up to 8 hours). Rush Visits don't require waiting for the next standard appointment slot.",
     color: "dark",
     size: "normal",
     offset: 0,
@@ -266,7 +266,7 @@ export const homepageFaqs: Faq[] = [
     id: "05",
     question: "What if I need more flexibility?",
     answer:
-      "Higher memberships include more scheduled visits each month — and Home Protection adds emergency response, while Whole-Home Care adds a full project day for the bigger items.",
+      "Higher memberships include more scheduled visits each month. Home Protection adds one Rush Visit per month, while Whole-Home Care adds two Rush Visits and a full project day for bigger items.",
     color: "blue",
     size: "normal",
     offset: -50,
@@ -348,14 +348,15 @@ export const plans: Plan[] = [
     name: "Premium",
     displayName: "Home Protection",
     tagline: "Cared for. And protected.",
-    cadence: "Two scheduled visits + emergency response",
+    cadence: "Two scheduled visits + one Rush Visit",
     description:
-      "Ongoing care, plus on-call help when something can't wait.",
+      "Ongoing care, plus faster scheduling when something can't wait.",
     price: 349,
     subtitle: "Everything in Home Care Plus",
     features: [
       "Two scheduled visits each month",
-      "One emergency visit per month when something can't wait",
+      "One Rush Visit per month",
+      "Rush Visits don't require waiting for the next standard appointment slot",
       "Same trusted team — on call for the moments that matter",
       "Direct line to Taras, the founder",
     ],
@@ -371,13 +372,14 @@ export const plans: Plan[] = [
     tagline: "Everything about your home — handled.",
     cadence: "Two scheduled visits + a full project day each month",
     description:
-      "Ongoing care, emergency coverage, and a dedicated project day every month.",
+      "Ongoing care, two Rush Visits, and a dedicated project day every month.",
     price: 499,
     subtitle: "Everything in Home Protection",
     features: [
       "Two scheduled visits each month",
+      "Two Rush Visits per month",
       "One full project day per month (up to 8 hours)",
-      "Emergency response when something can't wait",
+      "Rush Visits don't require waiting for the next standard appointment slot",
       "10% off home improvement projects (roofing, remodeling, kitchen)",
     ],
     buttonText: "Become a Member",

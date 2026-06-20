@@ -47,14 +47,14 @@ export const PLAN_DETAILS: PlanDetails[] = [
     id: "premium",
     name: "Premium",
     price: 349,
-    description: "Urgent situations and peace of mind",
+    description: "Faster scheduling and peace of mind",
     subtitle: "Everything in Plus, plus",
     isPopular: true,
     features: [
       "2 active bookings",
-      "1 emergency visit per month",
+      "1 Rush Visit per month",
       "Each visit covers up to 90 minutes of work",
-      "Emergency visits are for urgent situations only",
+      "Rush Visits don't require waiting for the next standard appointment slot",
     ],
   },
   {
@@ -65,6 +65,7 @@ export const PLAN_DETAILS: PlanDetails[] = [
     subtitle: "Everything in Premium, plus",
     features: [
       "2-3 active bookings",
+      "2 Rush Visits per month",
       "1 full-day visit per month (up to 8 hours)",
       "Each standard visit covers up to 90 minutes of work",
       "Full-day visit must be scheduled in advance",

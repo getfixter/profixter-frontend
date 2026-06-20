@@ -45,8 +45,8 @@ const QUESTIONS = [
   },
   {
     key: "emergency" as const,
-    question: "Do you ever need emergency or after-hours support?",
-    hint: "Burst pipes, urgent repairs, etc.",
+    question: "Would you value faster scheduling when something can't wait?",
+    hint: "Rush Visits don't require waiting for the next standard appointment slot.",
     choices: [
       {
         value: "yes",
@@ -135,7 +135,7 @@ function getRecommendation(answers: { usage?: string; emergency?: string; projec
         type: "plan",
         slug: "/#plans",
         title: "Premium Subscription",
-        subtitle: "Best if you want emergency support and the strongest coverage.",
+        subtitle: "Best if you want Rush Visits and the strongest coverage.",
         cta: "View Plans",
         color: "#306EEC",
         colorBg: "rgba(48,110,236,0.08)",
