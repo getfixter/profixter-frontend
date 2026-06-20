@@ -614,6 +614,46 @@ export interface CalendarCutoverReadiness {
   };
   reservationAudit: Record<string, unknown>;
 }
+export interface ReservationAutoAssignmentReport {
+  dryRun: boolean;
+  activeFutureBookings: number;
+  alreadyReserved: number;
+  canReserve: number;
+  created: number;
+  noEligibleTechnician: number;
+  conflicts: number;
+  outsideWorkingHours: number;
+  missingFoundation: number;
+  plannedAssignments: Array<{
+    bookingId: string;
+    requestedStart: string;
+    technicianId: string;
+    technicianName: string;
+    isDefaultFixter: boolean;
+    dayBookingCount: number;
+    weekBookingCount: number;
+    assignmentReason: string;
+  }>;
+  issues: Array<{
+    category: string;
+    bookingId: string;
+    slotStart?: string;
+    techniciansEvaluated?: Array<{
+      id: string;
+      name?: string;
+      position?: string;
+      accountActive?: boolean;
+      availabilityStatus?: string;
+      scheduleSource?: string;
+      available: boolean;
+      rejectionCode?: string | null;
+      reason?: string;
+    }>;
+  }>;
+  errors: Array<{ bookingId?: string; message: string }>;
+  confirmationRequired?: boolean;
+  bookingIds?: string[];
+}
 export interface ShadowCalendarDaySummary {
   date: string;
   bookingCount: number;
@@ -698,6 +738,24 @@ export const getCalendarCutoverReadiness = async (
   const response = await API.get(
     "/api/admin/calendar/customer-availability-preview",
     { params: { days } }
+  );
+  return response.data;
+};
+
+export const previewReservationAutoAssignments =
+  async (): Promise<ReservationAutoAssignmentReport> => {
+    const response = await API.get(
+      "/api/admin/calendar/reservation-auto-assignment-preview"
+    );
+    return response.data;
+  };
+
+export const confirmReservationAutoAssignments = async (
+  bookingIds: string[]
+): Promise<ReservationAutoAssignmentReport> => {
+  const response = await API.post(
+    "/api/admin/calendar/reservation-auto-assignment",
+    { confirm: true, bookingIds }
   );
   return response.data;
 };

@@ -5,6 +5,7 @@ import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import {
   bootstrapCalendarFoundation,
   cancelShadowTimeOff,
+  confirmReservationAutoAssignments,
   createShadowTimeOff,
   deleteShadowDayNote,
   getCalendarFoundationStatus,
@@ -16,6 +17,7 @@ import {
   getShadowTechnicianTemplate,
   getShadowTechnicians,
   getShadowTimeOff,
+  previewReservationAutoAssignments,
   restoreShadowDay,
   runShadowSlotAction,
   saveShadowDayNote,
@@ -30,6 +32,7 @@ import type {
   CalendarCutoverStatus,
   CalendarScope,
   CalendarWeeklyDay,
+  ReservationAutoAssignmentReport,
   ShadowCalendarDay,
   ShadowCalendarDaySummary,
   ShadowCompanyTemplate,
@@ -271,6 +274,9 @@ export default function AdminCalendarSettings({
   const [cutoverReadiness, setCutoverReadiness] =
     useState<CalendarCutoverReadiness | null>(null);
   const [cutoverLoading, setCutoverLoading] = useState(false);
+  const [assignmentPreview, setAssignmentPreview] =
+    useState<ReservationAutoAssignmentReport | null>(null);
+  const [assignmentLoading, setAssignmentLoading] = useState(false);
 
   const scope: CalendarScope =
     scopeValue === "company" ? "company" : "technician";
@@ -409,6 +415,41 @@ export default function AdminCalendarSettings({
       setNotice(messageFrom(error));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const previewAutoAssignments = async () => {
+    setAssignmentLoading(true);
+    setNotice("");
+    try {
+      setAssignmentPreview(await previewReservationAutoAssignments());
+    } catch (error) {
+      setNotice(messageFrom(error));
+    } finally {
+      setAssignmentLoading(false);
+    }
+  };
+
+  const confirmAutoAssignments = async () => {
+    const bookingIds =
+      assignmentPreview?.bookingIds ||
+      assignmentPreview?.plannedAssignments.map((entry) => entry.bookingId) ||
+      [];
+    if (!bookingIds.length) return;
+    setAssignmentLoading(true);
+    setNotice("");
+    try {
+      const result = await confirmReservationAutoAssignments(bookingIds);
+      setNotice(
+        `${result.created} booking${result.created === 1 ? "" : "s"} assigned`
+      );
+      setAssignmentPreview(null);
+      await runCutoverReadiness();
+      await refresh();
+    } catch (error) {
+      setNotice(messageFrom(error));
+    } finally {
+      setAssignmentLoading(false);
     }
   };
 
@@ -582,6 +623,16 @@ export default function AdminCalendarSettings({
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
+                disabled={assignmentLoading || cutoverLoading}
+                onClick={previewAutoAssignments}
+                className="rounded-xl border border-blue-300 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-800 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {assignmentLoading
+                  ? "Checking assignments..."
+                  : "Auto Assign Eligible Technicians"}
+              </button>
+              <button
+                type="button"
                 disabled={busy || cutoverLoading}
                 onClick={reconcileFoundation}
                 className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-800 disabled:cursor-not-allowed disabled:opacity-45"
@@ -601,6 +652,101 @@ export default function AdminCalendarSettings({
               </button>
             </div>
           </div>
+
+          {assignmentPreview && (
+            <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-black text-slate-900">
+                    Assignment dry run
+                  </p>
+                  <p className="mt-1 text-sm text-slate-700">
+                    {assignmentPreview.plannedAssignments.length} booking
+                    {assignmentPreview.plannedAssignments.length === 1
+                      ? ""
+                      : "s"}{" "}
+                    can be assigned. No changes have been made.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAssignmentPreview(null)}
+                  className="text-sm font-bold text-slate-600"
+                >
+                  Dismiss
+                </button>
+              </div>
+
+              {!!assignmentPreview.plannedAssignments.length && (
+                <div className="mt-3 max-h-56 space-y-2 overflow-y-auto">
+                  {assignmentPreview.plannedAssignments.map((entry) => (
+                    <div
+                      key={entry.bookingId}
+                      className="rounded-lg bg-white p-3 text-sm"
+                    >
+                      <p className="font-bold text-slate-900">
+                        {new Date(entry.requestedStart).toLocaleString()} →{" "}
+                        {entry.technicianName || entry.technicianId}
+                      </p>
+                      <p className="text-slate-600">
+                        Booking {entry.bookingId} · {entry.assignmentReason}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!!assignmentPreview.issues.length && (
+                <details className="mt-3 rounded-lg bg-white p-3 text-sm">
+                  <summary className="cursor-pointer font-bold text-rose-800">
+                    Cannot auto-assign ({assignmentPreview.issues.length})
+                  </summary>
+                  <div className="mt-2 space-y-3">
+                    {assignmentPreview.issues.map((issue) => (
+                      <div key={`${issue.category}-${issue.bookingId}`}>
+                        <p className="font-bold text-slate-900">
+                          Booking {issue.bookingId}
+                          {issue.slotStart
+                            ? ` · ${new Date(issue.slotStart).toLocaleString()}`
+                            : ""}
+                        </p>
+                        <ul className="mt-1 list-disc pl-5 text-slate-600">
+                          {(issue.techniciansEvaluated || []).map(
+                            (technician) => (
+                              <li key={technician.id}>
+                                {technician.name || technician.id}:{" "}
+                                {technician.reason || "Unavailable"}
+                                {technician.scheduleSource
+                                  ? ` (${technician.scheduleSource})`
+                                  : ""}
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+
+              {!!assignmentPreview.plannedAssignments.length && (
+                <button
+                  type="button"
+                  disabled={assignmentLoading}
+                  onClick={confirmAutoAssignments}
+                  className="mt-4 w-full rounded-xl bg-blue-700 px-4 py-3 font-bold text-white disabled:opacity-50"
+                >
+                  {assignmentLoading
+                    ? "Assigning..."
+                    : `Confirm ${assignmentPreview.plannedAssignments.length} assignment${
+                        assignmentPreview.plannedAssignments.length === 1
+                          ? ""
+                          : "s"
+                      }`}
+                </button>
+              )}
+            </div>
+          )}
 
           <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
             {[
