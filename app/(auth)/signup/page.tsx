@@ -430,11 +430,12 @@ export default function SignUpPage() {
                     id="county"
                     value={formData.county}
                     onChange={(e) => handleChange("county", e.target.value)}
-                    className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-black focus:outline-none focus:border-[#306EEC]/60 transition-all"
+                    autoComplete="address-level3"
+                    className="auth-dark-select h-[50px] w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 text-[15px] text-white focus:border-[#306EEC]/60 focus:bg-white/[0.08] focus:outline-none transition-all"
                   >
-                    <option value="" className="text-black">Select County</option>
-                    <option value="Nassau" className="text-black">Nassau</option>
-                    <option value="Suffolk" className="text-black">Suffolk</option>
+                    <option value="">Select County</option>
+                    <option value="Nassau">Nassau</option>
+                    <option value="Suffolk">Suffolk</option>
                   </select>
                   {formData.zip.length === 5 && formData.county && (
                     <p className="mt-1.5 text-[11px] text-[#86EFAC]/70">
