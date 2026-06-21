@@ -4,7 +4,7 @@ import React from 'react';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-screen w-full overflow-hidden" style={{ background: "#080F1E" }}>
+    <div className="auth-dark-form relative min-h-screen w-full overflow-hidden" style={{ background: "#080F1E" }}>
       {/* Background layers */}
       <div className="absolute inset-0 z-0">
         <Image
