@@ -15,9 +15,11 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      { source: "/remodeling", destination: "/membership", permanent: true },
-      { source: "/kitchen", destination: "/membership", permanent: true },
-      { source: "/projects", destination: "/membership", permanent: true },
+      { source: "/roofing", destination: "/projects#roofing", permanent: true },
+      { source: "/siding", destination: "/projects#siding", permanent: true },
+      { source: "/remodeling", destination: "/projects#bathroom", permanent: true },
+      { source: "/kitchen", destination: "/projects#kitchen", permanent: true },
+      { source: "/services/general-contractor", destination: "/projects", permanent: true },
       { source: "/on-demand", destination: "/membership", permanent: true },
     ];
   },

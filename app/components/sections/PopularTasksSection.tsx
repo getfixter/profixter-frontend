@@ -121,12 +121,12 @@ export const POPULAR_TASKS: Task[] = [
 ];
 
 const PROJECT_CATEGORIES = [
-  { label: "Roofing", href: "/roofing" },
-  { label: "Siding", href: "/siding" },
-  { label: "Bathroom Remodeling", href: "/estimate?type=bathroom" },
-  { label: "Kitchen Remodeling", href: "/estimate?type=kitchen" },
-  { label: "Basement Finishing", href: "/estimate?type=basement" },
-  { label: "Interior Renovations", href: "/estimate?type=interior" },
+  { label: "Roofing", href: "/projects#roofing" },
+  { label: "Siding", href: "/projects#siding" },
+  { label: "Bathroom Remodeling", href: "/projects#bathroom" },
+  { label: "Kitchen Remodeling", href: "/projects#kitchen" },
+  { label: "Full House Renovation", href: "/projects#full-house" },
+  { label: "Get Project Estimate", href: "/projects#estimate" },
 ] as const;
 
 const PROJECT_BENEFITS = [
@@ -232,16 +232,16 @@ export default function PopularTasksSection() {
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
-                href="/estimate"
+                href="/projects#estimate"
                 className="inline-flex h-[54px] items-center justify-center rounded-[16px] bg-[#0B1628] px-7 text-[15px] font-extrabold text-white shadow-[0_18px_44px_rgba(15,23,42,0.24)] transition-all hover:-translate-y-0.5 hover:bg-[#14233A]"
               >
                 Get Project Estimate
               </Link>
               <Link
-                href="/siding"
+                href="/projects"
                 className="inline-flex h-[54px] items-center justify-center rounded-[16px] border border-[#CBD5E1] bg-white/65 px-7 text-[15px] font-extrabold text-[#0B1628] transition-all hover:-translate-y-0.5 hover:border-[#94A3B8] hover:bg-white"
               >
-                View Siding
+                Explore Larger Projects
               </Link>
             </div>
           </div>
@@ -262,7 +262,7 @@ export default function PopularTasksSection() {
                   />
                   <div className="relative flex min-h-[210px] flex-col justify-between gap-12 p-5 sm:min-h-[240px] sm:p-6">
                     <div className="inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-white/25 bg-white/16 px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md sm:text-[11px] sm:tracking-[0.16em]">
-                      Free Membership Included
+                      Membership Offer
                     </div>
                     <div>
                       <div className="text-[13px] font-bold uppercase tracking-[0.16em] text-white/62">
@@ -298,7 +298,7 @@ export default function PopularTasksSection() {
               <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
                 {[
                   { title: "Large project", body: "Roof, siding, remodel, or renovation" },
-                  { title: "Free membership", body: "Up to 12 months included" },
+                  { title: "Membership offer", body: "Up to 12 months if eligible" },
                   { title: "Ongoing care", body: "Regular handyman support after" },
                 ].map((step, index) => (
                   <div key={step.title} className="contents">
