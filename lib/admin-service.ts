@@ -14,6 +14,32 @@ addressesDetailed?: AddressDetailed[];
 createdAt?: string; // ✅ add this
 }
 
+export interface CustomerActivityItem {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  source: string;
+  actorName: string;
+  actorRole: string;
+  relatedBookingNumber: string;
+  status: string;
+}
+
+export interface CustomerActivityResponse {
+  user: {
+    _id: string;
+    userId: string;
+    name: string;
+    email: string;
+  };
+  limit: number | "all";
+  total: number;
+  items: CustomerActivityItem[];
+  unavailableSources?: string[];
+}
+
 export interface Address {
   _id: string;
   label: string;
@@ -374,6 +400,16 @@ export const getAllUsers = async (): Promise<User[]> => {
 
 export const getMembers = async (): Promise<User[]> => {
   const response = await API.get("/api/admin/members");
+  return response.data;
+};
+
+export const getCustomerActivity = async (
+  userId: string,
+  limit: 10 | "all" = 10
+): Promise<CustomerActivityResponse> => {
+  const response = await API.get(`/api/admin/users/${userId}/activity`, {
+    params: { limit },
+  });
   return response.data;
 };
 

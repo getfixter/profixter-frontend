@@ -1,7 +1,12 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import type { AddressDetailed, User } from '@/lib/admin-service';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  getCustomerActivity,
+  type AddressDetailed,
+  type CustomerActivityItem,
+  type User,
+} from '@/lib/admin-service';
 import { formatDateNY, getTodayNY } from '@/lib/utils/timezone-helpers';
 
 type PlanFilter = 'all' | 'basic' | 'plus' | 'premium' | 'elite' | 'cancel';
@@ -27,6 +32,8 @@ type FlattenedRow = {
   addressText: string;
   rowPlan: PlanFilter;
 };
+
+type ActivityLimit = 10 | 'all';
 
 const PLAN_FILTERS: Array<{
   key: PlanFilter;
@@ -111,6 +118,35 @@ function formatPlanLabel(plan: PlanFilter) {
   return plan === 'cancel' ? 'Cancel' : plan.charAt(0).toUpperCase() + plan.slice(1);
 }
 
+function formatActivityTime(value: string) {
+  if (!value) return 'Not available';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Not available';
+
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date);
+}
+
+function activityBadgeClass(status: string) {
+  const value = String(status || '').toLowerCase();
+  if (value === 'failed' || value === 'canceled' || value === 'cancelled' || value === 'blocked') {
+    return 'border-rose-200 bg-rose-50 text-rose-700';
+  }
+  if (value === 'sent' || value === 'completed' || value === 'created' || value === 'active') {
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+  }
+  if (value === 'pending' || value === 'confirmed') {
+    return 'border-amber-200 bg-amber-50 text-amber-700';
+  }
+  return 'border-slate-200 bg-slate-50 text-slate-600';
+}
+
 export default function UsersTable({
   users,
   onSetAddressPlan,
@@ -124,8 +160,64 @@ export default function UsersTable({
   const [planFilter, setPlanFilter] = useState<PlanFilter>('all');
   const [savingCancellationByAddress, setSavingCancellationByAddress] = useState<Record<string, boolean>>({});
   const [isRunningCleanup, setIsRunningCleanup] = useState(false);
+  const [historyUser, setHistoryUser] = useState<User | null>(null);
+  const [historyLimit, setHistoryLimit] = useState<ActivityLimit>(10);
+  const [historyItems, setHistoryItems] = useState<CustomerActivityItem[]>([]);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyUnavailableSources, setHistoryUnavailableSources] = useState<string[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState('');
 
   const minCancellationDate = getTodayNY();
+
+  useEffect(() => {
+    if (!historyUser) return;
+
+    let cancelled = false;
+    setHistoryLoading(true);
+    setHistoryError('');
+
+    void getCustomerActivity(historyUser._id, historyLimit)
+      .then((response) => {
+        if (cancelled) return;
+        setHistoryItems(response.items || []);
+        setHistoryTotal(Number(response.total || 0));
+        setHistoryUnavailableSources(response.unavailableSources || []);
+      })
+      .catch((error) => {
+        console.error('Failed to load customer activity:', error);
+        if (!cancelled) {
+          setHistoryError('Unable to load customer history. Please try again.');
+          setHistoryItems([]);
+          setHistoryTotal(0);
+          setHistoryUnavailableSources([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [historyLimit, historyUser]);
+
+  const openHistory = (selectedUser: User) => {
+    setHistoryUser(selectedUser);
+    setHistoryLimit(10);
+    setHistoryItems([]);
+    setHistoryTotal(0);
+    setHistoryUnavailableSources([]);
+    setHistoryError('');
+  };
+
+  const closeHistory = () => {
+    setHistoryUser(null);
+    setHistoryItems([]);
+    setHistoryTotal(0);
+    setHistoryUnavailableSources([]);
+    setHistoryError('');
+  };
 
   const handleSetCancellationDate = async (
     userId: string,
@@ -446,7 +538,7 @@ export default function UsersTable({
                   <th className="px-4 py-4 text-left text-sm font-semibold">Address</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold">Plan</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold">Created</th>
-                  {!readOnly && <th className="px-4 py-4 text-left text-sm font-semibold">Actions</th>}
+                  <th className="px-4 py-4 text-left text-sm font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -545,25 +637,34 @@ export default function UsersTable({
                       <td className="px-4 py-4 text-sm text-slate-600">
                         {user.createdAt ? new Date(user.createdAt).toLocaleString() : 'Not available'}
                       </td>
-                      {!readOnly && <td className="px-4 py-4">
-                        {isBlacklisted && blacklistId ? (
+                      <td className="px-4 py-4">
+                        <div className="flex flex-col gap-2">
                           <button
                             type="button"
-                            onClick={() => onUnblacklist(blacklistId)}
-                            className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                            onClick={() => openHistory(user)}
+                            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
                           >
-                            Restore
+                            History
                           </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => onBlacklist(user._id)}
-                            className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
-                          >
-                            Block
-                          </button>
-                        )}
-                      </td>}
+                          {!readOnly && (isBlacklisted && blacklistId ? (
+                            <button
+                              type="button"
+                              onClick={() => onUnblacklist(blacklistId)}
+                              className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                            >
+                              Restore
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => onBlacklist(user._id)}
+                              className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                            >
+                              Block
+                            </button>
+                          ))}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -686,6 +787,14 @@ export default function UsersTable({
                     )}
                   </div>
 
+                  <button
+                    type="button"
+                    onClick={() => openHistory(user)}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+                  >
+                    View history
+                  </button>
+
                   {!readOnly && (isBlacklisted && blacklistId ? (
                     <button
                       type="button"
@@ -718,6 +827,138 @@ export default function UsersTable({
           </div>
         )}
       </section>
+
+      {historyUser && (
+        <div
+          className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/55 px-3 py-4 backdrop-blur-sm sm:items-center"
+          onClick={closeHistory}
+        >
+          <div
+            className="max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-[28px] bg-white shadow-[0_28px_90px_rgba(15,23,42,0.28)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="border-b border-slate-200 bg-slate-950 px-5 py-4 text-white sm:px-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-[0.18em] text-sky-200">
+                    Customer activity
+                  </div>
+                  <div className="mt-1 text-xl font-black leading-tight">
+                    {historyUser.name || 'Unnamed user'}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-300">
+                    {historyUser.email} · ID {historyUser.userId}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeHistory}
+                  className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full border border-white/15 text-slate-200 transition hover:bg-white/10"
+                  aria-label="Close customer history"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-5 py-3 sm:px-6">
+              <div className="text-sm text-slate-600">
+                Showing{' '}
+                <span className="font-semibold text-slate-900">
+                  {historyLimit === 'all' ? historyItems.length : Math.min(historyItems.length, 10)}
+                </span>{' '}
+                of <span className="font-semibold text-slate-900">{historyTotal}</span> events
+              </div>
+              <div className="flex rounded-2xl border border-slate-200 bg-white p-1">
+                {([10, 'all'] as ActivityLimit[]).map((limitOption) => (
+                  <button
+                    key={String(limitOption)}
+                    type="button"
+                    onClick={() => setHistoryLimit(limitOption)}
+                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                      historyLimit === limitOption
+                        ? 'bg-slate-950 text-white'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {limitOption === 10 ? 'Last 10' : 'All'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="max-h-[58vh] overflow-y-auto px-5 py-4 sm:px-6">
+              {historyLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((item) => (
+                    <div key={item} className="h-20 animate-pulse rounded-2xl bg-slate-100" />
+                  ))}
+                </div>
+              ) : historyError ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+                  {historyError}
+                </div>
+              ) : historyItems.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
+                  <div className="font-semibold text-slate-900">No Profixter activity found yet</div>
+                  <div className="mt-1 text-sm text-slate-500">GHL SMS history is intentionally not included here.</div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {historyItems.map((item) => (
+                    <article
+                      key={item.id}
+                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                    >
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="font-bold text-slate-950">{item.title}</div>
+                            {item.status && (
+                              <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${activityBadgeClass(item.status)}`}>
+                                {item.status}
+                              </span>
+                            )}
+                            {item.relatedBookingNumber && (
+                              <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-bold text-sky-700">
+                                #{item.relatedBookingNumber}
+                              </span>
+                            )}
+                          </div>
+                          {item.description && (
+                            <p className="mt-1 text-sm leading-relaxed text-slate-600">{item.description}</p>
+                          )}
+                          <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
+                            {item.actorName && <span>{item.actorName}</span>}
+                            {item.actorRole && <span>· {item.actorRole}</span>}
+                            {item.source && <span>· {item.source.replace(/_/g, ' ')}</span>}
+                          </div>
+                        </div>
+                        <time className="flex-shrink-0 text-xs font-semibold text-slate-500">
+                          {formatActivityTime(item.timestamp)}
+                        </time>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+
+              {!historyLoading && historyUnavailableSources.length > 0 && (
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                    Not yet fully tracked
+                  </div>
+                  <ul className="mt-2 space-y-1 text-xs leading-relaxed text-slate-500">
+                    {historyUnavailableSources.map((source) => (
+                      <li key={source}>• {source}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
