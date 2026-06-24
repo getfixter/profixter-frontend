@@ -16,6 +16,7 @@ import RequestsTable from "@/app/components/admin/RequestsTable";
 import ProjectsModule from "@/app/components/admin/ProjectsModule";
 import FixtersModule from "@/app/components/admin/FixtersModule";
 import PromotionPopupEditor from "@/app/components/admin/PromotionPopupEditor";
+import AdminActivityLog from "@/app/components/admin/AdminActivityLog";
 import { tabsForUser } from "@/app/components/admin/admin-tabs-config";
 import { toYMDNY } from "@/lib/utils/timezone-helpers";
 import {
@@ -32,6 +33,8 @@ import {
   setAddressCancellationDate,
   addToBlacklist,
   removeFromBlacklist,
+  deleteUser,
+  deleteRequestLead,
 } from "@/lib/admin-service";
 import type {
   User,
@@ -324,6 +327,18 @@ export default function AdminPage() {
     } catch (error) {
       console.error("Failed to unblacklist:", error);
     }
+  };
+
+  const handleDeleteUser = async (targetUser: User, confirmation: string) => {
+    await deleteUser(targetUser._id, confirmation);
+    await fetchAll();
+    showToast("User deleted");
+  };
+
+  const handleDeleteLead = async (lead: RequestLead, confirmation: string) => {
+    await deleteRequestLead(lead._id, confirmation);
+    await fetchAll();
+    showToast("Lead deleted");
   };
 
   const qlc = q.trim().toLowerCase();
@@ -780,6 +795,7 @@ export default function AdminPage() {
                 blacklistByUserId={blacklistByUserId}
                 onBlacklist={handleBlacklist}
                 onUnblacklist={handleUnblacklist}
+                onDeleteUser={handleDeleteUser}
                 onRunSubscriptionCleanup={handleRunSubscriptionCleanup}
               />
             )}
@@ -792,6 +808,7 @@ export default function AdminPage() {
                 blacklistByUserId={blacklistByUserId}
                 onBlacklist={handleBlacklist}
                 onUnblacklist={handleUnblacklist}
+                onDeleteUser={handleDeleteUser}
                 onRunSubscriptionCleanup={handleRunSubscriptionCleanup}
                 readOnly={!isAdmin}
               />
@@ -801,6 +818,7 @@ export default function AdminPage() {
               <RequestsTable
                 requests={filteredRequests}
                 onUpdateStatus={handleUpdateRequestStatus}
+                onDeleteLead={handleDeleteLead}
               />
             )}
 
@@ -837,6 +855,7 @@ export default function AdminPage() {
 
             {active === "emails" && <EmailComposer />}
             {active === "promotion" && isAdmin && <PromotionPopupEditor />}
+            {active === "activity" && isAdmin && <AdminActivityLog />}
 
             {active === "blacklist" && (
               <BlacklistTable

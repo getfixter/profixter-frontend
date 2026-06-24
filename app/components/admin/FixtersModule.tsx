@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   createFixter,
   deleteFixter,
+  getAdminActivitySummary,
   getFixters,
   setDefaultFixter,
   setFixterActive,
@@ -12,6 +13,7 @@ import {
   type EmployeePosition,
   type EmployeeAvailabilityStatus,
   type FixterAccount,
+  type AdminActivitySummary,
 } from "@/lib/admin-service";
 
 const EMPTY = {
@@ -41,10 +43,16 @@ export default function FixtersModule() {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteSaving, setDeleteSaving] = useState(false);
   const [historyFixter, setHistoryFixter] = useState<FixterAccount | null>(null);
+  const [activitySummary, setActivitySummary] = useState<AdminActivitySummary | null>(null);
 
   const load = useCallback(async () => {
     try {
-      setRows(await getFixters());
+      const [fixters, summary] = await Promise.all([
+        getFixters(),
+        getAdminActivitySummary(),
+      ]);
+      setRows(fixters);
+      setActivitySummary(summary);
     } catch {
       setError("Failed to load Fixters");
     }
@@ -125,6 +133,21 @@ export default function FixtersModule() {
         <p className="mt-2 text-sm text-slate-300">
           Create employee logins. New accounts use temporary password <strong>11111111</strong>.
         </p>
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-3">
+        {[
+          ["Users deleted", activitySummary?.usersDeleted ?? 0],
+          ["Leads deleted", activitySummary?.leadsDeleted ?? 0],
+          ["Projects deleted", activitySummary?.projectsDeleted ?? 0],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="text-2xl font-black text-slate-950">{value}</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+              Last 24h · {label}
+            </div>
+          </div>
+        ))}
       </section>
 
       {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div>}

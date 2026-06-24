@@ -243,6 +243,12 @@ export default function PopularTasksSection() {
               >
                 Explore Larger Projects
               </Link>
+              <Link
+                href="/communities"
+                className="inline-flex h-[54px] items-center justify-center rounded-[16px] border border-[#CBD5E1] bg-white/40 px-7 text-[15px] font-extrabold text-[#334155] transition-all hover:-translate-y-0.5 hover:border-[#94A3B8] hover:bg-white"
+              >
+                For Communities
+              </Link>
             </div>
           </div>
 

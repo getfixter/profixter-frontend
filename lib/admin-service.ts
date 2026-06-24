@@ -19,6 +19,7 @@ export interface CustomerActivityItem {
   type: string;
   title: string;
   description: string;
+  descriptionLines?: string[];
   timestamp: string;
   source: string;
   actorName: string;
@@ -38,6 +39,46 @@ export interface CustomerActivityResponse {
   total: number;
   items: CustomerActivityItem[];
   unavailableSources?: string[];
+}
+
+export interface AdminActivityLogItem {
+  _id: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  entityName: string;
+  actorUserId?: string | null;
+  actorName: string;
+  actorRole: string;
+  details?: Record<string, unknown>;
+  ipAddress?: string;
+  createdAt: string;
+}
+
+export interface AdminActivityLogFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  actorUserId?: string;
+  action?: string;
+  entityType?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface AdminActivityLogResponse {
+  items: AdminActivityLogItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface AdminActivitySummary {
+  since: string;
+  usersDeleted: number;
+  leadsDeleted: number;
+  projectsDeleted: number;
 }
 
 export interface Address {
@@ -483,8 +524,25 @@ export const updateUser = async (
   return response.data.user;
 };
 
-export const deleteUser = async (userId: string): Promise<void> => {
-  await API.delete(`/api/admin/users/${userId}`);
+export const deleteUser = async (
+  userId: string,
+  confirmation: string
+): Promise<void> => {
+  await API.delete(`/api/admin/users/${userId}`, {
+    data: { confirmation },
+  });
+};
+
+export const getAdminActivityLogs = async (
+  filters: AdminActivityLogFilters = {}
+): Promise<AdminActivityLogResponse> => {
+  const response = await API.get("/api/admin/activity-log", { params: filters });
+  return response.data;
+};
+
+export const getAdminActivitySummary = async (): Promise<AdminActivitySummary> => {
+  const response = await API.get("/api/admin/activity-log/summary");
+  return response.data;
 };
 
 export const setAddressPlan = async (
@@ -1126,6 +1184,15 @@ export const updateRequestStatus = async (
   return response.data.request;
 };
 
+export const deleteRequestLead = async (
+  requestId: string,
+  confirmation: string
+): Promise<void> => {
+  await API.delete(`/api/admin/requests/${encodeURIComponent(requestId)}`, {
+    data: { confirmation },
+  });
+};
+
 // Projects
 export const getProjects = async (filters?: {
   status?: string;
@@ -1154,8 +1221,13 @@ export const updateProject = async (
   return response.data.project;
 };
 
-export const deleteProject = async (projectId: string): Promise<void> => {
-  await API.delete(`/api/admin/projects/${projectId}`);
+export const deleteProject = async (
+  projectId: string,
+  confirmation: string
+): Promise<void> => {
+  await API.delete(`/api/admin/projects/${projectId}`, {
+    data: { confirmation },
+  });
 };
 
 // Estimates

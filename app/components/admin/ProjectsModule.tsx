@@ -194,6 +194,10 @@ export default function ProjectsModule() {
   const [customer, setCustomer] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -226,6 +230,34 @@ export default function ProjectsModule() {
     setDetailTab("overview");
     setError("");
     setView("details");
+  };
+
+  const closeDeleteProject = () => {
+    if (deleting) return;
+    setDeleteTarget(null);
+    setDeleteConfirmation("");
+    setDeleteError("");
+  };
+
+  const confirmDeleteProject = async () => {
+    if (!deleteTarget || deleteConfirmation !== deleteTarget.projectNumber) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await deleteProject(deleteTarget._id, deleteConfirmation);
+      setProjects((current) => current.filter((project) => project._id !== deleteTarget._id));
+      if (selected?._id === deleteTarget._id) {
+        setSelected(null);
+        setView("list");
+      }
+      setDeleteTarget(null);
+      setDeleteConfirmation("");
+      setDeleteError("");
+    } catch (deleteProjectError) {
+      setDeleteError(errorMessage(deleteProjectError));
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (view === "create") {
@@ -277,6 +309,7 @@ export default function ProjectsModule() {
 
   if (view === "details" && selected) {
     return (
+      <>
       <div className="mx-auto max-w-5xl space-y-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -294,17 +327,10 @@ export default function ProjectsModule() {
             {detailTab === "overview" && (
               <button
                 type="button"
-                onClick={async () => {
-                  if (!window.confirm(`Delete ${selected.projectNumber}? This cannot be undone.`)) return;
-                  setError("");
-                  try {
-                    await deleteProject(selected._id);
-                    setProjects((current) => current.filter((project) => project._id !== selected._id));
-                    setSelected(null);
-                    setView("list");
-                  } catch (deleteError) {
-                    setError(errorMessage(deleteError));
-                  }
+                onClick={() => {
+                  setDeleteTarget(selected);
+                  setDeleteConfirmation("");
+                  setDeleteError("");
                 }}
                 className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700"
               >
@@ -364,6 +390,73 @@ export default function ProjectsModule() {
           <ProjectEstimates project={selected} />
         )}
       </div>
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-[90] flex items-end justify-center bg-slate-950/60 px-3 py-4 backdrop-blur-sm sm:items-center"
+          onClick={closeDeleteProject}
+        >
+          <div
+            className="w-full max-w-lg rounded-[28px] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.30)] sm:p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-rose-600">Delete Project</div>
+                <h3 className="mt-1 text-2xl font-black text-slate-950">Delete Project</h3>
+              </div>
+              <button
+                type="button"
+                onClick={closeDeleteProject}
+                disabled={deleting}
+                className="grid h-9 w-9 place-items-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:opacity-50"
+                aria-label="Close delete project confirmation"
+              >
+                ×
+              </button>
+            </div>
+            <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+              This action cannot be undone. Existing estimates must be deleted before a project can be deleted.
+            </div>
+            <div className="mt-4 space-y-2">
+              <div className="text-sm text-slate-600">
+                Type the project number exactly to continue:{' '}
+                <span className="font-bold text-slate-950">{deleteTarget.projectNumber}</span>
+              </div>
+              <input
+                value={deleteConfirmation}
+                onChange={(event) => setDeleteConfirmation(event.target.value)}
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-rose-400 focus:ring-4 focus:ring-rose-100"
+                placeholder={deleteTarget.projectNumber}
+                autoFocus
+              />
+            </div>
+            {deleteError && (
+              <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+                {deleteError}
+              </div>
+            )}
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={closeDeleteProject}
+                disabled={deleting}
+                className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteProject}
+                disabled={deleting || deleteConfirmation !== deleteTarget.projectNumber}
+                className="rounded-2xl bg-rose-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deleting ? "Deleting..." : "Delete Project"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
     );
   }
 
