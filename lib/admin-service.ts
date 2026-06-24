@@ -84,6 +84,8 @@ export interface CampaignRequest {
   body: string;
   ctaText?: string;
   ctaUrl?: string;
+  excludedUserIds?: string[];
+  excludedEmails?: string[];
 }
 
 export interface CampaignResponse {
@@ -93,6 +95,7 @@ export interface CampaignResponse {
   sent: number;
   failed: number;
   skipped: number;
+  excluded?: number;
   adminCopySent: boolean;
   status: string;
   errors: Array<{ email: string; error: string }>;
@@ -105,6 +108,32 @@ export interface CampaignPreview {
   html: string;
   text: string;
   sampleValues: Record<string, string>;
+  includedRecipients?: CampaignRecipient[];
+  excludedRecipientCount?: number;
+  eligibleBeforeExclusions?: number;
+}
+
+export interface CampaignRecipient {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  plans: string[];
+  subscriptionStatuses: string[];
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+}
+
+export interface CampaignRecipientsResponse {
+  segment: string;
+  includedCount: number;
+  excludedCount: number;
+  eligibleBeforeExclusions: number;
+  recipients: CampaignRecipient[];
+  excludedRecipients: CampaignRecipient[];
 }
 
 export interface CampaignVariable {
@@ -123,7 +152,53 @@ export interface CampaignTestResponse {
   testOnly: true;
   recipient: string;
   estimatedRecipientCount: number;
+  excludedRecipientCount?: number;
   providerMessageId: string;
+}
+
+export interface EmailLogItem {
+  _id: string;
+  templateKey?: string;
+  subject?: string;
+  recipientEmail?: string;
+  recipientName?: string;
+  customerEmail?: string;
+  customerName?: string;
+  bookingNumber?: string;
+  campaignNumber?: string;
+  source?: string;
+  emailType?: string;
+  status: 'sent' | 'failed';
+  sentAt?: string | null;
+  failedAt?: string | null;
+  providerMessageId?: string;
+  providerResponse?: string;
+  errorMessage?: string;
+  errorCode?: string;
+  responseCode?: string;
+  createdAt: string;
+}
+
+export interface EmailLogFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  templateKey?: string;
+  bookingNumber?: string;
+  customerEmail?: string;
+  recipientEmail?: string;
+  status?: string;
+  emailType?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface EmailLogResponse {
+  items: EmailLogItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 export interface RequestLead {
@@ -508,6 +583,28 @@ export const previewCampaign = async (
 export const getCampaignVariables = async (): Promise<CampaignVariableGroup[]> => {
   const response = await API.get('/api/admin/campaigns/variables');
   return response.data.groups;
+};
+
+export const getCampaignRecipients = async (
+  segment: string,
+  excludedUserIds: string[] = [],
+  excludedEmails: string[] = []
+): Promise<CampaignRecipientsResponse> => {
+  const response = await API.get('/api/admin/campaigns/recipients', {
+    params: {
+      segment,
+      excludedUserIds: excludedUserIds.join(','),
+      excludedEmails: excludedEmails.join(','),
+    },
+  });
+  return response.data;
+};
+
+export const getEmailLogs = async (
+  filters: EmailLogFilters = {}
+): Promise<EmailLogResponse> => {
+  const response = await API.get('/api/admin/email-logs', { params: filters });
+  return response.data;
 };
 
 // Calendar Config

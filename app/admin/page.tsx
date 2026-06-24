@@ -327,26 +327,168 @@ export default function AdminPage() {
   };
 
   const qlc = q.trim().toLowerCase();
+  const normalizedQueryDigits = qlc.replace(/\D/g, "");
+  const normalizedBookingQuery = qlc.replace(/^#+/, "");
+  const normalizedUserIdQuery = qlc.replace(/[^a-z0-9]/g, "");
+
+  const bookingMatchesSearch = useCallback((booking: Booking, query: string) => {
+    if (!query) return true;
+
+    const phoneDigits = String(booking.phone || "").replace(/\D/g, "");
+    const phoneWithoutCountry =
+      phoneDigits.length === 11 && phoneDigits.startsWith("1")
+        ? phoneDigits.slice(1)
+        : phoneDigits;
+    const queryPhoneWithoutCountry =
+      normalizedQueryDigits.length === 11 && normalizedQueryDigits.startsWith("1")
+        ? normalizedQueryDigits.slice(1)
+        : normalizedQueryDigits;
+
+    const bookingNumber = String(booking.bookingNumber || "").toLowerCase();
+    const bookingNumberPlain = bookingNumber.replace(/^#+/, "");
+    const bookingId = String(booking._id || "").toLowerCase();
+    const fullAddress = [
+      booking.address,
+      booking.city,
+      booking.state,
+      booking.zip,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    const name = String(booking.name || "").toLowerCase();
+    const nameParts = name.split(/\s+/).filter(Boolean);
+
+    const searchableText = [
+      booking._id,
+      booking.userId,
+      booking.bookingNumber,
+      booking.service,
+      booking.status,
+      booking.name,
+      booking.email,
+      booking.phone,
+      booking.address,
+      booking.city,
+      booking.zip,
+      fullAddress,
+    ]
+      .map((value) => String(value || "").toLowerCase())
+      .join(" ");
+
+    if (searchableText.includes(query)) return true;
+    if (nameParts.some((part) => part.includes(query))) return true;
+    if (bookingId.includes(normalizedBookingQuery)) return true;
+    if (bookingNumber.includes(query) || bookingNumberPlain.includes(normalizedBookingQuery)) {
+      return true;
+    }
+    if (
+      normalizedQueryDigits.length >= 3 &&
+      (phoneDigits.includes(normalizedQueryDigits) ||
+        phoneWithoutCountry.includes(queryPhoneWithoutCountry))
+    ) {
+      return true;
+    }
+
+    return false;
+  }, [normalizedBookingQuery, normalizedQueryDigits]);
+
+  const userMatchesSearch = useCallback((candidate: User, query: string) => {
+    if (!query) return true;
+
+    const userRecord = candidate as User & Record<string, unknown>;
+    const addresses = [
+      ...(candidate.addressesDetailed || []),
+      ...(candidate.addresses || []),
+    ];
+    const phoneDigits = String(candidate.phone || "").replace(/\D/g, "");
+    const phoneWithoutCountry =
+      phoneDigits.length === 11 && phoneDigits.startsWith("1")
+        ? phoneDigits.slice(1)
+        : phoneDigits;
+    const queryPhoneWithoutCountry =
+      normalizedQueryDigits.length === 11 && normalizedQueryDigits.startsWith("1")
+        ? normalizedQueryDigits.slice(1)
+        : normalizedQueryDigits;
+
+    const name = String(candidate.name || "").toLowerCase();
+    const nameParts = name.split(/\s+/).filter(Boolean);
+    const addressText = addresses
+      .map((address) =>
+        [
+          address._id,
+          address.label,
+          address.line1,
+          address.city,
+          address.state,
+          address.zip,
+          "county" in address ? address.county : "",
+          "plan" in address ? address.plan : "",
+        ]
+          .filter(Boolean)
+          .join(" ")
+      )
+      .join(" ");
+
+    const possibleIds = [
+      candidate._id,
+      candidate.userId,
+      candidate.defaultAddressId,
+      userRecord.customerId,
+      userRecord.stripeCustomerId,
+      userRecord.subscriptionId,
+      userRecord.stripeSubscriptionId,
+      userRecord.currentSubscriptionId,
+      ...addresses.map((address) => address._id),
+    ];
+
+    const searchableText = [
+      candidate._id,
+      candidate.userId,
+      candidate.name,
+      candidate.email,
+      candidate.phone,
+      candidate.subscription,
+      candidate.defaultAddressId,
+      addressText,
+      ...possibleIds,
+    ]
+      .map((value) => String(value || "").toLowerCase())
+      .join(" ");
+
+    if (searchableText.includes(query)) return true;
+    if (nameParts.some((part) => part.includes(query))) return true;
+
+    if (
+      normalizedQueryDigits.length >= 3 &&
+      (phoneDigits.includes(normalizedQueryDigits) ||
+        phoneWithoutCountry.includes(queryPhoneWithoutCountry))
+    ) {
+      return true;
+    }
+
+    if (
+      normalizedUserIdQuery &&
+      possibleIds
+        .map((value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, ""))
+        .some((value) => value.includes(normalizedUserIdQuery))
+    ) {
+      return true;
+    }
+
+    return false;
+  }, [normalizedQueryDigits, normalizedUserIdQuery]);
 
   const filteredUsers = useMemo(
-    () =>
-      users.filter((u) =>
-        [u.userId, u.name, u.email]
-          .map((v) => String(v || "").toLowerCase())
-          .some((s) => s.includes(qlc))
-      ),
-    [users, qlc]
+    () => users.filter((candidate) => userMatchesSearch(candidate, qlc)),
+    [users, qlc, userMatchesSearch]
   );
 
   const filteredBookings = useMemo(() => {
     let list = bookings;
 
     if (qlc) {
-      list = list.filter((b) =>
-        [b.userId, b.name, b.service, b.status].some((v) =>
-          String(v || "").toLowerCase().includes(qlc)
-        )
-      );
+      list = list.filter((b) => bookingMatchesSearch(b, qlc));
     }
 
     if (bookingQuickFilter === "upcoming") {
@@ -371,7 +513,7 @@ export default function AdminPage() {
     return list.sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
-  }, [bookings, qlc, statusFilter, selectedDate, bookingQuickFilter]);
+  }, [bookingMatchesSearch, bookings, qlc, statusFilter, selectedDate, bookingQuickFilter]);
 
   const filteredRequests = useMemo(() => {
     let list = requests;
@@ -396,9 +538,9 @@ export default function AdminPage() {
   const subscribedUsers = useMemo(() => {
     return users.filter((u) => {
       const addresses = u.addressesDetailed || [];
-      return addresses.some((a) => !!a.plan);
+      return addresses.some((a) => !!a.plan) && userMatchesSearch(u, qlc);
     });
-  }, [users]);
+  }, [qlc, userMatchesSearch, users]);
 
   const blacklistByUserId = useMemo(
     () => new Map(blacklist.map((entry) => [String(entry.userId), entry._id])),
@@ -581,7 +723,13 @@ export default function AdminPage() {
               </svg>
               <input
                 className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="Search..."
+                placeholder={
+                  active === "bookings"
+                    ? "Search name, phone, email, address, zip, booking #..."
+                    : active === "users" || active === "subscribed"
+                    ? "Search by name, email, phone, address, zip, plan, or ID"
+                    : "Search..."
+                }
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
               />

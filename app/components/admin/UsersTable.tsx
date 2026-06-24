@@ -121,7 +121,6 @@ export default function UsersTable({
   onRunSubscriptionCleanup,
   readOnly = false,
 }: UsersTableProps) {
-  const [search, setSearch] = useState('');
   const [planFilter, setPlanFilter] = useState<PlanFilter>('all');
   const [savingCancellationByAddress, setSavingCancellationByAddress] = useState<Record<string, boolean>>({});
   const [isRunningCleanup, setIsRunningCleanup] = useState(false);
@@ -220,19 +219,11 @@ export default function UsersTable({
   }, [users]);
 
   const filteredRows = useMemo(() => {
-    const q = search.trim().toLowerCase();
-
-    return rows.filter(({ user, addressText, rowPlan }) => {
+    return rows.filter(({ rowPlan }) => {
       const matchesPlan = planFilter === 'all' ? true : rowPlan === planFilter;
-      if (!matchesPlan) return false;
-
-      if (!q) return true;
-
-      return [user.userId, user.name, user.email, user.phone, addressText, rowPlan]
-        .map((value) => String(value || '').toLowerCase())
-        .some((value) => value.includes(q));
+      return matchesPlan;
     });
-  }, [planFilter, rows, search]);
+  }, [planFilter, rows]);
 
   const visibleUserCount = useMemo(() => {
     return new Set(filteredRows.map(({ user }) => user._id)).size;
@@ -413,29 +404,6 @@ export default function UsersTable({
 
       <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.06)] md:p-5">
         <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="relative w-full xl:max-w-xl">
-            <svg
-              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            <input
-              type="text"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by ID, name, email, phone, address, or plan"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100"
-            />
-          </div>
-
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
               Showing <span className="font-semibold text-slate-900">{filteredRows.length}</span> records for{' '}
@@ -745,7 +713,7 @@ export default function UsersTable({
           <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
             <div className="text-lg font-semibold text-slate-900">No users match this view</div>
             <p className="mt-2 text-sm text-slate-500">
-              Try switching the plan filter back to All or clear the search to widen the CRM list.
+              Try switching the plan filter back to All or clear the top search to widen the CRM list.
             </p>
           </div>
         )}

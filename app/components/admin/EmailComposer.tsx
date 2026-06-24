@@ -2,15 +2,19 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  getCampaignRecipients,
   getCampaignVariables,
   getSegmentCounts,
   previewCampaign,
   sendCampaign,
   sendCampaignTest,
 } from '@/lib/admin-service';
+import EmailHistory from './EmailHistory';
 import type {
   CampaignPreview,
+  CampaignRecipient,
   CampaignRequest,
+  CampaignRecipientsResponse,
   CampaignVariableGroup,
   SegmentCounts,
 } from '@/lib/admin-service';
@@ -39,6 +43,7 @@ function errorMessage(error: unknown) {
 }
 
 export default function EmailComposer() {
+  const [section, setSection] = useState<'compose' | 'history'>('compose');
   const [counts, setCounts] = useState<SegmentCounts | null>(null);
   const [segment, setSegment] = useState('not_subscribed');
   const [subject, setSubject] = useState('');
@@ -53,12 +58,53 @@ export default function EmailComposer() {
   const [variableGroups, setVariableGroups] = useState<CampaignVariableGroup[]>([]);
   const [variablesOpen, setVariablesOpen] = useState(false);
   const [copiedTag, setCopiedTag] = useState('');
+  const [recipients, setRecipients] = useState<CampaignRecipientsResponse | null>(null);
+  const [loadingRecipients, setLoadingRecipients] = useState(false);
+  const [recipientSearch, setRecipientSearch] = useState('');
+  const [excludedUserIds, setExcludedUserIds] = useState<Set<string>>(new Set());
 
-  const selectedCount = counts?.[segment as keyof SegmentCounts] ?? 0;
+  const excludedUserIdList = useMemo(() => Array.from(excludedUserIds), [excludedUserIds]);
+  const selectedCount =
+    recipients?.includedCount ?? counts?.[segment as keyof SegmentCounts] ?? 0;
+  const excludedCount =
+    recipients?.excludedCount ??
+    Math.max(0, (counts?.[segment as keyof SegmentCounts] ?? 0) - selectedCount);
   const payload = useMemo<CampaignRequest>(
-    () => ({ segment, subject, body, ctaText, ctaUrl }),
-    [segment, subject, body, ctaText, ctaUrl]
+    () => ({
+      segment,
+      subject,
+      body,
+      ctaText,
+      ctaUrl,
+      excludedUserIds: excludedUserIdList,
+    }),
+    [body, ctaText, ctaUrl, excludedUserIdList, segment, subject]
   );
+
+  const allDisplayedRecipients = useMemo(
+    () => [
+      ...(recipients?.recipients || []),
+      ...(recipients?.excludedRecipients || []),
+    ],
+    [recipients]
+  );
+
+  const visibleRecipients = useMemo(() => {
+    const query = recipientSearch.trim().toLowerCase();
+    const list = allDisplayedRecipients;
+    if (!query) return list;
+    return list.filter((recipient) =>
+      [
+        recipient.name,
+        recipient.email,
+        recipient.userId,
+        recipient.plans.join(', '),
+        recipient.subscriptionStatuses.join(', '),
+      ]
+        .map((value) => String(value || '').toLowerCase())
+        .some((value) => value.includes(query))
+    );
+  }, [allDisplayedRecipients, recipientSearch]);
 
   async function loadCounts() {
     try {
@@ -81,6 +127,29 @@ export default function EmailComposer() {
         setNotice(errorMessage(error));
       });
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadRecipients() {
+      try {
+        setLoadingRecipients(true);
+        setRecipients(
+          await getCampaignRecipients(segment, excludedUserIdList)
+        );
+      } catch (error) {
+        if (!cancelled) {
+          setNoticeType('error');
+          setNotice(errorMessage(error));
+        }
+      } finally {
+        if (!cancelled) setLoadingRecipients(false);
+      }
+    }
+    void loadRecipients();
+    return () => {
+      cancelled = true;
+    };
+  }, [excludedUserIdList, segment]);
 
   async function copyVariable(tag: string) {
     try {
@@ -129,7 +198,7 @@ export default function EmailComposer() {
       const result = await sendCampaignTest(payload);
       setNoticeType('success');
       setNotice(
-        `Test sent only to ${result.recipient}. Estimated audience: ${result.estimatedRecipientCount}.`
+        `Test sent only to ${result.recipient}. Estimated audience: ${result.estimatedRecipientCount}; excluded ${result.excludedRecipientCount || 0}.`
       );
     } catch (error) {
       setNoticeType('error');
@@ -142,7 +211,7 @@ export default function EmailComposer() {
   async function handleSend() {
     if (!validate()) return;
     const confirmed = window.confirm(
-      `Send this campaign to ${selectedCount} ${SEGMENTS.find((item) => item.id === segment)?.label ?? segment} recipient(s)? An admin copy will also be sent to getfixter@gmail.com.`
+      `Send this campaign to ${selectedCount} ${SEGMENTS.find((item) => item.id === segment)?.label ?? segment} recipient(s)? ${excludedCount} excluded. An admin copy will also be sent to getfixter@gmail.com.`
     );
     if (!confirmed) return;
 
@@ -153,7 +222,7 @@ export default function EmailComposer() {
       setNotice(
         `${result.campaignId}: sent ${result.sent}/${result.total}; failed ${result.failed}; admin copy ${
           result.adminCopySent ? 'sent' : 'failed'
-        }.`
+        }; excluded ${result.excluded || result.skipped || 0}.`
       );
       await loadCounts();
     } catch (error) {
@@ -164,7 +233,55 @@ export default function EmailComposer() {
     }
   }
 
+  function toggleRecipient(recipient: CampaignRecipient) {
+    setExcludedUserIds((current) => {
+      const next = new Set(current);
+      if (next.has(recipient.id)) next.delete(recipient.id);
+      else next.add(recipient.id);
+      return next;
+    });
+  }
+
+  function includeAll() {
+    setExcludedUserIds(new Set());
+  }
+
+  function excludeVisible() {
+    setExcludedUserIds((current) => {
+      const next = new Set(current);
+      for (const recipient of visibleRecipients) next.add(recipient.id);
+      return next;
+    });
+  }
+
   return (
+    <div className="space-y-5">
+      <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm sm:flex-row">
+        {[
+          ['compose', 'Compose Campaign'],
+          ['history', 'Email History'],
+        ].map(([id, label]) => {
+          const active = section === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setSection(id as 'compose' | 'history')}
+              className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+                active
+                  ? 'bg-slate-950 text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {section === 'history' ? (
+        <EmailHistory />
+      ) : (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <header className="border-b border-slate-200 bg-slate-950 px-5 py-5 text-white md:px-7">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -264,7 +381,11 @@ export default function EmailComposer() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setSegment(item.id)}
+                  onClick={() => {
+                    setSegment(item.id);
+                    setExcludedUserIds(new Set());
+                    setRecipientSearch('');
+                  }}
                   className={`rounded-xl border p-3 text-left transition ${
                     active
                       ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600'
@@ -282,6 +403,104 @@ export default function EmailComposer() {
             })}
           </div>
         </div>
+
+        <section className="rounded-xl border border-slate-200 bg-slate-50">
+          <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-slate-950">Recipients included</h3>
+              <p className="mt-1 text-xs text-slate-500">
+                {loadingRecipients
+                  ? 'Loading recipients...'
+                  : `${selectedCount} included · ${excludedCount} excluded`}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                value={recipientSearch}
+                onChange={(event) => setRecipientSearch(event.target.value)}
+                placeholder="Search name or email"
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-600"
+              />
+              <button
+                type="button"
+                onClick={includeAll}
+                disabled={!excludedUserIds.size}
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+              >
+                Include all
+              </button>
+              <button
+                type="button"
+                onClick={excludeVisible}
+                disabled={!visibleRecipients.length}
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+              >
+                Exclude visible
+              </button>
+            </div>
+          </div>
+
+          <div className="max-h-[360px] overflow-y-auto p-3">
+            {loadingRecipients && !recipients ? (
+              <div className="rounded-xl bg-white px-4 py-5 text-center text-sm text-slate-500">
+                Loading recipient list...
+              </div>
+            ) : visibleRecipients.length === 0 ? (
+              <div className="rounded-xl bg-white px-4 py-5 text-center text-sm text-slate-500">
+                No recipients match this search.
+              </div>
+            ) : (
+              <div className="grid gap-2">
+                {visibleRecipients.map((recipient) => {
+                  const included = !excludedUserIds.has(recipient.id);
+                  const planText = recipient.plans.length
+                    ? recipient.plans.join(', ')
+                    : 'not subscribed';
+                  const statusText = recipient.subscriptionStatuses.length
+                    ? recipient.subscriptionStatuses.join(', ')
+                    : 'no active plan';
+                  return (
+                    <label
+                      key={recipient.id}
+                      className={`flex cursor-pointer items-start gap-3 rounded-xl border bg-white p-3 transition ${
+                        included
+                          ? 'border-slate-200 hover:border-blue-300'
+                          : 'border-rose-200 bg-rose-50/50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={included}
+                        onChange={() => toggleRecipient(recipient)}
+                        className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-500"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-bold text-slate-950">
+                          {recipient.name || 'Unnamed customer'}
+                        </span>
+                        <span className="block break-all text-xs text-slate-500">
+                          {recipient.email}
+                        </span>
+                        <span className="mt-1 block text-xs text-slate-500">
+                          {planText} · {statusText}
+                        </span>
+                      </span>
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-bold ${
+                          included
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-rose-100 text-rose-700'
+                        }`}
+                      >
+                        {included ? 'Included' : 'Excluded'}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
 
         <div className="grid gap-5">
           <label className="grid gap-2">
@@ -414,5 +633,7 @@ export default function EmailComposer() {
         )}
       </div>
     </section>
+      )}
+    </div>
   );
 }
