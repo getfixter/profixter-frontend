@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
-import { trackEvent } from "@/lib/analytics";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,6 +18,7 @@ export default function Header() {
   const navItems = useMemo(
     () => [
       { href: "/membership-info", label: "Membership" },
+      { href: "/communities", label: "Communities" },
       { href: "/roofing", label: "Roofing" },
       { href: "/siding", label: "Siding" },
       ...(isAuthenticated ? [{ href: "/account", label: "Account" }] : []),
@@ -36,24 +36,6 @@ export default function Header() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const scrollToHash = (hash: string) => {
-    const id = hash.replace("#", "");
-    const el = document.getElementById(id);
-    if (!el) return;
-
-    const headerOffset = window.innerWidth >= 1024 ? 120 : 100;
-    const y = el.getBoundingClientRect().top + window.scrollY - headerOffset;
-
-    window.scrollTo({ top: y, behavior: "smooth" });
-    history.replaceState(null, "", hash);
-  };
-
-  const handleTrackedHashClick = (hash: string) => {
-    if (hash === "#plans") trackEvent("view_plans", { placement: "header" });
-    if (hash === "#pick-day") trackEvent("start_booking", { placement: "header" });
-    scrollToHash(hash);
-  };
 
   useEffect(() => {
     if (isMenuOpen) document.body.style.overflow = "hidden";

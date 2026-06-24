@@ -1,8 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useState } from "react";
 import Footer from "@/app/components/sections/Footer";
+import Header from "@/app/components/sections/Header";
+
+const CONTACT_PHONE_DISPLAY = "631-599-1363";
+const CONTACT_PHONE_TEL = "tel:6315991363";
+const CONTACT_EMAIL = "getfixter@gmail.com";
+const SUCCESS_MESSAGE = "Thank you — we received your request. We’ll reach out shortly.";
 
 type FormState = {
   communityName: string;
@@ -109,7 +114,7 @@ const faqs = [
   },
   {
     q: "Can we schedule a meeting?",
-    a: "Yes. Send the form or call (631) 801-0007 and we can set up a partnership conversation.",
+    a: `Yes. Send the form or call ${CONTACT_PHONE_DISPLAY} and we can set up a partnership conversation.`,
   },
 ];
 
@@ -230,34 +235,30 @@ export default function CommunitiesPage() {
       const body = (await response.json().catch(() => ({}))) as { message?: string };
       if (!response.ok) {
         setStatus("error");
-        setMessage(body.message || "We could not send your request. Please call (631) 801-0007.");
+        setMessage(body.message || `We could not send your request. Please call ${CONTACT_PHONE_DISPLAY}.`);
         return;
       }
 
       setStatus("success");
       setMessage("Thank you — we received your request. We’ll reach out shortly.");
+      setMessage(SUCCESS_MESSAGE);
       setForm(initialForm);
     } catch {
       setStatus("error");
-      setMessage("We could not send your request. Please call (631) 801-0007.");
+      setMessage(`We could not send your request. Please call ${CONTACT_PHONE_DISPLAY}.`);
     }
   };
 
   return (
     <main className="min-h-screen bg-[#F5F7FB] text-[#0B1628]">
-      <section className="relative overflow-hidden bg-[#07111F] px-4 py-8 text-white sm:px-6 lg:px-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(48,110,236,0.28),transparent_34%),radial-gradient(circle_at_80%_10%,rgba(212,165,116,0.18),transparent_28%)]" />
-        <div className="relative mx-auto flex max-w-[1240px] items-center justify-between">
-          <Link href="/" className="text-[18px] font-black tracking-[-0.02em]">Profixter</Link>
-          <a href="tel:+16318010007" className="rounded-full border border-white/15 px-4 py-2 text-[13px] font-bold text-white/85 transition hover:bg-white/10">
-            Call (631) 801-0007
-          </a>
+      <section className="relative overflow-hidden bg-[#07111F] px-4 pb-20 pt-4 text-white sm:px-6 sm:pb-24 lg:px-8">
+        <div className="relative z-20 -mx-4 sm:-mx-6 lg:-mx-8">
+          <Header />
         </div>
-      </section>
-
-      <section className="relative overflow-hidden bg-[#07111F] px-4 pb-20 pt-10 text-white sm:px-6 sm:pb-24 lg:px-8 lg:pt-16">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(48,110,236,0.28),transparent_34%),radial-gradient(circle_at_80%_10%,rgba(212,165,116,0.18),transparent_28%)]" />
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#F5F7FB] to-transparent" />
-        <div className="relative mx-auto grid max-w-[1240px] gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.035]" style={{ backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)", backgroundSize: "30px 30px" }} />
+        <div className="relative mx-auto grid max-w-[1240px] gap-12 pt-14 sm:pt-18 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pt-20">
           <div>
             <div className="mb-6 inline-flex rounded-full border border-white/12 bg-white/8 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#BFD2FF]">
               HOA • Condo • 55+ • Property Management
@@ -272,9 +273,16 @@ export default function CommunitiesPage() {
               <a href="#partnership-form" className="inline-flex h-14 items-center justify-center rounded-[16px] bg-[#306EEC] px-7 text-[15px] font-black text-white shadow-[0_18px_52px_rgba(48,110,236,0.35)] transition hover:-translate-y-0.5 hover:bg-[#2558c9]">
                 Schedule A Conversation
               </a>
-              <a href="tel:+16318010007" className="inline-flex h-14 items-center justify-center rounded-[16px] border border-white/16 bg-white/8 px-7 text-[15px] font-black text-white transition hover:-translate-y-0.5 hover:bg-white/12">
-                Call (631) 801-0007
+              <a href={CONTACT_PHONE_TEL} className="inline-flex h-14 items-center justify-center rounded-[16px] border border-white/16 bg-white/8 px-7 text-[15px] font-black text-white transition hover:-translate-y-0.5 hover:bg-white/12">
+                Call {CONTACT_PHONE_DISPLAY}
               </a>
+            </div>
+            <div className="mt-8 grid max-w-[620px] gap-3 text-[13px] font-bold text-white/62 sm:grid-cols-3">
+              {["No burden on management", "Resident-first support", "Long Island based"].map((item) => (
+                <div key={item} className="rounded-[16px] border border-white/10 bg-white/[0.06] px-4 py-3">
+                  {item}
+                </div>
+              ))}
             </div>
           </div>
           <PartnershipIllustration />
@@ -282,15 +290,33 @@ export default function CommunitiesPage() {
       </section>
 
       <section className="px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-[1240px] gap-3 sm:grid-cols-2 lg:grid-cols-6">
-          {trustItems.map((item) => (
-            <div key={item} className="rounded-[18px] border border-[#E2E8F0] bg-white p-4 shadow-sm">
-              <div className="mb-3 grid h-9 w-9 place-items-center rounded-[12px] bg-[#EEF5FF] text-[#306EEC]">
-                <IconMark />
+        <div className="mx-auto max-w-[1240px]">
+          <div className="-mt-14 mb-8 rounded-[28px] border border-white/70 bg-white/85 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur sm:p-6 lg:p-7">
+            <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+              <div>
+                <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
+                  For Long Island communities
+                </div>
+                <h2 className="mt-2 text-[24px] font-black leading-tight tracking-[-0.03em] text-[#0B1628] sm:text-[30px]">
+                  Built for HOA boards, condo associations, property managers, and 55+ communities.
+                </h2>
               </div>
-              <div className="text-[13px] font-black leading-snug text-[#0B1628]">{item}</div>
+              <p className="text-[14px] leading-7 text-[#64748B] sm:text-[15px]">
+                Profixter gives residents a clear local resource for everyday repairs, small projects, and ongoing maintenance support across Nassau and Suffolk Counties.
+              </p>
             </div>
-          ))}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+            {trustItems.map((item) => (
+              <div key={item} className="rounded-[18px] border border-[#E2E8F0] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
+                <div className="mb-3 grid h-9 w-9 place-items-center rounded-[12px] bg-[#EEF5FF] text-[#306EEC]">
+                  <IconMark />
+                </div>
+                <div className="text-[13px] font-black leading-snug text-[#0B1628]">{item}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -398,9 +424,21 @@ export default function CommunitiesPage() {
             <p className="mt-5 text-[16px] leading-8 text-[#64748B]">
               We would love to learn more about your residents and discuss ways we may be able to provide value.
             </p>
-            <div className="mt-6 space-y-2 text-[14px] font-bold text-[#0B1628]">
-              <a href="tel:+16318010007" className="block transition hover:text-[#306EEC]">Phone: (631) 801-0007</a>
-              <a href="mailto:support@profixter.com" className="block transition hover:text-[#306EEC]">Email: support@profixter.com</a>
+            <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <a
+                href={CONTACT_PHONE_TEL}
+                className="rounded-[20px] border border-[#D9E4FF] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#306EEC]/35 hover:shadow-[0_18px_44px_rgba(48,110,236,0.10)]"
+              >
+                <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#64748B]">Phone</div>
+                <div className="mt-1 text-[18px] font-black text-[#0B1628]">{CONTACT_PHONE_DISPLAY}</div>
+              </a>
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="rounded-[20px] border border-[#D9E4FF] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#306EEC]/35 hover:shadow-[0_18px_44px_rgba(48,110,236,0.10)]"
+              >
+                <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#64748B]">Email</div>
+                <div className="mt-1 break-all text-[18px] font-black text-[#0B1628]">{CONTACT_EMAIL}</div>
+              </a>
             </div>
           </div>
 
