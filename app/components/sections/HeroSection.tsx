@@ -16,9 +16,9 @@ type NextBookingResponse = {
 };
 
 const BENEFITS = [
-  "90-minute visits",
-  "Same trusted team",
-  "One monthly price",
+  "90-Minute Visits",
+  "Trusted Local Team",
+  "Cancel Anytime",
 ];
 
 const TRUST_ROW = [
@@ -139,13 +139,12 @@ export default function HeroSection() {
       <div className="relative mx-auto flex min-h-[calc(100svh-104px)] max-w-[1180px] items-center px-4 py-16 sm:px-6 sm:py-20 lg:min-h-[calc(100svh-116px)] lg:px-8">
         <div className="w-full max-w-[680px] text-left">
           <h1 className="max-w-[350px] text-[40px] font-black leading-[0.98] tracking-[-0.025em] text-white sm:max-w-[680px] sm:text-[60px] sm:leading-[0.98] sm:tracking-[-0.028em] lg:text-[66px]">
-            <span className="block">Smart People</span>
-            <span className="block">Use</span>
-            <span className="block">Handyman Monthly</span>
+            <span className="block">We Take Care</span>
+            <span className="block">Of Your House</span>
           </h1>
 
           <p className="mt-6 max-w-[350px] text-[17px] font-semibold leading-[1.55] text-white/76 sm:max-w-[590px] sm:text-[20px]">
-            Same trusted team. One monthly price. No estimates. No surprise invoices.
+            From small repairs and installations to the projects you&apos;ve been putting off, Profixter helps Long Island homeowners keep their homes in great shape for one simple monthly price.
           </p>
 
           <div className="mt-7 inline-flex max-w-[350px] items-center gap-3 rounded-full border border-white/12 bg-white/8 px-4 py-2.5 text-[13px] font-extrabold text-white/78 backdrop-blur-md sm:max-w-none">
