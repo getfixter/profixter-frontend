@@ -117,6 +117,9 @@ export default function Footer() {
               </a>
 
               <div className="mt-2 flex flex-col gap-2.5">
+                <Link href="/communities" className="text-[13px] text-white/30 transition-colors hover:text-white/55">
+                  Community Partnerships
+                </Link>
                 <Link href="/privacy" className="text-[13px] text-white/30 transition-colors hover:text-white/55">
                   Privacy Policy
                 </Link>

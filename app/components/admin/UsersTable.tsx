@@ -22,6 +22,7 @@ interface UsersTableProps {
   blacklistByUserId: Map<string, string>;
   onBlacklist: (userId: string) => void;
   onUnblacklist: (blacklistId: string) => void;
+  onDeleteUser: (user: User, confirmation: string) => Promise<void> | void;
   onRunSubscriptionCleanup: () => Promise<void> | void;
   readOnly?: boolean;
 }
@@ -147,6 +148,53 @@ function activityBadgeClass(status: string) {
   return 'border-slate-200 bg-slate-50 text-slate-600';
 }
 
+function titleCaseActivity(value: string) {
+  return String(value || '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatActorRole(role: string) {
+  const value = String(role || '').trim();
+  if (!value) return '';
+  const normalized = value.toLowerCase().replace(/[_-]+/g, ' ');
+  if (normalized === 'general fixter') return 'General Fixter';
+  return titleCaseActivity(normalized);
+}
+
+function getActorLine(item: CustomerActivityItem) {
+  const actorName = String(item.actorName || '').trim();
+  const actorRole = formatActorRole(item.actorRole);
+  const isSystem = !actorName || actorName.toLowerCase() === 'system' || actorRole.toLowerCase() === 'system';
+
+  if (isSystem) return 'By System';
+  return actorRole ? `By ${actorName} · ${actorRole}` : `By ${actorName}`;
+}
+
+function shouldShowActivityStatus(item: CustomerActivityItem) {
+  const status = String(item.status || '').trim();
+  if (!status) return false;
+
+  const type = String(item.type || '').toLowerCase();
+  return (
+    type.startsWith('email_') ||
+    type.includes('subscription') ||
+    type.includes('blacklist') ||
+    status.toLowerCase() === 'failed' ||
+    status.toLowerCase() === 'blocked'
+  );
+}
+
+function getActivityDescriptionLines(item: CustomerActivityItem) {
+  const lines = Array.isArray(item.descriptionLines) && item.descriptionLines.length
+    ? item.descriptionLines
+    : String(item.description || '').split(/\n+/);
+
+  return lines.map((line) => String(line || '').trim()).filter(Boolean);
+}
+
 export default function UsersTable({
   users,
   onSetAddressPlan,
@@ -154,6 +202,7 @@ export default function UsersTable({
   blacklistByUserId,
   onBlacklist,
   onUnblacklist,
+  onDeleteUser,
   onRunSubscriptionCleanup,
   readOnly = false,
 }: UsersTableProps) {
@@ -167,6 +216,10 @@ export default function UsersTable({
   const [historyUnavailableSources, setHistoryUnavailableSources] = useState<string[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
+  const [deleteUserTarget, setDeleteUserTarget] = useState<User | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const minCancellationDate = getTodayNY();
 
@@ -217,6 +270,45 @@ export default function UsersTable({
     setHistoryTotal(0);
     setHistoryUnavailableSources([]);
     setHistoryError('');
+  };
+
+  const openDeleteUser = (selectedUser: User) => {
+    setDeleteUserTarget(selectedUser);
+    setDeleteConfirmation('');
+    setDeleteError('');
+  };
+
+  const closeDeleteUser = () => {
+    if (deleteLoading) return;
+    setDeleteUserTarget(null);
+    setDeleteConfirmation('');
+    setDeleteError('');
+  };
+
+  const expectedDeleteUserConfirmation = deleteUserTarget
+    ? `DELETE ${deleteUserTarget.email}`
+    : '';
+
+  const handleConfirmDeleteUser = async () => {
+    if (!deleteUserTarget || deleteConfirmation !== expectedDeleteUserConfirmation) return;
+    setDeleteLoading(true);
+    setDeleteError('');
+    try {
+      await onDeleteUser(deleteUserTarget, deleteConfirmation);
+      setDeleteUserTarget(null);
+      setDeleteConfirmation('');
+      setDeleteError('');
+    } catch (error) {
+      const message =
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      setDeleteError(message || (error instanceof Error ? error.message : 'Failed to delete user.'));
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const handleSetCancellationDate = async (
@@ -663,6 +755,15 @@ export default function UsersTable({
                               Block
                             </button>
                           ))}
+                          {!readOnly && (
+                            <button
+                              type="button"
+                              onClick={() => openDeleteUser(user)}
+                              className="rounded-xl border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
+                            >
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -812,6 +913,16 @@ export default function UsersTable({
                       Block user
                     </button>
                   ))}
+
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      onClick={() => openDeleteUser(user)}
+                      className="w-full rounded-2xl border border-rose-300 bg-white px-4 py-3 text-sm font-semibold text-rose-700"
+                    >
+                      Delete user
+                    </button>
+                  )}
                 </div>
               </article>
             );
@@ -905,41 +1016,48 @@ export default function UsersTable({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {historyItems.map((item) => (
+                  {historyItems.map((item) => {
+                    const descriptionLines = getActivityDescriptionLines(item);
+                    const showStatus = shouldShowActivityStatus(item);
+
+                    return (
                     <article
                       key={item.id}
-                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                      className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm transition hover:border-slate-300 sm:p-4"
                     >
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <div className="font-bold text-slate-950">{item.title}</div>
-                            {item.status && (
-                              <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${activityBadgeClass(item.status)}`}>
-                                {item.status}
-                              </span>
-                            )}
+                            <div className="text-sm font-extrabold text-slate-950 sm:text-[15px]">{item.title}</div>
                             {item.relatedBookingNumber && (
                               <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-bold text-sky-700">
                                 #{item.relatedBookingNumber}
                               </span>
                             )}
+                            {showStatus && (
+                              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] ${activityBadgeClass(item.status)}`}>
+                                {item.status}
+                              </span>
+                            )}
                           </div>
-                          {item.description && (
-                            <p className="mt-1 text-sm leading-relaxed text-slate-600">{item.description}</p>
+                          {descriptionLines.length > 0 && (
+                            <div className="mt-2 space-y-1 text-sm leading-relaxed text-slate-600">
+                              {descriptionLines.map((line, index) => (
+                                <div key={`${item.id}-line-${index}`}>{line}</div>
+                              ))}
+                            </div>
                           )}
-                          <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-                            {item.actorName && <span>{item.actorName}</span>}
-                            {item.actorRole && <span>· {item.actorRole}</span>}
-                            {item.source && <span>· {item.source.replace(/_/g, ' ')}</span>}
+                          <div className="mt-2 text-xs font-medium text-slate-500">
+                            {getActorLine(item)}
                           </div>
                         </div>
-                        <time className="flex-shrink-0 text-xs font-semibold text-slate-500">
+                        <time className="flex-shrink-0 text-xs font-semibold text-slate-500 sm:text-right">
                           {formatActivityTime(item.timestamp)}
                         </time>
                       </div>
                     </article>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -955,6 +1073,84 @@ export default function UsersTable({
                   </ul>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteUserTarget && (
+        <div
+          className="fixed inset-0 z-[90] flex items-end justify-center bg-slate-950/60 px-3 py-4 backdrop-blur-sm sm:items-center"
+          onClick={closeDeleteUser}
+        >
+          <div
+            className="w-full max-w-lg rounded-[28px] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.30)] sm:p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-rose-600">
+                  High risk action
+                </div>
+                <h3 className="mt-1 text-2xl font-black text-slate-950">Delete User</h3>
+              </div>
+              <button
+                type="button"
+                onClick={closeDeleteUser}
+                disabled={deleteLoading}
+                className="grid h-9 w-9 place-items-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:opacity-50"
+                aria-label="Close delete user confirmation"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+              <div className="font-bold">This will permanently remove the customer account.</div>
+              <div className="mt-1">
+                Deletion is blocked if this customer has active subscriptions or future active bookings.
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <div className="text-sm text-slate-600">
+                Type exactly{' '}
+                <code className="rounded bg-slate-100 px-1.5 py-0.5 font-bold text-slate-950">
+                  {expectedDeleteUserConfirmation}
+                </code>
+              </div>
+              <input
+                value={deleteConfirmation}
+                onChange={(event) => setDeleteConfirmation(event.target.value)}
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-rose-400 focus:ring-4 focus:ring-rose-100"
+                placeholder={expectedDeleteUserConfirmation}
+                autoFocus
+              />
+            </div>
+
+            {deleteError && (
+              <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={closeDeleteUser}
+                disabled={deleteLoading}
+                className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteUser}
+                disabled={deleteLoading || deleteConfirmation !== expectedDeleteUserConfirmation}
+                className="rounded-2xl bg-rose-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deleteLoading ? 'Deleting...' : 'Delete User'}
+              </button>
             </div>
           </div>
         </div>
