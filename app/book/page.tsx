@@ -7,6 +7,7 @@ import Footer from "@/app/components/sections/Footer";
 import { useAuth } from "@/lib/useAuth";
 import {
   createOneTimeVisitCheckout,
+  getMonthAvailability,
   getOneTimeVisitConfig,
   getTimeSlots,
 } from "@/lib/booking-service";
@@ -34,6 +35,9 @@ const MEMBERSHIP_UPSELL_BENEFITS = [
   "Unlock more service flexibility for regular home maintenance",
   "Priority scheduling, project discounts, and rush visit benefits may be included depending on plan",
 ];
+
+const AUTO_SELECT_MONTHS_TO_CHECK = 6;
+const FALLBACK_DAYS_TO_CHECK = 120;
 
 const FALLBACK_ONE_TIME_CONFIG: OneTimeVisitConfig = {
   enabled: true,
@@ -66,6 +70,10 @@ function formatYMD(date: Date) {
 
 function monthLabel(date: Date) {
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+function monthKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function dayLabel(value: string) {
@@ -154,6 +162,24 @@ function calendarDays(currentMonth: Date) {
   });
 }
 
+function dateFromYMD(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day)
+  ) {
+    return null;
+  }
+  return new Date(year, month - 1, day);
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
 function StepHeader({
   step,
   title,
@@ -191,16 +217,21 @@ export default function BookPage() {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
-  const [selectedDate, setSelectedDate] = useState(todayYMD());
+  const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [slots, setSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [autoSelectingDate, setAutoSelectingDate] = useState(true);
+  const [noAvailabilityMessage, setNoAvailabilityMessage] = useState("");
+  const [availabilityByDate, setAvailabilityByDate] = useState<Record<string, string[]>>({});
   const [note, setNote] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const autoSelectStartedRef = useRef(false);
+  const availabilityByDateRef = useRef<Record<string, string[]>>({});
 
   useEffect(() => {
     trackEvent("book_started", { page: "/book" });
@@ -242,17 +273,138 @@ export default function BookPage() {
     }
   }, [addressId, addresses, user?.defaultAddressId]);
 
+  function cacheDateSlots(ymd: string, nextSlots: string[]) {
+    const next = { ...availabilityByDateRef.current, [ymd]: nextSlots };
+    availabilityByDateRef.current = next;
+    setAvailabilityByDate(next);
+  }
+
+  useEffect(() => {
+    if (autoSelectStartedRef.current) return;
+    autoSelectStartedRef.current = true;
+
+    let cancelled = false;
+
+    const rememberMonth = (
+      days: Array<{ date: string; slots?: string[] }>
+    ) => {
+      if (!days.length) return;
+      const next = { ...availabilityByDateRef.current };
+      for (const day of days) {
+        next[day.date] = day.slots || [];
+      }
+      availabilityByDateRef.current = next;
+      setAvailabilityByDate(next);
+    };
+
+    const selectCandidate = (ymd: string, nextSlots: string[]) => {
+      const date = dateFromYMD(ymd);
+      if (!date) return;
+      cacheDateSlots(ymd, nextSlots);
+      setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+      setSelectedDate(ymd);
+      setSelectedTime("");
+      setSlots(nextSlots);
+      setNoAvailabilityMessage("");
+    };
+
+    const findSoonestAvailableDate = async () => {
+      setAutoSelectingDate(true);
+      setNoAvailabilityMessage("");
+      const startDate = new Date();
+      startDate.setHours(0, 0, 0, 0);
+      const startYmd = todayYMD();
+
+      try {
+        for (let offset = 0; offset < AUTO_SELECT_MONTHS_TO_CHECK; offset += 1) {
+          const monthDate = new Date(
+            startDate.getFullYear(),
+            startDate.getMonth() + offset,
+            1
+          );
+          try {
+            const month = await getMonthAvailability(monthKey(monthDate));
+            if (cancelled) return;
+            const monthDays = [...(month.days || [])].sort((a, b) =>
+              a.date.localeCompare(b.date)
+            );
+            rememberMonth(monthDays);
+            const candidate = monthDays.find(
+              (day) => day.date >= startYmd && (day.slots || []).length > 0
+            );
+            if (candidate) {
+              selectCandidate(candidate.date, candidate.slots || []);
+              return;
+            }
+          } catch {
+            break;
+          }
+        }
+
+        for (let offset = 0; offset < FALLBACK_DAYS_TO_CHECK; offset += 1) {
+          const ymd = formatYMD(addDays(startDate, offset));
+          const data = await getTimeSlots(ymd);
+          if (cancelled) return;
+          const nextSlots = data.slots || [];
+          cacheDateSlots(ymd, nextSlots);
+          if (nextSlots.length > 0) {
+            selectCandidate(ymd, nextSlots);
+            return;
+          }
+        }
+
+        if (!cancelled) {
+          setSelectedDate("");
+          setSelectedTime("");
+          setSlots([]);
+          setNoAvailabilityMessage(
+            "No available dates are currently open. Please call 631-599-1363 and we will help you find the next option."
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setSelectedDate("");
+          setSelectedTime("");
+          setSlots([]);
+          setNoAvailabilityMessage(
+            "We could not load available dates right now. Please refresh or call 631-599-1363."
+          );
+        }
+      } finally {
+        if (!cancelled) setAutoSelectingDate(false);
+      }
+    };
+
+    void findSoonestAvailableDate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     setSelectedTime("");
     setSlots([]);
-    if (!selectedDate) return;
+    if (!selectedDate) {
+      setLoadingSlots(false);
+      return;
+    }
+
+    const cachedSlots = availabilityByDateRef.current[selectedDate];
+    if (cachedSlots) {
+      setSlots(cachedSlots);
+      setLoadingSlots(false);
+      return;
+    }
 
     setLoadingSlots(true);
     getTimeSlots(selectedDate)
       .then((data) => {
         if (cancelled) return;
-        setSlots(data.slots || []);
+        const nextSlots = data.slots || [];
+        cacheDateSlots(selectedDate, nextSlots);
+        setSlots(nextSlots);
       })
       .catch(() => {
         if (!cancelled) setError("Unable to load available times. Please try another date.");
@@ -296,6 +448,42 @@ export default function BookPage() {
 
   function removePhoto(index: number) {
     setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index));
+  }
+
+  async function chooseDate(ymd: string) {
+    if (ymd < today) return;
+
+    setError("");
+    setNoAvailabilityMessage("");
+
+    const cachedSlots = availabilityByDateRef.current[ymd];
+    if (cachedSlots) {
+      if (cachedSlots.length === 0) return;
+      const date = dateFromYMD(ymd);
+      if (date) setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+      setSelectedDate(ymd);
+      setSelectedTime("");
+      setSlots(cachedSlots);
+      return;
+    }
+
+    setLoadingSlots(true);
+    try {
+      const data = await getTimeSlots(ymd);
+      const nextSlots = data.slots || [];
+      cacheDateSlots(ymd, nextSlots);
+      if (!nextSlots.length) return;
+
+      const date = dateFromYMD(ymd);
+      if (date) setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+      setSelectedDate(ymd);
+      setSelectedTime("");
+      setSlots(nextSlots);
+    } catch {
+      setError("Unable to load available times. Please try another date.");
+    } finally {
+      setLoadingSlots(false);
+    }
   }
 
   async function submit() {
@@ -451,14 +639,17 @@ export default function BookPage() {
 
                 <div className="grid grid-cols-7 gap-y-1">
                   {days.map((day) => {
-                    const disabled = day.ymd < today;
+                    const knownSlots = availabilityByDate[day.ymd];
+                    const disabled =
+                      day.ymd < today ||
+                      (knownSlots !== undefined && knownSlots.length === 0);
                     const selected = day.ymd === selectedDate;
                     return (
                       <button
                         key={day.ymd}
                         type="button"
                         disabled={disabled}
-                        onClick={() => setSelectedDate(day.ymd)}
+                        onClick={() => chooseDate(day.ymd)}
                         className={[
                           "mx-auto grid h-9 w-9 place-items-center rounded-[12px] text-[14px] font-semibold transition-all duration-150 sm:h-10 sm:w-10 sm:text-[15px]",
                           day.muted ? "text-[#C5CBD8]" : "",
@@ -479,7 +670,11 @@ export default function BookPage() {
               </div>
 
               <div className="mt-3 rounded-[14px] border border-[#D9E4FF] bg-white px-4 py-3 text-[14px] font-semibold text-[#0B1628]">
-                Selected date: {dayLabel(selectedDate)}
+                {selectedDate
+                  ? `Selected date: ${dayLabel(selectedDate)}`
+                  : autoSelectingDate
+                    ? "Finding the soonest available date..."
+                    : "No available date selected yet."}
               </div>
 
               <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
@@ -583,7 +778,15 @@ export default function BookPage() {
                       subtitle={`Each visit is up to ${config.durationMinutes} minutes.`}
                     />
 
-                    {loadingSlots ? (
+                    {autoSelectingDate ? (
+                      <div className="rounded-[16px] border border-[#D9E4FF] bg-[#F0F7FF] px-4 py-5 text-center text-[14px] font-semibold text-[#475569]">
+                        Finding the soonest available appointment...
+                      </div>
+                    ) : noAvailabilityMessage ? (
+                      <div className="rounded-[16px] border border-amber-200 bg-amber-50 px-4 py-5 text-center text-[14px] font-semibold text-amber-800">
+                        {noAvailabilityMessage}
+                      </div>
+                    ) : loadingSlots ? (
                       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
                         {[1, 2, 3, 4, 5, 6].map((item) => (
                           <div key={item} className="h-[58px] animate-pulse rounded-[18px] bg-[#F1F5F9]" />
@@ -609,7 +812,7 @@ export default function BookPage() {
                       </div>
                     ) : (
                       <div className="rounded-[16px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-5 text-center text-[14px] text-[#64748B]">
-                        No times available for this date. Try a different day.
+                        Choose an available date to see times.
                       </div>
                     )}
                   </div>
@@ -785,7 +988,7 @@ export default function BookPage() {
                       <div className="flex justify-between gap-4 rounded-[14px] bg-[#F8FAFF] px-4 py-3">
                         <span>Time</span>
                         <strong className="text-right text-[#0B1628]">
-                          {dayLabel(selectedDate)}
+                          {selectedDate ? dayLabel(selectedDate) : "Not selected"}
                           {selectedTime ? ` at ${formatTime12(selectedTime)}` : ""}
                         </strong>
                       </div>

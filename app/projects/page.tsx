@@ -11,33 +11,48 @@ import { ChatWidget } from "@/app/components/ChatWidget";
 type ProjectType =
   | "roofing"
   | "siding"
-  | "bathroom"
   | "kitchen"
-  | "full-house"
-  | "basement"
-  | "interior"
+  | "bathroom"
+  | "build-new-house"
   | "other";
 
 type ContactPreference = "call" | "text" | "email";
+type ServiceKey = ProjectType | "full-house";
 
 const PROJECT_OPTIONS: Array<{ value: ProjectType; label: string }> = [
   { value: "roofing", label: "Roofing" },
   { value: "siding", label: "Siding" },
-  { value: "bathroom", label: "Bathroom Remodeling" },
-  { value: "kitchen", label: "Kitchen Remodeling" },
-  { value: "full-house", label: "Full House Renovation" },
-  { value: "basement", label: "Basement Finishing" },
-  { value: "interior", label: "Interior Renovations" },
-  { value: "other", label: "Other Larger Project" },
+  { value: "kitchen", label: "Kitchen" },
+  { value: "bathroom", label: "Bathroom" },
+  { value: "build-new-house", label: "Build New House" },
+  { value: "other", label: "Other" },
 ];
 
 const PROJECT_TYPES = new Set<ProjectType>(
   PROJECT_OPTIONS.map((option) => option.value)
 );
 
+const LEGACY_TYPE_MAP: Record<string, ProjectType> = {
+  "full-house": "other",
+  basement: "other",
+  interior: "other",
+  "new-house": "build-new-house",
+  "new-construction": "build-new-house",
+};
+
+const PROJECT_IMAGES = {
+  roof: "/images/projects/Roof%20Project.jpg",
+  siding: "/images/projects/Siding%20Project.jpg",
+  kitchen: "/images/projects/Kitchen%20Project.jpg",
+  bathroom: "/images/projects/Bathroom%20Project.jpg",
+  fullHouse: "/images/projects/Full%20House%20Project.avif",
+  newHouse: "/images/projects/New%20House%20Project.jpg",
+};
+
 const SERVICES: Array<{
   id: string;
-  type: ProjectType;
+  type: ServiceKey;
+  estimateType?: ProjectType;
   eyebrow: string;
   title: string;
   description: string;
@@ -51,32 +66,52 @@ const SERVICES: Array<{
     id: "roofing",
     type: "roofing",
     eyebrow: "Roofing",
-    title: "A clear path from roof concern to completed work.",
+    title: "Get New Roofing",
     description:
-      "We help Long Island homeowners plan roof repairs and replacements with a straightforward estimate process, practical material guidance, and clean project coordination.",
+      "Profixter plans roof replacements and larger roofing work with a clear scope, strong cleanup standards, and professional project coordination. Most standard roof replacements are usually completed in 1 day and include a 5-year labor warranty.",
     details: [
-      "Roof replacement and repair",
-      "Shingle and material options",
-      "Clear scope and estimate review",
+      "Usually completed in 1 day for standard roof replacements",
+      "5-year labor warranty",
+      "Shingle, ventilation, flashing, and material guidance",
+      "Clean tear-off, installation, and final cleanup coordination",
     ],
     cta: "Get Roofing Estimate",
-    image: "/images/projects/p7.jpg",
+    image: PROJECT_IMAGES.roof,
     imagePosition: "center",
   },
   {
     id: "siding",
     type: "siding",
     eyebrow: "Siding",
-    title: "Protect the house and make the exterior feel finished.",
+    title: "Get New Siding",
     description:
-      "From damaged areas to full replacement, we help plan siding work around protection, curb appeal, materials, colors, trim, and the details that bring the exterior together.",
+      "New siding should protect the home and make the exterior feel custom, not generic. We help homeowners compare unique siding options, trim details, colors, and finishing choices, with a 5-year labor warranty on qualifying siding work.",
     details: [
-      "Siding replacement and repair",
-      "Material and color planning",
-      "Trim and exterior coordination",
+      "Unique siding options and custom exterior looks",
+      "5-year labor warranty",
+      "Trim, soffit, fascia, and detail coordination",
+      "Color, profile, and curb-appeal planning",
     ],
     cta: "Get Siding Estimate",
-    image: "/images/projects/p4.jpg",
+    image: PROJECT_IMAGES.siding,
+    imagePosition: "center",
+    dark: true,
+  },
+  {
+    id: "kitchen",
+    type: "kitchen",
+    eyebrow: "Kitchen Remodeling",
+    title: "Get a New Kitchen",
+    description:
+      "Kitchen projects work best when layout, cabinets, counters, backsplash, lighting, plumbing, finish choices, and trade coordination are planned before demolition starts.",
+    details: [
+      "Cabinets, counters, backsplash, and finish planning",
+      "Layout and storage improvements",
+      "Lighting, plumbing, and trade coordination",
+      "A cleaner path from idea to written scope",
+    ],
+    cta: "Get Kitchen Estimate",
+    image: PROJECT_IMAGES.kitchen,
     imagePosition: "center",
     dark: true,
   },
@@ -84,76 +119,75 @@ const SERVICES: Array<{
     id: "bathroom",
     type: "bathroom",
     eyebrow: "Bathroom Remodeling",
-    title: "A better bathroom, planned as one complete project.",
+    title: "Get a New Bathroom",
     description:
-      "We coordinate the moving parts of a bathroom remodel so the finished room feels intentional—from the shower and tile to the vanity, fixtures, and plumbing details.",
+      "A bathroom remodel has to work in a small space with many moving parts. Profixter coordinates the tile, shower, vanity, fixtures, waterproofing, finishes, and schedule into one practical project plan.",
     details: [
-      "Shower, tub, vanity, and tile",
-      "Fixture and plumbing coordination",
-      "Clean scope and finish planning",
+      "Shower, tub, vanity, tile, and finish planning",
+      "Waterproofing and wet-area details reviewed carefully",
+      "Fixture, lighting, and layout coordination",
+      "Clear estimate path before work begins",
     ],
     cta: "Get Bathroom Estimate",
-    image: "/images/projects/p5.jpg",
+    image: PROJECT_IMAGES.bathroom,
     imagePosition: "center",
-  },
-  {
-    id: "kitchen",
-    type: "kitchen",
-    eyebrow: "Kitchen Remodeling",
-    title: "Bring the layout, finishes, and trades into one plan.",
-    description:
-      "Kitchen projects work best when cabinets, counters, backsplash, plumbing, electrical needs, and layout decisions are coordinated before work begins.",
-    details: [
-      "Cabinets, counters, and backsplash",
-      "Layout and finish planning",
-      "Plumbing and electrical coordination",
-    ],
-    cta: "Get Kitchen Estimate",
-    image: "/images/projects/p2.jpg",
-    imagePosition: "center",
-    dark: true,
   },
   {
     id: "full-house",
     type: "full-house",
-    eyebrow: "Full House Renovation",
-    title: "One relationship for a multi-room renovation.",
+    estimateType: "other",
+    eyebrow: "Whole Home Renovation",
+    title: "Full House Renovation",
     description:
-      "For larger renovations, we help organize the priorities, sequence, and scope across rooms. Work can be planned as one project or in practical phases.",
+      "For whole-home and multi-room renovations, Profixter helps organize priorities, sequencing, trade coordination, finishes, and phasing so the project feels manageable from the first conversation.",
     details: [
-      "Multi-room updates",
-      "Phased renovation planning",
-      "One coordinated project relationship",
+      "Multi-room renovation planning",
+      "Kitchen, bathroom, flooring, walls, and finish coordination",
+      "Phased or full-scope project planning",
+      "One General Contractor relationship",
     ],
     cta: "Discuss Full House Renovation",
-    image: "/images/projects/p8.jpg",
+    image: PROJECT_IMAGES.fullHouse,
     imagePosition: "center",
   },
   {
-    id: "basement-interior",
-    type: "basement",
-    eyebrow: "Basement & Interior Renovations",
-    title: "Make underused space work harder for the household.",
+    id: "build-new-house",
+    type: "build-new-house",
+    eyebrow: "New Construction",
+    title: "Build New House",
     description:
-      "We review basement finishing and interior renovation projects with the same practical approach: understand the space, define the result, and build a realistic plan.",
+      "We build houses from start to finish as a General Contractor. Profixter/Premium Island Homes can handle the whole project as the GC, from planning and coordination to construction management.",
     details: [
-      "Basement finishing",
-      "Interior room renovations",
-      "Functional layout improvements",
+      "General Contractor project leadership",
+      "Planning, permitting, and trade coordination",
+      "Construction management from start to finish",
+      "A single accountable team for the build",
     ],
-    cta: "Request Renovation Estimate",
-    image: "/images/projects/p3.jpg",
+    cta: "Discuss a New House",
+    image: PROJECT_IMAGES.newHouse,
     imagePosition: "center",
     dark: true,
   },
+];
+
+const GALLERY_ITEMS = [
+  { image: "/images/projects/p1.jpg", title: "Entry door refresh", label: "Before / after" },
+  { image: "/images/projects/p2.jpg", title: "Exterior trim repair", label: "Before / after" },
+  { image: "/images/projects/p3.jpg", title: "Ceiling repair", label: "Before / after" },
+  { image: "/images/projects/p4.jpg", title: "Exterior paint refresh", label: "Before / after" },
+  { image: "/images/projects/p6.jpg", title: "Cabinet finish update", label: "Before / after" },
+  { image: "/images/projects/p7.jpg", title: "Roof detail repair", label: "Before / after" },
+  { image: "/images/projects/p8.jpg", title: "Flooring detail", label: "Before / after" },
+  { image: "/images/projects/p9.jpg", title: "Bathroom vanity update", label: "Before / after" },
 ];
 
 const fieldClass =
   "h-[52px] w-full rounded-[12px] border border-[#CBD5E1] bg-white px-4 text-[15px] text-[#0B1628] outline-none transition placeholder:text-[#94A3B8] focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/10";
 
 function projectTypeFromQuery(value: string | null): ProjectType {
-  const normalized = String(value || "").toLowerCase() as ProjectType;
-  return PROJECT_TYPES.has(normalized) ? normalized : "roofing";
+  const normalized = String(value || "").toLowerCase();
+  const mapped = LEGACY_TYPE_MAP[normalized] || normalized;
+  return PROJECT_TYPES.has(mapped as ProjectType) ? (mapped as ProjectType) : "roofing";
 }
 
 function CheckIcon() {
@@ -271,7 +305,7 @@ function EstimateForm() {
       }
       setStatus("success");
       setMessage(
-        "Thanks — your project request was received. We’ll review the details and get back to you."
+        "Thanks - your project request was received. We will review the details and get back to you."
       );
     } catch {
       setStatus("error");
@@ -321,13 +355,13 @@ function EstimateForm() {
     >
       <div className="mb-6">
         <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
-          Project details
+          Renovation estimate
         </div>
         <h2 className="mt-2 text-[27px] font-black leading-tight text-[#0B1628] sm:text-[32px]">
-          Request a project estimate
+          Tell us what you want built.
         </h2>
         <p className="mt-2 text-[14px] leading-relaxed text-[#64748B]">
-          Share the basics. A real person will review your request.
+          Pick a project type, share the basics, and a real person will review the request.
         </p>
       </div>
 
@@ -390,22 +424,31 @@ function EstimateForm() {
         />
       </label>
 
-      <label className="mt-4 block">
-        <span className="mb-1.5 block text-[13px] font-bold text-[#334155]">
+      <fieldset className="mt-5">
+        <legend className="mb-2 block text-[13px] font-bold text-[#334155]">
           Project type *
-        </span>
-        <select
-          value={form.service}
-          onChange={(event) => update("service", event.target.value)}
-          className={fieldClass}
-        >
-          {PROJECT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
+        </legend>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {PROJECT_OPTIONS.map((option) => {
+            const active = form.service === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => update("service", option.value)}
+                className={`min-h-[48px] rounded-[14px] border px-3 text-left text-[13px] font-extrabold transition ${
+                  active
+                    ? "border-[#306EEC] bg-[#EEF4FF] text-[#1648A8] shadow-[0_10px_24px_rgba(48,110,236,0.16)]"
+                    : "border-[#D7DEE9] bg-[#F8FAFC] text-[#334155] hover:border-[#AFC3DF] hover:bg-white"
+                }`}
+                aria-pressed={active}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
 
       <label className="mt-4 block">
         <span className="mb-1.5 block text-[13px] font-bold text-[#334155]">
@@ -414,8 +457,8 @@ function EstimateForm() {
         <textarea
           value={form.notes}
           onChange={(event) => update("notes", event.target.value)}
-          className={`${fieldClass} min-h-[112px] resize-y py-3`}
-          placeholder="What are you planning, and what would you like to change?"
+          className={`${fieldClass} min-h-[116px] resize-y py-3`}
+          placeholder="What are you planning? Include goals, rooms, exterior areas, timing, and anything you already know."
         />
       </label>
 
@@ -432,7 +475,7 @@ function EstimateForm() {
             <option value="">Not sure yet</option>
             <option value="asap">As soon as possible</option>
             <option value="1month">Within one month</option>
-            <option value="1-3months">Within 1–3 months</option>
+            <option value="1-3months">Within 1-3 months</option>
             <option value="planning">Planning ahead</option>
           </select>
         </label>
@@ -447,9 +490,9 @@ function EstimateForm() {
           >
             <option value="">Not sure yet</option>
             <option value="under-15k">Under $15,000</option>
-            <option value="15k-30k">$15,000–$30,000</option>
-            <option value="30k-60k">$30,000–$60,000</option>
-            <option value="60k-100k">$60,000–$100,000</option>
+            <option value="15k-30k">$15,000-$30,000</option>
+            <option value="30k-60k">$30,000-$60,000</option>
+            <option value="60k-100k">$60,000-$100,000</option>
             <option value="100k-plus">$100,000+</option>
           </select>
         </label>
@@ -466,10 +509,10 @@ function EstimateForm() {
         disabled={status === "submitting"}
         className="mt-6 inline-flex h-[54px] w-full items-center justify-center rounded-[14px] bg-[#306EEC] px-6 text-[15px] font-extrabold text-white shadow-[0_14px_36px_rgba(48,110,236,0.25)] transition hover:bg-[#2558C9] disabled:opacity-60"
       >
-        {status === "submitting" ? "Sending request..." : "Request Project Estimate"}
+        {status === "submitting" ? "Sending request..." : "Request Renovation Estimate"}
       </button>
       <p className="mt-3 text-center text-[12px] leading-relaxed text-[#94A3B8]">
-        No obligation. Licensed and insured. Serving Nassau and Suffolk Counties.
+        Renovation estimates are separate from One-Time Handyman Visits. No obligation. Licensed and insured.
       </p>
     </form>
   );
@@ -477,6 +520,8 @@ function EstimateForm() {
 
 function ServiceSection({ service, index }: { service: (typeof SERVICES)[number]; index: number }) {
   const dark = service.dark;
+  const estimateType = service.estimateType || (service.type as ProjectType);
+
   return (
     <section
       id={service.id}
@@ -485,20 +530,20 @@ function ServiceSection({ service, index }: { service: (typeof SERVICES)[number]
       }`}
     >
       <div
-        className={`mx-auto grid max-w-[1180px] items-center gap-9 px-5 sm:px-8 lg:grid-cols-2 lg:gap-16 ${
+        className={`mx-auto grid max-w-[1220px] items-center gap-9 px-5 sm:px-8 lg:grid-cols-2 lg:gap-16 ${
           index % 2 ? "lg:[&>*:first-child]:order-2" : ""
         }`}
       >
-        <div className="relative min-h-[300px] overflow-hidden rounded-[24px] sm:min-h-[390px]">
+        <div className="relative min-h-[330px] overflow-hidden rounded-[28px] shadow-[0_30px_80px_rgba(15,23,42,0.18)] sm:min-h-[440px]">
           <Image
             src={service.image}
-            alt={`${service.eyebrow} project by Profixter`}
+            alt={`${service.title} project by Profixter`}
             fill
             className="object-cover"
             style={{ objectPosition: service.imagePosition }}
-            sizes="(max-width: 1024px) 92vw, 560px"
+            sizes="(max-width: 1024px) 92vw, 590px"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#07101F]/60 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#07101F]/65 via-transparent to-transparent" />
           <div className="absolute bottom-5 left-5 rounded-full border border-white/20 bg-[#07101F]/70 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur">
             Long Island, NY
           </div>
@@ -512,37 +557,37 @@ function ServiceSection({ service, index }: { service: (typeof SERVICES)[number]
           >
             {service.eyebrow}
           </div>
-          <h2 className="mt-4 text-[34px] font-black leading-[1.02] tracking-[-0.035em] sm:text-[46px]">
+          <h2 className="mt-4 text-[42px] font-black leading-[0.94] tracking-[-0.045em] sm:text-[58px] lg:text-[64px]">
             {service.title}
           </h2>
           <p
-            className={`mt-5 text-[16px] leading-relaxed ${
-              dark ? "text-white/62" : "text-[#475569]"
+            className={`mt-5 text-[16px] leading-relaxed sm:text-[17px] ${
+              dark ? "text-white/70" : "text-[#475569]"
             }`}
           >
             {service.description}
           </p>
-          <div className="mt-6 space-y-3">
+          <div className="mt-7 grid gap-3">
             {service.details.map((detail) => (
-              <div key={detail} className="flex items-center gap-3">
+              <div key={detail} className="flex items-start gap-3">
                 <span
-                  className={`flex h-6 w-6 items-center justify-center rounded-full ${
+                  className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${
                     dark ? "bg-white/10 text-[#86EFAC]" : "bg-[#E8F8EE] text-[#16834B]"
                   }`}
                 >
                   <CheckIcon />
                 </span>
-                <span className={`text-[14px] font-semibold ${dark ? "text-white/75" : "text-[#334155]"}`}>
+                <span className={`text-[14px] font-semibold leading-6 ${dark ? "text-white/80" : "text-[#334155]"}`}>
                   {detail}
                 </span>
               </div>
             ))}
           </div>
-          <p className={`mt-6 text-[13px] ${dark ? "text-white/42" : "text-[#64748B]"}`}>
-            Eligible larger projects may include up to 12 months of Profixter membership.
+          <p className={`mt-6 text-[13px] ${dark ? "text-white/50" : "text-[#64748B]"}`}>
+            Members may receive project discounts. Eligible larger projects may include up to 12 months of Profixter Membership.
           </p>
           <Link
-            href={`/projects?type=${service.type}#estimate`}
+            href={`/projects?type=${estimateType}#estimate`}
             className={`mt-7 inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[14px] px-6 text-[14px] font-extrabold transition ${
               dark
                 ? "bg-white text-[#0B1628] hover:bg-[#EAF1FF]"
@@ -558,9 +603,53 @@ function ServiceSection({ service, index }: { service: (typeof SERVICES)[number]
   );
 }
 
+function ProjectGallery() {
+  return (
+    <section className="bg-white py-16 sm:py-20 lg:py-24">
+      <div className="mx-auto max-w-[1220px] px-5 sm:px-8">
+        <div className="max-w-[760px]">
+          <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
+            Project proof
+          </div>
+          <h2 className="mt-3 text-[36px] font-black leading-[0.98] tracking-[-0.04em] text-[#0B1628] sm:text-[54px]">
+            Real work, real details, cleaner homes.
+          </h2>
+          <p className="mt-4 text-[16px] leading-relaxed text-[#475569]">
+            Larger renovations need planning, but trust is built in the details. These supporting projects show the kind of before-and-after care homeowners look for before inviting a contractor into their home.
+          </p>
+        </div>
+        <div className="mt-9 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {GALLERY_ITEMS.map((item) => (
+            <div
+              key={item.image}
+              className="group overflow-hidden rounded-[22px] border border-[#E2E8F0] bg-[#F8FAFC] shadow-[0_16px_46px_rgba(15,23,42,0.08)]"
+            >
+              <div className="relative aspect-[4/5] overflow-hidden">
+                <Image
+                  src={item.image}
+                  alt={`${item.title} by Profixter`}
+                  fill
+                  className="object-cover transition duration-500 group-hover:scale-[1.03]"
+                  sizes="(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 280px"
+                />
+              </div>
+              <div className="p-4">
+                <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#306EEC]">
+                  {item.label}
+                </div>
+                <div className="mt-1 text-[15px] font-black text-[#0B1628]">{item.title}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ProjectsContent() {
   const searchParams = useSearchParams();
-  const selectedType = searchParams.get("type") || "roofing";
+  const selectedType = projectTypeFromQuery(searchParams.get("type"));
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#F6F8FC]">
@@ -572,39 +661,39 @@ function ProjectsContent() {
         <section className="relative overflow-hidden bg-[#07101F] text-white">
           <div className="absolute inset-0">
             <Image
-              src="/images/hero-bg.webp"
+              src={PROJECT_IMAGES.fullHouse}
               alt=""
               fill
               priority
-              className="object-cover opacity-25"
+              className="object-cover opacity-[0.42]"
+              sizes="100vw"
             />
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,16,31,0.97)_0%,rgba(7,16,31,0.84)_52%,rgba(7,16,31,0.55)_100%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,16,31,0.96)_0%,rgba(7,16,31,0.84)_48%,rgba(7,16,31,0.48)_100%)]" />
           </div>
-          <div className="relative mx-auto max-w-[1180px] px-5 py-16 sm:px-8 sm:py-24 lg:py-28">
-            <div className="max-w-[790px]">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/70">
-                Local Long Island team · Licensed &amp; insured
+          <div className="relative mx-auto max-w-[1220px] px-5 py-16 sm:px-8 sm:py-24 lg:py-28">
+            <div className="max-w-[820px]">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.08] px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/80">
+                General Contractor Long Island
               </div>
-              <h1 className="mt-7 text-[44px] font-black leading-[0.94] tracking-[-0.045em] sm:text-[66px] lg:text-[78px]">
-                One team for the project—and the home after.
+              <h1 className="mt-7 text-[44px] font-black leading-[0.92] tracking-[-0.05em] sm:text-[70px] lg:text-[84px]">
+                Renovation and home projects, handled by one team.
               </h1>
-              <p className="mt-6 max-w-[680px] text-[17px] leading-relaxed text-white/65 sm:text-[19px]">
-                Roofing, siding, bathrooms, kitchens, and full-house renovations
-                planned with one contractor relationship. After the work is done,
-                Profixter can keep helping maintain the home.
+              <p className="mt-6 max-w-[700px] text-[17px] leading-relaxed text-white/75 sm:text-[19px]">
+                Profixter is a General Contractor for larger Long Island home projects: roofing, siding, kitchens, bathrooms, full-house renovations, and new house builds. Renovation estimates are separate from One-Time Handyman Visits.
               </p>
               <div className="mt-8 flex flex-wrap gap-2.5">
                 {[
                   ["Roofing", "#roofing"],
                   ["Siding", "#siding"],
-                  ["Bathroom", "#bathroom"],
                   ["Kitchen", "#kitchen"],
-                  ["Full House Renovation", "#full-house"],
+                  ["Bathroom", "#bathroom"],
+                  ["Full House", "#full-house"],
+                  ["Build New House", "#build-new-house"],
                 ].map(([label, href]) => (
                   <Link
                     key={href}
                     href={href}
-                    className="rounded-full border border-white/15 bg-white/[0.06] px-4 py-2 text-[12px] font-bold text-white/75 transition hover:bg-white/[0.12] hover:text-white"
+                    className="rounded-full border border-white/15 bg-white/[0.07] px-4 py-2 text-[12px] font-bold text-white/80 transition hover:bg-white/[0.14] hover:text-white"
                   >
                     {label}
                   </Link>
@@ -615,43 +704,39 @@ function ProjectsContent() {
                   href="#estimate"
                   className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-[15px] bg-[#306EEC] px-7 text-[15px] font-extrabold text-white shadow-[0_16px_40px_rgba(48,110,236,0.32)] transition hover:bg-[#2558C9]"
                 >
-                  Get Project Estimate
+                  Request Renovation Estimate
                   <ArrowIcon />
                 </Link>
                 <a
                   href="tel:+16315991363"
-                  className="inline-flex min-h-[56px] items-center justify-center rounded-[15px] border border-white/18 bg-white/[0.07] px-7 text-[15px] font-bold text-white"
+                  className="inline-flex min-h-[56px] items-center justify-center rounded-[15px] border border-white/20 bg-white/[0.07] px-7 text-[15px] font-bold text-white"
                 >
                   Call 631-599-1363
                 </a>
               </div>
             </div>
 
-            <div className="mt-12 max-w-[720px] rounded-[20px] border border-[#D4A574]/25 bg-[#D4A574]/10 p-5 backdrop-blur-sm sm:flex sm:items-center sm:justify-between sm:gap-6">
-              <div>
-                <div className="text-[11px] font-black uppercase tracking-[0.17em] text-[#F1D3A9]">
-                  Project benefit
+            <div className="mt-12 grid max-w-[940px] gap-3 sm:grid-cols-3">
+              {[
+                ["Member discounts", "Members get better long-term value and may receive discounts on larger work."],
+                ["Membership included", "Some larger projects may include up to 12 months of Profixter Membership."],
+                ["Not handyman visits", "Project estimates are for larger work, not $99 One-Time Handyman Visits."],
+              ].map(([title, body]) => (
+                <div key={title} className="rounded-[20px] border border-white/15 bg-white/[0.08] p-4 backdrop-blur">
+                  <div className="text-[13px] font-extrabold text-white">{title}</div>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-white/65">{body}</p>
                 </div>
-                <p className="mt-1.5 text-[14px] font-semibold leading-relaxed text-white/78">
-                  Eligible larger projects may include up to 12 months of Profixter membership.
-                </p>
-              </div>
-              <Link
-                href="#estimate"
-                className="mt-4 inline-flex shrink-0 items-center gap-2 text-[13px] font-bold text-white sm:mt-0"
-              >
-                Ask about eligibility <ArrowIcon />
-              </Link>
+              ))}
             </div>
           </div>
         </section>
 
         <section className="border-b border-[#DDE4EE] bg-white py-8">
-          <div className="mx-auto grid max-w-[1180px] gap-4 px-5 sm:grid-cols-3 sm:px-8">
+          <div className="mx-auto grid max-w-[1220px] gap-4 px-5 sm:grid-cols-3 sm:px-8">
             {[
-              ["One relationship", "A single team to discuss the larger project and ongoing home care."],
-              ["Clear planning", "A practical scope, estimate review, and next-step conversation."],
-              ["Support after", "Eligible projects can transition into ongoing Profixter maintenance."],
+              ["General Contractor", "A single team to plan, coordinate, and manage larger work."],
+              ["Clear estimate path", "A practical scope conversation before you commit to a project."],
+              ["Long Island focused", "Built for Nassau and Suffolk homeowners who want accountable local help."],
             ].map(([title, body]) => (
               <div key={title} className="rounded-[16px] border border-[#E2E8F0] bg-[#F8FAFC] p-4">
                 <div className="text-[14px] font-extrabold text-[#0B1628]">{title}</div>
@@ -665,25 +750,26 @@ function ProjectsContent() {
           <ServiceSection key={service.id} service={service} index={index} />
         ))}
 
+        <ProjectGallery />
+
         <section id="estimate" className="scroll-mt-[90px] bg-[#EAF0F8] py-16 sm:py-20 lg:py-24">
-          <div className="mx-auto grid max-w-[1180px] gap-10 px-5 sm:px-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-start lg:gap-14">
+          <div className="mx-auto grid max-w-[1220px] gap-10 px-5 sm:px-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-start lg:gap-14">
             <div className="lg:sticky lg:top-28">
               <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
                 Start the conversation
               </div>
               <h2 className="mt-4 text-[38px] font-black leading-[0.98] tracking-[-0.04em] text-[#0B1628] sm:text-[50px]">
-                Tell us what you’re planning.
+                Get a real project estimate.
               </h2>
               <p className="mt-5 text-[16px] leading-relaxed text-[#475569]">
-                We’ll review the project and get back to you. No oversized
-                questionnaire and no obligation.
+                We review larger projects personally. Tell us the project type, address, and what you want done, then we will follow up with the right next step.
               </p>
               <div className="mt-7 space-y-3">
                 {[
-                  "Local Long Island team",
-                  "Licensed and insured",
-                  "Nassau and Suffolk Counties",
-                  "Straightforward personal follow-up",
+                  "General Contractor for larger home projects",
+                  "Roofing, siding, kitchens, bathrooms, new builds",
+                  "Members may receive project discounts",
+                  "Separate from One-Time Handyman Visits",
                 ].map((item) => (
                   <div key={item} className="flex items-center gap-3 text-[14px] font-semibold text-[#334155]">
                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-[#16834B]">

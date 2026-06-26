@@ -339,25 +339,21 @@ export default function AboutPage() {
                 A place for Taras to explain Profixter in his own words.
               </h2>
               <p className="mt-5 text-[16px] leading-8 text-white/68">
-                This section is ready for a short founder video that introduces the Profixter story, the local mission, and the way we help homeowners choose the right path.
+                Watch the founder story, the local mission, and how Profixter helps homeowners choose the right path before hiring.
               </p>
             </div>
 
             <div className="bg-[linear-gradient(145deg,#172033_0%,#0B1628_60%,#306EEC_160%)] p-5 sm:p-7 lg:p-8">
-              <div className="grid aspect-video place-items-center rounded-[26px] border border-white/14 bg-white/[0.06] shadow-inner">
-                <div className="text-center">
-                  <div className="mx-auto grid h-20 w-20 place-items-center rounded-full border border-white/25 bg-white/12 text-white shadow-[0_18px_56px_rgba(48,110,236,0.28)]">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M8 5v14l11-7L8 5z" fill="currentColor" />
-                    </svg>
-                  </div>
-                  <div className="mt-5 text-[18px] font-black text-white">
-                    Founder video
-                  </div>
-                  <p className="mx-auto mt-2 max-w-[280px] text-[13px] leading-6 text-white/58">
-                    A clean video embed can live here when the final YouTube link is ready.
-                  </p>
-                </div>
+              <div className="aspect-video overflow-hidden rounded-[26px] border border-white/14 bg-black shadow-[0_18px_56px_rgba(48,110,236,0.22)]">
+                <iframe
+                  src="https://www.youtube.com/embed/HQoAkLNGI9c?rel=0"
+                  title="Taras Bandura explains Profixter"
+                  loading="lazy"
+                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                  className="h-full w-full"
+                />
               </div>
             </div>
           </div>

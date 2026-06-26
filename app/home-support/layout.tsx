@@ -1,24 +1,24 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Home Support AI",
+  title: "Profixter AI | Your Personal AI for Home Questions",
   description:
-    "Free AI assistant for homeowners. Upload photos, PDFs, contractor quotes, and agreements; ask repair, maintenance, safety, material, and DIY-or-hire questions.",
+    "Your personal AI for home questions. Upload photos, PDFs, contractor quotes, and agreements; ask repair, maintenance, safety, material, and DIY-or-hire questions.",
   alternates: {
     canonical: "/home-support",
   },
   openGraph: {
-    title: "Profixter Home Support AI",
+    title: "Profixter AI | Your Personal AI for Home Questions",
     description:
-      "A free homeowner AI assistant for photos, PDFs, quotes, maintenance questions, safety checks, and practical next steps.",
+      "A free homeowner AI assistant for photos, PDFs, quotes, maintenance questions, safety checks, and practical next steps before you hire anyone.",
     url: "https://www.profixter.com/home-support",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Profixter Home Support AI",
+    title: "Profixter AI | Your Personal AI for Home Questions",
     description:
-      "A free homeowner AI assistant for photos, PDFs, quotes, maintenance questions, safety checks, and practical next steps.",
+      "A free homeowner AI assistant for photos, PDFs, quotes, maintenance questions, safety checks, and practical next steps before you hire anyone.",
   },
 };
 

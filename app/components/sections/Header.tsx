@@ -14,7 +14,10 @@ export default function Header() {
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  const firstName = useMemo(() => user?.name?.split(" ")[0] || "User", [user?.name]);
+  const accountLabel = useMemo(() => {
+    const first = user?.name?.trim().split(/\s+/)[0];
+    return first || "Account";
+  }, [user?.name]);
   const navItems = useMemo(
     () => [
       { href: "/home-support", label: "Profixter AI" },
@@ -101,7 +104,7 @@ export default function Header() {
                   className="flex items-center gap-2 rounded-full border border-[#D8E2F2] bg-white/88 py-1.5 pl-4 pr-1.5 shadow-sm transition hover:bg-white"
                   aria-label="Open profile menu"
                 >
-                  <span className="text-sm font-black text-[#111827]">Account</span>
+                  <span className="text-sm font-black text-[#111827]">{accountLabel}</span>
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0B1628]">
                     <svg width="31" height="28" viewBox="0 0 31 28" fill="none" aria-hidden="true">
                       <path d="M15.5 14C18.5376 14 21 11.5376 21 8.5C21 5.46243 18.5376 3 15.5 3C12.4624 3 10 5.46243 10 8.5C10 11.5376 12.4624 14 15.5 14Z" fill="#EEF2FF" />
@@ -117,14 +120,7 @@ export default function Header() {
                       className="block px-4 py-3 text-base text-[#111827] transition-colors hover:bg-[#EEF2FF]"
                       onClick={() => setIsProfileMenuOpen(false)}
                     >
-                      Member portal
-                    </Link>
-                    <Link
-                      href="/account"
-                      className="block px-4 py-3 text-base text-[#111827] transition-colors hover:bg-[#EEF2FF]"
-                      onClick={() => setIsProfileMenuOpen(false)}
-                    >
-                      Make a booking
+                      My Account
                     </Link>
                     <div className="my-2 border-t border-[#E6E8EF]" />
                     <button
@@ -163,7 +159,7 @@ export default function Header() {
         <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-white/80 px-4 py-1.5 shadow-sm">
           <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#86EFAC]" style={{ boxShadow: "0 0 6px rgba(134,239,172,0.9)" }} />
           <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#306EEC]">
-            Babylon based - Serving Nassau & Suffolk Counties
+            Serving Nassau & Suffolk Counties
           </span>
         </div>
       </div>
@@ -228,8 +224,8 @@ export default function Header() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-base font-semibold text-[#111827]">{firstName}</p>
-                        <p className="text-sm text-[#6B7280]">Member portal</p>
+                        <p className="text-base font-semibold text-[#111827]">{accountLabel}</p>
+                        <p className="text-sm text-[#6B7280]">My Account</p>
                       </div>
                     </div>
                   </div>
@@ -238,7 +234,7 @@ export default function Header() {
                     onClick={() => setIsMenuOpen(false)}
                     className="rounded-[16px] bg-[#0B1628] px-6 py-4 text-center text-base font-black text-white transition hover:bg-[#172033]"
                   >
-                    Open account
+                    My Account
                   </Link>
                   <button
                     onClick={handleLogout}
