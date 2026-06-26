@@ -170,17 +170,6 @@ const SERVICES: Array<{
   },
 ];
 
-const GALLERY_ITEMS = [
-  { image: "/images/projects/p1.jpg", title: "Entry door refresh", label: "Before / after" },
-  { image: "/images/projects/p2.jpg", title: "Exterior trim repair", label: "Before / after" },
-  { image: "/images/projects/p3.jpg", title: "Ceiling repair", label: "Before / after" },
-  { image: "/images/projects/p4.jpg", title: "Exterior paint refresh", label: "Before / after" },
-  { image: "/images/projects/p6.jpg", title: "Cabinet finish update", label: "Before / after" },
-  { image: "/images/projects/p7.jpg", title: "Roof detail repair", label: "Before / after" },
-  { image: "/images/projects/p8.jpg", title: "Flooring detail", label: "Before / after" },
-  { image: "/images/projects/p9.jpg", title: "Bathroom vanity update", label: "Before / after" },
-];
-
 const fieldClass =
   "h-[52px] w-full rounded-[12px] border border-[#CBD5E1] bg-white px-4 text-[15px] text-[#0B1628] outline-none transition placeholder:text-[#94A3B8] focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/10";
 
@@ -603,50 +592,6 @@ function ServiceSection({ service, index }: { service: (typeof SERVICES)[number]
   );
 }
 
-function ProjectGallery() {
-  return (
-    <section className="bg-white py-16 sm:py-20 lg:py-24">
-      <div className="mx-auto max-w-[1220px] px-5 sm:px-8">
-        <div className="max-w-[760px]">
-          <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
-            Project proof
-          </div>
-          <h2 className="mt-3 text-[36px] font-black leading-[0.98] tracking-[-0.04em] text-[#0B1628] sm:text-[54px]">
-            Real work, real details, cleaner homes.
-          </h2>
-          <p className="mt-4 text-[16px] leading-relaxed text-[#475569]">
-            Larger renovations need planning, but trust is built in the details. These supporting projects show the kind of before-and-after care homeowners look for before inviting a contractor into their home.
-          </p>
-        </div>
-        <div className="mt-9 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {GALLERY_ITEMS.map((item) => (
-            <div
-              key={item.image}
-              className="group overflow-hidden rounded-[22px] border border-[#E2E8F0] bg-[#F8FAFC] shadow-[0_16px_46px_rgba(15,23,42,0.08)]"
-            >
-              <div className="relative aspect-[4/5] overflow-hidden">
-                <Image
-                  src={item.image}
-                  alt={`${item.title} by Profixter`}
-                  fill
-                  className="object-cover transition duration-500 group-hover:scale-[1.03]"
-                  sizes="(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 280px"
-                />
-              </div>
-              <div className="p-4">
-                <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#306EEC]">
-                  {item.label}
-                </div>
-                <div className="mt-1 text-[15px] font-black text-[#0B1628]">{item.title}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function ProjectsContent() {
   const searchParams = useSearchParams();
   const selectedType = projectTypeFromQuery(searchParams.get("type"));
@@ -749,8 +694,6 @@ function ProjectsContent() {
         {SERVICES.map((service, index) => (
           <ServiceSection key={service.id} service={service} index={index} />
         ))}
-
-        <ProjectGallery />
 
         <section id="estimate" className="scroll-mt-[90px] bg-[#EAF0F8] py-16 sm:py-20 lg:py-24">
           <div className="mx-auto grid max-w-[1220px] gap-10 px-5 sm:px-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-start lg:gap-14">
