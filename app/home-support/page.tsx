@@ -27,22 +27,24 @@ const WELCOME: Message = {
   id: "welcome",
   role: "assistant",
   content:
-    "Hi, I am Profixter Home Support AI. Ask about a home problem, upload photos, or share a contractor quote, agreement, or PDF. I will give practical recommendations, safety notes, rough difficulty and time estimates, shopping lists, and the best next step.",
+    "Hi, I am Profixter AI. Ask about a home problem, upload photos, or share a contractor quote, agreement, or PDF. I can help you think through safety, materials, tools, difficulty, timing, shopping lists, and whether to DIY or hire someone.",
 };
 
-const STARTER_GROUPS = [
-  {
-    title: "Diagnose",
-    prompts: ["What is wrong with this leak?", "Is this dangerous?", "Should I DIY this or hire someone?"],
-  },
-  {
-    title: "Plan",
-    prompts: ["What materials do I need?", "Make me a seasonal maintenance schedule", "Give me a shopping list for this repair"],
-  },
-  {
-    title: "Review",
-    prompts: ["Review this contractor quote", "What questions should I ask before signing?", "Is this scope missing anything?"],
-  },
+const STARTERS = [
+  "What is wrong with this leak?",
+  "Review this contractor quote",
+  "What materials do I need?",
+  "Is this dangerous?",
+  "Should I DIY this or hire someone?",
+];
+
+const HOW_TO_USE = [
+  "Upload photos of leaks, damage, fixtures, walls, ceilings, doors, or other home issues.",
+  "Upload PDFs, contractor quotes, scopes, or agreements for a practical second look.",
+  "Ask repair, maintenance, seasonal planning, materials, tools, and shopping list questions.",
+  "Ask if something looks dangerous or if you should stop and call a utility, emergency service, or licensed professional.",
+  "Ask whether a task is a good DIY project, a one-time handyman visit, Membership work, or a renovation estimate.",
+  "Profixter AI gives recommendations, not final professional or legal advice.",
 ];
 
 function MessageContent({ text }: { text: string }) {
@@ -59,9 +61,6 @@ function MessageContent({ text }: { text: string }) {
               <span>{trimmed.replace(/^[-*]\s+/, "")}</span>
             </div>
           );
-        }
-        if (/^\d+\.\s+/.test(trimmed)) {
-          return <p key={index}>{trimmed}</p>;
         }
         return <p key={index}>{line}</p>;
       })}
@@ -269,119 +268,95 @@ export default function HomeSupportPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F6F8FC] text-[#0B1628]">
+    <main className="min-h-screen bg-[#EEF3FB] text-[#0B1628]">
       <Header />
-      <section className="mx-auto grid min-h-[calc(100svh-76px)] max-w-[1240px] gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[340px_1fr] lg:px-8">
-        <aside className="rounded-[8px] border border-slate-200 bg-white p-4">
-          <div className="text-xs font-black uppercase tracking-[0.16em] text-blue-700">
-            Free Home Support AI
+
+      <section className="mx-auto flex min-h-[calc(100svh-112px)] max-w-[1040px] flex-col px-3 pb-4 pt-2 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[880px] pb-4 pt-2 text-center sm:pt-6">
+          <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
+            Free homeowner assistant
           </div>
-          <h1 className="mt-3 text-3xl font-black leading-tight text-slate-950">
-            A home expert you can ask before you hire.
+          <h1 className="mt-3 text-[34px] font-black leading-[0.98] text-[#0B1628] sm:text-5xl">
+            Profixter AI for home decisions.
           </h1>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            Upload photos, PDFs, contractor quotes, and agreements. Ask about repairs, maintenance, danger, materials, tools, shopping lists, and whether to DIY or hire.
+          <p className="mx-auto mt-4 max-w-[680px] text-sm font-medium leading-6 text-[#526078] sm:text-base">
+            Ask about repairs, maintenance, photos, PDFs, contractor quotes, safety concerns, materials, tools, shopping lists, and whether to DIY or hire someone.
           </p>
-          <div className="mt-4 rounded-[8px] border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-600">
-            Not for appliance repair or emergency service. For danger, call 911, your utility company, or the right licensed emergency provider.
-          </div>
+        </div>
 
-          <div className="mt-5 space-y-4">
-            {STARTER_GROUPS.map((group) => (
-              <div key={group.title}>
-                <div className="mb-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">
-                  {group.title}
+        <details className="mx-auto mb-3 w-full max-w-[880px] rounded-[20px] border border-white/70 bg-white/82 shadow-[0_14px_42px_rgba(9,22,43,0.08)] backdrop-blur">
+          <summary className="cursor-pointer list-none px-4 py-4 text-sm font-black text-[#0B1628] marker:hidden">
+            How to use
+          </summary>
+          <div className="border-t border-[#E5ECF6] px-4 pb-4 pt-1">
+            <div className="grid gap-2 sm:grid-cols-2">
+              {HOW_TO_USE.map((item) => (
+                <div key={item} className="rounded-[14px] bg-[#F6F8FC] px-3 py-3 text-sm leading-6 text-[#4B5A73]">
+                  {item}
                 </div>
-                <div className="space-y-2">
-                  {group.prompts.map((starter) => (
-                    <button
-                      key={starter}
-                      type="button"
-                      onClick={() => sendMessage(starter)}
-                      className="w-full rounded-[8px] border border-slate-200 bg-slate-50 px-3 py-3 text-left text-sm font-bold text-slate-800 transition hover:border-blue-200 hover:bg-blue-50"
-                    >
-                      {starter}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {!isAuthenticated && (
-            <div className="mt-5 rounded-[8px] border border-blue-100 bg-blue-50 p-3 text-sm leading-6 text-blue-900">
-              Use it free without logging in. An account gives you a better saved experience when you are ready.
-              <div className="mt-2 flex gap-2">
-                <Link href="/signin" className="font-black text-blue-700">
-                  Sign in
-                </Link>
-                <Link href="/signup" className="font-black text-blue-700">
-                  Create account
-                </Link>
-              </div>
+              ))}
             </div>
-          )}
-
-          <div className="mt-4 grid gap-2 text-sm">
-            <Link
-              href="/book"
-              onClick={() => trackEvent("book_cta_clicked", { placement: "home_support_sidebar" })}
-              className="rounded-[8px] border border-emerald-200 bg-emerald-50 px-3 py-2 font-black text-emerald-800"
-            >
-              Book a $99 Handyman Visit
-            </Link>
-            <Link
-              href="/membership"
-              onClick={() => trackEvent("membership_cta_clicked", { placement: "home_support_sidebar" })}
-              className="rounded-[8px] border border-blue-100 bg-blue-50 px-3 py-2 font-black text-blue-800"
-            >
-              Compare Membership
-            </Link>
-            <Link
-              href="/projects"
-              onClick={() => trackEvent("estimate_cta_clicked", { placement: "home_support_sidebar" })}
-              className="rounded-[8px] border border-amber-200 bg-amber-50 px-3 py-2 font-black text-amber-900"
-            >
-              Request Project Estimate
-            </Link>
+            <div className="mt-3 flex flex-wrap gap-2 text-sm font-black">
+              <Link
+                href="/book"
+                onClick={() => trackEvent("book_cta_clicked", { placement: "home_support_how_to" })}
+                className="rounded-full bg-[#EAF7EF] px-3 py-2 text-[#15803D]"
+              >
+                Book Handyman
+              </Link>
+              <Link
+                href="/membership"
+                onClick={() => trackEvent("membership_cta_clicked", { placement: "home_support_how_to" })}
+                className="rounded-full bg-[#EEF4FF] px-3 py-2 text-[#306EEC]"
+              >
+                Membership
+              </Link>
+              <Link
+                href="/projects"
+                onClick={() => trackEvent("estimate_cta_clicked", { placement: "home_support_how_to" })}
+                className="rounded-full bg-[#FFF5E6] px-3 py-2 text-[#B45309]"
+              >
+                Renovation estimate
+              </Link>
+            </div>
           </div>
-        </aside>
+        </details>
 
-        <section className="flex min-h-[76svh] flex-col overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-          <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-            <div>
-              <div className="text-sm font-black text-slate-950">Profixter Home Support AI</div>
-              <div className="text-xs font-semibold text-slate-500">
-                Recommendations, safety notes, difficulty/time estimates, and natural next steps.
+        <section className="mx-auto flex min-h-[620px] w-full max-w-[880px] flex-1 flex-col overflow-hidden rounded-[24px] border border-white/70 bg-white shadow-[0_22px_70px_rgba(9,22,43,0.12)]">
+          <div className="flex items-center justify-between gap-3 border-b border-[#E5ECF6] px-4 py-3 sm:px-5">
+            <div className="min-w-0">
+              <div className="text-sm font-black text-[#0B1628]">Profixter AI</div>
+              <div className="truncate text-xs font-semibold text-[#6B768A]">
+                Photos and PDFs stay in this chat request. No appliance repair.
               </div>
             </div>
             <button
               type="button"
               onClick={newChat}
-              className="rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50"
+              className="flex-shrink-0 rounded-full border border-[#DDE6F3] bg-white px-4 py-2 text-xs font-black text-[#172033] transition hover:bg-[#F6F8FC]"
             >
-              New chat
+              New Chat
             </button>
           </div>
 
-          <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50 p-4">
+          <div className="flex-1 space-y-4 overflow-y-auto bg-[#F8FAFD] px-3 py-4 sm:px-5">
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[88%] rounded-[8px] px-4 py-3 text-sm leading-6 shadow-sm ${
+                  className={`max-w-[92%] rounded-[20px] px-4 py-3 text-sm leading-6 shadow-sm sm:max-w-[78%] ${
                     message.role === "user"
-                      ? "bg-blue-600 text-white"
+                      ? "bg-[#0B1628] text-white"
                       : message.error
                         ? "border border-red-200 bg-red-50 text-red-800"
-                        : "border border-slate-200 bg-white text-slate-800"
+                        : "border border-[#E4EBF5] bg-white text-[#243149]"
                   }`}
                 >
                   <MessageContent text={message.content} />
                   {!!message.files?.length && (
-                    <div className="mt-3 rounded-[8px] bg-black/5 px-3 py-2 text-xs opacity-85">
+                    <div className="mt-3 rounded-[14px] bg-black/5 px-3 py-2 text-xs opacity-85">
                       Attached: {message.files.join(", ")}
                     </div>
                   )}
@@ -389,7 +364,7 @@ export default function HomeSupportPage() {
                     <button
                       type="button"
                       onClick={() => copyMessage(message)}
-                      className="mt-3 text-xs font-black text-blue-700"
+                      className="mt-3 rounded-full bg-[#EEF4FF] px-3 py-1.5 text-xs font-black text-[#306EEC]"
                     >
                       {copiedId === message.id ? "Copied" : "Copy response"}
                     </button>
@@ -398,15 +373,34 @@ export default function HomeSupportPage() {
               </div>
             ))}
             {sending && (
-              <div className="inline-flex items-center gap-2 rounded-[8px] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-500">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-blue-600" />
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#E4EBF5] bg-white px-4 py-3 text-sm font-semibold text-[#526078]">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-[#306EEC]" />
                 Reviewing your home question...
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="border-t border-slate-200 bg-white p-3">
+          <div className="border-t border-[#E5ECF6] bg-white p-3 sm:p-4">
+            {!isAuthenticated && (
+              <div className="mb-3 rounded-[16px] border border-[#E1EAFE] bg-[#F6F9FF] px-3 py-2 text-xs font-semibold leading-5 text-[#526078]">
+                Free to use without logging in. An account can help keep your Profixter experience organized when you are ready.
+              </div>
+            )}
+
+            <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+              {STARTERS.map((starter) => (
+                <button
+                  key={starter}
+                  type="button"
+                  onClick={() => sendMessage(starter)}
+                  className="flex-shrink-0 rounded-full border border-[#DDE6F3] bg-[#F8FAFD] px-3 py-2 text-xs font-black text-[#34435C] transition hover:border-[#BBD0FA] hover:bg-[#EEF4FF]"
+                >
+                  {starter}
+                </button>
+              ))}
+            </div>
+
             {files.length > 0 && (
               <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 {files.map((item, index) => (
@@ -414,44 +408,35 @@ export default function HomeSupportPage() {
                     key={`${item.name}-${index}`}
                     type="button"
                     onClick={() => removeFile(index)}
-                    className="min-w-0 rounded-[8px] border border-slate-200 bg-slate-50 p-2 text-left text-xs font-bold text-slate-700"
+                    className="min-w-0 rounded-[16px] border border-[#DDE6F3] bg-[#F8FAFD] p-2 text-left text-xs font-bold text-[#34435C]"
                   >
                     {item.url ? (
                       <span
                         aria-hidden="true"
-                        className="mb-2 block h-20 w-full rounded-[6px] bg-cover bg-center"
+                        className="mb-2 block h-20 w-full rounded-[12px] bg-cover bg-center"
                         style={{ backgroundImage: `url(${item.url})` }}
                       />
                     ) : (
-                      <div className="mb-2 flex h-20 items-center justify-center rounded-[6px] bg-white text-slate-500">
+                      <div className="mb-2 flex h-20 items-center justify-center rounded-[12px] bg-white text-[#6B768A]">
                         PDF
                       </div>
                     )}
                     <span className="block truncate">{item.name}</span>
-                    <span className="mt-1 block text-[11px] font-semibold text-slate-400">
-                      Click to remove
+                    <span className="mt-1 block text-[11px] font-semibold text-[#7C879A]">
+                      Tap to remove
                     </span>
                   </button>
                 ))}
               </div>
             )}
-            <div className="grid gap-2 sm:grid-cols-[auto_1fr_auto]">
-              <label className="flex min-h-[48px] cursor-pointer items-center justify-center rounded-[8px] border border-slate-200 px-3 text-sm font-black text-slate-700 transition hover:bg-slate-50">
-                Upload photo/PDF
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  multiple
-                  onChange={(event) => addFiles(event.target.files)}
-                  className="hidden"
-                />
-              </label>
+
+            <div className="rounded-[22px] border border-[#DDE6F3] bg-[#F8FAFD] p-2 shadow-inner">
               <textarea
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                rows={1}
+                rows={2}
                 placeholder="Ask about a leak, quote, material list, safety issue, or maintenance plan..."
-                className="min-h-[48px] resize-none rounded-[8px] border border-slate-200 px-3 py-3 text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="min-h-[64px] w-full resize-none bg-transparent px-3 py-3 text-base text-[#0B1628] outline-none placeholder:text-[#7C879A]"
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
@@ -459,14 +444,26 @@ export default function HomeSupportPage() {
                   }
                 }}
               />
-              <button
-                type="button"
-                onClick={() => sendMessage()}
-                disabled={!input.trim() || sending}
-                className="min-h-[48px] rounded-[8px] bg-blue-600 px-5 text-sm font-black text-white disabled:opacity-50"
-              >
-                {sending ? "Sending..." : "Send"}
-              </button>
+              <div className="flex items-center justify-between gap-2">
+                <label className="flex min-h-[42px] cursor-pointer items-center rounded-full border border-[#DDE6F3] bg-white px-4 text-sm font-black text-[#34435C] transition hover:bg-[#F6F8FC]">
+                  Upload photo/PDF
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    multiple
+                    onChange={(event) => addFiles(event.target.files)}
+                    className="hidden"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => sendMessage()}
+                  disabled={!input.trim() || sending}
+                  className="min-h-[42px] rounded-full bg-[#306EEC] px-5 text-sm font-black text-white shadow-[0_10px_26px_rgba(48,110,236,0.26)] transition hover:bg-[#1F5FD8] disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  {sending ? "Sending..." : "Send"}
+                </button>
+              </div>
             </div>
           </div>
         </section>

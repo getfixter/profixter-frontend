@@ -11,6 +11,7 @@ const PRODUCT_LINKS = [
 ];
 
 const COMPANY_LINKS = [
+  { label: "About Us", href: "/about" },
   { label: "Community Partnerships", href: "/communities" },
   { label: "Careers", href: "/careers" },
   { label: "Privacy Policy", href: "/privacy" },

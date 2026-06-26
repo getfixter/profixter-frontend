@@ -4,6 +4,7 @@ const siteUrl = "https://www.profixter.com";
 
 const routes = [
   "",
+  "/about",
   "/home-support",
   "/book",
   "/membership",
@@ -35,6 +36,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
         ? 1
         : ["/home-support", "/book", "/membership", "/projects"].includes(route)
           ? 0.9
+          : route === "/about"
+            ? 0.8
           : 0.5,
   }));
 }

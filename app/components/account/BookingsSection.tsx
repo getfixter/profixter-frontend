@@ -7,9 +7,15 @@ import axios from "axios";
 type Booking = {
   _id: string;
   bookingNumber?: string;
+  addressId?: string | null;
   date: string;
   status: string;
   service?: string;
+  selectedTask?: string;
+  accessType?: "membership" | "one_time" | "free_first_visit" | "admin" | string;
+  bookingType?: "membership_visit" | "one_time_handyman_visit" | string;
+  paymentState?: string;
+  entitlementId?: string | null;
   note?: string;
   phone?: string;
   address?: string;
@@ -25,6 +31,10 @@ type MeResponse = {
   email?: string;
   phone?: string;
   subscription?: string | null;
+  addresses?: Array<{
+    _id?: string;
+    hasActiveSubscription?: boolean;
+  }>;
 };
 
 type FilterKey = "all" | "active" | "completed" | "cancelled";
@@ -36,6 +46,34 @@ function normalizeStatus(status: string) {
 function canCancel(status: string) {
   const s = normalizeStatus(status);
   return s === "pending" || s === "confirmed";
+}
+
+function isOneTimeVisit(booking: Booking) {
+  return (
+    booking.bookingType === "one_time_handyman_visit" ||
+    booking.accessType === "one_time"
+  );
+}
+
+function isMemberBooking(booking: Booking) {
+  if (booking.accessType === "membership") return true;
+  if (booking.accessType === "one_time" || booking.accessType === "free_first_visit") {
+    return false;
+  }
+  if (booking.bookingType === "one_time_handyman_visit") return false;
+  return true;
+}
+
+function hasActiveMembershipForBooking(me: MeResponse | null, booking: Booking) {
+  if (booking.accessType === "membership") return true;
+
+  const activeAddresses = me?.addresses?.filter((address) => address.hasActiveSubscription) || [];
+  if (!activeAddresses.length) return false;
+
+  if (!booking.addressId) return true;
+  return activeAddresses.some(
+    (address) => String(address._id || "") === String(booking.addressId)
+  );
 }
 
 function isActiveStatus(status: string) {
@@ -243,8 +281,13 @@ function BookingCard({
 }) {
   const addr = formatAddress(booking);
   const phone = booking.phone || me?.phone;
-  const showCancel = canCancel(booking.status);
+  const memberBooking = isMemberBooking(booking);
+  const memberCanSelfCancel = memberBooking && hasActiveMembershipForBooking(me, booking);
+  const showCancel = canCancel(booking.status) && memberCanSelfCancel;
+  const showCallToChange = canCancel(booking.status) && !memberCanSelfCancel;
   const bookingId = booking.bookingNumber || booking._id.slice(-6).toUpperCase();
+  const isOneTime = isOneTimeVisit(booking);
+  const serviceLabel = booking.selectedTask || booking.service || "-";
 
   return (
     <div className="bg-white border border-[#E0E6F5] rounded-[16px] overflow-hidden transition hover:border-[#C7D9FF]">
@@ -258,9 +301,16 @@ function BookingCard({
             {formatNY(booking.date)}
           </div>
         </div>
-        <span className={`px-2.5 py-1 rounded-[10px] text-[11px] font-bold border ${statusBadge(booking.status)}`}>
-          {statusLabel(booking.status)}
-        </span>
+        <div className="flex flex-col items-end gap-1.5">
+          {isOneTime && (
+            <span className="rounded-[10px] border border-[#D9E4FF] bg-[#F0F7FF] px-2.5 py-1 text-[11px] font-bold text-[#1D4ED8]">
+              One-Time Visit
+            </span>
+          )}
+          <span className={`px-2.5 py-1 rounded-[10px] text-[11px] font-bold border ${statusBadge(booking.status)}`}>
+            {statusLabel(booking.status)}
+          </span>
+        </div>
       </div>
 
       {/* Card body */}
@@ -271,10 +321,15 @@ function BookingCard({
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#306EEC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
             </svg>
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-[0.08em]">Service</div>
-            <div className="text-[13px] font-semibold text-[#313234] leading-snug">{booking.service || "-"}</div>
+            </div>
+            <div>
+              <div className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-[0.08em]">Service</div>
+            <div className="text-[13px] font-semibold text-[#313234] leading-snug">{serviceLabel}</div>
+            {isOneTime && (
+              <div className="mt-1 text-[12px] font-semibold text-[#6A6D71]">
+                $99 / 90-minute paid request
+              </div>
+            )}
           </div>
         </div>
 
@@ -331,6 +386,14 @@ function BookingCard({
             >
               {cancelLoading ? "..." : "Cancel visit"}
             </button>
+          )}
+          {showCallToChange && (
+            <a
+              href="tel:631-599-1363"
+              className="flex-1 rounded-[12px] border border-[#D9E4FF] bg-[#F0F7FF] px-3 py-2.5 text-center text-[13px] font-semibold text-[#1D4ED8] transition hover:bg-[#E6F0FF]"
+            >
+              Need to cancel or reschedule? Call 631-599-1363
+            </a>
           )}
           {isCompletedStatus(booking.status) && (
             <>
@@ -502,11 +565,11 @@ export default function BookingsSection() {
         <div>
           <div className="text-[14px] font-semibold text-[#313234]">Questions or changes?</div>
           <div className="text-[13px] text-[#6A6D71] mt-0.5">
-            Call{" "}
+            One-Time Visit changes require a call. Call{" "}
             <a className="text-[#306EEC] font-semibold" href="tel:631-599-1363">
               631-599-1363
             </a>{" "}
-            - we&apos;ll help right away.
+            and we&apos;ll help right away.
           </div>
         </div>
       </div>
