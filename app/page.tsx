@@ -8,30 +8,26 @@ import { trackEvent } from "@/lib/analytics";
 const products = [
   {
     title: "Profixter AI",
-    label: "Free House Assistance",
+    label: "Ask anything about your home",
     href: "/home-support",
-    body: "Photos, PDFs, quotes, repairs, maintenance, safety checks, and DIY-or-hire decisions.",
     accent: "bg-[#306EEC]",
   },
   {
     title: "Book Handyman",
-    label: "$99 / 90 minutes",
+    label: "$99 for one small job",
     href: "/book",
-    body: "One focused small job, booked first and paid securely.",
     accent: "bg-[#16A34A]",
   },
   {
     title: "Membership",
-    label: "Ongoing home care",
+    label: "Ongoing home support",
     href: "/membership",
-    body: "Become a Member for recurring small-job help and a team that learns your home.",
     accent: "bg-[#0B1628]",
   },
   {
     title: "Renovation",
-    label: "Larger projects",
+    label: "Bigger work, real estimates",
     href: "/projects",
-    body: "Bathrooms, kitchens, roofing, siding, and bigger work that needs a real estimate.",
     accent: "bg-[#D97706]",
   },
 ];
@@ -46,21 +42,17 @@ function ProductButton({ product }: { product: (typeof products)[number] }) {
           href: product.href,
         })
       }
-      className="group relative overflow-hidden rounded-[18px] border border-white/55 bg-white/88 p-4 text-left shadow-[0_18px_50px_rgba(9,22,43,0.12)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:bg-white focus:outline-none focus:ring-4 focus:ring-[#306EEC]/25 sm:p-5"
+      className="group relative min-h-[150px] overflow-hidden rounded-[28px] bg-white/90 p-5 text-left shadow-[0_24px_70px_rgba(9,22,43,0.10)] backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:bg-white focus:outline-none focus:ring-4 focus:ring-[#306EEC]/25 sm:min-h-[190px] sm:p-6"
     >
-      <span className={`mb-4 block h-2 w-12 rounded-full ${product.accent}`} />
-      <span className="block text-lg font-black leading-tight text-[#0B1628] sm:text-xl">
+      <span className={`mb-6 block h-1.5 w-14 rounded-full ${product.accent}`} />
+      <span className="block text-[26px] font-black leading-[0.96] tracking-[-0.03em] text-[#0B1628] sm:text-[34px]">
         {product.title}
       </span>
-      <span className="mt-1 block text-sm font-black text-[#306EEC]">
+      <span className="mt-4 block max-w-[190px] text-sm font-bold leading-5 text-[#526078]">
         {product.label}
       </span>
-      <span className="mt-3 block text-sm leading-6 text-[#4B5A73]">
-        {product.body}
-      </span>
-      <span className="mt-4 inline-flex items-center text-sm font-black text-[#0B1628]">
-        Choose this
-        <span className="ml-2 transition group-hover:translate-x-1">-&gt;</span>
+      <span className="absolute bottom-5 right-5 flex h-10 w-10 items-center justify-center rounded-full bg-[#0B1628] text-white transition group-hover:scale-105">
+        -&gt;
       </span>
     </Link>
   );
@@ -68,7 +60,7 @@ function ProductButton({ product }: { product: (typeof products)[number] }) {
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-[#EAF0FA] text-[#0B1628]">
+    <main className="min-h-screen bg-[#F4F7FB] text-[#0B1628]">
       <section className="relative min-h-screen overflow-hidden">
         <Image
           src="/images/hero-bg.webp"
@@ -78,38 +70,26 @@ export default function HomePage() {
           className="object-cover"
           sizes="100vw"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(234,240,250,0.78)_0%,rgba(234,240,250,0.58)_42%,rgba(255,255,255,0.32)_100%)] sm:bg-[linear-gradient(110deg,rgba(234,240,250,0.84)_0%,rgba(234,240,250,0.58)_40%,rgba(255,255,255,0.16)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#EAF0FA]/80 to-transparent" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(244,247,251,0.92)_0%,rgba(244,247,251,0.70)_46%,rgba(255,255,255,0.30)_100%)] sm:bg-[linear-gradient(105deg,rgba(244,247,251,0.94)_0%,rgba(244,247,251,0.72)_48%,rgba(255,255,255,0.20)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#F4F7FB]/80 to-transparent" />
 
         <div className="relative z-10">
           <Header />
 
-          <div className="mx-auto flex min-h-[calc(100svh-120px)] max-w-[1200px] flex-col justify-center px-4 pb-8 pt-4 sm:px-6 lg:px-8">
-            <div className="max-w-[820px]">
-              <h1 className="max-w-[780px] text-[42px] font-black leading-[0.94] text-[#0B1628] sm:text-[64px] lg:text-[78px]">
-                Home help that starts in the right place.
+          <div className="mx-auto flex min-h-[calc(100svh-112px)] max-w-[1260px] flex-col justify-center px-4 pb-8 pt-8 sm:px-6 lg:px-8">
+            <div className="max-w-[980px]">
+              <h1 className="max-w-[940px] text-[54px] font-black leading-[0.86] tracking-[-0.07em] text-[#071325] sm:text-[86px] lg:text-[112px]">
+                Home ownership, finally simple.
               </h1>
-              <p className="mt-5 max-w-[650px] text-base font-medium leading-7 text-[#34435C] sm:text-lg">
-                Ask Profixter AI, book a small handyman job, become a Member for ongoing care, or start a renovation estimate. Clear choices for Long Island homeowners.
+              <p className="mt-7 max-w-[660px] text-lg font-semibold leading-7 text-[#34435C] sm:text-xl">
+                Ask AI, book help, become a Member, or start a renovation. One modern platform for the home.
               </p>
             </div>
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {products.map((product) => (
                 <ProductButton key={product.title} product={product} />
               ))}
-            </div>
-
-            <div className="mt-6 grid gap-2 text-xs font-black uppercase tracking-[0.14em] text-[#34435C] sm:grid-cols-3 sm:text-[11px]">
-              <div className="rounded-full border border-white/60 bg-white/76 px-4 py-3 shadow-sm backdrop-blur">
-                Licensed HI-71484
-              </div>
-              <div className="rounded-full border border-white/60 bg-white/76 px-4 py-3 shadow-sm backdrop-blur">
-                Fully insured local team
-              </div>
-              <div className="rounded-full border border-white/60 bg-white/76 px-4 py-3 shadow-sm backdrop-blur">
-                Built for real homes
-              </div>
             </div>
           </div>
         </div>
