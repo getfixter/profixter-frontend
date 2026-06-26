@@ -30,12 +30,6 @@ const ONE_TIME_SERVICE_OPTIONS = [
   "Other (Await for confirmation)",
 ];
 
-const MEMBERSHIP_UPSELL_BENEFITS = [
-  "Request ongoing handyman help without paying $99 each visit",
-  "Unlock more service flexibility for regular home maintenance",
-  "Priority scheduling, project discounts, and rush visit benefits may be included depending on plan",
-];
-
 const AUTO_SELECT_MONTHS_TO_CHECK = 6;
 const FALLBACK_DAYS_TO_CHECK = 120;
 
@@ -213,6 +207,7 @@ export default function BookPage() {
   const [configError, setConfigError] = useState("");
   const [addressId, setAddressId] = useState("");
   const [selectedTask, setSelectedTask] = useState("");
+  const [servicePickerOpen, setServicePickerOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -230,6 +225,7 @@ export default function BookPage() {
   const [loading, setLoading] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const servicePickerRef = useRef<HTMLDivElement | null>(null);
   const autoSelectStartedRef = useRef(false);
   const availabilityByDateRef = useRef<Record<string, string[]>>({});
 
@@ -244,6 +240,30 @@ export default function BookPage() {
       });
     }
   }, []);
+
+  useEffect(() => {
+    if (!servicePickerOpen) return;
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (
+        servicePickerRef.current &&
+        !servicePickerRef.current.contains(event.target as Node)
+      ) {
+        setServicePickerOpen(false);
+      }
+    };
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setServicePickerOpen(false);
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [servicePickerOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -501,7 +521,7 @@ export default function BookPage() {
       return;
     }
     if (!selectedTask) {
-      setError("Choose the service type you want help with.");
+      setError("Choose what you need help with.");
       return;
     }
     if (!selectedDate || !selectedTime) {
@@ -555,13 +575,13 @@ export default function BookPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F6F8FC] text-[#0B1628]">
+    <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
       <Header />
 
-      <section className="relative w-full overflow-hidden pt-6 pb-8 sm:pt-12 sm:pb-14 lg:pt-14">
+      <section className="relative w-full overflow-hidden pb-8 pt-8 sm:pb-14 sm:pt-14 lg:pt-16">
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-          <div className="mb-5 max-w-[760px] sm:mb-8">
-            <div className="mb-3 inline-flex items-center gap-2.5 rounded-[8px] border border-[#D9E4FF] bg-white px-3 py-2">
+          <div className="mb-7 max-w-[820px] sm:mb-10">
+            <div className="mb-4 inline-flex items-center gap-2.5 rounded-full bg-white px-4 py-2 shadow-sm">
               <span
                 className="h-2 w-2 flex-shrink-0 rounded-full bg-[#306EEC]"
                 style={{ boxShadow: "0 0 8px rgba(48,110,236,0.7)" }}
@@ -570,11 +590,11 @@ export default function BookPage() {
                 One-Time Visit
               </span>
             </div>
-            <h1 className="mb-2 text-[30px] font-black leading-[1.02] text-[#0B1628] sm:text-[42px] lg:text-[52px]">
-              Book one handyman visit
+            <h1 className="mb-4 text-[48px] font-black leading-[0.88] tracking-[-0.06em] text-[#071325] sm:text-[72px] lg:text-[86px]">
+              Book a handyman.
             </h1>
-            <p className="max-w-[620px] text-[14px] leading-relaxed text-[#475569] sm:text-[16px]">
-              Choose a service type, pick an available time, add notes and photos, then pay securely. Admin approval happens after payment and confirmation follows shortly.
+            <p className="max-w-[640px] text-[17px] font-semibold leading-7 text-[#475569] sm:text-[20px]">
+              Choose the job, pick a time, add photos, and pay securely. We confirm after review.
             </p>
             {configError && (
               <div className="mt-4 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] font-semibold text-amber-800">
@@ -585,7 +605,7 @@ export default function BookPage() {
 
           <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-12 lg:gap-6">
             <div className="order-2 lg:order-1 lg:col-span-5">
-              <div className="rounded-[12px] border border-[#D7DEE9] bg-white p-4 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5">
+              <div className="rounded-[30px] bg-white/95 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-5">
                 <div className="mb-5 flex items-center justify-between">
                   <button
                     type="button"
@@ -687,7 +707,7 @@ export default function BookPage() {
             </div>
 
             <div className="contents lg:order-2 lg:col-span-7 lg:flex lg:flex-col lg:gap-5">
-              <div className="order-1 rounded-[12px] border border-[#D7DEE9] bg-white p-4 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5 lg:order-none">
+              <div className="order-1 rounded-[30px] bg-white/95 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-5 lg:order-none">
                 {isLoading ? (
                   <div className="py-12 text-center text-[14px] font-semibold text-[#64748B]">
                     Loading your account...
@@ -748,22 +768,150 @@ export default function BookPage() {
                       )}
                     </div>
 
-                    <div>
+                    <div ref={servicePickerRef} className="relative">
                       <div className="mb-2 text-[13px] font-semibold text-[#0B1628]">
-                        Service type
+                        What do you need help with?
                       </div>
-                      <select
-                        value={selectedTask}
-                        onChange={(event) => setSelectedTask(event.target.value)}
-                        className="min-h-[48px] w-full rounded-[12px] border border-[#C5CBD8] bg-[#F8FAFF] px-3 py-2 text-[14px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15"
+                      <button
+                        type="button"
+                        onClick={() => setServicePickerOpen((open) => !open)}
+                        aria-expanded={servicePickerOpen}
+                        className={[
+                          "group flex min-h-[70px] w-full items-center justify-between gap-4 rounded-[24px] bg-[#F7F8FB] px-4 py-3 text-left shadow-inner transition duration-200 hover:bg-white hover:shadow-[0_18px_48px_rgba(15,23,42,0.08)] focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15",
+                          selectedTask ? "ring-1 ring-[#D7E4FF]" : "ring-1 ring-[#E5E9F2]",
+                        ].join(" ")}
                       >
-                        <option value="">Select service type</option>
-                        {ONE_TIME_SERVICE_OPTIONS.map((task) => (
-                          <option key={task} value={task}>
-                            {task}
-                          </option>
+                        <span className="min-w-0">
+                          <span className="block text-[11px] font-black uppercase tracking-[0.16em] text-[#7C879A]">
+                            One-Time Visit task
+                          </span>
+                          <span className={`mt-1 block truncate text-[18px] font-black tracking-[-0.02em] ${selectedTask ? "text-[#0B1628]" : "text-[#7C879A]"}`}>
+                            {selectedTask || "Choose a small job"}
+                          </span>
+                        </span>
+                        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#0B1628] shadow-sm transition group-hover:scale-105">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path
+                              d={servicePickerOpen ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"}
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2.2"
+                            />
+                          </svg>
+                        </span>
+                      </button>
+
+                      {servicePickerOpen && (
+                        <>
+                          <button
+                            type="button"
+                            className="fixed inset-0 z-[60] bg-[#071325]/20 backdrop-blur-[2px] sm:hidden"
+                            aria-label="Close service picker"
+                            onClick={() => setServicePickerOpen(false)}
+                          />
+                          <div className="fixed inset-x-3 bottom-3 z-[70] rounded-[30px] bg-white p-3 shadow-[0_30px_90px_rgba(7,19,37,0.28)] sm:absolute sm:inset-x-0 sm:bottom-auto sm:top-[calc(100%+10px)] sm:z-30 sm:rounded-[26px] sm:p-3">
+                            <div className="mb-2 flex items-center justify-between px-2 py-1">
+                              <div>
+                                <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#306EEC]">
+                                  Select service
+                                </div>
+                                <div className="mt-0.5 text-[13px] font-semibold text-[#64748B]">
+                                  One tap to choose.
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setServicePickerOpen(false)}
+                                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F4F6FA] text-[#34435C]"
+                                aria-label="Close service picker"
+                              >
+                                &times;
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              {ONE_TIME_SERVICE_OPTIONS.map((task) => {
+                                const active = selectedTask === task;
+                                return (
+                                  <button
+                                    key={task}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedTask(task);
+                                      setServicePickerOpen(false);
+                                    }}
+                                    className={[
+                                      "min-h-[58px] rounded-[18px] px-3 text-left text-[13px] font-black leading-4 transition duration-150 active:scale-[0.98]",
+                                      active
+                                        ? "bg-[#0B1628] text-white shadow-[0_16px_34px_rgba(11,22,40,0.22)]"
+                                        : "bg-[#F5F7FA] text-[#0B1628] hover:bg-[#EEF4FF]",
+                                    ].join(" ")}
+                                  >
+                                    {task}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="overflow-hidden rounded-[26px] bg-[#0B1628] p-4 text-white shadow-[0_24px_70px_rgba(7,19,37,0.16)] sm:p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="text-[11px] font-black uppercase tracking-[0.18em] text-white/55">
+                            Already a Member?
+                          </div>
+                          <h3 className="mt-2 text-[22px] font-black leading-[1.02] tracking-[-0.035em]">
+                            Members do not pay {priceLabel} every visit.
+                          </h3>
+                        </div>
+                        <Link
+                          href="/membership"
+                          onClick={() =>
+                            trackEvent("membership_cta_clicked", {
+                              placement: "book_service_selector_card",
+                            })
+                          }
+                          className="hidden flex-shrink-0 rounded-full bg-white px-4 py-2 text-[12px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF] sm:inline-flex"
+                        >
+                          Compare
+                        </Link>
+                      </div>
+                      <div className="mt-4 grid gap-2">
+                        {[
+                          "Better long-term value",
+                          "More service flexibility",
+                          "Priority scheduling and project discounts may be included",
+                        ].map((benefit) => (
+                          <div key={benefit} className="flex items-center gap-2 text-[13px] font-semibold text-white/78">
+                            <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-[#86EFAC]">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path
+                                  d="M5 12.5l4 4 10-10"
+                                  stroke="currentColor"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2.6"
+                                />
+                              </svg>
+                            </span>
+                            {benefit}
+                          </div>
                         ))}
-                      </select>
+                      </div>
+                      <Link
+                        href="/membership"
+                        onClick={() =>
+                          trackEvent("membership_cta_clicked", {
+                            placement: "book_service_selector_card_mobile",
+                          })
+                        }
+                        className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-full bg-white text-[13px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF] sm:hidden"
+                      >
+                        Compare Membership
+                      </Link>
                     </div>
                   </div>
                 )}
@@ -771,7 +919,7 @@ export default function BookPage() {
 
               {isAuthenticated && (
                 <>
-                  <div className="order-3 rounded-[12px] border border-[#D7DEE9] bg-white p-4 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5 lg:order-none">
+                  <div className="order-3 rounded-[30px] bg-white/95 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-5 lg:order-none">
                     <StepHeader
                       step="2 Time"
                       title="Choose a time"
@@ -817,7 +965,7 @@ export default function BookPage() {
                     )}
                   </div>
 
-                  <div className="order-4 rounded-[12px] border border-[#D7DEE9] bg-white p-4 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5 lg:order-none">
+                  <div className="order-4 rounded-[30px] bg-white/95 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-5 lg:order-none">
                     <StepHeader
                       step="3 Notes / Photos"
                       title="Tell us what you need"
@@ -965,7 +1113,7 @@ export default function BookPage() {
                     </div>
                   </div>
 
-                  <div className="order-5 rounded-[12px] border border-[#D7DEE9] bg-white p-4 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5 lg:order-none">
+                  <div className="order-5 rounded-[30px] bg-white/95 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-5 lg:order-none">
                     <StepHeader
                       step="4 Payment"
                       title="Review and continue"
@@ -980,7 +1128,7 @@ export default function BookPage() {
                         </strong>
                       </div>
                       <div className="flex justify-between gap-4 rounded-[14px] bg-[#F8FAFF] px-4 py-3">
-                        <span>Service type</span>
+                        <span>Help needed</span>
                         <strong className="text-right text-[#0B1628]">
                           {selectedTask || "Not selected"}
                         </strong>
@@ -1041,90 +1189,14 @@ export default function BookPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1280px] px-4 pb-10 sm:px-6 lg:px-8">
-        <div className="overflow-hidden rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)]">
-          <div className="grid gap-0 lg:grid-cols-[1fr_0.9fr]">
-            <div className="p-5 sm:p-6 lg:p-7">
-              <div className="mb-3 inline-flex items-center rounded-full bg-[#EEF5FF] px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-[#306EEC]">
-                Better for ongoing help
-              </div>
-              <h2 className="text-[24px] font-black leading-tight text-[#0B1628] sm:text-[30px]">
-                Planning more than one visit? Membership may save you money.
-              </h2>
-              <p className="mt-3 max-w-[640px] text-[14px] leading-6 text-[#64748B] sm:text-[15px]">
-                A One-Time Visit is great for one small job or trying Profixter once. Membership is built for ongoing home maintenance, regular help, and a team that learns your home over time. We care about Members like family.
-              </p>
-
-              <div className="mt-5 grid gap-2">
-                {MEMBERSHIP_UPSELL_BENEFITS.map((benefit) => (
-                  <div key={benefit} className="flex gap-2 rounded-[14px] bg-[#F8FAFF] px-4 py-3">
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      aria-hidden="true"
-                      className="mt-0.5 flex-shrink-0 text-[#306EEC]"
-                    >
-                      <path
-                        d="M5 12.5l4 4 10-10"
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2.4"
-                      />
-                    </svg>
-                    <span className="text-[13px] font-semibold leading-5 text-[#475569]">
-                      {benefit}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="border-t border-[#E5E9F2] bg-[#F8FAFF] p-5 sm:p-6 lg:border-l lg:border-t-0 lg:p-7">
-              <div className="rounded-[16px] border border-[#D9E4FF] bg-white p-5">
-                <div className="text-[13px] font-extrabold uppercase tracking-[0.14em] text-[#306EEC]">
-                  Quick comparison
-                </div>
-                <div className="mt-4 space-y-3 text-[14px] leading-6 text-[#475569]">
-                  <p>
-                    <span className="font-extrabold text-[#0B1628]">One-Time Visit:</span>{" "}
-                    one small job, {priceLabel}, up to {config.durationMinutes} minutes.
-                  </p>
-                  <p>
-                    <span className="font-extrabold text-[#0B1628]">Membership:</span>{" "}
-                    better long-term value if your home needs help more than once.
-                  </p>
-                </div>
-                <Link
-                  href="/membership"
-                  onClick={() =>
-                    trackEvent("membership_cta_clicked", {
-                      placement: "book_membership_upsell",
-                    })
-                  }
-                  className="mt-5 inline-flex h-[48px] w-full items-center justify-center rounded-[14px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99]"
-                >
-                  Compare Membership
-                </Link>
-                <p className="mt-3 text-center text-[12px] leading-5 text-[#64748B]">
-                  This will not interrupt your One-Time Visit checkout.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="mx-auto grid max-w-[1280px] gap-4 px-4 pb-10 sm:px-6 lg:grid-cols-3 lg:px-8">
-        <div className="rounded-[12px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)]">
+        <div className="rounded-[28px] bg-white/88 p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)]">
           <h2 className="text-[18px] font-extrabold text-[#0B1628]">What your visit includes</h2>
           <p className="mt-3 text-[14px] leading-6 text-[#64748B]">
             One focused handyman visit up to {config.durationMinutes} minutes. The visit price covers the visit itself, and Profixter brings the tools.
           </p>
         </div>
-        <div className="rounded-[12px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)]">
+        <div className="rounded-[28px] bg-white/88 p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)]">
           <h2 className="text-[18px] font-extrabold text-[#0B1628]">Before we arrive</h2>
           <p className="mt-3 text-[14px] leading-6 text-[#64748B]">
             Please prepare or provide materials if materials are needed. Appliance repair is not offered. Larger or multi-day work should use a{" "}
@@ -1138,7 +1210,7 @@ export default function BookPage() {
             .
           </p>
         </div>
-        <div className="rounded-[12px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)]">
+        <div className="rounded-[28px] bg-white/88 p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)]">
           <h2 className="text-[18px] font-extrabold text-[#0B1628]">What happens after payment</h2>
           <p className="mt-3 text-[14px] leading-6 text-[#64748B]">
             Admin reviews the paid request and sends confirmation shortly. If we cannot approve the job, cannot complete it within scope, or must cancel before service, you receive a full refund. One-Time Visit changes are handled by calling {config.cancellationPhone}.
@@ -1148,7 +1220,7 @@ export default function BookPage() {
 
       {isAuthenticated && (
         <section className="mx-auto max-w-[1280px] px-4 pb-10 sm:px-6 lg:px-8">
-          <div className="rounded-[12px] border border-[#D9E4FF] bg-[#F0F7FF] p-5">
+          <div className="rounded-[28px] bg-[#EEF5FF] p-5 shadow-[0_18px_54px_rgba(48,110,236,0.08)]">
             <h2 className="text-[18px] font-extrabold text-[#0B1628]">Your bookings</h2>
             <p className="mt-2 text-[14px] leading-6 text-[#64748B]">
               You can review One-Time Visits and Member visits together from your account.
