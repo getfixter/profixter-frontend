@@ -5,6 +5,7 @@ const ALLOWED_TYPES = new Set([
   "siding",
   "bathroom",
   "kitchen",
+  "build-new-house",
   "full-house",
   "basement",
   "interior",

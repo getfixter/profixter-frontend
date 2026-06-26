@@ -3,13 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import Header from "@/app/components/sections/Header";
-import Footer from "@/app/components/sections/Footer";
 import { trackEvent } from "@/lib/analytics";
 
 const products = [
   {
     title: "Profixter AI",
-    label: "Free home answers",
+    label: "Free House Assistance",
     href: "/home-support",
     body: "Photos, PDFs, quotes, repairs, maintenance, safety checks, and DIY-or-hire decisions.",
     accent: "bg-[#306EEC]",
@@ -18,7 +17,7 @@ const products = [
     title: "Book Handyman",
     label: "$99 / 90 minutes",
     href: "/book",
-    body: "One focused small job, booked first and paid securely before admin confirmation.",
+    body: "One focused small job, booked first and paid securely.",
     accent: "bg-[#16A34A]",
   },
   {
@@ -79,18 +78,15 @@ export default function HomePage() {
           className="object-cover"
           sizes="100vw"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(234,240,250,0.96)_0%,rgba(234,240,250,0.88)_34%,rgba(255,255,255,0.82)_100%)] sm:bg-[linear-gradient(110deg,rgba(234,240,250,0.98)_0%,rgba(234,240,250,0.92)_42%,rgba(255,255,255,0.62)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#EAF0FA] to-transparent" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(234,240,250,0.78)_0%,rgba(234,240,250,0.58)_42%,rgba(255,255,255,0.32)_100%)] sm:bg-[linear-gradient(110deg,rgba(234,240,250,0.84)_0%,rgba(234,240,250,0.58)_40%,rgba(255,255,255,0.16)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#EAF0FA]/80 to-transparent" />
 
         <div className="relative z-10">
           <Header />
 
           <div className="mx-auto flex min-h-[calc(100svh-120px)] max-w-[1200px] flex-col justify-center px-4 pb-8 pt-4 sm:px-6 lg:px-8">
             <div className="max-w-[820px]">
-              <div className="inline-flex rounded-full border border-white/70 bg-white/82 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC] shadow-sm backdrop-blur">
-                Babylon based - Serving Nassau & Suffolk
-              </div>
-              <h1 className="mt-5 max-w-[780px] text-[42px] font-black leading-[0.94] text-[#0B1628] sm:text-[64px] lg:text-[78px]">
+              <h1 className="max-w-[780px] text-[42px] font-black leading-[0.94] text-[#0B1628] sm:text-[64px] lg:text-[78px]">
                 Home help that starts in the right place.
               </h1>
               <p className="mt-5 max-w-[650px] text-base font-medium leading-7 text-[#34435C] sm:text-lg">
@@ -118,8 +114,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      <Footer />
     </main>
   );
 }
