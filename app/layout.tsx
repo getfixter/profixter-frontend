@@ -15,16 +15,56 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Profixter | Handyman Membership for Long Island Homeowners",
-  description: "Monthly handyman membership for Long Island homeowners. One trusted team, regular visits, and everything handled — from $149/mo. Licensed HI-71484. Nassau & Suffolk County.",
+  metadataBase: new URL("https://www.profixter.com"),
+  title: {
+    default: "Profixter | Home Support AI, Handyman Visits, Membership & Projects",
+    template: "%s | Profixter",
+  },
+  description:
+    "Profixter helps Long Island homeowners with free Home Support AI, $99 one-time handyman visits, ongoing membership, and larger home project estimates. Licensed HI-71484. Nassau and Suffolk County.",
+  alternates: {
+    canonical: "/",
+  },
+  keywords: [
+    "Profixter",
+    "Long Island handyman",
+    "home maintenance membership",
+    "home support AI",
+    "Nassau County handyman",
+    "Suffolk County handyman",
+    "home project estimates",
+  ],
   openGraph: {
-    title: "Profixter | Handyman Membership — Long Island",
-    description: "Monthly handyman membership for Long Island homeowners. One trusted team, regular visits, and everything handled. Licensed HI-71484. Serving Nassau & Suffolk County.",
+    title: "Profixter | Home Support for Long Island Homeowners",
+    description:
+      "Free Home Support AI, $99 handyman visits, ongoing maintenance membership, and larger home project estimates.",
+    url: "https://www.profixter.com",
+    siteName: "Profixter",
     type: "website",
+    locale: "en_US",
+    images: [
+      {
+        url: "/images/hero-bg.webp",
+        width: 1200,
+        height: 630,
+        alt: "Profixter home support for Long Island homeowners",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Profixter | Home Support for Long Island Homeowners",
+    description:
+      "Free Home Support AI, $99 handyman visits, membership, and larger project estimates.",
+    images: ["/images/hero-bg.webp"],
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
-const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FB_PIXEL_ID; // ✅ add this env
+const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FB_PIXEL_ID;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -34,6 +74,32 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <Script
+          id="profixter-structured-data"
+          type="application/ld+json"
+          strategy="beforeInteractive"
+        >
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "HomeAndConstructionBusiness",
+            name: "Profixter",
+            url: "https://www.profixter.com",
+            telephone: "+1-631-599-1363",
+            areaServed: ["Nassau County, NY", "Suffolk County, NY"],
+            image: "https://www.profixter.com/images/hero-bg.webp",
+            priceRange: "$$",
+            hasOfferCatalog: {
+              "@type": "OfferCatalog",
+              name: "Profixter services",
+              itemListElement: [
+                { "@type": "Offer", name: "Home Support AI" },
+                { "@type": "Offer", name: "One-Time Handyman Visit" },
+                { "@type": "Offer", name: "Profixter Membership" },
+                { "@type": "Offer", name: "Home Projects" },
+              ],
+            },
+          })}
+        </Script>
         <Script id="gtm-head" strategy="afterInteractive">
           {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -43,9 +109,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         </Script>
       </head>
 
-      {/* ✅ GTM */}
-
-      {/* ✅ Meta Pixel Base Code */}
       {FB_PIXEL_ID ? (
         <>
           <Script id="meta-pixel" strategy="afterInteractive">
@@ -88,9 +151,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
         <ScrollToTop />
 
-        <Providers>
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

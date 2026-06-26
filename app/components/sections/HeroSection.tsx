@@ -18,13 +18,13 @@ type NextBookingResponse = {
 const BENEFITS = [
   "90-Minute Visits",
   "Trusted Local Team",
-  "Cancel Anytime",
+  "Month-to-Month Plans",
 ];
 
 const TRUST_ROW = [
   "5.0 Google rating",
   "Long Island local",
-  "Cancel anytime",
+  "No long-term contract",
 ];
 
 export default function HeroSection() {

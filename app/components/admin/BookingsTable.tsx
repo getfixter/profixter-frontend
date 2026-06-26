@@ -88,6 +88,46 @@ function getStatusTone(status: string) {
   return "border-slate-200 bg-slate-50 text-slate-700";
 }
 
+function bookingTypeLabel(booking: Booking) {
+  if (isOneTimeBooking(booking)) {
+    return "One-Time Visit";
+  }
+  if (booking.accessType === "free_first_visit") return "Free First Visit";
+  return "Membership";
+}
+
+function isOneTimeBooking(booking: Booking) {
+  return booking.bookingType === "one_time_handyman_visit" || booking.accessType === "one_time";
+}
+
+function paymentStateLabel(booking: Booking) {
+  if (booking.reservationIssue?.status) return "Reservation Review Needed";
+  const state = String(booking.paymentState || "").toLowerCase();
+  if (!state || state === "not_required") return "No separate payment";
+  return state.replace(/_/g, " ").replace(/^./, (char) => char.toUpperCase());
+}
+
+function paymentStateTone(booking: Booking) {
+  if (booking.reservationIssue?.status) return "bg-rose-50 text-rose-800";
+  const state = String(booking.paymentState || "").toLowerCase();
+  if (state === "paid") return "bg-emerald-50 text-emerald-700";
+  if (state === "pending") return "bg-amber-50 text-amber-800";
+  if (state === "failed" || state === "expired" || state === "refunded") {
+    return "bg-rose-50 text-rose-800";
+  }
+  return "bg-slate-50 text-slate-600";
+}
+
+function serviceDisplayName(booking: Booking) {
+  return isOneTimeBooking(booking) ? "One-Time Visit" : booking.service || "Not set";
+}
+
+function serviceDisplayMeta(booking: Booking, user?: User) {
+  return isOneTimeBooking(booking)
+    ? "$99 / 90 min"
+    : booking.subscription || user?.subscription || "No plan";
+}
+
 export default function BookingsTable({
   bookings,
   updateStatus,
@@ -134,6 +174,11 @@ export default function BookingsTable({
       "Name",
       "User ID",
       "Service",
+      "Booking Type",
+      "Payment State",
+      "Selected Task",
+      "Entitlement",
+      "Reservation Issue",
       "Subscription",
       "Status",
       "Date (NY)",
@@ -150,7 +195,14 @@ export default function BookingsTable({
         booking.bookingNumber,
         booking.name || user?.name || "",
         booking.userId || "",
-        booking.service || "",
+        serviceDisplayName(booking),
+        bookingTypeLabel(booking),
+        paymentStateLabel(booking),
+        booking.selectedTask || "",
+        booking.entitlementId || "",
+        booking.reservationIssue?.status
+          ? `${booking.reservationIssue.status}: ${booking.reservationIssue.message || ""}`
+          : "",
         booking.subscription || user?.subscription || "",
         booking.status || "",
         formatTimeNY(booking.date),
@@ -402,11 +454,44 @@ export default function BookingsTable({
                             Service
                           </div>
                           <div className="mt-2 text-sm font-semibold text-slate-900">
-                            {booking.service || "Not set"}
+                            {serviceDisplayName(booking)}
                           </div>
                           <div className="mt-1 text-xs text-slate-500">
-                            {booking.subscription || user?.subscription || "No plan"}
+                            {serviceDisplayMeta(booking, user)}
                           </div>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            <span className="rounded-full bg-indigo-50 px-2 py-1 text-[11px] font-bold text-indigo-700">
+                              {bookingTypeLabel(booking)}
+                            </span>
+                            <span className={`rounded-full px-2 py-1 text-[11px] font-bold ${paymentStateTone(booking)}`}>
+                              {paymentStateLabel(booking)}
+                            </span>
+                          </div>
+                          {booking.selectedTask && (
+                            <div className="mt-2 text-xs font-semibold text-slate-700">
+                              Task: {booking.selectedTask}
+                            </div>
+                          )}
+                          {booking.entitlementId && (
+                            <div className="mt-1 break-all text-[11px] text-slate-400">
+                              Entitlement: {booking.entitlementId}
+                            </div>
+                          )}
+                          {booking.reservationIssue?.status && (
+                            <div className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-2 text-xs font-bold text-rose-800">
+                              Reservation review needed
+                              {booking.reservationIssue.message && (
+                                <div className="mt-1 font-semibold text-rose-700">
+                                  {booking.reservationIssue.message}
+                                </div>
+                              )}
+                              {booking.reservationIssue.holdExpiresAt && (
+                                <div className="mt-1 font-semibold text-rose-700">
+                                  Protected until {formatTimeNY(booking.reservationIssue.holdExpiresAt)}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
 

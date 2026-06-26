@@ -5,15 +5,15 @@ import { useState } from "react";
 const FAQS = [
   {
     q: "What's included in the membership?",
-    a: "Your membership includes small and medium home tasks that fit within your visit time: electrical, plumbing, repairs, installations, maintenance, drywall patches, caulking, paint touch-ups, doors, locks, shelves, fixtures, and more. Large remodels, full-room painting, roofing, siding, and major trade work are handled separately.",
+    a: "Your membership covers small and medium home tasks that fit within your visit time: repairs, installations, maintenance, drywall patches, caulking, paint touch-ups, doors, locks, shelves, fixtures, and similar handyman work. Large remodels, full-room painting, roofing, siding, and major trade work are handled separately.",
   },
   {
     q: "Are there limits per month?",
-    a: "There are no monthly standard-visit limits. Your plan controls how many active appointments you can have at one time, plus benefits like basic materials, Rush Visits, and project time. Need help sooner? Rush Visits don't require waiting for the next standard appointment slot.",
+    a: "There is no hard monthly cap on standard visit requests. Your plan controls how many active appointments you can have at one time, plus benefits like basic materials, Rush Visits, and project time. Appointment availability still depends on the schedule.",
   },
   {
-    q: "What does “active appointment” mean?",
-    a: "An active appointment is a visit that is currently booked, pending, or scheduled. Once that visit is completed, you can book the next one. Basic includes 1 active appointment at a time. Plus, Premium, and Elite include 2 active appointments at a time.",
+    q: "What does \"active appointment\" mean?",
+    a: "An active appointment is a visit that is pending, booked, or scheduled. Once that visit is completed, you can book the next one. Basic includes 1 active appointment at a time. Plus, Premium, and Elite include 2 active appointments at a time.",
   },
   {
     q: "How long is each visit?",
@@ -24,8 +24,8 @@ const FAQS = [
     a: "Basic includes labor only. Plus and Premium include basic materials for small tasks. Larger materials, special-order items, fixtures, appliances, and project materials are quoted or approved separately.",
   },
   {
-    q: "Can I cancel anytime?",
-    a: "Yes. Plans are month-to-month with no long-term contract. If you cancel, your membership stays active through the end of the current billing period and you will not be charged again.",
+    q: "How does cancellation work?",
+    a: "Plans are month-to-month with no long-term contract. If you cancel, your membership stays active through the end of the current billing period and you will not be charged again.",
   },
   {
     q: "What areas do you serve?",
@@ -54,38 +54,35 @@ export default function FAQSection() {
       className="relative w-full overflow-hidden"
       style={{ background: "linear-gradient(180deg, #080F1E 0%, #060C18 100%)" }}
     >
-      {/* Top separator */}
       <div
         aria-hidden="true"
-        className="absolute top-0 left-0 right-0 h-px"
+        className="absolute left-0 right-0 top-0 h-px"
         style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.18), transparent)" }}
       />
 
-      <div className="mx-auto max-w-[860px] px-5 sm:px-8 py-20 sm:py-28">
-
-        {/* Header */}
-        <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 mb-5">
+      <div className="mx-auto max-w-[860px] px-5 py-20 sm:px-8 sm:py-28">
+        <div className="mb-14 text-center">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5">
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/45">
               Frequently Asked Questions
             </span>
           </div>
-          <h2 className="text-[30px] sm:text-[42px] font-extrabold text-white leading-[1.1] tracking-[-0.03em]">
+          <h2 className="text-[30px] font-extrabold leading-[1.1] tracking-[-0.03em] text-white sm:text-[42px]">
             Questions Homeowners Ask
           </h2>
-          <p className="text-[15px] sm:text-[16px] text-white/42 mt-4 max-w-[520px] mx-auto leading-relaxed">
-            Simple answers before you choose a plan.
+          <p className="mx-auto mt-4 max-w-[520px] text-[15px] leading-relaxed text-white/42 sm:text-[16px]">
+            Clear answers before you choose a plan.
           </p>
         </div>
 
-        {/* Accordion */}
         <div className="space-y-2">
           {FAQS.map(({ q, a }, i) => {
             const isOpen = open === i;
+
             return (
               <div
                 key={q}
-                className="rounded-[18px] border border-white/[0.08] overflow-hidden transition-all duration-200"
+                className="overflow-hidden rounded-[18px] border border-white/[0.08] transition-all duration-200"
                 style={{
                   background: isOpen
                     ? "linear-gradient(145deg, rgba(48,110,236,0.06) 0%, rgba(255,255,255,0.025) 100%)"
@@ -96,14 +93,18 @@ export default function FAQSection() {
                 <button
                   type="button"
                   onClick={() => setOpen(isOpen ? null : i)}
-                  className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left"
+                  className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
                   aria-expanded={isOpen}
                 >
-                  <span className={`text-[15px] sm:text-[16px] font-semibold leading-snug transition-colors ${isOpen ? "text-white" : "text-white/78"}`}>
+                  <span
+                    className={`text-[15px] font-semibold leading-snug transition-colors sm:text-[16px] ${
+                      isOpen ? "text-white" : "text-white/78"
+                    }`}
+                  >
                     {q}
                   </span>
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300"
+                  <span
+                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full transition-all duration-300"
                     style={{
                       background: isOpen ? "rgba(48,110,236,0.18)" : "rgba(255,255,255,0.05)",
                       border: `1px solid ${isOpen ? "rgba(48,110,236,0.30)" : "rgba(255,255,255,0.08)"}`,
@@ -111,18 +112,18 @@ export default function FAQSection() {
                     }}
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M12 5v14M5 12h14" stroke={isOpen ? "#7BAEFF" : "rgba(255,255,255,0.40)"} strokeWidth="2" strokeLinecap="round" />
+                      <path
+                        d="M12 5v14M5 12h14"
+                        stroke={isOpen ? "#7BAEFF" : "rgba(255,255,255,0.40)"}
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
                     </svg>
-                  </div>
+                  </span>
                 </button>
 
-                <div
-                  className="overflow-hidden transition-all duration-300"
-                  style={{ maxHeight: isOpen ? "400px" : "0px" }}
-                >
-                  <p className="px-6 pb-6 text-[14px] sm:text-[15px] text-white/52 leading-[1.72]">
-                    {a}
-                  </p>
+                <div className="overflow-hidden transition-all duration-300" style={{ maxHeight: isOpen ? "400px" : "0px" }}>
+                  <p className="px-6 pb-6 text-[14px] leading-[1.72] text-white/52 sm:text-[15px]">{a}</p>
                 </div>
               </div>
             );

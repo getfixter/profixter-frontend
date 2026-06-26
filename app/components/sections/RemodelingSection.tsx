@@ -59,11 +59,11 @@ const SERVICES = [
     label: "Full Kitchen Remodeling",
     headline: "A kitchen that matches how you actually live.",
     description:
-      "Cabinets, countertops, backsplash, appliance coordination, lighting, and layout — all managed by a single trusted team. We bring the vision together without the month-long disruption of juggling multiple contractors.",
+      "Cabinets, countertops, backsplash, appliance vendor coordination, lighting, and layout — all managed by a single trusted team. We bring the vision together without the month-long disruption of juggling multiple contractors.",
     features: [
       "Custom cabinetry & hardware",
       "Countertop & backsplash installation",
-      "Appliance coordination",
+      "Appliance vendor coordination",
       "Island & layout reconfiguration",
       "Under-cabinet & pendant lighting",
       "Finish carpentry & trim work",

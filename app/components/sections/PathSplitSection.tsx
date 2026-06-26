@@ -87,7 +87,7 @@ export default function PathSplitSection() {
                   "Same trusted team, every single visit",
                   "Wide range of tasks covered — no per-task estimates",
                   "Priority scheduling for members",
-                  "Month-to-month, cancel anytime",
+              "Month-to-month with no long-term contract",
                 ].map((b) => (
                   <li key={b} className="flex items-center gap-3">
                     <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(48,110,236,0.18)", border: "1px solid rgba(48,110,236,0.30)" }}>

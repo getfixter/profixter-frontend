@@ -108,6 +108,19 @@ export interface Booking {
   date: string;
   service: string;
   subscription?: string;
+  accessType?: "membership" | "one_time" | "free_first_visit" | "admin";
+  bookingType?: "membership_visit" | "one_time_handyman_visit";
+  paymentState?: "not_required" | "pending" | "paid" | "failed" | "expired" | "refunded";
+  entitlementId?: string | null;
+  selectedTask?: string;
+  reservationIssue?: {
+    status?: string;
+    message?: string;
+    code?: string;
+    stripeCheckoutSessionId?: string;
+    holdExpiresAt?: string | null;
+    occurredAt?: string | null;
+  };
   status: string;
   note?: string;
   address?: string;

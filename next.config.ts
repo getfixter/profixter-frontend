@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
       { source: "/remodeling", destination: "/projects#bathroom", permanent: true },
       { source: "/kitchen", destination: "/projects#kitchen", permanent: true },
       { source: "/services/general-contractor", destination: "/projects", permanent: true },
-      { source: "/on-demand", destination: "/membership", permanent: true },
+      { source: "/on-demand", destination: "/book", permanent: false },
     ];
   },
 };

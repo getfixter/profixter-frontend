@@ -170,7 +170,7 @@ export const faqs: Faq[] = [
     id: "07",
     question: "What tasks are NOT covered?",
     answer:
-      "Big remodels, structural work, large electrical/plumbing projects, and appliances fixes are not included.",
+      "Big remodels, structural work, large electrical/plumbing projects, and appliance repairs are not included.",
     color: "dark",
     size: "small",
     offset: -100,

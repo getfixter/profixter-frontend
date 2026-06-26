@@ -42,7 +42,7 @@ const planDisplayContent: Record<
   Basic: {
     description: "Perfect for occasional home maintenance.",
     features: [
-      "No limits per month",
+      "No monthly visit cap",
       "1 active appointment at a time",
       "All handyman services included",
       "90-minute visits",
@@ -51,7 +51,7 @@ const planDisplayContent: Record<
   Plus: {
     description: "The best balance for active homeowners.",
     features: [
-      "No limits per month",
+      "No monthly visit cap",
       "2 active appointments at a time",
       "Basic materials included",
       "90-minute visits",
@@ -60,7 +60,7 @@ const planDisplayContent: Record<
   Premium: {
     description: "Faster scheduling when something can't wait.",
     features: [
-      "No limits per month",
+      "No monthly visit cap",
       "2 active appointments at a time",
       "Basic materials included",
       "1 Rush Visit per month",
@@ -70,7 +70,7 @@ const planDisplayContent: Record<
   Elite: {
     description: "Maximum home coverage.",
     features: [
-      "No limits per month",
+      "No monthly visit cap",
       "2 active appointments at a time",
       "1 full project day per month (up to 8 hours)",
       "2 Rush Visits per month",
@@ -686,10 +686,10 @@ export default function PlansSection() {
 
         <div className="mx-auto mb-8 max-w-[720px] text-center">
           <h3 className="text-xl font-semibold tracking-normal text-[#111111] sm:text-2xl">
-            No Limits Per Month
+            No monthly visit cap
           </h3>
           <p className="mt-2 text-sm leading-6 text-[#6E6E73] sm:text-base">
-            Book as many visits as you need. Your plan determines appointment availability and benefits.
+            Request visits as needed. Your plan determines active appointment capacity, scheduling benefits, and included support.
           </p>
         </div>
 

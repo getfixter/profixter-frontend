@@ -379,6 +379,16 @@ export default function AdminPage() {
       booking.userId,
       booking.bookingNumber,
       booking.service,
+      booking.bookingType,
+      booking.accessType,
+      booking.paymentState,
+      booking.selectedTask,
+      booking.entitlementId,
+      booking.reservationIssue?.status,
+      booking.reservationIssue?.message,
+      booking.bookingType === "one_time_handyman_visit" || booking.accessType === "one_time"
+        ? "one-time one time one-time visit book a handyman paid pending failed reservation review"
+        : "membership subscription",
       booking.status,
       booking.name,
       booking.email,

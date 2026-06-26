@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Image from "next/image";
@@ -11,22 +11,22 @@ const PHONE_DISPLAY = "631-599-1363";
 const PHONE_TEL = "+16315991363";
 
 const GALLERY = [
-  { src: "/images/projects/p2.jpg", label: "Full Kitchen Renovation", detail: "Custom cabinetry & quartz · Suffolk County" },
-  { src: "/images/projects/p7.jpg", label: "Open-Concept Remodel", detail: "Layout reconfiguration · Nassau County" },
-  { src: "/images/projects/p8.jpg", label: "Island & Countertop Build", detail: "Waterfall quartz island · Long Island" },
-  { src: "/images/projects/p9.jpg", label: "Chef's Kitchen", detail: "High-end finishes · Suffolk County" },
-  { src: "/images/projects/p10.jpg", label: "Cabinet Replacement", detail: "Semi-custom hardwood · Nassau County" },
-  { src: "/images/projects/p4.jpg", label: "Kitchen & Dining", detail: "Combined open space · Long Island" },
+  { src: "/images/projects/p2.jpg", label: "Full Kitchen Renovation", detail: "Custom cabinetry & quartz Â· Suffolk County" },
+  { src: "/images/projects/p7.jpg", label: "Open-Concept Remodel", detail: "Layout reconfiguration Â· Nassau County" },
+  { src: "/images/projects/p8.jpg", label: "Island & Countertop Build", detail: "Waterfall quartz island Â· Long Island" },
+  { src: "/images/projects/p9.jpg", label: "Chef's Kitchen", detail: "High-end finishes Â· Suffolk County" },
+  { src: "/images/projects/p10.jpg", label: "Cabinet Replacement", detail: "Semi-custom hardwood Â· Nassau County" },
+  { src: "/images/projects/p4.jpg", label: "Kitchen & Dining", detail: "Combined open space Â· Long Island" },
 ];
 
 const FAQS = [
   {
     q: "How long does a full kitchen remodel take?",
-    a: "Most full kitchen remodels on Long Island take 3–6 weeks from demo day to final punch list. A straightforward cabinet-and-countertop replacement with new flooring and backsplash runs about 3–4 weeks. Projects involving layout changes, new plumbing runs, or structural work take 5–7 weeks. We give you a precise project schedule — not a vague range — before any work begins.",
+    a: "Most full kitchen remodels on Long Island take 3â€“6 weeks from demo day to final punch list. A straightforward cabinet-and-countertop replacement with new flooring and backsplash runs about 3â€“4 weeks. Projects involving layout changes, new plumbing runs, or structural work take 5â€“7 weeks. We give you a precise project schedule â€” not a vague range â€” before any work begins.",
   },
   {
     q: "How much does a kitchen remodel cost on Long Island?",
-    a: "A professional full kitchen remodel in Nassau and Suffolk County typically ranges from $30,000–$90,000+ depending on size, materials, layout changes, and appliance selection. We don't quote numbers before seeing your kitchen. After a free in-home consultation we provide a detailed written estimate with line items — not a rough ballpark. No surprise invoices.",
+    a: "A professional full kitchen remodel in Nassau and Suffolk County typically ranges from $30,000â€“$90,000+ depending on size, materials, layout changes, and appliance selection. We don't quote numbers before seeing your kitchen. After a free in-home consultation we provide a detailed written estimate with line items â€” not a rough ballpark. No surprise invoices.",
   },
   {
     q: "Do you handle permits?",
@@ -34,19 +34,19 @@ const FAQS = [
   },
   {
     q: "Can you help with the design and material selection?",
-    a: "Yes — and most homeowners find our process more than sufficient. We guide you through cabinet style, finish, and hardware selection; countertop material and edge profile; backsplash tile and pattern; flooring options; and lighting placement. We bring samples to your home so you can see materials in your actual space before committing.",
+    a: "Yes â€” and most homeowners find our process more than sufficient. We guide you through cabinet style, finish, and hardware selection; countertop material and edge profile; backsplash tile and pattern; flooring options; and lighting placement. We bring samples to your home so you can see materials in your actual space before committing.",
   },
   {
     q: "Can I live at home during the remodel?",
-    a: "Yes, most homeowners do. We contain the work area, protect adjacent rooms and floors, and clean up at the end of each day. You'll need to adapt your cooking routine for the duration — most families use a microwave, slow cooker, or eat out more during the project. We can discuss staging to minimize disruption for your specific layout.",
+    a: "Yes, most homeowners do. We contain the work area, protect adjacent rooms and floors, and clean up at the end of each day. You'll need to adapt your cooking routine for the duration â€” most families use a microwave, slow cooker, or eat out more during the project. We can discuss staging to minimize disruption for your specific layout.",
   },
   {
-    q: "What if we want to change the layout — move the sink, open a wall?",
+    q: "What if we want to change the layout â€” move the sink, open a wall?",
     a: "We handle layout changes including sink relocations, island additions, and non-load-bearing wall removals. Structural changes (load-bearing walls) require an engineer's approval, which we can coordinate. We'll walk through your layout goals at the consultation and tell you exactly what's feasible, what requires permits, and what it will cost.",
   },
   {
-    q: "Do you coordinate appliance installation?",
-    a: "Yes. We coordinate delivery scheduling with your appliance vendor and handle the installation — gas connection, electrical hookup, under-cabinet range hood installation, built-in refrigerator panels, and dishwasher plumbing. If you're purchasing new appliances, we can advise on sizing and rough-in requirements before you order so nothing arrives that doesn't fit.",
+    q: "Do you coordinate appliances during a remodel?",
+    a: "Yes. We coordinate delivery timing, measurements, rough-in requirements, and handoffs with your appliance vendor or licensed installer. Profixter does not repair appliances or provide standalone appliance service.",
   },
   {
     q: "What countertop materials do you work with?",
@@ -54,15 +54,15 @@ const FAQS = [
   },
   {
     q: "Are you licensed and insured?",
-    a: "Yes. NY State Licensed Home Improvement Contractor HI-71484, verifiable through the NYS Department of State. Fully insured for property damage and general liability. Proof of insurance provided before any work begins — always. Never hire a kitchen contractor who can't hand you a COI on the spot.",
+    a: "Yes. NY State Licensed Home Improvement Contractor HI-71484, verifiable through the NYS Department of State. Fully insured for property damage and general liability. Proof of insurance provided before any work begins â€” always. Never hire a kitchen contractor who can't hand you a COI on the spot.",
   },
   {
     q: "What warranty do you offer?",
-    a: "We warranty our workmanship on all labor. Cabinet manufacturers provide their own warranties (typically 1–5 years on hardware, longer on cabinet boxes depending on grade). Countertop fabricators and appliance manufacturers carry separate warranties. We review all applicable warranties with you at the project closeout so you know exactly what is covered and for how long.",
+    a: "We warranty our workmanship on all labor. Cabinet manufacturers provide their own warranties (typically 1â€“5 years on hardware, longer on cabinet boxes depending on grade). Countertop fabricators and appliance manufacturers carry separate warranties. We review all applicable warranties with you at the project closeout so you know exactly what is covered and for how long.",
   },
   {
     q: "Can I finance my kitchen remodel?",
-    a: "Yes — monthly payment options are available for qualified homeowners. Kitchen remodels are among the most commonly financed home improvement projects, and for good reason — the result adds daily value to your life and significant value to your home. Rather than waiting years to save the full amount, many Long Island homeowners choose to start now and enjoy their new kitchen while paying over time. We discuss financing at your free consultation. No commitment required.",
+    a: "Yes â€” monthly payment options are available for qualified homeowners. Kitchen remodels are among the most commonly financed home improvement projects, and for good reason â€” the result adds daily value to your life and significant value to your home. Rather than waiting years to save the full amount, many Long Island homeowners choose to start now and enjoy their new kitchen while paying over time. We discuss financing at your free consultation. No commitment required.",
   },
 ];
 
@@ -113,7 +113,7 @@ function FaqRow({ q, a }: { q: string; a: string }) {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function KitchenPage() {
   const [galleryIdx, setGalleryIdx] = useState(0);
   const activePhoto = GALLERY[galleryIdx];
@@ -131,14 +131,14 @@ export default function KitchenPage() {
 
       <main>
 
-        {/* ═══════════════════════════════════════════════════════
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
             HERO
-        ═══════════════════════════════════════════════════════ */}
+        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <section
           className="relative w-full overflow-hidden min-h-[94vh] flex items-center"
           style={{ background: "linear-gradient(160deg, #0C0A04 0%, #141006 45%, #0F0D08 100%)" }}
         >
-          {/* Depth glows — warm golden */}
+          {/* Depth glows â€” warm golden */}
           <div aria-hidden="true" className="pointer-events-none absolute -top-40 left-1/4 h-[800px] w-[800px] rounded-full blur-[220px] opacity-50"
             style={{ background: "radial-gradient(circle, rgba(217,119,6,0.16), transparent 70%)" }} />
           <div aria-hidden="true" className="pointer-events-none absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full blur-[160px] opacity-25"
@@ -168,7 +168,7 @@ export default function KitchenPage() {
                     <circle cx="12" cy="16" r="2" stroke="currentColor" strokeWidth="2" />
                   </svg>
                   <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#FCD34D]/90">
-                    Full Kitchen Remodeling · Long Island
+                    Full Kitchen Remodeling Â· Long Island
                   </span>
                 </div>
 
@@ -223,7 +223,7 @@ export default function KitchenPage() {
                       <rect x="4" y="2" width="16" height="20" rx="2" stroke="currentColor" strokeWidth="1.8" />
                       <path d="M8 9h8M8 13h6M8 17h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                     </svg>
-                    Start your estimate online →
+                    Start your estimate online â†’
                   </Link>
                 </div>
 
@@ -267,14 +267,14 @@ export default function KitchenPage() {
 
                   <div className="relative p-8">
                     <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/30 mb-6">
-                      What&rsquo;s Included — Every Project
+                      What&rsquo;s Included â€” Every Project
                     </div>
 
                     <div className="space-y-4 mb-8">
                       {[
-                        { title: "Full Demolition", sub: "Everything out — cabinets, counters, flooring, fixtures" },
-                        { title: "Cabinetry Install", sub: "Semi-custom or custom — plumb, level, secured" },
-                        { title: "Countertop Fabrication", sub: "Quartz, granite, marble — measured, cut, installed" },
+                        { title: "Full Demolition", sub: "Everything out â€” cabinets, counters, flooring, fixtures" },
+                        { title: "Cabinetry Install", sub: "Semi-custom or custom â€” plumb, level, secured" },
+                        { title: "Countertop Fabrication", sub: "Quartz, granite, marble â€” measured, cut, installed" },
                         { title: "Backsplash & Tile", sub: "Design-matched tile, set and grouted clean" },
                         { title: "Plumbing & Electrical", sub: "New runs, relocated drains, panel work permitted" },
                         { title: "Lighting", sub: "Under-cabinet, recessed, island pendants installed" },
@@ -306,7 +306,7 @@ export default function KitchenPage() {
                         </svg>
                         Get Free Consultation
                       </button>
-                      <p className="mt-3 text-[11px] text-center text-white/25">No obligation · We come to you</p>
+                      <p className="mt-3 text-[11px] text-center text-white/25">No obligation Â· We come to you</p>
                     </div>
                   </div>
                 </div>
@@ -316,9 +316,9 @@ export default function KitchenPage() {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
             CREDENTIAL STRIP
-        ═══════════════════════════════════════════════════════ */}
+        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <div className="relative border-t border-b border-white/[0.07] bg-black/30 backdrop-blur-md">
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
             <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 sm:gap-x-14">
@@ -394,9 +394,9 @@ export default function KitchenPage() {
           </div>
         </div>
 
-        {/* ═══════════════════════════════════════════════════════
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
             WHAT'S INCLUDED
-        ═══════════════════════════════════════════════════════ */}
+        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <section
           className="relative w-full py-16 sm:py-20 lg:py-28 overflow-hidden"
           style={{ background: "linear-gradient(160deg, #FFFBF0 0%, #FEF8E7 100%)" }}
@@ -419,7 +419,7 @@ export default function KitchenPage() {
               </h2>
               <p className="text-[15px] sm:text-[17px] leading-relaxed text-[#475569] max-w-[520px]">
                 From the moment we pull your first cabinet to the day you cook
-                your first meal in your new kitchen — every trade, every
+                your first meal in your new kitchen â€” every trade, every
                 decision, fully coordinated by our team.
               </p>
             </div>
@@ -448,7 +448,7 @@ export default function KitchenPage() {
                 },
                 {
                   title: "Countertops",
-                  body: "Precise measurements taken post-cabinet install. Quartz, granite, marble, quartzite, or soapstone — fabricated, delivered, and set with seamless joints.",
+                  body: "Precise measurements taken post-cabinet install. Quartz, granite, marble, quartzite, or soapstone â€” fabricated, delivered, and set with seamless joints.",
                   icon: (
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <rect x="2" y="10" width="20" height="4" rx="1" stroke="currentColor" strokeWidth="1.7" />
@@ -458,7 +458,7 @@ export default function KitchenPage() {
                 },
                 {
                   title: "Backsplash & Tile",
-                  body: "Subway, mosaic, large-format slab, or handmade tile — set level, grouted clean, and sealed. We help you choose the pattern that ties the whole space together.",
+                  body: "Subway, mosaic, large-format slab, or handmade tile â€” set level, grouted clean, and sealed. We help you choose the pattern that ties the whole space together.",
                   icon: (
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <rect x="3" y="3" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="1.7" />
@@ -488,7 +488,7 @@ export default function KitchenPage() {
                 },
                 {
                   title: "Flooring",
-                  body: "Tile, hardwood, luxury vinyl, or engineered wood — installed with proper subfloor prep and clean transitions to adjacent rooms.",
+                  body: "Tile, hardwood, luxury vinyl, or engineered wood â€” installed with proper subfloor prep and clean transitions to adjacent rooms.",
                   icon: (
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M4 6h16M4 10h16M4 14h16M4 18h16" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
@@ -497,7 +497,7 @@ export default function KitchenPage() {
                 },
                 {
                   title: "Appliance Coordination",
-                  body: "We coordinate delivery and handle installation — gas connection, built-in panel fitting, range hood ductwork, refrigerator water lines, and dishwasher plumbing.",
+                  body: "We coordinate delivery timing, cabinet-panel fit, rough-in requirements, and vendor or licensed-installer handoffs. Appliance repair and standalone appliance service are not offered.",
                   icon: (
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <rect x="2" y="3" width="20" height="7" rx="2" stroke="currentColor" strokeWidth="1.7" />
@@ -544,7 +544,7 @@ export default function KitchenPage() {
               </button>
             </div>
 
-            {/* ── Warranty + Financing callout ── */}
+            {/* â”€â”€ Warranty + Financing callout â”€â”€ */}
             <div className="mt-10 sm:mt-12 grid sm:grid-cols-2 gap-5">
               <div className="rounded-[22px] border border-[#FDE68A] bg-white p-6 sm:p-7 shadow-[0_4px_24px_rgba(15,23,42,0.05)] flex items-start gap-5">
                 <div className="flex-shrink-0 h-12 w-12 rounded-[14px] bg-[#FEF3C7] flex items-center justify-center text-[#D97706]">
@@ -571,7 +571,7 @@ export default function KitchenPage() {
                   <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#D97706] mb-1">Financing</div>
                   <h4 className="text-[16px] font-bold text-[#0B1628] mb-2 leading-snug">Start cooking in your new kitchen sooner.</h4>
                   <p className="text-[13px] leading-relaxed text-[#64748B]">
-                    Monthly payment options are available for qualified homeowners. Don&rsquo;t put your kitchen on hold for years while saving — most Long Island homeowners who remodel choose to finance. Start enjoying it now and pay over time. Ask about financing at your free consultation.
+                    Monthly payment options are available for qualified homeowners. Don&rsquo;t put your kitchen on hold for years while saving â€” most Long Island homeowners who remodel choose to finance. Start enjoying it now and pay over time. Ask about financing at your free consultation.
                   </p>
                 </div>
               </div>
@@ -579,9 +579,9 @@ export default function KitchenPage() {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
             PROJECT GALLERY
-        ═══════════════════════════════════════════════════════ */}
+        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <section
           className="relative w-full py-16 sm:py-20 lg:py-28 overflow-hidden"
           style={{ background: "linear-gradient(160deg, #0B1525 0%, #0D1A30 60%, #0A1220 100%)" }}
@@ -614,16 +614,16 @@ export default function KitchenPage() {
                   </span>
                 </h2>
                 <p className="text-[15px] sm:text-[17px] text-white/45 leading-relaxed">
-                  Real results from Long Island kitchens — the craftsmanship
+                  Real results from Long Island kitchens â€” the craftsmanship
                   behind every remodel we complete.
                 </p>
               </div>
 
               <div className="flex gap-4 flex-shrink-0">
                 {[
-                  { v: "3–6 wks", l: "Typical remodel" },
+                  { v: "3â€“6 wks", l: "Typical remodel" },
                   { v: "9+ yrs", l: "On Long Island" },
-                  { v: "5.0 ★", l: "Google Rating" },
+                  { v: "5.0 â˜…", l: "Google Rating" },
                 ].map(({ v, l }) => (
                   <div key={l} className="rounded-[16px] border border-white/[0.09] bg-white/[0.04] px-4 py-4 text-center min-w-[88px]">
                     <div className="text-[18px] font-extrabold text-white leading-none mb-1.5">{v}</div>
@@ -732,7 +732,7 @@ export default function KitchenPage() {
                     </p>
                   </div>
                   {[
-                    "Same crew · every project",
+                    "Same crew Â· every project",
                     "Licensed NY HI-71484",
                     "Fully insured",
                     "No sub-contractors",
@@ -769,9 +769,9 @@ export default function KitchenPage() {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
             PROJECT TIMELINE
-        ═══════════════════════════════════════════════════════ */}
+        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <section
           className="relative w-full py-16 sm:py-20 lg:py-28 overflow-hidden"
           style={{ background: "linear-gradient(160deg, #FFFBF0 0%, #FEF8E7 100%)" }}
@@ -810,19 +810,19 @@ export default function KitchenPage() {
                   body: "Free in-home consultation. We measure, plan layout, select materials, and give you a written line-item estimate. You approve the scope before any work begins.",
                 },
                 {
-                  time: "Week 2–3",
+                  time: "Week 2â€“3",
                   phase: "Demo & Rough Work",
                   body: "Demolition, plumbing rough-in, electrical work, drywall repair. Everything permitted and inspected before any finish work begins.",
                 },
                 {
-                  time: "Week 3–5",
+                  time: "Week 3â€“5",
                   phase: "Cabinets & Countertops",
-                  body: "Cabinets installed, plumb and level. Countertops templated after cabinet install, fabricated, and set. This is the transformation — walls to a full kitchen.",
+                  body: "Cabinets installed, plumb and level. Countertops templated after cabinet install, fabricated, and set. This is the transformation â€” walls to a full kitchen.",
                 },
                 {
-                  time: "Week 5–6",
+                  time: "Week 5â€“6",
                   phase: "Finish & Punch List",
-                  body: "Backsplash, flooring, lighting, appliances, painting, and trim. Full walk-through with you before we sign off. Your kitchen, done right.",
+                  body: "Backsplash, flooring, lighting coordination, vendor appliance handoffs, painting, and trim. Full walk-through with you before we sign off. Your kitchen, done right.",
                 },
               ].map(({ time, phase, body }, i) => (
                 <div key={phase} className="relative flex flex-col">
@@ -846,15 +846,15 @@ export default function KitchenPage() {
 
             <div className="mt-12 sm:mt-14 rounded-[20px] border border-[#FDE68A] px-6 py-5 text-center bg-white shadow-[0_4px_20px_rgba(15,23,42,0.05)]">
               <p className="text-[14px] text-[#64748B] leading-relaxed max-w-[680px] mx-auto">
-                <span className="text-[#0B1628] font-semibold">Timeline note:</span> Projects involving layout changes, structural work, or custom cabinet lead times may run 6–8 weeks. We give you a precise project schedule — not a vague estimate — before any work begins.
+                <span className="text-[#0B1628] font-semibold">Timeline note:</span> Projects involving layout changes, structural work, or custom cabinet lead times may run 6â€“8 weeks. We give you a precise project schedule â€” not a vague estimate â€” before any work begins.
               </p>
             </div>
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
             WHY HOMEOWNERS CHOOSE US
-        ═══════════════════════════════════════════════════════ */}
+        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <section
           className="relative w-full py-16 sm:py-20 lg:py-28 overflow-hidden"
           style={{ background: "linear-gradient(160deg, #080F1E 0%, #0A1421 60%, #091220 100%)" }}
@@ -890,7 +890,7 @@ export default function KitchenPage() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {[
                 {
-                  headline: "We measure twice — on every single cut.",
+                  headline: "We measure twice â€” on every single cut.",
                   body: "Countertop templating happens after cabinet install, not before. Cabinets are plumbed and leveled before anything else goes in. This sequence matters. We never rush it.",
                   accent: "#D97706",
                 },
@@ -930,9 +930,9 @@ export default function KitchenPage() {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
             INVESTMENT CONFIDENCE
-        ═══════════════════════════════════════════════════════ */}
+        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <section
           className="relative w-full py-16 sm:py-20 lg:py-24 overflow-hidden"
           style={{ background: "linear-gradient(160deg, #FFFBF0 0%, #FEF8E7 100%)" }}
@@ -981,13 +981,13 @@ export default function KitchenPage() {
                       No surprise invoices.
                     </h3>
                     <p className="text-[14px] sm:text-[15px] text-[#475569] leading-relaxed">
-                      You receive a written, line-item estimate before any work begins. Not a rough range — a real number for the exact scope discussed. If anything changes mid-project, we tell you before touching it.
+                      You receive a written, line-item estimate before any work begins. Not a rough range â€” a real number for the exact scope discussed. If anything changes mid-project, we tell you before touching it.
                     </p>
                   </div>
 
                   <div className="space-y-3">
                     {[
-                      "Written line-item estimate — not a ballpark",
+                      "Written line-item estimate â€” not a ballpark",
                       "No change orders without your approval",
                       "Payment by milestone, not all upfront",
                       "Monthly payment options for qualified homeowners",
@@ -1013,16 +1013,16 @@ export default function KitchenPage() {
                     </svg>
                     Request Free Consultation
                   </button>
-                  <p className="text-[11px] text-center text-[#94A3B8]">Free · No obligation · We come to you</p>
+                  <p className="text-[11px] text-center text-[#94A3B8]">Free Â· No obligation Â· We come to you</p>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
             FAQ
-        ═══════════════════════════════════════════════════════ */}
+        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <section
           className="relative w-full py-16 sm:py-20 lg:py-28 overflow-hidden"
           style={{ background: "linear-gradient(160deg, #080F1E 0%, #0A1421 60%, #091220 100%)" }}
@@ -1109,9 +1109,9 @@ export default function KitchenPage() {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
             FOUNDER TRUST
-        ═══════════════════════════════════════════════════════ */}
+        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <section
           className="relative w-full py-16 sm:py-20 lg:py-24 overflow-hidden"
           style={{ background: "linear-gradient(160deg, #FFFBF0 0%, #FEF8E7 100%)" }}
@@ -1132,7 +1132,7 @@ export default function KitchenPage() {
                   </div>
 
                   <blockquote className="border-l-2 border-[#D97706] pl-5 text-[15px] sm:text-[16px] leading-relaxed text-[#1E293B]">
-                    &ldquo;A kitchen remodel is a serious trust. You&rsquo;re disrupting the center of your home and expecting it to come back better than it was. I personally review every project we accept — because I only want my team working on jobs we can deliver on. If anything isn&rsquo;t right, you call me directly.&rdquo;
+                    &ldquo;A kitchen remodel is a serious trust. You&rsquo;re disrupting the center of your home and expecting it to come back better than it was. I personally review every project we accept â€” because I only want my team working on jobs we can deliver on. If anything isn&rsquo;t right, you call me directly.&rdquo;
                   </blockquote>
 
                   <div className="flex flex-wrap gap-5">
@@ -1150,10 +1150,10 @@ export default function KitchenPage() {
                 <div className="px-8 py-10 sm:px-10 sm:py-12 lg:px-12 bg-[#FFFDF5] flex flex-col justify-between gap-6">
                   <div>
                     <div className="text-[22px] sm:text-[26px] font-extrabold leading-tight text-[#0B1628] mb-3">
-                      Your kitchen deserves to be done once — and done right.
+                      Your kitchen deserves to be done once â€” and done right.
                     </div>
                     <p className="text-[14px] sm:text-[15px] text-[#475569] leading-relaxed">
-                      A properly built kitchen lasts 20+ years before it needs real attention. The decisions made behind the cabinets, under the counters, and inside the walls — that&rsquo;s what determines whether your kitchen ages well or fails fast.
+                      A properly built kitchen lasts 20+ years before it needs real attention. The decisions made behind the cabinets, under the counters, and inside the walls â€” that&rsquo;s what determines whether your kitchen ages well or fails fast.
                     </p>
                   </div>
 
@@ -1185,9 +1185,9 @@ export default function KitchenPage() {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
             FINAL CTA
-        ═══════════════════════════════════════════════════════ */}
+        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <section
           className="relative w-full overflow-hidden py-24 sm:py-32 lg:py-40"
           style={{ background: "linear-gradient(160deg, #0C0A04 0%, #141006 55%, #0F0D08 100%)" }}
@@ -1203,7 +1203,7 @@ export default function KitchenPage() {
               <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D97706]/25 bg-[#D97706]/[0.08] px-4 py-2 backdrop-blur-sm mb-9">
                 <span className="h-2 w-2 rounded-full bg-[#FCD34D] flex-shrink-0" style={{ boxShadow: "0 0 10px rgba(252,211,77,0.9)" }} />
                 <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#FCD34D]/80">
-                  Full Kitchen Remodeling · Long Island
+                  Full Kitchen Remodeling Â· Long Island
                 </span>
               </div>
 
@@ -1220,7 +1220,7 @@ export default function KitchenPage() {
 
               <p className="text-[18px] sm:text-[22px] font-semibold text-white/50 leading-[1.4] max-w-[580px] mx-auto mb-10 sm:mb-12">
                 A free consultation costs you nothing. Seeing exactly what
-                your kitchen could become — that changes the whole conversation.
+                your kitchen could become â€” that changes the whole conversation.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-stretch sm:items-center mb-7">
@@ -1245,7 +1245,7 @@ export default function KitchenPage() {
 
               <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pt-8 border-t border-white/[0.07]">
                 {[
-                  "Free consultation · No obligation",
+                  "Free consultation Â· No obligation",
                   "Licensed HI-71484",
                   "Fully Insured",
                   "Workmanship warranty",
