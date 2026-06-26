@@ -29,8 +29,6 @@ type FilePreview = {
   url?: string;
 };
 
-const HISTORY_KEY = "homeSupportMessages";
-
 const WELCOME: Message = {
   id: "welcome",
   role: "assistant",
@@ -127,7 +125,6 @@ function MessageContent({ text }: { text: string }) {
 }
 
 export default function HomeSupportPage() {
-  const [visitorId, setVisitorId] = useState("");
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<FilePreview[]>([]);
@@ -137,29 +134,6 @@ export default function HomeSupportPage() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const filesRef = useRef<FilePreview[]>([]);
   const hasUserMessages = messages.some((message) => message.role === "user");
-
-  useEffect(() => {
-    let id = localStorage.getItem("homeSupportVisitorId");
-    if (!id) {
-      id = `home-support-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      localStorage.setItem("homeSupportVisitorId", id);
-    }
-    setVisitorId(id);
-
-    const saved = localStorage.getItem(HISTORY_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as Message[];
-        if (Array.isArray(parsed) && parsed.length) setMessages(parsed);
-      } catch {
-        localStorage.removeItem(HISTORY_KEY);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (visitorId) localStorage.setItem(HISTORY_KEY, JSON.stringify(messages.slice(-30)));
-  }, [messages, visitorId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -236,7 +210,6 @@ export default function HomeSupportPage() {
     setFileNotice("");
     setInput("");
     setMessages([WELCOME]);
-    localStorage.removeItem(HISTORY_KEY);
     trackEvent("home_support_new_chat", { page: "/home-support" });
   }
 
@@ -248,10 +221,17 @@ export default function HomeSupportPage() {
 
   async function sendMessage(text?: string) {
     const value = (text ?? input).trim();
-    if (!value || !visitorId || sending) return;
+    if (!value || sending) return;
 
     const attachedFiles = files;
     const fileNames = attachedFiles.map((item) => item.name);
+    const recentHistory = messages
+      .filter((message) => message.id !== "welcome" && !message.error)
+      .slice(-8)
+      .map((message) => ({
+        role: message.role,
+        content: message.content,
+      }));
     trackEvent("home_support_message_sent", {
       hasFiles: attachedFiles.length > 0,
       fileCount: attachedFiles.length,
@@ -275,20 +255,14 @@ export default function HomeSupportPage() {
 
     try {
       const formData = new FormData();
-      formData.append("visitorId", visitorId);
-      formData.append("channel", "home_support");
       formData.append("input", value);
+      formData.append("history", JSON.stringify(recentHistory));
       attachedFiles.forEach((item) => formData.append("files", item.file));
-
-      const headers: HeadersInit = {};
-      const token = localStorage.getItem("token");
-      if (token) headers.Authorization = `Bearer ${token}`;
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/chatbot/home-support/message`,
         {
           method: "POST",
-          headers,
           body: formData,
         }
       );
@@ -544,7 +518,8 @@ export default function HomeSupportPage() {
               ))}
             </div>
             <p className="mx-auto mt-1 max-w-[680px] px-2 text-center text-[11px] font-semibold leading-5 text-[#7C879A]">
-              Recommendations only. Not professional or legal advice. Appliance repair is not offered.
+              Chats are not saved. Every new visit starts with a fresh conversation. Recommendations only, not
+              professional or legal advice. Appliance repair is not offered.
             </p>
           </section>
         </div>
