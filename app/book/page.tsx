@@ -27,7 +27,6 @@ const ONE_TIME_SERVICE_OPTIONS = [
   "Assemble Small Furniture",
   "Wall Hangings",
   "Small Fix",
-  "Other (Await for confirmation)",
 ];
 
 const AUTO_SELECT_MONTHS_TO_CHECK = 6;
@@ -855,6 +854,27 @@ export default function BookPage() {
                           </div>
                         </>
                       )}
+                    </div>
+
+                    <div className="rounded-[22px] border border-[#E5E9F2] bg-[#F8FAFF] p-4">
+                      <div className="text-[14px] font-black text-[#0B1628]">
+                        Don&apos;t see your task?
+                      </div>
+                      <p className="mt-1 text-[13px] font-semibold leading-5 text-[#64748B]">
+                        This service is designed for specific small handyman jobs. If your project is different or larger,
+                        request a free Renovation Estimate instead.
+                      </p>
+                      <Link
+                        href="/projects#estimate"
+                        onClick={() =>
+                          trackEvent("estimate_cta_clicked", {
+                            placement: "book_service_selector_note",
+                          })
+                        }
+                        className="mt-3 inline-flex h-10 items-center justify-center rounded-full bg-white px-4 text-[13px] font-black text-[#0B1628] shadow-sm ring-1 ring-[#DDE4F0] transition hover:-translate-y-0.5 hover:bg-[#EEF4FF]"
+                      >
+                        Request Renovation Estimate -&gt;
+                      </Link>
                     </div>
 
                     <div className="overflow-hidden rounded-[26px] bg-[#0B1628] p-4 text-white shadow-[0_24px_70px_rgba(7,19,37,0.16)] sm:p-5">

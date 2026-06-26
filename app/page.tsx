@@ -70,18 +70,18 @@ export default function HomePage() {
           className="object-cover"
           sizes="100vw"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(244,247,251,0.92)_0%,rgba(244,247,251,0.70)_46%,rgba(255,255,255,0.30)_100%)] sm:bg-[linear-gradient(105deg,rgba(244,247,251,0.94)_0%,rgba(244,247,251,0.72)_48%,rgba(255,255,255,0.20)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#F4F7FB]/80 to-transparent" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.56)_0%,rgba(2,6,23,0.36)_46%,rgba(2,6,23,0.18)_100%)] sm:bg-[linear-gradient(105deg,rgba(2,6,23,0.66)_0%,rgba(2,6,23,0.42)_46%,rgba(2,6,23,0.18)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#071325]/45 to-transparent" />
 
         <div className="relative z-10">
           <Header />
 
           <div className="mx-auto flex min-h-[calc(100svh-112px)] max-w-[1260px] flex-col justify-center px-4 pb-8 pt-8 sm:px-6 lg:px-8">
             <div className="max-w-[980px]">
-              <h1 className="max-w-[940px] text-[54px] font-black leading-[0.86] tracking-[-0.07em] text-[#071325] sm:text-[86px] lg:text-[112px]">
+              <h1 className="max-w-[940px] text-[54px] font-black leading-[0.86] tracking-[-0.07em] text-white sm:text-[86px] lg:text-[112px]">
                 Home ownership, finally simple.
               </h1>
-              <p className="mt-7 max-w-[660px] text-lg font-semibold leading-7 text-[#34435C] sm:text-xl">
+              <p className="mt-7 max-w-[660px] text-lg font-semibold leading-7 text-white/88 sm:text-xl">
                 Ask AI, book help, become a Member, or start a renovation. One modern platform for the home.
               </p>
             </div>
