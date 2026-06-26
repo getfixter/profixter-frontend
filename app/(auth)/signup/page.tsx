@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -11,7 +11,7 @@ type Step = 1 | 2;
 function PasswordToggle({
   value,
   onChange,
-  placeholder = "â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢",
+  placeholder = "Password",
   id,
   autoComplete = "new-password",
 }: {
@@ -240,7 +240,8 @@ export default function SignUpPage() {
             href="/"
             className="mb-5 inline-flex min-h-[40px] items-center rounded-[12px] border border-white/[0.10] bg-white/[0.04] px-3.5 text-[13px] font-semibold text-white/60 transition hover:border-white/[0.18] hover:bg-white/[0.07] hover:text-white sm:mb-6"
           >
-            ← Back to Home
+            <span aria-hidden="true">&larr;</span>
+            Back to Home
           </Link>
 
           {/* Heading */}
@@ -261,7 +262,7 @@ export default function SignUpPage() {
             />
           </div>
 
-          {/* â”€â”€ STEP 1 â”€â”€ */}
+          {/* Step 1 */}
           {step === 1 && (
             <>
               <form
@@ -367,7 +368,7 @@ export default function SignUpPage() {
             </>
           )}
 
-          {/* â”€â”€ STEP 2 â”€â”€ */}
+          {/* Step 2 */}
           {step === 2 && (
             <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
 
@@ -439,7 +440,7 @@ export default function SignUpPage() {
                   </select>
                   {formData.zip.length === 5 && formData.county && (
                     <p className="mt-1.5 text-[11px] text-[#86EFAC]/70">
-                      Auto-detected âœ“
+                      Auto-detected
                     </p>
                   )}
                 </div>

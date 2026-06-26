@@ -1,12 +1,24 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Home Care Membership | Long Island Handyman Service | Profixter",
-  description: "Monthly handyman membership for Long Island homeowners. One trusted, licensed team — same professionals every visit. Regular maintenance, priority scheduling, no per-task estimates. From $149/mo. Licensed HI-71484. Nassau & Suffolk County.",
+  title: "Home Care Membership | Long Island Handyman Service",
+  description:
+    "Ongoing handyman membership for Long Island homeowners. One trusted, licensed team for regular maintenance, priority benefits, and practical home care. Licensed HI-71484.",
+  alternates: {
+    canonical: "/membership",
+  },
   openGraph: {
     title: "Home Care Membership | Profixter Long Island",
-    description: "One trusted team. Regular monthly maintenance. No estimates, no surprises — from $149/mo. Licensed HI-71484. Serving Long Island homeowners.",
+    description:
+      "One trusted team for ongoing Long Island home maintenance, practical repairs, and membership benefits.",
+    url: "https://www.profixter.com/membership",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Profixter Membership",
+    description:
+      "Ongoing home maintenance for Long Island homeowners with one trusted local team.",
   },
 };
 

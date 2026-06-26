@@ -52,6 +52,35 @@ export interface BookingData {
   requestedTime?: string;
 }
 
+export interface OneTimeCheckoutData {
+  addressId: string;
+  selectedTask: string;
+  date: string;
+  note: string;
+  images: File[];
+  requestedDate?: string;
+  requestedTime?: string;
+}
+
+export interface OneTimeCheckoutResponse {
+  url: string;
+  bookingId: string;
+  entitlementId?: string;
+  holdExpiresAt: string;
+}
+
+export interface OneTimeVisitConfig {
+  enabled: boolean;
+  priceCents: number;
+  currency: string;
+  durationMinutes: number;
+  holdMinutes: number;
+  cancellationPhone: string;
+  allowedServices: string[];
+  excludedServices: string[];
+  promoNote?: string;
+}
+
 export interface Booking {
   _id: string;
   bookingNumber: string;
@@ -145,6 +174,11 @@ export const getMonthAvailability = async (
   const response = await API.get<MonthAvailability>("/api/calendar/month", {
     params: { month },
   });
+  return response.data;
+};
+
+export const getOneTimeVisitConfig = async (): Promise<OneTimeVisitConfig> => {
+  const response = await API.get<OneTimeVisitConfig>("/api/bookings/one-time/config");
   return response.data;
 };
 
@@ -246,6 +280,44 @@ export const createBooking = async (data: BookingData): Promise<BookingResponse>
     };
     error.code = err.code;
     error.suggestions = err.suggestions;
+    throw error;
+  }
+
+  return response.json();
+};
+
+export const createOneTimeVisitCheckout = async (
+  data: OneTimeCheckoutData
+): Promise<OneTimeCheckoutResponse> => {
+  const formData = new FormData();
+  formData.append("addressId", data.addressId);
+  formData.append("selectedTask", data.selectedTask);
+  formData.append("date", data.date);
+  formData.append("note", data.note);
+  if (data.requestedDate) formData.append("requestedDate", data.requestedDate);
+  if (data.requestedTime) formData.append("requestedTime", data.requestedTime);
+  data.images.forEach((img) => formData.append("images", img));
+
+  const token = localStorage.getItem("token") || "";
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/one-time/checkout`,
+    {
+      method: "POST",
+      body: formData,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    const error = new Error(err.message || "Failed to start one-time checkout") as Error & {
+      code?: string;
+      redirectTo?: string;
+    };
+    error.code = err.code;
+    error.redirectTo = err.redirectTo;
     throw error;
   }
 

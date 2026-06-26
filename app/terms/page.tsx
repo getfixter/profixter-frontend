@@ -200,8 +200,7 @@ export default function TermsPage() {
                   <li>Work in unsafe conditions, extreme heights, unstable structures, or unreasonable risk environments.</li>
                   <li>Commercial properties, multi-unit buildings, or investment/turnover maintenance unless agreed in writing.</li>
                   <li>
-                    Internal appliance repairs (basic install/connection may be covered; internal diagnostics often require
-                    specialists).
+                    Internal appliance repairs, diagnostics, warranty service, or standalone appliance service.
                   </li>
                 </ul>
                 <p className="mt-3">
@@ -401,8 +400,8 @@ export default function TermsPage() {
 
               <ul className="list-disc list-inside space-y-2">
                 <li>
-                  You can cancel the SMS service at any time. Simply text <span className="font-semibold">"STOP"</span> to the number
-                  that texted you. Upon sending "STOP," we will confirm your unsubscribe status via SMS. Following this confirmation,
+                  You can cancel the SMS service at any time. Simply text <span className="font-semibold">&quot;STOP&quot;</span> to the number
+                  that texted you. Upon sending &quot;STOP,&quot; we will confirm your unsubscribe status via SMS. Following this confirmation,
                   you will no longer receive SMS messages from us. To rejoin, sign up as you did initially, and we will resume sending
                   SMS messages to you.
                 </li>

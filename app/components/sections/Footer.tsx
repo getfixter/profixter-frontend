@@ -3,15 +3,23 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const MEMBERSHIP_LINKS = [
-  { label: "Membership Plans", href: "/membership" },
-  { label: "Book a Visit", href: "/membership" },
-  { label: "My Account", href: "/account" },
+const PRODUCT_LINKS = [
+  { label: "Home Support AI", href: "/home-support" },
+  { label: "Book a Handyman", href: "/book" },
+  { label: "Membership", href: "/membership" },
+  { label: "Home Projects", href: "/projects" },
+];
+
+const COMPANY_LINKS = [
+  { label: "Community Partnerships", href: "/communities" },
+  { label: "Careers", href: "/careers" },
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Terms of Service", href: "/terms" },
 ];
 
 const TRUST_BADGES = [
   "Licensed HI-71484",
-  "Fully Insured",
+  "Fully insured",
   "Nassau & Suffolk County",
 ];
 
@@ -35,10 +43,9 @@ export default function Footer() {
         className="pointer-events-none absolute left-0 right-0 top-0 h-px"
         style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.20), transparent)" }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-black/25" />
 
       <div className="relative mx-auto max-w-[1240px] px-5 py-12 sm:px-6 sm:py-16 lg:px-5">
-        <div className="grid grid-cols-1 items-start gap-10 sm:grid-cols-2 lg:grid-cols-[1.6fr_0.7fr_0.7fr] lg:gap-8">
+        <div className="grid grid-cols-1 items-start gap-10 sm:grid-cols-2 lg:grid-cols-[1.45fr_0.7fr_0.7fr_0.8fr] lg:gap-8">
           <div>
             <Image
               src="/images/logo-footer.svg"
@@ -48,9 +55,8 @@ export default function Footer() {
               className="mb-5 h-auto w-[180px]"
             />
 
-            <p className="mb-7 max-w-[400px] text-[15px] leading-relaxed text-[#9AA3B2]">
-              Regular handyman visits for Long Island homeowners. No estimates. No surprise invoices. Just one trusted
-              team that gets to know your home.
+            <p className="mb-7 max-w-[430px] text-[15px] leading-relaxed text-[#9AA3B2]">
+              Home Support AI, one-time handyman visits, ongoing membership, and larger project estimates for Long Island homeowners.
             </p>
 
             <a
@@ -81,10 +87,27 @@ export default function Footer() {
 
           <div>
             <div className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35">
-              Membership
+              Products
             </div>
-            <nav className="flex flex-col gap-3.5">
-              {MEMBERSHIP_LINKS.map((link) => (
+            <nav className="flex flex-col gap-3.5" aria-label="Footer products">
+              {PRODUCT_LINKS.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="text-[15px] font-medium text-[#9AA3B2] transition-colors hover:text-white"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          <div>
+            <div className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35">
+              Company
+            </div>
+            <nav className="flex flex-col gap-3.5" aria-label="Footer company">
+              {COMPANY_LINKS.map((link) => (
                 <Link
                   key={link.label}
                   href={link.href}
@@ -115,18 +138,9 @@ export default function Footer() {
               >
                 @mrfixter.ny
               </a>
-
-              <div className="mt-2 flex flex-col gap-2.5">
-                <Link href="/communities" className="text-[13px] text-white/30 transition-colors hover:text-white/55">
-                  Community Partnerships
-                </Link>
-                <Link href="/privacy" className="text-[13px] text-white/30 transition-colors hover:text-white/55">
-                  Privacy Policy
-                </Link>
-                <Link href="/terms" className="text-[13px] text-white/30 transition-colors hover:text-white/55">
-                  Terms of Service
-                </Link>
-              </div>
+              <p className="text-[13px] leading-6 text-white/32">
+                Based near Babylon. Serving Nassau and Suffolk Counties.
+              </p>
             </div>
           </div>
         </div>
