@@ -84,7 +84,7 @@ export default function CustomerMobileNav() {
   return (
     <nav
       aria-label="Customer navigation"
-      className="fixed inset-x-0 bottom-0 z-[70] border-t border-[#D7E0F5] bg-white/95 px-2 pt-2 shadow-[0_-10px_34px_rgba(15,23,42,0.12)] backdrop-blur-md lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-[70] border-t border-[#D7E0F5] bg-white/95 px-2 pt-1.5 shadow-[0_-10px_34px_rgba(15,23,42,0.12)] backdrop-blur-md lg:hidden sm:pt-2"
       style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom, 0px))" }}
     >
       <div className="mx-auto grid max-w-[520px] grid-cols-5 gap-1">
@@ -96,7 +96,7 @@ export default function CustomerMobileNav() {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={[
-                "flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[14px] px-1 text-[11px] font-extrabold transition active:scale-[0.98]",
+                "flex min-h-[54px] flex-col items-center justify-center gap-0.5 rounded-[13px] px-1 text-[10px] font-extrabold transition active:scale-[0.98] sm:min-h-[58px] sm:gap-1 sm:rounded-[14px] sm:text-[11px]",
                 active
                   ? "bg-[#EEF5FF] text-[#306EEC]"
                   : "text-[#64748B] hover:bg-[#F8FAFF] hover:text-[#0B1628]",

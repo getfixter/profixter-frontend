@@ -208,18 +208,18 @@ function ServiceAreaStrip() {
 
 export default function TrustSection() {
   return (
-    <section id="trust" className="w-full bg-[#EAEDFA] py-12 sm:py-14 lg:py-20">
-      <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
-        <div className="mx-auto mb-9 max-w-[760px] text-center sm:mb-12 lg:mb-14">
+    <section id="trust" className="w-full bg-[#EAEDFA] py-10 sm:py-14 lg:py-20">
+      <div className="mx-auto max-w-[1240px] px-4 sm:px-5 lg:px-5">
+        <div className="mx-auto mb-7 max-w-[760px] text-center sm:mb-12 lg:mb-14">
           <span className="inline-flex items-center rounded-full border border-[#D9E4FF] bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
             Verified &amp; Accountable
           </span>
 
-          <h2 className="mt-5 text-[28px] font-extrabold leading-[1.06] tracking-[-0.035em] text-[#0F172A] sm:text-[40px] lg:text-[48px]">
+          <h2 className="mt-4 text-[26px] font-extrabold leading-[1.08] tracking-[-0.03em] text-[#0F172A] sm:mt-5 sm:text-[40px] sm:leading-[1.06] sm:tracking-[-0.035em] lg:text-[48px]">
             Why Homeowners Trust Profixter
           </h2>
 
-          <p className="mx-auto mt-5 max-w-[560px] text-[15px] leading-relaxed text-[#475569] sm:text-[16px]">
+          <p className="mx-auto mt-3 max-w-[560px] text-[14px] leading-relaxed text-[#475569] sm:mt-5 sm:text-[16px]">
             Licensed. Insured. Local. Reviewed.
           </p>
         </div>

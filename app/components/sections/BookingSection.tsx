@@ -148,7 +148,7 @@ function TimeSlotGrid({
               onSelect(slot.time);
             }}
             className={[
-              "group relative min-h-[72px] overflow-hidden rounded-[12px] border px-3.5 py-3 text-left transition-all duration-150 ease-out active:scale-[0.99]",
+              "group relative min-h-[60px] overflow-hidden rounded-[12px] border px-3 py-2.5 text-left transition-all duration-150 ease-out active:scale-[0.99] sm:min-h-[72px] sm:px-3.5 sm:py-3",
               isSelected
                 ? "border-[#306EEC] bg-[#EEF5FF] text-[#0B1628] shadow-[0_8px_24px_rgba(48,110,236,0.12)] ring-2 ring-[#306EEC]/20"
                 : slot.available
@@ -169,7 +169,7 @@ function TimeSlotGrid({
 
             <div className="relative z-[1] flex flex-col gap-1">
               <div
-                className={`text-[16px] font-black leading-tight tracking-[-0.01em] ${
+                  className={`text-[15px] font-black leading-tight tracking-[-0.01em] sm:text-[16px] ${
                   slot.available ? "" : "line-through"
                 } ${isSelected ? "text-[#0B1628]" : ""}`}
               >
@@ -1095,7 +1095,7 @@ const canBook =
   return (
     <section
       id="pick-day"
-      className="relative w-full overflow-hidden bg-[#F6F8FC] pt-8 pb-8 scroll-mt-[96px] sm:pt-16 sm:pb-16 lg:pt-20 lg:pb-20"
+      className="relative w-full overflow-hidden bg-[#F6F8FC] pb-6 pt-6 scroll-mt-[96px] sm:pb-16 sm:pt-16 lg:pb-20 lg:pt-20"
     >
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
@@ -1111,7 +1111,7 @@ const canBook =
             </span>
           </div>
 
-          <h2 className="mb-2 text-[30px] font-black leading-[1.02] text-[#0B1628] sm:text-[40px] lg:text-[48px]">
+          <h2 className="mb-2 text-[26px] font-black leading-[1.06] text-[#0B1628] sm:text-[40px] sm:leading-[1.02] lg:text-[48px]">
             Book Your Next Visit
           </h2>
 
@@ -1132,7 +1132,7 @@ const canBook =
           <div className="order-2 lg:order-1 lg:col-span-5">
 
             {/* Calendar card */}
-            <div className="rounded-[12px] border border-[#D7DEE9] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] p-4 sm:p-5">
+            <div className="rounded-[12px] border border-[#D7DEE9] bg-white p-3.5 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5">
               {/* Month navigation */}
               <div className="flex items-center justify-between mb-5">
                 <button
@@ -1143,7 +1143,7 @@ const canBook =
                   <ChevronLeft />
                 </button>
 
-                <div className="text-[18px] sm:text-[20px] font-extrabold text-[#0B1628]">
+                <div className="text-[16px] font-extrabold text-[#0B1628] sm:text-[20px]">
                   {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 </div>
 
@@ -1241,7 +1241,7 @@ const canBook =
           {/* ── Right column ── */}
           <div className="contents lg:order-2 lg:col-span-7 lg:flex lg:flex-col lg:gap-5">
 
-            <div className="order-1 rounded-[12px] border border-[#D7DEE9] bg-white p-4 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5 lg:order-none">
+            <div className="order-1 rounded-[12px] border border-[#D7DEE9] bg-white p-3.5 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5 lg:order-none">
               <StepHeader
                 step="1 Details"
                 title="Visit details"
@@ -1594,7 +1594,7 @@ const canBook =
                 onClick={handleBookNow}
                 data-track="booking-cta"
                 disabled={!canBook}
-                className="h-[52px] w-full rounded-[16px] bg-[#306EEC] text-[16px] font-extrabold text-white transition-all hover:bg-[#2558c9] hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-y-0 active:scale-[0.99] sm:h-[58px] sm:text-[17px]"
+                className="h-[50px] w-full rounded-[15px] bg-[#306EEC] text-[15px] font-extrabold text-white transition-all hover:-translate-y-0.5 hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-y-0 active:scale-[0.99] sm:h-[58px] sm:rounded-[16px] sm:text-[17px]"
                 style={{ boxShadow: canBook ? "0 16px 48px rgba(48,110,236,0.30)" : undefined }}
               >
                 {checkingAccess
@@ -1620,7 +1620,7 @@ const canBook =
             onClick={() => { if (!quickBookingLoading) setQuickBookOpen(false); }}
           >
             <div
-              className="w-full max-w-[700px] rounded-[28px] bg-white p-6 sm:p-7 shadow-[0_32px_100px_rgba(0,0,0,0.28)] max-h-[90vh] overflow-y-auto"
+              className="max-h-[90vh] w-full max-w-[700px] overflow-y-auto rounded-[24px] bg-white p-5 shadow-[0_32px_100px_rgba(0,0,0,0.28)] sm:rounded-[28px] sm:p-7"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-start justify-between gap-4 mb-6">
@@ -1628,7 +1628,7 @@ const canBook =
                   <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC] mb-1">
                     Quick Booking
                   </div>
-                  <h3 className="text-[22px] sm:text-[26px] font-extrabold text-[#0B1628] leading-tight">
+                  <h3 className="text-[20px] font-extrabold leading-tight text-[#0B1628] sm:text-[26px]">
                     What can we help with?
                   </h3>
                   <p className="text-[13px] text-[#64748B] mt-1.5">
@@ -1697,12 +1697,12 @@ const canBook =
                 <div className="h-1 w-10 rounded-full bg-[#E2E8F0]" />
               </div>
 
-              <div className="px-6 pt-5 pb-2 sm:px-9 sm:pt-9 sm:pb-9">
+              <div className="px-5 pb-2 pt-4 sm:px-9 sm:pb-9 sm:pt-9">
                 {/* Success icon with pulse ring */}
                 <div className="flex items-center justify-center mb-6">
                   <div className="relative">
                     <span className="absolute inset-0 rounded-full bg-[#DCFCE7] animate-ping opacity-60" />
-                    <div className="relative w-20 h-20 rounded-full bg-[#DCFCE7] flex items-center justify-center">
+                    <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-[#DCFCE7] sm:h-20 sm:w-20">
                       <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <path
                           d="M5 12.5l4.5 4.5L19 8"
@@ -1716,7 +1716,7 @@ const canBook =
                   </div>
                 </div>
 
-                <h2 className="text-[26px] sm:text-[30px] font-extrabold text-[#0B1628] text-center mb-2">
+                <h2 className="mb-2 text-center text-[22px] font-extrabold text-[#0B1628] sm:text-[30px]">
                   Booking Confirmed
                 </h2>
                 <p className="text-[14px] text-[#64748B] text-center mb-6">
@@ -1774,7 +1774,7 @@ const canBook =
                     setShowModal(false);
                     window.location.reload();
                   }}
-                  className="w-full h-[58px] sm:h-[56px] rounded-[16px] bg-[#306EEC] text-white text-[16px] font-extrabold hover:bg-[#2558c9] transition active:scale-[0.99]"
+                  className="h-[50px] w-full rounded-[15px] bg-[#306EEC] text-[15px] font-extrabold text-white transition hover:bg-[#2558c9] active:scale-[0.99] sm:h-[56px] sm:rounded-[16px] sm:text-[16px]"
                   style={{ boxShadow: "0 12px 36px rgba(48,110,236,0.30)" }}
                 >
                   Done

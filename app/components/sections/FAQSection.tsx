@@ -60,14 +60,14 @@ export default function FAQSection() {
         style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.18), transparent)" }}
       />
 
-      <div className="mx-auto max-w-[860px] px-5 py-20 sm:px-8 sm:py-28">
-        <div className="mb-14 text-center">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5">
+      <div className="mx-auto max-w-[860px] px-4 py-14 sm:px-8 sm:py-28">
+        <div className="mb-10 text-center sm:mb-14">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 sm:mb-5 sm:px-4">
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/45">
               Frequently Asked Questions
             </span>
           </div>
-          <h2 className="text-[30px] font-extrabold leading-[1.1] tracking-[-0.03em] text-white sm:text-[42px]">
+          <h2 className="text-[27px] font-extrabold leading-[1.12] tracking-[-0.025em] text-white sm:text-[42px] sm:tracking-[-0.03em]">
             Questions Homeowners Ask
           </h2>
           <p className="mx-auto mt-4 max-w-[520px] text-[15px] leading-relaxed text-white/42 sm:text-[16px]">
@@ -93,7 +93,7 @@ export default function FAQSection() {
                 <button
                   type="button"
                   onClick={() => setOpen(isOpen ? null : i)}
-                  className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
+                  className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left sm:px-6 sm:py-5"
                   aria-expanded={isOpen}
                 >
                   <span
@@ -123,7 +123,7 @@ export default function FAQSection() {
                 </button>
 
                 <div className="overflow-hidden transition-all duration-300" style={{ maxHeight: isOpen ? "400px" : "0px" }}>
-                  <p className="px-6 pb-6 text-[14px] leading-[1.72] text-white/52 sm:text-[15px]">{a}</p>
+                  <p className="px-4 pb-5 text-[13px] leading-[1.68] text-white/52 sm:px-6 sm:pb-6 sm:text-[15px] sm:leading-[1.72]">{a}</p>
                 </div>
               </div>
             );

@@ -577,10 +577,10 @@ export default function BookPage() {
     <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
       <Header />
 
-      <section className="relative w-full overflow-hidden pb-8 pt-8 sm:pb-14 sm:pt-14 lg:pt-16">
+      <section className="relative w-full overflow-hidden pb-6 pt-5 sm:pb-14 sm:pt-14 lg:pt-16">
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-          <div className="mb-7 max-w-[820px] sm:mb-10">
-            <div className="mb-4 inline-flex items-center gap-2.5 rounded-full bg-white px-4 py-2 shadow-sm">
+          <div className="mb-5 max-w-[820px] sm:mb-10">
+            <div className="mb-3 inline-flex items-center gap-2.5 rounded-full bg-white px-3.5 py-1.5 shadow-sm sm:mb-4 sm:px-4 sm:py-2">
               <span
                 className="h-2 w-2 flex-shrink-0 rounded-full bg-[#306EEC]"
                 style={{ boxShadow: "0 0 8px rgba(48,110,236,0.7)" }}
@@ -589,10 +589,10 @@ export default function BookPage() {
                 One-Time Visit
               </span>
             </div>
-            <h1 className="mb-4 text-[48px] font-black leading-[0.88] tracking-[-0.06em] text-[#071325] sm:text-[72px] lg:text-[86px]">
+            <h1 className="mb-3 text-[40px] font-black leading-[0.92] tracking-[-0.052em] text-[#071325] sm:mb-4 sm:text-[72px] sm:leading-[0.88] sm:tracking-[-0.06em] lg:text-[86px]">
               Book a handyman.
             </h1>
-            <p className="max-w-[640px] text-[17px] font-semibold leading-7 text-[#475569] sm:text-[20px]">
+            <p className="max-w-[640px] text-[15px] font-semibold leading-6 text-[#475569] sm:text-[20px] sm:leading-7">
               Choose the job, pick a time, add photos, and pay securely. We confirm after review.
             </p>
             {configError && (
@@ -604,8 +604,8 @@ export default function BookPage() {
 
           <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-12 lg:gap-6">
             <div className="order-2 lg:order-1 lg:col-span-5">
-              <div className="rounded-[30px] bg-white/95 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-5">
-                <div className="mb-5 flex items-center justify-between">
+              <div className="rounded-[24px] bg-white/95 p-3.5 shadow-[0_18px_54px_rgba(15,23,42,0.08)] sm:rounded-[30px] sm:p-5 sm:shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+                <div className="mb-4 flex items-center justify-between sm:mb-5">
                   <button
                     type="button"
                     aria-label="Previous month"
@@ -622,7 +622,7 @@ export default function BookPage() {
                   >
                     &lt;
                   </button>
-                  <div className="text-[18px] font-extrabold text-[#0B1628] sm:text-[20px]">
+                  <div className="text-[16px] font-extrabold text-[#0B1628] sm:text-[20px]">
                     {monthLabel(currentMonth)}
                   </div>
                   <button
@@ -688,7 +688,7 @@ export default function BookPage() {
                 </div>
               </div>
 
-              <div className="mt-3 rounded-[14px] border border-[#D9E4FF] bg-white px-4 py-3 text-[14px] font-semibold text-[#0B1628]">
+              <div className="mt-3 rounded-[14px] border border-[#D9E4FF] bg-white px-3.5 py-2.5 text-[13px] font-semibold text-[#0B1628] sm:px-4 sm:py-3 sm:text-[14px]">
                 {selectedDate
                   ? `Selected date: ${dayLabel(selectedDate)}`
                   : autoSelectingDate
@@ -698,7 +698,7 @@ export default function BookPage() {
 
               <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
                 {[priceLabel, `${config.durationMinutes} minutes`, "Tools included"].map((item) => (
-                  <div key={item} className="rounded-[14px] border border-[#E5E9F2] bg-white px-4 py-3 text-[13px] font-extrabold text-[#0B1628]">
+                  <div key={item} className="rounded-[14px] border border-[#E5E9F2] bg-white px-3.5 py-2.5 text-[12px] font-extrabold text-[#0B1628] sm:px-4 sm:py-3 sm:text-[13px]">
                     {item}
                   </div>
                 ))}
@@ -706,7 +706,7 @@ export default function BookPage() {
             </div>
 
             <div className="contents lg:order-2 lg:col-span-7 lg:flex lg:flex-col lg:gap-5">
-              <div className="order-1 rounded-[30px] bg-white/95 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-5 lg:order-none">
+              <div className="order-1 rounded-[24px] bg-white/95 p-3.5 shadow-[0_18px_54px_rgba(15,23,42,0.08)] sm:rounded-[30px] sm:p-5 sm:shadow-[0_24px_70px_rgba(15,23,42,0.08)] lg:order-none">
                 {isLoading ? (
                   <div className="py-12 text-center text-[14px] font-semibold text-[#64748B]">
                     Loading your account...
@@ -776,7 +776,7 @@ export default function BookPage() {
                         onClick={() => setServicePickerOpen((open) => !open)}
                         aria-expanded={servicePickerOpen}
                         className={[
-                          "group flex min-h-[70px] w-full items-center justify-between gap-4 rounded-[24px] bg-[#F7F8FB] px-4 py-3 text-left shadow-inner transition duration-200 hover:bg-white hover:shadow-[0_18px_48px_rgba(15,23,42,0.08)] focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15",
+                          "group flex min-h-[62px] w-full items-center justify-between gap-3 rounded-[20px] bg-[#F7F8FB] px-3.5 py-3 text-left shadow-inner transition duration-200 hover:bg-white hover:shadow-[0_18px_48px_rgba(15,23,42,0.08)] focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 sm:min-h-[70px] sm:gap-4 sm:rounded-[24px] sm:px-4",
                           selectedTask ? "ring-1 ring-[#D7E4FF]" : "ring-1 ring-[#E5E9F2]",
                         ].join(" ")}
                       >
@@ -784,11 +784,11 @@ export default function BookPage() {
                           <span className="block text-[11px] font-black uppercase tracking-[0.16em] text-[#7C879A]">
                             One-Time Visit task
                           </span>
-                          <span className={`mt-1 block truncate text-[18px] font-black tracking-[-0.02em] ${selectedTask ? "text-[#0B1628]" : "text-[#7C879A]"}`}>
+                          <span className={`mt-1 block truncate text-[16px] font-black tracking-[-0.018em] sm:text-[18px] sm:tracking-[-0.02em] ${selectedTask ? "text-[#0B1628]" : "text-[#7C879A]"}`}>
                             {selectedTask || "Choose a small job"}
                           </span>
                         </span>
-                        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#0B1628] shadow-sm transition group-hover:scale-105">
+                        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#0B1628] shadow-sm transition group-hover:scale-105 sm:h-10 sm:w-10">
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path
                               d={servicePickerOpen ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"}
@@ -809,7 +809,7 @@ export default function BookPage() {
                             aria-label="Close service picker"
                             onClick={() => setServicePickerOpen(false)}
                           />
-                          <div className="fixed inset-x-3 bottom-3 z-[70] rounded-[30px] bg-white p-3 shadow-[0_30px_90px_rgba(7,19,37,0.28)] sm:absolute sm:inset-x-0 sm:bottom-auto sm:top-[calc(100%+10px)] sm:z-30 sm:rounded-[26px] sm:p-3">
+                          <div className="fixed inset-x-3 bottom-3 z-[70] rounded-[26px] bg-white p-2.5 shadow-[0_30px_90px_rgba(7,19,37,0.28)] sm:absolute sm:inset-x-0 sm:bottom-auto sm:top-[calc(100%+10px)] sm:z-30 sm:rounded-[26px] sm:p-3">
                             <div className="mb-2 flex items-center justify-between px-2 py-1">
                               <div>
                                 <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#306EEC]">
@@ -840,7 +840,7 @@ export default function BookPage() {
                                       setServicePickerOpen(false);
                                     }}
                                     className={[
-                                      "min-h-[58px] rounded-[18px] px-3 text-left text-[13px] font-black leading-4 transition duration-150 active:scale-[0.98]",
+                                      "min-h-[52px] rounded-[16px] px-3 text-left text-[12px] font-black leading-4 transition duration-150 active:scale-[0.98] sm:min-h-[58px] sm:rounded-[18px] sm:text-[13px]",
                                       active
                                         ? "bg-[#0B1628] text-white shadow-[0_16px_34px_rgba(11,22,40,0.22)]"
                                         : "bg-[#F5F7FA] text-[#0B1628] hover:bg-[#EEF4FF]",
@@ -856,7 +856,7 @@ export default function BookPage() {
                       )}
                     </div>
 
-                    <div className="rounded-[22px] border border-[#E5E9F2] bg-[#F8FAFF] p-4">
+                    <div className="rounded-[20px] border border-[#E5E9F2] bg-[#F8FAFF] p-3.5 sm:rounded-[22px] sm:p-4">
                       <div className="text-[14px] font-black text-[#0B1628]">
                         Don&apos;t see your task?
                       </div>
@@ -877,13 +877,13 @@ export default function BookPage() {
                       </Link>
                     </div>
 
-                    <div className="overflow-hidden rounded-[26px] bg-[#0B1628] p-4 text-white shadow-[0_24px_70px_rgba(7,19,37,0.16)] sm:p-5">
+                    <div className="overflow-hidden rounded-[22px] bg-[#0B1628] p-3.5 text-white shadow-[0_18px_54px_rgba(7,19,37,0.14)] sm:rounded-[26px] sm:p-5 sm:shadow-[0_24px_70px_rgba(7,19,37,0.16)]">
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div className="text-[11px] font-black uppercase tracking-[0.18em] text-white/55">
                             Already a Member?
                           </div>
-                          <h3 className="mt-2 text-[22px] font-black leading-[1.02] tracking-[-0.035em]">
+                          <h3 className="mt-2 text-[19px] font-black leading-[1.05] tracking-[-0.03em] sm:text-[22px] sm:leading-[1.02] sm:tracking-[-0.035em]">
                             Members do not pay {priceLabel} every visit.
                           </h3>
                         </div>
@@ -939,7 +939,7 @@ export default function BookPage() {
 
               {isAuthenticated && (
                 <>
-                  <div className="order-3 rounded-[30px] bg-white/95 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-5 lg:order-none">
+                  <div className="order-3 rounded-[24px] bg-white/95 p-3.5 shadow-[0_18px_54px_rgba(15,23,42,0.08)] sm:rounded-[30px] sm:p-5 sm:shadow-[0_24px_70px_rgba(15,23,42,0.08)] lg:order-none">
                     <StepHeader
                       step="2 Time"
                       title="Choose a time"
@@ -968,7 +968,7 @@ export default function BookPage() {
                             type="button"
                             onClick={() => setSelectedTime(slot)}
                             className={[
-                              "min-h-[58px] rounded-[18px] border text-[14px] font-extrabold transition active:scale-[0.99]",
+                              "min-h-[50px] rounded-[16px] border text-[13px] font-extrabold transition active:scale-[0.99] sm:min-h-[58px] sm:rounded-[18px] sm:text-[14px]",
                               selectedTime === slot
                                 ? "border-[#306EEC] bg-[#306EEC] text-white shadow-[0_10px_28px_rgba(48,110,236,0.28)]"
                                 : "border-[#E5E9F2] bg-[#F8FAFF] text-[#1D4ED8] hover:border-[#D9E4FF] hover:bg-[#EEF5FF]",
@@ -985,7 +985,7 @@ export default function BookPage() {
                     )}
                   </div>
 
-                  <div className="order-4 rounded-[30px] bg-white/95 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-5 lg:order-none">
+                  <div className="order-4 rounded-[24px] bg-white/95 p-3.5 shadow-[0_18px_54px_rgba(15,23,42,0.08)] sm:rounded-[30px] sm:p-5 sm:shadow-[0_24px_70px_rgba(15,23,42,0.08)] lg:order-none">
                     <StepHeader
                       step="3 Notes / Photos"
                       title="Tell us what you need"
@@ -1133,7 +1133,7 @@ export default function BookPage() {
                     </div>
                   </div>
 
-                  <div className="order-5 rounded-[30px] bg-white/95 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-5 lg:order-none">
+                  <div className="order-5 rounded-[24px] bg-white/95 p-3.5 shadow-[0_18px_54px_rgba(15,23,42,0.08)] sm:rounded-[30px] sm:p-5 sm:shadow-[0_24px_70px_rgba(15,23,42,0.08)] lg:order-none">
                     <StepHeader
                       step="4 Payment"
                       title="Review and continue"
@@ -1192,7 +1192,7 @@ export default function BookPage() {
                       type="button"
                       onClick={submit}
                       disabled={loading || !config.enabled}
-                      className="h-[54px] w-full rounded-[16px] bg-[#306EEC] text-[16px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-y-0 active:scale-[0.99]"
+                      className="h-[50px] w-full rounded-[15px] bg-[#306EEC] text-[15px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-y-0 active:scale-[0.99] sm:h-[54px] sm:rounded-[16px] sm:text-[16px]"
                       style={{ boxShadow: !loading && config.enabled ? "0 16px 48px rgba(48,110,236,0.30)" : undefined }}
                     >
                       {loading
@@ -1209,14 +1209,14 @@ export default function BookPage() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-[1280px] gap-4 px-4 pb-10 sm:px-6 lg:grid-cols-3 lg:px-8">
-        <div className="rounded-[28px] bg-white/88 p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)]">
+      <section className="mx-auto grid max-w-[1280px] gap-3 px-4 pb-8 sm:gap-4 sm:px-6 sm:pb-10 lg:grid-cols-3 lg:px-8">
+        <div className="rounded-[24px] bg-white/88 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:p-5">
           <h2 className="text-[18px] font-extrabold text-[#0B1628]">What your visit includes</h2>
           <p className="mt-3 text-[14px] leading-6 text-[#64748B]">
             One focused handyman visit up to {config.durationMinutes} minutes. The visit price covers the visit itself, and Profixter brings the tools.
           </p>
         </div>
-        <div className="rounded-[28px] bg-white/88 p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)]">
+        <div className="rounded-[24px] bg-white/88 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:p-5">
           <h2 className="text-[18px] font-extrabold text-[#0B1628]">Before we arrive</h2>
           <p className="mt-3 text-[14px] leading-6 text-[#64748B]">
             Please prepare or provide materials if materials are needed. Appliance repair is not offered. Larger or multi-day work should use a{" "}
@@ -1230,7 +1230,7 @@ export default function BookPage() {
             .
           </p>
         </div>
-        <div className="rounded-[28px] bg-white/88 p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)]">
+        <div className="rounded-[24px] bg-white/88 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:p-5">
           <h2 className="text-[18px] font-extrabold text-[#0B1628]">What happens after payment</h2>
           <p className="mt-3 text-[14px] leading-6 text-[#64748B]">
             Admin reviews the paid request and sends confirmation shortly. If we cannot approve the job, cannot complete it within scope, or must cancel before service, you receive a full refund. One-Time Visit changes are handled by calling {config.cancellationPhone}.

@@ -209,7 +209,7 @@ export default function AboutPage() {
       />
       <Header />
 
-      <section className="relative overflow-hidden px-4 pb-12 pt-4 sm:px-6 sm:pb-16 lg:px-8">
+      <section className="relative overflow-hidden px-4 pb-10 pt-2 sm:px-6 sm:pb-16 sm:pt-4 lg:px-8">
         <div className="absolute inset-0 -z-10">
           <Image
             src="/images/hero-bg.webp"
@@ -223,40 +223,40 @@ export default function AboutPage() {
         </div>
 
         <div className="mx-auto grid max-w-[1240px] gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <div className="pt-4 sm:pt-8 lg:pt-14">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-white/88 px-4 py-2 shadow-sm backdrop-blur">
+          <div className="pt-3 sm:pt-8 lg:pt-14">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-white/88 px-3.5 py-1.5 shadow-sm backdrop-blur sm:px-4 sm:py-2">
               <span className="h-2 w-2 rounded-full bg-[#86EFAC]" />
               <span className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
                 Babylon based - Nassau and Suffolk
               </span>
             </div>
-            <h1 className="mt-5 max-w-[760px] text-[42px] font-black leading-[0.96] tracking-[-0.045em] text-[#0B1628] sm:text-[64px] lg:text-[76px]">
+            <h1 className="mt-4 max-w-[760px] text-[36px] font-black leading-[1] tracking-[-0.036em] text-[#0B1628] sm:mt-5 sm:text-[64px] sm:leading-[0.96] sm:tracking-[-0.045em] lg:text-[76px]">
               A better way for Long Island homeowners to get help.
             </h1>
-            <p className="mt-5 max-w-[680px] text-[16px] font-medium leading-8 text-[#34435C] sm:text-[18px]">
+            <p className="mt-4 max-w-[680px] text-[15px] font-medium leading-7 text-[#34435C] sm:mt-5 sm:text-[18px] sm:leading-8">
               Profixter is a modern local home service company built around four clear paths: free Home Support AI, one-time handyman visits, Membership, and renovation estimates for larger projects.
             </p>
-            <p className="mt-4 max-w-[640px] text-[15px] leading-7 text-[#64748B]">
+            <p className="mt-3 max-w-[640px] text-[14px] leading-6 text-[#64748B] sm:mt-4 sm:text-[15px] sm:leading-7">
               We exist because homeowners should not have to chase contractors, decode vague pricing, or start from zero every time something in the house needs attention.
             </p>
 
-            <div className="mt-7 grid gap-3 sm:grid-cols-2">
+            <div className="mt-6 grid gap-2.5 sm:mt-7 sm:grid-cols-2 sm:gap-3">
               <Link
                 href="/home-support"
-                className="inline-flex h-[54px] items-center justify-center rounded-[16px] bg-[#306EEC] px-5 text-[15px] font-extrabold text-white shadow-[0_16px_48px_rgba(48,110,236,0.30)] transition hover:-translate-y-0.5 hover:bg-[#2558c9]"
+                className="inline-flex h-[50px] items-center justify-center rounded-[15px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white shadow-[0_16px_48px_rgba(48,110,236,0.30)] transition hover:-translate-y-0.5 hover:bg-[#2558c9] sm:h-[54px] sm:rounded-[16px] sm:text-[15px]"
               >
                 Try Profixter AI
               </Link>
               <Link
                 href="/book"
-                className="inline-flex h-[54px] items-center justify-center rounded-[16px] border border-[#C5CBD8] bg-white/92 px-5 text-[15px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC]"
+                className="inline-flex h-[50px] items-center justify-center rounded-[15px] border border-[#C5CBD8] bg-white/92 px-5 text-[14px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] sm:h-[54px] sm:rounded-[16px] sm:text-[15px]"
               >
                 Book Handyman
               </Link>
             </div>
           </div>
 
-          <div className="rounded-[30px] border border-white/70 bg-white/86 p-4 shadow-[0_28px_90px_rgba(15,23,42,0.12)] backdrop-blur-xl sm:p-5 lg:p-6">
+          <div className="rounded-[24px] border border-white/70 bg-white/86 p-3.5 shadow-[0_20px_64px_rgba(15,23,42,0.10)] backdrop-blur-xl sm:rounded-[30px] sm:p-5 sm:shadow-[0_28px_90px_rgba(15,23,42,0.12)] lg:p-6">
             <div className="overflow-hidden rounded-[24px] bg-[#0B1628]">
               <div className="relative aspect-[4/3]">
                 <Image
@@ -287,19 +287,19 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 py-12 sm:px-6 lg:px-8">
+      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
         <div className="mx-auto grid max-w-[1240px] gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
           <div className="lg:sticky lg:top-8">
             <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
               Founder story
             </div>
-            <h2 className="mt-3 text-[34px] font-black leading-[1.02] tracking-[-0.04em] text-[#0B1628] sm:text-[52px]">
+            <h2 className="mt-3 text-[29px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[52px] sm:leading-[1.02] sm:tracking-[-0.04em]">
               Built because home help became too hard to trust.
             </h2>
           </div>
 
-          <div className="rounded-[28px] border border-[#DDE5F0] bg-white p-6 shadow-[0_22px_70px_rgba(15,23,42,0.06)] sm:p-8">
-            <div className="space-y-5 text-[16px] leading-8 text-[#475569]">
+          <div className="rounded-[24px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_56px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:p-8 sm:shadow-[0_22px_70px_rgba(15,23,42,0.06)]">
+            <div className="space-y-4 text-[15px] leading-7 text-[#475569] sm:space-y-5 sm:text-[16px] sm:leading-8">
               <p>
                 Profixter was built by Taras Bandura after years in construction and home services, seeing the same problem repeat: homeowners could often find someone for a major project, but struggled to find reliable help for the everyday things.
               </p>
@@ -328,17 +328,17 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-[1240px] overflow-hidden rounded-[32px] border border-[#DDE5F0] bg-[#0B1628] shadow-[0_28px_90px_rgba(15,23,42,0.18)]">
+      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+        <div className="mx-auto max-w-[1240px] overflow-hidden rounded-[26px] border border-[#DDE5F0] bg-[#0B1628] shadow-[0_22px_70px_rgba(15,23,42,0.16)] sm:rounded-[32px] sm:shadow-[0_28px_90px_rgba(15,23,42,0.18)]">
           <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="p-6 text-white sm:p-8 lg:p-10">
+            <div className="p-5 text-white sm:p-8 lg:p-10">
               <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#7BAEFF]">
                 Founder video
               </div>
-              <h2 className="mt-3 text-[32px] font-black leading-tight tracking-[-0.035em] sm:text-[48px]">
+              <h2 className="mt-3 text-[28px] font-black leading-tight tracking-[-0.03em] sm:text-[48px] sm:tracking-[-0.035em]">
                 A place for Taras to explain Profixter in his own words.
               </h2>
-              <p className="mt-5 text-[16px] leading-8 text-white/68">
+              <p className="mt-4 text-[15px] leading-7 text-white/68 sm:mt-5 sm:text-[16px] sm:leading-8">
                 Watch the founder story, the local mission, and how Profixter helps homeowners choose the right path before hiring.
               </p>
             </div>
@@ -360,13 +360,13 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 py-12 sm:px-6 lg:px-8">
+      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
         <div className="mx-auto max-w-[1240px]">
           <div className="max-w-[760px]">
             <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
               What we offer
             </div>
-            <h2 className="mt-3 text-[34px] font-black leading-[1.02] tracking-[-0.04em] text-[#0B1628] sm:text-[52px]">
+            <h2 className="mt-3 text-[29px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[52px] sm:leading-[1.02] sm:tracking-[-0.04em]">
               Four ways to move forward without guessing.
             </h2>
           </div>
@@ -379,16 +379,16 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 py-12 sm:px-6 lg:px-8">
+      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
         <div className="mx-auto grid max-w-[1240px] gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <div>
             <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
               Why homeowners trust Profixter
             </div>
-            <h2 className="mt-3 text-[34px] font-black leading-[1.02] tracking-[-0.04em] text-[#0B1628] sm:text-[52px]">
+            <h2 className="mt-3 text-[29px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[52px] sm:leading-[1.02] sm:tracking-[-0.04em]">
               Trust is built into the process, not bolted on later.
             </h2>
-            <p className="mt-5 text-[16px] leading-8 text-[#64748B]">
+            <p className="mt-4 text-[15px] leading-7 text-[#64748B] sm:mt-5 sm:text-[16px] sm:leading-8">
               Profixter is designed to reduce confusion before anyone arrives: clear service paths, photos and notes before visits, admin review, and a separate estimate path for work that should not be squeezed into a small handyman appointment.
             </p>
           </div>
@@ -409,17 +409,17 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-[1240px] rounded-[32px] border border-[#D9E4FF] bg-[#F0F7FF] p-6 sm:p-8 lg:p-10">
+      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+        <div className="mx-auto max-w-[1240px] rounded-[26px] border border-[#D9E4FF] bg-[#F0F7FF] p-5 sm:rounded-[32px] sm:p-8 lg:p-10">
           <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
             <div>
               <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
                 Service area
               </div>
-              <h2 className="mt-3 text-[34px] font-black leading-tight tracking-[-0.04em] text-[#0B1628] sm:text-[48px]">
+              <h2 className="mt-3 text-[29px] font-black leading-tight tracking-[-0.034em] text-[#0B1628] sm:text-[48px] sm:tracking-[-0.04em]">
                 Local to Long Island, built around Nassau and Suffolk homes.
               </h2>
-              <p className="mt-5 text-[16px] leading-8 text-[#475569]">
+              <p className="mt-4 text-[15px] leading-7 text-[#475569] sm:mt-5 sm:text-[16px] sm:leading-8">
                 Profixter is based near Babylon and serves Long Island homeowners across Nassau and Suffolk Counties.
               </p>
             </div>
@@ -435,13 +435,13 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 py-12 sm:px-6 lg:px-8">
+      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
         <div className="mx-auto max-w-[980px]">
           <div className="text-center">
             <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
               FAQ
             </div>
-            <h2 className="mt-3 text-[34px] font-black leading-tight tracking-[-0.04em] text-[#0B1628] sm:text-[52px]">
+            <h2 className="mt-3 text-[29px] font-black leading-tight tracking-[-0.034em] text-[#0B1628] sm:text-[52px] sm:tracking-[-0.04em]">
               Answers before you choose.
             </h2>
           </div>
@@ -457,17 +457,17 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-[1240px] rounded-[32px] bg-[#0B1628] p-6 text-white shadow-[0_28px_90px_rgba(15,23,42,0.18)] sm:p-8 lg:p-10">
+      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+        <div className="mx-auto max-w-[1240px] rounded-[26px] bg-[#0B1628] p-5 text-white shadow-[0_22px_70px_rgba(15,23,42,0.16)] sm:rounded-[32px] sm:p-8 sm:shadow-[0_28px_90px_rgba(15,23,42,0.18)] lg:p-10">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
             <div>
               <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#7BAEFF]">
                 Start with the right path
               </div>
-              <h2 className="mt-3 text-[34px] font-black leading-tight tracking-[-0.04em] sm:text-[52px]">
+              <h2 className="mt-3 text-[29px] font-black leading-tight tracking-[-0.034em] sm:text-[52px] sm:tracking-[-0.04em]">
                 Tell Profixter what kind of home help you need.
               </h2>
-              <p className="mt-5 text-[16px] leading-8 text-white/68">
+              <p className="mt-4 text-[15px] leading-7 text-white/68 sm:mt-5 sm:text-[16px] sm:leading-8">
                 Start free with AI, book one small handyman job, become a Member, or request a renovation estimate.
               </p>
             </div>

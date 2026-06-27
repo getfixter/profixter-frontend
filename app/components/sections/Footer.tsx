@@ -45,24 +45,24 @@ export default function Footer() {
         style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.20), transparent)" }}
       />
 
-      <div className="relative mx-auto max-w-[1240px] px-5 py-12 sm:px-6 sm:py-16 lg:px-5">
-        <div className="grid grid-cols-1 items-start gap-10 sm:grid-cols-2 lg:grid-cols-[1.45fr_0.7fr_0.7fr_0.8fr] lg:gap-8">
+      <div className="relative mx-auto max-w-[1240px] px-4 py-10 sm:px-6 sm:py-16 lg:px-5">
+        <div className="grid grid-cols-1 items-start gap-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-[1.45fr_0.7fr_0.7fr_0.8fr] lg:gap-8">
           <div>
             <Image
               src="/images/logo-footer.svg"
               alt="Profixter"
               width={200}
               height={48}
-              className="mb-5 h-auto w-[180px]"
+              className="mb-4 h-auto w-[160px] sm:mb-5 sm:w-[180px]"
             />
 
-            <p className="mb-7 max-w-[430px] text-[15px] leading-relaxed text-[#9AA3B2]">
+            <p className="mb-6 max-w-[430px] text-[14px] leading-relaxed text-[#9AA3B2] sm:mb-7 sm:text-[15px]">
               Home Support AI, one-time handyman visits, ongoing membership, and larger project estimates for Long Island homeowners.
             </p>
 
             <a
               href="tel:+16315991363"
-              className="group inline-flex items-center gap-3.5 rounded-[16px] border border-white/[0.14] bg-white/[0.06] px-5 py-3.5 transition-all hover:border-white/[0.22] hover:bg-white/[0.12]"
+              className="group inline-flex items-center gap-3 rounded-[15px] border border-white/[0.14] bg-white/[0.06] px-4 py-3 transition-all hover:border-white/[0.22] hover:bg-white/[0.12] sm:gap-3.5 sm:rounded-[16px] sm:px-5 sm:py-3.5"
             >
               <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#306EEC]">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -79,7 +79,7 @@ export default function Footer() {
                 <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">
                   Call Profixter
                 </div>
-                <div className="text-[16px] font-bold text-white">
+                <div className="text-[15px] font-bold text-white sm:text-[16px]">
                   631-599-1363
                 </div>
               </div>
@@ -87,15 +87,15 @@ export default function Footer() {
           </div>
 
           <div>
-            <div className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35">
+            <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 sm:mb-5">
               Products
             </div>
-            <nav className="flex flex-col gap-3.5" aria-label="Footer products">
+            <nav className="flex flex-col gap-3" aria-label="Footer products">
               {PRODUCT_LINKS.map((link) => (
                 <Link
                   key={link.label}
                   href={link.href}
-                  className="text-[15px] font-medium text-[#9AA3B2] transition-colors hover:text-white"
+                  className="text-[14px] font-medium text-[#9AA3B2] transition-colors hover:text-white sm:text-[15px]"
                 >
                   {link.label}
                 </Link>
@@ -104,15 +104,15 @@ export default function Footer() {
           </div>
 
           <div>
-            <div className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35">
+            <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 sm:mb-5">
               Company
             </div>
-            <nav className="flex flex-col gap-3.5" aria-label="Footer company">
+            <nav className="flex flex-col gap-3" aria-label="Footer company">
               {COMPANY_LINKS.map((link) => (
                 <Link
                   key={link.label}
                   href={link.href}
-                  className="text-[15px] font-medium text-[#9AA3B2] transition-colors hover:text-white"
+                  className="text-[14px] font-medium text-[#9AA3B2] transition-colors hover:text-white sm:text-[15px]"
                 >
                   {link.label}
                 </Link>
@@ -121,13 +121,13 @@ export default function Footer() {
           </div>
 
           <div>
-            <div className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35">
+            <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 sm:mb-5">
               Contact
             </div>
-            <div className="flex flex-col gap-3.5">
+            <div className="flex flex-col gap-3">
               <a
                 href="mailto:my@profixter.com"
-                className="break-all text-[15px] font-medium text-[#9AA3B2] transition-colors hover:text-white"
+                className="break-all text-[14px] font-medium text-[#9AA3B2] transition-colors hover:text-white sm:text-[15px]"
               >
                 my@profixter.com
               </a>
@@ -135,7 +135,7 @@ export default function Footer() {
                 href="https://instagram.com/mrfixter.ny"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[15px] font-medium text-[#9AA3B2] transition-colors hover:text-white"
+                className="text-[14px] font-medium text-[#9AA3B2] transition-colors hover:text-white sm:text-[15px]"
               >
                 @mrfixter.ny
               </a>
@@ -146,7 +146,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-white/[0.09] pt-6 sm:flex-row">
+        <div className="mt-9 flex flex-col items-center justify-between gap-3 border-t border-white/[0.09] pt-5 sm:mt-12 sm:flex-row sm:pt-6">
           <p className="text-[13px] text-[#4A5568]">
             &copy; 2026 Profixter. All rights reserved. &middot; NY State Licensed HI-71484
           </p>

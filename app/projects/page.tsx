@@ -496,7 +496,7 @@ function EstimateForm() {
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="mt-6 inline-flex h-[54px] w-full items-center justify-center rounded-[14px] bg-[#306EEC] px-6 text-[15px] font-extrabold text-white shadow-[0_14px_36px_rgba(48,110,236,0.25)] transition hover:bg-[#2558C9] disabled:opacity-60"
+        className="mt-6 inline-flex h-[50px] w-full items-center justify-center rounded-[14px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white shadow-[0_14px_36px_rgba(48,110,236,0.25)] transition hover:bg-[#2558C9] disabled:opacity-60 sm:h-[54px] sm:px-6 sm:text-[15px]"
       >
         {status === "submitting" ? "Sending request..." : "Request Renovation Estimate"}
       </button>
@@ -514,7 +514,7 @@ function ServiceSection({ service, index }: { service: (typeof SERVICES)[number]
   return (
     <section
       id={service.id}
-      className={`scroll-mt-[96px] py-16 sm:py-20 lg:py-24 ${
+      className={`scroll-mt-[96px] py-12 sm:py-20 lg:py-24 ${
         dark ? "bg-[#0B1628] text-white" : "bg-[#F6F8FC] text-[#0B1628]"
       }`}
     >
@@ -523,7 +523,7 @@ function ServiceSection({ service, index }: { service: (typeof SERVICES)[number]
           index % 2 ? "lg:[&>*:first-child]:order-2" : ""
         }`}
       >
-        <div className="relative min-h-[330px] overflow-hidden rounded-[28px] shadow-[0_30px_80px_rgba(15,23,42,0.18)] sm:min-h-[440px]">
+        <div className="relative min-h-[260px] overflow-hidden rounded-[24px] shadow-[0_24px_64px_rgba(15,23,42,0.16)] sm:min-h-[440px] sm:rounded-[28px] sm:shadow-[0_30px_80px_rgba(15,23,42,0.18)]">
           <Image
             src={service.image}
             alt={`${service.title} project by Profixter`}
@@ -546,17 +546,17 @@ function ServiceSection({ service, index }: { service: (typeof SERVICES)[number]
           >
             {service.eyebrow}
           </div>
-          <h2 className="mt-4 text-[42px] font-black leading-[0.94] tracking-[-0.045em] sm:text-[58px] lg:text-[64px]">
+          <h2 className="mt-3 text-[36px] font-black leading-[0.98] tracking-[-0.036em] sm:mt-4 sm:text-[58px] sm:leading-[0.94] sm:tracking-[-0.045em] lg:text-[64px]">
             {service.title}
           </h2>
           <p
-            className={`mt-5 text-[16px] leading-relaxed sm:text-[17px] ${
+            className={`mt-4 text-[15px] leading-relaxed sm:mt-5 sm:text-[17px] ${
               dark ? "text-white/70" : "text-[#475569]"
             }`}
           >
             {service.description}
           </p>
-          <div className="mt-7 grid gap-3">
+          <div className="mt-6 grid gap-2.5 sm:mt-7 sm:gap-3">
             {service.details.map((detail) => (
               <div key={detail} className="flex items-start gap-3">
                 <span
@@ -577,7 +577,7 @@ function ServiceSection({ service, index }: { service: (typeof SERVICES)[number]
           </p>
           <Link
             href={`/projects?type=${estimateType}#estimate`}
-            className={`mt-7 inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[14px] px-6 text-[14px] font-extrabold transition ${
+            className={`mt-6 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[14px] px-5 text-[14px] font-extrabold transition sm:mt-7 sm:min-h-[52px] sm:px-6 ${
               dark
                 ? "bg-white text-[#0B1628] hover:bg-[#EAF1FF]"
                 : "bg-[#0B1628] text-white hover:bg-[#17263D]"
@@ -615,18 +615,18 @@ function ProjectsContent() {
             />
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,16,31,0.96)_0%,rgba(7,16,31,0.84)_48%,rgba(7,16,31,0.48)_100%)]" />
           </div>
-          <div className="relative mx-auto max-w-[1220px] px-5 py-16 sm:px-8 sm:py-24 lg:py-28">
+          <div className="relative mx-auto max-w-[1220px] px-4 py-12 sm:px-8 sm:py-24 lg:py-28">
             <div className="max-w-[820px]">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.08] px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/80">
                 General Contractor Long Island
               </div>
-              <h1 className="mt-7 text-[44px] font-black leading-[0.92] tracking-[-0.05em] sm:text-[70px] lg:text-[84px]">
+              <h1 className="mt-5 text-[38px] font-black leading-[0.96] tracking-[-0.04em] sm:mt-7 sm:text-[70px] sm:leading-[0.92] sm:tracking-[-0.05em] lg:text-[84px]">
                 Renovation and home projects, handled by one team.
               </h1>
-              <p className="mt-6 max-w-[700px] text-[17px] leading-relaxed text-white/75 sm:text-[19px]">
+              <p className="mt-4 max-w-[700px] text-[15px] leading-relaxed text-white/75 sm:mt-6 sm:text-[19px]">
                 Profixter is a General Contractor for larger Long Island home projects: roofing, siding, kitchens, bathrooms, full-house renovations, and new house builds. Renovation estimates are separate from One-Time Handyman Visits.
               </p>
-              <div className="mt-8 flex flex-wrap gap-2.5">
+              <div className="mt-6 flex flex-wrap gap-2 sm:mt-8 sm:gap-2.5">
                 {[
                   ["Roofing", "#roofing"],
                   ["Siding", "#siding"],
@@ -644,24 +644,24 @@ function ProjectsContent() {
                   </Link>
                 ))}
               </div>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-7 flex flex-col gap-2.5 sm:mt-9 sm:flex-row sm:gap-3">
                 <Link
                   href="#estimate"
-                  className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-[15px] bg-[#306EEC] px-7 text-[15px] font-extrabold text-white shadow-[0_16px_40px_rgba(48,110,236,0.32)] transition hover:bg-[#2558C9]"
+                  className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-[14px] bg-[#306EEC] px-6 text-[14px] font-extrabold text-white shadow-[0_16px_40px_rgba(48,110,236,0.32)] transition hover:bg-[#2558C9] sm:min-h-[56px] sm:rounded-[15px] sm:px-7 sm:text-[15px]"
                 >
                   Request Renovation Estimate
                   <ArrowIcon />
                 </Link>
                 <a
                   href="tel:+16315991363"
-                  className="inline-flex min-h-[56px] items-center justify-center rounded-[15px] border border-white/20 bg-white/[0.07] px-7 text-[15px] font-bold text-white"
+                  className="inline-flex min-h-[50px] items-center justify-center rounded-[14px] border border-white/20 bg-white/[0.07] px-6 text-[14px] font-bold text-white sm:min-h-[56px] sm:rounded-[15px] sm:px-7 sm:text-[15px]"
                 >
                   Call 631-599-1363
                 </a>
               </div>
             </div>
 
-            <div className="mt-12 grid max-w-[940px] gap-3 sm:grid-cols-3">
+            <div className="mt-9 grid max-w-[940px] gap-2.5 sm:mt-12 sm:grid-cols-3 sm:gap-3">
               {[
                 ["Member discounts", "Members get better long-term value and may receive discounts on larger work."],
                 ["Membership included", "Some larger projects may include up to 12 months of Profixter Membership."],
@@ -695,16 +695,16 @@ function ProjectsContent() {
           <ServiceSection key={service.id} service={service} index={index} />
         ))}
 
-        <section id="estimate" className="scroll-mt-[90px] bg-[#EAF0F8] py-16 sm:py-20 lg:py-24">
-          <div className="mx-auto grid max-w-[1220px] gap-10 px-5 sm:px-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-start lg:gap-14">
+        <section id="estimate" className="scroll-mt-[90px] bg-[#EAF0F8] py-12 sm:py-20 lg:py-24">
+          <div className="mx-auto grid max-w-[1220px] gap-8 px-4 sm:px-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-start lg:gap-14">
             <div className="lg:sticky lg:top-28">
               <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
                 Start the conversation
               </div>
-              <h2 className="mt-4 text-[38px] font-black leading-[0.98] tracking-[-0.04em] text-[#0B1628] sm:text-[50px]">
+              <h2 className="mt-3 text-[32px] font-black leading-[1.02] tracking-[-0.035em] text-[#0B1628] sm:mt-4 sm:text-[50px] sm:leading-[0.98] sm:tracking-[-0.04em]">
                 Get a real project estimate.
               </h2>
-              <p className="mt-5 text-[16px] leading-relaxed text-[#475569]">
+              <p className="mt-4 text-[15px] leading-relaxed text-[#475569] sm:mt-5 sm:text-[16px]">
                 We review larger projects personally. Tell us the project type, address, and what you want done, then we will follow up with the right next step.
               </p>
               <div className="mt-7 space-y-3">

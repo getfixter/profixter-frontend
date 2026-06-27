@@ -323,14 +323,14 @@ export default function HomeSupportPage() {
     <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
       <Header />
 
-      <section className="mx-auto flex min-h-[calc(100svh-86px)] w-full max-w-[1120px] flex-col px-4 pb-5 pt-4 sm:px-6 lg:px-8">
+      <section className="mx-auto flex min-h-[calc(100svh-76px)] w-full max-w-[1120px] flex-col px-3.5 pb-4 pt-2 sm:min-h-[calc(100svh-86px)] sm:px-6 sm:pb-5 sm:pt-4 lg:px-8">
         <div className={`flex flex-1 flex-col ${hasUserMessages ? "justify-start" : "justify-center"}`}>
           {!hasUserMessages && (
-            <div className="mx-auto w-full max-w-[900px] pb-8 pt-8 text-center sm:pb-10">
-              <h1 className="mx-auto max-w-[860px] text-[48px] font-black leading-[0.88] tracking-[-0.07em] text-[#071325] sm:text-[82px] lg:text-[96px]">
+            <div className="mx-auto w-full max-w-[900px] pb-6 pt-5 text-center sm:pb-10 sm:pt-8">
+              <h1 className="mx-auto max-w-[860px] text-[40px] font-black leading-[0.94] tracking-[-0.055em] text-[#071325] sm:text-[82px] sm:leading-[0.88] sm:tracking-[-0.07em] lg:text-[96px]">
                 Your personal AI for your home.
               </h1>
-              <p className="mx-auto mt-6 max-w-[610px] text-base font-semibold leading-7 text-[#4B5870] sm:text-xl">
+              <p className="mx-auto mt-4 max-w-[610px] text-[15px] font-semibold leading-6 text-[#4B5870] sm:mt-6 sm:text-xl sm:leading-7">
                 Upload a photo, quote, agreement, or ask what to do next.
               </p>
             </div>
@@ -338,19 +338,19 @@ export default function HomeSupportPage() {
 
           <section className="mx-auto flex w-full max-w-[980px] flex-1 flex-col">
             {hasUserMessages && (
-              <div className="mb-4 flex items-center justify-between gap-3 pt-2">
+              <div className="mb-3 flex items-center justify-between gap-3 pt-1 sm:mb-4 sm:pt-2">
                 <div>
-                  <div className="text-[13px] font-black uppercase tracking-[0.18em] text-[#6B7280]">
+                  <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#6B7280] sm:text-[13px]">
                     Profixter AI
                   </div>
-                  <h1 className="mt-1 text-[32px] font-black tracking-[-0.05em] text-[#071325] sm:text-[44px]">
+                  <h1 className="mt-1 text-[28px] font-black tracking-[-0.045em] text-[#071325] sm:text-[44px] sm:tracking-[-0.05em]">
                     Home answers.
                   </h1>
                 </div>
                 <button
                   type="button"
                   onClick={newChat}
-                  className="inline-flex h-11 flex-shrink-0 items-center gap-2 rounded-full bg-[#0B1628] px-4 text-xs font-black text-white transition hover:bg-[#17263D]"
+                  className="inline-flex h-10 flex-shrink-0 items-center gap-2 rounded-full bg-[#0B1628] px-3.5 text-xs font-black text-white transition hover:bg-[#17263D] sm:h-11 sm:px-4"
                 >
                   <PlusIcon className="h-4 w-4" aria-hidden="true" />
                   New
@@ -358,7 +358,7 @@ export default function HomeSupportPage() {
               </div>
             )}
 
-            <div className={`${hasUserMessages ? "min-h-[42svh] flex-1 space-y-5 overflow-y-auto px-1 py-4" : "hidden"}`}>
+            <div className={`${hasUserMessages ? "min-h-[42svh] flex-1 space-y-4 overflow-y-auto px-1 py-3 sm:space-y-5 sm:py-4" : "hidden"}`}>
               {messages
               .filter((message) => hasUserMessages || message.id !== "welcome")
               .map((message) => (
@@ -367,7 +367,7 @@ export default function HomeSupportPage() {
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[94%] rounded-[24px] px-4 py-3 text-sm leading-6 shadow-sm sm:max-w-[78%] lg:max-w-[70%] ${
+                    className={`max-w-[94%] rounded-[20px] px-3.5 py-3 text-[13px] leading-5 shadow-sm sm:max-w-[78%] sm:rounded-[24px] sm:px-4 sm:text-sm sm:leading-6 lg:max-w-[70%] ${
                       message.role === "user"
                         ? "bg-[#0B1628] text-white shadow-[0_12px_30px_rgba(9,22,43,0.18)]"
                         : message.error
@@ -402,7 +402,7 @@ export default function HomeSupportPage() {
               ))}
 
               {sending && (
-                <div className="inline-flex max-w-[92%] items-center gap-3 rounded-full bg-white px-4 py-3 text-sm font-semibold text-[#526078] shadow-sm">
+                <div className="inline-flex max-w-[92%] items-center gap-3 rounded-full bg-white px-3.5 py-2.5 text-[13px] font-semibold text-[#526078] shadow-sm sm:px-4 sm:py-3 sm:text-sm">
                   <span className="flex gap-1" aria-hidden="true">
                     <span className="h-2 w-2 animate-pulse rounded-full bg-[#2563EB]" />
                     <span className="h-2 w-2 animate-pulse rounded-full bg-[#41A66A] [animation-delay:120ms]" />
@@ -455,13 +455,13 @@ export default function HomeSupportPage() {
               </div>
             )}
 
-            <div className="rounded-[34px] bg-white p-2 shadow-[0_34px_100px_rgba(15,23,42,0.16)]">
+            <div className="rounded-[28px] bg-white p-1.5 shadow-[0_24px_70px_rgba(15,23,42,0.14)] sm:rounded-[34px] sm:p-2 sm:shadow-[0_34px_100px_rgba(15,23,42,0.16)]">
               <textarea
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 rows={3}
                 placeholder="Ask anything about your house..."
-                className="min-h-[92px] w-full resize-none bg-transparent px-5 py-5 text-[18px] font-medium leading-7 text-[#0B1628] outline-none placeholder:text-[#8A94A6] sm:text-[21px]"
+                className="min-h-[78px] w-full resize-none bg-transparent px-4 py-4 text-[16px] font-medium leading-6 text-[#0B1628] outline-none placeholder:text-[#8A94A6] sm:min-h-[92px] sm:px-5 sm:py-5 sm:text-[21px] sm:leading-7"
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
@@ -469,9 +469,9 @@ export default function HomeSupportPage() {
                   }
                 }}
               />
-              <div className="flex items-center justify-between gap-2 px-2 pb-2">
+              <div className="flex items-center justify-between gap-2 px-1.5 pb-1.5 sm:px-2 sm:pb-2">
                 <div className="flex items-center gap-2">
-                  <label className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full bg-[#F5F6F8] px-4 text-sm font-black text-[#34435C] transition hover:bg-[#ECEFF3]">
+                  <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full bg-[#F5F6F8] px-3 text-xs font-black text-[#34435C] transition hover:bg-[#ECEFF3] sm:h-11 sm:gap-2 sm:px-4 sm:text-sm">
                     <PhotoIcon className="h-4 w-4" aria-hidden="true" />
                     Photo
                     <input
@@ -482,7 +482,7 @@ export default function HomeSupportPage() {
                       className="hidden"
                     />
                   </label>
-                  <label className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full bg-[#F5F6F8] px-4 text-sm font-black text-[#34435C] transition hover:bg-[#ECEFF3]">
+                  <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full bg-[#F5F6F8] px-3 text-xs font-black text-[#34435C] transition hover:bg-[#ECEFF3] sm:h-11 sm:gap-2 sm:px-4 sm:text-sm">
                     <DocumentTextIcon className="h-4 w-4" aria-hidden="true" />
                     PDF
                     <input
@@ -498,20 +498,20 @@ export default function HomeSupportPage() {
                     type="button"
                     onClick={() => sendMessage()}
                     disabled={!input.trim() || sending}
-                    className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0B1628] text-white shadow-[0_12px_28px_rgba(11,22,40,0.24)] transition hover:bg-[#17263D] disabled:cursor-not-allowed disabled:opacity-35"
+                    className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0B1628] text-white shadow-[0_12px_28px_rgba(11,22,40,0.24)] transition hover:bg-[#17263D] disabled:cursor-not-allowed disabled:opacity-35 sm:h-12 sm:w-12"
                     aria-label={sending ? "Sending message" : "Send message"}
                   >
                     <ArrowUpIcon className="h-5 w-5" aria-hidden="true" />
                   </button>
               </div>
             </div>
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-2 sm:flex-wrap sm:justify-center sm:overflow-visible">
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-2 sm:mt-4 sm:flex-wrap sm:justify-center sm:overflow-visible">
               {STARTERS.map((starter) => (
                 <button
                   key={starter}
                   type="button"
                   onClick={() => sendMessage(starter)}
-                  className="flex-shrink-0 rounded-full bg-white/70 px-4 py-2.5 text-xs font-black text-[#34435C] shadow-sm transition hover:bg-white sm:text-sm"
+                  className="flex-shrink-0 rounded-full bg-white/70 px-3.5 py-2 text-xs font-black text-[#34435C] shadow-sm transition hover:bg-white sm:px-4 sm:py-2.5 sm:text-sm"
                 >
                   {starter}
                 </button>
