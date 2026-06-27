@@ -175,7 +175,7 @@ export default function PopularTasksSection() {
   return (
     <section
       id="larger-projects"
-      className="relative w-full overflow-hidden py-16 sm:py-20 lg:py-28"
+      className="relative w-full overflow-hidden py-12 sm:py-20 lg:py-28"
       style={{
         background:
           "linear-gradient(160deg, #F7F4EE 0%, #EEF3F8 48%, #E6ECF6 100%)",
@@ -191,27 +191,27 @@ export default function PopularTasksSection() {
       />
 
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-14">
+        <div className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-14">
           <div className="max-w-[620px]">
-            <div className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-[#D4A574]/25 bg-white/70 px-4 py-2 shadow-[0_8px_28px_rgba(15,23,42,0.05)] backdrop-blur-sm">
+            <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-[#D4A574]/25 bg-white/70 px-3.5 py-1.5 shadow-[0_8px_28px_rgba(15,23,42,0.05)] backdrop-blur-sm sm:mb-6 sm:px-4 sm:py-2">
               <span className="h-2 w-2 rounded-full bg-[#D4A574]" />
               <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#92724E]">
                 Larger Home Projects
               </span>
             </div>
 
-            <h2 className="text-[38px] font-black leading-[0.95] tracking-[-0.04em] text-[#0B1628] sm:text-[54px] lg:text-[64px]">
+            <h2 className="text-[32px] font-black leading-[1] tracking-[-0.032em] text-[#0B1628] sm:text-[54px] sm:leading-[0.95] sm:tracking-[-0.04em] lg:text-[64px]">
               Planning a larger project?
             </h2>
 
-            <p className="mt-6 max-w-[560px] text-[16px] leading-relaxed text-[#475569] sm:text-[18px]">
+            <p className="mt-4 max-w-[560px] text-[15px] leading-relaxed text-[#475569] sm:mt-6 sm:text-[18px]">
               Roofing, siding, bathrooms, kitchens, basements, and interior renovations — request an estimate and we&apos;ll help you plan the next step.
             </p>
             <p className="mt-4 max-w-[560px] text-[15px] font-bold leading-relaxed text-[#0B1628] sm:text-[16px]">
               Get up to 12 months of Profixter membership included with eligible larger projects.
             </p>
 
-            <div className="mt-8 rounded-[24px] border border-white/70 bg-white/70 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.07)] backdrop-blur-sm sm:p-6">
+            <div className="mt-6 rounded-[22px] border border-white/70 bg-white/70 p-4 shadow-[0_16px_50px_rgba(15,23,42,0.07)] backdrop-blur-sm sm:mt-8 sm:rounded-[24px] sm:p-6 sm:shadow-[0_18px_60px_rgba(15,23,42,0.07)]">
               <p className="text-[15px] font-bold leading-relaxed text-[#0B1628] sm:text-[16px]">
                 We take care of the project first, then keep helping maintain your home after the work is done.
               </p>
@@ -230,22 +230,22 @@ export default function PopularTasksSection() {
               </div>
             </div>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-6 flex flex-col gap-2.5 sm:mt-8 sm:flex-row sm:gap-3">
               <Link
                 href="/projects#estimate"
-                className="inline-flex h-[54px] items-center justify-center rounded-[16px] bg-[#0B1628] px-7 text-[15px] font-extrabold text-white shadow-[0_18px_44px_rgba(15,23,42,0.24)] transition-all hover:-translate-y-0.5 hover:bg-[#14233A]"
+                className="inline-flex h-[50px] items-center justify-center rounded-[15px] bg-[#0B1628] px-6 text-[14px] font-extrabold text-white shadow-[0_18px_44px_rgba(15,23,42,0.24)] transition-all hover:-translate-y-0.5 hover:bg-[#14233A] sm:h-[54px] sm:rounded-[16px] sm:px-7 sm:text-[15px]"
               >
                 Get Project Estimate
               </Link>
               <Link
                 href="/projects"
-                className="inline-flex h-[54px] items-center justify-center rounded-[16px] border border-[#CBD5E1] bg-white/65 px-7 text-[15px] font-extrabold text-[#0B1628] transition-all hover:-translate-y-0.5 hover:border-[#94A3B8] hover:bg-white"
+                className="inline-flex h-[50px] items-center justify-center rounded-[15px] border border-[#CBD5E1] bg-white/65 px-6 text-[14px] font-extrabold text-[#0B1628] transition-all hover:-translate-y-0.5 hover:border-[#94A3B8] hover:bg-white sm:h-[54px] sm:rounded-[16px] sm:px-7 sm:text-[15px]"
               >
                 Explore Larger Projects
               </Link>
               <Link
                 href="/communities"
-                className="inline-flex h-[54px] items-center justify-center rounded-[16px] border border-[#CBD5E1] bg-white/40 px-7 text-[15px] font-extrabold text-[#334155] transition-all hover:-translate-y-0.5 hover:border-[#94A3B8] hover:bg-white"
+                className="inline-flex h-[50px] items-center justify-center rounded-[15px] border border-[#CBD5E1] bg-white/40 px-6 text-[14px] font-extrabold text-[#334155] transition-all hover:-translate-y-0.5 hover:border-[#94A3B8] hover:bg-white sm:h-[54px] sm:rounded-[16px] sm:px-7 sm:text-[15px]"
               >
                 For Communities
               </Link>

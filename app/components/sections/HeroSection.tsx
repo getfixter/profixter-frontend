@@ -136,18 +136,18 @@ export default function HeroSection() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#07101F]/18 via-transparent to-[#07101F]/66" />
       </div>
 
-      <div className="relative mx-auto flex min-h-[calc(100svh-104px)] max-w-[1180px] items-center px-4 py-16 sm:px-6 sm:py-20 lg:min-h-[calc(100svh-116px)] lg:px-8">
+      <div className="relative mx-auto flex min-h-[calc(100svh-92px)] max-w-[1180px] items-center px-4 py-12 sm:min-h-[calc(100svh-104px)] sm:px-6 sm:py-20 lg:min-h-[calc(100svh-116px)] lg:px-8">
         <div className="w-full max-w-[680px] text-left">
-          <h1 className="max-w-[350px] text-[40px] font-black leading-[0.98] tracking-[-0.025em] text-white sm:max-w-[680px] sm:text-[60px] sm:leading-[0.98] sm:tracking-[-0.028em] lg:text-[66px]">
+          <h1 className="max-w-[350px] text-[34px] font-black leading-[1] tracking-[-0.02em] text-white sm:max-w-[680px] sm:text-[60px] sm:leading-[0.98] sm:tracking-[-0.028em] lg:text-[66px]">
             <span className="block">We Take Care</span>
             <span className="block">Of Your House</span>
           </h1>
 
-          <p className="mt-6 max-w-[350px] text-[17px] font-semibold leading-[1.55] text-white/76 sm:max-w-[590px] sm:text-[20px]">
+          <p className="mt-5 max-w-[350px] text-[15px] font-semibold leading-[1.5] text-white/76 sm:mt-6 sm:max-w-[590px] sm:text-[20px] sm:leading-[1.55]">
             From small repairs and installations to the projects you&apos;ve been putting off, Profixter helps Long Island homeowners keep their homes in great shape for one simple monthly price.
           </p>
 
-          <div className="mt-7 inline-flex max-w-[350px] items-center gap-3 rounded-full border border-white/12 bg-white/8 px-4 py-2.5 text-[13px] font-extrabold text-white/78 backdrop-blur-md sm:max-w-none">
+          <div className="mt-6 inline-flex max-w-[350px] items-center gap-2.5 rounded-full border border-white/12 bg-white/8 px-3.5 py-2 text-[12px] font-extrabold text-white/78 backdrop-blur-md sm:mt-7 sm:max-w-none sm:gap-3 sm:px-4 sm:py-2.5 sm:text-[13px]">
             <span>Book visit</span>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="text-[#86EFAC]" aria-hidden="true">
               <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -155,11 +155,11 @@ export default function HeroSection() {
             <span>We show up</span>
           </div>
 
-          <div className="mt-7 flex max-w-[350px] flex-col gap-3 sm:max-w-none sm:flex-row sm:flex-wrap">
+          <div className="mt-6 flex max-w-[350px] flex-col gap-2.5 sm:mt-7 sm:max-w-none sm:flex-row sm:flex-wrap sm:gap-3">
             {BENEFITS.map((benefit) => (
               <div
                 key={benefit}
-                className="flex items-center gap-2.5 text-[15px] font-extrabold text-white/86"
+                className="flex items-center gap-2.5 text-[14px] font-extrabold text-white/86 sm:text-[15px]"
               >
                 <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#86EFAC]/18 text-[#86EFAC]">
                   <svg width="11" height="9" viewBox="0 0 11 9" fill="none" aria-hidden="true">
@@ -171,11 +171,11 @@ export default function HeroSection() {
             ))}
           </div>
 
-          <div className="mt-9 flex max-w-[350px] flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:items-center">
+          <div className="mt-7 flex max-w-[350px] flex-col items-stretch gap-2.5 sm:mt-9 sm:max-w-none sm:flex-row sm:items-center sm:gap-3">
             <button
               type="button"
               onClick={ctaConfig.primaryAction}
-              className="inline-flex min-h-[58px] items-center justify-center rounded-[16px] bg-[#306EEC] px-8 text-[16px] font-extrabold text-white shadow-[0_16px_42px_rgba(48,110,236,0.32)] transition hover:bg-[#2558c9] active:scale-[0.99] sm:min-w-[190px]"
+              className="inline-flex min-h-[52px] items-center justify-center rounded-[15px] bg-[#306EEC] px-6 text-[15px] font-extrabold text-white shadow-[0_16px_42px_rgba(48,110,236,0.32)] transition hover:bg-[#2558c9] active:scale-[0.99] sm:min-h-[58px] sm:min-w-[190px] sm:rounded-[16px] sm:px-8 sm:text-[16px]"
             >
               {ctaConfig.primaryLabel}
             </button>
@@ -183,7 +183,7 @@ export default function HeroSection() {
             <button
               type="button"
               onClick={ctaConfig.secondaryAction}
-              className="inline-flex min-h-[58px] items-center justify-center rounded-[16px] border border-white/20 bg-white/10 px-8 text-[16px] font-extrabold text-white shadow-[0_14px_36px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:bg-white/16 active:scale-[0.99] sm:min-w-[190px]"
+              className="inline-flex min-h-[52px] items-center justify-center rounded-[15px] border border-white/20 bg-white/10 px-6 text-[15px] font-extrabold text-white shadow-[0_14px_36px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:bg-white/16 active:scale-[0.99] sm:min-h-[58px] sm:min-w-[190px] sm:rounded-[16px] sm:px-8 sm:text-[16px]"
             >
               {ctaConfig.secondaryLabel}
             </button>
@@ -209,7 +209,7 @@ export default function HeroSection() {
             </div>
           </div>
 
-          <div className="mt-8 flex max-w-[350px] flex-wrap items-center gap-x-4 gap-y-2 text-white/48 sm:max-w-none sm:gap-x-5">
+          <div className="mt-7 flex max-w-[350px] flex-wrap items-center gap-x-4 gap-y-2 text-white/48 sm:mt-8 sm:max-w-none sm:gap-x-5">
             {TRUST_ROW.map((item) => (
               <div key={item} className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#43A047]" />

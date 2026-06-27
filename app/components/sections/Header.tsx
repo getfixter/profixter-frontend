@@ -77,9 +77,9 @@ export default function Header() {
   };
 
   return (
-    <header className="relative z-50 w-full py-[12px]">
-      <div className="mx-3 rounded-[20px] border border-white/50 bg-white/82 shadow-[0_14px_48px_rgba(9,22,43,0.14)] backdrop-blur-xl sm:mx-5">
-        <div className="mx-auto flex max-w-[1240px] items-center justify-between px-[14px] py-[10px] sm:px-[18px]">
+    <header className="relative z-50 w-full py-[8px] sm:py-[12px]">
+      <div className="mx-2.5 rounded-[18px] border border-white/50 bg-white/82 shadow-[0_14px_48px_rgba(9,22,43,0.14)] backdrop-blur-xl sm:mx-5 sm:rounded-[20px]">
+        <div className="mx-auto flex max-w-[1240px] items-center justify-between px-[12px] py-[8px] sm:px-[18px] sm:py-[10px]">
           <Link href="/" className="relative z-50 flex items-center">
             <Image src="/images/logo.svg" alt="Profixter Long Island" width={80} height={32} priority className="brightness-0" />
           </Link>
@@ -144,7 +144,7 @@ export default function Header() {
 
           <button
             onClick={() => setIsMenuOpen((v) => !v)}
-            className="relative z-[70] flex h-10 w-10 flex-col items-center justify-center gap-1.5 lg:hidden"
+            className="relative z-[70] flex h-9 w-9 flex-col items-center justify-center gap-1.5 lg:hidden"
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={isMenuOpen}
           >
@@ -175,7 +175,7 @@ export default function Header() {
         <button
           onClick={() => setIsMenuOpen(false)}
           aria-label="Close menu"
-          className="absolute right-5 top-14 z-[80] flex h-10 w-10 items-center justify-center rounded-full border border-[#E6E8EF] bg-white/95 text-[#111827] shadow-[0_10px_30px_rgba(17,24,39,0.15)] transition hover:bg-[#F6F7FB]"
+          className="absolute right-4 top-11 z-[80] flex h-9 w-9 items-center justify-center rounded-full border border-[#E6E8EF] bg-white/95 text-[#111827] shadow-[0_10px_30px_rgba(17,24,39,0.15)] transition hover:bg-[#F6F7FB] sm:right-5 sm:top-14 sm:h-10 sm:w-10"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -189,35 +189,35 @@ export default function Header() {
         />
 
         <div className="relative z-[75]">
-          <nav className="flex min-h-[100svh] flex-col items-center justify-start gap-5 px-4 pb-10 pt-24" aria-label="Mobile navigation">
+          <nav className="flex min-h-[100svh] flex-col items-center justify-start gap-4 px-4 pb-8 pt-20 sm:gap-5 sm:pb-10 sm:pt-24" aria-label="Mobile navigation">
             <div className="w-full max-w-sm">
               <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
                 Profixter Long Island
               </div>
-              <h2 className="mt-3 text-3xl font-black leading-tight text-[#0B1628]">
+              <h2 className="mt-2 text-2xl font-black leading-tight text-[#0B1628] sm:mt-3 sm:text-3xl">
                 What do you need at home today?
               </h2>
             </div>
 
-            <div className="flex w-full max-w-sm flex-col gap-3 rounded-[24px] border border-[#E6E8EF] bg-white p-3 shadow-[0_16px_50px_rgba(17,24,39,0.08)]">
+            <div className="flex w-full max-w-sm flex-col gap-2.5 rounded-[22px] border border-[#E6E8EF] bg-white p-2.5 shadow-[0_16px_50px_rgba(17,24,39,0.08)] sm:gap-3 sm:rounded-[24px] sm:p-3">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsMenuOpen(false)}
-                  className="rounded-[18px] border border-[#EEF2F7] bg-[#F8FAFF] px-4 py-4 text-left text-[22px] font-black leading-none text-[#111827] transition hover:bg-[#EEF4FF] hover:text-[#306EEC]"
+                  className="rounded-[16px] border border-[#EEF2F7] bg-[#F8FAFF] px-4 py-3.5 text-left text-[18px] font-black leading-none text-[#111827] transition hover:bg-[#EEF4FF] hover:text-[#306EEC] sm:rounded-[18px] sm:py-4 sm:text-[22px]"
                 >
                   {item.label}
                 </Link>
               ))}
             </div>
 
-            <div className="flex w-full max-w-sm flex-col gap-4 rounded-[24px] border border-[#E6E8EF] bg-white p-4 shadow-[0_16px_50px_rgba(17,24,39,0.08)]">
+            <div className="flex w-full max-w-sm flex-col gap-3 rounded-[22px] border border-[#E6E8EF] bg-white p-3 shadow-[0_16px_50px_rgba(17,24,39,0.08)] sm:gap-4 sm:rounded-[24px] sm:p-4">
               {isAuthenticated ? (
                 <>
-                  <div className="mb-2 flex items-center justify-between gap-3 rounded-[20px] border border-[#E6E8EF] bg-[#F8FAFF] p-4">
+                  <div className="mb-1 flex items-center justify-between gap-3 rounded-[18px] border border-[#E6E8EF] bg-[#F8FAFF] p-3 sm:mb-2 sm:rounded-[20px] sm:p-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#C5CBD8]">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#C5CBD8] sm:h-14 sm:w-14">
                         <svg width="30" height="26" viewBox="0 0 31 28" fill="none" aria-hidden="true">
                           <path d="M15.5 14C18.5376 14 21 11.5376 21 8.5C21 5.46243 18.5376 3 15.5 3C12.4624 3 10 5.46243 10 8.5C10 11.5376 12.4624 14 15.5 14Z" fill="#EEF2FF" />
                           <path d="M15.5 16C9.70101 16 5 19.134 5 23C5 24.1046 5.89543 25 7 25H24C25.1046 25 26 24.1046 26 23C26 19.134 21.299 16 15.5 16Z" fill="#EEF2FF" />
@@ -232,13 +232,13 @@ export default function Header() {
                   <Link
                     href="/account"
                     onClick={() => setIsMenuOpen(false)}
-                    className="rounded-[16px] bg-[#0B1628] px-6 py-4 text-center text-base font-black text-white transition hover:bg-[#172033]"
+                    className="rounded-[16px] bg-[#0B1628] px-5 py-3.5 text-center text-[15px] font-black text-white transition hover:bg-[#172033] sm:px-6 sm:py-4 sm:text-base"
                   >
                     My Account
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="rounded-[16px] border border-red-100 bg-red-50 px-6 py-4 text-base font-black text-red-700 transition hover:bg-red-100"
+                    className="rounded-[16px] border border-red-100 bg-red-50 px-5 py-3.5 text-[15px] font-black text-red-700 transition hover:bg-red-100 sm:px-6 sm:py-4 sm:text-base"
                   >
                     Log out
                   </button>
@@ -247,7 +247,7 @@ export default function Header() {
                 <Link
                   href="/signin"
                   onClick={() => setIsMenuOpen(false)}
-                  className="w-full rounded-[16px] bg-[#0B1628] px-6 py-4 text-center text-base font-black text-white transition hover:bg-[#172033]"
+                  className="w-full rounded-[16px] bg-[#0B1628] px-5 py-3.5 text-center text-[15px] font-black text-white transition hover:bg-[#172033] sm:px-6 sm:py-4 sm:text-base"
                 >
                   Sign in or create account
                 </Link>

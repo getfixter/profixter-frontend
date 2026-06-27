@@ -638,13 +638,13 @@ export default function PlansSection() {
   );
 
   return (
-    <section id="plans" className="w-full scroll-mt-[140px] bg-[#F5F5F7] px-5 py-16 sm:py-20 lg:py-24">
+    <section id="plans" className="w-full scroll-mt-[140px] bg-[#F5F5F7] px-4 py-12 sm:px-5 sm:py-20 lg:py-24">
       <div className="mx-auto max-w-[1280px]">
-        <div className="mx-auto mb-10 max-w-[720px] text-center sm:mb-14">
-          <h2 className="text-4xl font-semibold tracking-normal text-[#111111] sm:text-5xl">
+        <div className="mx-auto mb-8 max-w-[720px] text-center sm:mb-14">
+          <h2 className="text-[32px] font-semibold tracking-normal text-[#111111] sm:text-5xl">
             Choose Your Plan
           </h2>
-          <p className="mt-4 text-base leading-7 text-[#6E6E73] sm:text-lg">
+          <p className="mt-3 text-[15px] leading-6 text-[#6E6E73] sm:mt-4 sm:text-lg sm:leading-7">
             Start with the plan that fits your home today. Upgrade or downgrade anytime.
           </p>
           {promoCode ? (
@@ -684,11 +684,11 @@ export default function PlansSection() {
           </div>
         )}
 
-        <div className="mx-auto mb-8 max-w-[720px] text-center">
-          <h3 className="text-xl font-semibold tracking-normal text-[#111111] sm:text-2xl">
+        <div className="mx-auto mb-6 max-w-[720px] text-center sm:mb-8">
+          <h3 className="text-[18px] font-semibold tracking-normal text-[#111111] sm:text-2xl">
             No monthly visit cap
           </h3>
-          <p className="mt-2 text-sm leading-6 text-[#6E6E73] sm:text-base">
+          <p className="mt-2 text-[13px] leading-5 text-[#6E6E73] sm:text-base sm:leading-6">
             Request visits as needed. Your plan determines active appointment capacity, scheduling benefits, and included support.
           </p>
         </div>
@@ -696,7 +696,7 @@ export default function PlansSection() {
         <div className="lg:hidden">
           <div
             ref={mobileTrackRef}
-            className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-4 snap-x snap-mandatory touch-pan-x"
+            className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 touch-pan-x sm:gap-4 sm:pb-4"
           >
             {mobilePlans.map((plan, index) => {
               const action = getActionForPlan(plan.name);
@@ -712,7 +712,7 @@ export default function PlansSection() {
                     mobileCardRefs.current[index] = el as HTMLDivElement | null;
                   }}
                   className={[
-                    "snap-center flex min-w-[82%] flex-shrink-0 flex-col rounded-[28px] border bg-white p-6 shadow-[0_20px_70px_rgba(15,23,42,0.07)] transition duration-300 sm:min-w-[75%] sm:p-7",
+                    "flex min-w-[80%] flex-shrink-0 snap-center flex-col rounded-[24px] border bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.07)] transition duration-300 sm:min-w-[75%] sm:rounded-[28px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.07)]",
                     isPopular
                       ? "border-[#111111] ring-2 ring-[#111111]"
                       : "border-[#E5E7EB]",
@@ -725,28 +725,28 @@ export default function PlansSection() {
                   ) : null}
 
                   <div className="pr-24">
-                    <h3 className="text-2xl font-semibold tracking-normal text-[#111111]">
+                    <h3 className="text-[22px] font-semibold tracking-normal text-[#111111] sm:text-2xl">
                       {plan.name}
                     </h3>
                   </div>
 
-                  <div className="mt-8">
+                  <div className="mt-6 sm:mt-8">
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-semibold leading-none tracking-normal text-[#111111]">
+                      <span className="text-[42px] font-semibold leading-none tracking-normal text-[#111111] sm:text-5xl">
                         ${formatMoney(displayPrice)}
                       </span>
                       <span className="pb-1 text-sm font-medium text-[#6E6E73]">
                         /{billing === "annual" ? "year" : "mo"}
                       </span>
                     </div>
-                    <p className="mt-5 min-h-[52px] text-[15px] leading-6 text-[#6E6E73]">
+                    <p className="mt-4 min-h-[46px] text-[14px] leading-5 text-[#6E6E73] sm:mt-5 sm:min-h-[52px] sm:text-[15px] sm:leading-6">
                       {content.description}
                     </p>
                   </div>
 
-                  <ul className="mt-7 space-y-4">
+                  <ul className="mt-6 space-y-3 sm:mt-7 sm:space-y-4">
                     {content.features.map((feature) => (
-                      <li key={feature} className="flex gap-3 text-[15px] leading-6 text-[#1D1D1F]">
+                      <li key={feature} className="flex gap-2.5 text-[14px] leading-5 text-[#1D1D1F] sm:gap-3 sm:text-[15px] sm:leading-6">
                         <span className="mt-[1px] flex-none text-sm font-semibold text-[#111111]">
                           ✓
                         </span>
