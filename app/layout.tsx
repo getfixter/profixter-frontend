@@ -19,11 +19,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   applicationName: SITE_NAME,
   title: {
-    default: "Profixter | Long Island Home Maintenance Membership & Handyman",
+    default: "Long Island Handyman | $99 Visits & Home Maintenance Membership",
     template: "%s | Profixter",
   },
   description:
-    "Profixter helps Long Island homeowners with monthly home maintenance Membership, $99 One-Time Handyman Visits, and renovation or construction estimates.",
+    "Monthly home maintenance Membership, $99 One-Time Handyman Visits, and renovation help for Long Island homeowners.",
   alternates: {
     canonical: "/",
   },
@@ -37,9 +37,9 @@ export const metadata: Metadata = {
     "home project estimates",
   ],
   openGraph: {
-    title: "Profixter | Long Island Home Maintenance Membership & Handyman",
+    title: "Long Island Handyman | $99 Visits & Home Maintenance Membership",
     description:
-      "Become a Member for ongoing home care, book a $99 handyman visit, or request a renovation estimate from one Long Island home platform.",
+      "Monthly home maintenance Membership, $99 One-Time Handyman Visits, and renovation help for Long Island homeowners.",
     url: SITE_URL,
     siteName: SITE_NAME,
     type: "website",
@@ -48,9 +48,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Profixter | Long Island Home Maintenance Membership & Handyman",
+    title: "Long Island Handyman | $99 Visits & Home Maintenance Membership",
     description:
-      "Monthly home maintenance Membership, $99 handyman visits, and renovation estimates for Long Island homeowners.",
+      "Monthly home maintenance Membership, $99 One-Time Handyman Visits, and renovation help for Long Island homeowners.",
     images: [DEFAULT_OG_IMAGE.url],
   },
   robots: {
@@ -58,9 +58,18 @@ export const metadata: Metadata = {
     follow: true,
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+      { url: "/manifest-icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/manifest-icon-512.png", type: "image/png", sizes: "512x512" },
+    ],
     shortcut: "/favicon.ico",
+    apple: [
+      { url: "/apple-icon.png", type: "image/png", sizes: "180x180" },
+    ],
   },
+  manifest: "/manifest.webmanifest",
   category: "home services",
   creator: SITE_NAME,
   publisher: SITE_NAME,

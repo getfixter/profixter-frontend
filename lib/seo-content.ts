@@ -84,9 +84,9 @@ export const handymanServices: SeoPageContent[] = [
     slug: "tv-mounting",
     title: "TV Mounting",
     shortTitle: "TV Mounting",
-    metaTitle: "TV Mounting Long Island | Profixter",
+    metaTitle: "TV Mounting on Long Island | Profixter $99 Visit",
     metaDescription:
-      "TV mounting help for Long Island homeowners. Book a $99 One-Time Visit or become a Profixter Member for ongoing home maintenance support.",
+      "Need a TV mounted cleanly? Book a $99 Profixter visit for approved small tasks or become a Member for ongoing home help.",
     h1: "TV mounting help for Long Island homeowners.",
     intro:
       "Get practical help mounting a TV, placing it cleanly, and making sure the job fits the wall, room, and visit scope.",
@@ -134,9 +134,9 @@ export const handymanServices: SeoPageContent[] = [
     slug: "drywall-repair",
     title: "Drywall Repair",
     shortTitle: "Drywall Repair",
-    metaTitle: "Drywall Repair Long Island | Small Wall Patches | Profixter",
+    metaTitle: "Small Drywall Repair on Long Island | Profixter",
     metaDescription:
-      "Small drywall repair and wall patch help for Long Island homeowners. Book a handyman visit or become a Profixter Member for ongoing maintenance.",
+      "Fix the small wall damage you keep noticing. Profixter helps Long Island homeowners with drywall patches that fit a focused visit.",
     h1: "Small drywall repair before it gets ignored again.",
     intro:
       "Profixter helps with small wall patches and everyday drywall damage that fits a focused handyman visit.",
@@ -186,9 +186,9 @@ export const handymanServices: SeoPageContent[] = [
     slug: "door-repair",
     title: "Door Repair",
     shortTitle: "Door Repair",
-    metaTitle: "Door Repair Long Island | Profixter Handyman Help",
+    metaTitle: "Door Repair on Long Island | Profixter Handyman",
     metaDescription:
-      "Door repair help for Long Island homeowners, including small adjustments and common handyman tasks. Book once or become a Member.",
+      "Sticking, loose, or misaligned door? Book a focused handyman visit or become a Member for ongoing Long Island home maintenance.",
     h1: "Door repair for the small things that make a home feel off.",
     intro:
       "A sticking, loose, or misaligned door can be a daily annoyance. Profixter helps with practical door fixes that fit a small handyman visit.",
@@ -238,9 +238,9 @@ export const handymanServices: SeoPageContent[] = [
     slug: "light-fixture-installation",
     title: "Light Fixture Installation",
     shortTitle: "Light Fixtures",
-    metaTitle: "Light Fixture Installation Long Island | Profixter",
+    metaTitle: "Light Fixture Replacement on Long Island | Profixter",
     metaDescription:
-      "Light fixture replacement help for Long Island homeowners. For safe, simple fixture swaps within handyman scope.",
+      "Bought a new light fixture? Profixter helps with simple fixture replacements when existing wiring and scope are suitable.",
     h1: "Light fixture replacement, handled carefully.",
     intro:
       "Profixter can help with simple light fixture replacement when the existing wiring and box are suitable for the new fixture.",
@@ -290,9 +290,9 @@ export const handymanServices: SeoPageContent[] = [
     slug: "furniture-assembly",
     title: "Furniture Assembly",
     shortTitle: "Furniture Assembly",
-    metaTitle: "Furniture Assembly Long Island | Profixter",
+    metaTitle: "Furniture Assembly on Long Island | Profixter",
     metaDescription:
-      "Small furniture assembly help for Long Island homeowners. Book a One-Time Visit or become a Profixter Member for ongoing home support.",
+      "Get small furniture assembled without losing the afternoon. Book a Profixter visit or become a Member for ongoing home help.",
     h1: "Furniture assembly without losing the afternoon.",
     intro:
       "Profixter helps with small furniture assembly tasks that fit within a focused handyman visit.",
@@ -342,9 +342,9 @@ export const handymanServices: SeoPageContent[] = [
     slug: "caulking",
     title: "Caulking and Sealing",
     shortTitle: "Caulking",
-    metaTitle: "Caulking and Sealing Long Island | Profixter",
+    metaTitle: "Caulking & Sealing Help on Long Island | Profixter",
     metaDescription:
-      "Caulking and sealing help for Long Island homeowners. Keep small gaps and worn seals from becoming bigger home maintenance problems.",
+      "Refresh worn caulk around tubs, sinks, trim, and small gaps before they become bigger home maintenance problems.",
     h1: "Caulking and sealing for the gaps homeowners keep noticing.",
     intro:
       "Worn caulk and small gaps can make a home feel unfinished. Profixter helps with focused caulking and sealing tasks that fit visit scope.",
@@ -398,9 +398,9 @@ export const renovationServices: SeoPageContent[] = [
     slug: "bathroom-remodeling",
     title: "Bathroom Remodeling",
     shortTitle: "Bathroom Remodeling",
-    metaTitle: "Bathroom Remodeling Long Island | Profixter",
+    metaTitle: "Bathroom Remodeling Long Island | Plan with Profixter",
     metaDescription:
-      "Bathroom remodeling estimates for Long Island homeowners. Plan tile, fixtures, waterproofing, layout, and project coordination with Profixter.",
+      "Plan tile, fixtures, waterproofing, layout, and scope before the mess starts. Request a clear bathroom remodeling estimate.",
     h1: "Bathroom remodeling planned before the mess starts.",
     intro:
       "Bathrooms are small rooms with a lot of moving parts. Profixter helps homeowners think through scope, finishes, waterproofing, schedule, and estimate next steps.",
@@ -448,9 +448,9 @@ export const renovationServices: SeoPageContent[] = [
     slug: "kitchen-remodeling",
     title: "Kitchen Remodeling",
     shortTitle: "Kitchen Remodeling",
-    metaTitle: "Kitchen Remodeling Long Island | Profixter",
+    metaTitle: "Kitchen Remodeling Long Island | Plan with Profixter",
     metaDescription:
-      "Kitchen remodeling estimates for Long Island homeowners. Plan layout, cabinets, counters, backsplash, lighting, and project coordination.",
+      "Turn kitchen ideas into a clearer project path for layout, cabinets, counters, backsplash, lighting, and coordination.",
     h1: "Kitchen remodeling with the scope organized first.",
     intro:
       "A kitchen project works better when layout, cabinets, counters, backsplash, lighting, and trade coordination are understood before demolition.",
@@ -498,9 +498,9 @@ export const renovationServices: SeoPageContent[] = [
     slug: "roofing",
     title: "Roofing",
     shortTitle: "Roofing",
-    metaTitle: "Roofing Long Island | Roof Replacement Estimates | Profixter",
+    metaTitle: "Roofing Long Island | Estimates from Profixter",
     metaDescription:
-      "Roofing estimates for Long Island homeowners. Standard roof replacements are usually completed in 1 day and may include a 5-year labor warranty.",
+      "Need a new roof or comparing quotes? Profixter helps Long Island homeowners plan roofing scope, cleanup, and estimate next steps.",
     h1: "Roofing estimates for Long Island homes.",
     intro:
       "Profixter helps homeowners plan larger roofing work with clear scope, cleanup expectations, and project coordination.",
@@ -548,9 +548,9 @@ export const renovationServices: SeoPageContent[] = [
     slug: "siding",
     title: "Siding",
     shortTitle: "Siding",
-    metaTitle: "Siding Long Island | Siding Replacement Estimates | Profixter",
+    metaTitle: "Siding Long Island | Custom Estimates from Profixter",
     metaDescription:
-      "Siding replacement estimates for Long Island homeowners. Explore custom exterior looks, trim details, color choices, and project coordination.",
+      "Explore siding replacement with custom exterior options, trim details, colors, and a clear estimate path for your home.",
     h1: "Siding that protects the home and changes how it feels.",
     intro:
       "New siding should protect the home and improve curb appeal. Profixter helps homeowners compare options, details, colors, and project scope.",
@@ -598,9 +598,9 @@ export const renovationServices: SeoPageContent[] = [
     slug: "full-home-renovation",
     title: "Full Home Renovation",
     shortTitle: "Full Home Renovation",
-    metaTitle: "Full Home Renovation Long Island | Profixter",
+    metaTitle: "Full Home Renovation Long Island | Profixter Project Path",
     metaDescription:
-      "Full home renovation estimates for Long Island homeowners. Plan multi-room work, sequencing, finishes, and project coordination.",
+      "Renovating more than one room? Organize scope, sequencing, finishes, and project coordination before work begins.",
     h1: "Full home renovation, organized before it begins.",
     intro:
       "Whole-home work needs sequencing, priorities, trades, and decisions organized early. Profixter helps turn a large idea into a clearer project path.",
@@ -648,9 +648,9 @@ export const renovationServices: SeoPageContent[] = [
     slug: "new-home-construction",
     title: "New Home Construction",
     shortTitle: "New Home Construction",
-    metaTitle: "New Home Construction Long Island | Profixter",
+    metaTitle: "New Home Construction Long Island | Profixter GC Path",
     metaDescription:
-      "New home construction conversations for Long Island homeowners. Planning, coordination, and construction management through a General Contractor path.",
+      "Start a serious new construction conversation with planning, coordination, trades, schedule, and construction management in mind.",
     h1: "New home construction with a General Contractor path.",
     intro:
       "Building a new home requires planning, coordination, trades, schedule, and construction management. Profixter can start that conversation through the renovation estimate path.",
@@ -701,9 +701,9 @@ export const serviceAreas: ServiceAreaContent[] = [
     slug: "babylon",
     name: "Babylon",
     county: "Suffolk County",
-    metaTitle: "Handyman and Home Maintenance in Babylon, NY | Profixter",
+    metaTitle: "Profixter in Babylon, NY | Home Maintenance & Handyman Help",
     metaDescription:
-      "Profixter helps Babylon homeowners with Membership, One-Time Handyman Visits, and renovation estimate paths.",
+      "Babylon homeowners can start with Membership, a $99 handyman visit, Profixter AI, or a renovation estimate from one local platform.",
     h1: "Home maintenance and handyman help in Babylon.",
     intro:
       "For Babylon homeowners, Profixter gives one organized place to start: ongoing Membership, a $99 One-Time Visit, or a renovation estimate.",
@@ -719,9 +719,9 @@ export const serviceAreas: ServiceAreaContent[] = [
     slug: "lindenhurst",
     name: "Lindenhurst",
     county: "Suffolk County",
-    metaTitle: "Handyman and Home Maintenance in Lindenhurst, NY | Profixter",
+    metaTitle: "Lindenhurst Home Maintenance Made Easier | Profixter",
     metaDescription:
-      "Home maintenance Membership, One-Time Handyman Visits, and renovation estimates for Lindenhurst homeowners.",
+      "For Lindenhurst homeowners: ongoing Membership, $99 handyman visits, Profixter AI, and renovation estimate paths in one place.",
     h1: "A simpler way to get home help in Lindenhurst.",
     intro:
       "Profixter helps Lindenhurst homeowners handle small repairs, ongoing maintenance, and larger project conversations through one clear platform.",
@@ -737,9 +737,9 @@ export const serviceAreas: ServiceAreaContent[] = [
     slug: "west-babylon",
     name: "West Babylon",
     county: "Suffolk County",
-    metaTitle: "Handyman and Home Maintenance in West Babylon, NY | Profixter",
+    metaTitle: "West Babylon Handyman & Home Maintenance | Profixter",
     metaDescription:
-      "Profixter serves West Babylon homeowners with ongoing Membership, handyman visits, and renovation estimate support.",
+      "West Babylon homeowners can choose ongoing Membership, a focused $99 visit, or a renovation estimate without chasing contractors.",
     h1: "Home maintenance help for West Babylon homeowners.",
     intro:
       "Whether the home list is one small task or ongoing maintenance, Profixter gives West Babylon homeowners a clearer way to get help.",
@@ -755,9 +755,9 @@ export const serviceAreas: ServiceAreaContent[] = [
     slug: "west-islip",
     name: "West Islip",
     county: "Suffolk County",
-    metaTitle: "Handyman and Home Maintenance in West Islip, NY | Profixter",
+    metaTitle: "West Islip Home Help | Profixter Home Platform",
     metaDescription:
-      "West Islip homeowners can use Profixter for Membership, One-Time Handyman Visits, and renovation estimate requests.",
+      "A modern home platform for West Islip: ask Profixter AI, become a Member, book a handyman, or request a renovation estimate.",
     h1: "A modern home help platform for West Islip.",
     intro:
       "Profixter helps West Islip homeowners choose between ongoing home care, a focused handyman visit, or a larger renovation estimate.",
@@ -773,9 +773,9 @@ export const serviceAreas: ServiceAreaContent[] = [
     slug: "bay-shore",
     name: "Bay Shore",
     county: "Suffolk County",
-    metaTitle: "Handyman and Home Maintenance in Bay Shore, NY | Profixter",
+    metaTitle: "Bay Shore Handyman & Home Maintenance Help | Profixter",
     metaDescription:
-      "Bay Shore homeowners can start with Profixter Membership, a One-Time Handyman Visit, or a renovation estimate.",
+      "Bay Shore homeowners can get clearer next steps for small fixes, ongoing maintenance, AI home questions, and larger projects.",
     h1: "Handyman and home maintenance help in Bay Shore.",
     intro:
       "From small household tasks to larger project planning, Profixter gives Bay Shore homeowners clear next steps.",
@@ -791,9 +791,9 @@ export const serviceAreas: ServiceAreaContent[] = [
     slug: "islip",
     name: "Islip",
     county: "Suffolk County",
-    metaTitle: "Handyman and Home Maintenance in Islip, NY | Profixter",
+    metaTitle: "Islip Home Maintenance & Handyman Visits | Profixter",
     metaDescription:
-      "Profixter helps Islip homeowners with ongoing home maintenance, small handyman visits, and renovation estimates.",
+      "Islip homeowners can use Profixter for ongoing Membership, approved $99 handyman visits, and larger renovation estimates.",
     h1: "Home maintenance and project help for Islip homeowners.",
     intro:
       "Islip homeowners can use Profixter for ongoing Membership, a one-time handyman task, or a bigger renovation conversation.",
@@ -809,9 +809,9 @@ export const serviceAreas: ServiceAreaContent[] = [
     slug: "copiague",
     name: "Copiague",
     county: "Suffolk County",
-    metaTitle: "Handyman and Home Maintenance in Copiague, NY | Profixter",
+    metaTitle: "Copiague Home Help Without Contractor Chasing | Profixter",
     metaDescription:
-      "Home maintenance Membership, One-Time Handyman Visits, and renovation estimate paths for Copiague homeowners.",
+      "Copiague homeowners can stop guessing where to start: Membership, Book Handyman, Profixter AI, or Renovation Estimate.",
     h1: "A clearer home service path for Copiague.",
     intro:
       "Profixter helps Copiague homeowners stop guessing where to start with the house list.",
@@ -827,9 +827,9 @@ export const serviceAreas: ServiceAreaContent[] = [
     slug: "amityville",
     name: "Amityville",
     county: "Suffolk County",
-    metaTitle: "Handyman and Home Maintenance in Amityville, NY | Profixter",
+    metaTitle: "Amityville Home Maintenance & Handyman Help | Profixter",
     metaDescription:
-      "Amityville homeowners can use Profixter for Membership, One-Time Handyman Visits, and renovation estimates.",
+      "Amityville homeowners can start with ongoing Membership, a $99 handyman visit, Profixter AI, or a renovation estimate.",
     h1: "Home maintenance help for Amityville homeowners.",
     intro:
       "Profixter gives Amityville homeowners one modern place to start for small fixes, ongoing maintenance, and larger project estimates.",

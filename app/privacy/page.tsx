@@ -1,4 +1,33 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: "Privacy Policy | Profixter",
+  },
+  description:
+    "Read how Profixter handles customer information, communication consent, SMS data, and privacy for our home services platform.",
+  alternates: {
+    canonical: "/privacy",
+  },
+  openGraph: {
+    title: "Privacy Policy | Profixter",
+    description:
+      "How Profixter handles customer information, privacy, SMS consent, and communication data.",
+    url: absoluteUrl("/privacy"),
+    siteName: "Profixter",
+    type: "website",
+    images: [DEFAULT_OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Privacy Policy | Profixter",
+    description:
+      "How Profixter handles customer information, privacy, SMS consent, and communication data.",
+    images: [DEFAULT_OG_IMAGE.url],
+  },
+};
 
 export default function PrivacyPage() {
   return (

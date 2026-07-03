@@ -9,16 +9,18 @@ const kitchenImage = {
 };
 
 export const metadata: Metadata = {
-  title: "Kitchen Remodeling Long Island | Profixter",
+  title: {
+    absolute: "Kitchen Remodeling on Long Island | Profixter",
+  },
   description:
-    "Complete kitchen remodeling for Long Island homeowners, including layout planning, cabinetry, counters, backsplash, lighting, and project coordination.",
+    "Plan a Long Island kitchen remodel with a clear estimate path for layout, cabinets, counters, backsplash, lighting, and coordination.",
   alternates: {
     canonical: "/renovations/kitchen-remodeling",
   },
   openGraph: {
-    title: "Kitchen Remodeling Long Island | Profixter",
+    title: "Kitchen Remodeling on Long Island | Profixter",
     description:
-      "Complete kitchen renovation planning and project coordination for Long Island homeowners.",
+      "Plan layout, cabinets, counters, backsplash, lighting, and project coordination before demolition starts.",
     url: absoluteUrl("/renovations/kitchen-remodeling"),
     siteName: "Profixter",
     type: "website",
@@ -26,9 +28,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kitchen Remodeling Long Island | Profixter",
+    title: "Kitchen Remodeling on Long Island | Profixter",
     description:
-      "Complete kitchen renovation planning and project coordination for Long Island homeowners.",
+      "Plan layout, cabinets, counters, backsplash, lighting, and project coordination.",
     images: [kitchenImage.url],
   },
 };

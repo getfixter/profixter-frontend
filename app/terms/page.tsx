@@ -1,5 +1,34 @@
 // app/terms/page.tsx
+import type { Metadata } from "next";
 import Link from "next/link";
+import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: "Terms of Service | Profixter",
+  },
+  description:
+    "Review Profixter's terms for Membership, booking visits, home services, communications, payments, and customer responsibilities.",
+  alternates: {
+    canonical: "/terms",
+  },
+  openGraph: {
+    title: "Terms of Service | Profixter",
+    description:
+      "The terms that apply when using Profixter Membership, handyman visits, home services, and communications.",
+    url: absoluteUrl("/terms"),
+    siteName: "Profixter",
+    type: "website",
+    images: [DEFAULT_OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Terms of Service | Profixter",
+    description:
+      "Review Profixter's terms for Membership, booking visits, communications, payments, and customer responsibilities.",
+    images: [DEFAULT_OG_IMAGE.url],
+  },
+};
 
 export default function TermsPage() {
   return (
