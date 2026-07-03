@@ -1,4 +1,33 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: "SMS & Communication Consent | Profixter",
+  },
+  description:
+    "Learn how Profixter may contact customers by phone, text, email, and automated systems for home service updates and account communication.",
+  alternates: {
+    canonical: "/communication-consent",
+  },
+  openGraph: {
+    title: "SMS & Communication Consent | Profixter",
+    description:
+      "How Profixter contacts customers by phone, text, email, and automated systems for service communication.",
+    url: absoluteUrl("/communication-consent"),
+    siteName: "Profixter",
+    type: "website",
+    images: [DEFAULT_OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SMS & Communication Consent | Profixter",
+    description:
+      "How Profixter contacts customers by phone, text, email, and automated systems for service communication.",
+    images: [DEFAULT_OG_IMAGE.url],
+  },
+};
 
 export default function CommunicationConsentPage() {
   return (

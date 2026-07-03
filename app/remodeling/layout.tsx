@@ -9,16 +9,18 @@ const bathroomImage = {
 };
 
 export const metadata: Metadata = {
-  title: "Bathroom Remodeling Long Island | Profixter",
+  title: {
+    absolute: "Bathroom Remodeling on Long Island | Profixter",
+  },
   description:
-    "Complete bathroom remodeling for Long Island homeowners, including tile, shower, vanity, fixtures, waterproofing details, and project coordination.",
+    "Plan a Long Island bathroom remodel with a clear estimate path for tile, shower, vanity, fixtures, waterproofing, and project coordination.",
   alternates: {
     canonical: "/renovations/bathroom-remodeling",
   },
   openGraph: {
-    title: "Bathroom Remodeling Long Island | Profixter",
+    title: "Bathroom Remodeling on Long Island | Profixter",
     description:
-      "Complete bathroom renovation planning and project coordination for Long Island homeowners.",
+      "Plan tile, shower, vanity, fixtures, waterproofing, and project coordination before the work starts.",
     url: absoluteUrl("/renovations/bathroom-remodeling"),
     siteName: "Profixter",
     type: "website",
@@ -26,9 +28,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Bathroom Remodeling Long Island | Profixter",
+    title: "Bathroom Remodeling on Long Island | Profixter",
     description:
-      "Complete bathroom renovation planning and project coordination for Long Island homeowners.",
+      "Plan tile, shower, vanity, fixtures, waterproofing, and project coordination.",
     images: [bathroomImage.url],
   },
 };

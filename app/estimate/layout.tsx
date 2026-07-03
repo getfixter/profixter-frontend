@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Larger Project Estimate | Long Island | Profixter",
+  title: {
+    absolute: "Request a Renovation Estimate on Long Island | Profixter",
+  },
   description:
-    "Request an estimate for roofing, siding, bathroom remodeling, kitchen remodeling, full house renovation, build new house projects, and other larger work on Long Island.",
+    "Tell Profixter about your roofing, siding, kitchen, bathroom, full-home renovation, or new construction project and get the right next step.",
   alternates: {
     canonical: "/projects",
   },
   openGraph: {
-    title: "Larger Project Estimate | Profixter Long Island",
+    title: "Request a Renovation Estimate on Long Island | Profixter",
     description:
       "Tell us what you are planning. Profixter reviews roofing, siding, kitchen, bathroom, full renovation, and new house projects across Nassau and Suffolk Counties.",
     url: absoluteUrl("/projects"),
@@ -19,9 +21,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Larger Project Estimate | Profixter Long Island",
+    title: "Request a Renovation Estimate on Long Island | Profixter",
     description:
-      "Request an estimate for roofing, siding, kitchen, bathroom, full renovation, and new house projects across Nassau and Suffolk Counties.",
+      "Tell Profixter about your larger home project and get the right next step.",
     images: [DEFAULT_OG_IMAGE.url],
   },
 };

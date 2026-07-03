@@ -9,16 +9,18 @@ import { renovationServices } from "@/lib/seo-content";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Renovations and Construction Long Island",
+  title: {
+    absolute: "Home Renovations on Long Island | Profixter",
+  },
   description:
-    "Explore Profixter renovation and construction services for Long Island homeowners, including bathroom remodeling, kitchen remodeling, roofing, siding, full-home renovation, and new home construction.",
+    "Roofing, siding, kitchens, bathrooms, full-home renovations, and new construction. Compare project paths and request a renovation estimate.",
   alternates: {
     canonical: "/renovations",
   },
   openGraph: {
-    title: "Renovations and Construction Long Island | Profixter",
+    title: "Home Renovations on Long Island | Profixter",
     description:
-      "Bathrooms, kitchens, roofing, siding, full-home renovation, and new home construction estimate paths for Long Island homeowners.",
+      "Compare Long Island renovation paths for bathrooms, kitchens, roofing, siding, full-home renovation, and new construction.",
     url: absoluteUrl("/renovations"),
     siteName: SITE_NAME,
     type: "website",
@@ -26,9 +28,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Renovations and Construction Long Island | Profixter",
+    title: "Home Renovations on Long Island | Profixter",
     description:
-      "Explore larger home project estimate paths for Long Island homeowners.",
+      "Compare larger home project paths and request a renovation estimate from Profixter.",
     images: [DEFAULT_OG_IMAGE.url],
   },
 };

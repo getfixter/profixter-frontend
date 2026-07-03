@@ -23,7 +23,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!area) return {};
 
   return {
-    title: area.metaTitle,
+    title: {
+      absolute: area.metaTitle,
+    },
     description: area.metaDescription,
     alternates: {
       canonical: `/locations/${area.slug}`,

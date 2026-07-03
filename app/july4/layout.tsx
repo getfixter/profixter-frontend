@@ -2,16 +2,18 @@ import type { Metadata } from "next";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "One Less Thing to Worry About | Profixter Basic",
+  title: {
+    absolute: "Long Island Home Maintenance Offer | Profixter Basic",
+  },
   description:
-    "Reliable local handyman help for Babylon-area homeowners. Try Profixter Basic free for your first month with JULY4, then $149/month. Cancel anytime.",
+    "A simpler way to handle the home to-do list. Join Profixter Basic for ongoing maintenance support from a local Long Island team.",
   alternates: {
     canonical: "/july4",
   },
   openGraph: {
-    title: "One Trusted Solution for Your Home To-Do List",
+    title: "Long Island Home Maintenance Offer | Profixter Basic",
     description:
-      "Stop chasing contractors for every small job. Try Profixter Basic free for your first month with JULY4.",
+      "Profixter Basic gives Long Island homeowners a simpler way to keep up with small home maintenance tasks.",
     url: absoluteUrl("/july4"),
     siteName: "Profixter",
     type: "website",
@@ -19,9 +21,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "One Trusted Solution for Your Home To-Do List",
+    title: "Long Island Home Maintenance Offer | Profixter Basic",
     description:
-      "Stop chasing contractors for every small job. Try Profixter Basic free for your first month with JULY4.",
+      "Join Profixter Basic for recurring home maintenance support from a local Long Island team.",
     images: [DEFAULT_OG_IMAGE.url],
   },
 };

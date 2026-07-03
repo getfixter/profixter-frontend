@@ -7,16 +7,18 @@ import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 import { CORE_PRODUCTS, HOME_SUPPORT_AI } from "@/lib/site-architecture";
 
 export const metadata: Metadata = {
-  title: "About Us | Long Island Home Support Company",
+  title: {
+    absolute: "About Profixter | Long Island's Modern Home Platform",
+  },
   description:
-    "Learn about Profixter, a Long Island home service platform helping homeowners with Profixter AI, one-time handyman visits, Membership, and renovation estimates.",
+    "Meet the local team behind Profixter: Membership, $99 handyman visits, Profixter AI, and renovation estimates for Long Island homeowners.",
   alternates: {
     canonical: "/about",
   },
   openGraph: {
-    title: "About Profixter | Long Island Home Support Company",
+    title: "About Profixter | Long Island's Modern Home Platform",
     description:
-      "Profixter helps Long Island homeowners get clearer home help through AI, one-time handyman visits, Membership, and larger project estimates.",
+      "Learn why Profixter was built to make home ownership simpler with Membership, $99 visits, AI guidance, and renovation estimates.",
     url: absoluteUrl("/about"),
     siteName: "Profixter",
     type: "website",
@@ -24,9 +26,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "About Profixter | Long Island Home Support Company",
+    title: "About Profixter | Long Island's Modern Home Platform",
     description:
-      "A local Long Island platform for home answers, handyman visits, Membership, and renovation estimates.",
+      "Meet the local team behind Profixter AI, Book Handyman, Membership, and Renovation.",
     images: [DEFAULT_OG_IMAGE.url],
   },
 };

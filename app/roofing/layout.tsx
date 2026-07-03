@@ -9,16 +9,18 @@ const roofingImage = {
 };
 
 export const metadata: Metadata = {
-  title: "Roof Replacement Long Island | Profixter",
+  title: {
+    absolute: "Roof Replacement on Long Island | Profixter",
+  },
   description:
-    "Roof replacement planning for Long Island homeowners with clear estimate support, project coordination, and service across Nassau and Suffolk County.",
+    "Need a new roof? Profixter helps Long Island homeowners plan roof replacement with clear scope, cleanup expectations, and estimate support.",
   alternates: {
     canonical: "/renovations/roofing",
   },
   openGraph: {
-    title: "Roof Replacement Long Island | Profixter",
+    title: "Roof Replacement on Long Island | Profixter",
     description:
-      "Premium roof replacement for Long Island homeowners with local licensed project support.",
+      "Plan roof replacement with clear scope, cleanup expectations, and estimate support from Profixter.",
     url: absoluteUrl("/renovations/roofing"),
     siteName: "Profixter",
     type: "website",
@@ -26,9 +28,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Roof Replacement Long Island | Profixter",
+    title: "Roof Replacement on Long Island | Profixter",
     description:
-      "Premium roof replacement for Long Island homeowners with local licensed project support.",
+      "Plan roof replacement with clear scope, cleanup expectations, and estimate support from Profixter.",
     images: [roofingImage.url],
   },
 };

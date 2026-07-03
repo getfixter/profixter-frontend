@@ -1,4 +1,33 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: "Careers at Profixter | Build the Future of Home Services",
+  },
+  description:
+    "Join a fast-growing Long Island home platform building modern Membership, handyman, AI, and renovation experiences for homeowners.",
+  alternates: {
+    canonical: "/careers",
+  },
+  openGraph: {
+    title: "Careers at Profixter | Build the Future of Home Services",
+    description:
+      "Explore careers with Profixter, a Long Island home platform changing how homeowners get maintenance, handyman, AI, and renovation help.",
+    url: absoluteUrl("/careers"),
+    siteName: "Profixter",
+    type: "website",
+    images: [DEFAULT_OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Careers at Profixter | Build the Future of Home Services",
+    description:
+      "Join a fast-growing Long Island home platform building modern home service experiences.",
+    images: [DEFAULT_OG_IMAGE.url],
+  },
+};
 
 export default function CareersPage() {
   return (

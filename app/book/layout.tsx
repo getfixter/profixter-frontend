@@ -2,25 +2,27 @@ import type { Metadata } from "next";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Book a Handyman | $99 One-Time Visit",
+  title: {
+    absolute: "Book a Handyman on Long Island | $99 One-Time Visit",
+  },
   description:
-    "Book a $99 One-Time Handyman Visit with Profixter for small Long Island home repairs and installations. Choose the task, date, time, notes, and photos before checkout.",
+    "Choose a small job, pick a time, add photos, and pay after the slot is selected. A 90-minute Profixter visit for approved handyman tasks.",
   alternates: {
     canonical: "/book",
   },
   openGraph: {
-    title: "Book a Handyman | $99 One-Time Visit | Profixter",
+    title: "Book a Handyman on Long Island | $99 One-Time Visit",
     description:
-      "A focused 90-minute handyman visit for one small job. Book first, pay securely, then Profixter reviews and confirms.",
+      "A focused 90-minute handyman visit for one approved small job. Choose the task, date, time, notes, and photos before checkout.",
     url: absoluteUrl("/book"),
     type: "website",
     images: [DEFAULT_OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Book a Handyman | $99 One-Time Visit | Profixter",
+    title: "Book a Handyman on Long Island | $99 One-Time Visit",
     description:
-      "Book a focused 90-minute handyman visit for one small Long Island home task.",
+      "Book a focused 90-minute Profixter visit for one approved Long Island handyman task.",
     images: [DEFAULT_OG_IMAGE.url],
   },
 };

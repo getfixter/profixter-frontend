@@ -10,16 +10,18 @@ import { handymanServices, membershipBenefits } from "@/lib/seo-content";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Handyman Services Long Island",
+  title: {
+    absolute: "Handyman Services on Long Island | Profixter",
+  },
   description:
-    "Explore Profixter handyman services for Long Island homeowners, including TV mounting, drywall repair, door repair, light fixtures, furniture assembly, and caulking.",
+    "Explore small handyman tasks that fit a Profixter visit, from TV mounting to drywall repair, and see when Membership is the smarter choice.",
   alternates: {
     canonical: "/services",
   },
   openGraph: {
-    title: "Handyman Services Long Island | Profixter",
+    title: "Handyman Services on Long Island | Profixter",
     description:
-      "Small handyman services, One-Time Visits, and Membership paths for Long Island homeowners.",
+      "Small handyman services, $99 One-Time Visits, and Membership paths for Long Island homeowners.",
     url: absoluteUrl("/services"),
     siteName: SITE_NAME,
     type: "website",
@@ -27,9 +29,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Handyman Services Long Island | Profixter",
+    title: "Handyman Services on Long Island | Profixter",
     description:
-      "Explore small handyman services, One-Time Visits, and Membership paths for Long Island homeowners.",
+      "Explore small handyman services, $99 One-Time Visits, and Membership paths for Long Island homeowners.",
     images: [DEFAULT_OG_IMAGE.url],
   },
 };

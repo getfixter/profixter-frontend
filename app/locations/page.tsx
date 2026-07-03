@@ -9,16 +9,18 @@ import { serviceAreas } from "@/lib/seo-content";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Service Areas Long Island",
+  title: {
+    absolute: "Profixter Service Areas | Long Island Home Help",
+  },
   description:
-    "Explore Profixter service areas for Long Island homeowners, including Babylon, Lindenhurst, West Babylon, West Islip, Bay Shore, Islip, Copiague, and Amityville.",
+    "See where Profixter helps homeowners across Long Island with Membership, $99 handyman visits, and renovation estimate paths.",
   alternates: {
     canonical: "/locations",
   },
   openGraph: {
-    title: "Profixter Service Areas Long Island",
+    title: "Profixter Service Areas | Long Island Home Help",
     description:
-      "Membership, One-Time Handyman Visits, and renovation estimate paths for Long Island homeowners.",
+      "Membership, $99 handyman visits, and renovation estimate paths for Long Island homeowners.",
     url: absoluteUrl("/locations"),
     siteName: SITE_NAME,
     type: "website",
@@ -26,9 +28,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Profixter Service Areas Long Island",
+    title: "Profixter Service Areas | Long Island Home Help",
     description:
-      "Explore Profixter service area pages for Long Island homeowners.",
+      "Explore Profixter service areas for Long Island homeowners.",
     images: [DEFAULT_OG_IMAGE.url],
   },
 };

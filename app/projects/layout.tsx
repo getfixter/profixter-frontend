@@ -9,25 +9,27 @@ const projectsImage = {
 };
 
 export const metadata: Metadata = {
-  title: "General Contractor Long Island | Roofing, Siding, Kitchen, Bathroom & New Builds",
+  title: {
+    absolute: "Long Island Renovations & General Contractor | Profixter",
+  },
   description:
-    "Request a Long Island renovation estimate from Profixter for roofing, siding, kitchen remodeling, bathroom remodeling, full house renovation, and build new house projects.",
+    "Planning roofing, siding, kitchen, bathroom, full-home renovation, or new construction? Request a clear project estimate from Profixter.",
   alternates: {
     canonical: "/projects",
   },
   openGraph: {
-    title: "Profixter Home Projects | General Contractor Long Island",
+    title: "Long Island Renovations & General Contractor | Profixter",
     description:
-      "Roofing, siding, kitchen, bathroom, full house renovation, and new house project estimates for Long Island homeowners.",
+      "Roofing, siding, kitchens, bathrooms, full-home renovations, and new construction estimates for Long Island homeowners.",
     url: absoluteUrl("/projects"),
     type: "website",
     images: [projectsImage],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Profixter Home Projects | General Contractor Long Island",
+    title: "Long Island Renovations & General Contractor | Profixter",
     description:
-      "Request an estimate for roofing, siding, kitchen, bathroom, full house renovation, and build new house projects.",
+      "Request a clear estimate for roofing, siding, kitchen, bathroom, full-home renovation, or new construction.",
     images: [projectsImage.url],
   },
 };

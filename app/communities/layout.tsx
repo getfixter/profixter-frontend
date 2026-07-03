@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Profixter for Communities | HOA, Condo & 55+ Home Maintenance Partner",
+  title: {
+    absolute: "Home Maintenance Partner for HOAs & Communities | Profixter",
+  },
   description:
-    "Partner with Profixter to offer Long Island residents a trusted home maintenance and handyman resource for everyday repairs, small projects, and ongoing support.",
+    "Give residents one trusted Long Island resource for maintenance help, handyman visits, and larger project coordination through Profixter.",
   alternates: {
     canonical: "/communities",
   },
@@ -16,9 +18,9 @@ export const metadata: Metadata = {
     "community home maintenance partner",
   ],
   openGraph: {
-    title: "Profixter for Communities | HOA, Condo & 55+ Home Maintenance Partner",
+    title: "Home Maintenance Partner for HOAs & Communities | Profixter",
     description:
-      "Partner with Profixter to offer Long Island residents a trusted home maintenance and handyman resource for everyday repairs, small projects, and ongoing support.",
+      "A modern home maintenance partner for HOAs, condos, 55+ communities, and property teams on Long Island.",
     url: absoluteUrl("/communities"),
     siteName: "Profixter",
     type: "website",
@@ -26,9 +28,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Profixter for Communities | HOA, Condo & 55+ Home Maintenance Partner",
+    title: "Home Maintenance Partner for HOAs & Communities | Profixter",
     description:
-      "A trusted Long Island home maintenance and handyman resource for HOA, condo, 55+, and residential communities.",
+      "Give residents one trusted Long Island resource for maintenance, handyman visits, and project coordination.",
     images: [DEFAULT_OG_IMAGE.url],
   },
 };

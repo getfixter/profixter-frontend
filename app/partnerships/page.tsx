@@ -1,4 +1,33 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: "Partner with Profixter | Long Island Home Services",
+  },
+  description:
+    "For realtors, creators, property managers, and local businesses: partner with Profixter to give homeowners practical Membership and home help.",
+  alternates: {
+    canonical: "/partnerships",
+  },
+  openGraph: {
+    title: "Partner with Profixter | Long Island Home Services",
+    description:
+      "Build a useful partnership around Profixter Membership, home maintenance, handyman visits, and Long Island homeowner trust.",
+    url: absoluteUrl("/partnerships"),
+    siteName: "Profixter",
+    type: "website",
+    images: [DEFAULT_OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Partner with Profixter | Long Island Home Services",
+    description:
+      "Partner with Profixter to give Long Island homeowners practical Membership and home help.",
+    images: [DEFAULT_OG_IMAGE.url],
+  },
+};
 
 export default function PartnershipsPage() {
   return (

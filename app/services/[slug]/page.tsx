@@ -22,7 +22,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!service) return {};
 
   return {
-    title: service.metaTitle,
+    title: {
+      absolute: service.metaTitle,
+    },
     description: service.metaDescription,
     alternates: {
       canonical: `/services/${service.slug}`,

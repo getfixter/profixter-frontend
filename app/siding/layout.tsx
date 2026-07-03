@@ -9,16 +9,18 @@ const sidingImage = {
 };
 
 export const metadata: Metadata = {
-  title: "Siding Replacement Long Island | Profixter",
+  title: {
+    absolute: "Siding Replacement on Long Island | Profixter",
+  },
   description:
-    "Premium siding replacement for Long Island homeowners with custom exterior options, local project support, and service across Nassau and Suffolk County.",
+    "Explore siding replacement for Long Island homes with custom exterior options, trim details, color planning, and a clear estimate path.",
   alternates: {
     canonical: "/renovations/siding",
   },
   openGraph: {
-    title: "Siding Replacement Long Island | Profixter",
+    title: "Siding Replacement on Long Island | Profixter",
     description:
-      "Premium siding replacement for Long Island homeowners with custom exterior options and licensed project support.",
+      "Explore custom siding options, trim details, colors, and a clear estimate path for your Long Island home.",
     url: absoluteUrl("/renovations/siding"),
     siteName: "Profixter",
     type: "website",
@@ -26,9 +28,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Siding Replacement Long Island | Profixter",
+    title: "Siding Replacement on Long Island | Profixter",
     description:
-      "Premium siding replacement for Long Island homeowners with custom exterior options.",
+      "Explore custom siding options, trim details, colors, and a clear estimate path.",
     images: [sidingImage.url],
   },
 };
