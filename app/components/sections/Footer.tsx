@@ -2,21 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-
-const PRODUCT_LINKS = [
-  { label: "Home Support AI", href: "/home-support" },
-  { label: "Book a Handyman", href: "/book" },
-  { label: "Membership", href: "/membership" },
-  { label: "Home Projects", href: "/projects" },
-];
-
-const COMPANY_LINKS = [
-  { label: "About Us", href: "/about" },
-  { label: "Community Partnerships", href: "/communities" },
-  { label: "Careers", href: "/careers" },
-  { label: "Privacy Policy", href: "/privacy" },
-  { label: "Terms of Service", href: "/terms" },
-];
+import {
+  COMPANY_LINKS,
+  FOOTER_SEO_LINKS,
+  FOOTER_PRODUCT_LINKS,
+} from "@/lib/site-architecture";
 
 const TRUST_BADGES = [
   "Licensed HI-71484",
@@ -46,7 +36,7 @@ export default function Footer() {
       />
 
       <div className="relative mx-auto max-w-[1240px] px-4 py-10 sm:px-6 sm:py-16 lg:px-5">
-        <div className="grid grid-cols-1 items-start gap-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-[1.45fr_0.7fr_0.7fr_0.8fr] lg:gap-8">
+        <div className="grid grid-cols-1 items-start gap-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-[1.35fr_0.62fr_0.72fr_0.68fr_0.78fr] lg:gap-8">
           <div>
             <Image
               src="/images/logo-footer.svg"
@@ -57,7 +47,7 @@ export default function Footer() {
             />
 
             <p className="mb-6 max-w-[430px] text-[14px] leading-relaxed text-[#9AA3B2] sm:mb-7 sm:text-[15px]">
-              Home Support AI, one-time handyman visits, ongoing membership, and larger project estimates for Long Island homeowners.
+              Monthly home maintenance Membership, $99 One-Time Handyman Visits, and renovation estimates for Long Island homeowners.
             </p>
 
             <a
@@ -91,7 +81,7 @@ export default function Footer() {
               Products
             </div>
             <nav className="flex flex-col gap-3" aria-label="Footer products">
-              {PRODUCT_LINKS.map((link) => (
+              {FOOTER_PRODUCT_LINKS.map((link) => (
                 <Link
                   key={link.label}
                   href={link.href}
@@ -109,6 +99,23 @@ export default function Footer() {
             </div>
             <nav className="flex flex-col gap-3" aria-label="Footer company">
               {COMPANY_LINKS.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="text-[14px] font-medium text-[#9AA3B2] transition-colors hover:text-white sm:text-[15px]"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          <div>
+            <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 sm:mb-5">
+              Services
+            </div>
+            <nav className="flex flex-col gap-3" aria-label="Footer services">
+              {FOOTER_SEO_LINKS.map((link) => (
                 <Link
                   key={link.label}
                   href={link.href}

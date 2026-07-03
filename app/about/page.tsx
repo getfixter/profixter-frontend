@@ -3,8 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
-
-const siteUrl = "https://www.profixter.com";
+import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
+import { CORE_PRODUCTS, HOME_SUPPORT_AI } from "@/lib/site-architecture";
 
 export const metadata: Metadata = {
   title: "About Us | Long Island Home Support Company",
@@ -17,59 +17,52 @@ export const metadata: Metadata = {
     title: "About Profixter | Long Island Home Support Company",
     description:
       "Profixter helps Long Island homeowners get clearer home help through AI, one-time handyman visits, Membership, and larger project estimates.",
-    url: `${siteUrl}/about`,
+    url: absoluteUrl("/about"),
     siteName: "Profixter",
     type: "website",
-    images: [
-      {
-        url: "/images/hero-bg.webp",
-        width: 1200,
-        height: 630,
-        alt: "Profixter home support for Long Island homeowners",
-      },
-    ],
+    images: [DEFAULT_OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
     title: "About Profixter | Long Island Home Support Company",
     description:
       "A local Long Island platform for home answers, handyman visits, Membership, and renovation estimates.",
-    images: ["/images/hero-bg.webp"],
+    images: [DEFAULT_OG_IMAGE.url],
   },
 };
 
 const productCards = [
   {
-    title: "Profixter AI",
-    eyebrow: "Free home answers",
-    href: "/home-support",
-    cta: "Try Profixter AI",
-    body: "Ask about repairs, maintenance, photos, PDFs, contractor quotes, materials, shopping lists, safety, and whether to DIY or hire.",
-    accent: "bg-[#306EEC]",
-  },
-  {
-    title: "Book Handyman",
-    eyebrow: "$99 / 90 minutes",
-    href: "/book",
-    cta: "Book Handyman",
-    body: "For one focused small job. Choose the task, date, time, notes, and photos before secure checkout and admin approval.",
-    accent: "bg-[#16A34A]",
-  },
-  {
-    title: "Membership",
+    title: CORE_PRODUCTS[0].shortTitle,
     eyebrow: "Ongoing home care",
-    href: "/membership",
-    cta: "Become a Member",
-    body: "For homeowners who want recurring support, better long-term value, and a team that learns their home over time.",
+    href: CORE_PRODUCTS[0].href,
+    cta: CORE_PRODUCTS[0].cta,
+    body: CORE_PRODUCTS[0].summary,
     accent: "bg-[#0B1628]",
   },
   {
-    title: "Renovation",
-    eyebrow: "Home Projects",
-    href: "/projects",
-    cta: "Request Renovation Estimate",
-    body: "For larger work like bathrooms, kitchens, roofing, siding, remodeling, and projects that need a real estimate path.",
+    title: CORE_PRODUCTS[1].shortTitle,
+    eyebrow: "$99 / 90 minutes",
+    href: CORE_PRODUCTS[1].href,
+    cta: CORE_PRODUCTS[1].cta,
+    body: CORE_PRODUCTS[1].summary,
+    accent: "bg-[#16A34A]",
+  },
+  {
+    title: CORE_PRODUCTS[2].shortTitle,
+    eyebrow: "Renovation / construction",
+    href: CORE_PRODUCTS[2].href,
+    cta: CORE_PRODUCTS[2].cta,
+    body: CORE_PRODUCTS[2].summary,
     accent: "bg-[#D97706]",
+  },
+  {
+    title: HOME_SUPPORT_AI.shortTitle,
+    eyebrow: "Free home answers",
+    href: HOME_SUPPORT_AI.href,
+    cta: HOME_SUPPORT_AI.cta,
+    body: HOME_SUPPORT_AI.summary,
+    accent: "bg-[#306EEC]",
   },
 ];
 
@@ -84,7 +77,7 @@ const trustItems = [
   },
   {
     title: "Clear booking",
-    body: "Homeowners choose the path that fits: free AI help, a one-time visit, Membership, or a larger project estimate.",
+    body: "Homeowners choose the path that fits: Membership, a one-time visit, or a larger project estimate.",
   },
   {
     title: "No contractor chasing",
@@ -112,7 +105,7 @@ const serviceAreas = [
 const faqs = [
   {
     q: "Are you a handyman company?",
-    a: "Yes. Profixter provides handyman help for small home tasks, but it is also more than a traditional handyman company. Homeowners can use Profixter AI, book one visit, become a Member, or request estimates for larger work.",
+    a: "Yes. Profixter provides handyman help for small home tasks, but it is also more than a traditional handyman company. Homeowners can become a Member for ongoing care, book one visit for a small task, or request estimates for larger renovation and construction work.",
   },
   {
     q: "What is Membership?",
@@ -140,7 +133,7 @@ const faqs = [
   },
   {
     q: "How do I get started?",
-    a: "Start with Profixter AI if you are unsure, Book Handyman for one small job, Membership for ongoing home maintenance, or Home Projects for larger renovation work.",
+    a: "Choose Membership if you want ongoing home maintenance, Book Handyman for one small job, Renovation for larger work, or Profixter AI if you are unsure what path fits.",
   },
 ];
 
@@ -234,7 +227,7 @@ export default function AboutPage() {
               A better way for Long Island homeowners to get help.
             </h1>
             <p className="mt-4 max-w-[680px] text-[15px] font-medium leading-7 text-[#34435C] sm:mt-5 sm:text-[18px] sm:leading-8">
-              Profixter is a modern local home service company built around four clear paths: free Home Support AI, one-time handyman visits, Membership, and renovation estimates for larger projects.
+              Profixter is a modern local home service company built around three clear paths: Membership for ongoing care, Book Handyman for one small fix, and Renovation for larger projects.
             </p>
             <p className="mt-3 max-w-[640px] text-[14px] leading-6 text-[#64748B] sm:mt-4 sm:text-[15px] sm:leading-7">
               We exist because homeowners should not have to chase contractors, decode vague pricing, or start from zero every time something in the house needs attention.
@@ -242,10 +235,10 @@ export default function AboutPage() {
 
             <div className="mt-6 grid gap-2.5 sm:mt-7 sm:grid-cols-2 sm:gap-3">
               <Link
-                href="/home-support"
+                href="/membership"
                 className="inline-flex h-[50px] items-center justify-center rounded-[15px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white shadow-[0_16px_48px_rgba(48,110,236,0.30)] transition hover:-translate-y-0.5 hover:bg-[#2558c9] sm:h-[54px] sm:rounded-[16px] sm:text-[15px]"
               >
-                Try Profixter AI
+                Become a Member
               </Link>
               <Link
                 href="/book"
@@ -367,7 +360,7 @@ export default function AboutPage() {
               What we offer
             </div>
             <h2 className="mt-3 text-[29px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[52px] sm:leading-[1.02] sm:tracking-[-0.04em]">
-              Four ways to move forward without guessing.
+              Three ways to get work handled, with AI when you are unsure.
             </h2>
           </div>
 
@@ -468,7 +461,7 @@ export default function AboutPage() {
                 Tell Profixter what kind of home help you need.
               </h2>
               <p className="mt-4 text-[15px] leading-7 text-white/68 sm:mt-5 sm:text-[16px] sm:leading-8">
-                Start free with AI, book one small handyman job, become a Member, or request a renovation estimate.
+                Become a Member for ongoing care, book one small handyman job, request a renovation estimate, or ask Profixter AI if you are unsure.
               </p>
             </div>
 

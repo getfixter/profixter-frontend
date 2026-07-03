@@ -1,24 +1,27 @@
 import type { Metadata } from "next";
+import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Home Care Membership | Long Island Handyman Service",
+  title: "Membership | Long Island Home Maintenance",
   description:
-    "Ongoing handyman membership for Long Island homeowners. One trusted, licensed team for regular maintenance, priority benefits, and practical home care. Licensed HI-71484.",
+    "Become a Profixter Member for ongoing Long Island home maintenance, handyman help, priority benefits, and better long-term value than repeated one-time visits.",
   alternates: {
     canonical: "/membership",
   },
   openGraph: {
-    title: "Home Care Membership | Profixter Long Island",
+    title: "Profixter Membership | Long Island Home Maintenance",
     description:
-      "One trusted team for ongoing Long Island home maintenance, practical repairs, and membership benefits.",
-    url: "https://www.profixter.com/membership",
+      "Ongoing home maintenance support for Long Island homeowners who want one trusted team for small repairs and practical home care.",
+    url: absoluteUrl("/membership"),
     type: "website",
+    images: [DEFAULT_OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Profixter Membership",
+    title: "Profixter Membership | Long Island Home Maintenance",
     description:
-      "Ongoing home maintenance for Long Island homeowners with one trusted local team.",
+      "Become a Member for ongoing Long Island home maintenance, handyman help, and better long-term value.",
+    images: [DEFAULT_OG_IMAGE.url],
   },
 };
 

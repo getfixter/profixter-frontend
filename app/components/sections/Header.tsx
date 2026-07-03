@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
+import { MAIN_NAV_LINKS } from "@/lib/site-architecture";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -18,16 +19,6 @@ export default function Header() {
     const first = user?.name?.trim().split(/\s+/)[0];
     return first || "Account";
   }, [user?.name]);
-  const navItems = useMemo(
-    () => [
-      { href: "/home-support", label: "Profixter AI" },
-      { href: "/book", label: "Book Handyman" },
-      { href: "/membership", label: "Membership" },
-      { href: "/projects", label: "Renovation" },
-      { href: "/about", label: "About Us" },
-    ],
-    []
-  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -85,11 +76,11 @@ export default function Header() {
           </Link>
 
           <nav className="hidden items-center gap-1 rounded-full border border-[#E6ECF7] bg-white/72 p-1 lg:flex" aria-label="Main navigation">
-            {navItems.map((item) => (
+            {MAIN_NAV_LINKS.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-full px-4 py-2.5 text-sm font-black text-[#172033] transition-colors hover:bg-[#EEF4FF] hover:text-[#306EEC]"
+                className="rounded-full px-3.5 py-2.5 text-sm font-black text-[#172033] transition-colors hover:bg-[#EEF4FF] hover:text-[#306EEC]"
               >
                 {item.label}
               </Link>
@@ -133,12 +124,20 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              <Link
-                href="/signin"
-                className="rounded-full border border-[#C5CBD8] bg-white/90 px-5 py-3 text-sm font-black text-[#111827] shadow-sm transition hover:bg-white"
-              >
-                Sign in
-              </Link>
+              <>
+                <Link
+                  href="/membership"
+                  className="rounded-full bg-[#0B1628] px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#172033]"
+                >
+                  Become a Member
+                </Link>
+                <Link
+                  href="/signin"
+                  className="rounded-full border border-[#C5CBD8] bg-white/90 px-5 py-3 text-sm font-black text-[#111827] shadow-sm transition hover:bg-white"
+                >
+                  Sign in
+                </Link>
+              </>
             )}
           </div>
 
@@ -200,7 +199,7 @@ export default function Header() {
             </div>
 
             <div className="flex w-full max-w-sm flex-col gap-2.5 rounded-[22px] border border-[#E6E8EF] bg-white p-2.5 shadow-[0_16px_50px_rgba(17,24,39,0.08)] sm:gap-3 sm:rounded-[24px] sm:p-3">
-              {navItems.map((item) => (
+              {MAIN_NAV_LINKS.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -244,13 +243,22 @@ export default function Header() {
                   </button>
                 </>
               ) : (
-                <Link
-                  href="/signin"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="w-full rounded-[16px] bg-[#0B1628] px-5 py-3.5 text-center text-[15px] font-black text-white transition hover:bg-[#172033] sm:px-6 sm:py-4 sm:text-base"
-                >
-                  Sign in or create account
-                </Link>
+                <>
+                  <Link
+                    href="/membership"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="w-full rounded-[16px] bg-[#0B1628] px-5 py-3.5 text-center text-[15px] font-black text-white transition hover:bg-[#172033] sm:px-6 sm:py-4 sm:text-base"
+                  >
+                    Become a Member
+                  </Link>
+                  <Link
+                    href="/signin"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="w-full rounded-[16px] border border-[#D7DEE9] bg-white px-5 py-3.5 text-center text-[15px] font-black text-[#0B1628] transition hover:bg-[#F8FAFF] sm:px-6 sm:py-4 sm:text-base"
+                  >
+                    Sign in
+                  </Link>
+                </>
               )}
             </div>
           </nav>
