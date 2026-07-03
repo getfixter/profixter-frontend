@@ -642,10 +642,10 @@ export default function PlansSection() {
       <div className="mx-auto max-w-[1280px]">
         <div className="mx-auto mb-8 max-w-[720px] text-center sm:mb-14">
           <h2 className="text-[32px] font-semibold tracking-normal text-[#111111] sm:text-5xl">
-            Choose Your Plan
+            Choose Your Membership
           </h2>
           <p className="mt-3 text-[15px] leading-6 text-[#6E6E73] sm:mt-4 sm:text-lg sm:leading-7">
-            Start with the plan that fits your home today. Upgrade or downgrade anytime.
+            Start with the Membership that fits your home today. Upgrade or downgrade anytime.
           </p>
           {promoCode ? (
             <div className="mt-5 inline-flex rounded-full border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm font-semibold text-[#166534]">
@@ -890,7 +890,7 @@ export default function PlansSection() {
         </div>
 
         <p className="mx-auto mt-8 max-w-[760px] text-center text-sm leading-6 text-[#6E6E73] sm:text-base">
-          All plans include the same trusted team, online booking, and access to every Profixter service.
+          All Membership plans include the same trusted team, online booking, and access to every Profixter service.
         </p>
       </div>
     </section>

@@ -1,0 +1,91 @@
+export const CORE_PRODUCTS = [
+  {
+    id: "membership",
+    label: "Membership",
+    href: "/membership",
+    intent: "I want someone every month.",
+    title: "Monthly Home Maintenance Membership",
+    shortTitle: "Membership",
+    summary:
+      "Ongoing handyman help, home maintenance, and better long-term value for Long Island homeowners.",
+    cta: "Become a Member",
+  },
+  {
+    id: "one-time",
+    label: "Book Handyman",
+    href: "/book",
+    intent: "I need something fixed.",
+    title: "One-Time Handyman Services",
+    shortTitle: "Book Handyman",
+    summary:
+      "$99 One-Time Visit for one predefined small handyman task, up to 90 minutes.",
+    cta: "Book a Handyman",
+  },
+  {
+    id: "renovation",
+    label: "Renovation",
+    href: "/projects",
+    intent: "I want to renovate.",
+    title: "Renovation and Construction",
+    shortTitle: "Renovation",
+    summary:
+      "Bathrooms, kitchens, roofing, siding, additions, full-home renovations, and new construction.",
+    cta: "Request Renovation Estimate",
+  },
+] as const;
+
+export const HOME_SUPPORT_AI = {
+  id: "home-support-ai",
+  label: "Profixter AI",
+  href: "/home-support",
+  intent: "I am not sure where to start.",
+  title: "Profixter Home Support AI",
+  shortTitle: "Profixter AI",
+  summary:
+    "Free homeowner guidance for repairs, maintenance, quotes, materials, safety, and DIY-or-hire decisions.",
+  cta: "Ask Profixter AI",
+} as const;
+
+export const COMPANY_LINKS = [
+  { label: "About Us", href: "/about" },
+  { label: "Community Partnerships", href: "/communities" },
+  { label: "Careers", href: "/careers" },
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Terms of Service", href: "/terms" },
+] as const;
+
+export const MAIN_NAV_LINKS = [
+  ...CORE_PRODUCTS.map((product) => ({
+    label: product.label,
+    href: product.href,
+  })),
+  { label: HOME_SUPPORT_AI.label, href: HOME_SUPPORT_AI.href },
+  { label: "About Us", href: "/about" },
+] as const;
+
+export const FOOTER_PRODUCT_LINKS = [
+  ...CORE_PRODUCTS.map((product) => ({
+    label: product.shortTitle,
+    href: product.href,
+  })),
+  { label: HOME_SUPPORT_AI.shortTitle, href: HOME_SUPPORT_AI.href },
+] as const;
+
+export const PROJECT_SERVICE_LINKS = [
+  { label: "Bathroom Remodeling", href: "/renovations/bathroom-remodeling" },
+  { label: "Kitchen Remodeling", href: "/renovations/kitchen-remodeling" },
+  { label: "Roofing", href: "/renovations/roofing" },
+  { label: "Siding", href: "/renovations/siding" },
+  { label: "Full Home Renovation", href: "/renovations/full-home-renovation" },
+  { label: "New Home Construction", href: "/renovations/new-home-construction" },
+] as const;
+
+export const FOOTER_SEO_LINKS = [
+  { label: "Services", href: "/services" },
+  { label: "TV Mounting", href: "/services/tv-mounting" },
+  { label: "Drywall Repair", href: "/services/drywall-repair" },
+  { label: "Renovations", href: "/renovations" },
+  { label: "Bathroom Remodeling", href: "/renovations/bathroom-remodeling" },
+  { label: "Roofing", href: "/renovations/roofing" },
+  { label: "Locations", href: "/locations" },
+] as const;

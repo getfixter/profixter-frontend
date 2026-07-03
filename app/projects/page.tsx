@@ -663,13 +663,34 @@ function ProjectsContent() {
 
             <div className="mt-9 grid max-w-[940px] gap-2.5 sm:mt-12 sm:grid-cols-3 sm:gap-3">
               {[
-                ["Member discounts", "Members get better long-term value and may receive discounts on larger work."],
-                ["Membership included", "Some larger projects may include up to 12 months of Profixter Membership."],
-                ["Not handyman visits", "Project estimates are for larger work, not $99 One-Time Handyman Visits."],
-              ].map(([title, body]) => (
+                [
+                  "Member discounts",
+                  "Members get better long-term value and may receive discounts on larger work.",
+                  "/membership",
+                  "Learn about Membership",
+                ],
+                [
+                  "Membership included",
+                  "Some larger projects may include up to 12 months of Profixter Membership.",
+                  "/membership",
+                  "Become a Member",
+                ],
+                [
+                  "Not handyman visits",
+                  "Project estimates are for larger work, not $99 One-Time Handyman Visits.",
+                  "/book",
+                  "Book a small visit",
+                ],
+              ].map(([title, body, href, cta]) => (
                 <div key={title} className="rounded-[20px] border border-white/15 bg-white/[0.08] p-4 backdrop-blur">
                   <div className="text-[13px] font-extrabold text-white">{title}</div>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-white/65">{body}</p>
+                  <Link
+                    href={href}
+                    className="mt-3 inline-flex text-[12px] font-black text-white underline decoration-white/30 underline-offset-4 transition hover:text-white/80"
+                  >
+                    {cta}
+                  </Link>
                 </div>
               ))}
             </div>

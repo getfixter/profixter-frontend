@@ -4,6 +4,7 @@ import Script from "next/script";
 import Providers from "./providers";
 import ScrollToTop from "./ScrollToTop";
 import "./globals.css";
+import { DEFAULT_OG_IMAGE, PROFIXTER_STRUCTURED_DATA, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -15,13 +16,14 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.profixter.com"),
+  metadataBase: new URL(SITE_URL),
+  applicationName: SITE_NAME,
   title: {
-    default: "Profixter | Home Support AI, Handyman Visits, Membership & Projects",
+    default: "Profixter | Long Island Home Maintenance Membership & Handyman",
     template: "%s | Profixter",
   },
   description:
-    "Profixter helps Long Island homeowners with free Home Support AI, $99 one-time handyman visits, ongoing membership, and larger home project estimates. Licensed HI-71484. Nassau and Suffolk County.",
+    "Profixter helps Long Island homeowners with monthly home maintenance Membership, $99 One-Time Handyman Visits, and renovation or construction estimates.",
   alternates: {
     canonical: "/",
   },
@@ -35,32 +37,37 @@ export const metadata: Metadata = {
     "home project estimates",
   ],
   openGraph: {
-    title: "Profixter | Home Support for Long Island Homeowners",
+    title: "Profixter | Long Island Home Maintenance Membership & Handyman",
     description:
-      "Free Home Support AI, $99 handyman visits, ongoing maintenance membership, and larger home project estimates.",
-    url: "https://www.profixter.com",
-    siteName: "Profixter",
+      "Become a Member for ongoing home care, book a $99 handyman visit, or request a renovation estimate from one Long Island home platform.",
+    url: SITE_URL,
+    siteName: SITE_NAME,
     type: "website",
     locale: "en_US",
-    images: [
-      {
-        url: "/images/hero-bg.webp",
-        width: 1200,
-        height: 630,
-        alt: "Profixter home support for Long Island homeowners",
-      },
-    ],
+    images: [DEFAULT_OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Profixter | Home Support for Long Island Homeowners",
+    title: "Profixter | Long Island Home Maintenance Membership & Handyman",
     description:
-      "Free Home Support AI, $99 handyman visits, membership, and larger project estimates.",
-    images: ["/images/hero-bg.webp"],
+      "Monthly home maintenance Membership, $99 handyman visits, and renovation estimates for Long Island homeowners.",
+    images: [DEFAULT_OG_IMAGE.url],
   },
   robots: {
     index: true,
     follow: true,
+  },
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+  },
+  category: "home services",
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  formatDetection: {
+    telephone: true,
+    address: false,
+    email: true,
   },
 };
 
@@ -75,30 +82,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <Script
-          id="profixter-structured-data"
+          id="profixter-local-business-structured-data"
           type="application/ld+json"
           strategy="beforeInteractive"
         >
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "HomeAndConstructionBusiness",
-            name: "Profixter",
-            url: "https://www.profixter.com",
-            telephone: "+1-631-599-1363",
-            areaServed: ["Nassau County, NY", "Suffolk County, NY"],
-            image: "https://www.profixter.com/images/hero-bg.webp",
-            priceRange: "$$",
-            hasOfferCatalog: {
-              "@type": "OfferCatalog",
-              name: "Profixter services",
-              itemListElement: [
-                { "@type": "Offer", name: "Home Support AI" },
-                { "@type": "Offer", name: "One-Time Handyman Visit" },
-                { "@type": "Offer", name: "Profixter Membership" },
-                { "@type": "Offer", name: "Home Projects" },
-              ],
-            },
-          })}
+          {JSON.stringify(PROFIXTER_STRUCTURED_DATA)}
         </Script>
         <Script id="gtm-head" strategy="afterInteractive">
           {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':

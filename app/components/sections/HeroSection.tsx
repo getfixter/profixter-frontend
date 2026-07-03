@@ -16,9 +16,9 @@ type NextBookingResponse = {
 };
 
 const BENEFITS = [
-  "90-Minute Visits",
+  "Ongoing Home Care",
   "Trusted Local Team",
-  "Month-to-Month Plans",
+  "Month-to-Month Membership",
 ];
 
 const TRUST_ROW = [
@@ -86,13 +86,17 @@ export default function HeroSection() {
   const goToPlans = () => {
     const el = document.getElementById("plans");
     if (el) scrollToHash("#plans");
-    else router.push("/#plans");
+    else router.push("/membership#plans");
   };
 
   const goToBooking = () => {
     const el = document.getElementById("pick-day");
     if (el) scrollToHash("#pick-day");
-    else router.push("/#pick-day");
+    else router.push("/membership#pick-day");
+  };
+
+  const goToOneTimeBooking = () => {
+    router.push("/book");
   };
 
   const ctaConfig =
@@ -100,25 +104,21 @@ export default function HeroSection() {
       ? {
           primaryLabel: "Book Visit",
           primaryAction: goToBooking,
-          secondaryLabel: "Get Subscription",
+          secondaryLabel: "Membership Details",
           secondaryAction: goToPlans,
         }
       : isAuthenticated
         ? {
-            primaryLabel: "Get Subscription",
+            primaryLabel: "Become a Member",
             primaryAction: goToPlans,
-            secondaryLabel: "Book Visit",
-            secondaryAction: goToBooking,
+            secondaryLabel: "Book One-Time Visit",
+            secondaryAction: goToOneTimeBooking,
           }
         : {
-            primaryLabel: "Create Account",
-            primaryAction: () => {
-              router.push("/signup");
-            },
-            secondaryLabel: "Login",
-            secondaryAction: () => {
-              router.push("/signin");
-            },
+            primaryLabel: "Become a Member",
+            primaryAction: goToPlans,
+            secondaryLabel: "Book One-Time Visit",
+            secondaryAction: goToOneTimeBooking,
           };
 
   return (
@@ -144,15 +144,15 @@ export default function HeroSection() {
           </h1>
 
           <p className="mt-5 max-w-[350px] text-[15px] font-semibold leading-[1.5] text-white/76 sm:mt-6 sm:max-w-[590px] sm:text-[20px] sm:leading-[1.55]">
-            From small repairs and installations to the projects you&apos;ve been putting off, Profixter helps Long Island homeowners keep their homes in great shape for one simple monthly price.
+            Membership gives Long Island homeowners one reliable way to keep the home list moving month after month, without starting a new contractor search every time.
           </p>
 
           <div className="mt-6 inline-flex max-w-[350px] items-center gap-2.5 rounded-full border border-white/12 bg-white/8 px-3.5 py-2 text-[12px] font-extrabold text-white/78 backdrop-blur-md sm:mt-7 sm:max-w-none sm:gap-3 sm:px-4 sm:py-2.5 sm:text-[13px]">
-            <span>Book visit</span>
+            <span>Become a Member</span>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="text-[#86EFAC]" aria-hidden="true">
               <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span>We show up</span>
+            <span>Request ongoing help</span>
           </div>
 
           <div className="mt-6 flex max-w-[350px] flex-col gap-2.5 sm:mt-7 sm:max-w-none sm:flex-row sm:flex-wrap sm:gap-3">
