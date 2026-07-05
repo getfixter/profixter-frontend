@@ -1,12 +1,61 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { register } from "@/lib/auth-service";
 import { trackEvent } from "@/lib/analytics";
+import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
 
-type Step = 1 | 2;
+type Step = 1 | 2 | 3 | 4;
+
+const onboardingSteps: Array<{ id: Step; label: string }> = [
+  { id: 1, label: "Property" },
+  { id: 2, label: "You" },
+  { id: 3, label: "Contact" },
+  { id: 4, label: "Security" },
+];
+
+const stepCopy: Record<Step, { title: string; subtitle: string }> = {
+  1: {
+    title: "Where should we come?",
+    subtitle: "What is the address of the property you'd like us to help with?",
+  },
+  2: {
+    title: "How should we call you?",
+    subtitle: "Tell us whose home we are helping.",
+  },
+  3: {
+    title: "How should we reach you?",
+    subtitle: "We'll only use this to contact you about your appointments and service.",
+  },
+  4: {
+    title: "Almost done",
+    subtitle: "Create a secure password to manage your home, appointments and membership.",
+  },
+};
+
+const initialFormData = {
+  name: "",
+  email: "",
+  password: "",
+  repeatPassword: "",
+  phone: "",
+  address: "",
+  city: "",
+  state: "NY",
+  zip: "",
+  county: "",
+};
+
+type FormData = typeof initialFormData;
 
 function PasswordToggle({
   value,
@@ -16,7 +65,7 @@ function PasswordToggle({
   autoComplete = "new-password",
 }: {
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   id: string;
   autoComplete?: string;
@@ -31,15 +80,15 @@ function PasswordToggle({
         onChange={onChange}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all pr-12"
+        className="w-full rounded-[14px] border border-white/[0.14] bg-white/[0.07] px-4 py-3.5 pr-12 text-[15px] text-white placeholder-white/32 outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
       />
       <button
         type="button"
         onClick={() => setShow(!show)}
-        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/35 hover:text-white/65 transition"
+        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/38 transition hover:text-white/72"
         aria-label={show ? "Hide password" : "Show password"}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
           {show ? (
             <>
               <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" strokeLinecap="round" strokeLinejoin="round" />
@@ -64,6 +113,45 @@ function detectCounty(zip: string): string {
   return "";
 }
 
+function FieldLabel({ htmlFor, children }: { htmlFor: string; children: ReactNode }) {
+  return (
+    <label htmlFor={htmlFor} className="mb-2 block text-[12px] font-bold uppercase tracking-[0.13em] text-white/58">
+      {children}
+    </label>
+  );
+}
+
+function FieldInput({
+  id,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  autoComplete,
+  maxLength,
+}: {
+  id: string;
+  value: string;
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  placeholder: string;
+  type?: string;
+  autoComplete?: string;
+  maxLength?: number;
+}) {
+  return (
+    <input
+      id={id}
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      autoComplete={autoComplete}
+      maxLength={maxLength}
+      className="w-full rounded-[14px] border border-white/[0.14] bg-white/[0.07] px-4 py-3.5 text-[15px] text-white placeholder-white/32 outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
+    />
+  );
+}
+
 export default function SignUpPage() {
   const [step, setStep] = useState<Step>(1);
   const [agreeTerms, setAgreeTerms] = useState(true);
@@ -72,18 +160,7 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    repeatPassword: "",
-    phone: "",
-    address: "",
-    city: "",
-    state: "NY",
-    zip: "",
-    county: "",
-  });
+  const [formData, setFormData] = useState<FormData>(initialFormData);
 
   const passwordsDoNotMatch =
     formData.password.length > 0 &&
@@ -101,10 +178,14 @@ export default function SignUpPage() {
     }
   }, []);
 
-  const handleChange = (field: keyof typeof formData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const clearFeedback = () => {
     if (error) setError("");
     if (consentError) setConsentError(false);
+  };
+
+  const handleChange = (field: keyof FormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    clearFeedback();
     if (field === "email" || field === "phone") {
       setFieldErrors((prev) => ({ ...prev, [field]: "" }));
     }
@@ -114,6 +195,7 @@ export default function SignUpPage() {
     const digits = value.replace(/\D/g, "").slice(0, 5);
     const county = digits.length === 5 ? detectCounty(digits) : formData.county;
     setFormData((prev) => ({ ...prev, zip: digits, county: county || prev.county }));
+    clearFeedback();
   };
 
   const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -125,47 +207,83 @@ export default function SignUpPage() {
     return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
   };
 
-  const validateStep1 = () => {
-    if (!formData.name.trim()) { setError("Please enter your full name"); return false; }
-    if (!formData.email.trim()) { setFieldErrors((p) => ({ ...p, email: "Please enter your email" })); return false; }
-    if (!isValidEmail(formData.email)) { setFieldErrors((p) => ({ ...p, email: "Please enter a valid email address" })); return false; }
-    if (!formData.phone.trim()) { setFieldErrors((p) => ({ ...p, phone: "Please enter your phone number" })); return false; }
-    if (phoneDigits.length !== 10) { setFieldErrors((p) => ({ ...p, phone: "Please enter a valid 10-digit phone number" })); return false; }
-    if (!formData.password) { setError("Please create a password"); return false; }
-    if (formData.password.length < 8) { setError("Password must be at least 8 characters"); return false; }
-    if (!formData.repeatPassword) { setError("Please repeat your password"); return false; }
-    if (formData.password !== formData.repeatPassword) { setError("Passwords do not match"); return false; }
-    setError(""); setFieldErrors({});
-    return true;
-  };
-
-  const validateStep2 = () => {
+  const validatePropertyStep = () => {
     if (!formData.address.trim()) { setError("Please enter your full address"); return false; }
     if (!formData.city.trim()) { setError("Please enter your city"); return false; }
     if (!formData.zip.trim()) { setError("Please enter your zip code"); return false; }
     if (zipDigits.length !== 5) { setError("Zip code must be 5 digits"); return false; }
     if (!formData.county.trim()) { setError("Please select your county"); return false; }
-    if (!agreeTerms) { setConsentError(true); setError("You must agree to the Terms and Privacy Policy to continue."); return false; }
-    setError(""); setConsentError(false);
+    setError("");
     return true;
   };
 
+  const validateNameStep = () => {
+    if (!formData.name.trim()) { setError("Please enter your full name"); return false; }
+    setError("");
+    return true;
+  };
+
+  const validateContactStep = () => {
+    if (!formData.phone.trim()) { setFieldErrors((p) => ({ ...p, phone: "Please enter your phone number" })); return false; }
+    if (phoneDigits.length !== 10) { setFieldErrors((p) => ({ ...p, phone: "Please enter a valid 10-digit phone number" })); return false; }
+    if (!formData.email.trim()) { setFieldErrors((p) => ({ ...p, email: "Please enter your email" })); return false; }
+    if (!isValidEmail(formData.email)) { setFieldErrors((p) => ({ ...p, email: "Please enter a valid email address" })); return false; }
+    setError("");
+    setFieldErrors({});
+    return true;
+  };
+
+  const validateSecurityStep = () => {
+    if (!formData.password) { setError("Please create a password"); return false; }
+    if (formData.password.length < 8) { setError("Password must be at least 8 characters"); return false; }
+    if (!formData.repeatPassword) { setError("Please repeat your password"); return false; }
+    if (formData.password !== formData.repeatPassword) { setError("Passwords do not match"); return false; }
+    if (!agreeTerms) {
+      setConsentError(true);
+      setError("You must agree to the Terms and Privacy Policy to continue.");
+      return false;
+    }
+    setError("");
+    setConsentError(false);
+    return true;
+  };
+
+  const validateCurrentStep = () => {
+    if (step === 1) return validatePropertyStep();
+    if (step === 2) return validateNameStep();
+    if (step === 3) return validateContactStep();
+    return validateSecurityStep();
+  };
+
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+
   const handleNextStep = () => {
-    if (!validateStep1()) return;
-    setStep(2);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (!validateCurrentStep()) return;
+    if (step < 4) {
+      setStep((step + 1) as Step);
+      scrollToTop();
+    }
   };
 
   const handleBackStep = () => {
-    setError(""); setConsentError(false);
-    setStep(1);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setError("");
+    setConsentError(false);
+    setFieldErrors({});
+    if (step > 1) {
+      setStep((step - 1) as Step);
+      scrollToTop();
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(""); setConsentError(false);
-    if (!validateStep2()) return;
+  const submitHomeSetup = async () => {
+    setError("");
+    setConsentError(false);
+
+    if (!validatePropertyStep()) { setStep(1); scrollToTop(); return; }
+    if (!validateNameStep()) { setStep(2); scrollToTop(); return; }
+    if (!validateContactStep()) { setStep(3); scrollToTop(); return; }
+    if (!validateSecurityStep()) { setStep(4); return; }
+
     setLoading(true);
     try {
       const registrationPayload = {
@@ -194,354 +312,341 @@ export default function SignUpPage() {
         ? `/?promo=${encodeURIComponent(checkoutPromo)}#plans`
         : "/";
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      const message = error?.response?.data?.message || "Registration failed. Please try again.";
+      const errorResponse = err as { response?: { data?: { message?: string } } };
+      const message = errorResponse?.response?.data?.message || "We couldn't finish setting up your home. Please try again.";
       setError(message);
       setLoading(false);
     }
   };
 
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (step < 4) {
+      handleNextStep();
+      return;
+    }
+    void submitHomeSetup();
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f42] to-[#0f1429] flex flex-col items-center justify-center px-4 py-5 sm:px-6 sm:py-10">
-      {/* Container */}
-      <div className="w-full max-w-[520px]">
-        
-        {/* Logo */}
-        <div className="mb-5 text-center sm:mb-8">
-          <Link href="/" className="inline-block">
+    <RoleEntryGate loadingLabel="Checking your session..." redirectLabel="Opening your dashboard...">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#050B18] px-4 py-5 text-white sm:px-6 sm:py-8">
+      <Image
+        src="/images/hero-bg.webp"
+        alt="Long Island home cared for by Profixter"
+        fill
+        priority
+        sizes="100vw"
+        className="pointer-events-none object-cover opacity-28"
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(5,11,24,0.94)_0%,rgba(8,18,40,0.88)_48%,rgba(5,11,24,0.72)_100%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#050B18] to-transparent" />
+
+      <div className="relative z-10 mx-auto flex w-full max-w-[1120px] flex-1 flex-col">
+        <div className="flex items-center justify-between gap-4 py-2">
+          <Link href="/" className="inline-flex items-center">
             <Image
               src="/images/logo.svg"
-              alt="Fixter"
-              width={120}
-              height={40}
+              alt="Profixter"
+              width={132}
+              height={44}
               className="h-8 w-auto sm:h-10"
             />
           </Link>
-        </div>
-
-        {/* Card */}
-        <div className="rounded-[16px] border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-5 sm:p-8">
-          
-          {/* Step Progress */}
-          {step === 2 && (
-            <button
-              type="button"
-              onClick={handleBackStep}
-              className="mb-5 flex items-center gap-2 text-[13px] font-medium text-white/50 transition hover:text-white/70 sm:mb-8"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Back
-            </button>
-          )}
-
           <Link
             href="/"
-            className="mb-5 inline-flex min-h-[40px] items-center rounded-[12px] border border-white/[0.10] bg-white/[0.04] px-3.5 text-[13px] font-semibold text-white/60 transition hover:border-white/[0.18] hover:bg-white/[0.07] hover:text-white sm:mb-6"
+            className="inline-flex min-h-[40px] items-center rounded-full border border-white/[0.13] bg-white/[0.08] px-4 text-[13px] font-bold text-white/72 transition hover:bg-white/[0.12] hover:text-white"
           >
-            <span aria-hidden="true">&larr;</span>
             Back to Home
           </Link>
+        </div>
 
-          {/* Heading */}
-          <div className="mb-5 text-center sm:mb-7">
-            <h1 className="mb-1.5 text-[27px] font-black tracking-[-0.02em] text-white sm:text-[36px]">
-              {step === 1 ? "Create Your Account" : "Your Service Address"}
+        <main className="grid flex-1 items-center gap-8 py-8 lg:grid-cols-[0.82fr_1fr] lg:gap-12 lg:py-10">
+          <section className="hidden max-w-[440px] lg:block">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.08] px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white/58">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#86EFAC]" />
+              Long Island home care
+            </div>
+            <h1 className="mt-6 text-[58px] font-black leading-[0.92] tracking-[-0.048em] text-white">
+              Let us get your home ready.
             </h1>
-            <p className="text-[14px] text-white/50 sm:text-[15px]">
-              {step === 1 ? "It takes less than a minute." : "We deliver to one address per account."}
+            <p className="mt-5 text-[17px] font-medium leading-8 text-white/62">
+              Add the property once, then book visits, manage Membership, and keep your home details in one calm place.
             </p>
-          </div>
-
-          {/* Progress bar */}
-          <div className="mb-5 h-1 w-full overflow-hidden rounded-full bg-white/[0.08] sm:mb-8">
-            <div
-              className="h-full rounded-full bg-[#306EEC] transition-all duration-500"
-              style={{ width: step === 1 ? "50%" : "100%" }}
-            />
-          </div>
-
-          {/* Step 1 */}
-          {step === 1 && (
-            <>
-              <form
-                onSubmit={(e) => { e.preventDefault(); handleNextStep(); }}
-                className="space-y-3 sm:space-y-4"
-              >
-                {/* Name & Email */}
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                  <div>
-                    <label htmlFor="name" className="block text-[12px] font-semibold text-white/60 mb-2">
-                      Full Name
-                    </label>
-                    <input
-                      id="name"
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => handleChange("name", e.target.value)}
-                      placeholder="John Smith"
-                      autoComplete="name"
-                      className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-[12px] font-semibold text-white/60 mb-2">
-                      Email
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleChange("email", e.target.value)}
-                      placeholder="you@example.com"
-                      autoComplete="email"
-                      className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all"
-                    />
-                    {fieldErrors.email && <p className="mt-1.5 text-[11px] text-red-400">{fieldErrors.email}</p>}
-                  </div>
+            <div className="mt-8 grid gap-3">
+              {["Licensed HI-71484", "Fully insured", "Nassau and Suffolk Counties"].map((item) => (
+                <div key={item} className="flex items-center gap-3 text-[14px] font-bold text-white/68">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#86EFAC]/16 text-[#86EFAC]">
+                    <svg width="11" height="9" viewBox="0 0 11 9" fill="none" aria-hidden="true">
+                      <path d="M1 4.5L4 7.5L10 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                  {item}
                 </div>
+              ))}
+            </div>
+          </section>
 
-                {/* Phone */}
-                <div>
-                  <label htmlFor="phone" className="block text-[12px] font-semibold text-white/60 mb-2">
-                    Phone
-                  </label>
-                  <input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => handleChange("phone", formatPhone(e.target.value))}
-                    placeholder="(631) 000-0000"
-                    autoComplete="tel"
-                    className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all"
-                  />
-                  {fieldErrors.phone && <p className="mt-1.5 text-[11px] text-red-400">{fieldErrors.phone}</p>}
-                </div>
+          <section className="mx-auto w-full max-w-[570px]">
+            <div className="rounded-[28px] border border-white/[0.10] bg-white/[0.075] p-4 shadow-[0_28px_90px_rgba(0,0,0,0.24)] backdrop-blur-2xl sm:p-6 lg:p-7">
+              <div className="rounded-[22px] border border-white/[0.09] bg-[#071225]/72 p-4 sm:p-6">
+                <nav aria-label="Home setup progress" className="mb-6">
+                  <ol className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-[0.13em] text-white/35 sm:flex-nowrap sm:gap-2.5">
+                    {onboardingSteps.map((item, index) => {
+                      const active = item.id === step;
+                      const complete = item.id < step;
 
-                {/* Password & Confirm */}
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                  <div>
-                    <label htmlFor="password" className="block text-[12px] font-semibold text-white/60 mb-2">
-                      Password
-                    </label>
-                    <PasswordToggle
-                      id="password"
-                      value={formData.password}
-                      onChange={(e) => handleChange("password", e.target.value)}
-                      placeholder="Min 8 characters"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="confirm-password" className="block text-[12px] font-semibold text-white/60 mb-2">
-                      Confirm Password
-                    </label>
-                    <PasswordToggle
-                      id="confirm-password"
-                      value={formData.repeatPassword}
-                      onChange={(e) => handleChange("repeatPassword", e.target.value)}
-                      placeholder="Repeat password"
-                      autoComplete="new-password"
-                    />
-                    {passwordsDoNotMatch && (
-                      <p className="mt-1.5 text-[11px] text-red-400">Passwords do not match</p>
-                    )}
-                  </div>
-                </div>
+                      return (
+                        <li key={item.id} className="flex items-center gap-2">
+                          <span
+                            aria-current={active ? "step" : undefined}
+                            className={[
+                              "rounded-full px-2.5 py-1.5 transition",
+                              active
+                                ? "bg-white text-[#0B1628]"
+                                : complete
+                                  ? "bg-[#86EFAC]/16 text-[#86EFAC]"
+                                  : "bg-white/[0.06] text-white/40",
+                            ].join(" ")}
+                          >
+                            {item.label}
+                          </span>
+                          {index < onboardingSteps.length - 1 ? (
+                            <span className="text-white/22" aria-hidden="true">
+                              -&gt;
+                            </span>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </nav>
 
-                {/* Error */}
-                {error && (
-                  <div className="rounded-[10px] border border-red-500/20 bg-red-500/[0.08] px-4 py-3 text-[13px] text-red-400 text-center">
-                    {error}
-                  </div>
-                )}
-
-                {/* Submit */}
-                <button
-                  type="submit"
-                  className="mt-2 h-12 w-full rounded-[12px] bg-[#306EEC] text-[15px] font-bold text-white transition-all hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50"
-                  style={{ boxShadow: "0 12px 32px rgba(48,110,236,0.28)" }}
-                >
-                  Continue
-                </button>
-              </form>
-            </>
-          )}
-
-          {/* Step 2 */}
-          {step === 2 && (
-            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-
-              {/* Address */}
-              <div>
-                <label htmlFor="address" className="block text-[12px] font-semibold text-white/60 mb-2">
-                  Street Address
-                </label>
-                <input
-                  id="address"
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => handleChange("address", e.target.value)}
-                  placeholder="123 Main St"
-                  autoComplete="street-address"
-                  className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all"
-                />
-              </div>
-
-              {/* City & Zip */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                <div>
-                  <label htmlFor="city" className="block text-[12px] font-semibold text-white/60 mb-2">
-                    City
-                  </label>
-                  <input
-                    id="city"
-                    type="text"
-                    value={formData.city}
-                    onChange={(e) => handleChange("city", e.target.value)}
-                    placeholder="Hicksville"
-                    autoComplete="address-level2"
-                    className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="zip" className="block text-[12px] font-semibold text-white/60 mb-2">
-                    Zip Code
-                  </label>
-                  <input
-                    id="zip"
-                    type="text"
-                    value={formData.zip}
-                    onChange={(e) => handleZipChange(e.target.value)}
-                    placeholder="11801"
-                    autoComplete="postal-code"
-                    maxLength={5}
-                    className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* County & State */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                <div>
-                  <label htmlFor="county" className="block text-[12px] font-semibold text-white/60 mb-2">
-                    County
-                  </label>
-                  <select
-                    id="county"
-                    value={formData.county}
-                    onChange={(e) => handleChange("county", e.target.value)}
-                    autoComplete="address-level3"
-                    className="auth-dark-select h-[50px] w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 text-[15px] text-white focus:border-[#306EEC]/60 focus:bg-white/[0.08] focus:outline-none transition-all"
+                {step > 1 ? (
+                  <button
+                    type="button"
+                    onClick={handleBackStep}
+                    className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/[0.10] bg-white/[0.05] px-3.5 py-2 text-[13px] font-bold text-white/58 transition hover:bg-white/[0.09] hover:text-white"
                   >
-                    <option value="">Select County</option>
-                    <option value="Nassau">Nassau</option>
-                    <option value="Suffolk">Suffolk</option>
-                  </select>
-                  {formData.zip.length === 5 && formData.county && (
-                    <p className="mt-1.5 text-[11px] text-[#86EFAC]/70">
-                      Auto-detected
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label htmlFor="state" className="block text-[12px] font-semibold text-white/60 mb-2">
-                    State
-                  </label>
-                  <input
-                    id="state"
-                    type="text"
-                    value={formData.state}
-                    onChange={(e) => handleChange("state", e.target.value)}
-                    placeholder="NY"
-                    autoComplete="address-level1"
-                    className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all"
-                  />
-                </div>
-              </div>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                      <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Back
+                  </button>
+                ) : null}
 
-              {/* Terms */}
-              <label className="flex cursor-pointer items-start gap-3 pt-1">
-                <div className="relative flex-shrink-0 mt-0.5">
-                  <input
-                    type="checkbox"
-                    checked={agreeTerms}
-                    onChange={(e) => { setAgreeTerms(e.target.checked); if (consentError) setConsentError(false); }}
-                    className="sr-only peer"
-                  />
-                  <div className="w-4 h-4 rounded-[4px] border border-white/25 flex items-center justify-center peer-checked:bg-[#306EEC] peer-checked:border-[#306EEC] transition flex-shrink-0">
-                    {agreeTerms && (
-                      <svg width="9" height="7" viewBox="0 0 9 7" fill="none" aria-hidden="true">
-                        <path d="M1 3.5l2 2L8 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </div>
+                <div className="mb-5 sm:mb-6">
+                  <h2 className="text-[31px] font-black leading-[0.98] tracking-[-0.035em] text-white sm:text-[40px]">
+                    {stepCopy[step].title}
+                  </h2>
+                  <p className="mt-3 max-w-[430px] text-[14px] font-medium leading-6 text-white/58 sm:text-[15px]">
+                    {stepCopy[step].subtitle}
+                  </p>
                 </div>
-                <span className="text-[13px] text-white/50 leading-relaxed">
-                  I agree to the{" "}
-                  <Link href="/terms" className="text-white/75 underline hover:text-white transition">
-                    Terms of Service
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {step === 1 ? (
+                    <>
+                      <div>
+                        <FieldLabel htmlFor="address">Property Address</FieldLabel>
+                        <FieldInput
+                          id="address"
+                          value={formData.address}
+                          onChange={(e) => handleChange("address", e.target.value)}
+                          placeholder="123 Main St"
+                          autoComplete="street-address"
+                        />
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <FieldLabel htmlFor="city">City</FieldLabel>
+                          <FieldInput
+                            id="city"
+                            value={formData.city}
+                            onChange={(e) => handleChange("city", e.target.value)}
+                            placeholder="Babylon"
+                            autoComplete="address-level2"
+                          />
+                        </div>
+                        <div>
+                          <FieldLabel htmlFor="zip">Zip Code</FieldLabel>
+                          <FieldInput
+                            id="zip"
+                            value={formData.zip}
+                            onChange={(e) => handleZipChange(e.target.value)}
+                            placeholder="11702"
+                            autoComplete="postal-code"
+                            maxLength={5}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <FieldLabel htmlFor="county">County</FieldLabel>
+                          <select
+                            id="county"
+                            value={formData.county}
+                            onChange={(e) => handleChange("county", e.target.value)}
+                            autoComplete="address-level3"
+                            className="auth-dark-select h-[51px] w-full rounded-[14px] border border-white/[0.14] bg-white/[0.07] px-4 text-[15px] text-white outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
+                          >
+                            <option value="">Select County</option>
+                            <option value="Nassau">Nassau</option>
+                            <option value="Suffolk">Suffolk</option>
+                          </select>
+                          {formData.zip.length === 5 && formData.county ? (
+                            <p className="mt-2 text-[11px] font-semibold text-[#86EFAC]/78">
+                              Auto-detected from zip code
+                            </p>
+                          ) : null}
+                        </div>
+                        <div>
+                          <FieldLabel htmlFor="state">State</FieldLabel>
+                          <FieldInput
+                            id="state"
+                            value={formData.state}
+                            onChange={(e) => handleChange("state", e.target.value)}
+                            placeholder="NY"
+                            autoComplete="address-level1"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
+
+                  {step === 2 ? (
+                    <div>
+                      <FieldLabel htmlFor="name">Full Name</FieldLabel>
+                      <FieldInput
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => handleChange("name", e.target.value)}
+                        placeholder="John Smith"
+                        autoComplete="name"
+                      />
+                    </div>
+                  ) : null}
+
+                  {step === 3 ? (
+                    <>
+                      <div>
+                        <FieldLabel htmlFor="phone">Phone Number</FieldLabel>
+                        <FieldInput
+                          id="phone"
+                          type="tel"
+                          value={formData.phone}
+                          onChange={(e) => handleChange("phone", formatPhone(e.target.value))}
+                          placeholder="(631) 000-0000"
+                          autoComplete="tel"
+                        />
+                        {fieldErrors.phone ? (
+                          <p className="mt-2 text-[12px] font-semibold text-red-300">{fieldErrors.phone}</p>
+                        ) : null}
+                      </div>
+                      <div>
+                        <FieldLabel htmlFor="email">Email Address</FieldLabel>
+                        <FieldInput
+                          id="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => handleChange("email", e.target.value)}
+                          placeholder="you@example.com"
+                          autoComplete="email"
+                        />
+                        {fieldErrors.email ? (
+                          <p className="mt-2 text-[12px] font-semibold text-red-300">{fieldErrors.email}</p>
+                        ) : null}
+                      </div>
+                    </>
+                  ) : null}
+
+                  {step === 4 ? (
+                    <>
+                      <div>
+                        <FieldLabel htmlFor="password">Password</FieldLabel>
+                        <PasswordToggle
+                          id="password"
+                          value={formData.password}
+                          onChange={(e) => handleChange("password", e.target.value)}
+                          placeholder="Minimum 8 characters"
+                        />
+                      </div>
+                      <div>
+                        <FieldLabel htmlFor="confirm-password">Confirm Password</FieldLabel>
+                        <PasswordToggle
+                          id="confirm-password"
+                          value={formData.repeatPassword}
+                          onChange={(e) => handleChange("repeatPassword", e.target.value)}
+                          placeholder="Repeat password"
+                          autoComplete="new-password"
+                        />
+                        {passwordsDoNotMatch ? (
+                          <p className="mt-2 text-[12px] font-semibold text-red-300">Passwords do not match</p>
+                        ) : null}
+                      </div>
+
+                      <label className="flex cursor-pointer items-start gap-3 rounded-[16px] border border-white/[0.09] bg-white/[0.04] p-3.5">
+                        <span className="relative mt-0.5 flex flex-shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={agreeTerms}
+                            onChange={(e) => {
+                              setAgreeTerms(e.target.checked);
+                              if (consentError) setConsentError(false);
+                            }}
+                            className="peer sr-only"
+                          />
+                          <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[4px] border border-white/30 transition peer-checked:border-[#306EEC] peer-checked:bg-[#306EEC]">
+                            {agreeTerms ? (
+                              <svg width="9" height="7" viewBox="0 0 9 7" fill="none" aria-hidden="true">
+                                <path d="M1 3.5l2 2L8 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            ) : null}
+                          </span>
+                        </span>
+                        <span className="text-[13px] leading-relaxed text-white/56">
+                          I agree to the{" "}
+                          <Link href="/terms" className="text-white/82 underline decoration-white/30 underline-offset-4 transition hover:text-white">
+                            Terms of Service
+                          </Link>
+                          {" "}and{" "}
+                          <Link href="/privacy" className="text-white/82 underline decoration-white/30 underline-offset-4 transition hover:text-white">
+                            Privacy Policy
+                          </Link>.
+                        </span>
+                      </label>
+                    </>
+                  ) : null}
+
+                  {error ? (
+                    <div className="rounded-[14px] border border-red-400/25 bg-red-500/[0.10] px-4 py-3 text-center text-[13px] font-semibold text-red-200">
+                      {error}
+                    </div>
+                  ) : null}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="mt-1 flex h-[52px] w-full items-center justify-center rounded-[16px] bg-[#306EEC] text-[15px] font-black text-white shadow-[0_16px_42px_rgba(48,110,236,0.34)] transition hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-55"
+                  >
+                    {step === 4 ? (loading ? "Finishing..." : "Finish") : "Continue"}
+                  </button>
+                </form>
+
+                <p className="mt-5 text-center text-[14px] text-white/48">
+                  Already with Profixter?{" "}
+                  <Link href="/signin" className="font-bold text-white transition hover:text-white/80">
+                    My Home
                   </Link>
-                  {" "}and{" "}
-                  <Link href="/privacy" className="text-white/75 underline hover:text-white transition">
-                    Privacy Policy
-                  </Link>.
-                </span>
-              </label>
-
-              {/* Error */}
-              {error && (
-                <div className="rounded-[10px] border border-red-500/20 bg-red-500/[0.08] px-4 py-3 text-[13px] text-red-400 text-center">
-                  {error}
-                </div>
-              )}
-
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="mt-2 h-12 w-full rounded-[12px] bg-[#306EEC] text-[15px] font-bold text-white transition-all hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50"
-                style={{ boxShadow: "0 12px 32px rgba(48,110,236,0.28)" }}
-              >
-                {loading ? "Creating Account..." : "Create Account"}
-              </button>
-            </form>
-          )}
-
-          {/* Sign in link */}
-          <p className="mt-5 text-center text-[14px] text-white/50">
-            Already have an account?{" "}
-            <Link
-              href="/signin"
-              className="font-semibold text-white hover:text-white/80 transition"
-            >
-              Sign In
-            </Link>
-          </p>
-        </div>
-
-        {/* Trust Strip */}
-        <div className="mt-7 grid grid-cols-3 gap-3 text-center sm:mt-12 sm:gap-4">
-          <div className="flex flex-col items-center gap-2">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white/40">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
-            </svg>
-            <p className="text-[12px] font-medium text-white/50">Licensed HI-71484</p>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white/40">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
-            </svg>
-            <p className="text-[12px] font-medium text-white/50">Fully Insured</p>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white/40">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
-            </svg>
-            <p className="text-[12px] font-medium text-white/50">Long Island Local</p>
-          </div>
-        </div>
+                </p>
+              </div>
+            </div>
+          </section>
+        </main>
       </div>
     </div>
+    </RoleEntryGate>
   );
 }

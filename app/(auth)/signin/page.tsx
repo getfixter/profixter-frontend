@@ -6,7 +6,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { login } from "@/lib/auth-service";
 import { useAuth } from "@/lib/useAuth";
+import { getRoleLandingPath } from "@/lib/auth-routing";
 import { trackEvent } from "@/lib/analytics";
+import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
 
 function PasswordToggle({
   value,
@@ -81,8 +83,7 @@ export default function SignInPage() {
       });
       authLogin(token, user);
       localStorage.setItem("rememberedEmail", email);
-      if (user.role === "admin" || user.role === "employee" || user.email.toLowerCase() === "getfixter@gmail.com") router.replace("/admin");
-      else router.replace("/");
+      router.replace(getRoleLandingPath(user));
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       const message = error.response?.data?.message || "Invalid email or password";
@@ -92,6 +93,7 @@ export default function SignInPage() {
   };
 
   return (
+    <RoleEntryGate loadingLabel="Checking your session..." redirectLabel="Opening your dashboard...">
     <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f42] to-[#0f1429] flex flex-col items-center justify-center px-6 py-12">
       {/* Container */}
       <div className="w-full max-w-[440px]">
@@ -124,7 +126,7 @@ export default function SignInPage() {
               Welcome Back
             </h1>
             <p className="text-[15px] text-white/50">
-              Sign in to manage your home visits
+              Open My Home to manage visits, Membership, and property details.
             </p>
           </div>
 
@@ -183,18 +185,18 @@ export default function SignInPage() {
               className="w-full h-12 rounded-[12px] bg-[#306EEC] text-white text-[15px] font-bold hover:bg-[#2558c9] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-3"
               style={{ boxShadow: "0 12px 32px rgba(48,110,236,0.28)" }}
             >
-              {loading ? "Signing in…" : "Sign In"}
+              {loading ? "Opening My Home..." : "Open My Home"}
             </button>
           </form>
 
-          {/* Sign up link */}
+          {/* Add property link */}
           <p className="mt-6 text-center text-[14px] text-white/50">
             New to Profixter?{" "}
             <Link
               href="/signup"
               className="font-semibold text-white hover:text-white/80 transition"
             >
-              Create Account
+              Add Property
             </Link>
           </p>
         </div>
@@ -222,5 +224,6 @@ export default function SignInPage() {
         </div>
       </div>
     </div>
+    </RoleEntryGate>
   );
 }

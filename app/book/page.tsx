@@ -512,7 +512,7 @@ export default function BookPage() {
       return;
     }
     if (!isAuthenticated) {
-      setError("Please sign in or create an account before booking.");
+      setError("Please open My Home or add your property before booking.");
       return;
     }
     if (!addressId) {
@@ -688,7 +688,7 @@ export default function BookPage() {
                 </div>
               </div>
 
-              <div className="mt-3 rounded-[14px] border border-[#D9E4FF] bg-white px-3.5 py-2.5 text-[13px] font-semibold text-[#0B1628] sm:px-4 sm:py-3 sm:text-[14px]">
+              <div className="mt-3 rounded-[10px] border-l-2 border-[#C8D3E3] bg-[#F7FAFE] px-3.5 py-2.5 text-[13px] font-semibold text-[#34435C] sm:px-4 sm:py-3 sm:text-[14px]">
                 {selectedDate
                   ? `Selected date: ${dayLabel(selectedDate)}`
                   : autoSelectingDate
@@ -698,7 +698,7 @@ export default function BookPage() {
 
               <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
                 {[priceLabel, `${config.durationMinutes} minutes`, "Tools included"].map((item) => (
-                  <div key={item} className="rounded-[14px] border border-[#E5E9F2] bg-white px-3.5 py-2.5 text-[12px] font-extrabold text-[#0B1628] sm:px-4 sm:py-3 sm:text-[13px]">
+                  <div key={item} className="rounded-[10px] border-l-2 border-[#D6DEE9] bg-[#F7FAFE] px-3.5 py-2.5 text-[12px] font-extrabold text-[#34435C] sm:px-4 sm:py-3 sm:text-[13px]">
                     {item}
                   </div>
                 ))}
@@ -714,22 +714,22 @@ export default function BookPage() {
                 ) : !isAuthenticated ? (
                   <div className="space-y-4 py-6 text-center">
                     <StepHeader
-                      step="Account"
-                      title="Sign in to book"
-                      subtitle="We need an account for your address, photos, payment status, reminders, and booking history."
+                      step="Home profile"
+                      title="Add your property first"
+                      subtitle="We need a home profile for your address, photos, payment status, reminders, and booking history."
                     />
                     <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
                       <Link
                         href="/signin"
                         className="rounded-[14px] bg-[#306EEC] px-5 py-3 text-[14px] font-extrabold text-white"
                       >
-                        Sign in
+                        My Home
                       </Link>
                       <Link
                         href="/signup"
                         className="rounded-[14px] border border-[#C5CBD8] px-5 py-3 text-[14px] font-extrabold text-[#0B1628]"
                       >
-                        Create account
+                        Add Property
                       </Link>
                     </div>
                   </div>

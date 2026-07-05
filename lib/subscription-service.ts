@@ -50,6 +50,27 @@ export type ManagedSubscription = {
   stripeManaged?: boolean;
 };
 
+export type RetentionOfferResponse = {
+  eligible: boolean;
+  reason?: string;
+  offer?: {
+    title?: string;
+    discountLabel?: string;
+    offeredAt?: string;
+  };
+  subscription?: ManagedSubscription;
+};
+
+export type RetentionOfferAcceptResponse = {
+  message: string;
+  subscription: ManagedSubscription;
+  retentionOffer?: {
+    acceptedAt?: string;
+    nextRenewalDate?: string | null;
+    discountDescription?: string | null;
+  };
+};
+
 type SubscriptionActionErrorShape = {
   response?: {
     status?: number;
@@ -126,9 +147,29 @@ export async function changeSubscriptionPlan(params: {
 
 export async function cancelSubscription(params: {
   addressId: string;
+  retentionOfferDeclined?: boolean;
 }): Promise<{ message: string; subscription: ManagedSubscription }> {
   const response = await API.post<{ message: string; subscription: ManagedSubscription }>(
-    `/api/subscriptions/manage/address/${params.addressId}/cancel`
+    `/api/subscriptions/manage/address/${params.addressId}/cancel`,
+    params.retentionOfferDeclined ? { retentionOfferDeclined: true } : undefined
+  );
+  return response.data;
+}
+
+export async function requestSubscriptionRetentionOffer(params: {
+  addressId: string;
+}): Promise<RetentionOfferResponse> {
+  const response = await API.post<RetentionOfferResponse>(
+    `/api/subscriptions/manage/address/${params.addressId}/retention-offer`
+  );
+  return response.data;
+}
+
+export async function acceptSubscriptionRetentionOffer(params: {
+  addressId: string;
+}): Promise<RetentionOfferAcceptResponse> {
+  const response = await API.post<RetentionOfferAcceptResponse>(
+    `/api/subscriptions/manage/address/${params.addressId}/retention-offer/accept`
   );
   return response.data;
 }

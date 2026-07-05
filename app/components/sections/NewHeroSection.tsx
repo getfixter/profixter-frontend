@@ -17,7 +17,7 @@ export default function NewHeroSection() {
         </h1>
 
         <p className="text-lg sm:text-2xl text-white/80 mb-8 max-w-3xl mx-auto">
-          Unlimited handyman visits for one low monthly fee or book a professional on-demand.
+          Ongoing home maintenance for one clear monthly Membership or a one-time handyman visit when you need a small fix.
           Serving Long Island homes with premium care and transparent pricing.
         </p>
 
@@ -27,7 +27,7 @@ export default function NewHeroSection() {
             href="/services/subscription"
             className="inline-block px-6 py-3 rounded-xl bg-[#86EFAC] text-[#0B1220] font-bold text-base sm:text-lg hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#86EFAC]"
           >
-            See Subscription
+            See Membership
           </Link>
 
           {/* ✅ CONDITIONAL BUTTON */}
@@ -39,7 +39,7 @@ export default function NewHeroSection() {
             }
             className="inline-block px-6 py-3 rounded-xl bg-white/10 text-white/90 border border-white/20 font-bold text-base sm:text-lg hover:bg-white/20 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white"
           >
-            {isAuthenticated ? "General Contractor" : "Join Now"}
+            {isAuthenticated ? "General Contractor" : "Add Property"}
           </Link>
         </div>
       </div>

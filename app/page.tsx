@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
+import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
 import { trackEvent } from "@/lib/analytics";
 import { CORE_PRODUCTS, HOME_SUPPORT_AI } from "@/lib/site-architecture";
 
@@ -65,7 +66,7 @@ function ProductButton({ product }: { product: (typeof products)[number] }) {
 
 export default function HomePage() {
   return (
-    <>
+    <RoleEntryGate>
       <main className="min-h-screen bg-[#F4F7FB] text-[#0B1628]">
         <section className="relative min-h-screen overflow-hidden">
           <Image
@@ -125,6 +126,6 @@ export default function HomePage() {
         </section>
       </main>
       <Footer />
-    </>
+    </RoleEntryGate>
   );
 }

@@ -436,7 +436,7 @@ export default function PlansSection() {
     if (!planType || !selectedAddressActive) {
       return {
         kind: "subscribe" as ChangeActionKind,
-        label: "Get Started",
+        label: "Start Membership",
         disabled: false,
       };
     }
@@ -481,14 +481,14 @@ export default function PlansSection() {
     if (targetRank === currentRank && !sameCycle) {
       return {
         kind: billing === "annual" ? ("upgrade" as ChangeActionKind) : ("downgrade" as ChangeActionKind),
-        label: "Get Started",
+        label: "Change Plan",
         disabled: false,
       };
     }
 
     return {
       kind: targetRank > currentRank ? ("upgrade" as ChangeActionKind) : ("downgrade" as ChangeActionKind),
-      label: "Get Started",
+      label: "Change Plan",
       disabled: false,
     };
   };

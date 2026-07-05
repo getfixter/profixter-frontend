@@ -704,7 +704,7 @@ function ProjectsContent() {
               ["Clear estimate path", "A practical scope conversation before you commit to a project."],
               ["Long Island focused", "Built for Nassau and Suffolk homeowners who want accountable local help."],
             ].map(([title, body]) => (
-              <div key={title} className="rounded-[16px] border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+              <div key={title} className="rounded-[10px] border-l-2 border-[#CBD5E1] bg-[#F8FAFC] px-4 py-3.5">
                 <div className="text-[14px] font-extrabold text-[#0B1628]">{title}</div>
                 <p className="mt-1.5 text-[13px] leading-relaxed text-[#64748B]">{body}</p>
               </div>

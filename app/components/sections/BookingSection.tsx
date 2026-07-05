@@ -869,7 +869,7 @@ if (next?.date) {
 
   const handleBookNow = async () => {
     if (!isAuthenticated) {
-      alert("Please sign in to book a visit");
+      alert("Please open My Home to book a visit.");
       window.location.href = "/signin";
       return;
     }

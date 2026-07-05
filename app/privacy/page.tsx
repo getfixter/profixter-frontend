@@ -289,7 +289,7 @@ export default function PrivacyPage() {
               href="/signup"
               className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
             >
-              Back to Sign Up
+              Back to Add Property
             </Link>
           </div>
         </div>

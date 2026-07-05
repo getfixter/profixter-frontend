@@ -37,7 +37,7 @@ export default function StickyMobileCTA() {
             href="#plans"
             className="flex w-full h-[52px] items-center justify-center rounded-[13px] bg-[#306EEC] text-[15px] font-extrabold text-white shadow-[0_8px_22px_rgba(48,110,236,0.30)] active:bg-[#2558c9]"
           >
-            Get Subscription &mdash; from $149/mo
+            Start Membership &mdash; from $149/mo
           </Link>
         ) : (
           <div className="flex gap-3">
@@ -45,13 +45,13 @@ export default function StickyMobileCTA() {
               href="/signin"
               className="flex-1 inline-flex h-[52px] items-center justify-center rounded-[13px] border border-[#C5CBD8] bg-white text-[14px] font-bold text-[#0B1628] active:bg-[#F1F5F9]"
             >
-              Sign In
+              My Home
             </Link>
             <Link
               href="#plans"
               className="flex-[2] inline-flex h-[52px] items-center justify-center rounded-[13px] bg-[#306EEC] text-[14px] font-extrabold text-white shadow-[0_8px_22px_rgba(48,110,236,0.28)] active:bg-[#2558c9]"
             >
-              Get Subscription
+              Start Membership
             </Link>
           </div>
         )}

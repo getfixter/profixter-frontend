@@ -8,6 +8,8 @@ import {
   reactivateSubscription,
   getMySubscriptions,
   createBillingPortalSession,
+  requestSubscriptionRetentionOffer,
+  acceptSubscriptionRetentionOffer,
   getSubscriptionActionErrorMessage,
   type ManagedSubscription,
 } from "@/lib/subscription-service";
@@ -129,7 +131,10 @@ export function PlanSection() {
   const [subscriptions, setSubscriptions] = useState<ManagedSubscription[]>([]);
 
   const [cancelTarget, setCancelTarget] = useState<ManagedSubscription | null>(null);
+  const [cancelMode, setCancelMode] = useState<"checking" | "offer" | "confirm" | "accepted">("confirm");
   const [canceling, setCanceling] = useState(false);
+  const [acceptingRetention, setAcceptingRetention] = useState(false);
+  const [retentionError, setRetentionError] = useState("");
 
   const [reactivatingId, setReactivatingId] = useState<string | null>(null);
 
@@ -201,7 +206,41 @@ export function PlanSection() {
     [subscriptions]
   );
 
-  const handleCancel = async () => {
+  const openCancelFlow = async (subscription: ManagedSubscription) => {
+    if (!subscription.addressId) return;
+
+    setCancelTarget(subscription);
+    setCancelMode("checking");
+    setCanceling(false);
+    setAcceptingRetention(false);
+    setRetentionError("");
+    setError("");
+    setNotice("");
+
+    try {
+      const result = await requestSubscriptionRetentionOffer({
+        addressId: subscription.addressId,
+      });
+
+      const updatedSubscription = result.subscription;
+      if (updatedSubscription) {
+        setSubscriptions((current) =>
+          current.map((item) =>
+            item._id === updatedSubscription._id ? updatedSubscription : item
+          )
+        );
+      }
+
+      setCancelMode(result.eligible ? "offer" : "confirm");
+    } catch {
+      setRetentionError(
+        "We couldn't check the retention offer right now, but you can still continue cancellation."
+      );
+      setCancelMode("confirm");
+    }
+  };
+
+  const handleCancel = async (retentionOfferDeclined = false) => {
     if (!cancelTarget?.addressId) return;
 
     setCanceling(true);
@@ -209,7 +248,10 @@ export function PlanSection() {
     setNotice("");
 
     try {
-      const result = await cancelSubscription({ addressId: cancelTarget.addressId });
+      const result = await cancelSubscription({
+        addressId: cancelTarget.addressId,
+        retentionOfferDeclined,
+      });
 
       setSubscriptions((current) =>
         current.map((subscription) =>
@@ -225,6 +267,38 @@ export function PlanSection() {
     }
   };
 
+  const handleAcceptRetentionOffer = async () => {
+    if (!cancelTarget?.addressId) return;
+
+    setAcceptingRetention(true);
+    setRetentionError("");
+    setError("");
+    setNotice("");
+
+    try {
+      const result = await acceptSubscriptionRetentionOffer({
+        addressId: cancelTarget.addressId,
+      });
+
+      setSubscriptions((current) =>
+        current.map((subscription) =>
+          subscription._id === result.subscription._id ? result.subscription : subscription
+        )
+      );
+      setCancelMode("accepted");
+      setNotice("");
+    } catch (err: unknown) {
+      const message = getSubscriptionActionErrorMessage(err);
+      setRetentionError(
+        message === "Something went wrong. Please try again or call (631) 599-1363."
+          ? "We couldn't apply the discount right now. You can try again or continue cancellation."
+          : message
+      );
+    } finally {
+      setAcceptingRetention(false);
+    }
+  };
+
   const handleReactivate = async (subscription: ManagedSubscription) => {
     if (!subscription.addressId) return;
 
@@ -237,7 +311,7 @@ export function PlanSection() {
       setSubscriptions((current) =>
         current.map((s) => (s._id === result.subscription._id ? result.subscription : s))
       );
-      setNotice(result.message || "Subscription reactivated successfully.");
+      setNotice(result.message || "Membership reactivated successfully.");
     } catch (err: unknown) {
       setError(getSubscriptionActionErrorMessage(err));
     } finally {
@@ -348,7 +422,7 @@ export function PlanSection() {
 
         {!loading && paymentEndedSubscriptions.length ? (
           <div className="mb-4 rounded-[16px] border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3 text-sm font-semibold text-[#92400E]">
-            Your subscription ended because payment could not be processed. Please start a new subscription to continue booking.
+            Your Membership ended because payment could not be processed. Please start a new Membership to continue booking.
           </div>
         ) : null}
 
@@ -392,7 +466,7 @@ export function PlanSection() {
                 href="/membership"
                 className="mt-6 block w-full rounded-[14px] bg-[#306EEC] py-3 text-center text-base font-semibold text-[#EEF2FF] transition-colors hover:bg-[#2557C7] sm:py-4 sm:text-lg"
               >
-                Get Started
+                Start Membership
               </Link>
 
               <div className="mt-3 text-xs text-[#6A6D71] opacity-80">
@@ -552,15 +626,20 @@ export function PlanSection() {
 
                         <button
                           type="button"
-                          disabled={billingPortalLoadingId === subscription._id}
-                          onClick={() => handleManageBilling(subscription)}
+                          disabled={
+                            subscription.cancelAtPeriodEnd ||
+                            canceling ||
+                            acceptingRetention ||
+                            (cancelTarget?._id === subscription._id && cancelMode === "checking")
+                          }
+                          onClick={() => openCancelFlow(subscription)}
                           className="w-full rounded-[14px] border border-[#C5CBD8] bg-white/70 py-3 text-base font-semibold text-[#313234] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {subscription.cancelAtPeriodEnd
                             ? "Cancellation scheduled"
-                            : billingPortalLoadingId === subscription._id
-                            ? "Opening billing..."
-                            : "Cancel Plan"}
+                            : cancelTarget?._id === subscription._id && cancelMode === "checking"
+                            ? "Checking options..."
+                            : "Cancel Membership"}
                         </button>
                       </div>
 
@@ -646,7 +725,10 @@ export function PlanSection() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4"
           onClick={() => {
-            if (!canceling) setCancelTarget(null);
+            if (!canceling && !acceptingRetention && cancelMode !== "checking") {
+              setCancelTarget(null);
+              setRetentionError("");
+            }
           }}
         >
           <div
@@ -654,14 +736,110 @@ export function PlanSection() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="text-center">
+              {cancelMode === "checking" ? (
+                <div className="py-4">
+                  <div className="mx-auto mb-5 h-10 w-10 animate-spin rounded-full border-2 border-[#D7E0F5] border-t-[#306EEC]" />
+                  <h3 className="text-xl font-extrabold text-[#313234]">
+                    Checking your membership...
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[#6A6D71]">
+                    We&apos;re checking whether a retention offer is available for this membership.
+                  </p>
+                </div>
+              ) : cancelMode === "offer" ? (
+                <>
+                  <div className="mx-auto mb-5 inline-flex rounded-full border border-[#D7E0F5] bg-[#EEF2FF] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#306EEC]">
+                    Member offer
+                  </div>
+
+                  <h3 className="text-3xl font-extrabold tracking-[-0.02em] text-[#313234]">
+                    Before you cancel...
+                  </h3>
+                  <div className="mx-auto mt-4 max-w-[340px] space-y-3 text-sm leading-relaxed text-[#6A6D71]">
+                    <p>We&apos;d love to keep taking care of your home.</p>
+                    <p>
+                      Stay with Profixter and receive{" "}
+                      <strong className="font-extrabold text-[#313234]">
+                        30% OFF your next monthly renewal.
+                      </strong>
+                    </p>
+                    <p>Your membership stays exactly the same.</p>
+                    <p>
+                      The discount applies to your next renewal only. After that, your membership
+                      automatically returns to the regular monthly price.
+                    </p>
+                  </div>
+
+                  {retentionError ? (
+                    <div className="mt-5 rounded-[14px] border border-[#FCA5A5]/60 bg-[#FEF2F2] px-4 py-3 text-sm font-semibold text-[#B91C1C]">
+                      {retentionError}
+                    </div>
+                  ) : null}
+
+                  <div className="mt-6 grid grid-cols-1 gap-3">
+                    <button
+                      type="button"
+                      disabled={acceptingRetention || canceling}
+                      onClick={handleAcceptRetentionOffer}
+                      className="min-h-[54px] rounded-[16px] bg-[#306EEC] px-4 py-3 text-base font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
+                    >
+                      {acceptingRetention
+                        ? "Applying offer..."
+                        : "Keep My Membership (30% OFF Next Month)"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={acceptingRetention || canceling}
+                      onClick={() => handleCancel(true)}
+                      className="min-h-[52px] rounded-[16px] border border-[#D1D5DB] bg-white px-4 py-3 text-base font-extrabold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
+                    >
+                      {canceling ? "Scheduling cancellation..." : "Continue Cancellation"}
+                    </button>
+                  </div>
+                </>
+              ) : cancelMode === "accepted" ? (
+                <>
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#ECFDF3] text-2xl font-extrabold text-[#166534]">
+                    OK
+                  </div>
+
+                  <h3 className="text-3xl font-extrabold tracking-[-0.02em] text-[#313234]">
+                    You&apos;re all set!
+                  </h3>
+                  <p className="mx-auto mt-4 max-w-[340px] text-sm leading-relaxed text-[#6A6D71]">
+                    Your next renewal will automatically receive 30% off. After that, your
+                    membership returns to the regular monthly price.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCancelTarget(null);
+                      setRetentionError("");
+                      setNotice("Retention offer accepted. Your membership remains active.");
+                    }}
+                    className="mt-6 h-[52px] w-full rounded-[16px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9]"
+                  >
+                    Done
+                  </button>
+                </>
+              ) : (
+                <>
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#EEF2FF] text-2xl">
                 !
               </div>
 
               <h3 className="text-2xl font-extrabold text-[#313234]">Are you sure you want to cancel?</h3>
               <p className="mt-3 text-sm leading-relaxed text-[#6A6D71]">
-                You&apos;ll keep your membership until the end of the current billing period — your home stays in regular care until then.
+                You&apos;ll keep your membership until the end of the current billing period.
+                Your home stays in regular care until then.
               </p>
+
+              {retentionError ? (
+                <div className="mt-5 rounded-[14px] border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3 text-left text-sm font-semibold text-[#92400E]">
+                  {retentionError}
+                </div>
+              ) : null}
 
               <div className="mt-5 rounded-[16px] border border-[#D7E0F5] bg-[#F8FAFF] p-4 text-left">
                 <div className="text-sm font-semibold text-[#313234]">Before you cancel</div>
@@ -676,20 +854,25 @@ export function PlanSection() {
                 <button
                   type="button"
                   disabled={canceling}
-                  onClick={() => setCancelTarget(null)}
+                  onClick={() => {
+                    setCancelTarget(null);
+                    setRetentionError("");
+                  }}
                   className="h-[52px] rounded-[16px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
                 >
-                  Keep my plan
+                  Keep my membership
                 </button>
                 <button
                   type="button"
                   disabled={canceling}
-                  onClick={handleCancel}
+                  onClick={() => handleCancel(false)}
                   className="h-[52px] rounded-[16px] border border-[#D1D5DB] bg-white font-extrabold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
                 >
                   {canceling ? "Canceling..." : "Cancel anyway"}
                 </button>
               </div>
+                </>
+              )}
             </div>
           </div>
         </div>

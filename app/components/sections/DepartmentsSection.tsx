@@ -4,7 +4,7 @@ import Link from "next/link";
 
 const DEPARTMENTS = [
   {
-    title: "Subscription Handyman",
+    title: "Home Maintenance Membership",
     description:
       "Choose the plan that fits your home — from simple ongoing tasks to larger full-day projects.",
     href: "/services/subscription",
@@ -49,8 +49,8 @@ const DEPARTMENTS = [
   {
     title: "One-Time Service",
     description:
-      "Need a fix now? Book a single visit at an hourly or daily rate.",
-    href: "/on-demand",
+      "Need one small fix now? Book a $99 One-Time Visit.",
+    href: "/book",
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />

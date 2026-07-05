@@ -7,11 +7,17 @@ const REFERRER_REWARD = "$50";
 const REFERRED_REWARD = "$50";
 const BASE_URL = "https://profixter.com";
 
+type ReferralUser = {
+  _id?: string;
+  userId?: string;
+};
+
 export default function ReferralSection() {
   const { user, isAuthenticated } = useAuth();
   const [copied, setCopied] = useState(false);
 
-  const userId = (user as any)?._id || (user as any)?.userId || "";
+  const typedUser = user as ReferralUser | null | undefined;
+  const userId = typedUser?._id || typedUser?.userId || "";
   const referralLink = userId ? `${BASE_URL}/?ref=${userId}` : `${BASE_URL}/signup`;
 
   const handleCopy = async () => {
@@ -86,7 +92,7 @@ export default function ReferralSection() {
         {/* Referral link box */}
         <div className="max-w-[640px] mx-auto mb-6">
           <p className="text-[12px] font-semibold text-[#64748B] mb-2 text-center">
-            {isAuthenticated ? "Your personal referral link" : "Sign in to get your personal link"}
+            {isAuthenticated ? "Your personal referral link" : "Open My Home to get your personal link"}
           </p>
           <div className="flex items-center gap-2 rounded-[14px] border border-[#E2E8F0] bg-[#F8FAFF] px-4 py-3">
             <span className="flex-1 text-[13px] text-[#475569] font-mono truncate select-all">
