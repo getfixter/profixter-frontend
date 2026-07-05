@@ -5,8 +5,8 @@ import Link from "next/link";
 const STEPS = [
   {
     n: "1",
-    title: "Sign up in under 2 minutes",
-    body: "Choose your plan, enter your address, and you're a member. No consultation required to start.",
+    title: "Add your property in under 2 minutes",
+    body: "Choose your Membership, enter your address, and you are ready to request visits. No consultation required to start.",
   },
   {
     n: "2",
@@ -47,14 +47,14 @@ export default function OnboardingSection() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-[#EEF2FF] px-4 py-1.5 mb-5">
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
-                After You Sign Up
+                After You Start
               </span>
             </div>
             <h2 className="text-[26px] sm:text-[34px] font-extrabold text-[#0B1628] leading-[1.1] tracking-[-0.025em] mb-2">
               What happens after you start?
             </h2>
             <p className="text-[15px] text-[#475569] mb-8 leading-relaxed">
-              Four simple steps — from sign-up to your first visit handled.
+              Four simple steps from adding your property to your first visit handled.
             </p>
 
             <div className="space-y-6">
@@ -110,8 +110,8 @@ export default function OnboardingSection() {
 
             <ul className="space-y-3 mb-8">
               {FIRST_VISIT_IDEAS.map((idea) => (
-                <li key={idea} className="flex items-center gap-3 rounded-[12px] border border-[#E2E8F0] bg-[#F8FAFF] px-4 py-3">
-                  <div className="w-6 h-6 rounded-full bg-[#306EEC]/10 border border-[#306EEC]/20 flex items-center justify-center flex-shrink-0">
+                <li key={idea} className="flex items-center gap-3 rounded-[8px] border-l-2 border-[#D7DEE9] bg-[#F8FAFC] px-4 py-3">
+                  <div className="w-6 h-6 rounded-full bg-[#EAF2FF] flex items-center justify-center flex-shrink-0">
                     <svg width="10" height="8" viewBox="0 0 10 8" fill="none" aria-hidden="true">
                       <path d="M1 4l2.5 2.5L9 1" stroke="#306EEC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>

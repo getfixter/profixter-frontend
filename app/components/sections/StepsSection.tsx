@@ -1,10 +1,8 @@
-import Image from "next/image";
-
 const STEPS = [
   {
     id: "01",
-    title: "Create your account & pick a plan",
-    desc: "Sign up in minutes and choose a membership that fits your home. Month-to-month, no contracts.",
+    title: "Add your property & pick a plan",
+    desc: "Start in minutes and choose a Membership that fits your home. Month-to-month, no contracts.",
   },
   {
     id: "02",
@@ -42,10 +40,10 @@ export default function StepsSection() {
         <div className="relative">
           {/* Side notes (desktop only) */}
           <div className="hidden lg:block absolute left-0 top-2 text-sm text-[#6a6c71]">
-            Simple steps to get unlimited handyman visits.
+            Simple steps to start your Membership.
           </div>
           <div className="hidden lg:block absolute right-0 top-2 text-sm text-[#6a6c71]">
-            At least 2 Visits Garrantee.
+            Book online when your home needs help.
           </div>
 
           {/* Heading */}
@@ -54,10 +52,10 @@ export default function StepsSection() {
               <span>3 EASY STEPS</span>
             </h2>
             <h2 className="mt-1 text-3xl sm:text-5xl lg:text-[64px] font-extrabold tracking-[-0.05em] leading-[1.0] text-[#313234]">
-              TO UNLIMITED HANDYMAN SERVICE
+              TO EASIER HOME CARE
             </h2>
             <p className="mt-4 text-[#6a6c71] text-sm sm:text-base max-w-[680px] mx-auto">
-              Create your account, choose a plan, then book online — and we'll handle everything else. Enjoy more than two visits per month.
+              Add your property, choose a plan, then book online and we will handle everything else. Request visits as your home needs help.
             </p>
           </div>
 
@@ -72,8 +70,7 @@ export default function StepsSection() {
                   "relative rounded-[22px] border border-black/10 bg-white/70 backdrop-blur-md",
                   "shadow-[0_16px_80px_rgba(0,0,0,0.10)]",
                   "p-6 sm:p-7 lg:p-8",
-                  "transition-transform duration-200",
-                  "hover:-translate-y-[2px]",
+                  "transition-colors duration-200",
                 ].join(" ")}
               >
                 {/* dot */}

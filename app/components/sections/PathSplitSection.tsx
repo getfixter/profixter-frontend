@@ -35,7 +35,7 @@ export default function PathSplitSection() {
         {/* ── Membership card ── */}
         <div className="max-w-[680px] mx-auto">
           <div
-            className="group relative flex flex-col rounded-[28px] border border-white/8 overflow-hidden transition-all duration-300 hover:border-[#306EEC]/40 hover:-translate-y-1"
+            className="relative flex flex-col overflow-hidden rounded-[22px] border-l-2 border-[#306EEC]/35"
             style={{ background: "linear-gradient(145deg, #0C1A3A 0%, #0F2050 60%, #0A1630 100%)" }}
           >
             {/* Accent top line */}
@@ -114,7 +114,7 @@ export default function PathSplitSection() {
                   className="w-full min-h-[54px] rounded-[16px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                   style={{ background: "linear-gradient(135deg, #306EEC 0%, #1D4ED8 100%)", boxShadow: "0 12px 40px rgba(48,110,236,0.32)" }}
                 >
-                  Get Subscription
+                  Start Membership
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>

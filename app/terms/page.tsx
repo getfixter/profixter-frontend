@@ -431,7 +431,7 @@ export default function TermsPage() {
                 <li>
                   You can cancel the SMS service at any time. Simply text <span className="font-semibold">&quot;STOP&quot;</span> to the number
                   that texted you. Upon sending &quot;STOP,&quot; we will confirm your unsubscribe status via SMS. Following this confirmation,
-                  you will no longer receive SMS messages from us. To rejoin, sign up as you did initially, and we will resume sending
+                  you will no longer receive SMS messages from us. To rejoin, start again as you did initially, and we will resume sending
                   SMS messages to you.
                 </li>
                 <li>
@@ -532,7 +532,7 @@ export default function TermsPage() {
                 href="/signup"
                 className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
               >
-                Back to Sign Up
+                Back to Add Property
               </Link>
             </div>
           </div>

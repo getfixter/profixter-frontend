@@ -62,7 +62,7 @@ export default function ConfirmationClient() {
         </h1>
 
         <p className="mb-6 text-lg leading-relaxed text-[#6A6D71]">
-          Your subscription is now{" "}
+          Your Membership is now{" "}
           <span className="font-semibold text-[#306EEC]">active</span>. Thanks
           for becoming part of the Mr. Fixter family.
         </p>
@@ -72,7 +72,7 @@ export default function ConfirmationClient() {
             What&apos;s next
           </h3>
           <ul className="space-y-2 text-[#6A6D71]">
-            <li>1. Your subscription is active</li>
+            <li>1. Your Membership is active</li>
             <li>2. Book your first visit</li>
             <li>3. We&apos;ll confirm your appointment</li>
           </ul>

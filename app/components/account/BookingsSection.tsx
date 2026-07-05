@@ -461,7 +461,7 @@ export default function BookingsSection() {
     const headers = authHeaders();
     if (!headers) {
       setLoading(false);
-      setError("Please sign in.");
+      setError("Please open My Home again.");
       return;
     }
 
@@ -526,7 +526,7 @@ export default function BookingsSection() {
 
     const headers = authHeaders();
     if (!headers) {
-      setCancelError("Please sign in again.");
+      setCancelError("Please open My Home again.");
       return;
     }
 

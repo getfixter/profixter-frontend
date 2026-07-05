@@ -109,7 +109,7 @@ function getRecommendation(answers: { usage?: string; emergency?: string; projec
       slug: "/services/general-contractor",
       title: "General Contractor",
       subtitle: "Best for larger renovation or improvement projects.",
-      cta: "Get Started",
+      cta: "Request Estimate",
       color: "#D97706",
       colorBg: "rgba(217,119,6,0.08)",
       colorBorder: "rgba(217,119,6,0.20)",
@@ -120,7 +120,7 @@ function getRecommendation(answers: { usage?: string; emergency?: string; projec
     return {
       type: "plan",
       slug: "/#plans",
-      title: "Basic Subscription",
+      title: "Basic Membership",
       subtitle: "Best if you want regular help without paying full hourly rates.",
       cta: "View Plans",
       color: "#306EEC",
@@ -134,7 +134,7 @@ function getRecommendation(answers: { usage?: string; emergency?: string; projec
       return {
         type: "plan",
         slug: "/#plans",
-        title: "Premium Subscription",
+        title: "Premium Membership",
         subtitle: "Best if you want Rush Visits and the strongest coverage.",
         cta: "View Plans",
         color: "#306EEC",
@@ -145,7 +145,7 @@ function getRecommendation(answers: { usage?: string; emergency?: string; projec
     return {
       type: "plan",
       slug: "/#plans",
-      title: "Plus Subscription",
+      title: "Plus Membership",
       subtitle: "Best for most homeowners who want ongoing handyman support.",
       cta: "View Plans",
       color: "#306EEC",
@@ -157,7 +157,7 @@ function getRecommendation(answers: { usage?: string; emergency?: string; projec
   return {
     type: "plan",
     slug: "/#plans",
-    title: "Subscription",
+    title: "Membership",
     subtitle: "Best way to save money and always have help when you need it.",
     cta: "View Plans",
     color: "#306EEC",

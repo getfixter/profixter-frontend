@@ -38,7 +38,7 @@ export default function EntryHeroSection() {
         <div className="inline-flex items-center gap-2.5 rounded-full border border-white/18 bg-white/[0.06] px-5 py-2 backdrop-blur-sm mb-8">
           <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#86EFAC]" style={{ boxShadow: "0 0 8px rgba(134,239,172,0.9)" }} />
           <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/70">
-            Long Island's Premier Home Services Team
+            Long Island&apos;s Premier Home Services Team
           </span>
         </div>
 
@@ -77,7 +77,7 @@ export default function EntryHeroSection() {
             href="/membership#plans"
             className="inline-flex min-h-[58px] items-center justify-center rounded-[18px] bg-[#306EEC] px-8 text-[16px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9]"
           >
-            Get Subscription
+            Start Membership
           </Link>
           <a
             href="tel:+16315991363"

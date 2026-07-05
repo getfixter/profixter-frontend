@@ -44,7 +44,7 @@ const frustrations = [
 const steps = [
   {
     title: "Join online",
-    text: "Create your account and choose Profixter Basic. Your JULY4 code comes with you.",
+    text: "Add your property and choose Profixter Basic. Your JULY4 code comes with you.",
   },
   {
     title: "Tell us what needs attention",
@@ -557,7 +557,7 @@ export default function July4Page() {
         <div className="mx-auto max-w-[820px]">
           <SectionHeading
             eyebrow="Straight answers"
-            title="Know exactly what you are signing up for."
+            title="Know exactly what you are starting."
             description="A clear offer earns more trust than fine print. Here are the questions homeowners ask most."
           />
 

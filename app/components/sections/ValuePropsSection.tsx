@@ -4,7 +4,7 @@
  * ValuePropsSection
  *
  * Highlights the core benefits of Profixter's service and shows a simple
- * cost comparison between subscribing and paying per visit.  The section
+ * cost comparison between Membership and paying per visit.  The section
  * uses a responsive grid to present icons and text on small and large screens.
  */
 export default function ValuePropsSection() {
@@ -50,8 +50,8 @@ export default function ValuePropsSection() {
             <thead>
               <tr>
                 <th className="px-4 py-2 font-bold bg-gray-50 border-b border-gray-200">Service</th>
-                <th className="px-4 py-2 font-bold bg-gray-50 border-b border-gray-200">Non‑Subscriber</th>
-                <th className="px-4 py-2 font-bold bg-gray-50 border-b border-gray-200">Subscriber</th>
+                <th className="px-4 py-2 font-bold bg-gray-50 border-b border-gray-200">Non-Member</th>
+                <th className="px-4 py-2 font-bold bg-gray-50 border-b border-gray-200">Member</th>
               </tr>
             </thead>
             <tbody>

@@ -3,6 +3,7 @@
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "@/lib/useAuth";
 import VisitorPromotionPopup from "@/app/components/promotion/VisitorPromotionPopup";
+import InstallAppPrompt from "@/app/components/pwa/InstallAppPrompt";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -13,6 +14,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <AuthProvider>
         {children}
         <VisitorPromotionPopup />
+        <InstallAppPrompt />
       </AuthProvider>
     );
   }
@@ -22,6 +24,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <AuthProvider>
         {children}
         <VisitorPromotionPopup />
+        <InstallAppPrompt />
       </AuthProvider>
     </GoogleOAuthProvider>
   );

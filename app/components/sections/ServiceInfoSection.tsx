@@ -118,7 +118,7 @@ export default function ServiceInfoSection() {
     if (state === "sub") {
       return {
         eyebrow: planName ? `${planName} Member` : "Active Member",
-        title: "Personal Handyman Subscription for Homeowners",
+        title: "Personal Handyman Membership for Homeowners",
         sub:
           "Your membership is active. Book your next visit online with clear pricing, predictable service, and no surprise invoices.",
         badge: planName ? `${planName} active` : "Membership active",
@@ -127,8 +127,8 @@ export default function ServiceInfoSection() {
 
     if (state === "none") {
       return {
-        eyebrow: isNewLoggedIn ? "Account Ready" : "Subscription Required",
-        title: "Personal Handyman Subscription for Homeowners",
+        eyebrow: isNewLoggedIn ? "Home Ready" : "Membership Required",
+        title: "Personal Handyman Membership for Homeowners",
         sub:
           "Choose a clear monthly plan, book online, and stop paying unpredictable per-visit rates. No estimates, no surprises.",
         badge: "Easy online booking",
@@ -137,7 +137,7 @@ export default function ServiceInfoSection() {
 
     return {
       eyebrow: "Long Island Homeowners",
-      title: "Personal Handyman Subscription for Homeowners",
+      title: "Personal Handyman Membership for Homeowners",
       sub:
         "Choose a clear monthly plan, book online, and stop paying unpredictable per-visit rates. No estimates, no surprises.",
       badge: "More affordable than per visit",

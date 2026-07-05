@@ -5,6 +5,14 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useAuth } from "@/lib/useAuth";
 
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
 function PasswordField({
   id,
   label,
@@ -90,9 +98,10 @@ function DeleteAccountModal({
 
       logout();
       router.replace("/?deleted=1");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
       const msg =
-        err?.response?.data?.message ||
+        apiError?.response?.data?.message ||
         "Could not delete account. Please try again or contact support.";
       setErrorMsg(msg);
       setPhase("error");
@@ -265,9 +274,10 @@ export function PasswordForm() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirm("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       setStatus("error");
-      const msg = err?.response?.data?.message || "Password update failed. Please try again.";
+      const apiError = err as ApiError;
+      const msg = apiError?.response?.data?.message || "Password update failed. Please try again.";
       setMessage(msg);
     }
   };
@@ -406,7 +416,7 @@ export function PasswordForm() {
                 <div className="text-[14px] font-bold text-[#313234]">Delete Account</div>
                 <div className="text-[12px] text-[#6A6D71] mt-0.5 leading-relaxed">
                   Permanently remove your account and all data.
-                  Only available when you have no active subscription.
+                  Only available when you have no active Membership.
                 </div>
               </div>
               <button
