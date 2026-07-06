@@ -21,11 +21,11 @@ type Booking = {
 const FAQS = [
   {
     q: "How often can I book a visit?",
-    a: "Each plan includes 1–2 scheduled visits per month depending on your plan. You book directly from your account — no phone calls or estimates needed.",
+    a: "Members can request visits as needed. Your plan determines active appointment capacity, materials, Rush Visit benefits, and project benefits. You book online from Your Home.",
   },
   {
     q: "Can I request the same technician every time?",
-    a: "Absolutely — same trusted team, every single visit. That's a core promise of the Fixter membership. They learn your home, your preferences, your running list.",
+    a: "Absolutely. The same trusted team is a core promise of the Profixter Membership. They learn your home, your preferences, and your running list.",
   },
   {
     q: "What if I need to reschedule?",
@@ -57,7 +57,7 @@ const PRE_VISIT_TIPS = [
   "Have all materials, fixtures, and parts on-site and ready — we focus on labor, not supply runs.",
   "Clear access to work areas before we arrive to make the most of the 90-minute window.",
   "Write your full task list in advance and walk through it with your technician at the start.",
-  "Your Fixter may arrive up to 30 min early or late — keep your phone nearby.",
+  "Your Profixter pro may arrive up to 30 min early or late - keep your phone nearby.",
   "For plumbing or electrical work, know where your shutoffs and breaker panel are.",
   "Happy with the visit? A Google review and a tip go a long way for your tech.",
 ];
@@ -242,7 +242,7 @@ export default function OverviewSection({
                   style={{ boxShadow: "0 0 8px rgba(134,239,172,0.9)" }}
                 />
                 <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/55">
-                  {planName ? `${planName} Plan · Active Member` : "Fixter Member"}
+                  {planName ? `${planName} Plan - Active Member` : "Profixter Member"}
                 </span>
               </div>
               <h2 className="text-[24px] sm:text-[28px] font-black text-white leading-tight tracking-[-0.02em]">
@@ -254,7 +254,7 @@ export default function OverviewSection({
             </div>
             <div className="flex gap-3 flex-shrink-0">
               <a
-                href="/membership"
+                href="/membership#pick-day"
                 className="inline-flex items-center justify-center h-[44px] px-5 rounded-[12px] bg-[#306EEC] text-white text-[13px] font-extrabold hover:bg-[#2558c9] transition"
                 style={{ boxShadow: "0 8px 24px rgba(48,110,236,0.35)" }}
               >
@@ -335,7 +335,7 @@ export default function OverviewSection({
                   <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><line x1="12" y1="14" x2="12" y2="18" /><line x1="10" y1="16" x2="14" y2="16" />
                 </svg>
               ),
-              href: "/membership",
+              href: "/membership#pick-day",
               color: "#306EEC",
               bg: "#EEF5FF",
               external: false,
@@ -501,7 +501,7 @@ export default function OverviewSection({
           </div>
           <div className="mt-4 rounded-[10px] bg-[#F8FAFF] border border-[#E6E8EF] px-4 py-3">
             <p className="text-[12px] text-[#64748B] leading-relaxed">
-              <span className="font-semibold text-[#0B1628]">Member perk:</span> As a Fixter member, mention your membership when requesting an exterior estimate. We take care of our regulars.
+              <span className="font-semibold text-[#0B1628]">Member perk:</span> As a Profixter Member, mention your Membership when requesting an exterior estimate. We take care of our regulars.
             </p>
           </div>
         </div>

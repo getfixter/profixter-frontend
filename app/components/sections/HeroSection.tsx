@@ -22,7 +22,7 @@ const BENEFITS = [
 ];
 
 const TRUST_ROW = [
-  "5.0 Google rating",
+  "4.9 Google rating",
   "Long Island local",
   "No long-term contract",
 ];
@@ -89,6 +89,10 @@ export default function HeroSection() {
     else router.push("/membership#plans");
   };
 
+  const goToSignupForMembership = () => {
+    router.push("/signup?redirect=%2Fmembership%23plans");
+  };
+
   const goToBooking = () => {
     const el = document.getElementById("pick-day");
     if (el) scrollToHash("#pick-day");
@@ -116,7 +120,7 @@ export default function HeroSection() {
           }
         : {
             primaryLabel: "Become a Member",
-            primaryAction: goToPlans,
+            primaryAction: goToSignupForMembership,
             secondaryLabel: "Book One-Time Visit",
             secondaryAction: goToOneTimeBooking,
           };

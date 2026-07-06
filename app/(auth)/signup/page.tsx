@@ -113,6 +113,12 @@ function detectCounty(zip: string): string {
   return "";
 }
 
+function getSafeInternalRedirect(raw: string | null): string {
+  const value = String(raw || "").trim();
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "";
+  return value;
+}
+
 function FieldLabel({ htmlFor, children }: { htmlFor: string; children: ReactNode }) {
   return (
     <label htmlFor={htmlFor} className="mb-2 block text-[12px] font-bold uppercase tracking-[0.13em] text-white/58">
@@ -308,9 +314,14 @@ export default function SignUpPage() {
         new URLSearchParams(window.location.search).get("promo")?.trim().toUpperCase() ||
         sessionStorage.getItem("pendingPromoCode") ||
         "";
-      window.location.href = checkoutPromo
-        ? `/?promo=${encodeURIComponent(checkoutPromo)}#plans`
-        : "/";
+      const redirect = getSafeInternalRedirect(
+        new URLSearchParams(window.location.search).get("redirect")
+      );
+      window.location.href =
+        redirect ||
+        (checkoutPromo
+          ? `/membership?promo=${encodeURIComponent(checkoutPromo)}#plans`
+          : "/account");
     } catch (err: unknown) {
       const errorResponse = err as { response?: { data?: { message?: string } } };
       const message = errorResponse?.response?.data?.message || "We couldn't finish setting up your home. Please try again.";
@@ -329,7 +340,7 @@ export default function SignUpPage() {
   };
 
   return (
-    <RoleEntryGate loadingLabel="Checking your session..." redirectLabel="Opening your dashboard...">
+    <RoleEntryGate loadingLabel="Checking your session..." redirectLabel="Opening Your Home...">
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#050B18] px-4 py-5 text-white sm:px-6 sm:py-8">
       <Image
         src="/images/hero-bg.webp"

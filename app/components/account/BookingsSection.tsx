@@ -626,7 +626,7 @@ export default function BookingsSection() {
           </div>
           {filter === "all" && (
             <a
-              href="/membership"
+              href="/membership#pick-day"
               className="inline-flex items-center justify-center mt-4 px-5 py-2.5 rounded-[12px] bg-[#306EEC] text-white font-semibold text-[13px] hover:bg-[#2557C7] transition"
             >
               Book a visit
@@ -653,7 +653,7 @@ export default function BookingsSection() {
       {!loading && !error && bookings.length > 0 && (
         <div className="mt-5 text-[13px] text-[#6A6D71] text-center">
           Need a new visit?{" "}
-          <a className="text-[#306EEC] font-semibold hover:underline" href="/membership">
+          <a className="text-[#306EEC] font-semibold hover:underline" href="/membership#pick-day">
             Book another visit
           </a>
         </div>

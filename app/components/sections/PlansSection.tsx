@@ -42,7 +42,7 @@ const planDisplayContent: Record<
   Basic: {
     description: "Perfect for occasional home maintenance.",
     features: [
-      "No monthly visit cap",
+      "Request help as needed",
       "1 active appointment at a time",
       "All handyman services included",
       "90-minute visits",
@@ -51,7 +51,7 @@ const planDisplayContent: Record<
   Plus: {
     description: "The best balance for active homeowners.",
     features: [
-      "No monthly visit cap",
+      "Request help as needed",
       "2 active appointments at a time",
       "Basic materials included",
       "90-minute visits",
@@ -60,7 +60,7 @@ const planDisplayContent: Record<
   Premium: {
     description: "Faster scheduling when something can't wait.",
     features: [
-      "No monthly visit cap",
+      "Request help as needed",
       "2 active appointments at a time",
       "Basic materials included",
       "1 Rush Visit per month",
@@ -70,7 +70,7 @@ const planDisplayContent: Record<
   Elite: {
     description: "Maximum home coverage.",
     features: [
-      "No monthly visit cap",
+      "Request help as needed",
       "2 active appointments at a time",
       "1 full project day per month (up to 8 hours)",
       "2 Rush Visits per month",
@@ -156,58 +156,6 @@ export default function PlansSection() {
         .filter((plan): plan is Plan => Boolean(plan)),
     [mobilePlanOrder]
   );
-  const [mobilePlanIndex, setMobilePlanIndex] = useState(1);
-  const mobileTrackRef = React.useRef<HTMLDivElement | null>(null);
-  const mobileCardRefs = React.useRef<Array<HTMLDivElement | null>>([]);
-
-  const scrollMobileCardToIndex = useCallback((index: number, behavior: ScrollBehavior = "smooth") => {
-    const card = mobileCardRefs.current[index];
-    if (card) {
-      card.scrollIntoView({ behavior, inline: "center", block: "nearest" });
-    }
-  }, []);
-
-  useEffect(() => {
-    mobileCardRefs.current = mobileCardRefs.current.slice(0, mobilePlans.length);
-  }, [mobilePlans.length]);
-
-  useEffect(() => {
-    scrollMobileCardToIndex(mobilePlanIndex, "auto");
-  }, [mobilePlanIndex, scrollMobileCardToIndex]);
-
-  const handleMobileScroll = useCallback(() => {
-    const container = mobileTrackRef.current;
-    if (!container) return;
-
-    const containerCenter = container.getBoundingClientRect().left + container.clientWidth / 2;
-    let closestIndex = mobilePlanIndex;
-    let closestDistance = Number.POSITIVE_INFINITY;
-
-    mobileCardRefs.current.forEach((card, index) => {
-      if (!card) return;
-      const rect = card.getBoundingClientRect();
-      const cardCenter = rect.left + rect.width / 2;
-      const distance = Math.abs(cardCenter - containerCenter);
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestIndex = index;
-      }
-    });
-
-    if (closestIndex !== mobilePlanIndex) {
-      setMobilePlanIndex(closestIndex);
-    }
-  }, [mobilePlanIndex]);
-
-  useEffect(() => {
-    const container = mobileTrackRef.current;
-    if (!container) return;
-    container.addEventListener("scroll", handleMobileScroll, { passive: true });
-    return () => container.removeEventListener("scroll", handleMobileScroll);
-  }, [handleMobileScroll]);
-
-  const handleMobilePrev = () => setMobilePlanIndex((current) => Math.max(0, current - 1));
-  const handleMobileNext = () => setMobilePlanIndex((current) => Math.min(mobilePlans.length - 1, current + 1));
 
   useEffect(() => {
     if (!selectedAddressId && defaultAddress?._id) {
@@ -295,7 +243,7 @@ export default function PlansSection() {
     const endpointUrl = `${apiBase.replace(/\/$/, "")}${endpointPath}`;
     const preservePlanUrl = `/membership?plan=${encodeURIComponent(plan)}&billingCycle=${encodeURIComponent(
       cycle
-    )}&addressId=${encodeURIComponent(addressId)}`;
+    )}&addressId=${encodeURIComponent(addressId)}#plans`;
 
     if (!authToken) {
       console.error("[checkout] Missing auth token before checkout request", {
@@ -310,7 +258,7 @@ export default function PlansSection() {
         "pendingCheckoutPlan",
         JSON.stringify({ plan, billingCycle: cycle, planName, addressId })
       );
-      window.location.href = `/signin?redirect=${encodeURIComponent(preservePlanUrl)}`;
+      window.location.href = `/signup?redirect=${encodeURIComponent(preservePlanUrl)}`;
       return;
     }
 
@@ -388,7 +336,7 @@ export default function PlansSection() {
           "pendingCheckoutPlan",
           JSON.stringify({ plan, billingCycle: cycle, planName, addressId })
         );
-        window.location.href = `/signin?redirect=${encodeURIComponent(preservePlanUrl)}`;
+        window.location.href = `/signup?redirect=${encodeURIComponent(preservePlanUrl)}`;
         return;
       }
 
@@ -525,8 +473,8 @@ export default function PlansSection() {
         "pendingCheckoutPlan",
         JSON.stringify({ plan: planType, billingCycle: billing, planName })
       );
-      window.location.href = `/signin?redirect=${encodeURIComponent(
-        `/membership?plan=${encodeURIComponent(planType)}&billingCycle=${encodeURIComponent(billing)}`
+      window.location.href = `/signup?redirect=${encodeURIComponent(
+        `/membership?plan=${encodeURIComponent(planType)}&billingCycle=${encodeURIComponent(billing)}#plans`
       )}`;
       return;
     }
@@ -686,19 +634,43 @@ export default function PlansSection() {
 
         <div className="mx-auto mb-6 max-w-[720px] text-center sm:mb-8">
           <h3 className="text-[18px] font-semibold tracking-normal text-[#111111] sm:text-2xl">
-            No monthly visit cap
+            Request help when your home needs it
           </h3>
           <p className="mt-2 text-[13px] leading-5 text-[#6E6E73] sm:text-base sm:leading-6">
             Request visits as needed. Your plan determines active appointment capacity, scheduling benefits, and included support.
           </p>
         </div>
 
-        <div className="lg:hidden">
-          <div
-            ref={mobileTrackRef}
-            className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 touch-pan-x sm:gap-4 sm:pb-4"
-          >
-            {mobilePlans.map((plan, index) => {
+        <div className="mx-auto mb-7 max-w-[780px] rounded-[24px] border border-[#E5E7EB] bg-white p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:mb-10 sm:p-5">
+          <div className="grid items-center gap-3 text-center sm:grid-cols-[1fr_auto_1fr] sm:text-left">
+            <div className="rounded-[18px] bg-[#F8FAFC] px-4 py-4">
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#64748B]">
+                Two handyman visits
+              </div>
+              <div className="mt-1 text-[30px] font-semibold tracking-[-0.03em] text-[#111111]">
+                $198
+              </div>
+              <div className="text-sm font-semibold text-[#6E6E73]">$99 each visit</div>
+            </div>
+            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#94A3B8]">
+              vs
+            </div>
+            <div className="rounded-[18px] bg-[#0B1628] px-4 py-4 text-white">
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-white/55">
+                Membership starts at
+              </div>
+              <div className="mt-1 text-[30px] font-semibold tracking-[-0.03em]">
+                $149/mo
+              </div>
+              <div className="text-sm font-semibold text-white/65">
+                Ongoing home help, no $99 visit charge
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:hidden">
+          {mobilePlans.map((plan) => {
               const action = getActionForPlan(plan.name);
               const isPopular = plan.name === "Plus";
               const disabled = action.disabled || !!actionLoadingPlan || checkingAddr;
@@ -708,11 +680,8 @@ export default function PlansSection() {
               return (
                 <article
                   key={plan.name}
-                  ref={(el) => {
-                    mobileCardRefs.current[index] = el as HTMLDivElement | null;
-                  }}
                   className={[
-                    "flex min-w-[80%] flex-shrink-0 snap-center flex-col rounded-[24px] border bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.07)] transition duration-300 sm:min-w-[75%] sm:rounded-[28px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.07)]",
+                    "relative flex w-full max-w-full min-w-0 flex-col overflow-hidden rounded-[24px] border bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.07)] transition duration-300 sm:rounded-[28px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.07)]",
                     isPopular
                       ? "border-[#111111] ring-2 ring-[#111111]"
                       : "border-[#E5E7EB]",
@@ -724,7 +693,7 @@ export default function PlansSection() {
                     </div>
                   ) : null}
 
-                  <div className="pr-24">
+                  <div className="min-w-0 pr-24">
                     <h3 className="text-[22px] font-semibold tracking-normal text-[#111111] sm:text-2xl">
                       {plan.name}
                     </h3>
@@ -746,11 +715,11 @@ export default function PlansSection() {
 
                   <ul className="mt-6 space-y-3 sm:mt-7 sm:space-y-4">
                     {content.features.map((feature) => (
-                      <li key={feature} className="flex gap-2.5 text-[14px] leading-5 text-[#1D1D1F] sm:gap-3 sm:text-[15px] sm:leading-6">
+                      <li key={feature} className="flex min-w-0 gap-2.5 text-[14px] leading-5 text-[#1D1D1F] sm:gap-3 sm:text-[15px] sm:leading-6">
                         <span className="mt-[1px] flex-none text-sm font-semibold text-[#111111]">
                           ✓
                         </span>
-                        <span>{feature}</span>
+                        <span className="min-w-0 break-words">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -760,12 +729,12 @@ export default function PlansSection() {
                     data-track="plans-cta"
                     disabled={disabled}
                     className={[
-                      "mt-auto h-12 rounded-full text-sm font-semibold transition duration-200",
+                      "mt-auto h-12 w-full max-w-full rounded-full border text-sm font-semibold transition duration-200",
                       disabled
-                        ? "cursor-not-allowed bg-[#D1D5DB] text-white"
+                        ? "cursor-not-allowed border-[#D1D5DB] bg-[#D1D5DB] text-white"
                         : isPopular
-                          ? "bg-[#111111] text-white hover:bg-black"
-                          : "bg-[#F2F2F2] text-[#111111] hover:bg-[#E5E5E5]",
+                          ? "border-[#111111] bg-[#111111] text-white hover:bg-black"
+                          : "border-[#111111]/20 bg-white text-[#111111] hover:border-[#111111] hover:bg-[#F8F8F8]",
                     ].join(" ")}
                   >
                     {actionLoadingPlan === plan.name ? "Working..." : action.label}
@@ -773,45 +742,6 @@ export default function PlansSection() {
                 </article>
               );
             })}
-          </div>
-
-          <div className="mt-4 flex items-center justify-between gap-3 px-2">
-            <button
-              type="button"
-              onClick={handleMobilePrev}
-              disabled={mobilePlanIndex === 0}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#D1D5DB] bg-white text-[#111111] transition hover:bg-[#F8F8F9] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <span className="sr-only">Previous plan</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M15 6L9 12L15 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-
-            <div className="flex items-center gap-2">
-              {mobilePlans.map((plan, index) => (
-                <span
-                  key={plan.name}
-                  className={[
-                    "h-2.5 w-2.5 rounded-full transition-colors",
-                    index === mobilePlanIndex ? "bg-[#111111]" : "bg-[#D9D9DB]",
-                  ].join(" ")}
-                />
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={handleMobileNext}
-              disabled={mobilePlanIndex === mobilePlans.length - 1}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#D1D5DB] bg-white text-[#111111] transition hover:bg-[#F8F8F9] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <span className="sr-only">Next plan</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </div>
         </div>
 
         <div className="hidden gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-4 lg:grid">
@@ -838,7 +768,7 @@ export default function PlansSection() {
                   </div>
                 ) : null}
 
-                <div className="pr-24">
+                <div className="min-w-0 pr-24">
                   <h3 className="text-2xl font-semibold tracking-normal text-[#111111]">
                     {plan.name}
                   </h3>
@@ -853,18 +783,18 @@ export default function PlansSection() {
                       /{billing === "annual" ? "year" : "mo"}
                     </span>
                   </div>
-                  <p className="mt-5 min-h-[52px] text-[15px] leading-6 text-[#6E6E73]">
+                  <p className="mt-5 min-h-[52px] break-words text-[15px] leading-6 text-[#6E6E73]">
                     {content.description}
                   </p>
                 </div>
 
                 <ul className="mt-7 space-y-4">
                   {content.features.map((feature) => (
-                    <li key={feature} className="flex gap-3 text-[15px] leading-6 text-[#1D1D1F]">
+                    <li key={feature} className="flex min-w-0 gap-3 text-[15px] leading-6 text-[#1D1D1F]">
                       <span className="mt-[1px] flex-none text-sm font-semibold text-[#111111]">
                         ✓
                       </span>
-                      <span>{feature}</span>
+                      <span className="min-w-0 break-words">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -874,12 +804,12 @@ export default function PlansSection() {
                   data-track="plans-cta"
                   disabled={disabled}
                   className={[
-                    "mt-auto h-12 rounded-full text-sm font-semibold transition duration-200",
+                    "mt-auto h-12 w-full max-w-full rounded-full border text-sm font-semibold transition duration-200",
                     disabled
-                      ? "cursor-not-allowed bg-[#D1D5DB] text-white"
+                      ? "cursor-not-allowed border-[#D1D5DB] bg-[#D1D5DB] text-white"
                       : isPopular
-                        ? "bg-[#111111] text-white hover:bg-black"
-                        : "bg-[#F2F2F2] text-[#111111] hover:bg-[#E5E5E5]",
+                        ? "border-[#111111] bg-[#111111] text-white hover:bg-black"
+                        : "border-[#111111]/20 bg-white text-[#111111] hover:border-[#111111] hover:bg-[#F8F8F8]",
                   ].join(" ")}
                 >
                   {actionLoadingPlan === plan.name ? "Working..." : action.label}

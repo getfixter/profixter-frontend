@@ -45,6 +45,52 @@ const STARTERS = [
   "Plan seasonal maintenance",
 ];
 
+const NEXT_STEPS = {
+  handyman: {
+    label: "Book Handyman",
+    href: "/book",
+  },
+  membership: {
+    label: "Become a Member",
+    href: "/membership#plans",
+  },
+  renovation: {
+    label: "Request Renovation Estimate",
+    href: "/projects#estimate",
+  },
+} as const;
+
+function getMessageActions(text: string) {
+  const lower = text.toLowerCase();
+  const actions: Array<(typeof NEXT_STEPS)[keyof typeof NEXT_STEPS]> = [];
+
+  if (
+    /\b(renovation|renovate|remodel|roof|roofing|siding|kitchen|bathroom|addition|construction|contractor quote|agreement|estimate)\b/.test(
+      lower
+    )
+  ) {
+    actions.push(NEXT_STEPS.renovation);
+  }
+
+  if (
+    /\b(maintenance|seasonal|recurring|ongoing|to-do list|task list|multiple|regular|membership|member)\b/.test(
+      lower
+    )
+  ) {
+    actions.push(NEXT_STEPS.membership);
+  }
+
+  if (
+    /\b(handyman|small fix|minor repair|faucet|fixture|caulk|drywall|mount|shelf|mirror|door|patch|paint touch-up)\b/.test(
+      lower
+    )
+  ) {
+    actions.push(NEXT_STEPS.handyman);
+  }
+
+  return actions.slice(0, 2);
+}
+
 function InlineText({ text }: { text: string }) {
   const nodes: ReactNode[] = [];
   const pattern = /(\*\*([^*]+)\*\*)|\[([^\]]+)\]\((https?:\/\/[^)]+|\/[^)]+)\)/g;
@@ -388,14 +434,38 @@ export default function HomeSupportPage() {
                       </div>
                     )}
                     {message.role === "assistant" && !message.error && (
-                      <button
-                        type="button"
-                        onClick={() => copyMessage(message)}
-                        className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#EEF4FF] px-3 py-1.5 text-xs font-black text-[#2563EB] transition hover:bg-[#E1ECFF]"
-                      >
-                        <ClipboardDocumentIcon className="h-4 w-4" aria-hidden="true" />
-                        {copiedId === message.id ? "Copied" : "Copy response"}
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => copyMessage(message)}
+                          className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#EEF4FF] px-3 py-1.5 text-xs font-black text-[#2563EB] transition hover:bg-[#E1ECFF]"
+                        >
+                          <ClipboardDocumentIcon className="h-4 w-4" aria-hidden="true" />
+                          {copiedId === message.id ? "Copied" : "Copy response"}
+                        </button>
+                        {getMessageActions(message.content).length > 0 ? (
+                          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#E4EBF5] pt-3">
+                            <span className="text-[11px] font-black uppercase tracking-[0.14em] text-[#7C879A]">
+                              Next step
+                            </span>
+                            {getMessageActions(message.content).map((action) => (
+                              <Link
+                                key={action.href}
+                                href={action.href}
+                                onClick={() =>
+                                  trackEvent("home_support_recommendation_clicked", {
+                                    label: action.label,
+                                    href: action.href,
+                                  })
+                                }
+                                className="rounded-full bg-[#0B1628] px-3 py-1.5 text-xs font-black text-white transition hover:bg-[#17263D]"
+                              >
+                                {action.label}
+                              </Link>
+                            ))}
+                          </div>
+                        ) : null}
+                      </>
                     )}
                   </div>
                 </div>

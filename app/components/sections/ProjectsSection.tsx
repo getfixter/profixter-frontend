@@ -239,12 +239,12 @@ export default function ProjectsSection() {
 
               <div className="space-y-3">
                 {[
-                  { icon: "★", text: "5.0 Google Rating" },
+                  { icon: "★", text: "4.9 Google Rating" },
                   { icon: "✓", text: "Same team, every visit" },
                   { icon: "✓", text: "No estimates — ever" },
                   { icon: "✓", text: "Licensed HI-71484" },
                   { icon: "✓", text: "9+ years on Long Island" },
-                ].map(({ icon, text }) => (
+                ].map(({ text }) => (
                   <div key={text} className="flex items-center gap-3">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M5 12.5l4 4 10-10" stroke="#86EFAC" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />

@@ -1,6 +1,6 @@
 "use client";
 
-const GOOGLE_REVIEWS_URL = "https://www.google.com/maps";
+const GOOGLE_REVIEWS_URL = "https://maps.app.goo.gl/Zgf97uUDCh6HBK5o8";
 
 const MOST_ACTIVE_TOWNS = [
   "Babylon",
@@ -82,7 +82,7 @@ function CredentialsCard() {
         <ul className="mt-6 space-y-3">
           <CheckItem light>Licensed Home Improvement Contractor</CheckItem>
           <CheckItem light>Fully insured</CheckItem>
-          <CheckItem light>Nearly 10 years In Construction Industry</CheckItem>
+          <CheckItem light>Nearly 10 years in construction</CheckItem>
           <CheckItem light>Founder-led and locally accountable</CheckItem>
         </ul>
 

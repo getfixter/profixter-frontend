@@ -10,7 +10,7 @@ const OLD_WAY = [
 ];
 
 const PROFIXTER_WAY = [
-  "One membership covers your monthly visits",
+  "Membership lets you request help as needed",
   "Book online in 60 seconds",
   "Confirmed slot, same-day response",
   "No estimates for covered work",
@@ -49,7 +49,7 @@ export default function CategorySection() {
           </h2>
           <p className="text-[15px] sm:text-[17px] text-white/48 max-w-[600px] mx-auto leading-relaxed">
             Most homeowners wait until something breaks, then start searching for help.
-            Profixter flips that — giving you a reliable handyman every month so your home stays under control.
+            Profixter flips that: one reliable team, easy online booking, and ongoing help so your home stays under control.
           </p>
         </div>
 

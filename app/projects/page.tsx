@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import { ChatWidget } from "@/app/components/ChatWidget";
+import MembershipCtaLink from "@/app/components/membership/MembershipCtaLink";
 
 type ProjectType =
   | "roofing"
@@ -672,7 +673,7 @@ function ProjectsContent() {
                 [
                   "Membership included",
                   "Some larger projects may include up to 12 months of Profixter Membership.",
-                  "/membership",
+                  "/membership#plans",
                   "Become a Member",
                 ],
                 [
@@ -685,12 +686,18 @@ function ProjectsContent() {
                 <div key={title} className="rounded-[20px] border border-white/15 bg-white/[0.08] p-4 backdrop-blur">
                   <div className="text-[13px] font-extrabold text-white">{title}</div>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-white/65">{body}</p>
-                  <Link
-                    href={href}
-                    className="mt-3 inline-flex text-[12px] font-black text-white underline decoration-white/30 underline-offset-4 transition hover:text-white/80"
-                  >
-                    {cta}
-                  </Link>
+                  {cta === "Become a Member" ? (
+                    <MembershipCtaLink className="mt-3 inline-flex text-[12px] font-black text-white underline decoration-white/30 underline-offset-4 transition hover:text-white/80">
+                      {cta}
+                    </MembershipCtaLink>
+                  ) : (
+                    <Link
+                      href={href}
+                      className="mt-3 inline-flex text-[12px] font-black text-white underline decoration-white/30 underline-offset-4 transition hover:text-white/80"
+                    >
+                      {cta}
+                    </Link>
+                  )}
                 </div>
               ))}
             </div>

@@ -61,7 +61,7 @@ export default function RenovationsPage() {
           title="Larger home projects need a clearer first step."
           description="Explore Profixter renovation and construction paths for bathrooms, kitchens, roofing, siding, full-home renovation, and new home construction."
           primaryCta={{ label: "Request Renovation Estimate", href: "/projects#estimate" }}
-          secondaryCta={{ label: "Become a Member", href: "/membership" }}
+          secondaryCta={{ label: "Become a Member", href: "/membership#plans" }}
           breadcrumb={{ label: "Renovations", href: "/renovations" }}
         />
 

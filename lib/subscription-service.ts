@@ -50,6 +50,24 @@ export type ManagedSubscription = {
   stripeManaged?: boolean;
 };
 
+export type RetentionOfferDebug = {
+  route?: string | null;
+  apiResponseReason?: string | null;
+  couponEnvPresent?: boolean | null;
+  subscriptionId?: string | null;
+  addressId?: string | null;
+  status?: string | null;
+  cancelAtPeriodEnd?: boolean | null;
+  stripeSubscriptionId?: string | null;
+  stripeStatus?: string | null;
+  stripeCancelAtPeriodEnd?: boolean | null;
+  retentionOffer?: {
+    offeredAt?: string | null;
+    acceptedAt?: string | null;
+    declinedAt?: string | null;
+  };
+};
+
 export type RetentionOfferResponse = {
   eligible: boolean;
   reason?: string;
@@ -59,6 +77,7 @@ export type RetentionOfferResponse = {
     offeredAt?: string;
   };
   subscription?: ManagedSubscription;
+  debug?: RetentionOfferDebug;
 };
 
 export type RetentionOfferAcceptResponse = {

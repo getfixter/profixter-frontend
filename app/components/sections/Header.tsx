@@ -126,7 +126,7 @@ export default function Header() {
             ) : (
               <>
                 <Link
-                  href="/membership"
+                  href="/signup?redirect=%2Fmembership%23plans"
                   className="rounded-full bg-[#0B1628] px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#172033]"
                 >
                   Become a Member
@@ -245,7 +245,7 @@ export default function Header() {
               ) : (
                 <>
                   <Link
-                    href="/membership"
+                    href="/signup?redirect=%2Fmembership%23plans"
                     onClick={() => setIsMenuOpen(false)}
                     className="w-full rounded-[16px] bg-[#0B1628] px-5 py-3.5 text-center text-[15px] font-black text-white transition hover:bg-[#172033] sm:px-6 sm:py-4 sm:text-base"
                   >

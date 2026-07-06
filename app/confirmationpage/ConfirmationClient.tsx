@@ -10,7 +10,7 @@ export default function ConfirmationClient() {
   const sessionId = searchParams.get("session_id");
 
   const handleBookClick = () => {
-    window.location.href = "/#pick-day";
+    window.location.href = "/membership#pick-day";
   };
 
   useEffect(() => {
@@ -47,9 +47,9 @@ export default function ConfirmationClient() {
   }, [sessionId]);
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-6 py-20 bg-gradient-to-b from-[#F4F6FF] to-[#E6EBFF]">
-      <div className="relative w-full max-w-lg rounded-[24px] border border-[#DCE3F8] bg-white p-10 text-center shadow-[0_20px_60px_rgba(0,0,0,0.1)] animate-fadeIn">
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-5xl">🎉</div>
+    <main className="flex min-h-screen items-center justify-center bg-[#F5F7FB] px-5 py-16 sm:px-6 sm:py-20">
+      <div className="relative w-full max-w-xl overflow-hidden rounded-[30px] border border-[#DCE3F8] bg-white p-7 text-center shadow-[0_28px_80px_rgba(15,23,42,0.12)] animate-fadeIn sm:p-10">
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#306EEC] via-[#86EFAC] to-[#D4A574]" />
 
         <div className="mb-6 flex justify-center">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#E8F1FF] shadow-inner">
@@ -57,46 +57,38 @@ export default function ConfirmationClient() {
           </div>
         </div>
 
-        <h1 className="mb-3 text-3xl font-bold tracking-tight text-[#313234]">
-          You&apos;re all set
+        <h1 className="mb-3 text-[34px] font-black leading-tight tracking-[-0.035em] text-[#0B1628] sm:text-[44px]">
+          Your home is now taken care of.
         </h1>
 
-        <p className="mb-6 text-lg leading-relaxed text-[#6A6D71]">
-          Your Membership is now{" "}
-          <span className="font-semibold text-[#306EEC]">active</span>. Thanks
-          for becoming part of the Mr. Fixter family.
+        <p className="mx-auto mb-6 max-w-[420px] text-[15px] font-semibold leading-relaxed text-[#64748B] sm:text-base">
+          Your Membership is active. Book your first Member visit and we&apos;ll start learning your home, your priorities, and your running list.
         </p>
 
-        <div className="mb-6 rounded-xl border border-[#D7E0F5] bg-[#F4F7FF] p-5 text-left shadow-sm">
-          <h3 className="mb-2 text-lg font-semibold text-[#306EEC]">
+        <div className="mb-6 rounded-[20px] border border-[#D7E0F5] bg-[#F8FAFF] p-5 text-left shadow-sm">
+          <h3 className="mb-3 text-base font-black text-[#0B1628]">
             What&apos;s next
           </h3>
-          <ul className="space-y-2 text-[#6A6D71]">
-            <li>1. Your Membership is active</li>
-            <li>2. Book your first visit</li>
-            <li>3. We&apos;ll confirm your appointment</li>
+          <ul className="space-y-3 text-sm font-semibold text-[#64748B]">
+            <li>1. Choose your first visit time</li>
+            <li>2. Add notes and photos for the work</li>
+            <li>3. Profixter confirms the appointment</li>
           </ul>
         </div>
 
         <button
           onClick={handleBookClick}
-          className="h-[56px] w-full rounded-xl bg-[#306EEC] text-lg font-semibold text-white shadow-lg shadow-[#306EEC]/30 transition-all hover:bg-[#2558c9]"
+          className="h-[56px] w-full rounded-[16px] bg-[#0B1628] text-base font-black text-white shadow-[0_18px_44px_rgba(11,22,40,0.24)] transition-all hover:bg-[#17263D]"
         >
-          Book Your First Visit
+          Book Your Member Visit
         </button>
 
-        <div className="mt-4 rounded-[16px] border border-[#D7E0F5] bg-[#F8FAFF] p-4 text-left">
-          <p className="text-sm font-semibold text-[#313234]">
-            Most members book one visit per month
+        <div className="mt-4 rounded-[18px] border border-[#E5E7EB] bg-white p-4 text-left">
+          <p className="text-sm font-black text-[#0B1628]">
+            How booking works as a Member
           </p>
           <p className="mt-2 text-sm leading-relaxed text-[#6A6D71]">
-            You can always schedule your next visit after completion.
-          </p>
-        </div>
-
-        <div className="mt-4 rounded-[16px] border border-[#D7E0F5] bg-[#F8FAFF] p-4 text-left">
-          <p className="text-sm font-semibold text-[#313234]">
-            Invite a friend and share simple monthly home help
+            Members can request visits online as needed, subject to availability and active booking rules.
           </p>
         </div>
 

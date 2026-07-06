@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import MembershipCtaLink from "@/app/components/membership/MembershipCtaLink";
 
 export default function PathSplitSection() {
   return (
@@ -83,7 +83,7 @@ export default function PathSplitSection() {
               {/* Benefits */}
               <ul className="space-y-3 mb-8">
                 {[
-                  "Regular scheduled visits based on your plan",
+                  "Request help whenever your home needs it",
                   "Same trusted team, every single visit",
                   "Wide range of tasks covered — no per-task estimates",
                   "Priority scheduling for members",
@@ -109,8 +109,7 @@ export default function PathSplitSection() {
 
               {/* CTA */}
               <div className="mt-auto space-y-3">
-                <Link
-                  href="/membership"
+                <MembershipCtaLink
                   className="w-full min-h-[54px] rounded-[16px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                   style={{ background: "linear-gradient(135deg, #306EEC 0%, #1D4ED8 100%)", boxShadow: "0 12px 40px rgba(48,110,236,0.32)" }}
                 >
@@ -118,7 +117,7 @@ export default function PathSplitSection() {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                </Link>
+                </MembershipCtaLink>
 
                 {/* Promo code */}
                 <div className="flex items-center justify-center gap-2">
@@ -137,7 +136,7 @@ export default function PathSplitSection() {
           {[
             "NY State Licensed · HI-71484",
             "Fully Insured",
-            "5.0 Google Rating",
+            "4.9 Google Rating",
             "9+ Years on Long Island",
             "Founder-Led",
           ].map((item) => (

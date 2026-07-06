@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
+import MembershipCtaLink from "@/app/components/membership/MembershipCtaLink";
 import type { CtaLink, SeoPageContent, ServiceAreaContent } from "@/lib/seo-content";
 
 type LinkItem = {
@@ -48,6 +49,26 @@ function MinusIcon() {
         strokeWidth="2.4"
       />
     </svg>
+  );
+}
+
+function SmartCtaLink({
+  cta,
+  className,
+  children,
+}: {
+  cta: CtaLink;
+  className: string;
+  children: React.ReactNode;
+}) {
+  if (cta.label === "Become a Member") {
+    return <MembershipCtaLink className={className}>{children}</MembershipCtaLink>;
+  }
+
+  return (
+    <Link href={cta.href} className={className}>
+      {children}
+    </Link>
   );
 }
 
@@ -109,19 +130,19 @@ export function HubHero({
             {description}
           </p>
           <div className="mt-7 flex flex-col gap-2.5 sm:flex-row">
-            <Link
-              href={primaryCta.href}
+            <SmartCtaLink
+              cta={primaryCta}
               className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-[14px] bg-[#306EEC] px-6 text-[14px] font-black text-white shadow-[0_16px_42px_rgba(48,110,236,0.26)] transition hover:bg-[#2558C9] sm:min-h-[54px] sm:text-[15px]"
             >
               {primaryCta.label}
               <ArrowIcon />
-            </Link>
-            <Link
-              href={secondaryCta.href}
+            </SmartCtaLink>
+            <SmartCtaLink
+              cta={secondaryCta}
               className="inline-flex min-h-[50px] items-center justify-center rounded-[14px] border border-[#D7DEE9] bg-white px-6 text-[14px] font-black text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] sm:min-h-[54px] sm:text-[15px]"
             >
               {secondaryCta.label}
-            </Link>
+            </SmartCtaLink>
           </div>
         </div>
       </div>
@@ -194,7 +215,7 @@ export function ConversionBand({
   description?: string;
 }) {
   const links: CtaLink[] = [
-    { label: "Become a Member", href: "/membership" },
+    { label: "Become a Member", href: "/membership#plans" },
     { label: "Book One-Time Visit", href: "/book" },
     { label: "Request Renovation Estimate", href: "/projects#estimate" },
   ];
@@ -216,14 +237,14 @@ export function ConversionBand({
           </div>
           <div className="grid gap-2.5 sm:grid-cols-3 lg:grid-cols-1">
             {links.map((link) => (
-              <Link
+              <SmartCtaLink
                 key={link.href}
-                href={link.href}
+                cta={link}
                 className="inline-flex min-h-[50px] items-center justify-between gap-3 rounded-[16px] border border-white/12 bg-white/[0.07] px-5 text-[14px] font-black text-white transition hover:bg-white hover:text-[#0B1628]"
               >
                 {link.label}
                 <ArrowIcon />
-              </Link>
+              </SmartCtaLink>
             ))}
           </div>
         </div>
@@ -306,14 +327,14 @@ export function DetailPage({
                 </p>
                 <div className="mt-5 grid gap-2">
                   {[content.primaryCta, content.secondaryCta, content.tertiaryCta].map((cta) => (
-                    <Link
+                    <SmartCtaLink
                       key={cta.href}
-                      href={cta.href}
+                      cta={cta}
                       className="inline-flex min-h-[48px] items-center justify-between gap-3 rounded-[14px] border border-[#D9E4FF] bg-[#F8FAFF] px-4 text-[13px] font-black text-[#0B1628] transition hover:border-[#306EEC] hover:bg-[#EEF4FF]"
                     >
                       {cta.label}
                       <ArrowIcon />
-                    </Link>
+                    </SmartCtaLink>
                   ))}
                 </div>
               </aside>

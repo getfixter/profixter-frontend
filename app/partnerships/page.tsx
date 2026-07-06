@@ -49,8 +49,8 @@ export default function PartnershipsPage() {
           <span className="font-semibold">influencers, bloggers, marketing companies</span>,{" "}
           and local pros who want to offer something truly helpful to homeowners.
           <br className="hidden sm:block" />
-          Profixter (Mr. Fixter) is a{" "}
-          <span className="font-semibold">unique home protection & handyman subscription</span>{" "}
+          Profixter is a{" "}
+          <span className="font-semibold">unique home protection and handyman Membership</span>{" "}
           that makes home repairs simple — and that’s why partnerships work so well.
         </p>
 
@@ -131,7 +131,7 @@ export default function PartnershipsPage() {
               <p className="text-white/85">
                 Want to stand out from every other realtor? Instead of a bottle of wine or a gift basket,
                 give something that new homeowners actually need:{" "}
-                <span className="font-semibold">a Profixter subscription.</span>
+                <span className="font-semibold">a Profixter Membership.</span>
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">

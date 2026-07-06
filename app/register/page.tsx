@@ -23,7 +23,7 @@ function RegisterRedirect() {
 
 export default function RegisterPage() {
   return (
-    <RoleEntryGate loadingLabel="Checking your session..." redirectLabel="Opening your dashboard...">
+    <RoleEntryGate loadingLabel="Checking your session..." redirectLabel="Opening Your Home...">
       <RegisterRedirect />
     </RoleEntryGate>
   );

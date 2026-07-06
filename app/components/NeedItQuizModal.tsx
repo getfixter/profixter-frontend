@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type Props = {
   open: boolean;
@@ -153,6 +153,17 @@ export default function NeedItQuizModal({
   const [feedback, setFeedback] = useState("");
   const [pickedWrong, setPickedWrong] = useState(false);
 
+  const resetQuiz = useCallback(() => {
+    setStep(0);
+    setFeedback("");
+    setPickedWrong(false);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    resetQuiz();
+    onClose();
+  }, [onClose, resetQuiz]);
+
   // lock body scroll
   useEffect(() => {
     if (!open) return;
@@ -167,19 +178,11 @@ export default function NeedItQuizModal({
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  // reset when reopened
-  useEffect(() => {
-    if (!open) return;
-    setStep(0);
-    setFeedback("");
-    setPickedWrong(false);
-  }, [open]);
+  }, [open, handleClose]);
 
   const q = QUESTIONS[step];
 
@@ -216,7 +219,7 @@ export default function NeedItQuizModal({
     // last step GOOD => go to plans
     if (q.id === "q6") {
       window.setTimeout(() => {
-        onClose();
+        handleClose();
         setTimeout(() => onGoToPlans(), 60);
       }, 250);
       return;
@@ -234,7 +237,7 @@ export default function NeedItQuizModal({
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/55" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/55" onClick={handleClose} />
 
       {/* Modal */}
       <div className="relative w-[92vw] max-w-[760px] max-h-[85vh] overflow-auto rounded-[20px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.20)]">
@@ -246,7 +249,7 @@ export default function NeedItQuizModal({
                 Quick Check
               </div>
               <div className="text-[22px] sm:text-[28px] font-bold text-[#313234] leading-tight mt-1">
-                Quick questions — see if Mr. Fixter fits your home
+                Quick questions - see if Profixter fits your home
               </div>
               <div className="text-[13px] sm:text-[14px] text-[#6A6D71] mt-2">
                 Month-to-month membership • visits up to 90 minutes
@@ -254,7 +257,7 @@ export default function NeedItQuizModal({
             </div>
 
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="w-10 h-10 rounded-[12px] border border-[#c5cbd8] bg-white/60 grid place-items-center text-[#313234] hover:bg-white"
               aria-label="Close"
             >

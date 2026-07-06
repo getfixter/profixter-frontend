@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 const TRUST_STATS = [
-  { value: "5.0 ★", label: "Google Rating" },
+  { value: "4.9", label: "Google Rating" },
   { value: "9+ yrs", label: "On Long Island" },
   { value: "HI-71484", label: "Licensed" },
   { value: "Insured", label: "Fully Covered" },
@@ -12,8 +12,8 @@ const TRUST_STATS = [
 
 const BENEFITS = [
   "Same trusted team shows up every visit",
-  "Book online in seconds — no phone calls",
-  "Monthly care, not one-time fixes",
+  "Book online in seconds - no phone calls",
+  "Ongoing care, not one-time fixes",
 ];
 
 export default function AuthLeftPanel() {
@@ -21,7 +21,7 @@ export default function AuthLeftPanel() {
     <div className="hidden lg:flex flex-col justify-between h-full px-12 xl:px-16 py-12 border-r border-white/[0.07]">
       {/* Logo */}
       <Link href="/" className="inline-block">
-        <Image src="/images/logo.svg" alt="Fixter" width={90} height={34} />
+        <Image src="/images/logo.svg" alt="Profixter" width={90} height={34} />
       </Link>
 
       {/* Value content */}
@@ -48,13 +48,13 @@ export default function AuthLeftPanel() {
                 "linear-gradient(90deg, #86EFAC 0%, #4ADE80 50%, #86EFAC 100%)",
             }}
           >
-            Every month.
+            Whenever you need us.
           </span>
         </h2>
 
         <p className="text-[14px] sm:text-[15px] text-white/45 leading-relaxed mb-9 max-w-[380px]">
           Join Long Island homeowners who&rsquo;ve stopped hunting for contractors.
-          One team. One bill. Consistent service, month after month.
+          One team. One bill. Consistent service when your home needs attention.
         </p>
 
         {/* Trust stats */}
@@ -133,7 +133,7 @@ export default function AuthLeftPanel() {
 
       {/* Footer */}
       <div className="text-[11px] text-white/18">
-        &copy; {new Date().getFullYear()} Fixter &middot; Long Island, NY
+        &copy; {new Date().getFullYear()} Profixter &middot; Long Island, NY
       </div>
     </div>
   );

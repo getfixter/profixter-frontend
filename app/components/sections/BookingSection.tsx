@@ -1756,7 +1756,7 @@ const canBook =
                   <div className="space-y-2.5">
                     {[
                       "Have all materials & fixtures on-site and ready",
-                      "Your Fixter may arrive up to 30 min early or late",
+                      "Your Profixter pro may arrive up to 30 min early or late",
                       "Questions? Call Taras: 631-599-1363",
                     ].map((item) => (
                       <div key={item} className="flex items-start gap-2.5">

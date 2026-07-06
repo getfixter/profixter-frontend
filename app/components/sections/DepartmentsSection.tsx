@@ -6,8 +6,8 @@ const DEPARTMENTS = [
   {
     title: "Home Maintenance Membership",
     description:
-      "Choose the plan that fits your home — from simple ongoing tasks to larger full-day projects.",
-    href: "/services/subscription",
+      "Choose the plan that fits your home - from simple ongoing tasks to larger full-day projects.",
+    href: "/membership#plans",
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
