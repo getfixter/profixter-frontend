@@ -888,7 +888,7 @@ export default function BookPage() {
                           </h3>
                         </div>
                         <Link
-                          href="/membership"
+                          href="/membership#plans"
                           onClick={() =>
                             trackEvent("membership_cta_clicked", {
                               placement: "book_service_selector_card",
@@ -922,7 +922,7 @@ export default function BookPage() {
                         ))}
                       </div>
                       <Link
-                        href="/membership"
+                        href="/membership#plans"
                         onClick={() =>
                           trackEvent("membership_cta_clicked", {
                             placement: "book_service_selector_card_mobile",

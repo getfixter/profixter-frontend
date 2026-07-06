@@ -24,7 +24,7 @@ export default function NewHeroSection() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           {/* ✅ MAIN BUTTON */}
           <Link
-            href="/services/subscription"
+            href="/membership#plans"
             className="inline-block px-6 py-3 rounded-xl bg-[#86EFAC] text-[#0B1220] font-bold text-base sm:text-lg hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#86EFAC]"
           >
             See Membership

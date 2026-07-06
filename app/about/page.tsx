@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
+import MembershipCtaLink from "@/app/components/membership/MembershipCtaLink";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 import { CORE_PRODUCTS, HOME_SUPPORT_AI } from "@/lib/site-architecture";
 
@@ -236,12 +237,11 @@ export default function AboutPage() {
             </p>
 
             <div className="mt-6 grid gap-2.5 sm:mt-7 sm:grid-cols-2 sm:gap-3">
-              <Link
-                href="/membership"
+              <MembershipCtaLink
                 className="inline-flex h-[50px] items-center justify-center rounded-[15px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white shadow-[0_16px_48px_rgba(48,110,236,0.30)] transition hover:-translate-y-0.5 hover:bg-[#2558c9] sm:h-[54px] sm:rounded-[16px] sm:text-[15px]"
               >
                 Become a Member
-              </Link>
+              </MembershipCtaLink>
               <Link
                 href="/book"
                 className="inline-flex h-[50px] items-center justify-center rounded-[15px] border border-[#C5CBD8] bg-white/92 px-5 text-[14px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] sm:h-[54px] sm:rounded-[16px] sm:text-[15px]"

@@ -1,10 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import MembershipCtaLink from "@/app/components/membership/MembershipCtaLink";
 
 const TRUST = [
-  { label: "5.0 Google Rating", icon: "star" },
+  { label: "4.9 Google Rating", icon: "star" },
   { label: "Licensed HI-71484", icon: "shield" },
   { label: "9+ Years on Long Island", icon: "clock" },
   { label: "Fully Insured", icon: "check" },
@@ -56,8 +56,8 @@ export default function EntryHeroSection() {
 
         {/* Sub */}
         <p className="text-[17px] sm:text-[20px] font-medium leading-[1.6] text-white/55 max-w-[560px] mx-auto mb-10">
-          One licensed, insured team for everything your home needs —
-          regular visits, covered tasks, and everything handled on a simple monthly membership.
+          One licensed, insured team for everything your home needs:
+          ongoing help, covered tasks, and everything handled through a simple Membership.
         </p>
 
         {/* Trust chips */}
@@ -73,12 +73,11 @@ export default function EntryHeroSection() {
         </div>
 
         <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link
-            href="/membership#plans"
+          <MembershipCtaLink
             className="inline-flex min-h-[58px] items-center justify-center rounded-[18px] bg-[#306EEC] px-8 text-[16px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9]"
           >
             Start Membership
-          </Link>
+          </MembershipCtaLink>
           <a
             href="tel:+16315991363"
             className="inline-flex min-h-[58px] items-center justify-center rounded-[18px] border border-white/12 bg-white/[0.05] px-6 text-[15px] font-bold text-white/80 transition hover:border-white/20 hover:bg-white/[0.09]"

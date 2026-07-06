@@ -32,6 +32,29 @@ const products = [
   },
 ];
 
+const trustItems = [
+  {
+    label: "Licensed",
+    value: "HI-71484",
+  },
+  {
+    label: "Insured",
+    value: "In-home work",
+  },
+  {
+    label: "Serving",
+    value: "Nassau & Suffolk",
+  },
+  {
+    label: "Reviewed",
+    value: "Google Reviews",
+  },
+  {
+    label: "Support",
+    value: "631-599-1363",
+  },
+];
+
 function ProductButton({ product }: { product: (typeof products)[number] }) {
   return (
     <Link
@@ -122,6 +145,21 @@ export default function HomePage() {
                 </span>
               </Link>
             </div>
+          </div>
+        </section>
+
+        <section className="border-y border-[#E6EAF2] bg-white">
+          <div className="mx-auto grid max-w-[1260px] grid-cols-2 gap-px px-4 py-3 sm:grid-cols-5 sm:px-6 lg:px-8">
+            {trustItems.map((item) => (
+              <div key={item.label} className="px-2 py-3 text-center sm:px-3">
+                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[#7B8798]">
+                  {item.label}
+                </div>
+                <div className="mt-1 text-[13px] font-black text-[#0B1628] sm:text-sm">
+                  {item.value}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       </main>

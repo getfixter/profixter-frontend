@@ -205,10 +205,10 @@ export default function PopularTasksSection() {
             </h2>
 
             <p className="mt-4 max-w-[560px] text-[15px] leading-relaxed text-[#475569] sm:mt-6 sm:text-[18px]">
-              Roofing, siding, bathrooms, kitchens, basements, and interior renovations — request an estimate and we&apos;ll help you plan the next step.
+              Roofing, siding, bathrooms, kitchens, full-house renovations, and new home construction - request an estimate and we&apos;ll help you plan the next step.
             </p>
             <p className="mt-4 max-w-[560px] text-[15px] font-bold leading-relaxed text-[#0B1628] sm:text-[16px]">
-              Get up to 12 months of Profixter membership included with eligible larger projects.
+              Get up to 12 months of Profixter Membership included with eligible larger projects.
             </p>
 
             <div className="mt-6 rounded-[22px] border border-white/70 bg-white/70 p-4 shadow-[0_16px_50px_rgba(15,23,42,0.07)] backdrop-blur-sm sm:mt-8 sm:rounded-[24px] sm:p-6 sm:shadow-[0_18px_60px_rgba(15,23,42,0.07)]">

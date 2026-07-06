@@ -45,7 +45,7 @@ export default function CareersPage() {
         </h1>
 
         <p className="text-sm sm:text-base text-white/65 text-center mb-10 leading-relaxed">
-          Join <span className="font-semibold">Profixter (Mr. Fixter)</span> — a fast-growing home service company
+          Join <span className="font-semibold">Profixter</span> — a fast-growing home service company
           changing how homeowners handle repairs, maintenance, and peace of mind.
         </p>
 

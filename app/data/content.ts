@@ -12,9 +12,9 @@ export type Service = {
 export const services: Service[] = [
   {
     id: "01",
-    title: "Simple monthly visits",
+    title: "Ongoing home help",
     description:
-      "Choose the plan that fits your home. Each visit covers up to 90 minutes of work.",
+      "Choose the plan that fits your home. Members can request help whenever the home list starts growing.",
     color: "blue",
     size: "normal",
     offset: 0,
@@ -132,9 +132,9 @@ export const faqs: Faq[] = [
   },
   {
     id: "03",
-    question: "How many visits come with each plan?",
+    question: "How does Membership work?",
     answer:
-      "Home Care Membership includes one scheduled visit each month. Home Care Plus includes two scheduled visits each month. Home Protection includes two scheduled visits plus one Rush Visit per month. Whole-Home Care includes two scheduled visits, two Rush Visits, and one full project day per month (up to 8 hours). Rush Visits don't require waiting for the next standard appointment slot.",
+      "Members can request help whenever they need it. Plans differ by active appointment capacity, basic materials, Rush Visit benefits, project time, and premium support. Appointment availability still depends on the schedule.",
     color: "dark",
     size: "normal",
     offset: 0,
@@ -152,7 +152,7 @@ export const faqs: Faq[] = [
     id: "05",
     question: "How do I book a visit?",
     answer:
-      "Use the booking form after you’re a member and choose an available slot.",
+      "After becoming a Member, choose your property, pick an available slot, add notes and photos, and we will confirm the appointment.",
     color: "blue",
     size: "normal",
     offset: -50,
@@ -188,7 +188,7 @@ export const faqs: Faq[] = [
     id: "09",
     question: "Can I reschedule?",
     answer:
-      "Yes-please reschedule early so we can offer the slot to another customer.",
+      "Yes. Please reschedule early so we can offer the slot to another customer.",
     color: "light",
     size: "normal",
     offset: -20,
@@ -215,7 +215,7 @@ export const faqs: Faq[] = [
     id: "12",
     question: "How often can I book?",
     answer:
-      "You can book as often as availability allows. Most members use one visit per month.",
+      "Members can request visits as needed, subject to availability and active appointment rules.",
     color: "light",
     size: "normal",
     offset: -20,
@@ -266,7 +266,7 @@ export const homepageFaqs: Faq[] = [
     id: "05",
     question: "What if I need more flexibility?",
     answer:
-      "Higher memberships include more scheduled visits each month. Home Protection adds one Rush Visit per month, while Whole-Home Care adds two Rush Visits and a full project day for bigger items.",
+      "Higher Memberships add more flexibility: more active appointment capacity, Rush Visit benefits, basic materials, project time, and premium support.",
     color: "blue",
     size: "normal",
     offset: -50,
@@ -308,56 +308,56 @@ export const plans: Plan[] = [
     name: "Basic",
     displayName: "Home Care Membership",
     tagline: "Your home, handled.",
-    cadence: "One scheduled visit each month",
+    cadence: "Request help as needed",
     description:
       "The easiest way to keep your home handled, year-round.",
     price: 149,
     features: [
-      "One scheduled visit each month",
-      "Same trusted team — they get to know your home",
+      "1 active appointment at a time",
+      "Same trusted team - they get to know your home",
       "Small fixes and regular maintenance, no estimates",
       "Predictable monthly billing",
     ],
     buttonText: "Become a Member",
     retentionLine:
-      "Most members stay for the long haul — your home keeps getting better, not worse.",
+      "Most members stay for the long haul - your home keeps getting better, not worse.",
     stripeLink: "https://buy.stripe.com/eVqfZgeAN2pCgAxb3kawo02",
   },
   {
     name: "Plus",
     displayName: "Home Care Plus",
     tagline: "Stay ahead of your home, not behind it.",
-    cadence: "Two scheduled visits each month",
+    cadence: "More active appointment capacity",
     description:
-      "More care, more often — for active homes with an ongoing list.",
+      "More flexibility for active homes with an ongoing list.",
     price: 249,
     subtitle: "Everything in Home Care",
     features: [
-      "Two scheduled visits each month",
-      "Same trusted team — they remember every detail",
+      "2 active appointments at a time",
+      "Same trusted team - they remember every detail",
       "Tackle the to-do list before it becomes a problem list",
       "Priority on open scheduling slots",
     ],
     buttonText: "Become a Member",
     badge: "StartHere",
     retentionLine:
-      "Where most homeowners with active homes start — and stay for years.",
+      "Where most homeowners with active homes start - and stay for years.",
     stripeLink: "https://buy.stripe.com/4gMaEWboB1ly3NL4EWawo03",
   },
   {
     name: "Premium",
     displayName: "Home Protection",
     tagline: "Cared for. And protected.",
-    cadence: "Two scheduled visits + one Rush Visit",
+    cadence: "More flexibility + one Rush Visit",
     description:
       "Ongoing care, plus faster scheduling when something can't wait.",
     price: 349,
     subtitle: "Everything in Home Care Plus",
     features: [
-      "Two scheduled visits each month",
+      "2 active appointments at a time",
       "One Rush Visit per month",
       "Rush Visits don't require waiting for the next standard appointment slot",
-      "Same trusted team — on call for the moments that matter",
+      "Same trusted team - on call for the moments that matter",
       "Direct line to Taras, the founder",
     ],
     buttonText: "Become a Member",
@@ -369,14 +369,14 @@ export const plans: Plan[] = [
   {
     name: "Elite",
     displayName: "Whole-Home Care",
-    tagline: "Everything about your home — handled.",
-    cadence: "Two scheduled visits + a full project day each month",
+    tagline: "Everything about your home - handled.",
+    cadence: "Maximum flexibility + project time",
     description:
       "Ongoing care, two Rush Visits, and a dedicated project day every month.",
     price: 499,
     subtitle: "Everything in Home Protection",
     features: [
-      "Two scheduled visits each month",
+      "2 active appointments at a time",
       "Two Rush Visits per month",
       "One full project day per month (up to 8 hours)",
       "Rush Visits don't require waiting for the next standard appointment slot",
@@ -404,7 +404,7 @@ export const team: TeamMember[] = [
     photo: "/images/Taras.png",
     thumb: "/images/Taras.png",
     blurb:
-      "I founded Mr. Fixter to fix what’s broken in the handyman industry - unreliable scheduling, unclear pricing, and inconsistent quality. With 9+ years in construction and home services, I personally oversee customer support, approve bookings, and make sure every visit meets our standard. My goal is simple: make home service more affordable, more professional, and completely stress-free. If you ever have questions or need help, you can reach me directly 24/7 - you’re in good hands here.",
+      "I founded Profixter to fix what is broken in the handyman industry: unreliable scheduling, unclear pricing, and inconsistent quality. With 9+ years in construction and home services, I personally oversee customer support, approve bookings, and make sure every visit meets our standard. My goal is simple: make home service more affordable, more professional, and completely stress-free. If you ever have questions or need help, you can call us directly - you are in good hands here.",
   },
   {
     id: 2,
@@ -412,6 +412,6 @@ export const team: TeamMember[] = [
     photo: "/images/Roman.png",
     thumb: "/images/Roman.png",
     blurb:
-      "Roman is our lead handyman and the standard-setter for quality at Mr. Fixter. He’s skilled across electrical, mounting, installations, and everyday home repairs - with a sharp eye for clean finishes and long-lasting results. Homeowners love him because he’s punctual, respectful, and explains the plan before he starts. He works fast, keeps the workspace clean, and treats every home like it’s his own.",
+      "Roman is our lead handyman and the standard-setter for quality at Profixter. He is skilled across mounting, installations, fixtures, and everyday home repairs - with a sharp eye for clean finishes and long-lasting results. Homeowners love him because he is punctual, respectful, and explains the plan before he starts. He works fast, keeps the workspace clean, and treats every home with care.",
   },
 ];

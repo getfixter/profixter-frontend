@@ -34,7 +34,7 @@ export default function StickyMobileCTA() {
       <div className="bg-white border-t border-[#E2E8F0] shadow-[0_-8px_24px_rgba(15,23,42,0.12)] px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
         {isAuthenticated ? (
           <Link
-            href="#plans"
+            href="/membership#plans"
             className="flex w-full h-[52px] items-center justify-center rounded-[13px] bg-[#306EEC] text-[15px] font-extrabold text-white shadow-[0_8px_22px_rgba(48,110,236,0.30)] active:bg-[#2558c9]"
           >
             Start Membership &mdash; from $149/mo
@@ -48,7 +48,7 @@ export default function StickyMobileCTA() {
               My Home
             </Link>
             <Link
-              href="#plans"
+              href="/signup?redirect=%2Fmembership%23plans"
               className="flex-[2] inline-flex h-[52px] items-center justify-center rounded-[13px] bg-[#306EEC] text-[14px] font-extrabold text-white shadow-[0_8px_22px_rgba(48,110,236,0.28)] active:bg-[#2558c9]"
             >
               Start Membership

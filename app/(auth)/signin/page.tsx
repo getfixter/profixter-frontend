@@ -93,7 +93,7 @@ export default function SignInPage() {
   };
 
   return (
-    <RoleEntryGate loadingLabel="Checking your session..." redirectLabel="Opening your dashboard...">
+    <RoleEntryGate loadingLabel="Checking your session..." redirectLabel="Opening Your Home...">
     <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f42] to-[#0f1429] flex flex-col items-center justify-center px-6 py-12">
       {/* Container */}
       <div className="w-full max-w-[440px]">
@@ -103,7 +103,7 @@ export default function SignInPage() {
           <Link href="/" className="inline-block">
             <Image
               src="/images/logo.svg"
-              alt="Fixter"
+              alt="Profixter"
               width={120}
               height={40}
               className="h-10 w-auto"

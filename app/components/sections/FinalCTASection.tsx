@@ -2,9 +2,10 @@
 
 import { usePathname } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
+import { useAuth } from "@/lib/useAuth";
 
 const TRUST_ITEMS = [
-  "5.0 Google Rating",
+  "4.9 Google Rating",
   "Licensed HI-71484",
   "9+ Years on Long Island",
   "Fully Insured",
@@ -13,10 +14,16 @@ const TRUST_ITEMS = [
 
 export default function FinalCTASection() {
   const pathname = usePathname();
+  const { isAuthenticated } = useAuth();
   const isOnMembership = pathname === "/membership";
 
   const handlePlansClick = () => {
     trackEvent("view_plans", { placement: "final_cta" });
+    if (!isAuthenticated) {
+      window.location.href = "/signup?redirect=%2Fmembership%23plans";
+      return;
+    }
+
     if (isOnMembership) {
       const el = document.getElementById("plans");
       if (!el) return;
@@ -96,7 +103,7 @@ export default function FinalCTASection() {
 
           {/* ── Subhead ── */}
           <p className="text-[17px] sm:text-[20px] font-semibold text-white/48 leading-[1.45] max-w-[600px] mx-auto mb-5 sm:mb-6">
-            Monthly visits. Same trusted team. No searching, no estimates, no surprises — just your home getting the steady care it deserves.
+            Request help when your home needs it. Same trusted team. No searching, no estimates, no surprises - just your home getting the steady care it deserves.
           </p>
 
           {/* Risk reversal */}

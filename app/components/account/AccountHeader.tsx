@@ -19,7 +19,7 @@ export function AccountHeader({ userName }: AccountHeaderProps) {
         <Link href="/" className="flex-shrink-0">
           <Image
             src="/images/logo.svg"
-            alt="Fixter"
+            alt="Profixter"
             width={82}
             height={30}
             className="h-[28px] sm:h-[30px] w-auto"
@@ -35,10 +35,10 @@ export function AccountHeader({ userName }: AccountHeaderProps) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 12H5M12 5l-7 7 7 7" />
             </svg>
-            Back to Fixter
+            Back to Profixter
           </Link>
           <Link
-            href="/membership"
+            href="/membership#plans"
             className="text-[13px] font-medium text-[#6A6D71] hover:text-[#313234] transition"
           >
             Plans

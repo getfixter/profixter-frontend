@@ -19,7 +19,7 @@ function EntryLoading({ label }: { label: string }) {
 export default function RoleEntryGate({
   children,
   loadingLabel = "Opening Profixter...",
-  redirectLabel = "Opening your dashboard...",
+  redirectLabel = "Opening Profixter...",
 }: {
   children: ReactNode;
   loadingLabel?: string;

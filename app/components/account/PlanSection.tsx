@@ -12,6 +12,7 @@ import {
   acceptSubscriptionRetentionOffer,
   getSubscriptionActionErrorMessage,
   type ManagedSubscription,
+  type RetentionOfferDebug,
 } from "@/lib/subscription-service";
 
 type PlanKey = "basic" | "plus" | "premium" | "elite";
@@ -26,23 +27,23 @@ const PLAN_PRICES: Record<PlanKey, number> = {
 const PLAN_INCLUDES: Record<PlanKey, string[]> = {
   basic: [
     "Home Care Membership — your home, handled",
-    "One scheduled visit each month",
+    "1 active appointment at a time",
     "Each visit covers up to 90 minutes of work",
   ],
   plus: [
     "Home Care Plus — stay ahead of your home",
-    "Two scheduled visits each month",
+    "2 active appointments at a time",
     "Same trusted team, every visit",
   ],
   premium: [
     "Home Protection — cared for and protected",
-    "Two scheduled visits each month",
+    "2 active appointments at a time",
     "One Rush Visit per month",
     "Rush Visits don't require waiting for the next standard appointment slot",
   ],
   elite: [
     "Whole-Home Care — everything about your home, handled",
-    "Two scheduled visits each month",
+    "2 active appointments at a time",
     "Two Rush Visits per month",
     "One full project day per month (up to 8 hours)",
   ],
@@ -126,6 +127,43 @@ function statusLabel(subscription: ManagedSubscription) {
   return "Active";
 }
 
+function retentionEndpointPath(addressId: string) {
+  return `/api/subscriptions/manage/address/${addressId}/retention-offer`;
+}
+
+function hasStoredAuthToken() {
+  if (typeof window === "undefined") return false;
+  return Boolean(localStorage.getItem("token"));
+}
+
+type ApiErrorWithResponse = {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+      error?: string;
+      reason?: string;
+      debug?: RetentionOfferDebug;
+    };
+  };
+  message?: string;
+};
+
+function RetentionDebugDetails({ debug }: { debug: RetentionOfferDebug | null }) {
+  if (!debug || process.env.NODE_ENV === "production") return null;
+
+  return (
+    <details className="mt-4 rounded-[14px] border border-[#D7E0F5] bg-[#F8FAFF] p-3 text-left">
+      <summary className="cursor-pointer text-xs font-extrabold uppercase tracking-[0.14em] text-[#306EEC]">
+        Retention debug
+      </summary>
+      <pre className="mt-3 max-h-56 overflow-auto whitespace-pre-wrap break-words text-[11px] leading-relaxed text-[#475569]">
+        {JSON.stringify(debug, null, 2)}
+      </pre>
+    </details>
+  );
+}
+
 export function PlanSection() {
   const [loading, setLoading] = useState(true);
   const [subscriptions, setSubscriptions] = useState<ManagedSubscription[]>([]);
@@ -135,6 +173,7 @@ export function PlanSection() {
   const [canceling, setCanceling] = useState(false);
   const [acceptingRetention, setAcceptingRetention] = useState(false);
   const [retentionError, setRetentionError] = useState("");
+  const [retentionDebug, setRetentionDebug] = useState<RetentionOfferDebug | null>(null);
 
   const [reactivatingId, setReactivatingId] = useState<string | null>(null);
 
@@ -214,12 +253,35 @@ export function PlanSection() {
     setCanceling(false);
     setAcceptingRetention(false);
     setRetentionError("");
+    setRetentionDebug(null);
     setError("");
     setNotice("");
+
+    const endpointPath = retentionEndpointPath(subscription.addressId);
+    const authTokenPresent = hasStoredAuthToken();
+
+    console.info("[retention-offer] Checking eligibility", {
+      endpointPath,
+      authTokenPresent,
+      subscriptionId: subscription._id,
+      addressId: subscription.addressId,
+      status: subscription.status,
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd ?? null,
+    });
 
     try {
       const result = await requestSubscriptionRetentionOffer({
         addressId: subscription.addressId,
+      });
+      const debug = result.debug || null;
+      setRetentionDebug(debug);
+
+      console.info("[retention-offer] Eligibility response", {
+        endpointPath,
+        authTokenPresent,
+        eligible: result.eligible,
+        reason: result.reason || null,
+        debug,
       });
 
       const updatedSubscription = result.subscription;
@@ -231,8 +293,42 @@ export function PlanSection() {
         );
       }
 
+      if (!result.eligible) {
+        console.warn("[retention-offer] Offer unavailable", {
+          reason: result.reason || "unknown",
+          subscriptionId: subscription._id,
+          addressId: subscription.addressId,
+          status: updatedSubscription?.status || subscription.status,
+          cancelAtPeriodEnd:
+            updatedSubscription?.cancelAtPeriodEnd ?? subscription.cancelAtPeriodEnd,
+          debug,
+        });
+        setRetentionError(
+          "This member offer is not available for this membership, but you can still continue cancellation."
+        );
+      }
+
       setCancelMode(result.eligible ? "offer" : "confirm");
-    } catch {
+    } catch (err) {
+      const apiError = err as ApiErrorWithResponse;
+      const responseDebug = apiError.response?.data?.debug || null;
+      setRetentionDebug(responseDebug);
+      console.warn("[retention-offer] Eligibility check failed", {
+        endpointPath,
+        authTokenPresent,
+        subscriptionId: subscription._id,
+        addressId: subscription.addressId,
+        httpStatus: apiError.response?.status || null,
+        responseReason: apiError.response?.data?.reason || null,
+        responseMessage:
+          apiError.response?.data?.message ||
+          apiError.response?.data?.error ||
+          null,
+        debug: responseDebug,
+        message:
+          apiError.message ||
+          (err instanceof Error ? err.message : "Unknown error"),
+      });
       setRetentionError(
         "We couldn't check the retention offer right now, but you can still continue cancellation."
       );
@@ -260,6 +356,7 @@ export function PlanSection() {
       );
       setNotice(result.message || "Cancellation scheduled successfully.");
       setCancelTarget(null);
+      setRetentionDebug(null);
     } catch (err: unknown) {
       setError(getSubscriptionActionErrorMessage(err));
     } finally {
@@ -463,7 +560,7 @@ export function PlanSection() {
               </div>
 
               <Link
-                href="/membership"
+                href="/membership#plans"
                 className="mt-6 block w-full rounded-[14px] bg-[#306EEC] py-3 text-center text-base font-semibold text-[#EEF2FF] transition-colors hover:bg-[#2557C7] sm:py-4 sm:text-lg"
               >
                 Start Membership
@@ -487,7 +584,7 @@ export function PlanSection() {
 
               <div className="mt-6 flex flex-col gap-3">
                 <Link
-                  href="/membership"
+                  href="/membership#plans"
                   className="inline-flex items-center justify-center rounded-[14px] border border-[#C5CBD8] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
                 >
                   View Plans
@@ -669,14 +766,14 @@ export function PlanSection() {
 
                 <div className="mt-5 space-y-3">
                   <Link
-                    href="/membership"
+                    href="/membership#plans"
                     className="flex items-center justify-between rounded-[14px] border border-[#D7E0F5] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
                   >
                     <span>How often can I book?</span>
                     <span className="text-[#306EEC]">Open</span>
                   </Link>
                   <Link
-                    href="/membership"
+                    href="/membership#pick-day"
                     className="flex items-center justify-between rounded-[14px] border border-[#D7E0F5] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
                   >
                     <span>Book your next visit</span>
@@ -728,6 +825,7 @@ export function PlanSection() {
             if (!canceling && !acceptingRetention && cancelMode !== "checking") {
               setCancelTarget(null);
               setRetentionError("");
+              setRetentionDebug(null);
             }
           }}
         >
@@ -775,6 +873,7 @@ export function PlanSection() {
                       {retentionError}
                     </div>
                   ) : null}
+                  <RetentionDebugDetails debug={retentionDebug} />
 
                   <div className="mt-6 grid grid-cols-1 gap-3">
                     <button
@@ -816,6 +915,7 @@ export function PlanSection() {
                     onClick={() => {
                       setCancelTarget(null);
                       setRetentionError("");
+                      setRetentionDebug(null);
                       setNotice("Retention offer accepted. Your membership remains active.");
                     }}
                     className="mt-6 h-[52px] w-full rounded-[16px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9]"
@@ -840,12 +940,13 @@ export function PlanSection() {
                   {retentionError}
                 </div>
               ) : null}
+              <RetentionDebugDetails debug={retentionDebug} />
 
               <div className="mt-5 rounded-[16px] border border-[#D7E0F5] bg-[#F8FAFF] p-4 text-left">
                 <div className="text-sm font-semibold text-[#313234]">Before you cancel</div>
                 <div className="mt-2 space-y-1.5 text-sm text-[#6A6D71]">
                   <div>Keep predictable monthly billing and the same trusted team.</div>
-                  <div>Higher memberships add more scheduled visits, Rush Visits, or a full project day each month.</div>
+                  <div>Higher Memberships add more active appointment capacity, Rush Visits, project time, and premium support.</div>
                   <div>You can keep your current membership and continue scheduling visits online.</div>
                 </div>
               </div>
@@ -857,6 +958,7 @@ export function PlanSection() {
                   onClick={() => {
                     setCancelTarget(null);
                     setRetentionError("");
+                    setRetentionDebug(null);
                   }}
                   className="h-[52px] rounded-[16px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
                 >

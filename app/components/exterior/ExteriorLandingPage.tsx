@@ -232,7 +232,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                 { icon: "🛡️", text: "Licensed HI-71484" },
                 { icon: "✓", text: "Fully Insured" },
                 { icon: "📍", text: "Long Island Local · 9+ Years" },
-                { icon: "⭐", text: "5.0 Google Rating" },
+                { icon: "⭐", text: "4.9 Google Rating" },
                 { icon: "💳", text: "Financing Available" },
               ].map(({ icon, text }) => (
                 <div key={text} className="flex items-center gap-2">
@@ -375,7 +375,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                   </p>
                   <div className="mt-5 space-y-2.5">
                     {[
-                      "Ask about current subscriber exterior project offers.",
+                      "Ask about current Member exterior project offers.",
                       "Current members may qualify for a free year of handyman membership or preferred project pricing.",
                       "Offer availability depends on project scope.",
                     ].map((line) => (
@@ -476,7 +476,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                     "Financing available for qualified homeowners",
                     "Licensed HI-71484 · Fully insured",
                     "Local Long Island team · 9+ years",
-                    "5.0 Google Rating",
+                    "4.9 Google Rating",
                   ].map((item) => (
                     <div key={item} className="flex items-center gap-2.5 text-[14px] font-semibold text-white/55">
                       <CheckMark />
@@ -535,7 +535,7 @@ export default function ExteriorLandingPage({ project }: Props) {
               <span aria-hidden="true">·</span>
               <span>Long Island Local</span>
               <span aria-hidden="true">·</span>
-              <span>5.0 Google Rating</span>
+              <span>4.9 Google Rating</span>
             </div>
           </div>
         </section>

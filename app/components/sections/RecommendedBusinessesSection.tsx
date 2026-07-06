@@ -46,7 +46,7 @@ function BusinessCard({ b }: { b: RecommendedBusiness }) {
             Licensed & Insured
           </div>
           <div className="text-[11px] font-semibold text-[#6A6D71]">
-            Verified by <span className="text-[#313234]">Mr. Fixter</span>
+            Verified by <span className="text-[#313234]">Profixter</span>
           </div>
         </div>
 
@@ -226,7 +226,6 @@ export default function RecommendedBusinessesSection() {
     const onResize = () => updateArrowsAndDots();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -238,7 +237,7 @@ export default function RecommendedBusinessesSection() {
         <div className="flex items-end justify-between gap-4 flex-wrap">
           <div>
             <div className="text-[12px] uppercase tracking-wider text-[#6A6D71] font-semibold">
-              Mr. Fixter Trusted Pro Network
+              Profixter Trusted Pro Network
             </div>
 
             <h2 className="mt-2 text-[26px] sm:text-[34px] font-extrabold text-[#313234] leading-[110%]">
@@ -279,7 +278,7 @@ export default function RecommendedBusinessesSection() {
               href="tel:631-599-1363"
               className="h-[46px] px-5 rounded-[14px] bg-[#EEF2FF] border border-[#C5CBD8] hover:bg-[#E6ECFF] transition-colors text-[#306EEC] text-[14px] font-semibold inline-flex items-center justify-center"
             >
-              Not sure who to hire? Ask Mr. Fixter
+              Not sure who to hire? Ask Profixter
             </a>
           </div>
         </div>
@@ -340,7 +339,7 @@ export default function RecommendedBusinessesSection() {
             Independent Professionals
           </div>
           <div className="mt-1 text-[14px] text-[#6A6D71] leading-relaxed">
-            These businesses operate independently from Mr. Fixter. Pricing and discounts are determined by each provider.
+            These businesses operate independently from Profixter. Pricing and discounts are determined by each provider.
           </div>
         </div>
       </div>

@@ -142,6 +142,20 @@ function SubscribedCustomerFlow() {
   );
 }
 
+function ProspectMembershipFlow() {
+  return (
+    <>
+      <HowItWorksSection />
+      <IncludedVisitsSection />
+      <PlansSection />
+      <TrustSection />
+      <PopularTasksSection />
+      <FAQSection />
+      <Footer />
+    </>
+  );
+}
+
 export default function MembershipExperience() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -183,27 +197,11 @@ export default function MembershipExperience() {
         )}
 
         {isAuthenticated && !isSubscribed && (
-          <>
-          <BookingSection />
-            <PopularTasksSection />
-            <IncludedVisitsSection />
-            <PlansSection />
-            <TrustSection />
-            <FAQSection />
-            <Footer />
-          </>
+          <ProspectMembershipFlow />
         )}
 
         {!isAuthenticated && (
-          <><BookingSection />
-            <HowItWorksSection />
-            <PopularTasksSection />
-            <IncludedVisitsSection />
-            <PlansSection />
-            <TrustSection />
-            <FAQSection />
-            <Footer />
-          </>
+          <ProspectMembershipFlow />
         )}
       </main>
 

@@ -149,7 +149,7 @@ function DeleteAccountModal({
                 "Your name, email, and contact info",
                 "Your saved addresses",
                 "Your full booking history",
-                "Your Fixter account login",
+                "Your Profixter login",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">
                   <span className="mt-px flex-shrink-0 text-red-500">✕</span>
@@ -399,7 +399,7 @@ export function PasswordForm() {
               </li>
               <li className="flex items-start gap-1.5">
                 <span className="text-[#306EEC] mt-px">•</span>
-                Never share your password with anyone, including Fixter staff
+                Never share your password with anyone, including Profixter staff
               </li>
             </ul>
           </div>
