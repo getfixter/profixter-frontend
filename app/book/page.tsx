@@ -197,6 +197,121 @@ function StepHeader({
   );
 }
 
+function RushServiceCallout() {
+  return (
+    <div className="mb-5 overflow-hidden rounded-[24px] border border-[#F2C46D]/70 bg-[linear-gradient(135deg,#FFF8E8_0%,#FFFFFF_50%,#FFF1C4_100%)] shadow-[0_24px_76px_rgba(146,86,18,0.13)] sm:mb-7 sm:rounded-[30px]">
+      <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[1.12fr_0.88fr] lg:items-center lg:p-7">
+        <div>
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#0B1628] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-white shadow-[0_12px_28px_rgba(11,22,40,0.16)]">
+            <span className="grid h-5 w-5 place-items-center rounded-full bg-[#F59E0B] text-white">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M13 2 4.5 13h6L9 22l10.5-13h-6L13 2Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </span>
+            Need Help Today?
+          </div>
+          <p className="max-w-[680px] text-[15px] font-semibold leading-6 text-[#34435C] sm:text-[17px] sm:leading-7">
+            Don&apos;t want to wait for the next available appointment?
+          </p>
+          <p className="mt-2 max-w-[720px] text-[15px] font-semibold leading-6 text-[#34435C] sm:text-[17px] sm:leading-7">
+            Ask about our <span className="font-black text-[#0B1628]">Rush Service</span>. When technician availability allows, we&apos;ll do our best to get someone to your home as soon as possible.
+          </p>
+          <h2 className="mt-3 text-[24px] font-black leading-[1.02] tracking-[-0.035em] text-[#0B1628] sm:text-[34px] sm:tracking-[-0.045em]">
+            Rush Service
+          </h2>
+          <div className="mt-4 grid gap-2.5">
+            {[
+              "Priority scheduling",
+              "Rush dispatch when available",
+              "$300 Rush Service Fee",
+              "Labor is charged separately",
+            ].map((item) => (
+              <div key={item} className="flex items-start gap-2.5 text-[13px] font-bold leading-5 text-[#34435C] sm:text-[14px]">
+                <span className="mt-0.5 grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-[#F59E0B]/14 text-[#B45309]">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M5 12.5l4 4 10-10"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2.6"
+                    />
+                  </svg>
+                </span>
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-[20px] bg-white/82 p-4 shadow-[0_18px_50px_rgba(146,86,18,0.10)] ring-1 ring-[#F2C46D]/55 sm:rounded-[24px] sm:p-5">
+          <div className="text-[12px] font-black uppercase tracking-[0.16em] text-[#B45309]">
+            Call to check today&apos;s availability
+          </div>
+          <p className="mt-2 flex items-center gap-2 text-[14px] font-semibold text-[#64748B]">
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-[#FEF3C7] text-[#B45309]">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M6.6 10.8c1.5 3 3.9 5.3 6.8 6.8l2.3-2.3c.3-.3.8-.4 1.2-.3 1.3.4 2.6.6 4 .6.7 0 1.1.5 1.1 1.1v3.7c0 .7-.5 1.1-1.1 1.1C10.6 21.5 2.5 13.4 2.5 3.1 2.5 2.5 3 2 3.7 2h3.7c.7 0 1.1.5 1.1 1.1 0 1.4.2 2.7.6 4 .1.4 0 .8-.3 1.2l-2.2 2.5Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </span>
+            Call us now:
+          </p>
+          <a
+            href="tel:6315991363"
+            className="mt-1 inline-flex text-[26px] font-black tracking-[-0.04em] text-[#0B1628] transition hover:text-[#B45309] sm:text-[32px]"
+          >
+            (631) 599-1363
+          </a>
+          <a
+            href="tel:6315991363"
+            onClick={() =>
+              trackEvent("rush_service_call_clicked", {
+                placement: "book_rush_service_callout",
+              })
+            }
+            className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full bg-[#F59E0B] px-5 text-[14px] font-black text-[#0B1628] shadow-[0_16px_34px_rgba(245,158,11,0.26)] transition hover:-translate-y-0.5 hover:bg-[#FBBF24] active:translate-y-0"
+          >
+            Call Now
+          </a>
+          <p className="mt-3 text-[11px] font-bold leading-4 text-[#8A5A10]">
+            *Rush Service is subject to technician availability and cannot be guaranteed.
+          </p>
+        </div>
+      </div>
+
+      <div className="border-t border-[#F2C46D]/55 bg-white/60 p-4 sm:p-6 lg:p-7">
+        <div className="grid gap-3 rounded-[20px] bg-white/78 p-4 shadow-[0_14px_44px_rgba(15,23,42,0.07)] ring-1 ring-[#E5E9F2] sm:grid-cols-[1fr_auto] sm:items-center sm:rounded-[24px] sm:p-5">
+          <div>
+            <h3 className="text-[18px] font-black tracking-[-0.025em] text-[#0B1628] sm:text-[22px]">
+              Included with Premium &amp; Elite Memberships
+            </h3>
+            <p className="mt-1 max-w-[820px] text-[13px] font-semibold leading-5 text-[#64748B] sm:text-[14px] sm:leading-6">
+              Rush Visits are already included with our Premium and Elite memberships. Members receive priority scheduling and can request Rush Visits without paying the $300 Rush Service Fee.
+            </p>
+          </div>
+          <Link
+            href="/membership"
+            onClick={() =>
+              trackEvent("membership_cta_clicked", {
+                placement: "book_rush_service_callout",
+              })
+            }
+            className="inline-flex h-11 items-center justify-center rounded-full bg-[#0B1628] px-5 text-[13px] font-black text-white shadow-[0_14px_34px_rgba(11,22,40,0.18)] transition hover:-translate-y-0.5 hover:bg-[#1B2A44] active:translate-y-0 sm:h-12"
+          >
+            View Membership Plans
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BookPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const addresses = useMemo(() => user?.addresses ?? [], [user?.addresses]);
@@ -601,6 +716,8 @@ export default function BookPage() {
               </div>
             )}
           </div>
+
+          <RushServiceCallout />
 
           <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-12 lg:gap-6">
             <div className="order-2 lg:order-1 lg:col-span-5">
