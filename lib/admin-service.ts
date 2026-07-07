@@ -81,6 +81,30 @@ export interface AdminActivitySummary {
   projectsDeleted: number;
 }
 
+export type GhlAiCommanderRiskLevel = "low" | "medium" | "high";
+
+export interface GhlAiCommanderPlanResponse {
+  confirmationId: string;
+  summary: string;
+  exactPlan?: unknown[];
+  objectsAffected?: unknown[];
+  messagesToSendOrCreate?: unknown[];
+  plannedApiActions?: unknown[];
+  unsupportedActions?: unknown[];
+  riskLevel: GhlAiCommanderRiskLevel;
+  destructive: boolean;
+  requiresApproval: boolean;
+  approvalRequired?: boolean;
+  expiresAt: string;
+}
+
+export interface GhlAiCommanderExecuteResponse {
+  status: "executed" | "failed";
+  executedActions?: unknown[];
+  results?: unknown[];
+  errors?: unknown[];
+}
+
 export interface Address {
   _id: string;
   label: string;
@@ -1281,6 +1305,25 @@ export const updateEstimate = async (
 
 export const deleteEstimate = async (estimateId: string): Promise<void> => {
   await API.delete(`/api/admin/estimates/${estimateId}`);
+};
+
+// GHL AI Commander
+export const generateGhlAiCommanderPlan = async (
+  message: string
+): Promise<GhlAiCommanderPlanResponse> => {
+  const response = await API.post("/api/admin/ai-commander/ghl/plan", {
+    message,
+  });
+  return response.data;
+};
+
+export const executeGhlAiCommanderPlan = async (
+  confirmationId: string
+): Promise<GhlAiCommanderExecuteResponse> => {
+  const response = await API.post("/api/admin/ai-commander/ghl/execute", {
+    confirmationId,
+  });
+  return response.data;
 };
 
 export const getReferrals = async (): Promise<Referral[]> => {

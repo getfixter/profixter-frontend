@@ -104,6 +104,23 @@ export default function AdminPage() {
     [isAdmin, user?.role, user?.employeePosition]
   );
 
+  const handleAdminTabChange = useCallback(
+    (tab: string) => {
+      if (tab === "jarvis") {
+        router.push("/admin/jarvis");
+        return;
+      }
+
+      setActive(tab);
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        params.set("tab", tab);
+        router.replace(`/admin?${params.toString()}`, { scroll: false });
+      }
+    },
+    [router]
+  );
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
@@ -161,6 +178,22 @@ export default function AdminPage() {
     setSelectedDate((prev) => prev || todayNY());
     fetchAll();
   }, [user, hasWorkspaceAccess, authLoading, router, fetchAll, allowedTabs, active]);
+
+  useEffect(() => {
+    if (authLoading || !user || !allowedTabs.length) return;
+
+    const requestedTab = new URLSearchParams(window.location.search).get("tab");
+    if (!requestedTab) return;
+
+    if (requestedTab === "jarvis" && isAdmin) {
+      router.replace("/admin/jarvis");
+      return;
+    }
+
+    if (allowedTabs.some((tab) => tab.id === requestedTab) && active !== requestedTab) {
+      setActive(requestedTab);
+    }
+  }, [active, allowedTabs, authLoading, isAdmin, router, user]);
 
   useEffect(() => {
     if (user?.employeePosition === "Fixter") {
@@ -619,8 +652,8 @@ export default function AdminPage() {
 
       <div className="border-b border-slate-200 bg-white shadow-sm">
         <div className="px-3 md:px-8 py-3 md:py-4">
-          <AdminTabs active={active} onChange={setActive} tabs={allowedTabs} />
-          <BottomNav active={active} onChange={setActive} tabs={allowedTabs} />
+          <AdminTabs active={active} onChange={handleAdminTabChange} tabs={allowedTabs} />
+          <BottomNav active={active} onChange={handleAdminTabChange} tabs={allowedTabs} />
 
           {active === "bookings" && (
             <div className="sticky top-0 z-30 -mx-3 mt-3 flex items-center gap-2 overflow-x-auto border-y border-slate-100 bg-white px-3 py-2 md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
