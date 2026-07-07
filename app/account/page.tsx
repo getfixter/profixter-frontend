@@ -28,23 +28,11 @@ function TabSync({ onTab }: { onTab: (tab: string) => void }) {
   return null;
 }
 
-const MOBILE_TABS: { key: ActiveTab; label: string }[] = [
-  { key: "overview", label: "Overview" },
-  { key: "bookings", label: "Visits" },
-  { key: "plan", label: "My Plan" },
-  { key: "personal", label: "Profile" },
-  { key: "password", label: "Security" },
-];
-
 export default function AccountPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
 
   const router = useRouter();
   const { user, isAuthenticated, isLoading, logout, refreshUser } = useAuth();
-  const isSubscribed =
-    !!isAuthenticated &&
-    !!user?.addresses?.some((addr: { hasActiveSubscription?: boolean }) => addr.hasActiveSubscription);
-
   const applyTab = useCallback((tab: string) => {
     if (tab === "overview") setActiveTab("overview");
     else if (tab === "bookings") setActiveTab("bookings");
@@ -123,36 +111,17 @@ export default function AccountPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <div
-      className={`min-h-screen bg-[#EEF2FF] ${
-        isSubscribed ? "pb-[calc(86px+env(safe-area-inset-bottom,0px))] lg:pb-0" : ""
-      }`}
-    >
-      <AccountHeader userName={formData.name} />
+    <div className="min-h-screen bg-[#EEF2FF] pb-[calc(86px+env(safe-area-inset-bottom,0px))] lg:pb-0">
+      <AccountHeader
+        userName={formData.name}
+        activeTab={activeTab}
+        onSelectTab={selectTab}
+        onLogout={handleLogout}
+      />
 
       <Suspense fallback={null}>
         <TabSync onTab={applyTab} />
       </Suspense>
-
-      {/* Mobile horizontal tab bar */}
-      <div className="lg:hidden bg-white border-b border-[#E0E6F5] overflow-x-auto scrollbar-none">
-        <div className="flex min-w-max">
-          {MOBILE_TABS.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => selectTab(t.key)}
-              className={`px-5 py-3.5 text-[13px] font-semibold whitespace-nowrap transition-all border-b-2 ${
-                activeTab === t.key
-                  ? "border-[#306EEC] text-[#306EEC]"
-                  : "border-transparent text-[#6A6D71] hover:text-[#313234]"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
 
       <main className="max-w-[1240px] mx-auto px-4 sm:px-5 py-5 sm:py-8 lg:py-10">
         <div className="flex flex-col lg:flex-row gap-5 lg:gap-6">
@@ -185,7 +154,7 @@ export default function AccountPage() {
         </div>
       </main>
 
-      {isSubscribed && <CustomerMobileNav />}
+      <CustomerMobileNav />
     </div>
   );
 }
