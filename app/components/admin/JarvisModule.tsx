@@ -691,14 +691,63 @@ function riskTone(plan: GhlAiCommanderPlanResponse | null) {
   return "text-emerald-700 bg-emerald-50 border-emerald-200";
 }
 
+function redactSecretString(value: string) {
+  return value
+    .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer [REDACTED]")
+    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, "[REDACTED_JWT]");
+}
+
+function isSensitiveKey(key: string) {
+  return /authorization|x-auth-token|api[-_]?key|secret|token|jwt|password|access[-_]?token|refresh[-_]?token/i.test(
+    key
+  );
+}
+
+function redactTechnicalValue(value: unknown, seen = new WeakSet<object>()): unknown {
+  if (typeof value === "string") return redactSecretString(value);
+  if (value === null || typeof value !== "object") return value;
+
+  if (seen.has(value)) return "[Circular]";
+  seen.add(value);
+
+  if (value instanceof Error) {
+    const errorRecord = value as Error & Record<string, unknown>;
+    return redactTechnicalValue(
+      {
+        name: errorRecord.name,
+        message: errorRecord.message,
+        stack: errorRecord.stack,
+        status: errorRecord.status,
+        statusCode: errorRecord.statusCode,
+        response: errorRecord.response,
+        config: errorRecord.config,
+        request: errorRecord.request,
+      },
+      seen
+    );
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => redactTechnicalValue(item, seen));
+  }
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+      key,
+      isSensitiveKey(key) ? "[REDACTED]" : redactTechnicalValue(item, seen),
+    ])
+  );
+}
+
 function JsonPanel({ title, value }: { title: string; value: unknown }) {
+  const safeValue = redactTechnicalValue(value);
   return (
     <div>
       <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-slate-400">
         {title}
       </div>
       <pre className="max-h-[340px] overflow-auto whitespace-pre-wrap break-words rounded-2xl bg-slate-950 p-4 text-xs leading-relaxed text-slate-100">
-        {JSON.stringify(value, null, 2)}
+        {JSON.stringify(safeValue, null, 2)}
       </pre>
     </div>
   );
