@@ -694,7 +694,15 @@ function riskTone(plan: GhlAiCommanderPlanResponse | null) {
 function redactSecretString(value: string) {
   return value
     .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer [REDACTED]")
-    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, "[REDACTED_JWT]");
+    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, "[REDACTED_JWT]")
+    .replace(
+      /("(?:authorization|x-auth-token|api[-_]?key|secret|token|jwt|password|access[-_]?token|refresh[-_]?token)"\s*:\s*")[^"]+(")/gi,
+      "$1[REDACTED]$2"
+    )
+    .replace(
+      /((?:api[-_]?key|token|secret|jwt|access[-_]?token|refresh[-_]?token)=)[^&\s"']+/gi,
+      "$1[REDACTED]"
+    );
 }
 
 function isSensitiveKey(key: string) {
