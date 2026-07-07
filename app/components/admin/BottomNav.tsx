@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { SparklesIcon } from '@heroicons/react/24/outline';
 import { ADMIN_TABS, type AdminTabItem } from './admin-tabs-config';
 
 interface BottomNavProps {
@@ -49,6 +50,7 @@ const TAB_ICONS: Record<string, React.ReactNode> = {
       <path d="M4 4h16v12H5.5L4 17.5V4z" /><path d="M8 8h8M8 12h5" />
     </svg>
   ),
+  jarvis: <SparklesIcon className="h-5 w-5" aria-hidden="true" />,
   blacklist: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
