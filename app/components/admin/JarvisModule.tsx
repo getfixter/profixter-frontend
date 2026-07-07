@@ -914,7 +914,7 @@ export default function JarvisModule() {
   return (
     <div className="min-h-screen bg-[#070B14] text-slate-950">
       <div className="grid min-h-screen gap-4 p-3 lg:grid-cols-[280px_minmax(0,1fr)_310px] lg:p-4 xl:grid-cols-[300px_minmax(0,1fr)_340px]">
-        <aside className="order-2 rounded-[30px] border border-white/10 bg-white/[0.06] p-4 text-white shadow-2xl backdrop-blur-xl lg:order-1">
+        <aside className="order-2 rounded-[30px] border border-white/10 bg-white/[0.06] p-4 text-white shadow-2xl backdrop-blur-xl lg:order-1 lg:pt-16">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-200">
@@ -954,7 +954,7 @@ export default function JarvisModule() {
         </aside>
 
         <main className="order-1 flex min-h-[calc(100vh-24px)] flex-col overflow-hidden rounded-[34px] border border-white/10 bg-[#EEF3FB] shadow-2xl lg:order-2">
-          <section className="relative overflow-hidden bg-[#090F1D] px-5 py-7 text-white md:px-8 md:py-9">
+          <section className="relative overflow-hidden bg-[#090F1D] px-5 pb-7 pt-20 text-white md:px-8 md:pb-9 lg:pt-9">
             <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(48,110,236,0.30),rgba(15,23,42,0)_44%),linear-gradient(180deg,rgba(255,255,255,0.10),rgba(255,255,255,0))]" />
             <div className="relative">
               <div>
