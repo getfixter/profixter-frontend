@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Montserrat } from "next/font/google";
 import Script from "next/script";
 import Providers from "./providers";
 import ScrollToTop from "./ScrollToTop";
+import CustomerSiteMobileNav from "./components/CustomerSiteMobileNav";
 import "./globals.css";
 import { DEFAULT_OG_IMAGE, PROFIXTER_STRUCTURED_DATA, SITE_NAME, SITE_URL } from "@/lib/seo";
 
@@ -152,7 +153,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
         <ScrollToTop />
 
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <CustomerSiteMobileNav />
+        </Providers>
       </body>
     </html>
   );

@@ -24,7 +24,7 @@ export default function StickyMobileCTA() {
   return (
     <div
       className={`
-        fixed bottom-0 left-0 right-0 z-40
+        fixed bottom-[calc(76px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40
         lg:hidden
         transition-transform duration-300 ease-in-out
         ${visible ? "translate-y-0" : "translate-y-full"}
