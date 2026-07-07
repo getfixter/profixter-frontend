@@ -16,7 +16,6 @@ import IncludedVisitsSection from "@/app/components/sections/IncludedVisitsSecti
 import TrustSection from "@/app/components/sections/TrustSection";
 import FAQSection from "@/app/components/sections/FAQSection";
 import Footer from "@/app/components/sections/Footer";
-import { ChatWidget } from "@/app/components/ChatWidget";
 import StickyMobileCTA from "@/app/components/StickyMobileCTA";
 import BookingsSection from "@/app/components/account/BookingsSection";
 import CustomerMobileNav from "@/app/components/account/CustomerMobileNav";
@@ -207,8 +206,6 @@ export default function MembershipExperience() {
 
       {!isSubscribed && <StickyMobileCTA />}
       {isSubscribed && <CustomerMobileNav />}
-
-      {!isSubscribed && <ChatWidget />}
     </div>
   );
 }

@@ -354,8 +354,8 @@ export default function SignUpPage() {
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#050B18] to-transparent" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-[1120px] flex-1 flex-col">
-        <div className="flex items-center justify-between gap-4 py-2">
-          <Link href="/" className="inline-flex items-center">
+        <div className="flex items-center justify-end gap-4 py-2 lg:justify-between">
+          <Link href="/" className="hidden items-center lg:inline-flex">
             <Image
               src="/images/logo.svg"
               alt="Profixter"

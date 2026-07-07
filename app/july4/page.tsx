@@ -497,6 +497,7 @@ export default function July4Page() {
                 src="/images/Taras.png"
                 alt="Taras, founder of Profixter"
                 fill
+                loading="eager"
                 sizes="(max-width: 1024px) 390px, 35vw"
                 className="object-cover object-[center_20%] lg:object-top"
               />
