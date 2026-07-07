@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowPathIcon,
+  BoltIcon,
   CheckCircleIcon,
   ChevronDownIcon,
+  ClockIcon,
   ExclamationTriangleIcon,
-  ShieldCheckIcon,
+  PaperAirplaneIcon,
+  PlusIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "@/lib/useAuth";
@@ -17,18 +20,13 @@ import {
   type GhlAiCommanderPlanResponse,
 } from "@/lib/admin-service";
 
-const SUGGESTED_ACTIONS = [
-  "Create Roofing Campaign",
-  "Create Membership Campaign",
-  "Create SMS Follow-up",
-  "Find Cold Leads",
-  "Send Review Campaign",
-  "Create Pipeline",
-  "Create Workflow",
-  "Import Contacts",
+const STATUS_LINES = [
+  "Everything is running normally.",
+  "I've been monitoring your business.",
+  "Ready for your next instruction.",
 ];
 
-const PROMPT_EXAMPLES = [
+const PROMPT_HINTS = [
   "Create a roofing campaign.",
   "Build a follow-up workflow.",
   "Create an SMS campaign.",
@@ -38,12 +36,63 @@ const PROMPT_EXAMPLES = [
   "Generate follow-up sequence.",
 ];
 
-type ConversationItem = {
+const SUGGESTIONS = [
+  {
+    title: "Create Roofing Campaign",
+    body: "Launch a clean roofing follow-up motion.",
+    prompt: "Create a roofing campaign.",
+  },
+  {
+    title: "Create Membership Campaign",
+    body: "Prepare a campaign for membership leads.",
+    prompt: "Create a membership campaign.",
+  },
+  {
+    title: "Import Contacts",
+    body: "Organize a safe contact import plan.",
+    prompt: "Import contacts into GHL.",
+  },
+  {
+    title: "Build SMS Follow-up",
+    body: "Write and stage a short follow-up sequence.",
+    prompt: "Build an SMS follow-up sequence.",
+  },
+  {
+    title: "Review Active Conversations",
+    body: "Check which conversations need attention.",
+    prompt: "Review active GHL conversations.",
+  },
+  {
+    title: "Find Cold Leads",
+    body: "Identify leads that have gone quiet.",
+    prompt: "Find cold leads.",
+  },
+  {
+    title: "Create Workflow",
+    body: "Prepare automation around a known workflow.",
+    prompt: "Create a workflow.",
+  },
+  {
+    title: "Pause Campaign",
+    body: "Prepare a safe pause plan for a campaign.",
+    prompt: "Pause a campaign.",
+  },
+];
+
+type ChatMessage = {
   id: string;
   role: "user" | "jarvis";
+  kind: "text" | "plan" | "error";
+  text?: string;
+  plan?: GhlAiCommanderPlanResponse;
+  error?: unknown;
+};
+
+type Conversation = {
+  id: string;
   title: string;
-  body: string;
-  tone?: "normal" | "success" | "error";
+  subtitle: string;
+  messages: ChatMessage[];
 };
 
 type TechnicalError = {
@@ -51,6 +100,105 @@ type TechnicalError = {
   response?: { data?: unknown };
   status?: number;
 };
+
+const INITIAL_CONVERSATIONS: Conversation[] = [
+  {
+    id: "today",
+    title: "Today",
+    subtitle: "AI brief",
+    messages: [
+      {
+        id: "today-brief",
+        role: "jarvis",
+        kind: "text",
+        text:
+          "Everything looks good today. No campaigns are running, no active tasks are waiting, and no conversations need your attention.",
+      },
+    ],
+  },
+  {
+    id: "test-contact",
+    title: "Create Test Contact",
+    subtitle: "GHL contact",
+    messages: [
+      {
+        id: "test-contact-user",
+        role: "user",
+        kind: "text",
+        text: "Create a test contact.",
+      },
+      {
+        id: "test-contact-jarvis",
+        role: "jarvis",
+        kind: "text",
+        text:
+          "I can prepare that. I will create one contact, attach the requested tag, and wait for your approval before anything changes.",
+      },
+    ],
+  },
+  {
+    id: "roofing",
+    title: "Roofing Campaign",
+    subtitle: "Campaign idea",
+    messages: [
+      {
+        id: "roofing-user",
+        role: "user",
+        kind: "text",
+        text: "Create a roofing campaign.",
+      },
+      {
+        id: "roofing-jarvis",
+        role: "jarvis",
+        kind: "text",
+        text:
+          "I understand. I would prepare the campaign structure, follow-up language, and lead organization for your approval.",
+      },
+    ],
+  },
+  {
+    id: "membership",
+    title: "Membership Campaign",
+    subtitle: "Lead nurturing",
+    messages: [
+      {
+        id: "membership-jarvis",
+        role: "jarvis",
+        kind: "text",
+        text:
+          "A membership campaign can be staged here when you are ready. I will analyze the audience and show you exactly what changes before approval.",
+      },
+    ],
+  },
+  {
+    id: "sms",
+    title: "SMS Automation",
+    subtitle: "Follow-up",
+    messages: [
+      {
+        id: "sms-jarvis",
+        role: "jarvis",
+        kind: "text",
+        text:
+          "For SMS automation, I will always show the message copy first and wait for approval before anything is sent.",
+      },
+    ],
+  },
+  {
+    id: "import-leads",
+    title: "Import Leads",
+    subtitle: "Contacts",
+    messages: [
+      {
+        id: "import-jarvis",
+        role: "jarvis",
+        kind: "text",
+        text:
+          "Lead import planning will stay controlled: review first, approval second, execution only after you confirm.",
+      },
+    ],
+  },
+];
 
 function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
@@ -87,21 +235,32 @@ function getFirstName(name?: string | null) {
   return String(name || "Taras").trim().split(/\s+/)[0] || "Taras";
 }
 
+function id() {
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function titleFromPrompt(value: string) {
+  const clean = value.replace(/[^\w\s-]/g, "").trim();
+  if (!clean) return "New Conversation";
+  return clean.split(/\s+/).slice(0, 4).join(" ");
+}
+
 function getPlanBullets(plan: GhlAiCommanderPlanResponse | null) {
   if (!plan) return [];
+
   const exactPlan = asArray(plan.exactPlan)
     .map(readable)
     .filter(Boolean)
-    .slice(0, 6);
+    .slice(0, 5);
   if (exactPlan.length) return exactPlan;
 
   return asArray(plan.plannedApiActions)
-    .map((action) => {
-      const record = objectRecord(action);
+    .map((item) => {
+      const record = objectRecord(item);
       return readable(record.description) || titleCase(readable(record.actionType));
     })
     .filter(Boolean)
-    .slice(0, 6);
+    .slice(0, 5);
 }
 
 function getObjectsSummary(plan: GhlAiCommanderPlanResponse | null) {
@@ -112,10 +271,12 @@ function getObjectsSummary(plan: GhlAiCommanderPlanResponse | null) {
       const type = readable(record.type);
       const name = readable(record.name);
       const details = readable(record.details);
-      return [operation && titleCase(operation), type && titleCase(type), name]
-        .filter(Boolean)
-        .join(" ")
-        .trim() || details;
+      return (
+        [operation && titleCase(operation), type && titleCase(type), name]
+          .filter(Boolean)
+          .join(" ")
+          .trim() || details
+      );
     })
     .filter(Boolean);
 }
@@ -124,15 +285,11 @@ function getMessageSummary(plan: GhlAiCommanderPlanResponse | null) {
   return asArray(plan?.messagesToSendOrCreate)
     .map((item) => {
       const record = objectRecord(item);
-      const channel = readable(record.channel) || "Message";
-      const timing = readable(record.timing);
-      const subject = readable(record.subject);
-      const body = readable(record.body);
       return {
-        channel,
-        timing,
-        headline: subject || `${channel} message`,
-        body,
+        channel: readable(record.channel) || "Message",
+        timing: readable(record.timing),
+        headline: readable(record.subject) || "Prepared message",
+        body: readable(record.body),
       };
     })
     .filter((item) => item.headline || item.body);
@@ -142,8 +299,8 @@ function unsupportedFromPlan(plan: GhlAiCommanderPlanResponse | null) {
   if (!plan) return [];
   const explicit = asArray(plan.unsupportedActions);
   if (explicit.length) return explicit;
-  return asArray(plan.plannedApiActions).filter((action) => {
-    const record = objectRecord(action);
+  return asArray(plan.plannedApiActions).filter((item) => {
+    const record = objectRecord(item);
     return record.supported === false || record.actionType === "unsupported";
   });
 }
@@ -153,46 +310,32 @@ function unsupportedCopy(item: unknown) {
   const requested = readable(record.requestedAction) || readable(record.actionType);
   const reason = readable(record.reason) || readable(record.unsupportedReason);
   if (requested && reason) return `${requested}: ${reason}`;
-  return requested || reason || "This needs more information before Jarvis can continue.";
+  return requested || reason || "I need one more detail before I can continue.";
 }
 
 function actionLabel(value: unknown) {
   const record = objectRecord(value);
   const type = readable(record.actionType);
-  const description = readable(record.description);
-  if (description) return description;
-
   const labels: Record<string, string> = {
-    create_contact: "Create contact",
-    upsert_contact: "Create or update contact",
-    update_contact: "Update contact",
-    add_contact_tags: "Add tags",
-    remove_contact_tags: "Remove tags",
-    create_contact_note: "Create note",
-    create_contact_task: "Create task",
-    add_contact_to_campaign: "Add contact to campaign",
-    add_contact_to_workflow: "Add contact to workflow",
-    create_opportunity: "Create opportunity",
-    create_pipeline: "Create pipeline",
-    send_conversation_message: "Send message",
-    create_calendar_appointment: "Create appointment",
-    get_pipelines: "Review pipelines",
-    get_workflows: "Review workflows",
+    create_contact: "Contact",
+    upsert_contact: "Contact",
+    update_contact: "Contact",
+    add_contact_tags: "Tags",
+    remove_contact_tags: "Tags",
+    create_contact_note: "Note",
+    create_contact_task: "Task",
+    add_contact_to_campaign: "Campaign",
+    add_contact_to_workflow: "Workflow",
+    create_opportunity: "Opportunity",
+    create_pipeline: "Pipeline",
+    send_conversation_message: "Message",
+    create_calendar_appointment: "Appointment",
   };
-
-  return labels[type] || titleCase(type) || "Complete action";
+  return labels[type] || titleCase(type) || "Item";
 }
 
-function getExecuteLabels(result: GhlAiCommanderExecuteResponse | null) {
+function getExecuteLabels(result?: GhlAiCommanderExecuteResponse | null) {
   return asArray(result?.executedActions).map(actionLabel).filter(Boolean);
-}
-
-function estimateCompletion(plan: GhlAiCommanderPlanResponse | null) {
-  const actions = asArray(plan?.plannedApiActions).length;
-  if (!actions) return "Under a minute";
-  if (actions <= 2) return "Under a minute";
-  if (actions <= 6) return "About 2 minutes";
-  return "A few minutes";
 }
 
 function getFriendlyError(error: unknown) {
@@ -210,88 +353,60 @@ function getFriendlyError(error: unknown) {
 
   if (/token|jwt|unauthorized|401/i.test(diagnosticText)) {
     return {
-      title: "I couldn't complete this task.",
-      reason: "GHL rejected the request.",
-      possibleReason: "Invalid or unauthorized GHL token.",
+      title: "I couldn't complete that task.",
+      reason: "Invalid GHL token.",
     };
   }
 
   if (/expired/i.test(diagnosticText)) {
     return {
-      title: "I couldn't complete this task.",
-      reason: "This approval window expired.",
-      possibleReason: "Create a fresh plan and approve it within 30 minutes.",
+      title: "I couldn't complete that task.",
+      reason: "The approval window expired.",
     };
   }
 
   if (/unsupported/i.test(diagnosticText)) {
     return {
-      title: "I couldn't complete this task.",
-      reason: "One or more requested GHL actions are not supported yet.",
-      possibleReason: "Review the plan and adjust the request.",
+      title: "I couldn't complete that task.",
+      reason: "One part of this is not supported yet.",
     };
   }
 
-  if (/ghl|request failed|rejected|400|403|422|500/i.test(diagnosticText)) {
+  if (/ghl|rejected|400|403|422|500/i.test(diagnosticText)) {
     return {
-      title: "I couldn't complete this task.",
-      reason: "GHL rejected the request.",
-      possibleReason: "Open technical details for the exact response.",
+      title: "I couldn't complete that task.",
+      reason: "GHL rejected it.",
     };
   }
 
   return {
-    title: "I couldn't complete this task.",
-    reason: message || "Something stopped Jarvis before completion.",
-    possibleReason: "Review the request or open technical details.",
+    title: "I couldn't complete that task.",
+    reason: message || "Something blocked completion.",
   };
 }
 
-function RiskPill({
-  riskLevel,
-  destructive,
-}: {
-  riskLevel?: string;
-  destructive?: boolean;
-}) {
-  const risk = String(riskLevel || "low").toLowerCase();
-  const tone =
-    risk === "high" || destructive
-      ? "border-rose-200 bg-rose-50 text-rose-700"
-      : risk === "medium"
-        ? "border-amber-200 bg-amber-50 text-amber-700"
-        : "border-emerald-200 bg-emerald-50 text-emerald-700";
-
-  return (
-    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-black uppercase ${tone}`}>
-      {risk} risk
-    </span>
-  );
+function estimateCompletion(plan: GhlAiCommanderPlanResponse | null) {
+  const count = asArray(plan?.plannedApiActions).length;
+  if (count <= 2) return "Under a minute";
+  if (count <= 6) return "About 2 minutes";
+  return "A few minutes";
 }
 
-function ImpactMetric({
-  label,
-  value,
-  tone = "slate",
-}: {
-  label: string;
-  value: string;
-  tone?: "slate" | "blue" | "emerald" | "amber" | "rose";
-}) {
-  const tones = {
-    slate: "border-slate-200 bg-white text-slate-950",
-    blue: "border-blue-100 bg-blue-50 text-blue-900",
-    emerald: "border-emerald-100 bg-emerald-50 text-emerald-900",
-    amber: "border-amber-100 bg-amber-50 text-amber-900",
-    rose: "border-rose-100 bg-rose-50 text-rose-900",
-  };
+function riskTone(plan: GhlAiCommanderPlanResponse | null) {
+  if (plan?.riskLevel === "high" || plan?.destructive) return "text-rose-700 bg-rose-50 border-rose-200";
+  if (plan?.riskLevel === "medium") return "text-amber-700 bg-amber-50 border-amber-200";
+  return "text-emerald-700 bg-emerald-50 border-emerald-200";
+}
 
+function JsonPanel({ title, value }: { title: string; value: unknown }) {
   return (
-    <div className={`rounded-2xl border px-4 py-3 ${tones[tone]}`}>
-      <div className="text-[11px] font-black uppercase tracking-[0.14em] opacity-60">
-        {label}
+    <div>
+      <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+        {title}
       </div>
-      <div className="mt-2 text-lg font-black">{value}</div>
+      <pre className="max-h-[340px] overflow-auto whitespace-pre-wrap break-words rounded-2xl bg-slate-950 p-4 text-xs leading-relaxed text-slate-100">
+        {JSON.stringify(value, null, 2)}
+      </pre>
     </div>
   );
 }
@@ -301,487 +416,636 @@ function TechnicalDetails({
   execution,
   error,
 }: {
-  plan: GhlAiCommanderPlanResponse | null;
-  execution: GhlAiCommanderExecuteResponse | null;
-  error: unknown;
+  plan?: GhlAiCommanderPlanResponse;
+  execution?: GhlAiCommanderExecuteResponse;
+  error?: unknown;
 }) {
   if (!plan && !execution && !error) return null;
 
   return (
-    <details className="group rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-black text-slate-800">
-        <span>Advanced Details</span>
+    <details className="group mt-5 rounded-[22px] border border-slate-200 bg-white/80">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-black text-slate-700">
+        <span>Show technical details</span>
         <ChevronDownIcon className="h-4 w-4 transition group-open:rotate-180" aria-hidden="true" />
       </summary>
-      <div className="border-t border-slate-100 p-5">
-        <div className="grid gap-4">
-          {plan && (
-            <>
-              <div>
-                <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-                  Confirmation ID
-                </div>
-                <div className="break-all rounded-xl bg-slate-100 p-3 text-xs font-bold text-slate-700">
-                  {plan.confirmationId}
-                </div>
+      <div className="grid gap-4 border-t border-slate-100 p-4">
+        {plan && (
+          <>
+            <div>
+              <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+                Confirmation ID
               </div>
-              <JsonPanel title="Plan JSON" value={plan} />
-            </>
-          )}
-          {execution && <JsonPanel title="Execution JSON" value={execution} />}
-          {error ? <JsonPanel title="Error Details" value={error} /> : null}
-        </div>
+              <div className="break-all rounded-2xl bg-slate-100 p-3 text-xs font-bold text-slate-700">
+                {plan.confirmationId}
+              </div>
+            </div>
+            <JsonPanel title="JSON" value={plan} />
+          </>
+        )}
+        {execution && <JsonPanel title="Execution" value={execution} />}
+        {error ? <JsonPanel title="Developer diagnostics" value={error} /> : null}
       </div>
     </details>
   );
 }
 
-function JsonPanel({ title, value }: { title: string; value: unknown }) {
+function ThinkingBubble({ label = "Jarvis is thinking" }: { label?: string }) {
   return (
-    <div>
-      <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-        {title}
+    <div className="jarvis-fade flex items-center gap-3 rounded-[26px] border border-white/60 bg-white/90 px-5 py-4 text-sm font-bold text-slate-700 shadow-sm">
+      <span className="flex gap-1">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
+        <span className="h-2 w-2 animate-pulse rounded-full bg-blue-400 [animation-delay:120ms]" />
+        <span className="h-2 w-2 animate-pulse rounded-full bg-blue-300 [animation-delay:240ms]" />
+      </span>
+      {label}
+    </div>
+  );
+}
+
+function ChatText({ message }: { message: ChatMessage }) {
+  const isUser = message.role === "user";
+  return (
+    <article
+      className={`jarvis-fade flex ${isUser ? "justify-end" : "justify-start"}`}
+    >
+      <div
+        className={`max-w-[760px] rounded-[28px] px-5 py-4 text-[15px] font-semibold leading-7 shadow-sm ${
+          isUser
+            ? "bg-[#0E1424] text-white"
+            : "border border-white/70 bg-white/90 text-slate-800"
+        }`}
+      >
+        {message.text}
       </div>
-      <pre className="max-h-[360px] overflow-auto whitespace-pre-wrap break-words rounded-xl bg-slate-950 p-4 text-xs leading-relaxed text-slate-100">
-        {JSON.stringify(value, null, 2)}
-      </pre>
+    </article>
+  );
+}
+
+function PlanMessage({
+  plan,
+  execution,
+  error,
+  canceled,
+  executing,
+  onApprove,
+  onCancel,
+}: {
+  plan: GhlAiCommanderPlanResponse;
+  execution?: GhlAiCommanderExecuteResponse;
+  error?: unknown;
+  canceled: boolean;
+  executing: boolean;
+  onApprove: () => void;
+  onCancel: () => void;
+}) {
+  const bullets = getPlanBullets(plan);
+  const objects = getObjectsSummary(plan);
+  const messages = getMessageSummary(plan);
+  const unsupported = unsupportedFromPlan(plan);
+  const completed = execution?.status === "executed";
+  const failed = Boolean(error) || execution?.status === "failed";
+  const friendlyError = failed ? getFriendlyError(error || execution) : null;
+  const created = getExecuteLabels(execution);
+
+  return (
+    <article className="jarvis-fade flex justify-start">
+      <div className="w-full max-w-[900px] overflow-hidden rounded-[32px] border border-white/70 bg-white/95 shadow-[0_18px_70px_rgba(15,23,42,0.10)]">
+        <div className="border-b border-slate-100 p-5 md:p-6">
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-blue-500">
+            I understand.
+          </div>
+          <h3 className="mt-2 text-2xl font-black tracking-normal text-slate-950">
+            Here&apos;s what I&apos;m going to do.
+          </h3>
+          <p className="mt-2 text-sm font-black text-blue-700">
+            Nothing has been changed yet.
+          </p>
+        </div>
+
+        <div className="grid gap-4 p-5 md:grid-cols-3 md:p-6">
+          <section className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+            <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+              What I understood
+            </div>
+            <p className="mt-3 text-sm font-bold leading-6 text-slate-800">
+              {plan.summary || "You want Jarvis to prepare a safe GHL change for approval."}
+            </p>
+          </section>
+
+          <section className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+            <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+              What I will create
+            </div>
+            <div className="mt-3 space-y-2">
+              {(bullets.length ? bullets : ["Prepare the work and wait for approval."]).map((item) => (
+                <div key={item} className="flex gap-2 text-sm font-bold leading-6 text-slate-800">
+                  <CheckCircleIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" aria-hidden="true" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+            <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+              Estimated impact
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+              <Impact label="Contacts" value={String(objects.filter((item) => /contact/i.test(item)).length || objects.length || 0)} />
+              <Impact label="Messages" value={String(messages.length)} />
+              <Impact label="Workflows" value={String(objects.filter((item) => /workflow/i.test(item)).length)} />
+              <Impact label="Risk" value={titleCase(plan.riskLevel || "low")} tone={riskTone(plan)} />
+              <Impact label="Time" value={estimateCompletion(plan)} wide />
+            </div>
+          </section>
+        </div>
+
+        {messages.length > 0 && (
+          <div className="border-t border-slate-100 px-5 py-4 md:px-6">
+            <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+              Message copy
+            </div>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {messages.map((item) => (
+                <div key={`${item.channel}-${item.headline}-${item.timing}`} className="rounded-[22px] border border-slate-200 bg-white p-4">
+                  <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+                    {item.channel} {item.timing ? `- ${item.timing}` : ""}
+                  </div>
+                  <div className="mt-1 text-sm font-black text-slate-950">{item.headline}</div>
+                  {item.body && <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">{item.body}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {unsupported.length > 0 && (
+          <div className="mx-5 mb-5 rounded-[24px] border border-amber-200 bg-amber-50 p-4 text-amber-950 md:mx-6">
+            <div className="text-sm font-black">Before I continue...</div>
+            <div className="mt-3 space-y-2">
+              {unsupported.map((item, index) => (
+                <div key={index} className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-bold">
+                  {unsupportedCopy(item)}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {completed && (
+          <div className="mx-5 mb-5 rounded-[26px] border border-emerald-200 bg-emerald-50 p-5 text-emerald-950 md:mx-6">
+            <div className="flex items-start gap-3">
+              <CheckCircleIcon className="h-7 w-7 flex-shrink-0 text-emerald-600" aria-hidden="true" />
+              <div>
+                <h3 className="text-2xl font-black">Completed</h3>
+                <p className="mt-1 text-sm font-bold">Everything finished successfully.</p>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  {(created.length ? created : ["No additional action is required."]).map((item) => (
+                    <div key={item} className="flex gap-2 rounded-2xl bg-white/70 px-3 py-2 text-sm font-black">
+                      <CheckCircleIcon className="h-5 w-5 flex-shrink-0 text-emerald-600" aria-hidden="true" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-sm font-bold">No additional action is required.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {failed && friendlyError && (
+          <div className="mx-5 mb-5 rounded-[26px] border border-rose-200 bg-rose-50 p-5 text-rose-950 md:mx-6">
+            <div className="flex items-start gap-3">
+              <ExclamationTriangleIcon className="h-7 w-7 flex-shrink-0 text-rose-600" aria-hidden="true" />
+              <div>
+                <h3 className="text-2xl font-black">{friendlyError.title}</h3>
+                <p className="mt-3 text-sm font-black">Reason:</p>
+                <p className="mt-1 text-sm font-semibold">{friendlyError.reason}</p>
+                <p className="mt-4 text-sm font-semibold">Would you like to see technical details?</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!completed && !failed && (
+          <div className="border-t border-slate-100 bg-slate-50 p-5 md:p-6">
+            <div className="mx-auto max-w-xl text-center">
+              <h4 className="text-2xl font-black text-slate-950">Would you like me to continue?</h4>
+              <p className="mt-2 text-sm font-bold text-slate-600">
+                Approval stays with you. Jarvis will only continue after you confirm.
+              </p>
+              <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={onApprove}
+                  disabled={executing || canceled}
+                  className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-2xl bg-blue-600 px-8 py-4 text-sm font-black text-white shadow-[0_16px_45px_rgba(37,99,235,0.24)] transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+                >
+                  {executing ? (
+                    <>
+                      <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      Working...
+                    </>
+                  ) : (
+                    "Approve & Execute"
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  disabled={executing || canceled}
+                  className="inline-flex min-h-[56px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-8 py-4 text-sm font-black text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {canceled ? "Canceled" : "Cancel"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="px-5 pb-5 md:px-6 md:pb-6">
+          <TechnicalDetails plan={plan} execution={execution} error={error} />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function Impact({
+  label,
+  value,
+  tone = "border-slate-200 bg-white text-slate-950",
+  wide = false,
+}: {
+  label: string;
+  value: string;
+  tone?: string;
+  wide?: boolean;
+}) {
+  return (
+    <div className={`rounded-2xl border px-3 py-2 ${tone} ${wide ? "col-span-2" : ""}`}>
+      <div className="text-[10px] font-black uppercase tracking-[0.12em] opacity-50">{label}</div>
+      <div className="mt-1 text-sm font-black">{value}</div>
     </div>
   );
 }
 
 export default function JarvisModule() {
   const { user } = useAuth();
-  const [message, setMessage] = useState("");
-  const [plan, setPlan] = useState<GhlAiCommanderPlanResponse | null>(null);
-  const [executeResult, setExecuteResult] =
-    useState<GhlAiCommanderExecuteResponse | null>(null);
+  const [statusLine, setStatusLine] = useState(STATUS_LINES[0]);
+  const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS);
+  const [activeConversationId, setActiveConversationId] = useState(INITIAL_CONVERSATIONS[0].id);
+  const [draft, setDraft] = useState("");
   const [planning, setPlanning] = useState(false);
-  const [executing, setExecuting] = useState(false);
-  const [error, setError] = useState<unknown>(null);
-  const [history, setHistory] = useState<ConversationItem[]>([]);
+  const [executingPlanId, setExecutingPlanId] = useState<string | null>(null);
+  const [executionByPlanId, setExecutionByPlanId] = useState<Record<string, GhlAiCommanderExecuteResponse>>({});
+  const [errorByPlanId, setErrorByPlanId] = useState<Record<string, unknown>>({});
+  const [canceledPlans, setCanceledPlans] = useState<Record<string, boolean>>({});
 
+  useEffect(() => {
+    setStatusLine(STATUS_LINES[Math.floor(Math.random() * STATUS_LINES.length)]);
+  }, []);
+
+  const activeConversation =
+    conversations.find((conversation) => conversation.id === activeConversationId) ||
+    conversations[0];
   const firstName = getFirstName(user?.name);
-  const planBullets = useMemo(() => getPlanBullets(plan), [plan]);
-  const objects = useMemo(() => getObjectsSummary(plan), [plan]);
-  const messages = useMemo(() => getMessageSummary(plan), [plan]);
-  const unsupportedActions = useMemo(() => unsupportedFromPlan(plan), [plan]);
-  const completedLabels = useMemo(() => getExecuteLabels(executeResult), [executeResult]);
-  const highRisk = plan?.riskLevel === "high" || plan?.destructive === true;
-  const canExecute =
-    Boolean(plan?.confirmationId) &&
-    !executing &&
-    executeResult?.status !== "executed";
-  const friendlyError = error ? getFriendlyError(error) : null;
 
-  const addHistory = (item: Omit<ConversationItem, "id">) => {
-    setHistory((current) => [
-      ...current,
-      { ...item, id: `${Date.now()}-${current.length}` },
-    ]);
+  const updateConversation = (
+    conversationId: string,
+    updater: (conversation: Conversation) => Conversation
+  ) => {
+    setConversations((current) =>
+      current.map((conversation) =>
+        conversation.id === conversationId ? updater(conversation) : conversation
+      )
+    );
   };
 
-  const resetForNewPrompt = (value: string) => {
-    setMessage(value);
-    setPlan(null);
-    setExecuteResult(null);
-    setError(null);
+  const startNewConversation = () => {
+    const next: Conversation = {
+      id: id(),
+      title: "New Conversation",
+      subtitle: "Ready",
+      messages: [
+        {
+          id: id(),
+          role: "jarvis",
+          kind: "text",
+          text: "I'm here. Tell me what you want handled.",
+        },
+      ],
+    };
+    setConversations((current) => [next, ...current]);
+    setActiveConversationId(next.id);
+    setDraft("");
+  };
+
+  const selectSuggestion = (prompt: string) => {
+    if (!activeConversation) startNewConversation();
+    setDraft(prompt);
   };
 
   const handleAnalyze = async () => {
-    const trimmed = message.trim();
-    if (!trimmed) {
-      setError(new Error("Tell Jarvis what you want handled in GHL."));
-      return;
-    }
+    const trimmed = draft.trim();
+    if (!trimmed || planning) return;
 
-    setPlanning(true);
-    setError(null);
-    setPlan(null);
-    setExecuteResult(null);
-    addHistory({
+    const conversationId = activeConversation.id;
+    const userMessage: ChatMessage = {
+      id: id(),
       role: "user",
-      title: "You",
-      body: trimmed,
-    });
+      kind: "text",
+      text: trimmed,
+    };
+
+    updateConversation(conversationId, (conversation) => ({
+      ...conversation,
+      title:
+        conversation.title === "Today" || conversation.title === "New Conversation"
+          ? titleFromPrompt(trimmed)
+          : conversation.title,
+      subtitle: "In progress",
+      messages: [...conversation.messages, userMessage],
+    }));
+    setDraft("");
+    setPlanning(true);
 
     try {
       const nextPlan = await generateGhlAiCommanderPlan(trimmed);
-      setPlan(nextPlan);
-      addHistory({
+      const planMessage: ChatMessage = {
+        id: id(),
         role: "jarvis",
-        title: "Jarvis",
-        body: nextPlan.summary || "I analyzed the request and prepared a plan.",
-      });
+        kind: "plan",
+        plan: nextPlan,
+      };
+      updateConversation(conversationId, (conversation) => ({
+        ...conversation,
+        subtitle: `${titleCase(nextPlan.riskLevel || "low")} risk`,
+        messages: [...conversation.messages, planMessage],
+      }));
     } catch (planError) {
-      setError(planError);
       const friendly = getFriendlyError(planError);
-      addHistory({
+      const errorMessage: ChatMessage = {
+        id: id(),
         role: "jarvis",
-        title: "Jarvis",
-        body: `${friendly.reason} ${friendly.possibleReason}`,
-        tone: "error",
-      });
+        kind: "error",
+        text: `${friendly.title} ${friendly.reason}`,
+        error: planError,
+      };
+      updateConversation(conversationId, (conversation) => ({
+        ...conversation,
+        subtitle: "Needs attention",
+        messages: [...conversation.messages, errorMessage],
+      }));
     } finally {
       setPlanning(false);
     }
   };
 
-  const handleExecute = async () => {
-    if (!plan?.confirmationId) return;
+  const approvePlan = async (plan: GhlAiCommanderPlanResponse) => {
+    if (!plan.confirmationId || executingPlanId) return;
 
-    setExecuting(true);
-    setError(null);
+    setExecutingPlanId(plan.confirmationId);
+    setErrorByPlanId((current) => {
+      const next = { ...current };
+      delete next[plan.confirmationId];
+      return next;
+    });
 
     try {
       const result = await executeGhlAiCommanderPlan(plan.confirmationId);
-      setExecuteResult(result);
-      if (result.status === "executed") {
-        addHistory({
-          role: "jarvis",
-          title: "Jarvis",
-          body: "Completed. I successfully executed the approved GHL plan.",
-          tone: "success",
-        });
-      } else {
-        const executionError = {
-          message: "GHL rejected the request.",
-          response: { data: { errors: result.errors || [] } },
-        };
-        setError(executionError);
-        addHistory({
-          role: "jarvis",
-          title: "Jarvis",
-          body: "I couldn't complete this task. GHL rejected the request.",
-          tone: "error",
-        });
+      setExecutionByPlanId((current) => ({
+        ...current,
+        [plan.confirmationId]: result,
+      }));
+      if (result.status !== "executed") {
+        setErrorByPlanId((current) => ({
+          ...current,
+          [plan.confirmationId]: {
+            message: "GHL rejected it.",
+            response: { data: { errors: result.errors || [] } },
+          },
+        }));
       }
     } catch (executeError) {
-      setError(executeError);
-      const friendly = getFriendlyError(executeError);
-      addHistory({
-        role: "jarvis",
-        title: "Jarvis",
-        body: `${friendly.reason} ${friendly.possibleReason}`,
-        tone: "error",
-      });
+      setErrorByPlanId((current) => ({
+        ...current,
+        [plan.confirmationId]: executeError,
+      }));
     } finally {
-      setExecuting(false);
+      setExecutingPlanId(null);
     }
   };
 
+  const cancelPlan = (plan: GhlAiCommanderPlanResponse) => {
+    if (!plan.confirmationId) return;
+    setCanceledPlans((current) => ({ ...current, [plan.confirmationId]: true }));
+  };
+
   return (
-    <div className="space-y-6">
-      <section className="overflow-hidden rounded-[32px] bg-[#080D18] text-white shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
-        <div className="bg-[linear-gradient(135deg,rgba(48,110,236,0.28),rgba(15,23,42,0)_44%),linear-gradient(180deg,rgba(255,255,255,0.10),rgba(255,255,255,0))] px-5 py-8 md:px-8 md:py-10">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-blue-100">
-                <SparklesIcon className="h-4 w-4" aria-hidden="true" />
+    <div className="min-h-screen bg-[#070B14] text-slate-950">
+      <div className="grid min-h-screen gap-4 p-3 lg:grid-cols-[280px_minmax(0,1fr)_310px] lg:p-4 xl:grid-cols-[300px_minmax(0,1fr)_340px]">
+        <aside className="order-2 rounded-[30px] border border-white/10 bg-white/[0.06] p-4 text-white shadow-2xl backdrop-blur-xl lg:order-1">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-200">
                 Jarvis
               </div>
-              <h2 className="mt-6 text-4xl font-black tracking-normal md:text-6xl">
-                {getGreeting()}, {firstName}.
-              </h2>
-              <p className="mt-4 text-2xl font-black text-white md:text-3xl">
-                I&apos;m ready.
-              </p>
-              <p className="mt-3 max-w-xl text-base font-semibold leading-7 text-slate-300">
-                What would you like me to do today?
-              </p>
+              <h2 className="mt-1 text-xl font-black">Conversations</h2>
             </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-slate-200">
-              GHL operations are approval-only
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {history.length > 0 && (
-        <section className="rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-          <div className="mb-4 text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-            Conversation History
-          </div>
-          <div className="space-y-3">
-            {history.map((item) => (
-              <article
-                key={item.id}
-                className={`rounded-2xl border px-4 py-3 ${
-                  item.role === "user"
-                    ? "ml-auto max-w-3xl border-slate-200 bg-slate-50 text-slate-900"
-                    : item.tone === "success"
-                      ? "mr-auto max-w-3xl border-emerald-100 bg-emerald-50 text-emerald-950"
-                      : item.tone === "error"
-                        ? "mr-auto max-w-3xl border-rose-100 bg-rose-50 text-rose-950"
-                        : "mr-auto max-w-3xl border-blue-100 bg-blue-50 text-blue-950"
-                }`}
-              >
-                <div className="text-xs font-black uppercase tracking-[0.14em] opacity-60">
-                  {item.title}
-                </div>
-                <p className="mt-1 text-sm font-semibold leading-6">{item.body}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-        <textarea
-          value={message}
-          onChange={(event) => resetForNewPrompt(event.target.value)}
-          placeholder={PROMPT_EXAMPLES.join("\n")}
-          className="min-h-[210px] w-full resize-y rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5 text-base font-semibold leading-7 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-        />
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          {SUGGESTED_ACTIONS.map((action) => (
             <button
-              key={action}
               type="button"
-              onClick={() => resetForNewPrompt(action)}
-              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+              onClick={startNewConversation}
+              aria-label="New conversation"
+              className="grid h-10 w-10 place-items-center rounded-2xl border border-white/10 bg-white/10 text-white transition hover:bg-white/15"
             >
-              {action}
+              <PlusIcon className="h-5 w-5" aria-hidden="true" />
             </button>
-          ))}
-        </div>
-
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold text-slate-500">
-            Jarvis will analyze first. Nothing executes until you approve.
-          </p>
-          <button
-            type="button"
-            onClick={handleAnalyze}
-            disabled={planning || !message.trim()}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-6 py-3.5 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            {planning ? (
-              <>
-                <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden="true" />
-                Analyzing...
-              </>
-            ) : (
-              "Analyze Request"
-            )}
-          </button>
-        </div>
-      </section>
-
-      {friendlyError && !plan && (
-        <section className="rounded-[26px] border border-rose-200 bg-rose-50 p-5 text-rose-950 shadow-sm">
-          <div className="flex gap-3">
-            <ExclamationTriangleIcon className="mt-0.5 h-6 w-6 flex-shrink-0 text-rose-600" aria-hidden="true" />
-            <div>
-              <h3 className="text-xl font-black">{friendlyError.title}</h3>
-              <p className="mt-2 text-sm font-bold">Reason: {friendlyError.reason}</p>
-              <p className="mt-1 text-sm font-semibold text-rose-800">
-                Possible reason: {friendlyError.possibleReason}
-              </p>
-            </div>
           </div>
-        </section>
-      )}
 
-      {plan && (
-        <section className="rounded-[30px] border border-slate-200 bg-white shadow-sm">
-          <div className="p-5 md:p-7">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="max-w-3xl">
-                <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-                  Here&apos;s what I understand
-                </div>
-                <h3 className="mt-3 text-2xl font-black text-slate-950">
-                  {plan.summary || "I prepared a plan for this GHL request."}
-                </h3>
-                <p className="mt-3 text-sm font-black text-blue-700">
-                  Nothing has been changed yet.
-                </p>
-              </div>
-              <RiskPill riskLevel={plan.riskLevel} destructive={plan.destructive} />
-            </div>
-
-            <div className="mt-6 grid gap-3 md:grid-cols-4">
-              <ImpactMetric
-                label="Contacts affected"
-                value={String(objects.filter((item) => /contact/i.test(item)).length || objects.length || 0)}
-                tone="blue"
-              />
-              <ImpactMetric
-                label="Estimated messages"
-                value={String(messages.length)}
-                tone={messages.length ? "amber" : "slate"}
-              />
-              <ImpactMetric
-                label="Risk"
-                value={titleCase(plan.riskLevel || "low")}
-                tone={highRisk ? "rose" : plan.riskLevel === "medium" ? "amber" : "emerald"}
-              />
-              <ImpactMetric
-                label="Completion time"
-                value={estimateCompletion(plan)}
-                tone="slate"
-              />
-            </div>
-
-            <div className="mt-7 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-              <div>
-                <h4 className="text-sm font-black text-slate-950">You would like me to:</h4>
-                <div className="mt-3 space-y-3">
-                  {(planBullets.length ? planBullets : ["Prepare a safe GHL plan for approval."]).map((item) => (
-                    <div key={item} className="flex gap-3 rounded-2xl bg-slate-50 px-4 py-3">
-                      <CheckCircleIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" aria-hidden="true" />
-                      <p className="text-sm font-bold leading-6 text-slate-800">{item}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-sm font-black text-slate-950">Objects Jarvis sees</h4>
-                  <div className="mt-3 space-y-2">
-                    {objects.length ? (
-                      objects.slice(0, 5).map((item) => (
-                        <div key={item} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700">
-                          {item}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-500">
-                        No existing GHL objects were identified.
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {messages.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-black text-slate-950">Messages Jarvis will prepare</h4>
-                    <div className="mt-3 space-y-2">
-                      {messages.map((item) => (
-                        <article key={`${item.channel}-${item.headline}-${item.timing}`} className="rounded-2xl border border-slate-200 px-4 py-3">
-                          <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
-                            {item.channel} {item.timing ? `- ${item.timing}` : ""}
-                          </div>
-                          <div className="mt-1 text-sm font-black text-slate-950">{item.headline}</div>
-                          {item.body && <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">{item.body}</p>}
-                        </article>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {unsupportedActions.length > 0 && (
-              <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
-                <div className="text-sm font-black">Before I continue...</div>
-                <p className="mt-1 text-sm font-semibold">
-                  I need one adjustment before this can be executed cleanly.
-                </p>
-                <div className="mt-3 space-y-2">
-                  {unsupportedActions.map((item, index) => (
-                    <div key={index} className="rounded-xl bg-white/70 px-3 py-2 text-sm font-bold">
-                      {unsupportedCopy(item)}
-                    </div>
-                  ))}
-                </div>
+          <div className="mt-5 space-y-2">
+            {conversations.map((conversation) => {
+              const active = conversation.id === activeConversation.id;
+              return (
                 <button
+                  key={conversation.id}
                   type="button"
-                  onClick={() => resetForNewPrompt(`${message.trim()}\n\nLet Jarvis write the missing copy, names, timing, and safe defaults.`)}
-                  className="mt-4 rounded-full bg-amber-500 px-4 py-2 text-sm font-black text-white shadow-sm hover:bg-amber-600"
+                  onClick={() => setActiveConversationId(conversation.id)}
+                  className={`w-full rounded-[22px] border px-4 py-3 text-left transition ${
+                    active
+                      ? "border-blue-300/40 bg-blue-400/15 text-white"
+                      : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white"
+                  }`}
                 >
-                  Let Jarvis write it
+                  <div className="text-sm font-black">{conversation.title}</div>
+                  <div className="mt-1 text-xs font-semibold opacity-60">{conversation.subtitle}</div>
                 </button>
-              </div>
-            )}
-
-            {highRisk && (
-              <div className="mt-6 flex gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-950">
-                <ExclamationTriangleIcon className="mt-0.5 h-6 w-6 flex-shrink-0 text-rose-600" aria-hidden="true" />
-                <div>
-                  <div className="text-sm font-black">This needs careful review.</div>
-                  <p className="mt-1 text-sm font-semibold">
-                    Jarvis marked this as high risk or destructive. Review every contact, message, and object before approval.
-                  </p>
-                </div>
-              </div>
-            )}
+              );
+            })}
           </div>
+        </aside>
 
-          <div className="border-t border-slate-200 bg-slate-50 p-5 md:p-7">
-            <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
+        <main className="order-1 flex min-h-[calc(100vh-24px)] flex-col overflow-hidden rounded-[34px] border border-white/10 bg-[#EEF3FB] shadow-2xl lg:order-2">
+          <section className="relative overflow-hidden bg-[#090F1D] px-5 py-7 text-white md:px-8 md:py-9">
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(48,110,236,0.30),rgba(15,23,42,0)_44%),linear-gradient(180deg,rgba(255,255,255,0.10),rgba(255,255,255,0))]" />
+            <div className="relative grid gap-6 xl:grid-cols-[1fr_330px] xl:items-end">
               <div>
-                <div className="flex items-center gap-2 text-slate-950">
-                  <ShieldCheckIcon className="h-6 w-6 text-blue-600" aria-hidden="true" />
-                  <h3 className="text-2xl font-black">Ready to execute?</h3>
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-blue-100">
+                  <SparklesIcon className="h-4 w-4" aria-hidden="true" />
+                  Profixter OS
                 </div>
-                <p className="mt-2 text-sm font-bold text-slate-600">
-                  Nothing has been changed in GHL. After approval Jarvis will:
-                </p>
-                <div className="mt-4 grid gap-2 md:grid-cols-2">
-                  {(planBullets.length ? planBullets.slice(0, 4) : ["Execute the approved GHL plan."]).map((item) => (
-                    <div key={item} className="flex gap-2 text-sm font-bold text-slate-700">
-                      <CheckCircleIcon className="h-5 w-5 flex-shrink-0 text-emerald-600" aria-hidden="true" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
+                <h1 className="mt-5 text-4xl font-black tracking-normal md:text-6xl">
+                  {getGreeting()}, {firstName}.
+                </h1>
+                <p className="mt-4 text-xl font-black text-white md:text-2xl">{statusLine}</p>
               </div>
 
-              <button
-                type="button"
-                onClick={handleExecute}
-                disabled={!canExecute}
-                className="inline-flex min-h-[58px] items-center justify-center rounded-2xl bg-blue-600 px-8 py-4 text-base font-black text-white shadow-[0_16px_40px_rgba(37,99,235,0.24)] transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
-              >
-                {executing ? "Executing..." : "Approve & Execute"}
-              </button>
+              <div className="rounded-[26px] border border-white/10 bg-white/10 p-4 backdrop-blur">
+                <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-100">
+                  Today
+                </div>
+                <div className="mt-3 space-y-2 text-sm font-semibold text-slate-200">
+                  <p>No campaigns running.</p>
+                  <p>No active tasks.</p>
+                  <p>No conversations waiting.</p>
+                  <p className="font-black text-white">Everything looks good.</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
 
-      {executeResult && executeResult.status === "executed" && (
-        <section className="rounded-[30px] border border-emerald-200 bg-emerald-50 p-6 text-emerald-950 shadow-sm md:p-8">
-          <div className="flex gap-4">
-            <CheckCircleIcon className="h-8 w-8 flex-shrink-0 text-emerald-600" aria-hidden="true" />
-            <div>
-              <h3 className="text-3xl font-black">Completed</h3>
-              <p className="mt-2 text-base font-bold">
-                Jarvis successfully completed your request.
-              </p>
-              <div className="mt-5 grid gap-2 md:grid-cols-2">
-                {(completedLabels.length ? completedLabels : ["Everything completed successfully."]).map((item) => (
-                  <div key={item} className="flex gap-2 rounded-2xl bg-white/70 px-4 py-3 text-sm font-black">
-                    <CheckCircleIcon className="h-5 w-5 flex-shrink-0 text-emerald-600" aria-hidden="true" />
-                    <span>{item}</span>
+          <section className="flex-1 overflow-y-auto px-4 py-5 md:px-6">
+            <div className="mx-auto max-w-5xl space-y-5">
+              {activeConversation.messages.map((chat) => {
+                if (chat.kind === "plan" && chat.plan) {
+                  return (
+                    <PlanMessage
+                      key={chat.id}
+                      plan={chat.plan}
+                      execution={executionByPlanId[chat.plan.confirmationId]}
+                      error={errorByPlanId[chat.plan.confirmationId]}
+                      canceled={Boolean(canceledPlans[chat.plan.confirmationId])}
+                      executing={executingPlanId === chat.plan.confirmationId}
+                      onApprove={() => approvePlan(chat.plan as GhlAiCommanderPlanResponse)}
+                      onCancel={() => cancelPlan(chat.plan as GhlAiCommanderPlanResponse)}
+                    />
+                  );
+                }
+
+                if (chat.kind === "error") {
+                  const friendly = getFriendlyError(chat.error);
+                  return (
+                    <article key={chat.id} className="jarvis-fade flex justify-start">
+                      <div className="max-w-[760px] rounded-[28px] border border-rose-200 bg-rose-50 px-5 py-4 text-rose-950 shadow-sm">
+                        <h3 className="text-lg font-black">{friendly.title}</h3>
+                        <p className="mt-2 text-sm font-bold">Reason:</p>
+                        <p className="mt-1 text-sm font-semibold">{friendly.reason}</p>
+                        <p className="mt-4 text-sm font-semibold">Would you like to see technical details?</p>
+                        <TechnicalDetails error={chat.error} />
+                      </div>
+                    </article>
+                  );
+                }
+
+                return <ChatText key={chat.id} message={chat} />;
+              })}
+
+              {planning && <ThinkingBubble />}
+            </div>
+          </section>
+
+          <section className="border-t border-slate-200 bg-white/80 p-4 backdrop-blur md:p-5">
+            <div className="mx-auto max-w-5xl">
+              <div className="rounded-[28px] border border-slate-200 bg-white p-3 shadow-sm">
+                <textarea
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                      event.preventDefault();
+                      void handleAnalyze();
+                    }
+                  }}
+                  placeholder={PROMPT_HINTS.join("\n")}
+                  className="min-h-[118px] w-full resize-none rounded-[22px] bg-slate-50 px-4 py-4 text-base font-semibold leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:bg-white"
+                />
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <div className="hidden items-center gap-2 text-xs font-bold text-slate-400 sm:flex">
+                    <BoltIcon className="h-4 w-4" aria-hidden="true" />
+                    Approval remains manual
                   </div>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => void handleAnalyze()}
+                    disabled={planning || !draft.trim()}
+                    className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-[#0E1424] px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    {planning ? (
+                      <>
+                        <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        Thinking
+                      </>
+                    ) : (
+                      <>
+                        <PaperAirplaneIcon className="h-4 w-4" aria-hidden="true" />
+                        Send
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        </main>
 
-      {friendlyError && plan && (
-        <section className="rounded-[26px] border border-rose-200 bg-rose-50 p-5 text-rose-950 shadow-sm">
-          <div className="flex gap-3">
-            <ExclamationTriangleIcon className="mt-0.5 h-6 w-6 flex-shrink-0 text-rose-600" aria-hidden="true" />
-            <div>
-              <h3 className="text-xl font-black">{friendlyError.title}</h3>
-              <p className="mt-2 text-sm font-bold">Reason: {friendlyError.reason}</p>
-              <p className="mt-1 text-sm font-semibold text-rose-800">
-                Possible reason: {friendlyError.possibleReason}
-              </p>
+        <aside className="order-3 space-y-4 rounded-[30px] border border-white/10 bg-white/[0.06] p-4 text-white shadow-2xl backdrop-blur-xl">
+          <section>
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-200">
+              Suggested next moves
             </div>
-          </div>
-        </section>
-      )}
+            <div className="mt-4 grid gap-3">
+              {SUGGESTIONS.map((suggestion) => (
+                <button
+                  key={suggestion.title}
+                  type="button"
+                  onClick={() => selectSuggestion(suggestion.prompt)}
+                  className="rounded-[24px] border border-white/10 bg-white/[0.06] p-4 text-left transition hover:border-blue-300/40 hover:bg-blue-400/10"
+                >
+                  <div className="text-sm font-black text-white">{suggestion.title}</div>
+                  <p className="mt-2 text-xs font-semibold leading-5 text-slate-400">
+                    {suggestion.body}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </section>
 
-      <TechnicalDetails plan={plan} execution={executeResult} error={error} />
+          <section className="rounded-[26px] border border-white/10 bg-white/[0.06] p-4">
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-blue-200">
+              <ClockIcon className="h-4 w-4" aria-hidden="true" />
+              Tomorrow
+            </div>
+            <div className="mt-4 grid gap-3 text-sm font-semibold text-slate-300">
+              <div className="flex justify-between gap-3">
+                <span>Campaigns running</span>
+                <span className="font-black text-white">3</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span>New leads</span>
+                <span className="font-black text-white">12</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span>Waiting for callback</span>
+                <span className="font-black text-white">5</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span>Need you</span>
+                <span className="font-black text-white">2</span>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </div>
     </div>
   );
 }
