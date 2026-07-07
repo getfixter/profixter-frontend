@@ -22,7 +22,7 @@ export function AccountHeader({ userName }: AccountHeaderProps) {
             alt="Profixter"
             width={82}
             height={30}
-            className="h-[28px] sm:h-[30px] w-auto"
+            className="h-[28px] w-auto brightness-0 sm:h-[30px]"
           />
         </Link>
 
