@@ -18,7 +18,6 @@ import FAQSection from "@/app/components/sections/FAQSection";
 import Footer from "@/app/components/sections/Footer";
 import StickyMobileCTA from "@/app/components/StickyMobileCTA";
 import BookingsSection from "@/app/components/account/BookingsSection";
-import CustomerMobileNav from "@/app/components/account/CustomerMobileNav";
 import { PlanSection } from "@/app/components/account/PlanSection";
 
 const ADMIN_EMAIL = "getfixter@gmail.com";
@@ -179,11 +178,7 @@ export default function MembershipExperience() {
   }, []);
 
   return (
-    <div
-      className={`min-h-screen bg-background overflow-x-hidden ${
-        isSubscribed ? "pb-[calc(86px+env(safe-area-inset-bottom,0px))] lg:pb-0" : ""
-      }`}
-    >
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <div className="sticky top-0 z-50">
         <Header />
       </div>
@@ -205,7 +200,6 @@ export default function MembershipExperience() {
       </main>
 
       {!isSubscribed && <StickyMobileCTA />}
-      {isSubscribed && <CustomerMobileNav />}
     </div>
   );
 }

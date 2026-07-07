@@ -8,7 +8,6 @@ import { initialAccountFormData } from "../data/account";
 
 import { AccountHeader } from "../components/account/AccountHeader";
 import { AccountSidebar } from "../components/account/AccountSidebar";
-import CustomerMobileNav from "../components/account/CustomerMobileNav";
 import { PersonalInfoForm } from "../components/account/PersonalInfoForm";
 import { PlanSection } from "../components/account/PlanSection";
 import { PasswordForm } from "../components/account/PasswordForm";
@@ -111,7 +110,7 @@ export default function AccountPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen bg-[#EEF2FF] pb-[calc(86px+env(safe-area-inset-bottom,0px))] lg:pb-0">
+    <div className="min-h-screen bg-[#EEF2FF]">
       <AccountHeader
         userName={formData.name}
         activeTab={activeTab}
@@ -153,8 +152,6 @@ export default function AccountPage() {
 
         </div>
       </main>
-
-      <CustomerMobileNav />
     </div>
   );
 }
