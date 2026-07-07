@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import {
   ArrowPathIcon,
   BoltIcon,
+  ChartBarIcon,
+  ChatBubbleLeftRightIcon,
   CheckCircleIcon,
   ChevronDownIcon,
-  ClockIcon,
   ExclamationTriangleIcon,
   PaperAirplaneIcon,
+  PhoneArrowUpRightIcon,
   PlusIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
@@ -22,59 +24,58 @@ import {
 
 const STATUS_LINES = [
   "Everything is running normally.",
-  "I've been monitoring your business.",
-  "Ready for your next instruction.",
+  "I've been keeping an eye on the business.",
+  "Here's what happened while you were away.",
 ];
 
-const PROMPT_HINTS = [
-  "Create a roofing campaign.",
-  "Build a follow-up workflow.",
-  "Create an SMS campaign.",
-  "Move all interested leads.",
-  "Create a pipeline.",
-  "Find inactive contacts.",
-  "Generate follow-up sequence.",
+const THINKING_LINES = [
+  "Jarvis is analyzing...",
+  "Thinking...",
+  "Reviewing available actions...",
+  "Planning...",
 ];
+
+const PROMPT_PLACEHOLDER = "Tell me what you'd like me to accomplish...";
 
 const SUGGESTIONS = [
   {
-    title: "Create Roofing Campaign",
-    body: "Launch a clean roofing follow-up motion.",
+    title: "Launch Roofing Campaign",
+    body: "Because there are no active campaigns.",
     prompt: "Create a roofing campaign.",
   },
   {
+    title: "Follow up with yesterday's leads",
+    body: "No follow-up workflow exists yet.",
+    prompt: "Follow up with yesterday's leads.",
+  },
+  {
+    title: "Review conversations",
+    body: "Check if anyone replied overnight.",
+    prompt: "Review active GHL conversations.",
+  },
+  {
     title: "Create Membership Campaign",
-    body: "Prepare a campaign for membership leads.",
+    body: "Turn warm leads into member conversations.",
     prompt: "Create a membership campaign.",
   },
   {
     title: "Import Contacts",
-    body: "Organize a safe contact import plan.",
+    body: "Bring new leads into a controlled plan.",
     prompt: "Import contacts into GHL.",
   },
   {
     title: "Build SMS Follow-up",
-    body: "Write and stage a short follow-up sequence.",
+    body: "Start with copy review before anything sends.",
     prompt: "Build an SMS follow-up sequence.",
   },
   {
-    title: "Review Active Conversations",
-    body: "Check which conversations need attention.",
-    prompt: "Review active GHL conversations.",
-  },
-  {
     title: "Find Cold Leads",
-    body: "Identify leads that have gone quiet.",
+    body: "Surface quiet contacts for reactivation.",
     prompt: "Find cold leads.",
   },
   {
-    title: "Create Workflow",
-    body: "Prepare automation around a known workflow.",
-    prompt: "Create a workflow.",
-  },
-  {
     title: "Pause Campaign",
-    body: "Prepare a safe pause plan for a campaign.",
+    body: "Stop a campaign safely after review.",
     prompt: "Pause a campaign.",
   },
 ];
@@ -82,7 +83,7 @@ const SUGGESTIONS = [
 type ChatMessage = {
   id: string;
   role: "user" | "jarvis";
-  kind: "text" | "plan" | "error";
+  kind: "text" | "brief" | "plan" | "error";
   text?: string;
   plan?: GhlAiCommanderPlanResponse;
   error?: unknown;
@@ -110,9 +111,7 @@ const INITIAL_CONVERSATIONS: Conversation[] = [
       {
         id: "today-brief",
         role: "jarvis",
-        kind: "text",
-        text:
-          "Everything looks good today. No campaigns are running, no active tasks are waiting, and no conversations need your attention.",
+        kind: "brief",
       },
     ],
   },
@@ -239,6 +238,15 @@ function id() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function holdThinking(startedAt: number, minimumMs = 2200) {
+  const remaining = minimumMs - (Date.now() - startedAt);
+  if (remaining > 0) await wait(remaining);
+}
+
 function titleFromPrompt(value: string) {
   const clean = value.replace(/[^\w\s-]/g, "").trim();
   if (!clean) return "New Conversation";
@@ -353,34 +361,34 @@ function getFriendlyError(error: unknown) {
 
   if (/token|jwt|unauthorized|401/i.test(diagnosticText)) {
     return {
-      title: "I couldn't complete that task.",
+      title: "I couldn't complete that request.",
       reason: "Invalid GHL token.",
     };
   }
 
   if (/expired/i.test(diagnosticText)) {
     return {
-      title: "I couldn't complete that task.",
+      title: "I couldn't complete that request.",
       reason: "The approval window expired.",
     };
   }
 
   if (/unsupported/i.test(diagnosticText)) {
     return {
-      title: "I couldn't complete that task.",
+      title: "I couldn't complete that request.",
       reason: "One part of this is not supported yet.",
     };
   }
 
   if (/ghl|rejected|400|403|422|500/i.test(diagnosticText)) {
     return {
-      title: "I couldn't complete that task.",
-      reason: "GHL rejected it.",
+      title: "I couldn't complete that request.",
+      reason: "GHL rejected the request.",
     };
   }
 
   return {
-    title: "I couldn't complete that task.",
+    title: "I couldn't complete that request.",
     reason: message || "Something blocked completion.",
   };
 }
@@ -481,6 +489,75 @@ function ChatText({ message }: { message: ChatMessage }) {
   );
 }
 
+function DailyBriefMessage({ firstName }: { firstName: string }) {
+  const cards = [
+    {
+      title: "Conversations",
+      body: "No customers are waiting.",
+      icon: ChatBubbleLeftRightIcon,
+      tone: "bg-blue-50 text-blue-700 border-blue-100",
+    },
+    {
+      title: "Campaigns",
+      body: "No campaigns are currently running.",
+      icon: ChartBarIcon,
+      tone: "bg-emerald-50 text-emerald-700 border-emerald-100",
+    },
+    {
+      title: "Follow-ups",
+      body: "No callbacks are scheduled.",
+      icon: PhoneArrowUpRightIcon,
+      tone: "bg-violet-50 text-violet-700 border-violet-100",
+    },
+    {
+      title: "Attention",
+      body: "Nothing needs your attention right now.",
+      icon: ExclamationTriangleIcon,
+      tone: "bg-amber-50 text-amber-700 border-amber-100",
+    },
+  ];
+
+  return (
+    <article className="jarvis-fade flex justify-start">
+      <div className="w-full max-w-[900px] rounded-[32px] border border-white/70 bg-white/95 p-5 shadow-[0_18px_70px_rgba(15,23,42,0.10)] md:p-6">
+        <div className="max-w-2xl">
+          <div className="text-sm font-black text-slate-950">
+            {getGreeting()}, {firstName}.
+          </div>
+          <p className="mt-2 text-2xl font-black tracking-normal text-slate-950">
+            I&apos;ve checked everything this morning.
+          </p>
+          <p className="mt-2 text-base font-bold text-slate-600">
+            Here&apos;s today&apos;s briefing.
+          </p>
+        </div>
+
+        <div className="mt-6 grid gap-3 md:grid-cols-2">
+          {cards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <section
+                key={card.title}
+                className="rounded-[26px] border border-slate-200 bg-slate-50 p-4 transition duration-300 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm"
+              >
+                <div className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl border ${card.tone}`}>
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <div className="mt-4 text-sm font-black text-slate-950">{card.title}</div>
+                <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">{card.body}</p>
+              </section>
+            );
+          })}
+        </div>
+
+        <p className="mt-6 text-lg font-black text-slate-950">
+          What would you like me to accomplish today?
+        </p>
+      </div>
+    </article>
+  );
+}
+
 function PlanMessage({
   plan,
   execution,
@@ -510,54 +587,40 @@ function PlanMessage({
   return (
     <article className="jarvis-fade flex justify-start">
       <div className="w-full max-w-[900px] overflow-hidden rounded-[32px] border border-white/70 bg-white/95 shadow-[0_18px_70px_rgba(15,23,42,0.10)]">
-        <div className="border-b border-slate-100 p-5 md:p-6">
+        <div className="p-5 md:p-6">
           <div className="text-xs font-black uppercase tracking-[0.16em] text-blue-500">
             I understand.
           </div>
           <h3 className="mt-2 text-2xl font-black tracking-normal text-slate-950">
-            Here&apos;s what I&apos;m going to do.
+            Here&apos;s what I plan to do.
           </h3>
-          <p className="mt-2 text-sm font-black text-blue-700">
+          <p className="mt-3 max-w-2xl text-sm font-bold leading-6 text-slate-700">
+            {plan.summary || "I will prepare the work, show you the impact, and wait for approval before anything changes."}
+          </p>
+          <div className="mt-5 space-y-3">
+            {(bullets.length ? bullets : ["Prepare the work and wait for approval."]).map((item) => (
+              <div key={item} className="flex gap-3 text-[15px] font-bold leading-7 text-slate-800">
+                <CheckCircleIcon className="mt-1 h-5 w-5 flex-shrink-0 text-emerald-600" aria-hidden="true" />
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-5 text-sm font-black text-blue-700">
             Nothing has been changed yet.
           </p>
-        </div>
 
-        <div className="grid gap-4 p-5 md:grid-cols-3 md:p-6">
-          <section className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-            <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
-              What I understood
-            </div>
-            <p className="mt-3 text-sm font-bold leading-6 text-slate-800">
-              {plan.summary || "You want Jarvis to prepare a safe GHL change for approval."}
-            </p>
-          </section>
-
-          <section className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-            <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
-              What I will create
-            </div>
-            <div className="mt-3 space-y-2">
-              {(bullets.length ? bullets : ["Prepare the work and wait for approval."]).map((item) => (
-                <div key={item} className="flex gap-2 text-sm font-bold leading-6 text-slate-800">
-                  <CheckCircleIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" aria-hidden="true" />
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+          <div className="mt-6">
             <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
               Estimated impact
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+            <div className="mt-3 grid grid-cols-2 gap-2 text-sm md:grid-cols-5">
               <Impact label="Contacts" value={String(objects.filter((item) => /contact/i.test(item)).length || objects.length || 0)} />
               <Impact label="Messages" value={String(messages.length)} />
               <Impact label="Workflows" value={String(objects.filter((item) => /workflow/i.test(item)).length)} />
               <Impact label="Risk" value={titleCase(plan.riskLevel || "low")} tone={riskTone(plan)} />
-              <Impact label="Time" value={estimateCompletion(plan)} wide />
+              <Impact label="Time" value={estimateCompletion(plan)} />
             </div>
-          </section>
+          </div>
         </div>
 
         {messages.length > 0 && (
@@ -597,8 +660,9 @@ function PlanMessage({
             <div className="flex items-start gap-3">
               <CheckCircleIcon className="h-7 w-7 flex-shrink-0 text-emerald-600" aria-hidden="true" />
               <div>
-                <h3 className="text-2xl font-black">Completed</h3>
-                <p className="mt-1 text-sm font-bold">Everything finished successfully.</p>
+                <h3 className="text-2xl font-black">Done.</h3>
+                <p className="mt-1 text-sm font-bold">Everything completed successfully.</p>
+                <p className="mt-4 text-sm font-black">I created:</p>
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
                   {(created.length ? created : ["No additional action is required."]).map((item) => (
                     <div key={item} className="flex gap-2 rounded-2xl bg-white/70 px-3 py-2 text-sm font-black">
@@ -630,9 +694,9 @@ function PlanMessage({
         {!completed && !failed && (
           <div className="border-t border-slate-100 bg-slate-50 p-5 md:p-6">
             <div className="mx-auto max-w-xl text-center">
-              <h4 className="text-2xl font-black text-slate-950">Would you like me to continue?</h4>
+              <h4 className="text-3xl font-black text-slate-950">Ready?</h4>
               <p className="mt-2 text-sm font-bold text-slate-600">
-                Approval stays with you. Jarvis will only continue after you confirm.
+                Nothing has been changed yet.
               </p>
               <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
                 <button
@@ -697,6 +761,7 @@ export default function JarvisModule() {
   const [activeConversationId, setActiveConversationId] = useState(INITIAL_CONVERSATIONS[0].id);
   const [draft, setDraft] = useState("");
   const [planning, setPlanning] = useState(false);
+  const [thinkingLine, setThinkingLine] = useState(THINKING_LINES[0]);
   const [executingPlanId, setExecutingPlanId] = useState<string | null>(null);
   const [executionByPlanId, setExecutionByPlanId] = useState<Record<string, GhlAiCommanderExecuteResponse>>({});
   const [errorByPlanId, setErrorByPlanId] = useState<Record<string, unknown>>({});
@@ -769,9 +834,12 @@ export default function JarvisModule() {
     }));
     setDraft("");
     setPlanning(true);
+    setThinkingLine(THINKING_LINES[Math.floor(Math.random() * THINKING_LINES.length)]);
+    const thinkingStartedAt = Date.now();
 
     try {
       const nextPlan = await generateGhlAiCommanderPlan(trimmed);
+      await holdThinking(thinkingStartedAt);
       const planMessage: ChatMessage = {
         id: id(),
         role: "jarvis",
@@ -784,6 +852,7 @@ export default function JarvisModule() {
         messages: [...conversation.messages, planMessage],
       }));
     } catch (planError) {
+      await holdThinking(thinkingStartedAt);
       const friendly = getFriendlyError(planError);
       const errorMessage: ChatMessage = {
         id: id(),
@@ -871,14 +940,13 @@ export default function JarvisModule() {
                   key={conversation.id}
                   type="button"
                   onClick={() => setActiveConversationId(conversation.id)}
-                  className={`w-full rounded-[22px] border px-4 py-3 text-left transition ${
+                  className={`w-full rounded-[18px] border px-4 py-3 text-left transition duration-200 hover:translate-x-0.5 ${
                     active
                       ? "border-blue-300/40 bg-blue-400/15 text-white"
                       : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white"
                   }`}
                 >
-                  <div className="text-sm font-black">{conversation.title}</div>
-                  <div className="mt-1 text-xs font-semibold opacity-60">{conversation.subtitle}</div>
+                  <div className="truncate text-sm font-bold">{conversation.title}</div>
                 </button>
               );
             })}
@@ -888,28 +956,16 @@ export default function JarvisModule() {
         <main className="order-1 flex min-h-[calc(100vh-24px)] flex-col overflow-hidden rounded-[34px] border border-white/10 bg-[#EEF3FB] shadow-2xl lg:order-2">
           <section className="relative overflow-hidden bg-[#090F1D] px-5 py-7 text-white md:px-8 md:py-9">
             <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(48,110,236,0.30),rgba(15,23,42,0)_44%),linear-gradient(180deg,rgba(255,255,255,0.10),rgba(255,255,255,0))]" />
-            <div className="relative grid gap-6 xl:grid-cols-[1fr_330px] xl:items-end">
+            <div className="relative">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-blue-100">
                   <SparklesIcon className="h-4 w-4" aria-hidden="true" />
-                  Profixter OS
+                  JARVIS
                 </div>
                 <h1 className="mt-5 text-4xl font-black tracking-normal md:text-6xl">
                   {getGreeting()}, {firstName}.
                 </h1>
                 <p className="mt-4 text-xl font-black text-white md:text-2xl">{statusLine}</p>
-              </div>
-
-              <div className="rounded-[26px] border border-white/10 bg-white/10 p-4 backdrop-blur">
-                <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-100">
-                  Today
-                </div>
-                <div className="mt-3 space-y-2 text-sm font-semibold text-slate-200">
-                  <p>No campaigns running.</p>
-                  <p>No active tasks.</p>
-                  <p>No conversations waiting.</p>
-                  <p className="font-black text-white">Everything looks good.</p>
-                </div>
               </div>
             </div>
           </section>
@@ -917,6 +973,10 @@ export default function JarvisModule() {
           <section className="flex-1 overflow-y-auto px-4 py-5 md:px-6">
             <div className="mx-auto max-w-5xl space-y-5">
               {activeConversation.messages.map((chat) => {
+                if (chat.kind === "brief") {
+                  return <DailyBriefMessage key={chat.id} firstName={firstName} />;
+                }
+
                 if (chat.kind === "plan" && chat.plan) {
                   return (
                     <PlanMessage
@@ -950,13 +1010,16 @@ export default function JarvisModule() {
                 return <ChatText key={chat.id} message={chat} />;
               })}
 
-              {planning && <ThinkingBubble />}
+              {planning && <ThinkingBubble label={thinkingLine} />}
             </div>
           </section>
 
           <section className="border-t border-slate-200 bg-white/80 p-4 backdrop-blur md:p-5">
             <div className="mx-auto max-w-5xl">
               <div className="rounded-[28px] border border-slate-200 bg-white p-3 shadow-sm">
+                <div className="px-2 pb-2 text-sm font-black text-slate-900">
+                  What would you like me to accomplish today?
+                </div>
                 <textarea
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
@@ -966,13 +1029,13 @@ export default function JarvisModule() {
                       void handleAnalyze();
                     }
                   }}
-                  placeholder={PROMPT_HINTS.join("\n")}
+                  placeholder={PROMPT_PLACEHOLDER}
                   className="min-h-[118px] w-full resize-none rounded-[22px] bg-slate-50 px-4 py-4 text-base font-semibold leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:bg-white"
                 />
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <div className="hidden items-center gap-2 text-xs font-bold text-slate-400 sm:flex">
                     <BoltIcon className="h-4 w-4" aria-hidden="true" />
-                    Approval remains manual
+                    I will review first, then wait for approval.
                   </div>
                   <button
                     type="button"
@@ -1001,7 +1064,7 @@ export default function JarvisModule() {
         <aside className="order-3 space-y-4 rounded-[30px] border border-white/10 bg-white/[0.06] p-4 text-white shadow-2xl backdrop-blur-xl">
           <section>
             <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-200">
-              Suggested next moves
+              Recommended for Today
             </div>
             <div className="mt-4 grid gap-3">
               {SUGGESTIONS.map((suggestion) => (
@@ -1020,32 +1083,24 @@ export default function JarvisModule() {
             </div>
           </section>
 
-          <section className="rounded-[26px] border border-white/10 bg-white/[0.06] p-4">
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-blue-200">
-              <ClockIcon className="h-4 w-4" aria-hidden="true" />
-              Tomorrow
-            </div>
-            <div className="mt-4 grid gap-3 text-sm font-semibold text-slate-300">
-              <div className="flex justify-between gap-3">
-                <span>Campaigns running</span>
-                <span className="font-black text-white">3</span>
-              </div>
-              <div className="flex justify-between gap-3">
-                <span>New leads</span>
-                <span className="font-black text-white">12</span>
-              </div>
-              <div className="flex justify-between gap-3">
-                <span>Waiting for callback</span>
-                <span className="font-black text-white">5</span>
-              </div>
-              <div className="flex justify-between gap-3">
-                <span>Need you</span>
-                <span className="font-black text-white">2</span>
-              </div>
-            </div>
-          </section>
         </aside>
       </div>
+      <style>{`
+        @keyframes jarvisFade {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .jarvis-fade {
+          animation: jarvisFade 360ms ease-out both;
+        }
+      `}</style>
     </div>
   );
 }
