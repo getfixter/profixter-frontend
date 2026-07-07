@@ -1,5 +1,6 @@
 // lib/auth-service.ts — FULL FINAL
 import API from "./api";
+import { normalizeUSPhoneE164 } from "./phone";
 
 export interface Address {
   _id: string;
@@ -75,12 +76,12 @@ export interface LoginData {
 
 // =================== REGISTER ===================
 export const register = async (data: RegisterData): Promise<AuthResponse> => {
-  const phoneDigits = data.phone.replace(/\D/g, "");
+  const normalizedPhone = normalizeUSPhoneE164(data.phone);
 
   const response = await API.post<AuthResponse>("/api/auth/register", {
     ...data,
     email: data.email.toLowerCase().trim(),
-    phone: phoneDigits,
+    phone: normalizedPhone || data.phone,
   });
 
   return response.data;

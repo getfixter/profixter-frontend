@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { register } from "@/lib/auth-service";
+import { extractUSNationalPhoneDigits, isValidUSNationalPhoneDigits } from "@/lib/phone";
 import { trackEvent } from "@/lib/analytics";
 import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
 
@@ -173,7 +174,7 @@ export default function SignUpPage() {
     formData.repeatPassword.length > 0 &&
     formData.password !== formData.repeatPassword;
 
-  const phoneDigits = useMemo(() => formData.phone.replace(/\D/g, ""), [formData.phone]);
+  const phoneDigits = useMemo(() => extractUSNationalPhoneDigits(formData.phone), [formData.phone]);
   const zipDigits = useMemo(() => formData.zip.replace(/\D/g, ""), [formData.zip]);
 
   useEffect(() => {
@@ -207,7 +208,7 @@ export default function SignUpPage() {
   const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
   const formatPhone = (value: string) => {
-    const digits = value.replace(/\D/g, "").slice(0, 10);
+    const digits = extractUSNationalPhoneDigits(value);
     if (digits.length <= 3) return digits;
     if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
     return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
@@ -231,7 +232,7 @@ export default function SignUpPage() {
 
   const validateContactStep = () => {
     if (!formData.phone.trim()) { setFieldErrors((p) => ({ ...p, phone: "Please enter your phone number" })); return false; }
-    if (phoneDigits.length !== 10) { setFieldErrors((p) => ({ ...p, phone: "Please enter a valid 10-digit phone number" })); return false; }
+    if (phoneDigits.length !== 10 || !isValidUSNationalPhoneDigits(phoneDigits)) { setFieldErrors((p) => ({ ...p, phone: "Please enter a valid 10-digit US phone number" })); return false; }
     if (!formData.email.trim()) { setFieldErrors((p) => ({ ...p, email: "Please enter your email" })); return false; }
     if (!isValidEmail(formData.email)) { setFieldErrors((p) => ({ ...p, email: "Please enter a valid email address" })); return false; }
     setError("");
