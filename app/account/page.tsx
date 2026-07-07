@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { ActiveTab, AccountFormData } from "../components/account/types";
@@ -45,14 +45,22 @@ export default function AccountPage() {
     !!isAuthenticated &&
     !!user?.addresses?.some((addr: { hasActiveSubscription?: boolean }) => addr.hasActiveSubscription);
 
-  const applyTab = (tab: string) => {
+  const applyTab = useCallback((tab: string) => {
     if (tab === "overview") setActiveTab("overview");
     else if (tab === "bookings") setActiveTab("bookings");
     else if (tab === "plan") setActiveTab("plan");
     else if (tab === "password") setActiveTab("password");
     else if (tab === "personal") setActiveTab("personal");
     else setActiveTab("overview");
-  };
+  }, []);
+
+  const selectTab = useCallback(
+    (tab: ActiveTab) => {
+      setActiveTab(tab);
+      router.replace(`/account?tab=${tab}`, { scroll: false });
+    },
+    [router],
+  );
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -64,13 +72,13 @@ export default function AccountPage() {
     if (typeof window === "undefined") return;
 
     const applyHash = () => {
-      if (window.location.hash === "#my-bookings") setActiveTab("bookings");
+      if (window.location.hash === "#my-bookings") selectTab("bookings");
     };
 
     applyHash();
     window.addEventListener("hashchange", applyHash);
     return () => window.removeEventListener("hashchange", applyHash);
-  }, []);
+  }, [selectTab]);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -133,7 +141,7 @@ export default function AccountPage() {
             <button
               key={t.key}
               type="button"
-              onClick={() => setActiveTab(t.key)}
+              onClick={() => selectTab(t.key)}
               className={`px-5 py-3.5 text-[13px] font-semibold whitespace-nowrap transition-all border-b-2 ${
                 activeTab === t.key
                   ? "border-[#306EEC] text-[#306EEC]"
@@ -151,7 +159,7 @@ export default function AccountPage() {
 
           <AccountSidebar
             activeTab={activeTab}
-            setActiveTab={setActiveTab}
+            setActiveTab={selectTab}
             userName={formData.name}
             userEmail={formData.email}
             onLogout={handleLogout}
@@ -161,7 +169,7 @@ export default function AccountPage() {
             {activeTab === "overview" && (
               <OverviewSection
                 formData={formData}
-                onSwitchTab={setActiveTab}
+                onSwitchTab={selectTab}
               />
             )}
             {activeTab === "personal" && <PersonalInfoForm formData={formData} />}

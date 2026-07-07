@@ -6,7 +6,6 @@ import { FormEvent, Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
-import { ChatWidget } from "@/app/components/ChatWidget";
 import MembershipCtaLink from "@/app/components/membership/MembershipCtaLink";
 
 type ProjectType =
@@ -760,7 +759,6 @@ function ProjectsContent() {
       </main>
 
       <Footer />
-      <ChatWidget />
     </div>
   );
 }

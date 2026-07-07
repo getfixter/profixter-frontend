@@ -7,7 +7,6 @@ import TrustSection from "@/app/components/sections/TrustSection";
 import FAQSection from "@/app/components/sections/FAQSection";
 import Footer from "@/app/components/sections/Footer";
 import StickyMobileCTA from "@/app/components/StickyMobileCTA";
-import { ChatWidget } from "@/app/components/ChatWidget";
 
 export default function MembershipInfoPage() {
   return (
@@ -27,7 +26,6 @@ export default function MembershipInfoPage() {
       </main>
 
       <StickyMobileCTA />
-      <ChatWidget />
     </div>
   );
 }

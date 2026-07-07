@@ -575,13 +575,13 @@ export default function HomeSupportPage() {
                   </button>
               </div>
             </div>
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-2 sm:mt-4 sm:flex-wrap sm:justify-center sm:overflow-visible">
+            <div className="mt-3 flex flex-wrap justify-center gap-2 pb-2 sm:mt-4">
               {STARTERS.map((starter) => (
                 <button
                   key={starter}
                   type="button"
                   onClick={() => sendMessage(starter)}
-                  className="flex-shrink-0 rounded-full bg-white/70 px-3.5 py-2 text-xs font-black text-[#34435C] shadow-sm transition hover:bg-white sm:px-4 sm:py-2.5 sm:text-sm"
+                  className="max-w-full rounded-full bg-white/70 px-3.5 py-2 text-xs font-black leading-snug text-[#34435C] shadow-sm transition hover:bg-white sm:px-4 sm:py-2.5 sm:text-sm"
                 >
                   {starter}
                 </button>
