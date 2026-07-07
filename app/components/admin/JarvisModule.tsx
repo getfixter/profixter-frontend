@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+} from "react";
 import {
   AcademicCapIcon,
   ArrowPathIcon,
@@ -9,20 +15,31 @@ import {
   ChatBubbleLeftRightIcon,
   CheckCircleIcon,
   ChevronDownIcon,
+  CloudArrowUpIcon,
+  DocumentIcon,
+  DocumentTextIcon,
   ExclamationTriangleIcon,
   PaperAirplaneIcon,
+  PaperClipIcon,
   PhoneArrowUpRightIcon,
+  PhotoIcon,
   PlusIcon,
   SparklesIcon,
+  TableCellsIcon,
+  TrashIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "@/lib/useAuth";
 import {
+  askJarvis,
   executeGhlAiCommanderPlan,
-  generateGhlAiCommanderPlan,
   simulateRoofingSalesAgentTraining,
+  uploadJarvisFilesForAnalysis,
   type GhlAiCommanderExecuteResponse,
   type GhlAiCommanderPlanResponse,
+  type JarvisAskResponse,
+  type JarvisUploadBatchResponse,
+  type JarvisUploadedFile,
   type RoofingSalesAgentTrainingAction,
   type RoofingSalesAgentTrainingRequest,
   type RoofingSalesAgentTrainingResponse,
@@ -42,6 +59,22 @@ const THINKING_LINES = [
 ];
 
 const PROMPT_PLACEHOLDER = "Tell me what you'd like me to accomplish...";
+const JARVIS_MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
+const JARVIS_FILE_ACCEPT = [
+  ".csv",
+  ".docx",
+  ".jpg",
+  ".jpeg",
+  ".json",
+  ".pdf",
+  ".png",
+  ".txt",
+  ".webp",
+  ".xlsx",
+].join(",");
+const JARVIS_ALLOWED_EXTENSIONS = new Set(
+  JARVIS_FILE_ACCEPT.split(",").map((item) => item.trim())
+);
 
 const SUGGESTIONS = [
   {
@@ -89,8 +122,12 @@ const SUGGESTIONS = [
 type ChatMessage = {
   id: string;
   role: "user" | "jarvis";
-  kind: "text" | "brief" | "plan" | "error";
+  kind: "text" | "brief" | "plan" | "answer" | "error";
   text?: string;
+  files?: JarvisConversationFile[];
+  intent?: JarvisAskResponse["intent"];
+  data?: unknown;
+  sources?: string[];
   plan?: GhlAiCommanderPlanResponse;
   error?: unknown;
 };
@@ -100,6 +137,33 @@ type Conversation = {
   title: string;
   subtitle: string;
   messages: ChatMessage[];
+  attachments?: JarvisDraftAttachment[];
+};
+
+type JarvisDraftAttachment = {
+  id: string;
+  file: File;
+  name: string;
+  size: number;
+  type: string;
+  extension: string;
+  previewUrl?: string;
+  progress: number;
+  status: "ready" | "uploading" | "uploaded" | "error";
+  error?: string;
+};
+
+type JarvisConversationFile = {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  extension: string;
+  uploadId?: string;
+  tempRef?: string;
+  storage?: JarvisUploadedFile["storage"];
+  uploadedAt?: string;
+  expiresAt?: string;
 };
 
 type TechnicalError = {
@@ -264,6 +328,111 @@ function titleCase(value: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function fileExtension(name: string) {
+  const match = String(name || "").toLowerCase().match(/\.[^.]+$/);
+  return match?.[0] || "";
+}
+
+function formatFileSize(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  let size = bytes;
+  let unitIndex = 0;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+  return `${size >= 10 || unitIndex === 0 ? size.toFixed(0) : size.toFixed(1)} ${units[unitIndex]}`;
+}
+
+function fileTypeLabel(extension: string) {
+  const ext = extension.replace(/^\./, "").toUpperCase();
+  if (!ext) return "File";
+  if (ext === "JPG" || ext === "JPEG" || ext === "PNG" || ext === "WEBP") return "Image";
+  if (ext === "XLSX" || ext === "CSV") return "Spreadsheet";
+  if (ext === "DOCX") return "Document";
+  return ext;
+}
+
+function isJarvisImage(file: { type?: string; extension?: string }) {
+  return (
+    String(file.type || "").startsWith("image/") ||
+    [".jpg", ".jpeg", ".png", ".webp"].includes(String(file.extension || "").toLowerCase())
+  );
+}
+
+function JarvisFileIcon({
+  file,
+  className,
+}: {
+  file: { type?: string; extension?: string };
+  className: string;
+}) {
+  const ext = String(file.extension || "").toLowerCase();
+  if (isJarvisImage(file)) return <PhotoIcon className={className} aria-hidden="true" />;
+  if (ext === ".xlsx" || ext === ".csv") {
+    return <TableCellsIcon className={className} aria-hidden="true" />;
+  }
+  if (ext === ".pdf" || ext === ".docx" || ext === ".txt") {
+    return <DocumentTextIcon className={className} aria-hidden="true" />;
+  }
+  return <DocumentIcon className={className} aria-hidden="true" />;
+}
+
+function validateJarvisFile(file: File) {
+  if (file.size > JARVIS_MAX_FILE_SIZE_BYTES) {
+    return `${file.name} is larger than 50MB.`;
+  }
+  const ext = fileExtension(file.name);
+  if (!JARVIS_ALLOWED_EXTENSIONS.has(ext)) {
+    return `${file.name} is not a supported Jarvis file yet.`;
+  }
+  return "";
+}
+
+function conversationFilesFromUpload(
+  attachments: JarvisDraftAttachment[],
+  uploadResult?: JarvisUploadBatchResponse | null
+): JarvisConversationFile[] {
+  return attachments.map((attachment, index) => {
+    const uploaded = uploadResult?.files[index];
+    return {
+      id: attachment.id,
+      name: uploaded?.originalName || attachment.name,
+      size: uploaded?.size || attachment.size,
+      type: uploaded?.mimeType || attachment.type,
+      extension: attachment.extension || (uploaded?.extension ? `.${uploaded.extension}` : ""),
+      uploadId: uploaded?.uploadId,
+      tempRef: uploaded?.tempRef,
+      storage: uploaded?.storage,
+      uploadedAt: uploaded?.uploadedAt,
+      expiresAt: uploaded?.expiresAt,
+    };
+  });
+}
+
+function buildPromptWithAttachmentContext(
+  prompt: string,
+  uploadResult?: JarvisUploadBatchResponse | null
+) {
+  const cleanPrompt = prompt.trim() || "Analyze the attached files.";
+  if (!uploadResult?.files?.length) return cleanPrompt;
+
+  const fileLines = uploadResult.files.map((file, index) => {
+    const ext = file.extension ? file.extension.toUpperCase() : "FILE";
+    return `${index + 1}. ${file.originalName} (${formatFileSize(file.size)}, ${ext}) - uploadId: ${file.uploadId}; tempRef: ${file.tempRef}`;
+  });
+
+  return [
+    cleanPrompt,
+    "",
+    "Attached files for this Jarvis analysis:",
+    ...fileLines,
+    "",
+    "Use the attached file metadata and temporary references. File-content parsing is not connected yet, so do not claim specific counts, duplicates, PDF details, image details, or document contents unless that content is explicitly provided.",
+  ].join("\n");
+}
+
 function roofingClassificationLabel(value: string) {
   return ROOFING_CLASSIFICATION_LABELS[value] || titleCase(value || "unclear");
 }
@@ -316,6 +485,27 @@ function getTrainingError(error: unknown) {
   }
 
   return message || "Jarvis could not finish this training run.";
+}
+
+function getJarvisUploadError(error: unknown) {
+  const technical = error as TechnicalError;
+  const message = technical?.response?.data
+    ? readable((technical.response.data as { message?: unknown }).message)
+    : readable(technical?.message);
+
+  if (/50mb|50 mb|larger|413/i.test(message)) {
+    return "One attachment is larger than 50MB.";
+  }
+
+  if (/csv|excel|pdf|txt|docx|image|json|supported/i.test(message)) {
+    return message;
+  }
+
+  if (/token|unauthorized|401/i.test(message)) {
+    return "Your admin session needs to be refreshed.";
+  }
+
+  return message || "Jarvis could not attach those files.";
 }
 
 function getGreeting() {
@@ -565,6 +755,107 @@ function ThinkingBubble({ label = "Jarvis is thinking" }: { label?: string }) {
   );
 }
 
+function MessageFiles({
+  files,
+  dark = false,
+}: {
+  files?: JarvisConversationFile[];
+  dark?: boolean;
+}) {
+  if (!files?.length) return null;
+
+  return (
+    <div className="mt-4 space-y-2">
+      <div className={`text-xs font-black uppercase tracking-[0.14em] ${dark ? "text-white/60" : "text-slate-400"}`}>
+        Files used
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {files.map((file) => {
+          return (
+            <div
+              key={`${file.id}-${file.name}`}
+              className={`flex min-w-0 items-center gap-3 rounded-2xl border p-3 ${
+                dark
+                  ? "border-white/15 bg-white/10 text-white"
+                  : "border-slate-200 bg-slate-50 text-slate-800"
+              }`}
+            >
+              <span className={`grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl ${dark ? "bg-white/10" : "bg-white"}`}>
+                <JarvisFileIcon file={file} className="h-5 w-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-black">{file.name}</span>
+                <span className={`mt-0.5 block text-xs font-bold ${dark ? "text-white/55" : "text-slate-500"}`}>
+                  {formatFileSize(file.size)} - {fileTypeLabel(file.extension)}
+                </span>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function DraftAttachmentCard({
+  attachment,
+  disabled,
+  onRemove,
+}: {
+  attachment: JarvisDraftAttachment;
+  disabled: boolean;
+  onRemove: () => void;
+}) {
+  const progress = Math.max(0, Math.min(100, attachment.progress));
+
+  return (
+    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300">
+      <div className="flex items-center gap-3">
+        {attachment.previewUrl && isJarvisImage(attachment) ? (
+          <span
+            aria-hidden="true"
+            className="h-12 w-12 flex-shrink-0 rounded-xl bg-cover bg-center"
+            style={{ backgroundImage: `url(${attachment.previewUrl})` }}
+          />
+        ) : (
+          <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-700">
+            <JarvisFileIcon file={attachment} className="h-6 w-6" />
+          </span>
+        )}
+
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-black text-slate-950">{attachment.name}</div>
+          <div className="mt-0.5 text-xs font-bold text-slate-500">
+            {formatFileSize(attachment.size)} - {fileTypeLabel(attachment.extension)}
+          </div>
+          {attachment.status === "error" && attachment.error ? (
+            <div className="mt-1 text-xs font-bold text-rose-600">{attachment.error}</div>
+          ) : null}
+        </div>
+
+        <button
+          type="button"
+          onClick={onRemove}
+          disabled={disabled}
+          className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <TrashIcon className="h-4 w-4" aria-hidden="true" />
+          Remove
+        </button>
+      </div>
+
+      {attachment.status === "uploading" ? (
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
+          <div
+            className="h-full rounded-full bg-blue-600 transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function ChatText({ message }: { message: ChatMessage }) {
   const isUser = message.role === "user";
   return (
@@ -578,7 +869,51 @@ function ChatText({ message }: { message: ChatMessage }) {
             : "border border-white/70 bg-white/90 text-slate-800"
         }`}
       >
-        {message.text}
+        {message.text ? <div>{message.text}</div> : null}
+        <MessageFiles files={message.files} dark={isUser} />
+      </div>
+    </article>
+  );
+}
+
+function AnswerMessage({ message }: { message: ChatMessage }) {
+  const sourceList = message.sources || [];
+  const label = message.intent === "advice" ? "Recommendation" : "Answer";
+
+  return (
+    <article className="jarvis-fade flex justify-start">
+      <div className="w-full max-w-[820px] rounded-[30px] border border-white/70 bg-white/95 p-5 text-slate-900 shadow-[0_18px_70px_rgba(15,23,42,0.10)]">
+        <div className="text-xs font-black uppercase tracking-[0.16em] text-blue-500">
+          {label}
+        </div>
+        <p className="mt-3 whitespace-pre-wrap text-[15px] font-semibold leading-7 text-slate-800">
+          {message.text}
+        </p>
+
+        {sourceList.length ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {sourceList.map((source) => (
+              <span
+                key={source}
+                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-600"
+              >
+                {source}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        {message.data ? (
+          <details className="group mt-5 rounded-[22px] border border-slate-200 bg-white/80">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-black text-slate-700">
+              <span>Show technical details</span>
+              <ChevronDownIcon className="h-4 w-4 transition group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="border-t border-slate-100 p-4">
+              <JsonPanel title="Jarvis data" value={message.data} />
+            </div>
+          </details>
+        ) : null}
       </div>
     </article>
   );
@@ -1116,11 +1451,16 @@ function RoofingTrainingPanel({
 
 export default function JarvisModule() {
   const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const previewUrlsRef = useRef<Set<string>>(new Set());
   const [statusLine, setStatusLine] = useState(STATUS_LINES[0]);
   const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS);
   const [activeConversationId, setActiveConversationId] = useState(INITIAL_CONVERSATIONS[0].id);
   const [draft, setDraft] = useState("");
   const [planning, setPlanning] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [thinkingLine, setThinkingLine] = useState(THINKING_LINES[0]);
   const [executingPlanId, setExecutingPlanId] = useState<string | null>(null);
   const [executionByPlanId, setExecutionByPlanId] = useState<Record<string, GhlAiCommanderExecuteResponse>>({});
@@ -1132,10 +1472,20 @@ export default function JarvisModule() {
     setStatusLine(STATUS_LINES[Math.floor(Math.random() * STATUS_LINES.length)]);
   }, []);
 
+  useEffect(() => {
+    const previewUrls = previewUrlsRef.current;
+    return () => {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+      previewUrls.clear();
+    };
+  }, []);
+
   const activeConversation =
     conversations.find((conversation) => conversation.id === activeConversationId) ||
     conversations[0];
+  const activeAttachments = activeConversation.attachments || [];
   const firstName = getFirstName(user?.name);
+  const busy = planning || uploadingAttachments;
 
   const updateConversation = (
     conversationId: string,
@@ -1146,6 +1496,101 @@ export default function JarvisModule() {
         conversation.id === conversationId ? updater(conversation) : conversation
       )
     );
+  };
+
+  const revokeAttachmentPreview = (attachment: JarvisDraftAttachment) => {
+    if (!attachment.previewUrl) return;
+    URL.revokeObjectURL(attachment.previewUrl);
+    previewUrlsRef.current.delete(attachment.previewUrl);
+  };
+
+  const updateAttachmentStatus = (
+    conversationId: string,
+    attachmentIds: string[],
+    patch: Partial<Pick<JarvisDraftAttachment, "status" | "progress" | "error">>
+  ) => {
+    updateConversation(conversationId, (conversation) => ({
+      ...conversation,
+      attachments: (conversation.attachments || []).map((attachment) =>
+        attachmentIds.includes(attachment.id)
+          ? { ...attachment, ...patch }
+          : attachment
+      ),
+    }));
+  };
+
+  const clearConversationAttachments = (
+    conversationId: string,
+    attachments: JarvisDraftAttachment[]
+  ) => {
+    attachments.forEach(revokeAttachmentPreview);
+    updateConversation(conversationId, (conversation) => ({
+      ...conversation,
+      attachments: [],
+    }));
+  };
+
+  const addFiles = (files: File[]) => {
+    if (!files.length) return;
+
+    const rejected: string[] = [];
+    const accepted = files.reduce<JarvisDraftAttachment[]>((items, file) => {
+      const validationError = validateJarvisFile(file);
+      if (validationError) {
+        rejected.push(validationError);
+        return items;
+      }
+
+      const extension = fileExtension(file.name);
+      const previewUrl = isJarvisImage({ type: file.type, extension })
+        ? URL.createObjectURL(file)
+        : undefined;
+      if (previewUrl) previewUrlsRef.current.add(previewUrl);
+
+      items.push({
+        id: id(),
+        file,
+        name: file.name,
+        size: file.size,
+        type: file.type || "application/octet-stream",
+        extension,
+        previewUrl,
+        progress: 0,
+        status: "ready",
+      });
+      return items;
+    }, []);
+
+    if (accepted.length) {
+      updateConversation(activeConversation.id, (conversation) => ({
+        ...conversation,
+        attachments: [...(conversation.attachments || []), ...accepted],
+      }));
+    }
+
+    setUploadError(rejected.length ? rejected.slice(0, 2).join(" ") : null);
+  };
+
+  const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    addFiles(Array.from(event.target.files || []));
+    event.target.value = "";
+  };
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragActive(false);
+    if (busy) return;
+    addFiles(Array.from(event.dataTransfer.files || []));
+  };
+
+  const removeAttachment = (attachmentId: string) => {
+    const attachment = activeAttachments.find((item) => item.id === attachmentId);
+    if (attachment) revokeAttachmentPreview(attachment);
+    updateConversation(activeConversation.id, (conversation) => ({
+      ...conversation,
+      attachments: (conversation.attachments || []).filter((item) => item.id !== attachmentId),
+    }));
+    setUploadError(null);
   };
 
   const startNewConversation = () => {
@@ -1161,10 +1606,12 @@ export default function JarvisModule() {
           text: "I'm here. Tell me what you want handled.",
         },
       ],
+      attachments: [],
     };
     setConversations((current) => [next, ...current]);
     setActiveConversationId(next.id);
     setDraft("");
+    setUploadError(null);
   };
 
   const selectSuggestion = (prompt: string) => {
@@ -1174,47 +1621,131 @@ export default function JarvisModule() {
 
   const handleAnalyze = async () => {
     const trimmed = draft.trim();
-    if (!trimmed || planning) return;
+    const attachments = activeAttachments;
+    if ((!trimmed && !attachments.length) || busy) return;
 
     const conversationId = activeConversation.id;
-    const userMessage: ChatMessage = {
-      id: id(),
-      role: "user",
-      kind: "text",
-      text: trimmed,
-    };
+    const attachmentIds = attachments.map((attachment) => attachment.id);
+    const analysisPrompt = trimmed || "Analyze the attached files.";
+    let uploadResult: JarvisUploadBatchResponse | null = null;
 
-    updateConversation(conversationId, (conversation) => ({
-      ...conversation,
-      title:
-        conversation.title === "Today" || conversation.title === "New Conversation"
-          ? titleFromPrompt(trimmed)
-          : conversation.title,
-      subtitle: "In progress",
-      messages: [...conversation.messages, userMessage],
-    }));
-    setDraft("");
     setPlanning(true);
-    setThinkingLine(THINKING_LINES[Math.floor(Math.random() * THINKING_LINES.length)]);
+    setUploadError(null);
+    setThinkingLine(
+      attachments.length
+        ? "Uploading attachments..."
+        : THINKING_LINES[Math.floor(Math.random() * THINKING_LINES.length)]
+    );
     const thinkingStartedAt = Date.now();
 
     try {
-      const nextPlan = await generateGhlAiCommanderPlan(trimmed);
+      if (attachments.length) {
+        setUploadingAttachments(true);
+        updateAttachmentStatus(conversationId, attachmentIds, {
+          status: "uploading",
+          progress: 4,
+          error: undefined,
+        });
+
+        const fallbackTotal = attachments.reduce((total, attachment) => total + attachment.size, 0);
+        uploadResult = await uploadJarvisFilesForAnalysis({
+          prompt: analysisPrompt,
+          conversationId,
+          files: attachments.map((attachment) => attachment.file),
+          onUploadProgress: (progressEvent) => {
+            const total = progressEvent.total || fallbackTotal;
+            const progress = total
+              ? Math.min(96, Math.max(4, Math.round((progressEvent.loaded / total) * 100)))
+              : 50;
+            updateAttachmentStatus(conversationId, attachmentIds, {
+              status: "uploading",
+              progress,
+            });
+          },
+        });
+
+        updateAttachmentStatus(conversationId, attachmentIds, {
+          status: "uploaded",
+          progress: 100,
+        });
+        setUploadingAttachments(false);
+        setThinkingLine(THINKING_LINES[Math.floor(Math.random() * THINKING_LINES.length)]);
+      }
+
+      const userMessage: ChatMessage = {
+        id: id(),
+        role: "user",
+        kind: "text",
+        text: analysisPrompt,
+        files: conversationFilesFromUpload(attachments, uploadResult),
+      };
+
+      updateConversation(conversationId, (conversation) => ({
+        ...conversation,
+        title:
+          conversation.title === "Today" || conversation.title === "New Conversation"
+            ? titleFromPrompt(analysisPrompt)
+            : conversation.title,
+        subtitle: "In progress",
+        messages: [...conversation.messages, userMessage],
+      }));
+      setDraft("");
+      if (attachments.length) {
+        clearConversationAttachments(conversationId, attachments);
+      }
+
+      setThinkingLine("Checking GoHighLevel...");
+      const plannerPrompt = buildPromptWithAttachmentContext(analysisPrompt, uploadResult);
+      const jarvisResponse = await askJarvis(plannerPrompt);
       await holdThinking(thinkingStartedAt);
-      const planMessage: ChatMessage = {
+
+      if (jarvisResponse.intent === "write") {
+        const nextPlan = jarvisResponse.plan;
+        const planMessage: ChatMessage = {
+          id: id(),
+          role: "jarvis",
+          kind: "plan",
+          plan: nextPlan,
+        };
+        updateConversation(conversationId, (conversation) => ({
+          ...conversation,
+          subtitle: `${titleCase(nextPlan.riskLevel || "low")} risk`,
+          messages: [...conversation.messages, planMessage],
+        }));
+        return;
+      }
+
+      const answerMessage: ChatMessage = {
         id: id(),
         role: "jarvis",
-        kind: "plan",
-        plan: nextPlan,
+        kind: "answer",
+        text: jarvisResponse.answer,
+        intent: jarvisResponse.intent,
+        data: jarvisResponse.data,
+        sources: jarvisResponse.sources,
       };
       updateConversation(conversationId, (conversation) => ({
         ...conversation,
-        subtitle: `${titleCase(nextPlan.riskLevel || "low")} risk`,
-        messages: [...conversation.messages, planMessage],
+        subtitle: jarvisResponse.intent === "read" ? "Checked GHL" : "Advice",
+        messages: [...conversation.messages, answerMessage],
       }));
     } catch (planError) {
       await holdThinking(thinkingStartedAt);
-      const friendly = getFriendlyError(planError);
+      const uploadFailed = attachments.length > 0 && !uploadResult;
+      const friendly = uploadFailed
+        ? {
+            title: "I couldn't attach those files.",
+            reason: getJarvisUploadError(planError),
+          }
+        : getFriendlyError(planError);
+      if (uploadFailed) {
+        updateAttachmentStatus(conversationId, attachmentIds, {
+          status: "error",
+          progress: 0,
+          error: friendly.reason,
+        });
+        setUploadError(friendly.reason);
+      }
       const errorMessage: ChatMessage = {
         id: id(),
         role: "jarvis",
@@ -1228,6 +1759,7 @@ export default function JarvisModule() {
         messages: [...conversation.messages, errorMessage],
       }));
     } finally {
+      setUploadingAttachments(false);
       setPlanning(false);
     }
   };
@@ -1353,6 +1885,10 @@ export default function JarvisModule() {
                   );
                 }
 
+                if (chat.kind === "answer") {
+                  return <AnswerMessage key={chat.id} message={chat} />;
+                }
+
                 if (chat.kind === "error") {
                   const friendly = getFriendlyError(chat.error);
                   return (
@@ -1378,9 +1914,93 @@ export default function JarvisModule() {
           <section className="border-t border-slate-200 bg-white/80 p-4 backdrop-blur md:p-5">
             <div className="mx-auto max-w-5xl">
               <div className="rounded-[28px] border border-slate-200 bg-white p-3 shadow-sm">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept={JARVIS_FILE_ACCEPT}
+                  onChange={handleFileSelect}
+                  disabled={busy}
+                  className="hidden"
+                />
                 <div className="px-2 pb-2 text-sm font-black text-slate-900">
                   What would you like me to accomplish today?
                 </div>
+                <div
+                  onDragEnter={(event) => {
+                    event.preventDefault();
+                    if (!busy) setDragActive(true);
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    if (!busy) setDragActive(true);
+                  }}
+                  onDragLeave={(event) => {
+                    if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+                    setDragActive(false);
+                  }}
+                  onDrop={handleDrop}
+                  className={`mb-3 overflow-hidden rounded-[24px] border border-dashed p-4 transition duration-300 ${
+                    dragActive
+                      ? "border-blue-400 bg-blue-50 shadow-[0_18px_55px_rgba(37,99,235,0.18)]"
+                      : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
+                  }`}
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className={`grid h-12 w-12 place-items-center rounded-2xl transition ${dragActive ? "bg-blue-600 text-white" : "bg-white text-slate-700"}`}>
+                        <CloudArrowUpIcon className="h-6 w-6" aria-hidden="true" />
+                      </span>
+                      <div>
+                        <div className="text-sm font-black text-slate-950">
+                          Attach files
+                        </div>
+                        <div className="mt-1 text-xs font-bold text-slate-500">
+                          Drop files here or browse. CSV, Excel, PDF, TXT, DOCX, images, and JSON.
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={busy}
+                      className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-800 shadow-sm transition hover:border-blue-200 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <PaperClipIcon className="h-4 w-4" aria-hidden="true" />
+                      Browse Files
+                    </button>
+                  </div>
+                </div>
+
+                {activeAttachments.length ? (
+                  <div className="mb-3 rounded-[24px] border border-slate-200 bg-slate-50 p-3">
+                    <div className="mb-3 flex items-center justify-between gap-3 px-1">
+                      <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                        Attached
+                      </div>
+                      <div className="text-xs font-bold text-slate-400">
+                        {activeAttachments.length} file{activeAttachments.length === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      {activeAttachments.map((attachment) => (
+                        <DraftAttachmentCard
+                          key={attachment.id}
+                          attachment={attachment}
+                          disabled={busy}
+                          onRemove={() => removeAttachment(attachment.id)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {uploadError ? (
+                  <div className="mb-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-800">
+                    {uploadError}
+                  </div>
+                ) : null}
+
                 <textarea
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
@@ -1391,28 +2011,29 @@ export default function JarvisModule() {
                     }
                   }}
                   placeholder={PROMPT_PLACEHOLDER}
-                  className="min-h-[118px] w-full resize-none rounded-[22px] bg-slate-50 px-4 py-4 text-base font-semibold leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:bg-white"
+                  disabled={busy}
+                  className="min-h-[118px] w-full resize-none rounded-[22px] bg-slate-50 px-4 py-4 text-base font-semibold leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:bg-white disabled:cursor-not-allowed disabled:text-slate-500"
                 />
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <div className="hidden items-center gap-2 text-xs font-bold text-slate-400 sm:flex">
                     <BoltIcon className="h-4 w-4" aria-hidden="true" />
-                    I will review first, then wait for approval.
+                    Files stay here until you click Analyze.
                   </div>
                   <button
                     type="button"
                     onClick={() => void handleAnalyze()}
-                    disabled={planning || !draft.trim()}
+                    disabled={busy || (!draft.trim() && !activeAttachments.length)}
                     className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-[#0E1424] px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                   >
-                    {planning ? (
+                    {busy ? (
                       <>
                         <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden="true" />
-                        Thinking
+                        {uploadingAttachments ? "Uploading" : "Analyzing"}
                       </>
                     ) : (
                       <>
                         <PaperAirplaneIcon className="h-4 w-4" aria-hidden="true" />
-                        Send
+                        Analyze
                       </>
                     )}
                   </button>
