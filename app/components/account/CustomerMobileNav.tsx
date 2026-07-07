@@ -2,21 +2,20 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useAuth } from "@/lib/useAuth";
+import { usePathname } from "next/navigation";
 
 type NavItem = {
   label: string;
   href: string;
-  match: (pathname: string, tab: string | null) => boolean;
+  match: (pathname: string) => boolean;
   icon: ReactNode;
 };
 
 const items: NavItem[] = [
   {
     label: "Home",
-    href: "/account?tab=overview",
-    match: (pathname, tab) => pathname === "/account" && (!tab || tab === "overview"),
+    href: "/",
+    match: (pathname) => pathname === "/",
     icon: (
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10.5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
@@ -24,9 +23,20 @@ const items: NavItem[] = [
     ),
   },
   {
+    label: "AI",
+    href: "/home-support",
+    match: (pathname) => pathname === "/home-support",
+    icon: (
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 3v3M12 18v3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M3 12h3M18 12h3M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+        <circle cx="12" cy="12" r="3.4" stroke="currentColor" strokeWidth="1.9" />
+      </svg>
+    ),
+  },
+  {
     label: "Book",
-    href: "/membership#pick-day",
-    match: (pathname) => pathname === "/membership",
+    href: "/book",
+    match: (pathname) => pathname === "/book" || pathname.startsWith("/book/"),
     icon: (
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
@@ -35,35 +45,26 @@ const items: NavItem[] = [
     ),
   },
   {
-    label: "Visits",
-    href: "/account?tab=bookings",
-    match: (pathname, tab) => pathname === "/account" && tab === "bookings",
+    label: "Member",
+    href: "/membership",
+    match: (pathname) => pathname === "/membership" || pathname === "/membership-info",
     icon: (
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M8 6h13M8 12h13M8 18h13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        <path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        <path d="m12 3 2.8 5.67 6.25.91-4.52 4.4 1.07 6.22L12 17.26 6.4 20.2l1.07-6.22-4.52-4.4 6.25-.91L12 3Z" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
       </svg>
     ),
   },
   {
-    label: "Plan",
-    href: "/account?tab=plan",
-    match: (pathname, tab) => pathname === "/account" && tab === "plan",
+    label: "Projects",
+    href: "/projects",
+    match: (pathname) =>
+      pathname === "/projects" ||
+      pathname.startsWith("/renovations") ||
+      ["/roofing", "/siding", "/kitchen", "/bathroom", "/remodeling", "/estimate"].includes(pathname),
     icon: (
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect x="2.5" y="5" width="19" height="14" rx="2" stroke="currentColor" strokeWidth="2" />
-        <path d="M2.5 9h19M6.5 15h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    label: "Profile",
-    href: "/account?tab=personal",
-    match: (pathname, tab) => pathname === "/account" && (tab === "personal" || tab === "password"),
-    icon: (
-      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
+        <path d="M4 20V8l8-4 8 4v12" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+        <path d="M9 20v-6h6v6M4 11l8 4 8-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },
@@ -71,25 +72,16 @@ const items: NavItem[] = [
 
 export default function CustomerMobileNav() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const { user, isAuthenticated, isLoading } = useAuth();
-
-  const tab = searchParams.get("tab");
-  const isSubscribed =
-    !!isAuthenticated &&
-    !!user?.addresses?.some((addr: { hasActiveSubscription?: boolean }) => addr.hasActiveSubscription);
-
-  if (isLoading || !isSubscribed) return null;
 
   return (
     <nav
-      aria-label="Customer navigation"
+      aria-label="Customer site navigation"
       className="fixed inset-x-0 bottom-0 z-[70] border-t border-[#D7E0F5] bg-white/95 px-2 pt-1.5 shadow-[0_-10px_34px_rgba(15,23,42,0.12)] backdrop-blur-md lg:hidden sm:pt-2"
       style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom, 0px))" }}
     >
       <div className="mx-auto grid max-w-[520px] grid-cols-5 gap-1">
         {items.map((item) => {
-          const active = item.match(pathname, tab);
+          const active = item.match(pathname);
           return (
             <Link
               key={item.label}
