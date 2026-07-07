@@ -105,6 +105,33 @@ export interface GhlAiCommanderExecuteResponse {
   errors?: unknown[];
 }
 
+export interface RoofingSalesAgentTrainingRequest {
+  contactName: string;
+  phone: string;
+  incomingMessage: string;
+  conversationHistory: Array<{
+    role: "user" | "assistant" | "system";
+    content: string;
+  }>;
+}
+
+export interface RoofingSalesAgentTrainingAction {
+  actionType?: string;
+  description?: string;
+  supported?: boolean;
+  executed?: boolean;
+  reason?: string;
+  requestPreview?: unknown;
+  result?: unknown;
+}
+
+export interface RoofingSalesAgentTrainingResponse {
+  classification: string;
+  recommendedReply: string;
+  actionsPlanned: RoofingSalesAgentTrainingAction[];
+  humanTakeover: boolean;
+}
+
 export interface Address {
   _id: string;
   label: string;
@@ -1323,6 +1350,13 @@ export const executeGhlAiCommanderPlan = async (
   const response = await API.post("/api/admin/ai-commander/ghl/execute", {
     confirmationId,
   });
+  return response.data;
+};
+
+export const simulateRoofingSalesAgentTraining = async (
+  data: RoofingSalesAgentTrainingRequest
+): Promise<RoofingSalesAgentTrainingResponse> => {
+  const response = await API.post("/api/admin/jarvis/roofing-agent/simulate", data);
   return response.data;
 };
 

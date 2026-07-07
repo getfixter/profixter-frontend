@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  AcademicCapIcon,
   ArrowPathIcon,
   BoltIcon,
   ChartBarIcon,
@@ -13,13 +14,18 @@ import {
   PhoneArrowUpRightIcon,
   PlusIcon,
   SparklesIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "@/lib/useAuth";
 import {
   executeGhlAiCommanderPlan,
   generateGhlAiCommanderPlan,
+  simulateRoofingSalesAgentTraining,
   type GhlAiCommanderExecuteResponse,
   type GhlAiCommanderPlanResponse,
+  type RoofingSalesAgentTrainingAction,
+  type RoofingSalesAgentTrainingRequest,
+  type RoofingSalesAgentTrainingResponse,
 } from "@/lib/admin-service";
 
 const STATUS_LINES = [
@@ -100,6 +106,41 @@ type TechnicalError = {
   message?: string;
   response?: { data?: unknown };
   status?: number;
+};
+
+type TrainingHistoryMessage = RoofingSalesAgentTrainingRequest["conversationHistory"][number];
+
+const ROOFING_CLASSIFICATION_LABELS: Record<string, string> = {
+  interested: "Interested",
+  maybe_interested: "Maybe interested",
+  wants_call: "Wants a call",
+  gave_callback_time: "Callback time provided",
+  not_interested: "Not interested",
+  stop_unsubscribe: "Stop or unsubscribe",
+  pricing_question: "Pricing question",
+  technical_question: "Technical question",
+  angry_or_complaint: "Complaint or angry reply",
+  wrong_number: "Wrong number",
+  unclear: "Unclear",
+  human_takeover: "Human takeover needed",
+};
+
+const ROOFING_ACTION_LABELS: Record<string, string> = {
+  store_suggested_reply: "save the suggested reply",
+  send_sms_reply: "prepare a safe SMS reply",
+  add_tag: "add tag",
+  add_contact_tags: "add tag",
+  create_task: "create callback task",
+  create_contact_task: "create callback task",
+  create_note: "add note",
+  create_contact_note: "add note",
+  create_or_update_opportunity: "update roofing opportunity",
+  create_opportunity: "update roofing opportunity",
+  upsert_opportunity: "update roofing opportunity",
+  notify_admin: "notify Taras",
+  stop_ai: "stop AI follow-up",
+  human_takeover: "human takeover",
+  unsupported: "needs setup",
 };
 
 const INITIAL_CONVERSATIONS: Conversation[] = [
@@ -221,6 +262,60 @@ function titleCase(value: string) {
     .replace(/\s+/g, " ")
     .trim()
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function roofingClassificationLabel(value: string) {
+  return ROOFING_CLASSIFICATION_LABELS[value] || titleCase(value || "unclear");
+}
+
+function parseRoofingHistory(value: string): TrainingHistoryMessage[] {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const match = line.match(/^([a-z\s]+):\s*(.+)$/i);
+      if (!match) return { role: "user", content: line };
+
+      const speaker = match[1].trim().toLowerCase();
+      const content = match[2].trim();
+      let role: TrainingHistoryMessage["role"] = "user";
+      if (/jarvis|assistant|ai/.test(speaker)) role = "assistant";
+      if (speaker === "system") role = "system";
+
+      return { role, content };
+    });
+}
+
+function roofingActionLabel(action: RoofingSalesAgentTrainingAction) {
+  const type = readable(action.actionType);
+  const label = ROOFING_ACTION_LABELS[type] || titleCase(type || "next step");
+  if (action.supported === false && action.reason) {
+    return `${label}: ${action.reason}`;
+  }
+  return label;
+}
+
+function roofingActionRows(actions: RoofingSalesAgentTrainingAction[]) {
+  const rows = actions.map(roofingActionLabel).filter(Boolean);
+  return [...new Set(rows)];
+}
+
+function getTrainingError(error: unknown) {
+  const technical = error as TechnicalError;
+  const message = technical?.response?.data
+    ? readable((technical.response.data as { message?: unknown }).message)
+    : readable(technical?.message);
+
+  if (/404|cannot post|not found/i.test(message)) {
+    return "The training room is not available right now.";
+  }
+
+  if (/token|unauthorized|401/i.test(message)) {
+    return "Your admin session needs to be refreshed.";
+  }
+
+  return message || "Jarvis could not finish this training run.";
 }
 
 function getGreeting() {
@@ -754,6 +849,271 @@ function Impact({
   );
 }
 
+function RoofingTrainingPanel({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [contactName, setContactName] = useState("John");
+  const [phone, setPhone] = useState("6315551111");
+  const [incomingMessage, setIncomingMessage] = useState("Maybe tomorrow after 5");
+  const [historyText, setHistoryText] = useState("");
+  const [result, setResult] = useState<RoofingSalesAgentTrainingResponse | null>(null);
+  const [lastRequest, setLastRequest] = useState<RoofingSalesAgentTrainingRequest | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  const [loading, setLoading] = useState(false);
+
+  if (!open) return null;
+
+  const actions = roofingActionRows(result?.actionsPlanned || []);
+
+  const runTraining = async () => {
+    if (!incomingMessage.trim() || loading) return;
+
+    const request: RoofingSalesAgentTrainingRequest = {
+      contactName: contactName.trim() || "Homeowner",
+      phone: phone.trim(),
+      incomingMessage: incomingMessage.trim(),
+      conversationHistory: parseRoofingHistory(historyText),
+    };
+
+    setLoading(true);
+    setError(null);
+    setLastRequest(request);
+
+    try {
+      const response = await simulateRoofingSalesAgentTraining(request);
+      setResult(response);
+    } catch (trainingError) {
+      setResult(null);
+      setError(trainingError);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 p-3 backdrop-blur-md md:p-6">
+      <div className="mx-auto flex min-h-full w-full max-w-6xl items-center">
+        <section
+          aria-modal="true"
+          role="dialog"
+          className="w-full overflow-hidden rounded-[34px] border border-white/20 bg-[#EEF3FB] shadow-[0_28px_90px_rgba(0,0,0,0.35)]"
+        >
+          <header className="relative overflow-hidden bg-[#090F1D] px-5 py-6 text-white md:px-7">
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(48,110,236,0.32),rgba(15,23,42,0)_48%),linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0))]" />
+            <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-blue-100">
+                  <AcademicCapIcon className="h-4 w-4" aria-hidden="true" />
+                  Roofing Sales Agent Training
+                </div>
+                <h2 className="mt-4 text-3xl font-black tracking-normal md:text-5xl">
+                  Train Roofing Agent
+                </h2>
+                <p className="mt-3 max-w-2xl text-base font-bold leading-7 text-slate-200">
+                  Practice homeowner replies with Jarvis before anything goes live.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close training"
+                className="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/10 text-white transition hover:bg-white/15"
+              >
+                <XMarkIcon className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+          </header>
+
+          <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:p-5">
+            <section className="rounded-[28px] border border-white/80 bg-white/95 p-4 shadow-sm md:p-5">
+              <div className="text-xs font-black uppercase tracking-[0.14em] text-blue-500">
+                Conversation
+              </div>
+              <div className="mt-4 grid gap-4">
+                <label className="grid gap-2">
+                  <span className="text-sm font-black text-slate-800">Contact name</span>
+                  <input
+                    value={contactName}
+                    onChange={(event) => setContactName(event.target.value)}
+                    className="min-h-[50px] rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-950 outline-none transition focus:border-blue-300 focus:bg-white"
+                  />
+                </label>
+
+                <label className="grid gap-2">
+                  <span className="text-sm font-black text-slate-800">Phone</span>
+                  <input
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    inputMode="tel"
+                    className="min-h-[50px] rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-950 outline-none transition focus:border-blue-300 focus:bg-white"
+                  />
+                </label>
+
+                <label className="grid gap-2">
+                  <span className="text-sm font-black text-slate-800">Customer message</span>
+                  <textarea
+                    value={incomingMessage}
+                    onChange={(event) => setIncomingMessage(event.target.value)}
+                    className="min-h-[150px] resize-none rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 text-base font-bold leading-7 text-slate-950 outline-none transition focus:border-blue-300 focus:bg-white"
+                  />
+                </label>
+
+                <label className="grid gap-2">
+                  <span className="text-sm font-black text-slate-800">
+                    Conversation history
+                  </span>
+                  <textarea
+                    value={historyText}
+                    onChange={(event) => setHistoryText(event.target.value)}
+                    placeholder={"Customer: maybe\nJarvis: Would today or tomorrow work?"}
+                    className="min-h-[110px] resize-none rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold leading-6 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:bg-white"
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => void runTraining()}
+                  disabled={loading || !incomingMessage.trim()}
+                  className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-sm font-black text-white shadow-[0_16px_45px_rgba(37,99,235,0.24)] transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+                >
+                  {loading ? (
+                    <>
+                      <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      Training
+                    </>
+                  ) : (
+                    <>
+                      <SparklesIcon className="h-4 w-4" aria-hidden="true" />
+                      Analyze Conversation
+                    </>
+                  )}
+                </button>
+              </div>
+            </section>
+
+            <section className="rounded-[28px] border border-white/80 bg-white/95 p-4 shadow-sm md:p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-xs font-black uppercase tracking-[0.14em] text-blue-500">
+                    Jarvis says
+                  </div>
+                  <h3 className="mt-2 text-2xl font-black text-slate-950">
+                    Nothing was sent. This is training mode.
+                  </h3>
+                </div>
+                {result && (
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
+                    Ready
+                  </span>
+                )}
+              </div>
+
+              {loading && (
+                <div className="mt-8">
+                  <ThinkingBubble label="Jarvis is training" />
+                </div>
+              )}
+
+              {Boolean(error) && !loading && (
+                <div className="mt-6 rounded-[24px] border border-rose-200 bg-rose-50 p-5 text-rose-950">
+                  <div className="flex items-start gap-3">
+                    <ExclamationTriangleIcon className="h-6 w-6 flex-shrink-0 text-rose-600" aria-hidden="true" />
+                    <div>
+                      <div className="text-lg font-black">Training paused.</div>
+                      <p className="mt-2 text-sm font-bold leading-6">{getTrainingError(error)}</p>
+                    </div>
+                  </div>
+                  <details className="group mt-5 rounded-2xl border border-rose-200 bg-white/80">
+                    <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-black text-rose-950">
+                      <span>Show technical details</span>
+                      <ChevronDownIcon className="h-4 w-4 transition group-open:rotate-180" aria-hidden="true" />
+                    </summary>
+                    <div className="border-t border-rose-100 p-4">
+                      <JsonPanel title="Details" value={error} />
+                    </div>
+                  </details>
+                </div>
+              )}
+
+              {!result && !error && !loading && (
+                <div className="mt-8 rounded-[26px] border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-lg font-black text-slate-950">
+                    Give Jarvis a homeowner reply and see how the roofing agent would handle it.
+                  </p>
+                  <p className="mt-3 text-sm font-bold leading-6 text-slate-600">
+                    The default example is ready when you are.
+                  </p>
+                </div>
+              )}
+
+              {result && !loading && (
+                <div className="mt-6 space-y-5">
+                  <section className="rounded-[24px] border border-blue-100 bg-blue-50 p-5 text-blue-950">
+                    <p className="text-sm font-bold">I classified this as:</p>
+                    <p className="mt-2 text-2xl font-black">
+                      {roofingClassificationLabel(result.classification)}
+                    </p>
+                  </section>
+
+                  <section>
+                    <div className="text-sm font-black text-slate-800">
+                      My suggested reply is:
+                    </div>
+                    <div className="mt-3 rounded-[24px] border border-slate-200 bg-slate-50 p-5 text-lg font-black leading-8 text-slate-950">
+                      {result.recommendedReply || "No reply. Jarvis would stop and wait for Taras."}
+                    </div>
+                  </section>
+
+                  <section>
+                    <div className="text-sm font-black text-slate-800">
+                      What I would do next:
+                    </div>
+                    <div className="mt-3 grid gap-2">
+                      {(actions.length ? actions : ["wait for Taras"]).map((action) => (
+                        <div
+                          key={action}
+                          className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-800"
+                        >
+                          <CheckCircleIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" aria-hidden="true" />
+                          <span>{action}</span>
+                        </div>
+                      ))}
+                      <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-800">
+                        <CheckCircleIcon
+                          className={`mt-0.5 h-5 w-5 flex-shrink-0 ${
+                            result.humanTakeover ? "text-amber-600" : "text-emerald-600"
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <span>human takeover: {result.humanTakeover ? "true" : "false"}</span>
+                      </div>
+                    </div>
+                  </section>
+
+                  <details className="group rounded-[22px] border border-slate-200 bg-white/80">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-black text-slate-700">
+                      <span>Show technical details</span>
+                      <ChevronDownIcon className="h-4 w-4 transition group-open:rotate-180" aria-hidden="true" />
+                    </summary>
+                    <div className="grid gap-4 border-t border-slate-100 p-4">
+                      <JsonPanel title="Training input" value={lastRequest} />
+                      <JsonPanel title="Jarvis result" value={result} />
+                    </div>
+                  </details>
+                </div>
+              )}
+            </section>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 export default function JarvisModule() {
   const { user } = useAuth();
   const [statusLine, setStatusLine] = useState(STATUS_LINES[0]);
@@ -766,6 +1126,7 @@ export default function JarvisModule() {
   const [executionByPlanId, setExecutionByPlanId] = useState<Record<string, GhlAiCommanderExecuteResponse>>({});
   const [errorByPlanId, setErrorByPlanId] = useState<Record<string, unknown>>({});
   const [canceledPlans, setCanceledPlans] = useState<Record<string, boolean>>({});
+  const [trainingOpen, setTrainingOpen] = useState(false);
 
   useEffect(() => {
     setStatusLine(STATUS_LINES[Math.floor(Math.random() * STATUS_LINES.length)]);
@@ -1067,6 +1428,26 @@ export default function JarvisModule() {
               Recommended for Today
             </div>
             <div className="mt-4 grid gap-3">
+              <button
+                type="button"
+                onClick={() => setTrainingOpen(true)}
+                className="rounded-[24px] border border-blue-300/30 bg-blue-400/15 p-4 text-left transition hover:border-blue-200/60 hover:bg-blue-400/20"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-2xl border border-blue-200/20 bg-blue-300/15 text-blue-100">
+                    <AcademicCapIcon className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <span>
+                    <span className="block text-sm font-black text-white">
+                      Train Roofing Agent
+                    </span>
+                    <span className="mt-2 block text-xs font-semibold leading-5 text-slate-300">
+                      Test how Jarvis would respond to homeowner replies before going live.
+                    </span>
+                  </span>
+                </div>
+              </button>
+
               {SUGGESTIONS.map((suggestion) => (
                 <button
                   key={suggestion.title}
@@ -1085,6 +1466,10 @@ export default function JarvisModule() {
 
         </aside>
       </div>
+      <RoofingTrainingPanel
+        open={trainingOpen}
+        onClose={() => setTrainingOpen(false)}
+      />
       <style>{`
         @keyframes jarvisFade {
           from {
