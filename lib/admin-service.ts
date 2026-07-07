@@ -1,3 +1,4 @@
+import type { AxiosProgressEvent } from 'axios';
 import API from './api';
 
 // Types
@@ -131,6 +132,50 @@ export interface RoofingSalesAgentTrainingResponse {
   actionsPlanned: RoofingSalesAgentTrainingAction[];
   humanTakeover: boolean;
 }
+
+export interface JarvisUploadedFile {
+  uploadId: string;
+  originalName: string;
+  displayName: string;
+  mimeType: string;
+  extension: string;
+  size: number;
+  uploadedAt: string;
+  expiresAt: string;
+  storage: "s3" | "local";
+  tempRef: string;
+  storageKey: string;
+}
+
+export interface JarvisUploadBatchResponse {
+  uploadBatchId: string;
+  prompt: string;
+  files: JarvisUploadedFile[];
+  temporary: true;
+  expiresAt: string;
+  maxFileSizeBytes: number;
+}
+
+export type JarvisAskResponse =
+  | {
+      intent: "read";
+      answer: string;
+      data?: unknown;
+      sources?: string[];
+      requiresApproval: false;
+    }
+  | {
+      intent: "advice";
+      answer: string;
+      data?: unknown;
+      sources?: string[];
+      requiresApproval: false;
+    }
+  | {
+      intent: "write";
+      plan: GhlAiCommanderPlanResponse;
+      requiresApproval: true;
+    };
 
 export interface Address {
   _id: string;
@@ -1357,6 +1402,34 @@ export const simulateRoofingSalesAgentTraining = async (
   data: RoofingSalesAgentTrainingRequest
 ): Promise<RoofingSalesAgentTrainingResponse> => {
   const response = await API.post("/api/admin/jarvis/roofing-agent/simulate", data);
+  return response.data;
+};
+
+export const askJarvis = async (message: string): Promise<JarvisAskResponse> => {
+  const response = await API.post("/api/admin/jarvis/ask", { message });
+  return response.data;
+};
+
+export const uploadJarvisFilesForAnalysis = async ({
+  prompt,
+  conversationId,
+  files,
+  onUploadProgress,
+}: {
+  prompt: string;
+  conversationId?: string;
+  files: File[];
+  onUploadProgress?: (progressEvent: AxiosProgressEvent) => void;
+}): Promise<JarvisUploadBatchResponse> => {
+  const formData = new FormData();
+  formData.append("prompt", prompt);
+  if (conversationId) formData.append("conversationId", conversationId);
+  files.forEach((file) => formData.append("files", file));
+
+  const response = await API.post("/api/admin/jarvis/uploads", formData, {
+    timeout: 300000,
+    onUploadProgress,
+  });
   return response.data;
 };
 
