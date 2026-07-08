@@ -212,6 +212,173 @@ export interface JarvisConversationListResponse {
   conversations: JarvisSavedConversation[];
 }
 
+export interface JarvisCampaignMessageStep {
+  stepId: string;
+  channel: "sms" | "email";
+  subject?: string;
+  body: string;
+  waitDelay?: {
+    amount?: number;
+    unit?: "minutes" | "hours" | "days";
+    seconds?: number;
+  };
+  enabled?: boolean;
+}
+
+export interface JarvisCampaignRun {
+  id: string;
+  templateId: string;
+  status: "queued" | "running" | "paused" | "completed" | "failed" | "canceled";
+  testMode: boolean;
+  dryRun: boolean;
+  currentStepIndex?: number;
+  audience?: {
+    type?: string;
+    tags?: string[];
+    limit?: number;
+    contactCount?: number;
+    previewContacts?: unknown[];
+    partial?: boolean;
+    reason?: string;
+    resolvedAt?: string | null;
+  };
+  stats?: {
+    leadCount?: number;
+    messagesQueued?: number;
+    messagesSent?: number;
+    messagesSkipped?: number;
+    replies?: number;
+    appointments?: number;
+    escalations?: number;
+    stopped?: number;
+    errors?: number;
+  };
+  messageLog?: unknown[];
+  events?: unknown[];
+  errors?: unknown[];
+  startedAt?: string;
+  pausedAt?: string;
+  completedAt?: string;
+  failedAt?: string;
+  nextRunAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface JarvisCampaignTemplate {
+  id: string;
+  campaignName: string;
+  description?: string;
+  audienceDefinition?: {
+    type?: "ghl_tags" | "smart_list" | "uploaded_csv" | "custom_query";
+    tags?: string[];
+    smartListId?: string;
+    uploadBatchId?: string;
+    files?: unknown[];
+    filters?: unknown;
+    limit?: number;
+    testMode?: boolean;
+  };
+  messageSteps?: JarvisCampaignMessageStep[];
+  stopConditions?: unknown;
+  replyHandlingRules?: unknown;
+  aiQualificationPrompt?: string;
+  outcomeTags?: string[];
+  appointmentBookingRules?: unknown;
+  ownerNotificationRules?: unknown;
+  testMode?: boolean;
+  approvalBeforeSending?: boolean;
+  status: "draft" | "approved" | "running" | "paused" | "completed" | "archived";
+  stats?: JarvisCampaignRun["stats"];
+  latestRun?: JarvisCampaignRun | null;
+  createdAt?: string;
+  updatedAt?: string;
+  approvedAt?: string;
+}
+
+export interface JarvisCampaignListResponse {
+  campaigns: JarvisCampaignTemplate[];
+}
+
+export interface JarvisCampaignDetailResponse {
+  campaign: JarvisCampaignTemplate;
+  runs: JarvisCampaignRun[];
+}
+
+export interface JarvisCampaignMutationResponse {
+  campaign: JarvisCampaignTemplate;
+  run: JarvisCampaignRun;
+  confirmationUsed?: string;
+}
+
+export interface JarvisGhlControlReport {
+  title: string;
+  generatedAt: string;
+  diagnostics?: {
+    baseUrl?: string;
+    apiVersion?: string;
+    locationIdUsed?: string | null;
+    token?: {
+      source?: string;
+      hasToken?: boolean;
+      length?: number;
+      hasLegacyGhlApiToken?: boolean;
+      legacyLength?: number;
+      apiVersion?: string;
+    };
+  };
+  approvalRules?: {
+    read?: string;
+    write?: string;
+    highRisk?: string;
+    destructive?: string;
+    campaignStart?: string;
+  };
+  summary?: {
+    workingCapabilities?: number;
+    failingCapabilities?: number;
+    registryEnabledEndpoints?: number;
+    writeEndpoints?: number;
+    highRiskEndpoints?: number;
+    destructiveEndpoints?: number;
+    recentActions?: number;
+    failedActions?: number;
+  };
+  capabilities?: {
+    working?: Array<{ key?: string; label?: string; status?: string }>;
+    failing?: Array<{ key?: string; label?: string; status?: string; reason?: string }>;
+    all?: unknown[];
+  };
+  registry?: {
+    stats?: Record<string, unknown>;
+    groups?: Array<{
+      group: string;
+      totals?: {
+        total?: number;
+        enabled?: number;
+        read?: number;
+        write?: number;
+        highRisk?: number;
+        destructive?: number;
+      };
+    }>;
+  };
+  dryRunWrites?: Array<{
+    key?: string;
+    method?: string;
+    path?: string;
+    status?: string;
+    riskCategory?: string;
+    requiresApproval?: boolean;
+    requiresExtraConfirmation?: boolean;
+    confirmationPhraseRequired?: string;
+    message?: string;
+  }>;
+  recentActions?: unknown[];
+  failedActions?: unknown[];
+  recommendations?: string[];
+}
+
 export type JarvisAskResponse =
   | {
       intent: "read";
@@ -1543,6 +1710,55 @@ export const saveJarvisConversation = async (
     conversation
   );
   return response.data.conversation;
+};
+
+export const listJarvisCampaigns = async (): Promise<JarvisCampaignListResponse> => {
+  const response = await API.get("/api/admin/jarvis/campaigns");
+  return response.data;
+};
+
+export const getJarvisCampaign = async (
+  campaignId: string
+): Promise<JarvisCampaignDetailResponse> => {
+  const response = await API.get(`/api/admin/jarvis/campaigns/${encodeURIComponent(campaignId)}`);
+  return response.data;
+};
+
+export const startJarvisCampaign = async (
+  campaignId: string,
+  data: { confirmation: string; dryRun?: boolean }
+): Promise<JarvisCampaignMutationResponse> => {
+  const response = await API.post(
+    `/api/admin/jarvis/campaigns/${encodeURIComponent(campaignId)}/start`,
+    data,
+    { timeout: 300000 }
+  );
+  return response.data;
+};
+
+export const pauseJarvisCampaign = async (
+  campaignId: string
+): Promise<JarvisCampaignMutationResponse> => {
+  const response = await API.post(
+    `/api/admin/jarvis/campaigns/${encodeURIComponent(campaignId)}/pause`
+  );
+  return response.data;
+};
+
+export const resumeJarvisCampaign = async (
+  campaignId: string
+): Promise<JarvisCampaignMutationResponse> => {
+  const response = await API.post(
+    `/api/admin/jarvis/campaigns/${encodeURIComponent(campaignId)}/resume`
+  );
+  return response.data;
+};
+
+export const getJarvisGhlControlHealth = async (): Promise<JarvisGhlControlReport> => {
+  const response = await API.get("/api/admin/jarvis/ghl-control/health", {
+    timeout: 300000,
+  });
+  return response.data.report;
 };
 
 export const getReferrals = async (): Promise<Referral[]> => {
