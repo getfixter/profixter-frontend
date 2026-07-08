@@ -1405,8 +1405,15 @@ export const simulateRoofingSalesAgentTraining = async (
   return response.data;
 };
 
-export const askJarvis = async (message: string): Promise<JarvisAskResponse> => {
-  const response = await API.post("/api/admin/jarvis/ask", { message });
+export const askJarvis = async (
+  message: string,
+  context?: { uploadBatchId?: string; files?: JarvisUploadedFile[] }
+): Promise<JarvisAskResponse> => {
+  const response = await API.post("/api/admin/jarvis/ask", {
+    message,
+    uploadBatchId: context?.uploadBatchId,
+    files: context?.files || [],
+  });
   return response.data;
 };
 
