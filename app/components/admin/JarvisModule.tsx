@@ -606,12 +606,30 @@ function actionLabel(value: unknown) {
     create_pipeline: "Pipeline",
     send_conversation_message: "Message",
     create_calendar_appointment: "Appointment",
+    sync_estimate_csv_with_ghl: "Workflow",
+    jarvis_workflow: "Workflow",
+    universal_ghl_request: "GHL Request",
   };
   return labels[type] || titleCase(type) || "Item";
 }
 
 function getExecuteLabels(result?: GhlAiCommanderExecuteResponse | null) {
   return asArray(result?.executedActions).map(actionLabel).filter(Boolean);
+}
+
+function workflowProgressFromExecution(result?: GhlAiCommanderExecuteResponse | null) {
+  const progress: string[] = [];
+  for (const item of asArray(result?.results)) {
+    const record = objectRecord(item);
+    const response = objectRecord(record.response);
+    const workflow = objectRecord(response.workflow || objectRecord(record.extracted).workflow);
+    const events = asArray(workflow.progress || response.progress);
+    for (const event of events) {
+      const message = readable(objectRecord(event).message) || readable(event);
+      if (message) progress.push(message);
+    }
+  }
+  return [...new Set(progress)].slice(-8);
 }
 
 function getFriendlyError(error: unknown) {
@@ -1053,6 +1071,7 @@ function PlanMessage({
   const failed = Boolean(error) || execution?.status === "failed";
   const friendlyError = failed ? getFriendlyError(error || execution) : null;
   const created = getExecuteLabels(execution);
+  const workflowProgress = workflowProgressFromExecution(execution);
 
   return (
     <article className="jarvis-fade flex justify-start">
@@ -1141,6 +1160,18 @@ function PlanMessage({
                     </div>
                   ))}
                 </div>
+                {workflowProgress.length > 0 && (
+                  <>
+                    <p className="mt-4 text-sm font-black">Workflow progress:</p>
+                    <div className="mt-3 space-y-2">
+                      {workflowProgress.map((item) => (
+                        <div key={item} className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-bold">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
                 <p className="mt-4 text-sm font-bold">No additional action is required.</p>
               </div>
             </div>
