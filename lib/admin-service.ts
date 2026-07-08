@@ -416,6 +416,34 @@ export interface AddressDetailed extends Address {
   scheduledCancellationDate?: string | null;
 }
 
+export interface SubscriptionRepairRequest {
+  userId?: string;
+  email?: string;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+}
+
+export interface SubscriptionRepairResponse {
+  message: string;
+  repaired: boolean;
+  reason: string;
+  user: {
+    _id: string;
+    userId: string | null;
+    name: string;
+    email: string;
+    stripeCustomerId: string | null;
+  };
+  selectedCurrentPlan: {
+    subscriptionId: string;
+    subscriptionType: "basic" | "plus" | "premium" | "elite";
+    status: string;
+    accessStatus?: string;
+    currentPeriodEnd?: string | null;
+  } | null;
+  addressesDetailed: AddressDetailed[];
+}
+
 
 export interface Booking {
   _id: string;
@@ -902,6 +930,13 @@ export const setAddressCancellationDate = async (
     }
   );
   return response.data.addressesDetailed;
+};
+
+export const repairUserSubscriptionFromStripe = async (
+  data: SubscriptionRepairRequest
+): Promise<SubscriptionRepairResponse> => {
+  const response = await API.post("/api/admin/users/subscription-sync/repair", data);
+  return response.data;
 };
 
 // Bookings
