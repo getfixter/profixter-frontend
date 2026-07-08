@@ -42,6 +42,7 @@ import type {
   BlacklistEntry,
   RequestLead,
   BookingAssignee,
+  BookingAdminPatch,
 } from "@/lib/admin-service";
 import AdminCalendarSettings from "@/app/components/admin/AdminCalendarSettings";
 
@@ -229,7 +230,7 @@ export default function AdminPage() {
 
   const handleUpdateBooking = async (
     bookingId: string,
-    patch: { note?: string; date?: string; assignedFixterId?: string | null }
+    patch: BookingAdminPatch
   ) => {
     try {
       await updateBookingAdmin(bookingId, patch);
@@ -237,7 +238,12 @@ export default function AdminPage() {
       showToast("Booking saved");
     } catch (error) {
       console.error("Failed to update booking fields:", error);
-      showToast("Failed to save booking changes");
+      const message =
+        (error as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
+        (error as { message?: string })?.message ||
+        "Failed to save booking changes";
+      showToast(message);
+      throw error;
     }
   };
 

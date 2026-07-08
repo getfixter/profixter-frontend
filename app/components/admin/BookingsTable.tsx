@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Booking, BookingAssignee, User } from "@/lib/admin-service";
+import type { Booking, BookingAdminPatch, BookingAssignee, User } from "@/lib/admin-service";
 import BookingStatusSelect from "./BookingStatusSelect";
 import BookingImageGallery from "./BookingImageGallery";
 import BookingHistory from "./BookingHistory";
@@ -11,7 +11,7 @@ interface BookingsTableProps {
   bookings: Booking[];
   updateStatus: (bookingId: string, status: string, assignedFixterId?: string | null) => Promise<void>;
   users: User[];
-  onUpdateBooking: (bookingId: string, patch: { note?: string; date?: string; assignedFixterId?: string | null }) => Promise<void>;
+  onUpdateBooking: (bookingId: string, patch: BookingAdminPatch) => Promise<void>;
   readOnly?: boolean;
   assignees?: BookingAssignee[];
   canAssign?: boolean;
@@ -140,7 +140,9 @@ export default function BookingsTable({
 }: BookingsTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftNote, setDraftNote] = useState("");
+  const [draftAdminNote, setDraftAdminNote] = useState("");
   const [draftDT, setDraftDT] = useState("");
+  const [draftPhotos, setDraftPhotos] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [quickActionId, setQuickActionId] = useState<string | null>(null);
   const [draftAssigneeId, setDraftAssigneeId] = useState("");
@@ -230,7 +232,9 @@ export default function BookingsTable({
   const startEdit = (booking: Booking) => {
     setEditingId(booking._id);
     setDraftNote(String(booking.note || ""));
+    setDraftAdminNote(String(booking.adminNote || ""));
     setDraftDT(nyDateTimeLocalValue(booking.date));
+    setDraftPhotos([]);
     setDraftAssigneeId(
       booking.assignedFixterId ||
         assignees.find((assignee) => assignee.isDefaultFixter)?.id ||
@@ -241,7 +245,9 @@ export default function BookingsTable({
   const cancelEdit = () => {
     setEditingId(null);
     setDraftNote("");
+    setDraftAdminNote("");
     setDraftDT("");
+    setDraftPhotos([]);
     setDraftAssigneeId("");
     setSaving(false);
   };
@@ -251,13 +257,19 @@ export default function BookingsTable({
     try {
       await onUpdateBooking(booking._id, {
         note: draftNote,
+        adminNote: draftAdminNote,
         date: nyLocalToISOString(draftDT),
         ...(canAssign ? { assignedFixterId: draftAssigneeId || null } : {}),
+        ...(draftPhotos.length ? { images: draftPhotos } : {}),
       });
       cancelEdit();
     } catch (error) {
       console.error("Save booking edit failed:", error);
-      alert("Failed to save booking changes");
+      const message =
+        (error as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
+        (error as { message?: string })?.message ||
+        "Failed to save booking changes";
+      alert(message);
       setSaving(false);
     }
   };
@@ -576,17 +588,68 @@ export default function BookingsTable({
                         </div>
 
                         {isEditing ? (
-                          <textarea
-                            value={draftNote}
-                            onChange={(event) => setDraftNote(event.target.value)}
-                            rows={4}
-                            className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
-                            placeholder="Type note here..."
-                          />
+                          <div className="space-y-3">
+                            <label className="block">
+                              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
+                                Customer-facing notes
+                              </span>
+                              <textarea
+                                value={draftNote}
+                                onChange={(event) => setDraftNote(event.target.value)}
+                                rows={4}
+                                className="mt-1 w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
+                                placeholder="Type note here..."
+                              />
+                            </label>
+
+                            <label className="block">
+                              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                                Internal admin notes
+                              </span>
+                              <textarea
+                                value={draftAdminNote}
+                                onChange={(event) => setDraftAdminNote(event.target.value)}
+                                rows={3}
+                                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                                placeholder="Private team note"
+                              />
+                            </label>
+
+                            <label className="block rounded-xl border border-dashed border-amber-300 bg-white px-3 py-3 text-sm font-semibold text-amber-900">
+                              Add appointment photos
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                                multiple
+                                className="mt-2 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-100 file:px-3 file:py-2 file:text-xs file:font-bold file:text-amber-900"
+                                onChange={(event) => {
+                                  const files = Array.from(event.target.files || []);
+                                  setDraftPhotos(files);
+                                }}
+                              />
+                              {draftPhotos.length > 0 && (
+                                <div className="mt-2 text-xs text-slate-500">
+                                  {draftPhotos.length} new photo{draftPhotos.length === 1 ? "" : "s"} selected
+                                </div>
+                              )}
+                            </label>
+                          </div>
                         ) : (
-                          <p className="whitespace-pre-wrap text-sm text-slate-700">
-                            {booking.note || "No note"}
-                          </p>
+                          <div className="space-y-3">
+                            <p className="whitespace-pre-wrap text-sm text-slate-700">
+                              {booking.note || "No note"}
+                            </p>
+                            {booking.adminNote && (
+                              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                                  Internal admin notes
+                                </div>
+                                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+                                  {booking.adminNote}
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
 

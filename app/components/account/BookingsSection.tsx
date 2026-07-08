@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { addBookingDetails } from "@/lib/booking-service";
 
 type Booking = {
   _id: string;
@@ -46,6 +47,28 @@ function normalizeStatus(status: string) {
 function canCancel(status: string) {
   const s = normalizeStatus(status);
   return s === "pending" || s === "confirmed";
+}
+
+function canAddDetails(status: string) {
+  const s = normalizeStatus(status);
+  return s === "pending" || s === "confirmed";
+}
+
+function hoursUntilVisit(booking: Booking) {
+  const start = new Date(booking.date);
+  if (Number.isNaN(start.getTime())) return null;
+  return (start.getTime() - Date.now()) / (60 * 60 * 1000);
+}
+
+function detailLockReason(booking: Booking) {
+  if (!canAddDetails(booking.status)) {
+    return "Only pending or confirmed appointments can be updated.";
+  }
+  const hours = hoursUntilVisit(booking);
+  if (hours === null || hours <= 48) {
+    return "Appointment can only be updated more than 48 hours before the visit.";
+  }
+  return "";
 }
 
 function isOneTimeVisit(booking: Booking) {
@@ -268,17 +291,141 @@ function CancelModal({
   );
 }
 
+function AddDetailsModal({
+  booking,
+  onClose,
+  onSaved,
+}: {
+  booking: Booking | null;
+  onClose: () => void;
+  onSaved: (booking: Booking) => void;
+}) {
+  const [note, setNote] = useState("");
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setNote("");
+    setPhotos([]);
+    setError("");
+  }, [booking?._id]);
+
+  if (!booking) return null;
+
+  const submit = async () => {
+    setError("");
+    if (!note.trim() && !photos.length) {
+      setError("Add a note or photo first.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const updated = await addBookingDetails(booking._id, {
+        note: note.trim(),
+        images: photos,
+      });
+      onSaved(updated);
+      setNote("");
+      setPhotos([]);
+      onClose();
+    } catch (err) {
+      setError((err as Error)?.message || "Failed to update appointment details.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] bg-black/55 flex items-end sm:items-center justify-center sm:p-4"
+      onClick={() => !saving && onClose()}
+    >
+      <div
+        className="w-full sm:max-w-[500px] bg-white rounded-t-[24px] sm:rounded-[20px] border border-[#E0E6F5] p-5 sm:p-6"
+        onClick={(e) => e.stopPropagation()}
+        style={{ boxShadow: "0 -8px 60px rgba(0,0,0,0.18)" }}
+      >
+        <div className="flex justify-center mb-4 sm:hidden">
+          <div className="w-10 h-1 rounded-full bg-[#E2E8F0]" />
+        </div>
+        <div className="text-[18px] font-bold text-[#313234]">Add notes/photos</div>
+        <div className="mt-1 text-[13px] text-[#6A6D71]">
+          You can add missing details. Existing notes and photos stay unchanged.
+        </div>
+
+        <label className="mt-4 block">
+          <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#6A6D71]">
+            Additional note
+          </span>
+          <textarea
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            rows={4}
+            className="mt-1 w-full rounded-[14px] border border-[#E0E6F5] px-3 py-2 text-[14px] text-[#313234] outline-none focus:border-[#306EEC] focus:ring-4 focus:ring-[#D9E4FF]"
+            placeholder="Add anything the team should know before arriving"
+          />
+        </label>
+
+        <label className="mt-3 block rounded-[14px] border border-dashed border-[#C7D9FF] bg-[#F8FAFF] px-3 py-3 text-[13px] font-semibold text-[#313234]">
+          Add photos
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+            multiple
+            className="mt-2 block w-full text-[12px] text-[#6A6D71] file:mr-3 file:rounded-[10px] file:border-0 file:bg-[#306EEC] file:px-3 file:py-2 file:text-[12px] file:font-bold file:text-white"
+            onChange={(event) => setPhotos(Array.from(event.target.files || []))}
+          />
+          {photos.length > 0 && (
+            <div className="mt-2 text-[12px] text-[#6A6D71]">
+              {photos.length} photo{photos.length === 1 ? "" : "s"} selected
+            </div>
+          )}
+        </label>
+
+        {error && (
+          <div className="mt-3 rounded-[12px] bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-[13px]">
+            {error}
+          </div>
+        )}
+
+        <div className="mt-5 flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            className="flex-1 py-3 rounded-[14px] border border-[#E0E6F5] bg-white text-[#313234] font-semibold text-[14px] hover:bg-[#F8FAFF] transition disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={saving}
+            className="flex-1 py-3 rounded-[14px] bg-[#306EEC] text-white font-semibold text-[14px] hover:bg-[#2557C7] transition disabled:opacity-60"
+          >
+            {saving ? "Saving..." : "Add details"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BookingCard({
   booking,
   me,
   onCancelClick,
+  onDetailsSaved,
   cancelLoading,
 }: {
   booking: Booking;
   me: MeResponse | null;
   onCancelClick: (b: Booking) => void;
+  onDetailsSaved: (booking: Booking) => void;
   cancelLoading: boolean;
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const addr = formatAddress(booking);
   const phone = booking.phone || me?.phone;
   const memberBooking = isMemberBooking(booking);
@@ -288,6 +435,8 @@ function BookingCard({
   const bookingId = booking.bookingNumber || booking._id.slice(-6).toUpperCase();
   const isOneTime = isOneTimeVisit(booking);
   const serviceLabel = booking.selectedTask || booking.service || "-";
+  const canAddAppointmentDetails = canAddDetails(booking.status);
+  const detailsLockReason = canAddAppointmentDetails ? detailLockReason(booking) : "";
 
   return (
     <div className="bg-white border border-[#E0E6F5] rounded-[16px] overflow-hidden transition hover:border-[#C7D9FF]">
@@ -376,6 +525,24 @@ function BookingCard({
         )}
 
         {/* Actions */}
+        {canAddAppointmentDetails && (
+          <div className="pt-1">
+            {!detailsLockReason ? (
+              <button
+                type="button"
+                onClick={() => setDetailsOpen(true)}
+                className="w-full rounded-[12px] border border-[#D9E4FF] bg-[#F0F7FF] px-3 py-2.5 text-[13px] font-semibold text-[#1D4ED8] transition hover:bg-[#E6F0FF]"
+              >
+                Add notes/photos
+              </button>
+            ) : (
+              <div className="rounded-[12px] border border-[#E0E6F5] bg-[#F8FAFF] px-3 py-2.5 text-[12px] font-semibold text-[#6A6D71]">
+                {detailsLockReason}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex gap-2 pt-1">
           {showCancel && (
             <button
@@ -428,6 +595,15 @@ function BookingCard({
           )}
         </div>
       </div>
+
+      <AddDetailsModal
+        booking={detailsOpen ? booking : null}
+        onClose={() => setDetailsOpen(false)}
+        onSaved={(updated) => {
+          onDetailsSaved(updated);
+          setDetailsOpen(false);
+        }}
+      />
     </div>
   );
 }
@@ -552,6 +728,14 @@ export default function BookingsSection() {
     }
   };
 
+  const handleDetailsSaved = (updated: Booking) => {
+    setBookings((prev) =>
+      prev.map((booking) =>
+        booking._id === updated._id ? { ...booking, ...updated } : booking
+      )
+    );
+  };
+
   return (
     <div className="w-full">
       {/* Header */}
@@ -643,6 +827,7 @@ export default function BookingsSection() {
               booking={b}
               me={me}
               onCancelClick={openCancel}
+              onDetailsSaved={handleDetailsSaved}
               cancelLoading={cancelLoading && cancelTarget?._id === b._id}
             />
           ))}

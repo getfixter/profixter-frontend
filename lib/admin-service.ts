@@ -470,11 +470,12 @@ export interface Booking {
   };
   status: string;
   note?: string;
+  adminNote?: string;
   address?: string;
   city?: string;
   state?: string;
   zip?: string;
-  images?: Array<{ key: string; url: string }>;
+  images?: Array<string | { key: string; url: string }>;
   assignedFixterId?: string | null;
   assignedFixterName?: string;
   assignedFixterEmail?: string;
@@ -514,6 +515,14 @@ export interface CampaignRequest {
   excludedUserIds?: string[];
   excludedEmails?: string[];
 }
+
+export type BookingAdminPatch = {
+  note?: string;
+  adminNote?: string;
+  date?: string;
+  assignedFixterId?: string | null;
+  images?: File[];
+};
 
 export interface CampaignResponse {
   campaignId: string;
@@ -984,8 +993,21 @@ export const updateBookingStatus = async (
 
 export const updateBookingAdmin = async (
   bookingId: string,
-  patch: { note?: string; date?: string; assignedFixterId?: string | null }
+  patch: BookingAdminPatch
 ): Promise<Booking> => {
+  if (patch.images?.length) {
+    const formData = new FormData();
+    if (patch.note !== undefined) formData.append("note", patch.note);
+    if (patch.adminNote !== undefined) formData.append("adminNote", patch.adminNote);
+    if (patch.date !== undefined) formData.append("date", patch.date);
+    if (patch.assignedFixterId !== undefined) {
+      formData.append("assignedFixterId", patch.assignedFixterId || "");
+    }
+    patch.images.forEach((file) => formData.append("images", file));
+    const response = await API.put(`/api/admin/bookings/${bookingId}`, formData);
+    return response.data.booking;
+  }
+
   const response = await API.put(`/api/admin/bookings/${bookingId}`, patch);
   return response.data.booking;
 };
