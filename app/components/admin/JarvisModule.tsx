@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -20,10 +21,13 @@ import {
   DocumentTextIcon,
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
+  MegaphoneIcon,
   PaperAirplaneIcon,
   PaperClipIcon,
+  PauseIcon,
   PhoneArrowUpRightIcon,
   PhotoIcon,
+  PlayIcon,
   PlusIcon,
   SparklesIcon,
   TableCellsIcon,
@@ -36,13 +40,20 @@ import {
   executeGhlAiCommanderPlan,
   getGhlWorkflowJobStatus,
   getJarvisConversation,
+  getJarvisGhlControlHealth,
+  listJarvisCampaigns,
   listJarvisConversations,
+  pauseJarvisCampaign,
+  resumeJarvisCampaign,
   saveJarvisConversation,
   simulateRoofingSalesAgentTraining,
+  startJarvisCampaign,
   uploadJarvisFilesForAnalysis,
   type GhlAiCommanderExecuteResponse,
   type GhlAiCommanderPlanResponse,
   type JarvisAskResponse,
+  type JarvisCampaignTemplate,
+  type JarvisGhlControlReport,
   type JarvisSavedConversation,
   type JarvisSavedConversationMessage,
   type JarvisUploadBatchResponse,
@@ -737,6 +748,7 @@ function actionLabel(value: unknown) {
     sync_estimate_csv_with_ghl: "Workflow",
     jarvis_workflow: "Workflow",
     universal_ghl_request: "GHL Request",
+    jarvis_campaign_template_create: "Campaign Template",
   };
   return labels[type] || titleCase(type) || "Item";
 }
@@ -1678,6 +1690,434 @@ function Impact({
   );
 }
 
+function campaignStatusTone(status?: string) {
+  if (status === "running") return "border-emerald-300/30 bg-emerald-400/15 text-emerald-100";
+  if (status === "paused") return "border-amber-300/30 bg-amber-400/15 text-amber-100";
+  if (status === "completed") return "border-blue-300/30 bg-blue-400/15 text-blue-100";
+  return "border-white/10 bg-white/10 text-slate-200";
+}
+
+function campaignAudienceLabel(campaign?: JarvisCampaignTemplate | null) {
+  const audience = campaign?.audienceDefinition;
+  if (!audience) return "Audience pending";
+  if (audience.type === "ghl_tags") {
+    const tags = audience.tags || [];
+    return tags.length ? tags.join(", ") : "GHL tags";
+  }
+  if (audience.type === "uploaded_csv") return "Uploaded CSV";
+  if (audience.type === "smart_list") return "GHL smart list";
+  return titleCase(audience.type || "Audience");
+}
+
+function campaignStats(campaign: JarvisCampaignTemplate) {
+  const runStats = campaign.latestRun?.stats || {};
+  const stats = campaign.stats || {};
+  return {
+    leads: Number(runStats.leadCount ?? stats.leadCount ?? 0),
+    sent: Number(runStats.messagesSent ?? stats.messagesSent ?? 0),
+    replies: Number(runStats.replies ?? stats.replies ?? 0),
+    appointments: Number(runStats.appointments ?? stats.appointments ?? 0),
+  };
+}
+
+function GhlControlCenterPanel({
+  report,
+  loading,
+  error,
+  onRun,
+}: {
+  report: JarvisGhlControlReport | null;
+  loading: boolean;
+  error: string | null;
+  onRun: () => void;
+}) {
+  const summary = report?.summary || {};
+  const working = report?.capabilities?.working || [];
+  const failing = report?.capabilities?.failing || [];
+  const recommendations = report?.recommendations || [];
+  const groups = report?.registry?.groups || [];
+  const dryRuns = report?.dryRunWrites || [];
+  const capabilityByKey = new Map(
+    [...working, ...failing].map((item) => [item.key || item.label || "", item])
+  );
+  const operationRows = [
+    { label: "Pipelines", key: "pipelines" },
+    { label: "Opportunities", key: "opportunities" },
+    { label: "Conversations", key: "conversations" },
+    { label: "Recent actions", value: summary.recentActions || 0 },
+    { label: "Failed actions", value: summary.failedActions || 0 },
+    { label: "Approval queue", value: "Chat plans" },
+  ];
+
+  return (
+    <section className="rounded-[28px] border border-white/10 bg-white/[0.05] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-200">
+            GHL Control Center
+          </div>
+          <h3 className="mt-1 text-lg font-black text-white">Account Audit</h3>
+        </div>
+        <button
+          type="button"
+          onClick={onRun}
+          disabled={loading}
+          className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white px-3 py-2 text-xs font-black text-slate-950 transition hover:bg-blue-50 disabled:opacity-60"
+        >
+          {loading ? (
+            <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <ChartBarIcon className="h-4 w-4" aria-hidden="true" />
+          )}
+          Health Check
+        </button>
+      </div>
+
+      {error ? (
+        <div className="mt-3 rounded-2xl border border-rose-300/20 bg-rose-400/10 px-3 py-2 text-xs font-bold leading-5 text-rose-100">
+          {error}
+        </div>
+      ) : null}
+
+      {report ? (
+        <div className="mt-4 space-y-4">
+          <div className="grid grid-cols-2 gap-2">
+            <Impact label="Working" value={String(summary.workingCapabilities || 0)} tone="border-white/10 bg-white/[0.06] text-white" />
+            <Impact label="Needs Attention" value={String(summary.failingCapabilities || 0)} tone="border-white/10 bg-white/[0.06] text-white" />
+            <Impact label="Endpoints" value={String(summary.registryEnabledEndpoints || 0)} tone="border-white/10 bg-white/[0.06] text-white" />
+            <Impact label="Failed Actions" value={String(summary.failedActions || 0)} tone="border-white/10 bg-white/[0.06] text-white" />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-center">
+              <div className="text-[10px] font-black uppercase text-amber-100/70">Write</div>
+              <div className="mt-1 text-sm font-black text-amber-100">
+                {summary.writeEndpoints || 0}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-rose-300/20 bg-rose-400/10 px-3 py-2 text-center">
+              <div className="text-[10px] font-black uppercase text-rose-100/70">High</div>
+              <div className="mt-1 text-sm font-black text-rose-100">
+                {summary.highRiskEndpoints || 0}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-red-300/20 bg-red-400/10 px-3 py-2 text-center">
+              <div className="text-[10px] font-black uppercase text-red-100/70">Delete</div>
+              <div className="mt-1 text-sm font-black text-red-100">
+                {summary.destructiveEndpoints || 0}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[22px] border border-white/10 bg-white/[0.04] p-3">
+            <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+              Access
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {working.slice(0, 6).map((item) => (
+                <span
+                  key={item.key || item.label}
+                  className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2 py-1 text-[11px] font-black text-emerald-100"
+                >
+                  {item.label || item.key}
+                </span>
+              ))}
+              {!working.length ? (
+                <span className="text-xs font-bold text-slate-400">Run the health check to see access.</span>
+              ) : null}
+            </div>
+          </div>
+
+          {failing.length ? (
+            <div className="rounded-[22px] border border-amber-300/20 bg-amber-400/10 p-3">
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-amber-100/70">
+                Needs Attention
+              </div>
+              <div className="mt-2 space-y-1">
+                {failing.slice(0, 4).map((item) => (
+                  <div key={item.key || item.label} className="text-xs font-bold leading-5 text-amber-100">
+                    {item.label || item.key}: {item.reason || "unavailable"}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="rounded-[22px] border border-white/10 bg-white/[0.04] p-3">
+            <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+              Operations
+            </div>
+            <div className="mt-3 grid gap-2">
+              {operationRows.map((row) => {
+                const capability = row.key ? capabilityByKey.get(row.key) : null;
+                const ok = capability?.status === "working";
+                const value = row.value ?? (capability ? (ok ? "Ready" : "Check") : "Run audit");
+                return (
+                  <div
+                    key={row.label}
+                    className="flex items-center justify-between gap-3 rounded-2xl bg-white/[0.05] px-3 py-2"
+                  >
+                    <span className="text-xs font-black text-slate-300">{row.label}</span>
+                    <span
+                      className={`rounded-full px-2 py-1 text-[10px] font-black uppercase ${
+                        ok
+                          ? "bg-emerald-400/10 text-emerald-100"
+                          : row.value !== undefined
+                            ? "bg-white/10 text-slate-200"
+                            : "bg-amber-400/10 text-amber-100"
+                      }`}
+                    >
+                      {value}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {recommendations.length ? (
+            <div className="space-y-2">
+              {recommendations.slice(0, 3).map((item) => (
+                <div key={item} className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold leading-5 text-slate-300">
+                  {item}
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          <details className="group rounded-[22px] border border-white/10 bg-white/[0.04]">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-black text-slate-200">
+              <span>Show technical details</span>
+              <ChevronDownIcon className="h-4 w-4 transition group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="grid gap-4 border-t border-white/10 p-4">
+              <JsonPanel title="Health report" value={report} />
+              <JsonPanel title="Registry groups" value={groups} />
+              <JsonPanel title="Dry-run writes" value={dryRuns} />
+            </div>
+          </details>
+        </div>
+      ) : (
+        <div className="mt-4 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm font-bold leading-6 text-slate-400">
+          Run a safe backend health check to see available GHL control, failing scopes, and recent action history.
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CampaignsPanel({
+  campaigns,
+  selectedCampaignId,
+  loading,
+  error,
+  actionId,
+  onSelect,
+  onRefresh,
+  onStart,
+  onPause,
+  onResume,
+}: {
+  campaigns: JarvisCampaignTemplate[];
+  selectedCampaignId: string | null;
+  loading: boolean;
+  error: string | null;
+  actionId: string | null;
+  onSelect: (campaignId: string) => void;
+  onRefresh: () => void;
+  onStart: (campaign: JarvisCampaignTemplate) => void;
+  onPause: (campaign: JarvisCampaignTemplate) => void;
+  onResume: (campaign: JarvisCampaignTemplate) => void;
+}) {
+  const selectedCampaign =
+    campaigns.find((campaign) => campaign.id === selectedCampaignId) || campaigns[0] || null;
+  const selectedStats = selectedCampaign ? campaignStats(selectedCampaign) : null;
+  const selectedRun = selectedCampaign?.latestRun || null;
+  const running = selectedCampaign?.status === "running" || selectedRun?.status === "running";
+  const paused = selectedCampaign?.status === "paused" || selectedRun?.status === "paused";
+
+  return (
+    <section className="rounded-[28px] border border-white/10 bg-white/[0.05] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-200">
+            Campaigns
+          </div>
+          <h3 className="mt-1 text-lg font-black text-white">Jarvis Campaign Builder</h3>
+        </div>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={loading}
+          aria-label="Refresh campaigns"
+          className="grid h-10 w-10 place-items-center rounded-2xl border border-white/10 bg-white/10 text-white transition hover:bg-white/15 disabled:opacity-50"
+        >
+          <ArrowPathIcon className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />
+        </button>
+      </div>
+
+      {error ? (
+        <div className="mt-3 rounded-2xl border border-rose-300/20 bg-rose-400/10 px-3 py-2 text-xs font-bold leading-5 text-rose-100">
+          {error}
+        </div>
+      ) : null}
+
+      <div className="mt-4 space-y-2">
+        {campaigns.slice(0, 5).map((campaign) => {
+          const stats = campaignStats(campaign);
+          const active = campaign.id === selectedCampaign?.id;
+          return (
+            <button
+              key={campaign.id}
+              type="button"
+              onClick={() => onSelect(campaign.id)}
+              className={`w-full rounded-[22px] border p-3 text-left transition hover:bg-white/[0.09] ${
+                active ? "border-blue-300/40 bg-blue-400/15" : "border-white/10 bg-white/[0.04]"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-black text-white">
+                    {campaign.campaignName}
+                  </div>
+                  <div className="mt-1 truncate text-[11px] font-bold text-slate-400">
+                    {campaignAudienceLabel(campaign)}
+                  </div>
+                </div>
+                <span
+                  className={`flex-shrink-0 rounded-full border px-2 py-1 text-[10px] font-black uppercase ${campaignStatusTone(campaign.status)}`}
+                >
+                  {campaign.status}
+                </span>
+              </div>
+              <div className="mt-3 grid grid-cols-4 gap-1 text-center">
+                <div className="rounded-xl bg-white/[0.06] px-2 py-2">
+                  <div className="text-[10px] font-black text-slate-500">Leads</div>
+                  <div className="text-xs font-black text-white">{stats.leads}</div>
+                </div>
+                <div className="rounded-xl bg-white/[0.06] px-2 py-2">
+                  <div className="text-[10px] font-black text-slate-500">Sent</div>
+                  <div className="text-xs font-black text-white">{stats.sent}</div>
+                </div>
+                <div className="rounded-xl bg-white/[0.06] px-2 py-2">
+                  <div className="text-[10px] font-black text-slate-500">Replies</div>
+                  <div className="text-xs font-black text-white">{stats.replies}</div>
+                </div>
+                <div className="rounded-xl bg-white/[0.06] px-2 py-2">
+                  <div className="text-[10px] font-black text-slate-500">Appts</div>
+                  <div className="text-xs font-black text-white">{stats.appointments}</div>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+
+        {!campaigns.length && !loading ? (
+          <div className="rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm font-bold leading-6 text-slate-400">
+            No campaign templates yet. Ask Jarvis to create one and approve the plan.
+          </div>
+        ) : null}
+      </div>
+
+      {selectedCampaign && selectedStats ? (
+        <div className="mt-4 rounded-[24px] border border-white/10 bg-white/[0.06] p-4">
+          <div className="flex items-start gap-3">
+            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-2xl border border-blue-200/20 bg-blue-300/15 text-blue-100">
+              <MegaphoneIcon className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-black text-white">{selectedCampaign.campaignName}</div>
+              <div className="mt-1 text-xs font-bold leading-5 text-slate-400">
+                {selectedCampaign.testMode ? "Test mode" : "Live audience"} - {campaignAudienceLabel(selectedCampaign)}
+              </div>
+              {selectedRun?.dryRun ? (
+                <div className="mt-2 rounded-xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-xs font-black text-amber-100">
+                  Dry run. No SMS was sent.
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <Impact label="Leads" value={String(selectedStats.leads)} tone="border-white/10 bg-white/[0.06] text-white" />
+            <Impact label="Messages" value={String(selectedStats.sent)} tone="border-white/10 bg-white/[0.06] text-white" />
+            <Impact label="Replies" value={String(selectedStats.replies)} tone="border-white/10 bg-white/[0.06] text-white" />
+            <Impact label="Appts" value={String(selectedStats.appointments)} tone="border-white/10 bg-white/[0.06] text-white" />
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {(selectedCampaign.messageSteps || []).slice(0, 3).map((step, index) => (
+              <div key={step.stepId || index} className="rounded-2xl border border-white/10 bg-white/[0.05] p-3">
+                <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+                  Step {index + 1}
+                  {index > 0 && step.waitDelay?.amount
+                    ? ` - ${step.waitDelay.amount} ${step.waitDelay.unit || "days"} later`
+                    : ""}
+                </div>
+                <p className="mt-2 line-clamp-3 text-xs font-bold leading-5 text-slate-300">
+                  {step.body}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {selectedRun?.audience?.reason ? (
+            <div className="mt-3 rounded-2xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-xs font-bold leading-5 text-amber-100">
+              {selectedRun.audience.reason}
+            </div>
+          ) : null}
+
+          <div className="mt-4 grid gap-2">
+            {running ? (
+              <button
+                type="button"
+                onClick={() => onPause(selectedCampaign)}
+                disabled={actionId === selectedCampaign.id}
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white text-sm font-black text-slate-950 transition hover:bg-blue-50 disabled:opacity-60"
+              >
+                {actionId === selectedCampaign.id ? (
+                  <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <PauseIcon className="h-4 w-4" aria-hidden="true" />
+                )}
+                Pause Campaign
+              </button>
+            ) : paused ? (
+              <button
+                type="button"
+                onClick={() => onResume(selectedCampaign)}
+                disabled={actionId === selectedCampaign.id}
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black text-slate-950 transition hover:bg-blue-50 disabled:opacity-60"
+              >
+                {actionId === selectedCampaign.id ? (
+                  <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <PlayIcon className="h-4 w-4" aria-hidden="true" />
+                )}
+                Resume Campaign
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onStart(selectedCampaign)}
+                disabled={actionId === selectedCampaign.id}
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black text-slate-950 transition hover:bg-blue-50 disabled:opacity-60"
+              >
+                {actionId === selectedCampaign.id ? (
+                  <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <PlayIcon className="h-4 w-4" aria-hidden="true" />
+                )}
+                Start Campaign
+              </button>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function RoofingTrainingPanel({
   open,
   onClose,
@@ -1967,10 +2407,47 @@ export default function JarvisModule() {
   const [errorByPlanId, setErrorByPlanId] = useState<Record<string, unknown>>({});
   const [canceledPlans, setCanceledPlans] = useState<Record<string, boolean>>({});
   const [trainingOpen, setTrainingOpen] = useState(false);
+  const [campaigns, setCampaigns] = useState<JarvisCampaignTemplate[]>([]);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+  const [campaignLoading, setCampaignLoading] = useState(false);
+  const [campaignError, setCampaignError] = useState<string | null>(null);
+  const [campaignActionId, setCampaignActionId] = useState<string | null>(null);
+  const [ghlControlReport, setGhlControlReport] = useState<JarvisGhlControlReport | null>(null);
+  const [ghlControlLoading, setGhlControlLoading] = useState(false);
+  const [ghlControlError, setGhlControlError] = useState<string | null>(null);
+
+  const loadCampaigns = useCallback(async () => {
+    setCampaignLoading(true);
+    try {
+      const result = await listJarvisCampaigns();
+      setCampaigns(result.campaigns || []);
+      setSelectedCampaignId((current) => current || result.campaigns?.[0]?.id || null);
+      setCampaignError(null);
+    } catch {
+      setCampaignError("Jarvis campaigns could not be loaded.");
+    } finally {
+      setCampaignLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     setStatusLine(STATUS_LINES[Math.floor(Math.random() * STATUS_LINES.length)]);
   }, []);
+
+  useEffect(() => {
+    void loadCampaigns();
+  }, [loadCampaigns]);
+
+  useEffect(() => {
+    const hasRunningCampaign = campaigns.some(
+      (campaign) => campaign.status === "running" || campaign.latestRun?.status === "running"
+    );
+    if (!hasRunningCampaign) return undefined;
+    const timer = setInterval(() => {
+      void loadCampaigns();
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [campaigns, loadCampaigns]);
 
   useEffect(() => {
     const previewUrls = previewUrlsRef.current;
@@ -2469,6 +2946,9 @@ export default function JarvisModule() {
         pollWorkflowJob(plan.confirmationId, result.jobId);
         return;
       }
+      if (result.status === "executed") {
+        void loadCampaigns();
+      }
       if (result.status !== "executed") {
         setErrorByPlanId((current) => ({
           ...current,
@@ -2491,6 +2971,70 @@ export default function JarvisModule() {
   const cancelPlan = (plan: GhlAiCommanderPlanResponse) => {
     if (!plan.confirmationId) return;
     setCanceledPlans((current) => ({ ...current, [plan.confirmationId]: true }));
+  };
+
+  const startCampaign = async (campaign: JarvisCampaignTemplate) => {
+    if (campaignActionId) return;
+    const confirmed = window.confirm(
+      `Start "${campaign.campaignName}"? Jarvis will stay inside the approved campaign rules.`
+    );
+    if (!confirmed) return;
+
+    setCampaignActionId(campaign.id);
+    setCampaignError(null);
+    try {
+      await startJarvisCampaign(campaign.id, {
+        confirmation: "START CAMPAIGN",
+        dryRun: false,
+      });
+      await loadCampaigns();
+    } catch (error) {
+      setCampaignError(getFriendlyError(error).reason);
+    } finally {
+      setCampaignActionId(null);
+    }
+  };
+
+  const pauseCampaign = async (campaign: JarvisCampaignTemplate) => {
+    if (campaignActionId) return;
+    setCampaignActionId(campaign.id);
+    setCampaignError(null);
+    try {
+      await pauseJarvisCampaign(campaign.id);
+      await loadCampaigns();
+    } catch (error) {
+      setCampaignError(getFriendlyError(error).reason);
+    } finally {
+      setCampaignActionId(null);
+    }
+  };
+
+  const resumeCampaign = async (campaign: JarvisCampaignTemplate) => {
+    if (campaignActionId) return;
+    setCampaignActionId(campaign.id);
+    setCampaignError(null);
+    try {
+      await resumeJarvisCampaign(campaign.id);
+      await loadCampaigns();
+    } catch (error) {
+      setCampaignError(getFriendlyError(error).reason);
+    } finally {
+      setCampaignActionId(null);
+    }
+  };
+
+  const runGhlHealthCheck = async () => {
+    if (ghlControlLoading) return;
+    setGhlControlLoading(true);
+    setGhlControlError(null);
+    try {
+      const report = await getJarvisGhlControlHealth();
+      setGhlControlReport(report);
+    } catch (error) {
+      setGhlControlError(getFriendlyError(error).reason);
+    } finally {
+      setGhlControlLoading(false);
+    }
   };
 
   const visibleConversations = conversations.filter((conversation) => {
@@ -2826,6 +3370,26 @@ export default function JarvisModule() {
               ))}
             </div>
           </section>
+
+          <GhlControlCenterPanel
+            report={ghlControlReport}
+            loading={ghlControlLoading}
+            error={ghlControlError}
+            onRun={() => void runGhlHealthCheck()}
+          />
+
+          <CampaignsPanel
+            campaigns={campaigns}
+            selectedCampaignId={selectedCampaignId}
+            loading={campaignLoading}
+            error={campaignError}
+            actionId={campaignActionId}
+            onSelect={setSelectedCampaignId}
+            onRefresh={() => void loadCampaigns()}
+            onStart={(campaign) => void startCampaign(campaign)}
+            onPause={(campaign) => void pauseCampaign(campaign)}
+            onResume={(campaign) => void resumeCampaign(campaign)}
+          />
 
         </aside>
       </div>
