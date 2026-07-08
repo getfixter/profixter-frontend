@@ -93,6 +93,11 @@ const SUGGESTIONS = [
     prompt: "Review active GHL conversations.",
   },
   {
+    title: "Technical",
+    body: "Check Jarvis's current GHL access.",
+    prompt: "What GHL access do you have?",
+  },
+  {
     title: "Create Membership Campaign",
     body: "Turn warm leads into member conversations.",
     prompt: "Create a membership campaign.",
@@ -409,28 +414,6 @@ function conversationFilesFromUpload(
       expiresAt: uploaded?.expiresAt,
     };
   });
-}
-
-function buildPromptWithAttachmentContext(
-  prompt: string,
-  uploadResult?: JarvisUploadBatchResponse | null
-) {
-  const cleanPrompt = prompt.trim() || "Analyze the attached files.";
-  if (!uploadResult?.files?.length) return cleanPrompt;
-
-  const fileLines = uploadResult.files.map((file, index) => {
-    const ext = file.extension ? file.extension.toUpperCase() : "FILE";
-    return `${index + 1}. ${file.originalName} (${formatFileSize(file.size)}, ${ext}) - uploadId: ${file.uploadId}; tempRef: ${file.tempRef}`;
-  });
-
-  return [
-    cleanPrompt,
-    "",
-    "Attached files for this Jarvis analysis:",
-    ...fileLines,
-    "",
-    "Use the attached file metadata and temporary references. File-content parsing is not connected yet, so do not claim specific counts, duplicates, PDF details, image details, or document contents unless that content is explicitly provided.",
-  ].join("\n");
 }
 
 function roofingClassificationLabel(value: string) {
@@ -1751,9 +1734,16 @@ export default function JarvisModule() {
         clearConversationAttachments(conversationId, attachments);
       }
 
-      setThinkingLine("Checking GoHighLevel...");
-      const plannerPrompt = buildPromptWithAttachmentContext(analysisPrompt, uploadResult);
-      const jarvisResponse = await askJarvis(plannerPrompt);
+      setThinkingLine(uploadResult ? "Reading attachments..." : "Checking GoHighLevel...");
+      const jarvisResponse = await askJarvis(
+        analysisPrompt,
+        uploadResult
+          ? {
+              uploadBatchId: uploadResult.uploadBatchId,
+              files: uploadResult.files,
+            }
+          : undefined
+      );
       await holdThinking(thinkingStartedAt);
 
       if (jarvisResponse.intent === "write") {
@@ -2062,7 +2052,11 @@ export default function JarvisModule() {
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
                   onKeyDown={(event) => {
-                    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                    if (
+                      event.key === "Enter" &&
+                      !event.shiftKey &&
+                      !event.nativeEvent.isComposing
+                    ) {
                       event.preventDefault();
                       void handleAnalyze();
                     }
