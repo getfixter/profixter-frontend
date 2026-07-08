@@ -176,6 +176,42 @@ export interface JarvisUploadBatchResponse {
   maxFileSizeBytes: number;
 }
 
+export interface JarvisSavedConversationMessage {
+  clientId?: string;
+  id?: string;
+  role: "user" | "jarvis";
+  kind: "text" | "brief" | "plan" | "answer" | "error";
+  text?: string;
+  intent?: JarvisAskResponse["intent"];
+  sources?: string[];
+  files?: unknown[];
+  plan?: GhlAiCommanderPlanResponse;
+  data?: unknown;
+  error?: unknown;
+  createdAt?: string;
+}
+
+export interface JarvisSavedConversation {
+  id: string;
+  conversationId: string;
+  title: string;
+  subtitle: string;
+  messages?: JarvisSavedConversationMessage[];
+  executionByPlanId?: Record<string, GhlAiCommanderExecuteResponse>;
+  errorByPlanId?: Record<string, unknown>;
+  canceledPlans?: Record<string, boolean>;
+  uploadBatchIds?: string[];
+  workflowJobIds?: string[];
+  messageCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  lastMessageAt?: string;
+}
+
+export interface JarvisConversationListResponse {
+  conversations: JarvisSavedConversation[];
+}
+
 export type JarvisAskResponse =
   | {
       intent: "read";
@@ -1441,12 +1477,19 @@ export const simulateRoofingSalesAgentTraining = async (
 
 export const askJarvis = async (
   message: string,
-  context?: { uploadBatchId?: string; files?: JarvisUploadedFile[] }
+  context?: {
+    conversationId?: string;
+    uploadBatchId?: string;
+    files?: JarvisUploadedFile[];
+    conversationHistory?: JarvisSavedConversationMessage[];
+  }
 ): Promise<JarvisAskResponse> => {
   const response = await API.post("/api/admin/jarvis/ask", {
     message,
+    conversationId: context?.conversationId,
     uploadBatchId: context?.uploadBatchId,
     files: context?.files || [],
+    conversationHistory: context?.conversationHistory || [],
   });
   return response.data;
 };
@@ -1472,6 +1515,34 @@ export const uploadJarvisFilesForAnalysis = async ({
     onUploadProgress,
   });
   return response.data;
+};
+
+export const listJarvisConversations = async (
+  search = ""
+): Promise<JarvisConversationListResponse> => {
+  const response = await API.get("/api/admin/jarvis/conversations", {
+    params: search.trim() ? { search: search.trim() } : undefined,
+  });
+  return response.data;
+};
+
+export const getJarvisConversation = async (
+  conversationId: string
+): Promise<JarvisSavedConversation> => {
+  const response = await API.get(
+    `/api/admin/jarvis/conversations/${encodeURIComponent(conversationId)}`
+  );
+  return response.data.conversation;
+};
+
+export const saveJarvisConversation = async (
+  conversation: JarvisSavedConversation
+): Promise<JarvisSavedConversation> => {
+  const response = await API.put(
+    `/api/admin/jarvis/conversations/${encodeURIComponent(conversation.conversationId || conversation.id)}`,
+    conversation
+  );
+  return response.data.conversation;
 };
 
 export const getReferrals = async (): Promise<Referral[]> => {

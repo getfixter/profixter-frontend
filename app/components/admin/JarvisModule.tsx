@@ -19,6 +19,7 @@ import {
   DocumentIcon,
   DocumentTextIcon,
   ExclamationTriangleIcon,
+  MagnifyingGlassIcon,
   PaperAirplaneIcon,
   PaperClipIcon,
   PhoneArrowUpRightIcon,
@@ -34,11 +35,16 @@ import {
   askJarvis,
   executeGhlAiCommanderPlan,
   getGhlWorkflowJobStatus,
+  getJarvisConversation,
+  listJarvisConversations,
+  saveJarvisConversation,
   simulateRoofingSalesAgentTraining,
   uploadJarvisFilesForAnalysis,
   type GhlAiCommanderExecuteResponse,
   type GhlAiCommanderPlanResponse,
   type JarvisAskResponse,
+  type JarvisSavedConversation,
+  type JarvisSavedConversationMessage,
   type JarvisUploadBatchResponse,
   type JarvisUploadedFile,
   type RoofingSalesAgentTrainingAction,
@@ -136,6 +142,7 @@ type ChatMessage = {
   sources?: string[];
   plan?: GhlAiCommanderPlanResponse;
   error?: unknown;
+  createdAt?: string;
 };
 
 type Conversation = {
@@ -144,6 +151,10 @@ type Conversation = {
   subtitle: string;
   messages: ChatMessage[];
   attachments?: JarvisDraftAttachment[];
+  createdAt?: string;
+  updatedAt?: string;
+  lastMessageAt?: string;
+  persisted?: boolean;
 };
 
 type JarvisDraftAttachment = {
@@ -417,6 +428,29 @@ function conversationFilesFromUpload(
   });
 }
 
+function uploadedFilesFromConversation(conversation: Conversation): JarvisUploadedFile[] {
+  const files = new Map<string, JarvisUploadedFile>();
+  conversation.messages.forEach((message) => {
+    (message.files || []).forEach((file) => {
+      if (!file.uploadId || !file.tempRef) return;
+      files.set(file.uploadId, {
+        uploadId: file.uploadId,
+        originalName: file.name,
+        displayName: file.name,
+        mimeType: file.type,
+        extension: file.extension.replace(/^\./, ""),
+        size: file.size,
+        uploadedAt: file.uploadedAt || "",
+        expiresAt: file.expiresAt || "",
+        storage: file.storage || "s3",
+        tempRef: file.tempRef,
+        storageKey: file.tempRef.replace(/^(s3|local):/, ""),
+      });
+    });
+  });
+  return [...files.values()].slice(-20);
+}
+
 function roofingClassificationLabel(value: string) {
   return ROOFING_CLASSIFICATION_LABELS[value] || titleCase(value || "unclear");
 }
@@ -520,6 +554,99 @@ function titleFromPrompt(value: string) {
   const clean = value.replace(/[^\w\s-]/g, "").trim();
   if (!clean) return "New Conversation";
   return clean.split(/\s+/).slice(0, 4).join(" ");
+}
+
+function conversationHasUserMessage(conversation: Conversation) {
+  return conversation.messages.some(
+    (message) => message.role === "user" && Boolean(message.text?.trim())
+  );
+}
+
+function conversationSearchText(conversation: Conversation) {
+  return [
+    conversation.title,
+    conversation.subtitle,
+    ...conversation.messages.map((message) => message.text || ""),
+  ]
+    .join(" ")
+    .toLowerCase();
+}
+
+function savedMessageToChatMessage(message: JarvisSavedConversationMessage): ChatMessage {
+  return {
+    id: message.clientId || message.id || id(),
+    role: message.role,
+    kind: message.kind,
+    text: message.text,
+    files: message.files as JarvisConversationFile[] | undefined,
+    intent: message.intent,
+    data: message.data,
+    sources: message.sources,
+    plan: message.plan,
+    error: message.error,
+    createdAt: message.createdAt,
+  };
+}
+
+function conversationFromSaved(saved: JarvisSavedConversation): Conversation {
+  return {
+    id: saved.conversationId || saved.id,
+    title: saved.title || "Jarvis Chat",
+    subtitle: saved.subtitle || "Saved",
+    messages: (saved.messages || []).map(savedMessageToChatMessage),
+    attachments: [],
+    createdAt: saved.createdAt,
+    updatedAt: saved.updatedAt,
+    lastMessageAt: saved.lastMessageAt,
+    persisted: true,
+  };
+}
+
+function planIdsForConversation(conversation: Conversation) {
+  return new Set(
+    conversation.messages
+      .map((message) => message.plan?.confirmationId)
+      .filter((value): value is string => Boolean(value))
+  );
+}
+
+function filterRecordByKeys<T>(record: Record<string, T>, keys: Set<string>) {
+  return Object.fromEntries(
+    Object.entries(record).filter(([key]) => keys.has(key))
+  ) as Record<string, T>;
+}
+
+function conversationToSaved(
+  conversation: Conversation,
+  executionByPlanId: Record<string, GhlAiCommanderExecuteResponse>,
+  errorByPlanId: Record<string, unknown>,
+  canceledPlans: Record<string, boolean>
+): JarvisSavedConversation {
+  const planIds = planIdsForConversation(conversation);
+  return {
+    id: conversation.id,
+    conversationId: conversation.id,
+    title: conversation.title,
+    subtitle: conversation.subtitle,
+    messages: conversation.messages.map((message) => ({
+      ...message,
+      clientId: message.id,
+      createdAt: message.createdAt || new Date().toISOString(),
+    })),
+    executionByPlanId: filterRecordByKeys(executionByPlanId, planIds),
+    errorByPlanId: filterRecordByKeys(errorByPlanId, planIds),
+    canceledPlans: filterRecordByKeys(canceledPlans, planIds),
+    createdAt: conversation.createdAt,
+    updatedAt: conversation.updatedAt,
+    lastMessageAt: conversation.lastMessageAt,
+  };
+}
+
+function formatHistoryDate(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function getPlanBullets(plan: GhlAiCommanderPlanResponse | null) {
@@ -1821,10 +1948,15 @@ export default function JarvisModule() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const previewUrlsRef = useRef<Set<string>>(new Set());
   const workflowPollTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const historySaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [statusLine, setStatusLine] = useState(STATUS_LINES[0]);
   const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS);
   const [activeConversationId, setActiveConversationId] = useState(INITIAL_CONVERSATIONS[0].id);
   const [draft, setDraft] = useState("");
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [historySaving, setHistorySaving] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [planning, setPlanning] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [uploadingAttachments, setUploadingAttachments] = useState(false);
@@ -1847,8 +1979,87 @@ export default function JarvisModule() {
       previewUrls.forEach((url) => URL.revokeObjectURL(url));
       previewUrls.clear();
       Object.values(pollTimers).forEach((timer) => clearTimeout(timer));
+      if (historySaveTimerRef.current) clearTimeout(historySaveTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    let canceled = false;
+
+    const loadHistory = async () => {
+      try {
+        const result = await listJarvisConversations();
+        if (canceled) return;
+        if (!result.conversations.length) {
+          setHistoryLoaded(true);
+          return;
+        }
+
+        const fullConversations = await Promise.all(
+          result.conversations.map((item) => getJarvisConversation(item.conversationId || item.id))
+        );
+        if (canceled) return;
+        const restored = fullConversations.map(conversationFromSaved);
+        setConversations(restored);
+        setActiveConversationId(restored[0]?.id || INITIAL_CONVERSATIONS[0].id);
+        setExecutionByPlanId((current) => ({
+          ...current,
+          ...Object.assign({}, ...fullConversations.map((item) => item.executionByPlanId || {})),
+        }));
+        setErrorByPlanId((current) => ({
+          ...current,
+          ...Object.assign({}, ...fullConversations.map((item) => item.errorByPlanId || {})),
+        }));
+        setCanceledPlans((current) => ({
+          ...current,
+          ...Object.assign({}, ...fullConversations.map((item) => item.canceledPlans || {})),
+        }));
+        setHistoryError(null);
+      } catch {
+        if (!canceled) {
+          setHistoryError("Saved Jarvis chats could not be loaded.");
+        }
+      } finally {
+        if (!canceled) setHistoryLoaded(true);
+      }
+    };
+
+    void loadHistory();
+
+    return () => {
+      canceled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!historyLoaded) return;
+    const savable = conversations.filter(conversationHasUserMessage);
+    if (!savable.length) return;
+    if (historySaveTimerRef.current) clearTimeout(historySaveTimerRef.current);
+
+    historySaveTimerRef.current = setTimeout(() => {
+      setHistorySaving(true);
+      Promise.all(
+        savable.map((conversation) =>
+          saveJarvisConversation(
+            conversationToSaved(
+              conversation,
+              executionByPlanId,
+              errorByPlanId,
+              canceledPlans
+            )
+          )
+        )
+      )
+        .then(() => setHistoryError(null))
+        .catch(() => setHistoryError("Jarvis could not save chat history."))
+        .finally(() => setHistorySaving(false));
+    }, 900);
+
+    return () => {
+      if (historySaveTimerRef.current) clearTimeout(historySaveTimerRef.current);
+    };
+  }, [canceledPlans, conversations, errorByPlanId, executionByPlanId, historyLoaded]);
 
   const activeConversation =
     conversations.find((conversation) => conversation.id === activeConversationId) ||
@@ -1964,6 +2175,7 @@ export default function JarvisModule() {
   };
 
   const startNewConversation = () => {
+    const now = new Date().toISOString();
     const next: Conversation = {
       id: id(),
       title: "New Conversation",
@@ -1974,14 +2186,51 @@ export default function JarvisModule() {
           role: "jarvis",
           kind: "text",
           text: "I'm here. Tell me what you want handled.",
+          createdAt: now,
         },
       ],
       attachments: [],
+      createdAt: now,
+      updatedAt: now,
+      lastMessageAt: now,
+      persisted: false,
     };
     setConversations((current) => [next, ...current]);
     setActiveConversationId(next.id);
     setDraft("");
     setUploadError(null);
+  };
+
+  const openConversation = async (conversationId: string) => {
+    const existing = conversations.find((conversation) => conversation.id === conversationId);
+    setActiveConversationId(conversationId);
+    setDraft("");
+    setUploadError(null);
+    if (existing?.messages.length) return;
+
+    try {
+      const saved = await getJarvisConversation(conversationId);
+      const restored = conversationFromSaved(saved);
+      setConversations((current) =>
+        current.map((conversation) =>
+          conversation.id === conversationId ? restored : conversation
+        )
+      );
+      setExecutionByPlanId((current) => ({
+        ...current,
+        ...(saved.executionByPlanId || {}),
+      }));
+      setErrorByPlanId((current) => ({
+        ...current,
+        ...(saved.errorByPlanId || {}),
+      }));
+      setCanceledPlans((current) => ({
+        ...current,
+        ...(saved.canceledPlans || {}),
+      }));
+    } catch {
+      setHistoryError("That Jarvis chat could not be opened.");
+    }
   };
 
   const selectSuggestion = (prompt: string) => {
@@ -2048,6 +2297,7 @@ export default function JarvisModule() {
         kind: "text",
         text: analysisPrompt,
         files: conversationFilesFromUpload(attachments, uploadResult),
+        createdAt: new Date().toISOString(),
       };
 
       updateConversation(conversationId, (conversation) => ({
@@ -2057,6 +2307,7 @@ export default function JarvisModule() {
             ? titleFromPrompt(analysisPrompt)
             : conversation.title,
         subtitle: "In progress",
+        lastMessageAt: userMessage.createdAt,
         messages: [...conversation.messages, userMessage],
       }));
       setDraft("");
@@ -2065,14 +2316,20 @@ export default function JarvisModule() {
       }
 
       setThinkingLine(uploadResult ? "Reading attachments..." : "Checking GoHighLevel...");
+      const rememberedFiles = uploadResult
+        ? uploadResult.files
+        : uploadedFilesFromConversation(activeConversation);
       const jarvisResponse = await askJarvis(
         analysisPrompt,
-        uploadResult
-          ? {
-              uploadBatchId: uploadResult.uploadBatchId,
-              files: uploadResult.files,
-            }
-          : undefined
+        {
+          conversationId,
+          uploadBatchId: uploadResult?.uploadBatchId,
+          files: rememberedFiles,
+          conversationHistory: activeConversation.messages.map((message) => ({
+            ...message,
+            clientId: message.id,
+          })),
+        }
       );
       await holdThinking(thinkingStartedAt);
 
@@ -2083,10 +2340,12 @@ export default function JarvisModule() {
           role: "jarvis",
           kind: "plan",
           plan: nextPlan,
+          createdAt: new Date().toISOString(),
         };
         updateConversation(conversationId, (conversation) => ({
           ...conversation,
           subtitle: `${titleCase(nextPlan.riskLevel || "low")} risk`,
+          lastMessageAt: planMessage.createdAt,
           messages: [...conversation.messages, planMessage],
         }));
         return;
@@ -2100,10 +2359,12 @@ export default function JarvisModule() {
         intent: jarvisResponse.intent,
         data: jarvisResponse.data,
         sources: jarvisResponse.sources,
+        createdAt: new Date().toISOString(),
       };
       updateConversation(conversationId, (conversation) => ({
         ...conversation,
         subtitle: jarvisResponse.intent === "read" ? "Checked GHL" : "Advice",
+        lastMessageAt: answerMessage.createdAt,
         messages: [...conversation.messages, answerMessage],
       }));
     } catch (planError) {
@@ -2129,10 +2390,12 @@ export default function JarvisModule() {
         kind: "error",
         text: `${friendly.title} ${friendly.reason}`,
         error: planError,
+        createdAt: new Date().toISOString(),
       };
       updateConversation(conversationId, (conversation) => ({
         ...conversation,
         subtitle: "Needs attention",
+        lastMessageAt: errorMessage.createdAt,
         messages: [...conversation.messages, errorMessage],
       }));
     } finally {
@@ -2230,6 +2493,12 @@ export default function JarvisModule() {
     setCanceledPlans((current) => ({ ...current, [plan.confirmationId]: true }));
   };
 
+  const visibleConversations = conversations.filter((conversation) => {
+    const search = historySearch.trim().toLowerCase();
+    if (!search) return true;
+    return conversationSearchText(conversation).includes(search);
+  });
+
   return (
     <div className="min-h-screen bg-[#070B14] text-slate-950">
       <div className="grid min-h-screen gap-4 p-3 lg:grid-cols-[280px_minmax(0,1fr)_310px] lg:p-4 xl:grid-cols-[300px_minmax(0,1fr)_340px]">
@@ -2251,14 +2520,48 @@ export default function JarvisModule() {
             </button>
           </div>
 
-          <div className="mt-5 space-y-2">
-            {conversations.map((conversation) => {
+          <button
+            type="button"
+            onClick={startNewConversation}
+            className="mt-5 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black text-slate-950 transition hover:bg-blue-50"
+          >
+            <PlusIcon className="h-4 w-4" aria-hidden="true" />
+            New Chat
+          </button>
+
+          <label className="mt-4 flex min-h-[44px] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-3 text-slate-200">
+            <MagnifyingGlassIcon className="h-4 w-4 flex-shrink-0 text-slate-400" aria-hidden="true" />
+            <input
+              value={historySearch}
+              onChange={(event) => setHistorySearch(event.target.value)}
+              placeholder="Search chats"
+              className="min-w-0 flex-1 bg-transparent text-sm font-bold text-white outline-none placeholder:text-slate-500"
+            />
+          </label>
+
+          <div className="mt-5 flex items-center justify-between gap-3">
+            <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+              Previous Chats
+            </div>
+            <div className="text-[11px] font-black text-slate-500">
+              {!historyLoaded ? "Loading" : historySaving ? "Saving" : "Saved"}
+            </div>
+          </div>
+
+          {historyError ? (
+            <div className="mt-3 rounded-2xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-xs font-bold leading-5 text-amber-100">
+              {historyError}
+            </div>
+          ) : null}
+
+          <div className="mt-3 space-y-2">
+            {visibleConversations.map((conversation) => {
               const active = conversation.id === activeConversation.id;
               return (
                 <button
                   key={conversation.id}
                   type="button"
-                  onClick={() => setActiveConversationId(conversation.id)}
+                  onClick={() => void openConversation(conversation.id)}
                   className={`w-full rounded-[18px] border px-4 py-3 text-left transition duration-200 hover:translate-x-0.5 ${
                     active
                       ? "border-blue-300/40 bg-blue-400/15 text-white"
@@ -2266,9 +2569,18 @@ export default function JarvisModule() {
                   }`}
                 >
                   <div className="truncate text-sm font-bold">{conversation.title}</div>
+                  <div className="mt-1 flex items-center justify-between gap-2 text-[11px] font-bold text-slate-500">
+                    <span className="truncate">{conversation.subtitle || "Jarvis chat"}</span>
+                    <span className="flex-shrink-0">{formatHistoryDate(conversation.lastMessageAt || conversation.updatedAt)}</span>
+                  </div>
                 </button>
               );
             })}
+            {!visibleConversations.length ? (
+              <div className="rounded-[18px] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-slate-400">
+                No chats found.
+              </div>
+            ) : null}
           </div>
         </aside>
 
