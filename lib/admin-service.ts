@@ -100,7 +100,27 @@ export interface GhlAiCommanderPlanResponse {
 }
 
 export interface GhlAiCommanderExecuteResponse {
-  status: "executed" | "failed";
+  status: "executed" | "failed" | "running";
+  jobId?: string;
+  workflowJob?: {
+    jobId: string;
+    name: string;
+    actionType: string;
+    status: "queued" | "running" | "completed" | "failed" | "canceled";
+    progress?: {
+      processed?: number;
+      total?: number;
+      percent?: number;
+      message?: string;
+    };
+    progressEvents?: unknown[];
+    report?: unknown;
+    errors?: unknown[];
+    startedAt?: string;
+    completedAt?: string;
+    failedAt?: string;
+    updatedAt?: string;
+  };
   executedActions?: unknown[];
   results?: unknown[];
   errors?: unknown[];
@@ -1394,7 +1414,21 @@ export const executeGhlAiCommanderPlan = async (
 ): Promise<GhlAiCommanderExecuteResponse> => {
   const response = await API.post("/api/admin/ai-commander/ghl/execute", {
     confirmationId,
+  }, {
+    timeout: 300000,
   });
+  return response.data;
+};
+
+export const getGhlWorkflowJobStatus = async (
+  jobId: string
+): Promise<GhlAiCommanderExecuteResponse> => {
+  const response = await API.get(
+    `/api/admin/ai-commander/ghl/workflows/${encodeURIComponent(jobId)}`,
+    {
+      timeout: 300000,
+    }
+  );
   return response.data;
 };
 
