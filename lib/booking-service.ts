@@ -98,6 +98,11 @@ export interface Booking {
   images: string[];
 }
 
+export interface BookingDetailUpdateData {
+  note?: string;
+  images: File[];
+}
+
 export interface BookingResponse {
   message: string;
   booking: {
@@ -331,6 +336,35 @@ export const cancelBooking = async (
     `/api/bookings/cancel/${bookingId}`
   );
   return response.data;
+};
+
+export const addBookingDetails = async (
+  bookingId: string,
+  data: BookingDetailUpdateData
+): Promise<Booking> => {
+  const formData = new FormData();
+  if (data.note) formData.append("note", data.note);
+  data.images.forEach((img) => formData.append("images", img));
+
+  const token = localStorage.getItem("token") || "";
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${bookingId}/add-details`,
+    {
+      method: "POST",
+      body: formData,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to update appointment details");
+  }
+
+  const result = await response.json();
+  return result.booking;
 };
 
 export const getAllBookings = async (): Promise<Booking[]> => {
