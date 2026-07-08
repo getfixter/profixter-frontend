@@ -1013,8 +1013,9 @@ function getFriendlyError(error: unknown) {
   const message = technical?.response?.data
     ? readable((technical.response.data as { message?: unknown }).message)
     : readable(technical?.message);
+  const safeMessage = redactSecretString(message);
   const diagnosticText = [
-    message,
+    safeMessage,
     technical?.response?.data ? JSON.stringify(technical.response.data) : "",
     error instanceof Error ? error.message : "",
   ]
@@ -1042,6 +1043,13 @@ function getFriendlyError(error: unknown) {
     };
   }
 
+  if (/^GHL rejected [^:]+:\s+/i.test(safeMessage)) {
+    return {
+      title: "I couldn't complete that request.",
+      reason: safeMessage,
+    };
+  }
+
   if (/ghl|rejected|400|403|422|500/i.test(diagnosticText)) {
     return {
       title: "I couldn't complete that request.",
@@ -1051,7 +1059,7 @@ function getFriendlyError(error: unknown) {
 
   return {
     title: "I couldn't complete that request.",
-    reason: message || "Something blocked completion.",
+    reason: safeMessage || "Something blocked completion.",
   };
 }
 
