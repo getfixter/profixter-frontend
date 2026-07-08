@@ -827,6 +827,44 @@ function workflowReportFromExecution(result?: GhlAiCommanderExecuteResponse | nu
   return null;
 }
 
+function failureReportFromValue(value: unknown): Record<string, unknown> | null {
+  const record = objectRecord(value);
+  const direct = objectRecord(record.failureReport);
+  if (Object.keys(direct).length) return direct;
+
+  const data = objectRecord(objectRecord(record.response).data);
+  const dataReport = objectRecord(data.failureReport);
+  if (Object.keys(dataReport).length) return dataReport;
+
+  for (const error of asArray(data.errors || record.errors)) {
+    const errorReport = objectRecord(objectRecord(error).failureReport);
+    if (Object.keys(errorReport).length) return errorReport;
+  }
+
+  const workflowJob = objectRecord(record.workflowJob);
+  const workflowReport = objectRecord(workflowJob.report);
+  const workflowFailureReport = objectRecord(workflowReport.failureReport);
+  if (Object.keys(workflowFailureReport).length) return workflowFailureReport;
+
+  return null;
+}
+
+function failureReportFromExecution(result?: GhlAiCommanderExecuteResponse | null) {
+  return failureReportFromValue(result);
+}
+
+function failureReportMessage(report: Record<string, unknown> | null) {
+  if (!report) return "";
+  const explicit = readable(report.message);
+  if (explicit) return explicit;
+  const step = readable(report.stepFailed) || "the approved action";
+  const status = readable(report.httpStatus);
+  const ghlMessage = readable(report.ghlErrorMessage);
+  if (status && ghlMessage) return `Failed while ${step}. GHL returned ${status}: ${ghlMessage}`;
+  if (ghlMessage) return `Failed while ${step}: ${ghlMessage}`;
+  return "";
+}
+
 function workflowSummaryTitle(report: Record<string, unknown>) {
   const summary = report.summary;
   if (typeof summary === "string") return summary;
@@ -837,6 +875,16 @@ function workflowSummaryText(report: Record<string, unknown>) {
   const summary = report.summary;
   if (typeof summary === "string") return summary;
   return readable(objectRecord(summary).aiSummary) || readable(objectRecord(summary).message);
+}
+
+function workflowReportHasFailures(report: Record<string, unknown>) {
+  const summary = objectRecord(report.summary);
+  const stats = objectRecord(report.stats);
+  return (
+    Boolean(failureReportFromValue(report)) ||
+    /fail|error/i.test(readable(summary.status)) ||
+    Number(stats.failed || stats.errors || stats.unresolvedErrors || 0) > 0
+  );
 }
 
 function workflowExecutionTime(report: Record<string, unknown>) {
@@ -873,6 +921,8 @@ function downloadWorkflowFile(download: unknown) {
 
 function WorkflowCompletionReport({ report }: { report: Record<string, unknown> }) {
   const stats = objectRecord(report.stats);
+  const failed = workflowReportHasFailures(report);
+  const failureReport = failureReportFromValue(report);
   const warnings = asArray(report.warnings).map(readable).filter(Boolean);
   const downloads = asArray(report.downloads);
   const recommendations = asArray(report.recommendations).map(readable).filter(Boolean);
@@ -884,49 +934,85 @@ function WorkflowCompletionReport({ report }: { report: Record<string, unknown> 
   );
   const summaryText = workflowSummaryText(report);
   const executionTime = workflowExecutionTime(report);
+  const tone = failed
+    ? {
+        shell: "border-rose-200 bg-rose-50 text-rose-950",
+        icon: "text-rose-600",
+        label: "text-rose-700",
+        body: "text-rose-900",
+        card: "border-rose-200 bg-white/80",
+        cardLabel: "text-rose-700",
+        cardValue: "text-rose-950",
+        note: "border-amber-200 bg-amber-50 text-amber-950",
+        detail: "border-rose-200 bg-white/70",
+        detailText: "text-rose-900",
+        detailBorder: "border-rose-100",
+        detailChip: "bg-rose-50 text-rose-800",
+        button: "border-rose-200 bg-white text-rose-800 hover:bg-rose-100",
+      }
+    : {
+        shell: "border-emerald-200 bg-emerald-50 text-emerald-950",
+        icon: "text-emerald-600",
+        label: "text-emerald-700",
+        body: "text-emerald-900",
+        card: "border-emerald-200 bg-white/80",
+        cardLabel: "text-emerald-700",
+        cardValue: "text-emerald-950",
+        note: "border-amber-200 bg-amber-50 text-amber-950",
+        detail: "border-emerald-200 bg-white/70",
+        detailText: "text-emerald-900",
+        detailBorder: "border-emerald-100",
+        detailChip: "bg-emerald-50 text-emerald-800",
+        button: "border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-100",
+      };
+  const StatusIcon = failed ? ExclamationTriangleIcon : CheckCircleIcon;
 
   return (
-    <div className="rounded-[28px] border border-emerald-200 bg-emerald-50 p-5 text-emerald-950 md:p-6">
+    <div className={`rounded-[28px] border p-5 md:p-6 ${tone.shell}`}>
       <div className="flex items-start gap-3">
-        <CheckCircleIcon className="h-7 w-7 flex-shrink-0 text-emerald-600" aria-hidden="true" />
+        <StatusIcon className={`h-7 w-7 flex-shrink-0 ${tone.icon}`} aria-hidden="true" />
         <div className="min-w-0 flex-1">
-          <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">
-            Workflow Report
+          <div className={`text-xs font-black uppercase tracking-[0.16em] ${tone.label}`}>
+            {failed ? "Failure Report" : "Workflow Report"}
           </div>
           <h3 className="mt-2 text-2xl font-black tracking-normal">
             {workflowSummaryTitle(report)}
           </h3>
           {summaryText ? (
-            <p className="mt-3 text-sm font-bold leading-6 text-emerald-900">
+            <p className={`mt-3 text-sm font-bold leading-6 ${tone.body}`}>
               {summaryText}
             </p>
           ) : null}
 
           <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-4">
             {Object.entries(stats).map(([key, value]) => (
-              <div key={key} className="rounded-2xl border border-emerald-200 bg-white/80 px-3 py-3">
-                <div className="text-[11px] font-black uppercase tracking-[0.12em] text-emerald-700">
+              <div key={key} className={`rounded-2xl border px-3 py-3 ${tone.card}`}>
+                <div className={`text-[11px] font-black uppercase tracking-[0.12em] ${tone.cardLabel}`}>
                   {statLabel(key)}
                 </div>
-                <div className="mt-1 text-xl font-black text-emerald-950">
+                <div className={`mt-1 text-xl font-black ${tone.cardValue}`}>
                   {statValue(value)}
                 </div>
               </div>
             ))}
             {executionTime ? (
-              <div className="rounded-2xl border border-emerald-200 bg-white/80 px-3 py-3">
-                <div className="text-[11px] font-black uppercase tracking-[0.12em] text-emerald-700">
+              <div className={`rounded-2xl border px-3 py-3 ${tone.card}`}>
+                <div className={`text-[11px] font-black uppercase tracking-[0.12em] ${tone.cardLabel}`}>
                   Execution Time
                 </div>
-                <div className="mt-1 text-xl font-black text-emerald-950">
+                <div className={`mt-1 text-xl font-black ${tone.cardValue}`}>
                   {executionTime}
                 </div>
               </div>
             ) : null}
           </div>
 
+          {failureReport ? (
+            <ExecutionFailureReport report={failureReport} compact />
+          ) : null}
+
           {warnings.length > 0 && (
-            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
+            <div className={`mt-5 rounded-2xl border p-4 ${tone.note}`}>
               <div className="text-sm font-black">Notes</div>
               <div className="mt-2 space-y-1">
                 {warnings.map((warning) => (
@@ -948,7 +1034,7 @@ function WorkflowCompletionReport({ report }: { report: Record<string, unknown> 
                       key={label}
                       type="button"
                       onClick={() => downloadWorkflowFile(download)}
-                      className="inline-flex min-h-[40px] items-center gap-2 rounded-2xl border border-emerald-200 bg-white px-3 py-2 text-xs font-black text-emerald-800 transition hover:bg-emerald-100"
+                      className={`inline-flex min-h-[40px] items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-black transition ${tone.button}`}
                     >
                       <DocumentTextIcon className="h-4 w-4" aria-hidden="true" />
                       {label}
@@ -973,16 +1059,16 @@ function WorkflowCompletionReport({ report }: { report: Record<string, unknown> 
             </div>
           )}
 
-          <details className="group mt-5 rounded-2xl border border-emerald-200 bg-white/70">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-black text-emerald-900">
+          <details className={`group mt-5 rounded-2xl border ${tone.detail}`}>
+            <summary className={`flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-black ${tone.detailText}`}>
               <span>Developer Details</span>
               <ChevronDownIcon className="h-4 w-4 transition group-open:rotate-180" aria-hidden="true" />
             </summary>
-            <div className="border-t border-emerald-100 p-4">
-              <div className="mb-3 grid gap-2 text-xs font-black text-emerald-800 sm:grid-cols-3">
-                <div className="rounded-2xl bg-emerald-50 px-3 py-2">Show API calls</div>
-                <div className="rounded-2xl bg-emerald-50 px-3 py-2">Show workflow log</div>
-                <div className="rounded-2xl bg-emerald-50 px-3 py-2">Show execution timeline</div>
+            <div className={`border-t p-4 ${tone.detailBorder}`}>
+              <div className={`mb-3 grid gap-2 text-xs font-black sm:grid-cols-3 ${tone.cardLabel}`}>
+                <div className={`rounded-2xl px-3 py-2 ${tone.detailChip}`}>Show API calls</div>
+                <div className={`rounded-2xl px-3 py-2 ${tone.detailChip}`}>Show workflow log</div>
+                <div className={`rounded-2xl px-3 py-2 ${tone.detailChip}`}>Show execution timeline</div>
               </div>
               <JsonPanel title="Workflow report" value={{
                 apiCalls,
@@ -1008,8 +1094,68 @@ function WorkflowCompletionReport({ report }: { report: Record<string, unknown> 
   );
 }
 
+function ExecutionFailureReport({
+  report,
+  compact = false,
+}: {
+  report: Record<string, unknown>;
+  compact?: boolean;
+}) {
+  const contact = objectRecord(report.firstAffectedContact);
+  const rows = [
+    ["Action", readable(report.actionName)],
+    ["Failed step", readable(report.stepFailed)],
+    ["Endpoint", readable(report.endpointCalled)],
+    ["HTTP status", readable(report.httpStatus)],
+    ["GHL reason", readable(report.ghlErrorMessage)],
+    [
+      "First contact",
+      [readable(contact.name), readable(contact.id)].filter(Boolean).join(" - "),
+    ],
+    ["Changed before failure", readable(report.anythingChangedBeforeFailure) || "No"],
+    ["Processed", readable(report.recordsProcessedBeforeFailure)],
+    ["Succeeded", readable(report.recordsSucceeded)],
+    ["Failed", readable(report.recordsFailed)],
+    ["Remaining", readable(report.recordsRemaining)],
+    ["Can resume", readable(report.canResumeSafely) || "No"],
+  ].filter(([, value]) => value !== "");
+  const message = failureReportMessage(report);
+
+  return (
+    <div className={`${compact ? "mt-5" : ""} rounded-2xl border border-rose-200 bg-white/80 p-4 text-rose-950`}>
+      <div className="text-sm font-black">What stopped Jarvis</div>
+      {message ? <p className="mt-2 text-sm font-bold leading-6">{message}</p> : null}
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        {rows.map(([label, value]) => (
+          <div key={label} className="rounded-xl bg-rose-50 px-3 py-2">
+            <div className="text-[10px] font-black uppercase tracking-[0.12em] text-rose-600">
+              {label}
+            </div>
+            <div className="mt-1 break-words text-sm font-black text-rose-950">
+              {value}
+            </div>
+          </div>
+        ))}
+      </div>
+      {readable(report.resumeReason) ? (
+        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-black text-amber-950">
+          {readable(report.resumeReason)}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function getFriendlyError(error: unknown) {
   const technical = error as TechnicalError;
+  const failureReport = failureReportFromValue(error);
+  const failureMessage = failureReportMessage(failureReport);
+  if (failureMessage) {
+    return {
+      title: "I couldn't complete that request.",
+      reason: failureMessage,
+    };
+  }
   const message = technical?.response?.data
     ? readable((technical.response.data as { message?: unknown }).message)
     : readable(technical?.message);
@@ -1466,6 +1612,7 @@ function PlanMessage({
   const workflowProgress = workflowProgressFromExecution(execution);
   const workflowJob = workflowJobProgress(execution);
   const workflowReport = workflowReportFromExecution(execution);
+  const failureReport = failureReportFromExecution(execution) || failureReportFromValue(error);
 
   return (
     <article className="jarvis-fade flex justify-start">
@@ -1625,11 +1772,18 @@ function PlanMessage({
           <div className="mx-5 mb-5 rounded-[26px] border border-rose-200 bg-rose-50 p-5 text-rose-950 md:mx-6">
             <div className="flex items-start gap-3">
               <ExclamationTriangleIcon className="h-7 w-7 flex-shrink-0 text-rose-600" aria-hidden="true" />
-              <div>
+              <div className="min-w-0 flex-1">
                 <h3 className="text-2xl font-black">{friendlyError.title}</h3>
                 <p className="mt-3 text-sm font-black">Reason:</p>
                 <p className="mt-1 text-sm font-semibold">{friendlyError.reason}</p>
-                <p className="mt-4 text-sm font-semibold">Would you like to see technical details?</p>
+                {workflowReport ? (
+                  <div className="mt-5">
+                    <WorkflowCompletionReport report={workflowReport} />
+                  </div>
+                ) : failureReport ? (
+                  <ExecutionFailureReport report={failureReport} compact />
+                ) : null}
+                <p className="mt-4 text-sm font-semibold">Technical details are available below if you need to audit the exact response.</p>
               </div>
             </div>
           </div>
