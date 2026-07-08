@@ -33,6 +33,7 @@ import { useAuth } from "@/lib/useAuth";
 import {
   askJarvis,
   executeGhlAiCommanderPlan,
+  getGhlWorkflowJobStatus,
   simulateRoofingSalesAgentTraining,
   uploadJarvisFilesForAnalysis,
   type GhlAiCommanderExecuteResponse,
@@ -619,6 +620,11 @@ function getExecuteLabels(result?: GhlAiCommanderExecuteResponse | null) {
 
 function workflowProgressFromExecution(result?: GhlAiCommanderExecuteResponse | null) {
   const progress: string[] = [];
+  const workflowJob = objectRecord(result?.workflowJob);
+  for (const event of asArray(workflowJob.progressEvents)) {
+    const message = readable(objectRecord(event).message) || readable(event);
+    if (message) progress.push(message);
+  }
   for (const item of asArray(result?.results)) {
     const record = objectRecord(item);
     const response = objectRecord(record.response);
@@ -630,6 +636,19 @@ function workflowProgressFromExecution(result?: GhlAiCommanderExecuteResponse | 
     }
   }
   return [...new Set(progress)].slice(-8);
+}
+
+function workflowJobProgress(result?: GhlAiCommanderExecuteResponse | null) {
+  const workflowJob = objectRecord(result?.workflowJob);
+  const progress = objectRecord(workflowJob.progress);
+  return {
+    jobId: readable(workflowJob.jobId) || readable(result?.jobId),
+    status: readable(workflowJob.status) || readable(result?.status),
+    processed: Number(progress.processed || 0),
+    total: Number(progress.total || 0),
+    percent: Math.max(0, Math.min(100, Number(progress.percent || 0))),
+    message: readable(progress.message),
+  };
 }
 
 function getFriendlyError(error: unknown) {
@@ -1068,10 +1087,12 @@ function PlanMessage({
   const messages = getMessageSummary(plan);
   const unsupported = unsupportedFromPlan(plan);
   const completed = execution?.status === "executed";
+  const running = execution?.status === "running";
   const failed = Boolean(error) || execution?.status === "failed";
   const friendlyError = failed ? getFriendlyError(error || execution) : null;
   const created = getExecuteLabels(execution);
   const workflowProgress = workflowProgressFromExecution(execution);
+  const workflowJob = workflowJobProgress(execution);
 
   return (
     <article className="jarvis-fade flex justify-start">
@@ -1178,6 +1199,47 @@ function PlanMessage({
           </div>
         )}
 
+        {running && (
+          <div className="mx-5 mb-5 rounded-[26px] border border-blue-200 bg-blue-50 p-5 text-blue-950 md:mx-6">
+            <div className="flex items-start gap-3">
+              <ArrowPathIcon className="h-7 w-7 flex-shrink-0 animate-spin text-blue-600" aria-hidden="true" />
+              <div className="min-w-0 flex-1">
+                <h3 className="text-2xl font-black">Workflow started.</h3>
+                <p className="mt-1 text-sm font-bold">
+                  Job ID: <span className="font-black">{workflowJob.jobId || "Starting..."}</span>
+                </p>
+                <p className="mt-1 text-sm font-bold">
+                  Status: {titleCase(workflowJob.status || "running")}
+                </p>
+                <div className="mt-4 h-3 overflow-hidden rounded-full bg-white">
+                  <div
+                    className="h-full rounded-full bg-blue-600 transition-all"
+                    style={{ width: `${workflowJob.percent}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-sm font-black">
+                  {workflowJob.percent}% complete
+                  {workflowJob.total
+                    ? ` - ${workflowJob.processed.toLocaleString("en-US")} / ${workflowJob.total.toLocaleString("en-US")}`
+                    : ""}
+                </p>
+                {workflowJob.message ? (
+                  <p className="mt-2 text-sm font-bold">{workflowJob.message}</p>
+                ) : null}
+                {workflowProgress.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {workflowProgress.map((item) => (
+                      <div key={item} className="rounded-2xl bg-white/80 px-3 py-2 text-sm font-bold">
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {failed && friendlyError && (
           <div className="mx-5 mb-5 rounded-[26px] border border-rose-200 bg-rose-50 p-5 text-rose-950 md:mx-6">
             <div className="flex items-start gap-3">
@@ -1192,7 +1254,7 @@ function PlanMessage({
           </div>
         )}
 
-        {!completed && !failed && (
+        {!completed && !failed && !running && (
           <div className="border-t border-slate-100 bg-slate-50 p-5 md:p-6">
             <div className="mx-auto max-w-xl text-center">
               <h4 className="text-3xl font-black text-slate-950">Ready?</h4>
@@ -1524,6 +1586,7 @@ export default function JarvisModule() {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const previewUrlsRef = useRef<Set<string>>(new Set());
+  const workflowPollTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const [statusLine, setStatusLine] = useState(STATUS_LINES[0]);
   const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS);
   const [activeConversationId, setActiveConversationId] = useState(INITIAL_CONVERSATIONS[0].id);
@@ -1545,9 +1608,11 @@ export default function JarvisModule() {
 
   useEffect(() => {
     const previewUrls = previewUrlsRef.current;
+    const pollTimers = workflowPollTimersRef.current;
     return () => {
       previewUrls.forEach((url) => URL.revokeObjectURL(url));
       previewUrls.clear();
+      Object.values(pollTimers).forEach((timer) => clearTimeout(timer));
     };
   }, []);
 
@@ -1842,6 +1907,51 @@ export default function JarvisModule() {
     }
   };
 
+  const pollWorkflowJob = (planId: string, jobId: string) => {
+    const timers = workflowPollTimersRef.current;
+    if (timers[planId]) clearTimeout(timers[planId]);
+
+    const poll = async () => {
+      try {
+        const result = await getGhlWorkflowJobStatus(jobId);
+        setExecutionByPlanId((current) => ({
+          ...current,
+          [planId]: result,
+        }));
+        setErrorByPlanId((current) => {
+          if (!current[planId]) return current;
+          const next = { ...current };
+          delete next[planId];
+          return next;
+        });
+
+        if (result.status === "running") {
+          timers[planId] = setTimeout(poll, 2500);
+          return;
+        }
+
+        delete timers[planId];
+        if (result.status === "failed") {
+          setErrorByPlanId((current) => ({
+            ...current,
+            [planId]: {
+              message: "The workflow could not finish.",
+              response: { data: { errors: result.errors || [] } },
+            },
+          }));
+        }
+      } catch (pollError) {
+        timers[planId] = setTimeout(poll, 5000);
+        setErrorByPlanId((current) => ({
+          ...current,
+          [planId]: pollError,
+        }));
+      }
+    };
+
+    timers[planId] = setTimeout(poll, 1200);
+  };
+
   const approvePlan = async (plan: GhlAiCommanderPlanResponse) => {
     if (!plan.confirmationId || executingPlanId) return;
 
@@ -1858,6 +1968,10 @@ export default function JarvisModule() {
         ...current,
         [plan.confirmationId]: result,
       }));
+      if (result.status === "running" && result.jobId) {
+        pollWorkflowJob(plan.confirmationId, result.jobId);
+        return;
+      }
       if (result.status !== "executed") {
         setErrorByPlanId((current) => ({
           ...current,
