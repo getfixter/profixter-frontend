@@ -651,6 +651,224 @@ function workflowJobProgress(result?: GhlAiCommanderExecuteResponse | null) {
   };
 }
 
+function isWorkflowReport(value: unknown) {
+  const record = objectRecord(value);
+  return Boolean(record.summary && record.stats && record.recommendations && record.executionTime);
+}
+
+function workflowReportFromValue(value: unknown): Record<string, unknown> | null {
+  const record = objectRecord(value);
+  if (isWorkflowReport(record)) return record;
+
+  const directReport = objectRecord(record.report);
+  if (isWorkflowReport(directReport)) return directReport;
+
+  const executionReport = objectRecord(record.executionReport);
+  if (isWorkflowReport(executionReport)) return executionReport;
+
+  const workflowJob = objectRecord(record.workflowJob);
+  const workflowJobReport = objectRecord(workflowJob.report);
+  if (isWorkflowReport(workflowJobReport)) return workflowJobReport;
+
+  return null;
+}
+
+function workflowReportFromExecution(result?: GhlAiCommanderExecuteResponse | null) {
+  const fromJob = workflowReportFromValue(result?.workflowJob?.report);
+  if (fromJob) return fromJob;
+
+  for (const item of asArray(result?.results)) {
+    const record = objectRecord(item);
+    const responseReport = workflowReportFromValue(record.response);
+    if (responseReport) return responseReport;
+    const extractedReport = workflowReportFromValue(record.extracted);
+    if (extractedReport) return extractedReport;
+  }
+
+  return null;
+}
+
+function workflowSummaryTitle(report: Record<string, unknown>) {
+  const summary = report.summary;
+  if (typeof summary === "string") return summary;
+  return readable(objectRecord(summary).title) || "Workflow Completed";
+}
+
+function workflowSummaryText(report: Record<string, unknown>) {
+  const summary = report.summary;
+  if (typeof summary === "string") return summary;
+  return readable(objectRecord(summary).aiSummary) || readable(objectRecord(summary).message);
+}
+
+function workflowExecutionTime(report: Record<string, unknown>) {
+  const executionTime = objectRecord(report.executionTime);
+  return readable(executionTime.label) || readable(report.executionTime);
+}
+
+function statLabel(key: string) {
+  return titleCase(key.replace(/([a-z0-9])([A-Z])/g, "$1 $2"));
+}
+
+function statValue(value: unknown) {
+  if (typeof value === "number") return value.toLocaleString("en-US");
+  if (typeof value === "string") return value;
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  return readable(value) || "-";
+}
+
+function downloadWorkflowFile(download: unknown) {
+  const record = objectRecord(download);
+  const filename = readable(record.filename) || readable(record.label) || "Jarvis Report.txt";
+  const contentType = readable(record.contentType) || "text/plain";
+  const content = readable(record.content);
+  const blob = new Blob([content], { type: contentType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function WorkflowCompletionReport({ report }: { report: Record<string, unknown> }) {
+  const stats = objectRecord(report.stats);
+  const warnings = asArray(report.warnings).map(readable).filter(Boolean);
+  const downloads = asArray(report.downloads);
+  const recommendations = asArray(report.recommendations).map(readable).filter(Boolean);
+  const developerDetails = objectRecord(report.developerDetails);
+  const apiCalls = asArray(developerDetails.apiCalls);
+  const workflowLog = asArray(developerDetails.workflowLog);
+  const executionTimeline = asArray(
+    developerDetails.executionTimeline || developerDetails.timeline || developerDetails.workflowLog
+  );
+  const summaryText = workflowSummaryText(report);
+  const executionTime = workflowExecutionTime(report);
+
+  return (
+    <div className="rounded-[28px] border border-emerald-200 bg-emerald-50 p-5 text-emerald-950 md:p-6">
+      <div className="flex items-start gap-3">
+        <CheckCircleIcon className="h-7 w-7 flex-shrink-0 text-emerald-600" aria-hidden="true" />
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">
+            Workflow Report
+          </div>
+          <h3 className="mt-2 text-2xl font-black tracking-normal">
+            {workflowSummaryTitle(report)}
+          </h3>
+          {summaryText ? (
+            <p className="mt-3 text-sm font-bold leading-6 text-emerald-900">
+              {summaryText}
+            </p>
+          ) : null}
+
+          <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-4">
+            {Object.entries(stats).map(([key, value]) => (
+              <div key={key} className="rounded-2xl border border-emerald-200 bg-white/80 px-3 py-3">
+                <div className="text-[11px] font-black uppercase tracking-[0.12em] text-emerald-700">
+                  {statLabel(key)}
+                </div>
+                <div className="mt-1 text-xl font-black text-emerald-950">
+                  {statValue(value)}
+                </div>
+              </div>
+            ))}
+            {executionTime ? (
+              <div className="rounded-2xl border border-emerald-200 bg-white/80 px-3 py-3">
+                <div className="text-[11px] font-black uppercase tracking-[0.12em] text-emerald-700">
+                  Execution Time
+                </div>
+                <div className="mt-1 text-xl font-black text-emerald-950">
+                  {executionTime}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          {warnings.length > 0 && (
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
+              <div className="text-sm font-black">Notes</div>
+              <div className="mt-2 space-y-1">
+                {warnings.map((warning) => (
+                  <p key={warning} className="text-sm font-bold leading-6">{warning}</p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {downloads.length > 0 && (
+            <div className="mt-5">
+              <div className="text-sm font-black">Downloads</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {downloads.map((download) => {
+                  const record = objectRecord(download);
+                  const label = readable(record.label) || readable(record.filename) || "Download";
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => downloadWorkflowFile(download)}
+                      className="inline-flex min-h-[40px] items-center gap-2 rounded-2xl border border-emerald-200 bg-white px-3 py-2 text-xs font-black text-emerald-800 transition hover:bg-emerald-100"
+                    >
+                      <DocumentTextIcon className="h-4 w-4" aria-hidden="true" />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {recommendations.length > 0 && (
+            <div className="mt-5">
+              <div className="text-sm font-black">Next Recommended Actions</div>
+              <div className="mt-3 space-y-2">
+                {recommendations.map((recommendation) => (
+                  <div key={recommendation} className="flex gap-2 rounded-2xl bg-white/80 px-3 py-2 text-sm font-bold">
+                    <CheckCircleIcon className="h-5 w-5 flex-shrink-0 text-emerald-600" aria-hidden="true" />
+                    <span>{recommendation}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <details className="group mt-5 rounded-2xl border border-emerald-200 bg-white/70">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-black text-emerald-900">
+              <span>Developer Details</span>
+              <ChevronDownIcon className="h-4 w-4 transition group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="border-t border-emerald-100 p-4">
+              <div className="mb-3 grid gap-2 text-xs font-black text-emerald-800 sm:grid-cols-3">
+                <div className="rounded-2xl bg-emerald-50 px-3 py-2">Show API calls</div>
+                <div className="rounded-2xl bg-emerald-50 px-3 py-2">Show workflow log</div>
+                <div className="rounded-2xl bg-emerald-50 px-3 py-2">Show execution timeline</div>
+              </div>
+              <JsonPanel title="Workflow report" value={{
+                apiCalls,
+                workflowLog,
+                executionTimeline,
+                stepStats: developerDetails.stepStats,
+                files: developerDetails.files,
+                stats,
+                downloads: downloads.map((download) => {
+                  const record = objectRecord(download);
+                  return {
+                    label: record.label,
+                    filename: record.filename,
+                    contentType: record.contentType,
+                  };
+                }),
+              }} />
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getFriendlyError(error: unknown) {
   const technical = error as TechnicalError;
   const message = technical?.response?.data
@@ -956,6 +1174,7 @@ function ChatText({ message }: { message: ChatMessage }) {
 function AnswerMessage({ message }: { message: ChatMessage }) {
   const sourceList = message.sources || [];
   const label = message.intent === "advice" ? "Recommendation" : "Answer";
+  const workflowReport = workflowReportFromValue(message.data);
 
   return (
     <article className="jarvis-fade flex justify-start">
@@ -977,6 +1196,12 @@ function AnswerMessage({ message }: { message: ChatMessage }) {
                 {source}
               </span>
             ))}
+          </div>
+        ) : null}
+
+        {workflowReport ? (
+          <div className="mt-5">
+            <WorkflowCompletionReport report={workflowReport} />
           </div>
         ) : null}
 
@@ -1093,6 +1318,7 @@ function PlanMessage({
   const created = getExecuteLabels(execution);
   const workflowProgress = workflowProgressFromExecution(execution);
   const workflowJob = workflowJobProgress(execution);
+  const workflowReport = workflowReportFromExecution(execution);
 
   return (
     <article className="jarvis-fade flex justify-start">
@@ -1165,16 +1391,22 @@ function PlanMessage({
           </div>
         )}
 
-        {completed && (
+        {completed && workflowReport ? (
+          <div className="mx-5 mb-5 md:mx-6">
+            <WorkflowCompletionReport report={workflowReport} />
+          </div>
+        ) : completed ? (
           <div className="mx-5 mb-5 rounded-[26px] border border-emerald-200 bg-emerald-50 p-5 text-emerald-950 md:mx-6">
             <div className="flex items-start gap-3">
               <CheckCircleIcon className="h-7 w-7 flex-shrink-0 text-emerald-600" aria-hidden="true" />
               <div>
-                <h3 className="text-2xl font-black">Done.</h3>
-                <p className="mt-1 text-sm font-bold">Everything completed successfully.</p>
-                <p className="mt-4 text-sm font-black">I created:</p>
+                <h3 className="text-2xl font-black">Execution completed.</h3>
+                <p className="mt-1 text-sm font-bold">
+                  Jarvis finished the approved work and recorded the result below.
+                </p>
+                <p className="mt-4 text-sm font-black">Result:</p>
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                  {(created.length ? created : ["No additional action is required."]).map((item) => (
+                  {(created.length ? created : ["No GHL records needed additional changes."]).map((item) => (
                     <div key={item} className="flex gap-2 rounded-2xl bg-white/70 px-3 py-2 text-sm font-black">
                       <CheckCircleIcon className="h-5 w-5 flex-shrink-0 text-emerald-600" aria-hidden="true" />
                       <span>{item}</span>
@@ -1193,11 +1425,13 @@ function PlanMessage({
                     </div>
                   </>
                 )}
-                <p className="mt-4 text-sm font-bold">No additional action is required.</p>
+                <p className="mt-4 text-sm font-bold">
+                  No additional action is required right now.
+                </p>
               </div>
             </div>
           </div>
-        )}
+        ) : null}
 
         {running && (
           <div className="mx-5 mb-5 rounded-[26px] border border-blue-200 bg-blue-50 p-5 text-blue-950 md:mx-6">
