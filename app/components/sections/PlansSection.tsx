@@ -40,27 +40,27 @@ const planDisplayContent: Record<
   }
 > = {
   Basic: {
-    description: "Perfect for occasional home maintenance.",
+    description: "A simple way to keep occasional home tasks moving.",
     features: [
-      "Request help as needed",
+      "Request membership visits as needed",
       "1 active appointment at a time",
       "All handyman services included",
       "90-minute visits",
     ],
   },
   Plus: {
-    description: "The best balance for active homeowners.",
+    description: "The balanced plan for homeowners who want steady support.",
     features: [
-      "Request help as needed",
+      "Request membership visits as needed",
       "2 active appointments at a time",
       "Basic materials included",
       "90-minute visits",
     ],
   },
   Premium: {
-    description: "Faster scheduling when something can't wait.",
+    description: "For homes that need priority support when timing matters.",
     features: [
-      "Request help as needed",
+      "Request membership visits as needed",
       "2 active appointments at a time",
       "Basic materials included",
       "1 Rush Visit per month",
@@ -68,9 +68,9 @@ const planDisplayContent: Record<
     ],
   },
   Elite: {
-    description: "Maximum home coverage.",
+    description: "The most hands-on care for homes with larger ongoing needs.",
     features: [
-      "Request help as needed",
+      "Request membership visits as needed",
       "2 active appointments at a time",
       "1 full project day per month (up to 8 hours)",
       "2 Rush Visits per month",
@@ -119,7 +119,11 @@ function getDisplayPrice(plan: Plan, billing: BillingCycle): number {
   return billing === "annual" ? monthly * 11 : monthly;
 }
 
-export default function PlansSection() {
+type PlansSectionProps = {
+  hideCancellationUi?: boolean;
+};
+
+export default function PlansSection({ hideCancellationUi = false }: PlansSectionProps = {}) {
   const [billing, setBilling] = useState<BillingCycle>("monthly");
   const [promoCode, setPromoCode] = useState("");
   const [actionMessage, setActionMessage] = useState("");
@@ -389,7 +393,7 @@ export default function PlansSection() {
       };
     }
 
-    if (selectedSubscription?.cancelAtPeriodEnd) {
+    if (selectedSubscription?.cancelAtPeriodEnd && !hideCancellationUi) {
       return {
         kind: "cancel-scheduled" as ChangeActionKind,
         label: "Cancellation scheduled",
@@ -585,15 +589,21 @@ export default function PlansSection() {
     </div>
   );
 
+  const PlanCheck = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="mt-[4px] flex-none text-[#111111]">
+      <path d="M5 12.5l4 4 10-10" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+
   return (
     <section id="plans" className="w-full scroll-mt-[140px] bg-[#F5F5F7] px-4 py-12 sm:px-5 sm:py-20 lg:py-24">
       <div className="mx-auto max-w-[1280px]">
         <div className="mx-auto mb-8 max-w-[720px] text-center sm:mb-14">
           <h2 className="text-[32px] font-semibold tracking-normal text-[#111111] sm:text-5xl">
-            Choose Your Membership
+            Choose the membership for your home
           </h2>
           <p className="mt-3 text-[15px] leading-6 text-[#6E6E73] sm:mt-4 sm:text-lg sm:leading-7">
-            Start with the Membership that fits your home today. Upgrade or downgrade anytime.
+            Start with the level of care that fits today. You can adjust as your home needs change.
           </p>
           {promoCode ? (
             <div className="mt-5 inline-flex rounded-full border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm font-semibold text-[#166534]">
@@ -634,36 +644,35 @@ export default function PlansSection() {
 
         <div className="mx-auto mb-6 max-w-[720px] text-center sm:mb-8">
           <h3 className="text-[18px] font-semibold tracking-normal text-[#111111] sm:text-2xl">
-            Request help when your home needs it
+            Membership is the home base
           </h3>
           <p className="mt-2 text-[13px] leading-5 text-[#6E6E73] sm:text-base sm:leading-6">
-            Request visits as needed. Your plan determines active appointment capacity, scheduling benefits, and included support.
+            Your plan determines appointment capacity, scheduling benefits, and the level of ongoing support available to your home.
           </p>
         </div>
 
         <div className="mx-auto mb-7 max-w-[780px] rounded-[24px] border border-[#E5E7EB] bg-white p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:mb-10 sm:p-5">
-          <div className="grid items-center gap-3 text-center sm:grid-cols-[1fr_auto_1fr] sm:text-left">
-            <div className="rounded-[18px] bg-[#F8FAFC] px-4 py-4">
-              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#64748B]">
-                Two handyman visits
-              </div>
-              <div className="mt-1 text-[30px] font-semibold tracking-[-0.03em] text-[#111111]">
-                $198
-              </div>
-              <div className="text-sm font-semibold text-[#6E6E73]">$99 each visit</div>
-            </div>
-            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#94A3B8]">
-              vs
-            </div>
+          <div className="grid items-stretch gap-3 text-left sm:grid-cols-[1.15fr_0.85fr]">
             <div className="rounded-[18px] bg-[#0B1628] px-4 py-4 text-white">
               <div className="text-[11px] font-black uppercase tracking-[0.16em] text-white/55">
-                Membership starts at
+                Recommended for homeowners
               </div>
-              <div className="mt-1 text-[30px] font-semibold tracking-[-0.03em]">
-                $149/mo
+              <div className="mt-2 text-[22px] font-semibold tracking-[-0.03em] sm:text-[26px]">
+                One trusted team, month after month
               </div>
-              <div className="text-sm font-semibold text-white/65">
-                Ongoing home help, no $99 visit charge
+              <div className="mt-2 text-sm font-semibold leading-6 text-white/65">
+                Better for homeowners who expect the home list to keep growing.
+              </div>
+            </div>
+            <div className="rounded-[18px] bg-[#F8FAFC] px-4 py-4">
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#64748B]">
+                If you only need one visit
+              </div>
+              <div className="mt-2 text-[20px] font-semibold tracking-[-0.025em] text-[#111111]">
+                One-time booking is still available
+              </div>
+              <div className="mt-2 text-sm font-semibold leading-6 text-[#6E6E73]">
+                Use it when Membership is not the right fit today.
               </div>
             </div>
           </div>
@@ -716,9 +725,7 @@ export default function PlansSection() {
                   <ul className="mt-6 space-y-3 sm:mt-7 sm:space-y-4">
                     {content.features.map((feature) => (
                       <li key={feature} className="flex min-w-0 gap-2.5 text-[14px] leading-5 text-[#1D1D1F] sm:gap-3 sm:text-[15px] sm:leading-6">
-                        <span className="mt-[1px] flex-none text-sm font-semibold text-[#111111]">
-                          ✓
-                        </span>
+                        <PlanCheck />
                         <span className="min-w-0 break-words">{feature}</span>
                       </li>
                     ))}
@@ -791,9 +798,7 @@ export default function PlansSection() {
                 <ul className="mt-7 space-y-4">
                   {content.features.map((feature) => (
                     <li key={feature} className="flex min-w-0 gap-3 text-[15px] leading-6 text-[#1D1D1F]">
-                      <span className="mt-[1px] flex-none text-sm font-semibold text-[#111111]">
-                        ✓
-                      </span>
+                      <PlanCheck />
                       <span className="min-w-0 break-words">{feature}</span>
                     </li>
                   ))}

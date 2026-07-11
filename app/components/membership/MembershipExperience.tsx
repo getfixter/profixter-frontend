@@ -123,7 +123,7 @@ function SubscribedCustomerFlow() {
         title="Manage Plan"
         subtitle="Review your membership, billing status, and plan settings."
       >
-        <PlanSection />
+        <PlanSection hideCancellationUi />
       </CustomerPortalSection>
 
       <CustomerPortalSection
@@ -134,7 +134,7 @@ function SubscribedCustomerFlow() {
         <AccountShortcuts />
       </CustomerPortalSection>
 
-      <FAQSection />
+      <FAQSection hideCancellationUi />
       <Footer />
     </>
   );
@@ -145,10 +145,10 @@ function ProspectMembershipFlow() {
     <>
       <HowItWorksSection />
       <IncludedVisitsSection />
-      <PlansSection />
+      <PlansSection hideCancellationUi />
       <TrustSection />
       <PopularTasksSection />
-      <FAQSection />
+      <FAQSection hideCancellationUi />
       <Footer />
     </>
   );

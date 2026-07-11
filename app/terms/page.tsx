@@ -1,6 +1,7 @@
 // app/terms/page.tsx
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -438,8 +439,8 @@ export default function TermsPage() {
                   If you experience issues with the messaging program, reply with the keyword{" "}
                   <span className="font-semibold">HELP</span> for more assistance, or reach out directly to{" "}
                   <span className="font-semibold">631-599-1363</span> or{" "}
-                  <a href="mailto:my@profixter.com" className="text-[#93c5fd] underline underline-offset-2">
-                    my@profixter.com
+                  <a href={PUBLIC_CONTACT_MAILTO} className="text-[#93c5fd] underline underline-offset-2">
+                    {PUBLIC_CONTACT_EMAIL}
                   </a>
                   .
                 </li>
@@ -465,8 +466,8 @@ export default function TermsPage() {
             <p>
               We may take reasonable before/after photos or short clips of work areas for documentation, training, and marketing. We try
               to avoid faces/identifying information and may blur/crop. If you want to opt out of marketing use, email{" "}
-              <a href="mailto:my@profixter.com" className="text-[#93c5fd] underline underline-offset-2">
-                my@profixter.com
+              <a href={PUBLIC_CONTACT_MAILTO} className="text-[#93c5fd] underline underline-offset-2">
+                {PUBLIC_CONTACT_EMAIL}
               </a>{" "}
               and we will honor it going forward.
             </p>
@@ -518,8 +519,8 @@ export default function TermsPage() {
               Phone: <span className="font-semibold">631-599-1363</span>
               <br />
               Email:{" "}
-              <a href="mailto:my@profixter.com" className="text-[#93c5fd] underline underline-offset-2">
-                my@profixter.com
+              <a href={PUBLIC_CONTACT_MAILTO} className="text-[#93c5fd] underline underline-offset-2">
+                {PUBLIC_CONTACT_EMAIL}
               </a>
             </p>
           </section>

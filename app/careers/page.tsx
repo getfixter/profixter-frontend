@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -146,10 +147,10 @@ export default function CareersPage() {
               <p className="mt-4 text-white/85">
                 Email:{" "}
                 <a
-                  href="mailto:my@profixter.com?subject=Career%20Application%20-%20Profixter"
+                  href={`${PUBLIC_CONTACT_MAILTO}?subject=Career%20Application%20-%20Profixter`}
                   className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition"
                 >
-                  my@profixter.com
+                  {PUBLIC_CONTACT_EMAIL}
                 </a>
               </p>
 

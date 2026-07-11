@@ -113,8 +113,8 @@ function isManageableStatus(status?: string | null) {
   return ["active", "trialing"].includes(String(status || "").toLowerCase());
 }
 
-function statusLabel(subscription: ManagedSubscription) {
-  if (subscription.cancelAtPeriodEnd) return "Cancels at period end";
+function statusLabel(subscription: ManagedSubscription, options: { hideCancellationUi?: boolean } = {}) {
+  if (subscription.cancelAtPeriodEnd && !options.hideCancellationUi) return "Cancels at period end";
   if (subscription.cancellationReason === "payment_failed") return "Payment could not be processed";
   if (subscription.pendingPlan) return "Scheduled change";
   const status = String(subscription.status || "").toLowerCase();
@@ -122,6 +122,7 @@ function statusLabel(subscription: ManagedSubscription) {
   if (status === "past_due") return "Past due";
   if (status === "unpaid") return "Payment issue";
   if (status === "incomplete") return "Action needed";
+  if (status === "canceled" && options.hideCancellationUi) return "Ended";
   if (status === "canceled") return "Canceled";
   if (status === "expired") return "Expired";
   return "Active";
@@ -164,7 +165,12 @@ function RetentionDebugDetails({ debug }: { debug: RetentionOfferDebug | null })
   );
 }
 
-export function PlanSection() {
+type PlanSectionProps = {
+  hideCancellationUi?: boolean;
+};
+
+export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {}) {
+  const showCancellationUi = !hideCancellationUi;
   const [loading, setLoading] = useState(true);
   const [subscriptions, setSubscriptions] = useState<ManagedSubscription[]>([]);
 
@@ -615,7 +621,7 @@ export function PlanSection() {
                       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                           <div className="text-sm font-semibold text-[#306EEC]">
-                            {statusLabel(subscription)}
+                            {statusLabel(subscription, { hideCancellationUi })}
                           </div>
                           <h3 className="mt-1 text-xl font-semibold text-[#313234] sm:text-2xl">
                             {formatPlanName(plan)} plan
@@ -657,7 +663,7 @@ export function PlanSection() {
                             Status
                           </div>
                           <div className="mt-1 text-sm font-semibold text-[#313234]">
-                            {statusLabel(subscription)}
+                            {statusLabel(subscription, { hideCancellationUi })}
                           </div>
                         </div>
                       </div>
@@ -676,7 +682,7 @@ export function PlanSection() {
                         </ul>
                       </div>
 
-                      {subscription.cancelAtPeriodEnd ? (
+                      {showCancellationUi && subscription.cancelAtPeriodEnd ? (
                         <div className="mt-5 rounded-[14px] border border-[#FDE68A] bg-[#FFFBEB] p-4 text-sm text-[#92400E]">
                           <div className="font-semibold">Cancellation scheduled</div>
                           <div className="mt-1">
@@ -699,7 +705,7 @@ export function PlanSection() {
                       ) : null}
 
                       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                        {subscription.cancelAtPeriodEnd ? (
+                        {showCancellationUi && subscription.cancelAtPeriodEnd ? (
                           <button
                             type="button"
                             disabled={isReactivating}
@@ -721,33 +727,37 @@ export function PlanSection() {
                           </button>
                         )}
 
-                        <button
-                          type="button"
-                          disabled={
-                            subscription.cancelAtPeriodEnd ||
-                            canceling ||
-                            acceptingRetention ||
-                            (cancelTarget?._id === subscription._id && cancelMode === "checking")
-                          }
-                          onClick={() => openCancelFlow(subscription)}
-                          className="w-full rounded-[14px] border border-[#C5CBD8] bg-white/70 py-3 text-base font-semibold text-[#313234] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {subscription.cancelAtPeriodEnd
-                            ? "Cancellation scheduled"
-                            : cancelTarget?._id === subscription._id && cancelMode === "checking"
-                            ? "Checking options..."
-                            : "Cancel Membership"}
-                        </button>
+                        {showCancellationUi ? (
+                          <button
+                            type="button"
+                            disabled={
+                              subscription.cancelAtPeriodEnd ||
+                              canceling ||
+                              acceptingRetention ||
+                              (cancelTarget?._id === subscription._id && cancelMode === "checking")
+                            }
+                            onClick={() => openCancelFlow(subscription)}
+                            className="w-full rounded-[14px] border border-[#C5CBD8] bg-white/70 py-3 text-base font-semibold text-[#313234] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {subscription.cancelAtPeriodEnd
+                              ? "Cancellation scheduled"
+                              : cancelTarget?._id === subscription._id && cancelMode === "checking"
+                              ? "Checking options..."
+                              : "Cancel Membership"}
+                          </button>
+                        ) : null}
                       </div>
 
                       {subscription.stripeManaged ? (
                         <div className="mt-1 text-xs font-semibold text-[#6A6D71]">
-                          Billing settings include plan changes, payment methods, invoices, and cancellation review.
+                          {showCancellationUi
+                            ? "Billing settings include plan changes, payment methods, invoices, and cancellation review."
+                            : "Billing settings include plan changes, payment methods, and invoices."}
                         </div>
                       ) : null}
 
                       <div className="mt-3 text-xs text-[#6A6D71]">
-                        {subscription.cancelAtPeriodEnd
+                        {showCancellationUi && subscription.cancelAtPeriodEnd
                           ? `Service continues until ${cancellationDate || renewalDate || "the end of the current period"}. You can reactivate anytime before that.`
                           : pendingPlan
                             ? `${pendingPlan} is scheduled for ${pendingChangeDate || renewalDate || "your next billing date"}, while your current plan stays active now.`
@@ -804,7 +814,7 @@ export function PlanSection() {
                           {formatPlanName(subscription.subscriptionType)} plan
                         </div>
                         <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">
-                          {statusLabel(subscription)}
+                          {statusLabel(subscription, { hideCancellationUi })}
                         </div>
                       </div>
                       <div className="mt-1 text-sm text-[#6A6D71]">{formatAddress(subscription)}</div>
@@ -818,7 +828,7 @@ export function PlanSection() {
       </div>
 
       {/* ── Cancel confirmation modal ── */}
-      {cancelTarget ? (
+      {showCancellationUi && cancelTarget ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4"
           onClick={() => {

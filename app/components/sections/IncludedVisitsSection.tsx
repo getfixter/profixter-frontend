@@ -1,8 +1,14 @@
 "use client";
 
-const VISIT_CATEGORIES = [
+type CategoryKind = "electrical" | "plumbing" | "repairs" | "maintenance";
+
+const VISIT_CATEGORIES: {
+  kind: CategoryKind;
+  title: string;
+  examples: string[];
+}[] = [
   {
-    icon: "⚡",
+    kind: "electrical",
     title: "Electrical",
     examples: [
       "Light fixtures",
@@ -13,7 +19,7 @@ const VISIT_CATEGORIES = [
     ],
   },
   {
-    icon: "🚿",
+    kind: "plumbing",
     title: "Plumbing",
     examples: [
       "Faucets",
@@ -24,7 +30,7 @@ const VISIT_CATEGORIES = [
     ],
   },
   {
-    icon: "🔨",
+    kind: "repairs",
     title: "Repairs & Installations",
     examples: [
       "TV mounting",
@@ -35,7 +41,7 @@ const VISIT_CATEGORIES = [
     ],
   },
   {
-    icon: "🏠",
+    kind: "maintenance",
     title: "Home Maintenance",
     examples: [
       "Punch lists",
@@ -47,6 +53,56 @@ const VISIT_CATEGORIES = [
   },
 ];
 
+function CategoryIcon({ kind }: { kind: CategoryKind }) {
+  const common = {
+    width: 24,
+    height: 24,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    "aria-hidden": true,
+  } as const;
+
+  if (kind === "electrical") {
+    return (
+      <svg {...common}>
+        <path d="M13 2 5 13h6l-1 9 8-12h-6l1-8Z" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (kind === "plumbing") {
+    return (
+      <svg {...common}>
+        <path d="M4 9h10a4 4 0 0 1 4 4v1" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+        <path d="M8 5v8M4 5h8M16 14c-1.7 2-2.5 3.4-2.5 4.5a2.5 2.5 0 0 0 5 0c0-1.1-.8-2.5-2.5-4.5Z" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (kind === "repairs") {
+    return (
+      <svg {...common}>
+        <path d="m14.5 5.5 4 4M3.5 20.5l5.8-1.3 9.9-9.9a2.8 2.8 0 0 0-4-4L5.3 15.2 3.5 20.5Z" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...common}>
+      <path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-8.5Z" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 21v-6h6v6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CheckMark() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="mt-[3px] flex-none text-[#306EEC]">
+      <path d="M5 12.5l4 4 10-10" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export default function IncludedVisitsSection() {
   return (
     <section
@@ -56,10 +112,10 @@ export default function IncludedVisitsSection() {
       <div className="mx-auto max-w-[1280px]">
         <div className="mx-auto max-w-[760px] text-center">
           <h2 className="text-[30px] font-semibold leading-[1.08] tracking-normal text-[#111111] sm:text-[48px] sm:leading-[1.05]">
-            What&apos;s Included In Your Visits?
+            The home list, handled over time.
           </h2>
           <p className="mx-auto mt-3 max-w-[640px] text-[15px] leading-6 text-[#6E6E73] sm:mt-4 sm:text-lg sm:leading-7">
-            Most small home tasks are included. If it fits within your visit time, we can usually help.
+            Membership is built for the small and medium tasks that keep a home working, comfortable, and cared for.
           </p>
         </div>
 
@@ -69,8 +125,8 @@ export default function IncludedVisitsSection() {
               key={category.title}
               className="rounded-[24px] border border-[#E5E7EB] bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
             >
-              <div className="text-[34px] leading-none sm:text-[42px]" aria-hidden="true">
-                {category.icon}
+              <div className="grid h-12 w-12 place-items-center rounded-[16px] bg-[#EEF5FF] text-[#306EEC]" aria-hidden="true">
+                <CategoryIcon kind={category.kind} />
               </div>
               <h3 className="mt-4 min-h-[52px] text-[21px] font-semibold leading-tight tracking-normal text-[#111111] sm:mt-5 sm:min-h-[64px] sm:text-[24px]">
                 {category.title}
@@ -78,9 +134,7 @@ export default function IncludedVisitsSection() {
               <ul className="mt-4 space-y-2.5 sm:mt-5 sm:space-y-3">
                 {category.examples.map((example) => (
                   <li key={example} className="flex gap-2.5 text-[14px] leading-5 text-[#1D1D1F] sm:gap-3 sm:text-[15px] sm:leading-6">
-                    <span className="mt-[1px] flex-none text-sm font-semibold text-[#111111]">
-                      ✓
-                    </span>
+                    <CheckMark />
                     <span>{example}</span>
                   </li>
                 ))}
@@ -93,23 +147,23 @@ export default function IncludedVisitsSection() {
           <div className="grid gap-6 md:grid-cols-2">
             <div>
               <div className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#306EEC]">
-                Included
+                Built for
               </div>
               <p className="mt-2 text-[15px] leading-7 text-[#1D1D1F]">
-                Electrical, plumbing, repairs, installations, maintenance, and most small home projects.
+                Small repairs, maintenance, installations, punch lists, and practical home tasks that fit within a membership visit.
               </p>
             </div>
             <div>
               <div className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#6E6E73]">
-                Not Included
+                Better as a project
               </div>
               <p className="mt-2 text-[15px] leading-7 text-[#6E6E73]">
-                Large remodels, full-room painting, major electrical work, major plumbing work, roofing, siding, and projects that exceed visit time.
+                Larger remodels, roofing, siding, full-room painting, major trade work, and jobs that should be planned as a separate estimate.
               </p>
             </div>
           </div>
           <p className="mt-6 border-t border-[#E5E7EB] pt-5 text-center text-[15px] font-medium leading-7 text-[#1D1D1F]">
-            A visit is designed for small and medium tasks that can typically be completed within your visit time.
+            If something is too large for a visit, you still stay with Profixter. We move it into the right project path.
           </p>
         </div>
       </div>

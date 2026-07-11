@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -65,8 +66,8 @@ export default function CommunicationConsentPage() {
             <div className="mt-4 rounded-2xl bg-white/5 border border-white/10 p-5">
               <p>
                 Email:{" "}
-                <a className="text-[#93c5fd] underline underline-offset-2" href="mailto:my@profixter.com">
-                  my@profixter.com
+                <a className="text-[#93c5fd] underline underline-offset-2" href={PUBLIC_CONTACT_MAILTO}>
+                  {PUBLIC_CONTACT_EMAIL}
                 </a>
                 <br />
                 Main Phone/Text Support: <span className="font-semibold">631-599-1363</span>
@@ -179,8 +180,8 @@ export default function CommunicationConsentPage() {
                 </li>
                 <li>
                   You can also contact us at <span className="font-semibold">631-599-1363</span> or{" "}
-                  <a className="text-[#93c5fd] underline underline-offset-2" href="mailto:my@profixter.com">
-                    my@profixter.com
+                  <a className="text-[#93c5fd] underline underline-offset-2" href={PUBLIC_CONTACT_MAILTO}>
+                    {PUBLIC_CONTACT_EMAIL}
                   </a>
                   .
                 </li>

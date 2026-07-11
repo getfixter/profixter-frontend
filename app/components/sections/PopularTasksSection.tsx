@@ -130,10 +130,10 @@ const PROJECT_CATEGORIES = [
 ] as const;
 
 const PROJECT_BENEFITS = [
-  "One contractor relationship",
-  "One trusted team",
-  "Ongoing support after the project",
-  "More value from your investment",
+  "Same trusted company",
+  "Clear project path",
+  "Ongoing care after the work",
+  "No starting over with a stranger",
 ] as const;
 
 function CheckIcon({ className = "" }: { className?: string }) {
@@ -196,24 +196,24 @@ export default function PopularTasksSection() {
             <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-[#D4A574]/25 bg-white/70 px-3.5 py-1.5 shadow-[0_8px_28px_rgba(15,23,42,0.05)] backdrop-blur-sm sm:mb-6 sm:px-4 sm:py-2">
               <span className="h-2 w-2 rounded-full bg-[#D4A574]" />
               <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#92724E]">
-                Larger Home Projects
+                Renovations, when needed
               </span>
             </div>
 
             <h2 className="text-[32px] font-black leading-[1] tracking-[-0.032em] text-[#0B1628] sm:text-[54px] sm:leading-[0.95] sm:tracking-[-0.04em] lg:text-[64px]">
-              Planning a larger project?
+              When your home needs something bigger.
             </h2>
 
             <p className="mt-4 max-w-[560px] text-[15px] leading-relaxed text-[#475569] sm:mt-6 sm:text-[18px]">
-              Roofing, siding, bathrooms, kitchens, full-house renovations, and new home construction - request an estimate and we&apos;ll help you plan the next step.
+              Some work is too large for a membership visit. Roofing, siding, bathrooms, kitchens, and larger remodels move into a clear project estimate.
             </p>
             <p className="mt-4 max-w-[560px] text-[15px] font-bold leading-relaxed text-[#0B1628] sm:text-[16px]">
-              Get up to 12 months of Profixter Membership included with eligible larger projects.
+              You do not need a different company. The same trusted Profixter team can help your home grow.
             </p>
 
             <div className="mt-6 rounded-[22px] border border-white/70 bg-white/70 p-4 shadow-[0_16px_50px_rgba(15,23,42,0.07)] backdrop-blur-sm sm:mt-8 sm:rounded-[24px] sm:p-6 sm:shadow-[0_18px_60px_rgba(15,23,42,0.07)]">
               <p className="text-[15px] font-bold leading-relaxed text-[#0B1628] sm:text-[16px]">
-                We take care of the project first, then keep helping maintain your home after the work is done.
+                We take care of the larger work, then keep helping maintain your home after the project is done.
               </p>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -243,12 +243,6 @@ export default function PopularTasksSection() {
               >
                 Explore Larger Projects
               </Link>
-              <Link
-                href="/communities"
-                className="inline-flex h-[50px] items-center justify-center rounded-[15px] border border-[#CBD5E1] bg-white/40 px-6 text-[14px] font-extrabold text-[#334155] transition-all hover:-translate-y-0.5 hover:border-[#94A3B8] hover:bg-white sm:h-[54px] sm:rounded-[16px] sm:px-7 sm:text-[15px]"
-              >
-                For Communities
-              </Link>
             </div>
           </div>
 
@@ -268,14 +262,14 @@ export default function PopularTasksSection() {
                   />
                   <div className="relative flex min-h-[210px] flex-col justify-between gap-12 p-5 sm:min-h-[240px] sm:p-6">
                     <div className="inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-white/25 bg-white/16 px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md sm:text-[11px] sm:tracking-[0.16em]">
-                      Membership Offer
+                      Same home care system
                     </div>
                     <div>
                       <div className="text-[13px] font-bold uppercase tracking-[0.16em] text-white/62">
-                        Large Project
+                        Larger work
                       </div>
                       <div className="mt-1 max-w-[360px] text-[28px] font-black leading-[1] tracking-[-0.035em] text-white sm:text-[34px]">
-                        Better work now. Better care after.
+                        Project help now. Home care after.
                       </div>
                     </div>
                   </div>
@@ -304,7 +298,7 @@ export default function PopularTasksSection() {
               <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
                 {[
                   { title: "Large project", body: "Roof, siding, remodel, or renovation" },
-                  { title: "Membership offer", body: "Up to 12 months if eligible" },
+                  { title: "Project estimate", body: "Clear scope before work starts" },
                   { title: "Ongoing care", body: "Regular handyman support after" },
                 ].map((step, index) => (
                   <div key={step.title} className="contents">
