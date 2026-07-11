@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   useEffect,
   useMemo,
@@ -114,12 +115,6 @@ function detectCounty(zip: string): string {
   return "";
 }
 
-function getSafeInternalRedirect(raw: string | null): string {
-  const value = String(raw || "").trim();
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "";
-  return value;
-}
-
 function FieldLabel({ htmlFor, children }: { htmlFor: string; children: ReactNode }) {
   return (
     <label htmlFor={htmlFor} className="mb-2 block text-[12px] font-bold uppercase tracking-[0.13em] text-white/58">
@@ -160,6 +155,7 @@ function FieldInput({
 }
 
 export default function SignUpPage() {
+  const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [agreeTerms, setAgreeTerms] = useState(true);
   const [consentError, setConsentError] = useState(false);
@@ -315,14 +311,10 @@ export default function SignUpPage() {
         new URLSearchParams(window.location.search).get("promo")?.trim().toUpperCase() ||
         sessionStorage.getItem("pendingPromoCode") ||
         "";
-      const redirect = getSafeInternalRedirect(
-        new URLSearchParams(window.location.search).get("redirect")
-      );
-      window.location.href =
-        redirect ||
-        (checkoutPromo
-          ? `/membership?promo=${encodeURIComponent(checkoutPromo)}#plans`
-          : "/account");
+      if (checkoutPromo) {
+        sessionStorage.setItem("pendingPromoCode", checkoutPromo);
+      }
+      router.replace("/membership");
     } catch (err: unknown) {
       const errorResponse = err as { response?: { data?: { message?: string } } };
       const message = errorResponse?.response?.data?.message || "We couldn't finish setting up your home. Please try again.";

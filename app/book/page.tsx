@@ -390,7 +390,7 @@ export default function BookPage() {
       .catch(() => {
         if (!cancelled) {
           setConfig(FALLBACK_ONE_TIME_CONFIG);
-          setConfigError("Using standard one-time visit details while settings load.");
+          setConfigError("Using standard booking details while settings load.");
         }
       });
 
@@ -556,7 +556,41 @@ export default function BookPage() {
     () => addresses.find((address) => String(address._id) === String(addressId)),
     [addresses, addressId]
   );
+  const hasActiveMembership = useMemo(
+    () => addresses.some((address) => Boolean(address.hasActiveSubscription)),
+    [addresses]
+  );
   const priceLabel = formatPrice(config.priceCents, config.currency);
+  const pageCopy = useMemo(
+    () =>
+      hasActiveMembership
+        ? {
+            navLabel: "Book an Extra Visit",
+            title: "Book an Extra Visit",
+            subtitle:
+              "Need another visit before your membership renews? Book an additional visit anytime.",
+            taskEyebrow: "Extra visit task",
+            unavailable: "Extra visit booking is temporarily unavailable.",
+            visitLabel: "Extra visit",
+            includeText: `An additional handyman visit up to ${config.durationMinutes} minutes. The visit price covers the visit itself, and Profixter brings the tools.`,
+            changeText: "Changes to this extra visit are handled by phone and require admin approval. Call",
+            bookingsText:
+              "You can review extra visits and included membership visits together from your account.",
+          }
+        : {
+            navLabel: "Book a Handyman",
+            title: "Book a Handyman",
+            subtitle:
+              "Need help around the house? Book a one-time handyman visit in just a few minutes. If you expect to need ongoing help, check out our Membership first.",
+            taskEyebrow: "Handyman task",
+            unavailable: "Handyman booking is temporarily unavailable.",
+            visitLabel: "Visit",
+            includeText: `One focused handyman visit up to ${config.durationMinutes} minutes. The visit price covers the visit itself, and Profixter brings the tools.`,
+            changeText: "Visit changes are handled by phone and require admin approval. Call",
+            bookingsText: "You can review your handyman visits from your account.",
+          },
+    [config.durationMinutes, hasActiveMembership]
+  );
   const days = useMemo(() => calendarDays(currentMonth), [currentMonth]);
   const today = todayYMD();
   const wordsCount = note.trim().split(/\s+/).filter(Boolean).length;
@@ -623,7 +657,7 @@ export default function BookPage() {
   async function submit() {
     setError("");
     if (!config.enabled) {
-      setError("One-Time Handyman Visit booking is temporarily unavailable.");
+      setError(pageCopy.unavailable);
       return;
     }
     if (!isAuthenticated) {
@@ -701,14 +735,14 @@ export default function BookPage() {
                 style={{ boxShadow: "0 0 8px rgba(48,110,236,0.7)" }}
               />
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
-                One-Time Visit
+                {pageCopy.navLabel}
               </span>
             </div>
             <h1 className="mb-3 text-[40px] font-black leading-[0.92] tracking-[-0.052em] text-[#071325] sm:mb-4 sm:text-[72px] sm:leading-[0.88] sm:tracking-[-0.06em] lg:text-[86px]">
-              Book a handyman.
+              {pageCopy.title}
             </h1>
             <p className="max-w-[640px] text-[15px] font-semibold leading-6 text-[#475569] sm:text-[20px] sm:leading-7">
-              Choose the job, pick a time, add photos, and pay securely. We confirm after review.
+              {pageCopy.subtitle}
             </p>
             {configError && (
               <div className="mt-4 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] font-semibold text-amber-800">
@@ -717,9 +751,51 @@ export default function BookPage() {
             )}
           </div>
 
+          {!hasActiveMembership && (
+            <div className="mb-5 overflow-hidden rounded-[24px] border border-[#E5E9F2] bg-white/92 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:mb-7 sm:rounded-[30px] sm:p-6 lg:p-7">
+              <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
+                <div>
+                  <h2 className="text-[24px] font-black leading-[1.02] tracking-[-0.035em] text-[#0B1628] sm:text-[34px] sm:tracking-[-0.045em]">
+                    Own your home?
+                  </h2>
+                  <p className="mt-3 max-w-[760px] text-[14px] font-semibold leading-6 text-[#475569] sm:text-[16px] sm:leading-7">
+                    If you expect to need help more than once, a Profixter Membership is usually the better value.
+                  </p>
+                  <p className="mt-2 max-w-[780px] text-[14px] font-semibold leading-6 text-[#475569] sm:text-[16px] sm:leading-7">
+                    Members don&apos;t pay for every visit, receive priority scheduling, and can request handyman service throughout the year.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
+                  <Link
+                    href="/membership#plans"
+                    onClick={() =>
+                      trackEvent("membership_cta_clicked", {
+                        placement: "book_non_member_recommendation",
+                      })
+                    }
+                    className="inline-flex h-12 items-center justify-center rounded-full bg-[#0B1628] px-6 text-[14px] font-black text-white shadow-[0_14px_34px_rgba(11,22,40,0.18)] transition hover:-translate-y-0.5 hover:bg-[#1B2A44] active:translate-y-0"
+                  >
+                    Become a Member
+                  </Link>
+                  <a
+                    href="#booking-form"
+                    onClick={() =>
+                      trackEvent("one_time_continue_clicked", {
+                        placement: "book_non_member_recommendation",
+                      })
+                    }
+                    className="inline-flex h-12 items-center justify-center rounded-full border border-[#D7DEEA] bg-white px-6 text-[14px] font-black text-[#0B1628] transition hover:border-[#C6D7FF] hover:bg-[#F8FAFF]"
+                  >
+                    Continue with One-Time Visit
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
           <RushServiceCallout />
 
-          <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-12 lg:gap-6">
+          <div id="booking-form" className="grid grid-cols-1 gap-3 scroll-mt-6 sm:gap-4 lg:grid-cols-12 lg:gap-6">
             <div className="order-2 lg:order-1 lg:col-span-5">
               <div className="rounded-[24px] bg-white/95 p-3.5 shadow-[0_18px_54px_rgba(15,23,42,0.08)] sm:rounded-[30px] sm:p-5 sm:shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
                 <div className="mb-4 flex items-center justify-between sm:mb-5">
@@ -804,22 +880,6 @@ export default function BookPage() {
                   })}
                 </div>
               </div>
-
-              <div className="mt-3 rounded-[10px] border-l-2 border-[#C8D3E3] bg-[#F7FAFE] px-3.5 py-2.5 text-[13px] font-semibold text-[#34435C] sm:px-4 sm:py-3 sm:text-[14px]">
-                {selectedDate
-                  ? `Selected date: ${dayLabel(selectedDate)}`
-                  : autoSelectingDate
-                    ? "Finding the soonest available date..."
-                    : "No available date selected yet."}
-              </div>
-
-              <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-                {[priceLabel, `${config.durationMinutes} minutes`, "Tools included"].map((item) => (
-                  <div key={item} className="rounded-[10px] border-l-2 border-[#D6DEE9] bg-[#F7FAFE] px-3.5 py-2.5 text-[12px] font-extrabold text-[#34435C] sm:px-4 sm:py-3 sm:text-[13px]">
-                    {item}
-                  </div>
-                ))}
-              </div>
             </div>
 
             <div className="contents lg:order-2 lg:col-span-7 lg:flex lg:flex-col lg:gap-5">
@@ -899,7 +959,7 @@ export default function BookPage() {
                       >
                         <span className="min-w-0">
                           <span className="block text-[11px] font-black uppercase tracking-[0.16em] text-[#7C879A]">
-                            One-Time Visit task
+                            {pageCopy.taskEyebrow}
                           </span>
                           <span className={`mt-1 block truncate text-[16px] font-black tracking-[-0.018em] sm:text-[18px] sm:tracking-[-0.02em] ${selectedTask ? "text-[#0B1628]" : "text-[#7C879A]"}`}>
                             {selectedTask || "Choose a small job"}
@@ -995,60 +1055,82 @@ export default function BookPage() {
                     </div>
 
                     <div className="overflow-hidden rounded-[22px] bg-[#0B1628] p-3.5 text-white shadow-[0_18px_54px_rgba(7,19,37,0.14)] sm:rounded-[26px] sm:p-5 sm:shadow-[0_24px_70px_rgba(7,19,37,0.16)]">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
+                      {hasActiveMembership ? (
+                        <>
                           <div className="text-[11px] font-black uppercase tracking-[0.18em] text-white/55">
-                            Already a Member?
+                            Extra visit
                           </div>
                           <h3 className="mt-2 text-[19px] font-black leading-[1.05] tracking-[-0.03em] sm:text-[22px] sm:leading-[1.02] sm:tracking-[-0.035em]">
-                            Members do not pay {priceLabel} every visit.
+                            Use this when you need another visit before your membership renews.
                           </h3>
-                        </div>
-                        <Link
-                          href="/membership#plans"
-                          onClick={() =>
-                            trackEvent("membership_cta_clicked", {
-                              placement: "book_service_selector_card",
-                            })
-                          }
-                          className="hidden flex-shrink-0 rounded-full bg-white px-4 py-2 text-[12px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF] sm:inline-flex"
-                        >
-                          Compare
-                        </Link>
-                      </div>
-                      <div className="mt-4 grid gap-2">
-                        {[
-                          "Better long-term value",
-                          "More service flexibility",
-                          "Priority scheduling and project discounts may be included",
-                        ].map((benefit) => (
-                          <div key={benefit} className="flex items-center gap-2 text-[13px] font-semibold text-white/78">
-                            <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-[#86EFAC]">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <path
-                                  d="M5 12.5l4 4 10-10"
-                                  stroke="currentColor"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2.6"
-                                />
-                              </svg>
-                            </span>
-                            {benefit}
+                          <p className="mt-3 text-[13px] font-semibold leading-5 text-white/72">
+                            Your included membership visits stay available through the normal membership booking flow.
+                          </p>
+                          <Link
+                            href="/membership#pick-day"
+                            className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-[13px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF]"
+                          >
+                            Book included visit
+                          </Link>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <div className="text-[11px] font-black uppercase tracking-[0.18em] text-white/55">
+                                Need regular help?
+                              </div>
+                              <h3 className="mt-2 text-[19px] font-black leading-[1.05] tracking-[-0.03em] sm:text-[22px] sm:leading-[1.02] sm:tracking-[-0.035em]">
+                                A membership may be better if you expect ongoing visits.
+                              </h3>
+                            </div>
+                            <Link
+                              href="/membership#plans"
+                              onClick={() =>
+                                trackEvent("membership_cta_clicked", {
+                                  placement: "book_service_selector_card",
+                                })
+                              }
+                              className="hidden flex-shrink-0 rounded-full bg-white px-4 py-2 text-[12px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF] sm:inline-flex"
+                            >
+                              Compare
+                            </Link>
                           </div>
-                        ))}
-                      </div>
-                      <Link
-                        href="/membership#plans"
-                        onClick={() =>
-                          trackEvent("membership_cta_clicked", {
-                            placement: "book_service_selector_card_mobile",
-                          })
-                        }
-                        className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-full bg-white text-[13px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF] sm:hidden"
-                      >
-                        Compare Membership
-                      </Link>
+                          <div className="mt-4 grid gap-2">
+                            {[
+                              "Better long-term value",
+                              "Included member visits",
+                              "Priority scheduling and project discounts may be included",
+                            ].map((benefit) => (
+                              <div key={benefit} className="flex items-center gap-2 text-[13px] font-semibold text-white/78">
+                                <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-[#86EFAC]">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path
+                                      d="M5 12.5l4 4 10-10"
+                                      stroke="currentColor"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2.6"
+                                    />
+                                  </svg>
+                                </span>
+                                {benefit}
+                              </div>
+                            ))}
+                          </div>
+                          <Link
+                            href="/membership#plans"
+                            onClick={() =>
+                              trackEvent("membership_cta_clicked", {
+                                placement: "book_service_selector_card_mobile",
+                              })
+                            }
+                            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-full bg-white text-[13px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF] sm:hidden"
+                          >
+                            Compare Membership
+                          </Link>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1259,7 +1341,7 @@ export default function BookPage() {
 
                     <div className="mb-4 grid gap-2 text-[14px] text-[#475569]">
                       <div className="flex justify-between gap-4 rounded-[14px] bg-[#F8FAFF] px-4 py-3">
-                        <span>Visit</span>
+                        <span>{pageCopy.visitLabel}</span>
                         <strong className="text-right text-[#0B1628]">
                           {priceLabel} / {config.durationMinutes} minutes
                         </strong>
@@ -1289,7 +1371,7 @@ export default function BookPage() {
                     </div>
 
                     <div className="mb-4 rounded-[16px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-3 text-[13px] leading-6 text-[#64748B]">
-                      One-Time Visit reschedule or cancellation requests are handled by phone and require admin approval. Call{" "}
+                      {pageCopy.changeText}{" "}
                       <a
                         href={`tel:${config.cancellationPhone}`}
                         className="font-extrabold text-[#306EEC]"
@@ -1330,7 +1412,7 @@ export default function BookPage() {
         <div className="rounded-[24px] bg-white/88 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:p-5">
           <h2 className="text-[18px] font-extrabold text-[#0B1628]">What your visit includes</h2>
           <p className="mt-3 text-[14px] leading-6 text-[#64748B]">
-            One focused handyman visit up to {config.durationMinutes} minutes. The visit price covers the visit itself, and Profixter brings the tools.
+            {pageCopy.includeText}
           </p>
         </div>
         <div className="rounded-[24px] bg-white/88 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:p-5">
@@ -1350,7 +1432,7 @@ export default function BookPage() {
         <div className="rounded-[24px] bg-white/88 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:p-5">
           <h2 className="text-[18px] font-extrabold text-[#0B1628]">What happens after payment</h2>
           <p className="mt-3 text-[14px] leading-6 text-[#64748B]">
-            Admin reviews the paid request and sends confirmation shortly. If we cannot approve the job, cannot complete it within scope, or must cancel before service, you receive a full refund. One-Time Visit changes are handled by calling {config.cancellationPhone}.
+            Admin reviews the paid request and sends confirmation shortly. If we cannot approve the job, cannot complete it within scope, or must cancel before service, you receive a full refund. Changes are handled by calling {config.cancellationPhone}.
           </p>
         </div>
       </section>
@@ -1360,7 +1442,7 @@ export default function BookPage() {
           <div className="rounded-[28px] bg-[#EEF5FF] p-5 shadow-[0_18px_54px_rgba(48,110,236,0.08)]">
             <h2 className="text-[18px] font-extrabold text-[#0B1628]">Your bookings</h2>
             <p className="mt-2 text-[14px] leading-6 text-[#64748B]">
-              You can review One-Time Visits and Member visits together from your account.
+              {pageCopy.bookingsText}
             </p>
             <Link
               href="/account?tab=bookings"

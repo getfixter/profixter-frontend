@@ -3,10 +3,10 @@
 import { FormEvent, useState } from "react";
 import Footer from "@/app/components/sections/Footer";
 import Header from "@/app/components/sections/Header";
+import { PUBLIC_CONTACT_EMAIL as CONTACT_EMAIL } from "@/lib/contact";
 
 const CONTACT_PHONE_DISPLAY = "631-599-1363";
 const CONTACT_PHONE_TEL = "tel:6315991363";
-const CONTACT_EMAIL = "getfixter@gmail.com";
 const SUCCESS_MESSAGE = "Thank you — we received your request. We’ll reach out shortly.";
 
 type FormState = {

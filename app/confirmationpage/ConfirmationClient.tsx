@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import { trackPurchase } from "@/lib/analytics";
+import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
 
 export default function ConfirmationClient() {
   const searchParams = useSearchParams();
@@ -94,8 +95,8 @@ export default function ConfirmationClient() {
 
         <p className="mt-4 text-sm text-[#6A6D71]">
           Need help? Email{" "}
-          <a href="mailto:my@profixter.com" className="text-[#306EEC] underline">
-            my@profixter.com
+          <a href={PUBLIC_CONTACT_MAILTO} className="text-[#306EEC] underline">
+            {PUBLIC_CONTACT_EMAIL}
           </a>
         </p>
       </div>

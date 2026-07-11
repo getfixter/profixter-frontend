@@ -4,8 +4,12 @@ import { useState } from "react";
 
 const FAQS = [
   {
+    q: "Why become a Member instead of calling a handyman when something breaks?",
+    a: "Membership gives your home one ongoing team instead of a new search every time. You can book online, keep the small list moving, and work with a company that learns your home over time.",
+  },
+  {
     q: "What's included in the membership?",
-    a: "Your membership covers small and medium home tasks that fit within your visit time: repairs, installations, maintenance, drywall patches, caulking, paint touch-ups, doors, locks, shelves, fixtures, and similar handyman work. Large remodels, full-room painting, roofing, siding, and major trade work are handled separately.",
+    a: "Membership is built for small and medium home tasks that fit within your visit time: repairs, installations, maintenance, drywall patches, caulking, paint touch-ups, doors, locks, shelves, fixtures, and similar handyman work. Larger work moves into a project estimate.",
   },
   {
     q: "Are there limits per month?",
@@ -37,7 +41,11 @@ const FAQS = [
   },
   {
     q: "What if my job is bigger than a regular visit?",
-    a: "Larger projects like roofing, siding, bathroom remodeling, kitchen work, full-room painting, major electrical, major plumbing, or longer repairs are handled as separate project estimates.",
+    a: "Larger projects like roofing, siding, bathroom remodeling, kitchen work, full-room painting, major electrical, major plumbing, or longer repairs are handled as separate project estimates. You still stay with Profixter; the work just moves into the right path.",
+  },
+  {
+    q: "Can I still book only one visit?",
+    a: "Yes. If Membership is not the right fit today, you can book a one-time handyman visit. Membership is usually better for homeowners who expect to need help more than once.",
   },
   {
     q: "Are you licensed and insured?",
@@ -45,8 +53,15 @@ const FAQS = [
   },
 ] as const;
 
-export default function FAQSection() {
+type FAQSectionProps = {
+  hideCancellationUi?: boolean;
+};
+
+export default function FAQSection({ hideCancellationUi = false }: FAQSectionProps = {}) {
   const [open, setOpen] = useState<number | null>(null);
+  const faqs = hideCancellationUi
+    ? FAQS.filter(({ q }) => !q.toLowerCase().includes("cancellation"))
+    : FAQS;
 
   return (
     <section
@@ -68,15 +83,15 @@ export default function FAQSection() {
             </span>
           </div>
           <h2 className="text-[27px] font-extrabold leading-[1.12] tracking-[-0.025em] text-white sm:text-[42px] sm:tracking-[-0.03em]">
-            Questions Homeowners Ask
+            Questions before you become a Member
           </h2>
           <p className="mx-auto mt-4 max-w-[520px] text-[15px] leading-relaxed text-white/42 sm:text-[16px]">
-            Clear answers before you choose a plan.
+            Clear answers about how ongoing home care works, what fits, and what belongs in a project estimate.
           </p>
         </div>
 
         <div className="space-y-2">
-          {FAQS.map(({ q, a }, i) => {
+          {faqs.map(({ q, a }, i) => {
             const isOpen = open === i;
 
             return (

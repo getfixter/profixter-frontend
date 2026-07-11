@@ -37,64 +37,72 @@ export const metadata: Metadata = {
 const productCards = [
   {
     title: CORE_PRODUCTS[0].shortTitle,
-    eyebrow: "Ongoing home care",
+    eyebrow: "Primary relationship",
+    role: "Recommended starting point",
     href: CORE_PRODUCTS[0].href,
     cta: CORE_PRODUCTS[0].cta,
-    body: CORE_PRODUCTS[0].summary,
-    accent: "bg-[#0B1628]",
+    body: "The preferred way to work with Profixter: one trusted local team that learns your home and helps keep the list moving over time.",
+    accent: "bg-[#306EEC]",
+    featured: true,
   },
   {
     title: CORE_PRODUCTS[1].shortTitle,
-    eyebrow: "$99 / 90 minutes",
+    eyebrow: "When you only need one visit",
+    role: "One-time support",
     href: CORE_PRODUCTS[1].href,
     cta: CORE_PRODUCTS[1].cta,
-    body: CORE_PRODUCTS[1].summary,
+    body: "A focused handyman visit for one small job when Membership is not the right fit today.",
     accent: "bg-[#16A34A]",
+    featured: false,
   },
   {
     title: CORE_PRODUCTS[2].shortTitle,
-    eyebrow: "Renovation / construction",
+    eyebrow: "When the work is larger",
+    role: "Project path",
     href: CORE_PRODUCTS[2].href,
     cta: CORE_PRODUCTS[2].cta,
-    body: CORE_PRODUCTS[2].summary,
+    body: "Bathrooms, kitchens, roofing, siding, remodels, and larger work handled through a clear estimate path.",
     accent: "bg-[#D97706]",
+    featured: false,
   },
   {
     title: HOME_SUPPORT_AI.shortTitle,
-    eyebrow: "Free home answers",
+    eyebrow: "Before you hire",
+    role: "Guidance",
     href: HOME_SUPPORT_AI.href,
     cta: HOME_SUPPORT_AI.cta,
-    body: HOME_SUPPORT_AI.summary,
+    body: "Free homeowner guidance for repairs, maintenance, quotes, materials, and DIY-or-hire decisions.",
     accent: "bg-[#306EEC]",
+    featured: false,
   },
-];
+] as const;
 
 const trustItems = [
   {
     title: "Long Island focused",
-    body: "Built for Nassau and Suffolk homeowners, with a local base near Babylon and a practical understanding of real homes here.",
+    body: "Based near Babylon and built around the way Nassau and Suffolk homeowners actually maintain their homes.",
   },
   {
     title: "Licensed and insured",
     body: "Profixter operates with NY State Home Improvement Contractor license HI-71484 and insurance for peace of mind.",
   },
   {
-    title: "Clear booking",
-    body: "Homeowners choose the path that fits: Membership, a one-time visit, or a larger project estimate.",
+    title: "Membership-first",
+    body: "The clearest experience is ongoing care, with one-time visits and project estimates available when they make more sense.",
   },
   {
     title: "No contractor chasing",
-    body: "The goal is fewer callbacks, less guessing, and a better organized way to get help at home.",
+    body: "The goal is fewer callbacks, less guessing, and one organized place to turn when the home list grows.",
   },
   {
-    title: "Online scheduling",
-    body: "Small visit requests use online scheduling, photos, notes, and real admin approval before the visit is confirmed.",
+    title: "Organized intake",
+    body: "Photos, notes, scheduling, admin review, and project routing help the work start with context.",
   },
   {
     title: "The right scope",
-    body: "Small jobs stay small. Larger or multi-day work moves to Project Estimate. Appliance repair is not offered.",
+    body: "Small jobs stay simple. Larger work moves into a project estimate instead of being forced into the wrong visit.",
   },
-];
+] as const;
 
 const serviceAreas = [
   "Long Island",
@@ -108,23 +116,23 @@ const serviceAreas = [
 const faqs = [
   {
     q: "Are you a handyman company?",
-    a: "Yes. Profixter provides handyman help for small home tasks, but it is also more than a traditional handyman company. Homeowners can become a Member for ongoing care, book one visit for a small task, or request estimates for larger renovation and construction work.",
+    a: "Profixter handles handyman work, but the company is built to be more than a one-time repair option. Membership is the preferred experience, with one-time visits, renovations, and Profixter AI available when they fit the situation better.",
   },
   {
     q: "What is Membership?",
-    a: "Membership is Profixter's ongoing home care option. Members can request regular handyman help, get better long-term value than one-off visits, and work with a team that learns their home.",
+    a: "Membership is Profixter's ongoing home care relationship. Members can request handyman help, keep the home list moving, and work with a team that learns the home over time.",
   },
   {
     q: "Can I book one visit?",
-    a: "Yes. Book Handyman is a one-time visit for one small job, up to 90 minutes. You choose the task, time, notes, and photos before checkout. Admin approval happens after payment.",
+    a: "Yes. Book Handyman is available when you only need one small job handled. It is useful when Membership is not the right fit today.",
   },
   {
     q: "Do you do renovations?",
-    a: "Yes. Larger work like bathrooms, kitchens, roofing, siding, remodeling, and multi-day projects should start through the Home Projects estimate path.",
+    a: "Yes. Larger work like bathrooms, kitchens, roofing, siding, remodeling, and multi-day projects starts through the project estimate path. It stays connected to the same trusted local company.",
   },
   {
     q: "What is Profixter AI?",
-    a: "Profixter AI is a free homeowner assistant for questions about repairs, maintenance, safety, materials, contractor quotes, PDFs, shopping lists, and DIY-or-hire decisions.",
+    a: "Profixter AI helps homeowners before they hire. It can answer questions about repairs, maintenance, safety, materials, contractor quotes, PDFs, shopping lists, and DIY-or-hire decisions.",
   },
   {
     q: "Do you repair appliances?",
@@ -136,7 +144,7 @@ const faqs = [
   },
   {
     q: "How do I get started?",
-    a: "Choose Membership if you want ongoing home maintenance, Book Handyman for one small job, Renovation for larger work, or Profixter AI if you are unsure what path fits.",
+    a: "Start with Membership if you want a long-term home care company. Choose Book Handyman for one small job, Renovation for larger work, or Profixter AI if you are unsure what path fits.",
   },
 ];
 
@@ -175,20 +183,30 @@ function CheckIcon() {
 }
 
 function ProductCard({ product }: { product: (typeof productCards)[number] }) {
+  const isFeatured = product.featured;
+
   return (
     <Link
       href={product.href}
-      className="group rounded-[22px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:border-[#C7D9FF] hover:shadow-[0_28px_80px_rgba(48,110,236,0.12)]"
+      className={[
+        "group rounded-[22px] border p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:border-[#C7D9FF] hover:shadow-[0_28px_80px_rgba(48,110,236,0.12)]",
+        isFeatured
+          ? "bg-[#0B1628] text-white sm:p-7"
+          : "border-[#DDE5F0] bg-white",
+      ].join(" ")}
     >
       <span className={`mb-5 block h-2 w-12 rounded-full ${product.accent}`} />
-      <span className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
+      <span className={`text-[11px] font-black uppercase tracking-[0.18em] ${isFeatured ? "text-[#7BAEFF]" : "text-[#306EEC]"}`}>
         {product.eyebrow}
       </span>
-      <h3 className="mt-2 text-[24px] font-black leading-tight text-[#0B1628]">
+      <h3 className={`mt-2 text-[24px] font-black leading-tight ${isFeatured ? "text-white sm:text-[34px]" : "text-[#0B1628]"}`}>
         {product.title}
       </h3>
-      <p className="mt-3 text-[14px] leading-6 text-[#64748B]">{product.body}</p>
-      <span className="mt-5 inline-flex text-[14px] font-black text-[#0B1628]">
+      <p className={`mt-2 text-[12px] font-black uppercase tracking-[0.14em] ${isFeatured ? "text-white/42" : "text-[#94A3B8]"}`}>
+        {product.role}
+      </p>
+      <p className={`mt-3 text-[14px] leading-6 ${isFeatured ? "text-white/68 sm:text-[15px] sm:leading-7" : "text-[#64748B]"}`}>{product.body}</p>
+      <span className={`mt-5 inline-flex text-[14px] font-black ${isFeatured ? "text-white" : "text-[#0B1628]"}`}>
         {product.cta}
         <span className="ml-2 transition group-hover:translate-x-1">-&gt;</span>
       </span>
@@ -223,17 +241,17 @@ export default function AboutPage() {
             <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-white/88 px-3.5 py-1.5 shadow-sm backdrop-blur sm:px-4 sm:py-2">
               <span className="h-2 w-2 rounded-full bg-[#86EFAC]" />
               <span className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
-                Babylon based - Nassau and Suffolk
+                Modern home care - Long Island
               </span>
             </div>
             <h1 className="mt-4 max-w-[760px] text-[36px] font-black leading-[1] tracking-[-0.036em] text-[#0B1628] sm:mt-5 sm:text-[64px] sm:leading-[0.96] sm:tracking-[-0.045em] lg:text-[76px]">
-              A better way for Long Island homeowners to get help.
+              One company to take care of your home.
             </h1>
             <p className="mt-4 max-w-[680px] text-[15px] font-medium leading-7 text-[#34435C] sm:mt-5 sm:text-[18px] sm:leading-8">
-              Profixter is a modern local home service company built around three clear paths: Membership for ongoing care, Book Handyman for one small fix, and Renovation for larger projects.
+              Profixter is a modern Long Island home services company built around long-term relationships. Membership is the preferred way to work with us.
             </p>
             <p className="mt-3 max-w-[640px] text-[14px] leading-6 text-[#64748B] sm:mt-4 sm:text-[15px] sm:leading-7">
-              We exist because homeowners should not have to chase contractors, decode vague pricing, or start from zero every time something in the house needs attention.
+              When one visit, a renovation, or a question makes more sense, those paths stay connected to the same trusted local company.
             </p>
 
             <div className="mt-6 grid gap-2.5 sm:mt-7 sm:grid-cols-2 sm:gap-3">
@@ -243,10 +261,10 @@ export default function AboutPage() {
                 Become a Member
               </MembershipCtaLink>
               <Link
-                href="/book"
+                href="#ways-to-work"
                 className="inline-flex h-[50px] items-center justify-center rounded-[15px] border border-[#C5CBD8] bg-white/92 px-5 text-[14px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] sm:h-[54px] sm:rounded-[16px] sm:text-[15px]"
               >
-                Book Handyman
+                See How It Works
               </Link>
             </div>
           </div>
@@ -272,7 +290,7 @@ export default function AboutPage() {
               </div>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              {["Licensed HI-71484", "Fully insured", "Local team"].map((item) => (
+              {["Membership-first", "Licensed HI-71484", "Fully insured"].map((item) => (
                 <div key={item} className="rounded-[16px] bg-[#F8FAFF] px-4 py-3 text-[12px] font-black uppercase tracking-[0.12em] text-[#34435C]">
                   {item}
                 </div>
@@ -289,32 +307,36 @@ export default function AboutPage() {
               Founder story
             </div>
             <h2 className="mt-3 text-[29px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[52px] sm:leading-[1.02] sm:tracking-[-0.04em]">
-              Built because home help became too hard to trust.
+              Built because homeowners deserved one place to turn.
             </h2>
           </div>
 
           <div className="rounded-[24px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_56px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:p-8 sm:shadow-[0_22px_70px_rgba(15,23,42,0.06)]">
             <div className="space-y-4 text-[15px] leading-7 text-[#475569] sm:space-y-5 sm:text-[16px] sm:leading-8">
               <p>
-                Profixter was built by Taras Bandura after years in construction and home services, seeing the same problem repeat: homeowners could often find someone for a major project, but struggled to find reliable help for the everyday things.
+                Profixter was built by Taras Bandura after years in construction and home services, seeing the same problem repeat: every small home issue forced people to start over.
               </p>
               <p>
-                A faucet leak. A loose door. A light fixture. Drywall damage. A contractor quote that does not make sense. A maintenance list that keeps growing because every small task feels like its own search.
+                A faucet leak. A loose door. A light fixture. Drywall damage. A contractor quote that does not make sense. The list grows because every item feels like its own search.
               </p>
               <p>
-                Profixter makes that easier by giving homeowners a smarter first step. Ask Profixter AI, book one small visit, become a Member for ongoing care, or request a real estimate when the work is bigger.
+                Profixter simplifies that into one organized home care company: become a Member for ongoing help, book one visit when that is enough, ask Profixter AI before hiring, or move larger work into a real project estimate.
               </p>
               <p className="text-[19px] font-extrabold leading-8 text-[#0B1628]">
-                The promise is simple: clear paths, local accountability, and a home service experience that feels organized from the start.
+                The promise is simple: your home should have a company that already knows where to start.
               </p>
             </div>
 
             <div className="mt-7 grid gap-3 sm:grid-cols-3">
-              {["Human", "Local", "Organized"].map((word) => (
+              {[
+                ["Long-term", "Built for relationships, not one-off callbacks."],
+                ["Local", "Based near Babylon and accountable to Long Island homeowners."],
+                ["Organized", "The right path for small visits, larger projects, and questions."],
+              ].map(([word, body]) => (
                 <div key={word} className="rounded-[18px] border border-[#E5E9F2] bg-[#F8FAFF] p-4">
                   <div className="text-[20px] font-black text-[#0B1628]">{word}</div>
                   <div className="mt-1 text-[13px] leading-5 text-[#64748B]">
-                    A practical standard for every homeowner interaction.
+                    {body}
                   </div>
                 </div>
               ))}
@@ -331,10 +353,10 @@ export default function AboutPage() {
                 Founder video
               </div>
               <h2 className="mt-3 text-[28px] font-black leading-tight tracking-[-0.03em] sm:text-[48px] sm:tracking-[-0.035em]">
-                A place for Taras to explain Profixter in his own words.
+                Hear why Profixter was built.
               </h2>
               <p className="mt-4 text-[15px] leading-7 text-white/68 sm:mt-5 sm:text-[16px] sm:leading-8">
-                Watch the founder story, the local mission, and how Profixter helps homeowners choose the right path before hiring.
+                Taras explains the local mission and why homeowners need a more organized way to take care of a home.
               </p>
             </div>
 
@@ -355,21 +377,27 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+      <section id="ways-to-work" className="scroll-mt-[120px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <div className="mx-auto max-w-[1240px]">
           <div className="max-w-[760px]">
             <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
-              What we offer
+              One company, four paths
             </div>
             <h2 className="mt-3 text-[29px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[52px] sm:leading-[1.02] sm:tracking-[-0.04em]">
-              Three ways to get work handled, with AI when you are unsure.
+              Membership first. Support for everything else.
             </h2>
+            <p className="mt-4 max-w-[680px] text-[15px] leading-7 text-[#64748B] sm:text-[16px] sm:leading-8">
+              These are not separate businesses. They are different ways to work with the same local home service company.
+            </p>
           </div>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {productCards.map((product) => (
-              <ProductCard key={product.title} product={product} />
-            ))}
+          <div className="mt-8 grid gap-4 lg:grid-cols-[1.08fr_1fr] lg:items-stretch">
+            <ProductCard product={productCards[0]} />
+            <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+              {productCards.slice(1).map((product) => (
+                <ProductCard key={product.title} product={product} />
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -381,10 +409,10 @@ export default function AboutPage() {
               Why homeowners trust Profixter
             </div>
             <h2 className="mt-3 text-[29px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[52px] sm:leading-[1.02] sm:tracking-[-0.04em]">
-              Trust is built into the process, not bolted on later.
+              Trust is built into the relationship.
             </h2>
             <p className="mt-4 text-[15px] leading-7 text-[#64748B] sm:mt-5 sm:text-[16px] sm:leading-8">
-              Profixter is designed to reduce confusion before anyone arrives: clear service paths, photos and notes before visits, admin review, and a separate estimate path for work that should not be squeezed into a small handyman appointment.
+              Profixter is designed to reduce uncertainty before anyone arrives: clear service paths, photos and notes before visits, admin review, and project routing when the work should not be squeezed into a small appointment.
             </p>
           </div>
 
@@ -412,10 +440,10 @@ export default function AboutPage() {
                 Service area
               </div>
               <h2 className="mt-3 text-[29px] font-black leading-tight tracking-[-0.034em] text-[#0B1628] sm:text-[48px] sm:tracking-[-0.04em]">
-                Local to Long Island, built around Nassau and Suffolk homes.
+                Local to Long Island. Built for real homes here.
               </h2>
               <p className="mt-4 text-[15px] leading-7 text-[#475569] sm:mt-5 sm:text-[16px] sm:leading-8">
-                Profixter is based near Babylon and serves Long Island homeowners across Nassau and Suffolk Counties.
+                Profixter is based near Babylon and serves homeowners across Nassau and Suffolk Counties with a practical understanding of how local homes age, break, and improve.
               </p>
             </div>
 
@@ -437,7 +465,7 @@ export default function AboutPage() {
               FAQ
             </div>
             <h2 className="mt-3 text-[29px] font-black leading-tight tracking-[-0.034em] text-[#0B1628] sm:text-[52px] sm:tracking-[-0.04em]">
-              Answers before you choose.
+              Clear answers before you choose a path.
             </h2>
           </div>
 
@@ -460,23 +488,28 @@ export default function AboutPage() {
                 Start with the right path
               </div>
               <h2 className="mt-3 text-[29px] font-black leading-tight tracking-[-0.034em] sm:text-[52px] sm:tracking-[-0.04em]">
-                Tell Profixter what kind of home help you need.
+                Start with Membership. Stay with Profixter as your home changes.
               </h2>
               <p className="mt-4 text-[15px] leading-7 text-white/68 sm:mt-5 sm:text-[16px] sm:leading-8">
-                Become a Member for ongoing care, book one small handyman job, request a renovation estimate, or ask Profixter AI if you are unsure.
+                The goal is simple: one trusted company that can help with the small list, the big project, and the questions in between.
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              {productCards.map((product) => (
-                <Link
-                  key={product.cta}
-                  href={product.href}
-                  className="rounded-[18px] border border-white/12 bg-white/[0.07] px-5 py-4 text-[15px] font-black text-white transition hover:bg-white hover:text-[#0B1628]"
-                >
-                  {product.cta}
-                </Link>
-              ))}
+            <div className="grid gap-3">
+              <MembershipCtaLink className="inline-flex min-h-[58px] items-center justify-center rounded-[18px] bg-white px-5 text-[15px] font-black text-[#0B1628] transition hover:bg-[#EEF5FF]">
+                Become a Member
+              </MembershipCtaLink>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {productCards.slice(1).map((product) => (
+                  <Link
+                    key={product.cta}
+                    href={product.href}
+                    className="rounded-[18px] border border-white/12 bg-white/[0.07] px-4 py-4 text-center text-[13px] font-black text-white transition hover:bg-white hover:text-[#0B1628]"
+                  >
+                    {product.cta}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </div>

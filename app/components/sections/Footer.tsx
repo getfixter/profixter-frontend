@@ -7,6 +7,7 @@ import {
   FOOTER_SEO_LINKS,
   FOOTER_PRODUCT_LINKS,
 } from "@/lib/site-architecture";
+import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
 
 const TRUST_BADGES = [
   "Licensed HI-71484",
@@ -133,10 +134,10 @@ export default function Footer() {
             </div>
             <div className="flex flex-col gap-3">
               <a
-                href="mailto:my@profixter.com"
+                href={PUBLIC_CONTACT_MAILTO}
                 className="break-all text-[14px] font-medium text-[#9AA3B2] transition-colors hover:text-white sm:text-[15px]"
               >
-                my@profixter.com
+                {PUBLIC_CONTACT_EMAIL}
               </a>
               <a
                 href="https://instagram.com/mrfixter.ny"

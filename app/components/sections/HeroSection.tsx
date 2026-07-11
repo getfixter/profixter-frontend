@@ -16,14 +16,14 @@ type NextBookingResponse = {
 };
 
 const BENEFITS = [
-  "Ongoing Home Care",
-  "Trusted Local Team",
-  "Month-to-Month Membership",
+  "One Trusted Team",
+  "Predictable Monthly Care",
+  "No Contractor Search",
 ];
 
 const TRUST_ROW = [
   "4.9 Google rating",
-  "Long Island local",
+  "Licensed and insured",
   "No long-term contract",
 ];
 
@@ -115,13 +115,13 @@ export default function HeroSection() {
         ? {
             primaryLabel: "Become a Member",
             primaryAction: goToPlans,
-            secondaryLabel: "Book One-Time Visit",
+            secondaryLabel: "Need just one visit?",
             secondaryAction: goToOneTimeBooking,
           }
         : {
             primaryLabel: "Become a Member",
             primaryAction: goToSignupForMembership,
-            secondaryLabel: "Book One-Time Visit",
+            secondaryLabel: "Need just one visit?",
             secondaryAction: goToOneTimeBooking,
           };
 
@@ -143,20 +143,20 @@ export default function HeroSection() {
       <div className="relative mx-auto flex min-h-[calc(100svh-92px)] max-w-[1180px] items-center px-4 py-12 sm:min-h-[calc(100svh-104px)] sm:px-6 sm:py-20 lg:min-h-[calc(100svh-116px)] lg:px-8">
         <div className="w-full max-w-[680px] text-left">
           <h1 className="max-w-[350px] text-[34px] font-black leading-[1] tracking-[-0.02em] text-white sm:max-w-[680px] sm:text-[60px] sm:leading-[0.98] sm:tracking-[-0.028em] lg:text-[66px]">
-            <span className="block">We Take Care</span>
-            <span className="block">Of Your House</span>
+            <span className="block">We take care</span>
+            <span className="block">of your home.</span>
           </h1>
 
           <p className="mt-5 max-w-[350px] text-[15px] font-semibold leading-[1.5] text-white/76 sm:mt-6 sm:max-w-[590px] sm:text-[20px] sm:leading-[1.55]">
-            Membership gives Long Island homeowners one reliable way to keep the home list moving month after month, without starting a new contractor search every time.
+            Profixter Membership gives Long Island homeowners one reliable team for small repairs, maintenance, and the home list that never really ends.
           </p>
 
           <div className="mt-6 inline-flex max-w-[350px] items-center gap-2.5 rounded-full border border-white/12 bg-white/8 px-3.5 py-2 text-[12px] font-extrabold text-white/78 backdrop-blur-md sm:mt-7 sm:max-w-none sm:gap-3 sm:px-4 sm:py-2.5 sm:text-[13px]">
-            <span>Become a Member</span>
+            <span>Membership first</span>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="text-[#86EFAC]" aria-hidden="true">
               <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span>Request ongoing help</span>
+            <span>Ongoing home care</span>
           </div>
 
           <div className="mt-6 flex max-w-[350px] flex-col gap-2.5 sm:mt-7 sm:max-w-none sm:flex-row sm:flex-wrap sm:gap-3">
@@ -193,24 +193,19 @@ export default function HeroSection() {
             </button>
           </div>
 
-          <div className="mt-7 flex max-w-[350px] flex-col gap-3 sm:max-w-none sm:flex-row sm:items-center">
-            <p className="text-[14px] font-bold text-white/50">
-              Need roofing or siding?
+          <div className="mt-7 max-w-[350px] rounded-[16px] border border-white/12 bg-white/8 p-4 backdrop-blur-md sm:max-w-[520px]">
+            <p className="text-[13px] font-bold leading-5 text-white/55">
+              Planning something bigger later?
             </p>
-            <div className="grid grid-cols-2 gap-2 sm:w-[210px]">
-              <Link
-                href="/roofing"
-                className="inline-flex h-[40px] items-center justify-center rounded-[12px] border border-[#D4A574]/28 bg-[#D4A574]/12 px-4 text-[14px] font-extrabold text-[#E8C49A] transition hover:bg-[#D4A574]/18"
-              >
-                Roofing
-              </Link>
-              <Link
-                href="/siding"
-                className="inline-flex h-[40px] items-center justify-center rounded-[12px] border border-white/16 bg-white/8 px-4 text-[14px] font-extrabold text-white/78 transition hover:bg-white/13 hover:text-white"
-              >
-                Siding
-              </Link>
-            </div>
+            <p className="mt-1 text-[14px] font-semibold leading-6 text-white/78">
+              The same trusted company can help with renovations when your home needs more than a regular visit.
+            </p>
+            <Link
+              href="/projects"
+              className="mt-3 inline-flex text-[13px] font-extrabold text-[#E8C49A] transition hover:text-white"
+            >
+              See larger projects -&gt;
+            </Link>
           </div>
 
           <div className="mt-7 flex max-w-[350px] flex-wrap items-center gap-x-4 gap-y-2 text-white/48 sm:mt-8 sm:max-w-none sm:gap-x-5">

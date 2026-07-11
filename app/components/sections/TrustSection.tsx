@@ -27,9 +27,16 @@ const ALSO_SERVING_TOWNS = [
 function CheckItem({ children, light = false }: { children: React.ReactNode; light?: boolean }) {
   return (
     <li className="flex items-start gap-3">
-      <span className={`mt-[1px] text-[14px] font-bold ${light ? "text-[#86EFAC]" : "text-[#0F172A]"}`}>
-        ✓
-      </span>
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+        className={`mt-[4px] flex-none ${light ? "text-[#86EFAC]" : "text-[#0F172A]"}`}
+      >
+        <path d="M5 12.5l4 4 10-10" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
       <span className={`text-[14px] leading-relaxed ${light ? "text-[#E2E8F0]" : "text-[#1E293B]"}`}>
         {children}
       </span>
@@ -141,18 +148,18 @@ function TrustReasonsCard() {
         </div>
 
         <h3 className="mt-5 text-[24px] font-extrabold leading-tight tracking-[-0.02em] text-[#0F172A]">
-          Why homeowners trust us
+          Built for repeat trust
         </h3>
 
         <ul className="mt-6 space-y-3">
           <CheckItem>Licensed &amp; insured</CheckItem>
           <CheckItem>Long Island local company</CheckItem>
           <CheckItem>Same trusted team every visit</CheckItem>
-          <CheckItem>Nearly 10 years of home service experience</CheckItem>
+          <CheckItem>Home notes and context carry forward</CheckItem>
         </ul>
 
         <p className="mt-auto pt-7 text-[13px] leading-relaxed text-[#64748B]">
-          Homeowners know who is coming to their home and can rely on the same trusted team month after month.
+          Membership works because the relationship continues. Your home gets easier to care for when the team already knows it.
         </p>
       </div>
     </div>
@@ -216,11 +223,11 @@ export default function TrustSection() {
           </span>
 
           <h2 className="mt-4 text-[26px] font-extrabold leading-[1.08] tracking-[-0.03em] text-[#0F172A] sm:mt-5 sm:text-[40px] sm:leading-[1.06] sm:tracking-[-0.035em] lg:text-[48px]">
-            Why Homeowners Trust Profixter
+            A local company you can keep coming back to.
           </h2>
 
           <p className="mx-auto mt-3 max-w-[560px] text-[14px] leading-relaxed text-[#475569] sm:mt-5 sm:text-[16px]">
-            Licensed. Insured. Local. Reviewed.
+            Membership only works if the company is accountable. Profixter is licensed, insured, reviewed, and local to Long Island.
           </p>
         </div>
 

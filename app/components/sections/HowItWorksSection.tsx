@@ -5,26 +5,26 @@ import Image from "next/image";
 const HOW_CARDS = [
   {
     n: "01",
-    title: "One simple monthly price",
-    body: "No hunting for contractors, no estimate for every small job. Pay once a month - and your home is covered. You always know exactly what you're spending.",
+    title: "One home care relationship",
+    body: "Instead of starting over with a new contractor each time, your home has one familiar team and one simple membership.",
     accent: "#306EEC",
   },
   {
     n: "02",
-    title: "Book any time you're ready",
-    body: "Each visit is 90 minutes. Log in, pick a day that works, and tell us what to tackle. No phone tag, no waiting around. You're in control.",
+    title: "Book when the list is ready",
+    body: "Log in, choose a day, add notes and photos, and tell us what to handle during your visit.",
     accent: "#4ADE80",
   },
   {
     n: "03",
-    title: "Same team. Every single visit.",
-    body: "No rotating strangers. The same trusted pros show up each time - they learn your home, your preferences, your running list. It gets better the longer you're a member.",
+    title: "The team learns your home",
+    body: "Over time, Profixter knows your preferences, recurring issues, access details, and the repairs you care about most.",
     accent: "#86EFAC",
   },
   {
     n: "04",
     title: "Your home improves over time",
-    body: "Instead of scrambling when things break, you stay ahead of it - month by month. Small issues handled before they become expensive ones.",
+    body: "Small items stop piling up. Maintenance becomes easier to plan. Homeownership feels less reactive.",
     accent: "#D4A574",
   },
 ] as const;
@@ -52,13 +52,13 @@ export default function HowItWorksSection() {
           </div>
 
           <h2 className="mb-4 text-[28px] font-black leading-[1.02] tracking-[-0.03em] text-[#0B1628] sm:mb-5 sm:text-[50px] sm:leading-[0.92] sm:tracking-[-0.04em] lg:text-[60px]">
-            One team. One bill.
+            One team. One home.
             <br />
-            <span className="text-[#306EEC]">No surprises.</span>
+            <span className="text-[#306EEC]">Ongoing care.</span>
           </h2>
 
           <p className="mx-auto max-w-[540px] text-[15px] leading-relaxed text-[#475569] sm:text-[17px]">
-            Most homeowners haven&apos;t seen this model before. Here&apos;s exactly what to expect - clear and simple.
+            Membership turns home maintenance into a simple routine instead of a new search every time something breaks.
           </p>
         </div>
 
@@ -123,34 +123,29 @@ export default function HowItWorksSection() {
             </div>
 
             <h3 className="mt-8 text-[29px] font-black leading-[1.06] tracking-[-0.03em] text-[#0B1628] sm:mt-10 sm:text-[48px] sm:leading-[1.02] sm:tracking-[-0.035em]">
-              Why I Created Profixter
+              Why Profixter exists
             </h3>
 
-            <div className="mx-auto mt-6 max-w-[680px] space-y-4 text-left text-[15px] leading-[1.72] text-[#334155] sm:mt-8 sm:space-y-5 sm:text-[17px] sm:leading-[1.82]">
+            <div className="mx-auto mt-6 max-w-[680px] space-y-4 text-left text-[15px] leading-[1.72] text-[#334155] sm:mt-8 sm:space-y-5 sm:text-[17px] sm:leading-[1.78]">
               <p>
-                After nearly 10 years in home improvement and home maintenance, I noticed the same problem over and over again.
+                After nearly 10 years in home improvement and home maintenance, I kept seeing the same gap.
               </p>
               <p>
-                Homeowners weren&apos;t struggling to find someone for a major renovation. They were struggling to find someone reliable for the small things.
+                Homeowners could usually find someone for a major renovation. The hard part was finding reliable help for the everyday things: the leak, the loose door, the fixture, the drywall patch, the list that keeps getting pushed off.
               </p>
               <p>
-                A leaking faucet. A loose door. A light fixture. Drywall repairs. A growing list of small jobs that never seemed important enough for contractors to prioritize.
+                Every small issue forced people to start over. Search again. Call again. Explain the house again. Hope someone shows up.
               </p>
-              <p>
-                Every time something needed attention, homeowners had to start from scratch. They searched online, called multiple companies, waited for callbacks, scheduled estimates, compared prices, and hoped someone would actually show up.
-              </p>
-              <p>I kept thinking there had to be a better way.</p>
               <p className="text-[19px] font-extrabold leading-[1.55] text-[#0B1628] sm:text-[21px]">
-                Your home needs regular attention, not just emergency repairs.
+                Your home needs regular attention, not a new contractor search every month.
               </p>
-              <p>That&apos;s why I created Profixter.</p>
               <p>
-                Instead of finding a new handyman every time something breaks, members have a trusted team that gets to know their home over time. We show up regularly, help with ongoing maintenance, and take care of the small issues before they become expensive problems.
+                That&apos;s why Profixter is built around Membership. Members have one team that gets to know the home, keeps the list moving, and helps small issues get handled before they become bigger problems.
               </p>
-              <div className="space-y-2 py-2 text-[17px] font-extrabold leading-relaxed text-[#0B1628]">
-                <p>No estimate for every small task.</p>
-                <p>No surprise invoices.</p>
-                <p>No starting over every time.</p>
+              <div className="grid gap-2 py-2 text-[15px] font-extrabold leading-relaxed text-[#0B1628] sm:grid-cols-3 sm:text-center">
+                <p className="rounded-[16px] bg-[#F8FAFF] px-4 py-3">No starting over.</p>
+                <p className="rounded-[16px] bg-[#F8FAFF] px-4 py-3">No contractor chase.</p>
+                <p className="rounded-[16px] bg-[#F8FAFF] px-4 py-3">No guesswork.</p>
               </div>
               <p>Just a simple, predictable way to take care of your home.</p>
               <div className="pt-3 text-[#0B1628]">
