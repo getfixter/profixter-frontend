@@ -40,10 +40,10 @@ type ContractFormState = {
   totalPrice: string;
   depositRequired: string;
   paymentSchedule: PaymentScheduleDraft[];
+  fullDepositConfirmed: boolean;
   contractDate: string;
   estimatedStartDate: string;
   estimatedCompletionDate: string;
-  cancellationDeadline: string;
   materialsAllowances: string;
   exclusions: string;
   permitResponsibility: string;
@@ -62,12 +62,6 @@ const STATUS_STYLES: Record<ContractStatus, string> = {
 
 function todayDate() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function addDaysDate(days: number) {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
 }
 
 function dateOnly(value?: string | null) {
@@ -90,6 +84,21 @@ function centsFromMoney(value: string) {
 function dollarsFromCents(cents: number) {
   if (!cents) return "";
   return (Number(cents || 0) / 100).toFixed(2);
+}
+
+const FULL_DEPOSIT_WARNING =
+  "The entered deposit equals 100% of the contract price. Confirm that full payment is intentionally due before work begins.";
+
+function normalizeComparableText(value: string) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^\w\s]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function addressHasStateAndZip(address: string) {
+  return /\b[A-Z]{2}\b/i.test(address) && /\b\d{5}(?:-\d{4})?\b/.test(address);
 }
 
 function displayDate(value?: string | null) {
@@ -138,10 +147,10 @@ function defaultForm(project: Project): ContractFormState {
     totalPrice: project.estimateAmount ? String(project.estimateAmount) : "",
     depositRequired: project.depositAmount ? String(project.depositAmount) : "",
     paymentSchedule: [],
+    fullDepositConfirmed: false,
     contractDate: todayDate(),
     estimatedStartDate: "",
     estimatedCompletionDate: "",
-    cancellationDeadline: addDaysDate(3),
     materialsAllowances: "",
     exclusions: "",
     permitResponsibility: "",
@@ -164,6 +173,7 @@ function formFromContract(contract: ProjectContract): ContractFormState {
     scopeText: contract.scopeText || "",
     totalPrice: dollarsFromCents(contract.totalPriceCents),
     depositRequired: dollarsFromCents(contract.depositAmountCents),
+    fullDepositConfirmed: !!contract.fullDepositConfirmed,
     paymentSchedule: (contract.paymentSchedule || []).map((row, index) => ({
       id: row._id || `${index}-${row.label}`,
       label: row.label,
@@ -173,7 +183,6 @@ function formFromContract(contract: ProjectContract): ContractFormState {
     contractDate: dateOnly(contract.dates.contractDate),
     estimatedStartDate: dateOnly(contract.dates.estimatedStartDate),
     estimatedCompletionDate: dateOnly(contract.dates.estimatedCompletionDate),
-    cancellationDeadline: dateOnly(contract.dates.cancellationDeadline),
     materialsAllowances: contract.optionalDetails.materialsAllowances || "",
     exclusions: contract.optionalDetails.exclusions || "",
     permitResponsibility: contract.optionalDetails.permitResponsibility || "",
@@ -202,6 +211,7 @@ function buildPayload(project: Project, form: ContractFormState): ProjectContrac
     scopeText: form.scopeText,
     totalPriceCents: centsFromMoney(form.totalPrice),
     depositAmountCents: centsFromMoney(form.depositRequired),
+    fullDepositConfirmed: form.fullDepositConfirmed,
     paymentSchedule: form.paymentSchedule.map((row, index) => ({
       label: row.label,
       amountCents: centsFromMoney(row.amount),
@@ -212,7 +222,6 @@ function buildPayload(project: Project, form: ContractFormState): ProjectContrac
       contractDate: form.contractDate,
       estimatedStartDate: form.estimatedStartDate || null,
       estimatedCompletionDate: form.estimatedCompletionDate || null,
-      cancellationDeadline: form.cancellationDeadline,
     },
     optionalDetails: {
       materialsAllowances: form.materialsAllowances,
@@ -263,7 +272,7 @@ function PdfPreview({
           </p>
         </div>
         <div className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">
-          Terms {meta?.termsVersion || "loading"}
+          Agreement Preview
         </div>
       </div>
 
@@ -305,10 +314,12 @@ function PdfPreview({
             </div>
           ))}
         </div>
-        <div className="grid gap-3 text-sm sm:grid-cols-3">
+        <div className="grid gap-3 text-sm sm:grid-cols-2">
           <div><p className="text-slate-500">Start</p><strong>{displayDate(form.estimatedStartDate)}</strong></div>
           <div><p className="text-slate-500">Completion</p><strong>{displayDate(form.estimatedCompletionDate)}</strong></div>
-          <div><p className="text-slate-500">Cancel by</p><strong>{displayDate(form.cancellationDeadline)}</strong></div>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-600">
+          Cancellation notice: {meta?.cancellationNotice?.includeCancellationNotice ? "Included from centralized legal notice config. No manual calendar deadline is generated." : "Disabled in centralized legal notice config."}
         </div>
       </div>
     </section>
@@ -347,6 +358,56 @@ export default function ProjectContracts({ project }: { project: Project }) {
     );
     return { total, deposit, remaining, percentage, scheduleTotal };
   }, [form.depositRequired, form.paymentSchedule, form.totalPrice]);
+  const contractWarnings = useMemo(() => {
+    const warnings: Array<{ code: string; message: string; requiresConfirmation?: boolean }> = [];
+    const description = normalizeComparableText(form.projectDescription);
+    const scope = normalizeComparableText(form.scopeText);
+
+    if (totals.total > 0 && totals.deposit === totals.total) {
+      warnings.push({
+        code: "full_deposit",
+        message: FULL_DEPOSIT_WARNING,
+        requiresConfirmation: true,
+      });
+    }
+    if (description && scope && description === scope) {
+      warnings.push({
+        code: "duplicate_description_scope",
+        message: "Project Description and Scope of Work are identical. The PDF will avoid repeating the same text twice.",
+      });
+    }
+    if (!form.estimatedCompletionDate) {
+      warnings.push({
+        code: "missing_completion",
+        message: "Estimated completion date is missing.",
+      });
+    }
+    if (!addressHasStateAndZip(form.propertyAddress)) {
+      warnings.push({
+        code: "missing_state_zip",
+        message: "Customer address may be missing a state or ZIP code.",
+      });
+    }
+    if (scope && scope.length < 80) {
+      warnings.push({
+        code: "short_scope",
+        message: "Scope of Work is unusually short. Add enough detail for the customer to understand what is included.",
+      });
+    }
+    return warnings;
+  }, [
+    form.estimatedCompletionDate,
+    form.projectDescription,
+    form.propertyAddress,
+    form.scopeText,
+    totals.deposit,
+    totals.total,
+  ]);
+  const requiresFullDepositConfirmation = contractWarnings.some(
+    (warning) => warning.code === "full_deposit"
+  );
+  const missingFullDepositConfirmation =
+    requiresFullDepositConfirmation && !form.fullDepositConfirmed;
   const currentSignature = useMemo(
     () => contractPayloadSignature(project, form),
     [form, project]
@@ -387,12 +448,22 @@ export default function ProjectContracts({ project }: { project: Project }) {
   }, [loadContracts]);
 
   const updateField = <K extends keyof ContractFormState>(field: K, value: ContractFormState[K]) => {
-    setForm((current) => ({ ...current, [field]: value }));
+    setForm((current) => ({
+      ...current,
+      [field]: value,
+      ...(field === "totalPrice" || field === "depositRequired"
+        ? { fullDepositConfirmed: false }
+        : {}),
+    }));
   };
 
   const saveDraft = async () => {
     if (!canSaveOrGenerateDraft) {
       setSuccess("No changes to save. The generated contract was left unchanged.");
+      return null;
+    }
+    if (missingFullDepositConfirmation) {
+      setError(FULL_DEPOSIT_WARNING);
       return null;
     }
     setSaving(true);
@@ -423,7 +494,11 @@ export default function ProjectContracts({ project }: { project: Project }) {
     setError("");
     setSuccess("");
     try {
-      const generated = await generateProjectContractPdf(project._id, saved._id);
+      const generated = await generateProjectContractPdf(
+        project._id,
+        saved._id,
+        form.fullDepositConfirmed
+      );
       setContracts((current) => current.map((contract) => (contract._id === generated._id ? generated : contract)));
       setSelectedContractId(generated._id);
       setForm(formFromContract(generated));
@@ -464,7 +539,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
         `Hi ${selectedContract.customerSnapshot.fullName || "there"},`,
         "",
         "Attached is your Premium Island Homes contract for review.",
-        "Please review the scope, payment schedule, and cancellation notice. If everything looks good, sign and return the contract so we can move forward.",
+        "Please review the scope, payment schedule, terms, and signature page. If everything looks good, sign and return the contract so we can move forward.",
         "",
         "Thank you,",
         "Premium Island Homes Inc.",
@@ -607,10 +682,10 @@ export default function ProjectContracts({ project }: { project: Project }) {
             <button type="button" onClick={createNewDraft} className="rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-white hover:bg-white/10">
               New Draft
             </button>
-            <button type="button" onClick={saveDraft} disabled={saving || !!workingAction} className="rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-950 hover:bg-slate-100 disabled:opacity-60">
+            <button type="button" onClick={saveDraft} disabled={saving || !!workingAction || missingFullDepositConfirmation} className="rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-950 hover:bg-slate-100 disabled:opacity-60">
               {saving ? "Saving..." : "Save Draft"}
             </button>
-            <button type="button" onClick={handleGenerate} disabled={!canSaveOrGenerateDraft || saving || !!workingAction} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-60">
+            <button type="button" onClick={handleGenerate} disabled={!canSaveOrGenerateDraft || saving || !!workingAction || missingFullDepositConfirmation} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-60">
               Generate PDF
             </button>
           </div>
@@ -620,6 +695,28 @@ export default function ProjectContracts({ project }: { project: Project }) {
 
       {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">{error}</div>}
       {success && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-700">{success}</div>}
+
+      {contractWarnings.length > 0 && (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-black">Review before generating</p>
+          <ul className="mt-2 space-y-1">
+            {contractWarnings.map((warning) => (
+              <li key={warning.code}>{warning.message}</li>
+            ))}
+          </ul>
+          {requiresFullDepositConfirmation && (
+            <label className="mt-3 flex gap-3 rounded-xl border border-amber-200 bg-white/70 p-3 font-semibold text-amber-950">
+              <input
+                type="checkbox"
+                checked={form.fullDepositConfirmed}
+                onChange={(event) => updateField("fullDepositConfirmed", event.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-amber-300"
+              />
+              <span>I confirm full payment is intentionally due before work begins.</span>
+            </label>
+          )}
+        </section>
+      )}
 
       {contracts.length > 0 && (
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -754,10 +851,6 @@ export default function ProjectContracts({ project }: { project: Project }) {
                 <input required type="date" value={form.contractDate} onChange={(event) => updateField("contractDate", event.target.value)} className={inputClass} />
               </label>
               <label className="text-sm font-semibold text-slate-700">
-                Cancellation deadline *
-                <input required type="date" value={form.cancellationDeadline} onChange={(event) => updateField("cancellationDeadline", event.target.value)} className={inputClass} />
-              </label>
-              <label className="text-sm font-semibold text-slate-700">
                 Estimated start
                 <input type="date" value={form.estimatedStartDate} onChange={(event) => updateField("estimatedStartDate", event.target.value)} className={inputClass} />
               </label>
@@ -837,6 +930,12 @@ export default function ProjectContracts({ project }: { project: Project }) {
                   <p className="mt-1 leading-6 text-slate-600">{section.body}</p>
                 </div>
               ))}
+              {meta?.cancellationNotice?.includeCancellationNotice && (
+                <div className="text-sm">
+                  <p className="font-bold text-slate-900">{meta.cancellationNotice.title}</p>
+                  <p className="mt-1 leading-6 text-slate-600">{meta.cancellationNotice.body}</p>
+                </div>
+              )}
             </div>
           </details>
         </div>

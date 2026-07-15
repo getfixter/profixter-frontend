@@ -854,12 +854,12 @@ export interface ProjectContractInput {
   scopeText: string;
   totalPriceCents: number;
   depositAmountCents: number;
+  fullDepositConfirmed?: boolean;
   paymentSchedule: ContractPaymentScheduleRow[];
   dates: {
     contractDate: string;
     estimatedStartDate: string | null;
     estimatedCompletionDate: string | null;
-    cancellationDeadline: string;
   };
   optionalDetails: {
     materialsAllowances: string;
@@ -879,6 +879,8 @@ export interface ProjectContract {
   projectId: string;
   status: ContractStatus;
   termsVersion: string;
+  legalNoticeVersion?: string;
+  fullDepositConfirmed?: boolean;
   customerSnapshot: ProjectContractInput["customerSnapshot"];
   propertySnapshot: ProjectContractInput["propertySnapshot"];
   workType: ContractWorkType;
@@ -940,6 +942,13 @@ export interface ContractMeta {
   statuses: string[];
   termsVersion: string;
   termsSections: Array<{ title: string; body: string }>;
+  cancellationNotice?: {
+    includeCancellationNotice: boolean;
+    termsVersion: string;
+    title: string;
+    body: string;
+  };
+  cancellationNoticeAttorneyReviewNote?: string;
   sourceUrls: string[];
   attorneyReviewNote: string;
   maxSignedPdfBytes: number;
@@ -1828,9 +1837,13 @@ export const saveProjectContractDraft = async (
 
 export const generateProjectContractPdf = async (
   projectId: string,
-  contractId: string
+  contractId: string,
+  fullDepositConfirmed = false
 ): Promise<ProjectContract> => {
-  const response = await API.post(`/api/admin/contracts/${contractId}/generate`, { projectId }, {
+  const response = await API.post(`/api/admin/contracts/${contractId}/generate`, {
+    projectId,
+    fullDepositConfirmed,
+  }, {
     timeout: 300000,
   });
   return response.data.contract;
