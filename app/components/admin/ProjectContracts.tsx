@@ -1,0 +1,854 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  CONTRACT_WORK_TYPES,
+  cancelProjectContract,
+  downloadProjectContractPdf,
+  emailProjectContract,
+  generateProjectContractPdf,
+  getContractMeta,
+  getProjectContracts,
+  saveProjectContractDraft,
+  uploadSignedProjectContract,
+  type ContractMeta,
+  type ContractStatus,
+  type ContractWorkType,
+  type Project,
+  type ProjectContract,
+  type ProjectContractInput,
+} from "@/lib/admin-service";
+
+type PaymentScheduleDraft = {
+  id: string;
+  label: string;
+  amount: string;
+  dueCondition: string;
+};
+
+type ContractFormState = {
+  contractId?: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  customerId: string;
+  propertyAddress: string;
+  workType: ContractWorkType;
+  otherWorkType: string;
+  projectDescription: string;
+  scopeText: string;
+  totalPrice: string;
+  depositRequired: string;
+  paymentSchedule: PaymentScheduleDraft[];
+  contractDate: string;
+  estimatedStartDate: string;
+  estimatedCompletionDate: string;
+  cancellationDeadline: string;
+  materialsAllowances: string;
+  exclusions: string;
+  permitResponsibility: string;
+  specialInstructions: string;
+  additionalNotes: string;
+};
+
+const STATUS_STYLES: Record<ContractStatus, string> = {
+  Draft: "border-slate-200 bg-slate-100 text-slate-700",
+  Generated: "border-blue-200 bg-blue-50 text-blue-700",
+  Emailed: "border-indigo-200 bg-indigo-50 text-indigo-700",
+  Signed: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  Superseded: "border-slate-200 bg-slate-50 text-slate-500",
+  Canceled: "border-rose-200 bg-rose-50 text-rose-700",
+};
+
+function todayDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function addDaysDate(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function dateOnly(value?: string | null) {
+  if (!value) return "";
+  return value.slice(0, 10);
+}
+
+function moneyFromCents(cents: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(Number(cents || 0) / 100);
+}
+
+function centsFromMoney(value: string) {
+  const number = Number(String(value || "").replace(/[$,\s]/g, ""));
+  return Number.isFinite(number) && number > 0 ? Math.round(number * 100) : 0;
+}
+
+function dollarsFromCents(cents: number) {
+  if (!cents) return "";
+  return (Number(cents || 0) / 100).toFixed(2);
+}
+
+function displayDate(value?: string | null) {
+  if (!value) return "Not set";
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function errorMessage(error: unknown) {
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const response = (error as { response?: { data?: { message?: string } } }).response;
+    if (response?.data?.message) return response.data.message;
+  }
+  return error instanceof Error ? error.message : "Something went wrong";
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function defaultForm(project: Project): ContractFormState {
+  const projectType = CONTRACT_WORK_TYPES.includes(project.projectType as ContractWorkType)
+    ? (project.projectType as ContractWorkType)
+    : "Other";
+  return {
+    customerName: project.customerName || "",
+    customerEmail: project.email || "",
+    customerPhone: project.phone || "",
+    customerId: "",
+    propertyAddress: project.address || "",
+    workType: projectType,
+    otherWorkType: projectType === "Other" ? project.projectType : "",
+    projectDescription: project.notes || `${project.projectType} project for ${project.customerName}`,
+    scopeText: "",
+    totalPrice: project.estimateAmount ? String(project.estimateAmount) : "",
+    depositRequired: project.depositAmount ? String(project.depositAmount) : "",
+    paymentSchedule: [],
+    contractDate: todayDate(),
+    estimatedStartDate: "",
+    estimatedCompletionDate: "",
+    cancellationDeadline: addDaysDate(3),
+    materialsAllowances: "",
+    exclusions: "",
+    permitResponsibility: "",
+    specialInstructions: "",
+    additionalNotes: "",
+  };
+}
+
+function formFromContract(contract: ProjectContract): ContractFormState {
+  return {
+    contractId: contract._id,
+    customerName: contract.customerSnapshot.fullName || "",
+    customerEmail: contract.customerSnapshot.email || "",
+    customerPhone: contract.customerSnapshot.phone || "",
+    customerId: contract.customerSnapshot.customerId || "",
+    propertyAddress: contract.propertySnapshot.address || "",
+    workType: contract.workType,
+    otherWorkType: contract.otherWorkType || "",
+    projectDescription: contract.projectDescription || "",
+    scopeText: contract.scopeText || "",
+    totalPrice: dollarsFromCents(contract.totalPriceCents),
+    depositRequired: dollarsFromCents(contract.depositAmountCents),
+    paymentSchedule: (contract.paymentSchedule || []).map((row, index) => ({
+      id: row._id || `${index}-${row.label}`,
+      label: row.label,
+      amount: dollarsFromCents(row.amountCents),
+      dueCondition: row.dueCondition,
+    })),
+    contractDate: dateOnly(contract.dates.contractDate),
+    estimatedStartDate: dateOnly(contract.dates.estimatedStartDate),
+    estimatedCompletionDate: dateOnly(contract.dates.estimatedCompletionDate),
+    cancellationDeadline: dateOnly(contract.dates.cancellationDeadline),
+    materialsAllowances: contract.optionalDetails.materialsAllowances || "",
+    exclusions: contract.optionalDetails.exclusions || "",
+    permitResponsibility: contract.optionalDetails.permitResponsibility || "",
+    specialInstructions: contract.optionalDetails.specialInstructions || "",
+    additionalNotes: contract.optionalDetails.additionalNotes || "",
+  };
+}
+
+function buildPayload(project: Project, form: ContractFormState): ProjectContractInput {
+  return {
+    contractId: form.contractId,
+    customerSnapshot: {
+      fullName: form.customerName,
+      email: form.customerEmail,
+      phone: form.customerPhone,
+      customerId: form.customerId,
+    },
+    propertySnapshot: {
+      address: form.propertyAddress,
+      projectId: project._id,
+      projectNumber: project.projectNumber,
+    },
+    workType: form.workType,
+    otherWorkType: form.otherWorkType,
+    projectDescription: form.projectDescription,
+    scopeText: form.scopeText,
+    totalPriceCents: centsFromMoney(form.totalPrice),
+    depositAmountCents: centsFromMoney(form.depositRequired),
+    paymentSchedule: form.paymentSchedule.map((row, index) => ({
+      label: row.label,
+      amountCents: centsFromMoney(row.amount),
+      dueCondition: row.dueCondition,
+      order: index,
+    })),
+    dates: {
+      contractDate: form.contractDate,
+      estimatedStartDate: form.estimatedStartDate || null,
+      estimatedCompletionDate: form.estimatedCompletionDate || null,
+      cancellationDeadline: form.cancellationDeadline,
+    },
+    optionalDetails: {
+      materialsAllowances: form.materialsAllowances,
+      exclusions: form.exclusions,
+      permitResponsibility: form.permitResponsibility,
+      specialInstructions: form.specialInstructions,
+      additionalNotes: form.additionalNotes,
+    },
+  };
+}
+
+function contractTitle(contract: ProjectContract | null) {
+  if (!contract) return "No Contract";
+  return `${contract.contractNumber} v${contract.version}`;
+}
+
+function PdfPreview({
+  form,
+  meta,
+  project,
+}: {
+  form: ContractFormState;
+  meta: ContractMeta | null;
+  project: Project;
+}) {
+  const total = centsFromMoney(form.totalPrice);
+  const deposit = centsFromMoney(form.depositRequired);
+  const remaining = Math.max(total - deposit, 0);
+  const schedule = form.paymentSchedule.length
+    ? form.paymentSchedule
+    : [
+        { id: "deposit", label: "Deposit", amount: form.depositRequired, dueCondition: "Due when contract is signed." },
+        { id: "balance", label: "Remaining Balance", amount: dollarsFromCents(remaining), dueCondition: "Due upon substantial completion unless otherwise agreed in writing." },
+      ].filter((row) => centsFromMoney(row.amount) > 0);
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Preview</p>
+          <h3 className="mt-1 text-xl font-black text-slate-950">Premium Island Homes Contract</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            {project.projectNumber} / {form.customerName || project.customerName}
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">
+          Terms {meta?.termsVersion || "loading"}
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-4 text-sm md:grid-cols-2">
+        <div>
+          <p className="font-bold text-slate-900">Company</p>
+          <p className="mt-1 leading-6 text-slate-600">{meta?.company.legalName || "Premium Island Homes Inc."}</p>
+          <p className="leading-6 text-slate-600">{meta?.company.addressLines.join(", ")}</p>
+          <p className="leading-6 text-slate-600">License {meta?.company.homeImprovementLicense}</p>
+        </div>
+        <div>
+          <p className="font-bold text-slate-900">Customer</p>
+          <p className="mt-1 leading-6 text-slate-600">{form.customerName || "Not set"}</p>
+          <p className="leading-6 text-slate-600">{form.customerEmail || "No email"}</p>
+          <p className="leading-6 text-slate-600">{form.propertyAddress || "No property address"}</p>
+        </div>
+      </div>
+
+      <div className="mt-6 space-y-5">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Project Description</p>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-700">{form.projectDescription || "No description yet."}</p>
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Scope of Work</p>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-700">{form.scopeText || "No scope yet."}</p>
+        </div>
+        <div className="grid gap-3 rounded-xl bg-slate-50 p-4 text-sm sm:grid-cols-3">
+          <div><p className="text-slate-500">Price</p><strong>{moneyFromCents(total)}</strong></div>
+          <div><p className="text-slate-500">Deposit</p><strong>{moneyFromCents(deposit)}</strong></div>
+          <div><p className="text-slate-500">Remaining</p><strong>{moneyFromCents(remaining)}</strong></div>
+        </div>
+        <div className="overflow-hidden rounded-xl border border-slate-200">
+          {schedule.map((row) => (
+            <div key={row.id} className="grid gap-2 border-b border-slate-100 p-3 text-sm last:border-b-0 sm:grid-cols-[1fr_120px_1.4fr]">
+              <strong className="text-slate-900">{row.label || "Milestone"}</strong>
+              <span className="font-semibold text-slate-700">{moneyFromCents(centsFromMoney(row.amount))}</span>
+              <span className="text-slate-600">{row.dueCondition || "Due condition not set"}</span>
+            </div>
+          ))}
+        </div>
+        <div className="grid gap-3 text-sm sm:grid-cols-3">
+          <div><p className="text-slate-500">Start</p><strong>{displayDate(form.estimatedStartDate)}</strong></div>
+          <div><p className="text-slate-500">Completion</p><strong>{displayDate(form.estimatedCompletionDate)}</strong></div>
+          <div><p className="text-slate-500">Cancel by</p><strong>{displayDate(form.cancellationDeadline)}</strong></div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function ProjectContracts({ project }: { project: Project }) {
+  const [contracts, setContracts] = useState<ProjectContract[]>([]);
+  const [selectedContractId, setSelectedContractId] = useState("");
+  const [form, setForm] = useState<ContractFormState>(() => defaultForm(project));
+  const [meta, setMeta] = useState<ContractMeta | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [workingAction, setWorkingAction] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showEmail, setShowEmail] = useState(false);
+  const [emailForm, setEmailForm] = useState({ recipient: "", subject: "", message: "" });
+
+  const selectedContract = useMemo(
+    () =>
+      selectedContractId
+        ? contracts.find((contract) => contract._id === selectedContractId) || null
+        : null,
+    [contracts, selectedContractId]
+  );
+
+  const totals = useMemo(() => {
+    const total = centsFromMoney(form.totalPrice);
+    const deposit = centsFromMoney(form.depositRequired);
+    const remaining = Math.max(total - deposit, 0);
+    const percentage = total > 0 ? Math.round((deposit / total) * 1000) / 10 : 0;
+    const scheduleTotal = form.paymentSchedule.reduce(
+      (sum, row) => sum + centsFromMoney(row.amount),
+      0
+    );
+    return { total, deposit, remaining, percentage, scheduleTotal };
+  }, [form.depositRequired, form.paymentSchedule, form.totalPrice]);
+
+  const loadContracts = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const [nextMeta, nextContracts] = await Promise.all([
+        getContractMeta(),
+        getProjectContracts(project._id),
+      ]);
+      setMeta(nextMeta);
+      setContracts(nextContracts);
+      const nextSelected = nextContracts.find((contract) => contract.current) || nextContracts[0] || null;
+      setSelectedContractId(nextSelected?._id || "");
+      setForm(nextSelected ? formFromContract(nextSelected) : defaultForm(project));
+    } catch (loadError) {
+      setError(errorMessage(loadError));
+    } finally {
+      setLoading(false);
+    }
+  }, [project]);
+
+  useEffect(() => {
+    void loadContracts();
+  }, [loadContracts]);
+
+  const updateField = <K extends keyof ContractFormState>(field: K, value: ContractFormState[K]) => {
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const saveDraft = async () => {
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      const saved = await saveProjectContractDraft(project._id, buildPayload(project, form));
+      setContracts((current) => {
+        const withoutSaved = current.filter((contract) => contract._id !== saved._id);
+        return [saved, ...withoutSaved].sort((a, b) => b.version - a.version);
+      });
+      setSelectedContractId(saved._id);
+      setForm(formFromContract(saved));
+      setSuccess("Contract draft saved.");
+      return saved;
+    } catch (saveError) {
+      setError(errorMessage(saveError));
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleGenerate = async () => {
+    const saved = await saveDraft();
+    if (!saved) return;
+    setWorkingAction("Generating PDF...");
+    setError("");
+    setSuccess("");
+    try {
+      const generated = await generateProjectContractPdf(saved._id);
+      setContracts((current) => current.map((contract) => (contract._id === generated._id ? generated : contract)));
+      setSelectedContractId(generated._id);
+      setForm(formFromContract(generated));
+      setSuccess("PDF generated and saved to this project.");
+      await loadContracts();
+    } catch (generateError) {
+      setError(errorMessage(generateError));
+    } finally {
+      setWorkingAction("");
+    }
+  };
+
+  const handleDownload = async (type: "generated" | "signed" = "generated") => {
+    if (!selectedContract) return;
+    setWorkingAction("Preparing download...");
+    setError("");
+    try {
+      const blob = await downloadProjectContractPdf(selectedContract._id, type);
+      const filename =
+        type === "signed"
+          ? selectedContract.signedPdf?.fileName || `${selectedContract.contractNumber}-signed.pdf`
+          : selectedContract.generatedPdf?.fileName || `${selectedContract.contractNumber}-Contract.pdf`;
+      downloadBlob(blob, filename);
+      await loadContracts();
+    } catch (downloadError) {
+      setError(errorMessage(downloadError));
+    } finally {
+      setWorkingAction("");
+    }
+  };
+
+  const openEmail = () => {
+    if (!selectedContract) return;
+    setEmailForm({
+      recipient: selectedContract.customerSnapshot.email || form.customerEmail,
+      subject: `Your Premium Island Homes Contract - ${selectedContract.workType}`,
+      message: [
+        `Hi ${selectedContract.customerSnapshot.fullName || "there"},`,
+        "",
+        "Attached is your Premium Island Homes contract for review.",
+        "Please review the scope, payment schedule, and cancellation notice. If everything looks good, sign and return the contract so we can move forward.",
+        "",
+        "Thank you,",
+        "Premium Island Homes Inc.",
+      ].join("\n"),
+    });
+    setShowEmail(true);
+  };
+
+  const handleEmail = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedContract) return;
+    setWorkingAction("Emailing contract...");
+    setError("");
+    try {
+      const emailed = await emailProjectContract(selectedContract._id, emailForm);
+      setContracts((current) => current.map((contract) => (contract._id === emailed._id ? emailed : contract)));
+      setSelectedContractId(emailed._id);
+      setForm(formFromContract(emailed));
+      setShowEmail(false);
+      setSuccess("Contract emailed and history saved.");
+    } catch (emailError) {
+      setError(errorMessage(emailError));
+    } finally {
+      setWorkingAction("");
+    }
+  };
+
+  const handleSignedUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !selectedContract) return;
+    setWorkingAction("Uploading signed contract...");
+    setError("");
+    try {
+      const signed = await uploadSignedProjectContract(selectedContract._id, file);
+      setContracts((current) => current.map((contract) => (contract._id === signed._id ? signed : contract)));
+      setSelectedContractId(signed._id);
+      setForm(formFromContract(signed));
+      setSuccess("Signed contract uploaded.");
+    } catch (uploadError) {
+      setError(errorMessage(uploadError));
+    } finally {
+      setWorkingAction("");
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!selectedContract) return;
+    const reason = window.prompt("Reason for canceling this contract?", "");
+    if (reason === null) return;
+    setWorkingAction("Canceling contract...");
+    setError("");
+    try {
+      const canceled = await cancelProjectContract(selectedContract._id, reason);
+      setContracts((current) => current.map((contract) => (contract._id === canceled._id ? canceled : contract)));
+      setSelectedContractId(canceled._id);
+      setForm(formFromContract(canceled));
+      setSuccess("Contract canceled.");
+    } catch (cancelError) {
+      setError(errorMessage(cancelError));
+    } finally {
+      setWorkingAction("");
+    }
+  };
+
+  const createNewDraft = () => {
+    setSelectedContractId("");
+    setForm(defaultForm(project));
+    setSuccess("");
+    setError("");
+  };
+
+  const selectContract = (contract: ProjectContract) => {
+    setSelectedContractId(contract._id);
+    setForm(formFromContract(contract));
+    setSuccess("");
+    setError("");
+  };
+
+  const addScheduleRow = () => {
+    setForm((current) => ({
+      ...current,
+      paymentSchedule: [
+        ...current.paymentSchedule,
+        { id: `${Date.now()}`, label: "", amount: "", dueCondition: "" },
+      ],
+    }));
+  };
+
+  const updateScheduleRow = (
+    index: number,
+    field: keyof Omit<PaymentScheduleDraft, "id">,
+    value: string
+  ) => {
+    setForm((current) => ({
+      ...current,
+      paymentSchedule: current.paymentSchedule.map((row, rowIndex) =>
+        rowIndex === index ? { ...row, [field]: value } : row
+      ),
+    }));
+  };
+
+  const removeScheduleRow = (index: number) => {
+    setForm((current) => ({
+      ...current,
+      paymentSchedule: current.paymentSchedule.filter((_row, rowIndex) => rowIndex !== index),
+    }));
+  };
+
+  const inputClass =
+    "mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
+
+  if (loading) {
+    return <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm font-semibold text-slate-500">Loading contract workspace...</div>;
+  }
+
+  return (
+    <div className="space-y-5">
+      <section className="rounded-2xl bg-slate-950 p-5 text-white shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Contract</p>
+            <h3 className="mt-2 text-2xl font-black">{contractTitle(selectedContract)}</h3>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className={`rounded-full border px-3 py-1 text-xs font-bold ${selectedContract ? STATUS_STYLES[selectedContract.status] : "border-slate-700 bg-slate-900 text-slate-300"}`}>
+                {selectedContract?.status || "No Contract"}
+              </span>
+              <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-slate-300">
+                {project.projectNumber}
+              </span>
+              <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-slate-300">
+                {meta?.company.homeImprovementLicense || "HI-71484"}
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={createNewDraft} className="rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-white hover:bg-white/10">
+              New Draft
+            </button>
+            <button type="button" onClick={saveDraft} disabled={saving || !!workingAction} className="rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-950 hover:bg-slate-100 disabled:opacity-60">
+              {saving ? "Saving..." : "Save Draft"}
+            </button>
+            <button type="button" onClick={handleGenerate} disabled={saving || !!workingAction} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-60">
+              Generate PDF
+            </button>
+          </div>
+        </div>
+        {workingAction && <p className="mt-4 text-sm font-semibold text-blue-200">{workingAction}</p>}
+      </section>
+
+      {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">{error}</div>}
+      {success && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-700">{success}</div>}
+
+      {contracts.length > 0 && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap gap-2">
+            {contracts.map((contract) => (
+              <button
+                key={contract._id}
+                type="button"
+                onClick={() => selectContract(contract)}
+                className={`rounded-xl border px-3 py-2 text-left text-xs font-bold transition ${
+                  contract._id === selectedContractId
+                    ? "border-blue-500 bg-blue-50 text-blue-700"
+                    : "border-slate-200 text-slate-600 hover:border-slate-300"
+                }`}
+              >
+                {contract.contractNumber} v{contract.version}
+                <span className="ml-2 font-semibold text-slate-400">{contract.status}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+        <form className="space-y-5" onSubmit={(event) => { event.preventDefault(); void saveDraft(); }}>
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Customer Snapshot</p>
+            <p className="mt-1 text-sm text-slate-500">Edits here affect this contract only. Project and customer records stay unchanged.</p>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <label className="text-sm font-semibold text-slate-700">
+                Customer name *
+                <input required maxLength={160} value={form.customerName} onChange={(event) => updateField("customerName", event.target.value)} className={inputClass} />
+              </label>
+              <label className="text-sm font-semibold text-slate-700">
+                Email
+                <input type="email" maxLength={254} value={form.customerEmail} onChange={(event) => updateField("customerEmail", event.target.value)} className={inputClass} />
+              </label>
+              <label className="text-sm font-semibold text-slate-700">
+                Phone
+                <input maxLength={40} value={form.customerPhone} onChange={(event) => updateField("customerPhone", event.target.value)} className={inputClass} />
+              </label>
+              <label className="text-sm font-semibold text-slate-700">
+                Customer ID
+                <input maxLength={120} value={form.customerId} onChange={(event) => updateField("customerId", event.target.value)} className={inputClass} />
+              </label>
+              <label className="text-sm font-semibold text-slate-700 md:col-span-2">
+                Project address *
+                <input required maxLength={500} value={form.propertyAddress} onChange={(event) => updateField("propertyAddress", event.target.value)} className={inputClass} />
+              </label>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Project</p>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <label className="text-sm font-semibold text-slate-700">
+                Work type *
+                <select value={form.workType} onChange={(event) => updateField("workType", event.target.value as ContractWorkType)} className={inputClass}>
+                  {CONTRACT_WORK_TYPES.map((type) => <option key={type}>{type}</option>)}
+                </select>
+              </label>
+              {form.workType === "Other" && (
+                <label className="text-sm font-semibold text-slate-700">
+                  Other work type *
+                  <input required maxLength={120} value={form.otherWorkType} onChange={(event) => updateField("otherWorkType", event.target.value)} className={inputClass} />
+                </label>
+              )}
+              <label className="text-sm font-semibold text-slate-700 md:col-span-2">
+                Project description *
+                <textarea required rows={4} maxLength={10000} value={form.projectDescription} onChange={(event) => updateField("projectDescription", event.target.value)} className={inputClass} />
+              </label>
+              <label className="text-sm font-semibold text-slate-700 md:col-span-2">
+                Scope of work *
+                <textarea required rows={10} maxLength={30000} value={form.scopeText} onChange={(event) => updateField("scopeText", event.target.value)} className={inputClass} placeholder={"Use paragraphs, line breaks, or lists. The PDF keeps this structure."} />
+              </label>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Pricing</p>
+            <div className="mt-4 grid gap-4 md:grid-cols-3">
+              <label className="text-sm font-semibold text-slate-700">
+                Total contract price *
+                <input required inputMode="decimal" value={form.totalPrice} onChange={(event) => updateField("totalPrice", event.target.value)} className={inputClass} />
+              </label>
+              <label className="text-sm font-semibold text-slate-700">
+                Deposit required *
+                <input required inputMode="decimal" value={form.depositRequired} onChange={(event) => updateField("depositRequired", event.target.value)} className={inputClass} />
+              </label>
+              <div className="rounded-xl bg-slate-50 p-4 text-sm">
+                <p className="text-slate-500">Remaining balance</p>
+                <p className="mt-1 text-xl font-black text-slate-950">{moneyFromCents(totals.remaining)}</p>
+                <p className="mt-1 text-xs font-semibold text-slate-500">{totals.percentage}% deposit</p>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-slate-900">Payment schedule</p>
+                  <p className="text-xs text-slate-500">Leave empty to use Deposit and Remaining Balance defaults.</p>
+                </div>
+                <button type="button" onClick={addScheduleRow} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                  Add Row
+                </button>
+              </div>
+              <div className="mt-3 space-y-3">
+                {form.paymentSchedule.map((row, index) => (
+                  <div key={row.id} className="grid gap-3 rounded-xl border border-slate-200 p-3 md:grid-cols-[1fr_120px_1.2fr_auto]">
+                    <input placeholder="Milestone" value={row.label} onChange={(event) => updateScheduleRow(index, "label", event.target.value)} className={inputClass.replace("mt-1.5 ", "")} />
+                    <input placeholder="Amount" value={row.amount} onChange={(event) => updateScheduleRow(index, "amount", event.target.value)} className={inputClass.replace("mt-1.5 ", "")} />
+                    <input placeholder="Due condition" value={row.dueCondition} onChange={(event) => updateScheduleRow(index, "dueCondition", event.target.value)} className={inputClass.replace("mt-1.5 ", "")} />
+                    <button type="button" onClick={() => removeScheduleRow(index)} className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50">
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {form.paymentSchedule.length > 0 && (
+                <p className={`mt-2 text-xs font-semibold ${totals.scheduleTotal > totals.total ? "text-rose-600" : "text-slate-500"}`}>
+                  Schedule total: {moneyFromCents(totals.scheduleTotal)}
+                </p>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Dates</p>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <label className="text-sm font-semibold text-slate-700">
+                Contract date *
+                <input required type="date" value={form.contractDate} onChange={(event) => updateField("contractDate", event.target.value)} className={inputClass} />
+              </label>
+              <label className="text-sm font-semibold text-slate-700">
+                Cancellation deadline *
+                <input required type="date" value={form.cancellationDeadline} onChange={(event) => updateField("cancellationDeadline", event.target.value)} className={inputClass} />
+              </label>
+              <label className="text-sm font-semibold text-slate-700">
+                Estimated start
+                <input type="date" value={form.estimatedStartDate} onChange={(event) => updateField("estimatedStartDate", event.target.value)} className={inputClass} />
+              </label>
+              <label className="text-sm font-semibold text-slate-700">
+                Estimated completion
+                <input type="date" value={form.estimatedCompletionDate} onChange={(event) => updateField("estimatedCompletionDate", event.target.value)} className={inputClass} />
+              </label>
+            </div>
+          </section>
+
+          <details className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <summary className="cursor-pointer text-sm font-black text-slate-900">Additional Details</summary>
+            <div className="mt-4 grid gap-4">
+              {[
+                ["materialsAllowances", "Materials / allowances"],
+                ["exclusions", "Exclusions"],
+                ["permitResponsibility", "Permit responsibility"],
+                ["specialInstructions", "Special customer instructions"],
+                ["additionalNotes", "Notes"],
+              ].map(([field, label]) => (
+                <label key={field} className="text-sm font-semibold text-slate-700">
+                  {label}
+                  <textarea rows={3} value={String(form[field as keyof ContractFormState] || "")} onChange={(event) => updateField(field as keyof ContractFormState, event.target.value as never)} className={inputClass} />
+                </label>
+              ))}
+            </div>
+          </details>
+        </form>
+
+        <div className="space-y-5">
+          <PdfPreview form={form} meta={meta} project={project} />
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Actions</p>
+            <div className="mt-4 grid gap-2">
+              <button type="button" disabled={!selectedContract?.generatedPdf?.key || !!workingAction} onClick={() => void handleDownload("generated")} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
+                Download Generated PDF
+              </button>
+              <button type="button" disabled={!selectedContract?.generatedPdf?.key || !!workingAction} onClick={openEmail} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
+                Email Contract
+              </button>
+              <label className={`rounded-xl border border-slate-200 px-4 py-3 text-center text-sm font-bold text-slate-800 ${selectedContract ? "cursor-pointer hover:bg-slate-50" : "opacity-50"}`}>
+                Upload Signed PDF
+                <input disabled={!selectedContract || !!workingAction} type="file" accept="application/pdf,.pdf" onChange={handleSignedUpload} className="hidden" />
+              </label>
+              <button type="button" disabled={!selectedContract?.signedPdf?.key || !!workingAction} onClick={() => void handleDownload("signed")} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
+                Download Signed PDF
+              </button>
+              <button type="button" disabled={!selectedContract || !!workingAction} onClick={handleCancel} className="rounded-xl border border-rose-200 px-4 py-3 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50">
+                Cancel Contract
+              </button>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Event History</p>
+            <div className="mt-4 space-y-3">
+              {selectedContract?.auditHistory?.length ? (
+                [...selectedContract.auditHistory].reverse().map((event) => (
+                  <div key={event._id || `${event.event}-${event.at}`} className="rounded-xl bg-slate-50 p-3 text-sm">
+                    <p className="font-bold text-slate-900">{event.event}</p>
+                    <p className="mt-1 text-xs text-slate-500">{displayDate(event.at)} {event.adminEmail ? `by ${event.adminEmail}` : ""}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">No contract events yet.</p>
+              )}
+            </div>
+          </section>
+
+          <details className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <summary className="cursor-pointer text-sm font-black text-slate-900">Terms Included in PDF</summary>
+            <div className="mt-4 space-y-3">
+              {meta?.termsSections.map((section) => (
+                <div key={section.title} className="text-sm">
+                  <p className="font-bold text-slate-900">{section.title}</p>
+                  <p className="mt-1 leading-6 text-slate-600">{section.body}</p>
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
+      </div>
+
+      {showEmail && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/60 px-3 py-4 backdrop-blur-sm sm:items-center" onClick={() => setShowEmail(false)}>
+          <form onSubmit={handleEmail} className="w-full max-w-2xl rounded-[28px] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.30)] sm:p-6" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">Email Contract</p>
+                <h3 className="mt-1 text-2xl font-black text-slate-950">{contractTitle(selectedContract)}</h3>
+              </div>
+              <button type="button" onClick={() => setShowEmail(false)} className="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-bold text-slate-600 hover:bg-slate-50">
+                Close
+              </button>
+            </div>
+            <div className="mt-5 space-y-4">
+              <label className="text-sm font-semibold text-slate-700">
+                Recipient
+                <input required type="email" value={emailForm.recipient} onChange={(event) => setEmailForm((current) => ({ ...current, recipient: event.target.value }))} className={inputClass} />
+              </label>
+              <label className="text-sm font-semibold text-slate-700">
+                Subject
+                <input required value={emailForm.subject} onChange={(event) => setEmailForm((current) => ({ ...current, subject: event.target.value }))} className={inputClass} />
+              </label>
+              <label className="text-sm font-semibold text-slate-700">
+                Body
+                <textarea required rows={8} value={emailForm.message} onChange={(event) => setEmailForm((current) => ({ ...current, message: event.target.value }))} className={inputClass} />
+              </label>
+            </div>
+            <button type="submit" disabled={!!workingAction} className="mt-5 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-60">
+              {workingAction || "Send Contract"}
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}

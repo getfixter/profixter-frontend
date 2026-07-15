@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ProjectContracts from "@/app/components/admin/ProjectContracts";
 import ProjectEstimates from "@/app/components/admin/ProjectEstimates";
 import {
   PROJECT_STATUSES,
@@ -16,7 +17,7 @@ import {
 } from "@/lib/admin-service";
 
 type View = "list" | "create" | "details" | "edit";
-type ProjectDetailTab = "overview" | "estimates";
+type ProjectDetailTab = "overview" | "contract" | "estimates";
 
 const EMPTY_PROJECT: ProjectInput = {
   status: "Lead",
@@ -343,7 +344,7 @@ export default function ProjectsModule() {
         {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">{error}</div>}
 
         <div className="flex gap-2 overflow-x-auto border-b border-slate-200">
-          {(["overview", "estimates"] as const).map((tab) => (
+          {(["overview", "contract", "estimates"] as const).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -386,6 +387,8 @@ export default function ProjectsModule() {
               <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">{selected.notes || "No notes yet."}</p>
             </section>
           </>
+        ) : detailTab === "contract" ? (
+          <ProjectContracts project={selected} />
         ) : (
           <ProjectEstimates project={selected} />
         )}
