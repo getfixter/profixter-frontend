@@ -802,6 +802,151 @@ export interface EstimateInput {
   expirationDate: string | null;
 }
 
+export const CONTRACT_WORK_TYPES = [
+  "Kitchen",
+  "Bathroom",
+  "Roofing",
+  "Siding",
+  "Flooring",
+  "Sheetrock",
+  "Home Remodeling",
+  "Handyman",
+  "Other",
+] as const;
+
+export const CONTRACT_STATUSES = [
+  "No Contract",
+  "Draft",
+  "Generated",
+  "Emailed",
+  "Signed",
+  "Superseded",
+  "Canceled",
+] as const;
+
+export type ContractWorkType = (typeof CONTRACT_WORK_TYPES)[number];
+export type ContractStatus = Exclude<(typeof CONTRACT_STATUSES)[number], "No Contract">;
+
+export interface ContractPaymentScheduleRow {
+  _id?: string;
+  label: string;
+  amountCents: number;
+  dueCondition: string;
+  order?: number;
+}
+
+export interface ProjectContractInput {
+  contractId?: string;
+  customerSnapshot: {
+    fullName: string;
+    email: string;
+    phone: string;
+    customerId: string;
+  };
+  propertySnapshot: {
+    address: string;
+    projectId: string;
+    projectNumber: string;
+  };
+  workType: ContractWorkType;
+  otherWorkType: string;
+  projectDescription: string;
+  scopeText: string;
+  totalPriceCents: number;
+  depositAmountCents: number;
+  paymentSchedule: ContractPaymentScheduleRow[];
+  dates: {
+    contractDate: string;
+    estimatedStartDate: string | null;
+    estimatedCompletionDate: string | null;
+    cancellationDeadline: string;
+  };
+  optionalDetails: {
+    materialsAllowances: string;
+    exclusions: string;
+    permitResponsibility: string;
+    specialInstructions: string;
+    additionalNotes: string;
+  };
+}
+
+export interface ProjectContract {
+  _id: string;
+  id: string;
+  contractNumber: string;
+  version: number;
+  current: boolean;
+  projectId: string;
+  status: ContractStatus;
+  termsVersion: string;
+  customerSnapshot: ProjectContractInput["customerSnapshot"];
+  propertySnapshot: ProjectContractInput["propertySnapshot"];
+  workType: ContractWorkType;
+  otherWorkType: string;
+  projectDescription: string;
+  scopeText: string;
+  totalPriceCents: number;
+  depositAmountCents: number;
+  remainingBalanceCents: number;
+  paymentSchedule: ContractPaymentScheduleRow[];
+  dates: ProjectContractInput["dates"];
+  optionalDetails: ProjectContractInput["optionalDetails"];
+  generatedPdf?: {
+    key?: string;
+    url?: string;
+    fileName?: string;
+    size?: number;
+    generatedAt?: string | null;
+    generatedBy?: string | null;
+  };
+  signedPdf?: {
+    key?: string;
+    url?: string;
+    fileName?: string;
+    size?: number;
+    uploadedAt?: string | null;
+    uploadedBy?: string | null;
+  };
+  emailHistory?: Array<{
+    _id?: string;
+    recipient: string;
+    subject: string;
+    message: string;
+    sentAt: string;
+    sentBy?: string | null;
+    providerResponse?: string;
+  }>;
+  auditHistory?: Array<{
+    _id?: string;
+    event: string;
+    at: string;
+    adminId?: string | null;
+    adminEmail?: string;
+    details?: Record<string, unknown>;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContractMeta {
+  company: {
+    legalName: string;
+    addressLines: string[];
+    phone: string;
+    email: string;
+    website: string;
+    homeImprovementLicense: string;
+    projectManager: string;
+  };
+  workTypes: ContractWorkType[];
+  statuses: string[];
+  termsVersion: string;
+  termsSections: Array<{ title: string; body: string }>;
+  sourceUrls: string[];
+  attorneyReviewNote: string;
+  maxSignedPdfBytes: number;
+}
+
 // Users
 export const getAllUsers = async (): Promise<User[]> => {
   const response = await API.get('/api/admin/users');
@@ -1657,6 +1802,81 @@ export const updateEstimate = async (
 
 export const deleteEstimate = async (estimateId: string): Promise<void> => {
   await API.delete(`/api/admin/estimates/${estimateId}`);
+};
+
+// Contracts
+export const getContractMeta = async (): Promise<ContractMeta> => {
+  const response = await API.get("/api/admin/contracts/meta");
+  return response.data;
+};
+
+export const getProjectContracts = async (
+  projectId: string
+): Promise<ProjectContract[]> => {
+  const response = await API.get(`/api/admin/contracts/project/${projectId}`);
+  return response.data.contracts;
+};
+
+export const saveProjectContractDraft = async (
+  projectId: string,
+  data: ProjectContractInput
+): Promise<ProjectContract> => {
+  const response = await API.post(
+    `/api/admin/contracts/project/${projectId}/draft`,
+    data
+  );
+  return response.data.contract;
+};
+
+export const generateProjectContractPdf = async (
+  contractId: string
+): Promise<ProjectContract> => {
+  const response = await API.post(`/api/admin/contracts/${contractId}/generate`, {}, {
+    timeout: 300000,
+  });
+  return response.data.contract;
+};
+
+export const emailProjectContract = async (
+  contractId: string,
+  data: { recipient: string; subject: string; message: string }
+): Promise<ProjectContract> => {
+  const response = await API.post(`/api/admin/contracts/${contractId}/email`, data, {
+    timeout: 300000,
+  });
+  return response.data.contract;
+};
+
+export const uploadSignedProjectContract = async (
+  contractId: string,
+  file: File
+): Promise<ProjectContract> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await API.post(`/api/admin/contracts/${contractId}/signed`, formData, {
+    timeout: 300000,
+  });
+  return response.data.contract;
+};
+
+export const cancelProjectContract = async (
+  contractId: string,
+  reason = ""
+): Promise<ProjectContract> => {
+  const response = await API.post(`/api/admin/contracts/${contractId}/cancel`, { reason });
+  return response.data.contract;
+};
+
+export const downloadProjectContractPdf = async (
+  contractId: string,
+  type: "generated" | "signed" = "generated"
+): Promise<Blob> => {
+  const response = await API.get(`/api/admin/contracts/${contractId}/download`, {
+    params: { type },
+    responseType: "blob",
+    timeout: 300000,
+  });
+  return response.data as Blob;
 };
 
 // GHL AI Commander
