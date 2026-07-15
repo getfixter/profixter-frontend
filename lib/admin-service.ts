@@ -892,16 +892,14 @@ export interface ProjectContract {
   dates: ProjectContractInput["dates"];
   optionalDetails: ProjectContractInput["optionalDetails"];
   generatedPdf?: {
-    key?: string;
-    url?: string;
+    available?: boolean;
     fileName?: string;
     size?: number;
     generatedAt?: string | null;
     generatedBy?: string | null;
   };
   signedPdf?: {
-    key?: string;
-    url?: string;
+    available?: boolean;
     fileName?: string;
     size?: number;
     uploadedAt?: string | null;
@@ -1829,9 +1827,10 @@ export const saveProjectContractDraft = async (
 };
 
 export const generateProjectContractPdf = async (
+  projectId: string,
   contractId: string
 ): Promise<ProjectContract> => {
-  const response = await API.post(`/api/admin/contracts/${contractId}/generate`, {}, {
+  const response = await API.post(`/api/admin/contracts/${contractId}/generate`, { projectId }, {
     timeout: 300000,
   });
   return response.data.contract;
@@ -1839,7 +1838,7 @@ export const generateProjectContractPdf = async (
 
 export const emailProjectContract = async (
   contractId: string,
-  data: { recipient: string; subject: string; message: string }
+  data: { projectId: string; recipient: string; subject: string; message: string }
 ): Promise<ProjectContract> => {
   const response = await API.post(`/api/admin/contracts/${contractId}/email`, data, {
     timeout: 300000,
@@ -1848,10 +1847,12 @@ export const emailProjectContract = async (
 };
 
 export const uploadSignedProjectContract = async (
+  projectId: string,
   contractId: string,
   file: File
 ): Promise<ProjectContract> => {
   const formData = new FormData();
+  formData.append("projectId", projectId);
   formData.append("file", file);
   const response = await API.post(`/api/admin/contracts/${contractId}/signed`, formData, {
     timeout: 300000,
@@ -1860,19 +1861,21 @@ export const uploadSignedProjectContract = async (
 };
 
 export const cancelProjectContract = async (
+  projectId: string,
   contractId: string,
   reason = ""
 ): Promise<ProjectContract> => {
-  const response = await API.post(`/api/admin/contracts/${contractId}/cancel`, { reason });
+  const response = await API.post(`/api/admin/contracts/${contractId}/cancel`, { projectId, reason });
   return response.data.contract;
 };
 
 export const downloadProjectContractPdf = async (
+  projectId: string,
   contractId: string,
   type: "generated" | "signed" = "generated"
 ): Promise<Blob> => {
   const response = await API.get(`/api/admin/contracts/${contractId}/download`, {
-    params: { type },
+    params: { projectId, type },
     responseType: "blob",
     timeout: 300000,
   });

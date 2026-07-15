@@ -224,6 +224,10 @@ function buildPayload(project: Project, form: ContractFormState): ProjectContrac
   };
 }
 
+function contractPayloadSignature(project: Project, form: ContractFormState) {
+  return JSON.stringify(buildPayload(project, form));
+}
+
 function contractTitle(contract: ProjectContract | null) {
   if (!contract) return "No Contract";
   return `${contract.contractNumber} v${contract.version}`;
@@ -343,6 +347,20 @@ export default function ProjectContracts({ project }: { project: Project }) {
     );
     return { total, deposit, remaining, percentage, scheduleTotal };
   }, [form.depositRequired, form.paymentSchedule, form.totalPrice]);
+  const currentSignature = useMemo(
+    () => contractPayloadSignature(project, form),
+    [form, project]
+  );
+  const selectedSignature = useMemo(
+    () =>
+      selectedContract
+        ? contractPayloadSignature(project, formFromContract(selectedContract))
+        : "",
+    [project, selectedContract]
+  );
+  const hasUnsavedChanges = !selectedContract || currentSignature !== selectedSignature;
+  const canSaveOrGenerateDraft =
+    !selectedContract || selectedContract.status === "Draft" || hasUnsavedChanges;
 
   const loadContracts = useCallback(async () => {
     setLoading(true);
@@ -373,6 +391,10 @@ export default function ProjectContracts({ project }: { project: Project }) {
   };
 
   const saveDraft = async () => {
+    if (!canSaveOrGenerateDraft) {
+      setSuccess("No changes to save. The generated contract was left unchanged.");
+      return null;
+    }
     setSaving(true);
     setError("");
     setSuccess("");
@@ -401,7 +423,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
     setError("");
     setSuccess("");
     try {
-      const generated = await generateProjectContractPdf(saved._id);
+      const generated = await generateProjectContractPdf(project._id, saved._id);
       setContracts((current) => current.map((contract) => (contract._id === generated._id ? generated : contract)));
       setSelectedContractId(generated._id);
       setForm(formFromContract(generated));
@@ -419,7 +441,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
     setWorkingAction("Preparing download...");
     setError("");
     try {
-      const blob = await downloadProjectContractPdf(selectedContract._id, type);
+      const blob = await downloadProjectContractPdf(project._id, selectedContract._id, type);
       const filename =
         type === "signed"
           ? selectedContract.signedPdf?.fileName || `${selectedContract.contractNumber}-signed.pdf`
@@ -457,7 +479,10 @@ export default function ProjectContracts({ project }: { project: Project }) {
     setWorkingAction("Emailing contract...");
     setError("");
     try {
-      const emailed = await emailProjectContract(selectedContract._id, emailForm);
+      const emailed = await emailProjectContract(selectedContract._id, {
+        ...emailForm,
+        projectId: project._id,
+      });
       setContracts((current) => current.map((contract) => (contract._id === emailed._id ? emailed : contract)));
       setSelectedContractId(emailed._id);
       setForm(formFromContract(emailed));
@@ -477,7 +502,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
     setWorkingAction("Uploading signed contract...");
     setError("");
     try {
-      const signed = await uploadSignedProjectContract(selectedContract._id, file);
+      const signed = await uploadSignedProjectContract(project._id, selectedContract._id, file);
       setContracts((current) => current.map((contract) => (contract._id === signed._id ? signed : contract)));
       setSelectedContractId(signed._id);
       setForm(formFromContract(signed));
@@ -496,7 +521,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
     setWorkingAction("Canceling contract...");
     setError("");
     try {
-      const canceled = await cancelProjectContract(selectedContract._id, reason);
+      const canceled = await cancelProjectContract(project._id, selectedContract._id, reason);
       setContracts((current) => current.map((contract) => (contract._id === canceled._id ? canceled : contract)));
       setSelectedContractId(canceled._id);
       setForm(formFromContract(canceled));
@@ -585,7 +610,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
             <button type="button" onClick={saveDraft} disabled={saving || !!workingAction} className="rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-950 hover:bg-slate-100 disabled:opacity-60">
               {saving ? "Saving..." : "Save Draft"}
             </button>
-            <button type="button" onClick={handleGenerate} disabled={saving || !!workingAction} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-60">
+            <button type="button" onClick={handleGenerate} disabled={!canSaveOrGenerateDraft || saving || !!workingAction} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-60">
               Generate PDF
             </button>
           </div>
@@ -768,17 +793,17 @@ export default function ProjectContracts({ project }: { project: Project }) {
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Actions</p>
             <div className="mt-4 grid gap-2">
-              <button type="button" disabled={!selectedContract?.generatedPdf?.key || !!workingAction} onClick={() => void handleDownload("generated")} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
+              <button type="button" disabled={!selectedContract?.generatedPdf?.available || !!workingAction} onClick={() => void handleDownload("generated")} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
                 Download Generated PDF
               </button>
-              <button type="button" disabled={!selectedContract?.generatedPdf?.key || !!workingAction} onClick={openEmail} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
+              <button type="button" disabled={!selectedContract?.generatedPdf?.available || !!workingAction} onClick={openEmail} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
                 Email Contract
               </button>
               <label className={`rounded-xl border border-slate-200 px-4 py-3 text-center text-sm font-bold text-slate-800 ${selectedContract ? "cursor-pointer hover:bg-slate-50" : "opacity-50"}`}>
                 Upload Signed PDF
                 <input disabled={!selectedContract || !!workingAction} type="file" accept="application/pdf,.pdf" onChange={handleSignedUpload} className="hidden" />
               </label>
-              <button type="button" disabled={!selectedContract?.signedPdf?.key || !!workingAction} onClick={() => void handleDownload("signed")} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
+              <button type="button" disabled={!selectedContract?.signedPdf?.available || !!workingAction} onClick={() => void handleDownload("signed")} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
                 Download Signed PDF
               </button>
               <button type="button" disabled={!selectedContract || !!workingAction} onClick={handleCancel} className="rounded-xl border border-rose-200 px-4 py-3 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50">
