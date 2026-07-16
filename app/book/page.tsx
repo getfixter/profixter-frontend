@@ -14,6 +14,7 @@ import {
 import { compressImage } from "@/lib/compressImage";
 import type { Address } from "@/lib/auth-service";
 import type { OneTimeVisitConfig } from "@/lib/booking-service";
+import { getBookableSlots, normalizeDayAvailability } from "@/lib/booking-calendar-availability";
 import { trackEvent, trackInitiateCheckout } from "@/lib/analytics";
 
 const ONE_TIME_SERVICE_OPTIONS = [
@@ -49,6 +50,10 @@ const FALLBACK_ONE_TIME_CONFIG: OneTimeVisitConfig = {
   ],
   promoNote: "",
 };
+
+function slotsForAvailabilityDay(day: Parameters<typeof normalizeDayAvailability>[0]) {
+  return getBookableSlots(normalizeDayAvailability(day)).map((slot) => slot.time);
+}
 
 function todayYMD() {
   return formatYMD(new Date());
@@ -420,12 +425,12 @@ export default function BookPage() {
     let cancelled = false;
 
     const rememberMonth = (
-      days: Array<{ date: string; slots?: string[] }>
+      days: Array<Parameters<typeof normalizeDayAvailability>[0] & { date: string }>
     ) => {
       if (!days.length) return;
       const next = { ...availabilityByDateRef.current };
       for (const day of days) {
-        next[day.date] = day.slots || [];
+        next[day.date] = slotsForAvailabilityDay(day);
       }
       availabilityByDateRef.current = next;
       setAvailabilityByDate(next);
@@ -464,10 +469,10 @@ export default function BookPage() {
             );
             rememberMonth(monthDays);
             const candidate = monthDays.find(
-              (day) => day.date >= startYmd && (day.slots || []).length > 0
+              (day) => day.date >= startYmd && slotsForAvailabilityDay(day).length > 0
             );
             if (candidate) {
-              selectCandidate(candidate.date, candidate.slots || []);
+              selectCandidate(candidate.date, slotsForAvailabilityDay(candidate));
               return;
             }
           } catch {
@@ -479,7 +484,7 @@ export default function BookPage() {
           const ymd = formatYMD(addDays(startDate, offset));
           const data = await getTimeSlots(ymd);
           if (cancelled) return;
-          const nextSlots = data.slots || [];
+          const nextSlots = slotsForAvailabilityDay(data);
           cacheDateSlots(ymd, nextSlots);
           if (nextSlots.length > 0) {
             selectCandidate(ymd, nextSlots);
@@ -536,7 +541,7 @@ export default function BookPage() {
     getTimeSlots(selectedDate)
       .then((data) => {
         if (cancelled) return;
-        const nextSlots = data.slots || [];
+        const nextSlots = slotsForAvailabilityDay(data);
         cacheDateSlots(selectedDate, nextSlots);
         setSlots(nextSlots);
       })
@@ -638,7 +643,7 @@ export default function BookPage() {
     setLoadingSlots(true);
     try {
       const data = await getTimeSlots(ymd);
-      const nextSlots = data.slots || [];
+      const nextSlots = slotsForAvailabilityDay(data);
       cacheDateSlots(ymd, nextSlots);
       if (!nextSlots.length) return;
 

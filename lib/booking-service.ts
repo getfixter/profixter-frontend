@@ -22,7 +22,7 @@ export interface TimeSlot {
   date: string;
   available?: boolean;
   availableSlotCount?: number;
-  slots: string[];
+  slots: Array<string | { time: string; available?: boolean }>;
   taken: Record<string, number>;
   capacityPerSlot: number;
   remaining?: Record<string, number>;
@@ -39,7 +39,7 @@ export interface MonthAvailability {
     availableSlotCount?: number;
     open: boolean;
     slotCount: number;
-    slots: string[];
+    slots: Array<string | { time: string; available?: boolean }>;
     taken: Record<string, number>;
     remaining: Record<string, number>;
     capacityPerSlot: number;
@@ -171,17 +171,31 @@ export const getCalendarConfig = async (): Promise<CalendarConfig> => {
   const response = await API.get<CalendarConfig>("/api/calendar/config");
   return response.data;
 };
-export const getTimeSlots = async (date: string): Promise<TimeSlot> => {
+export const getTimeSlots = async (
+  date: string,
+  options: { signal?: AbortSignal } = {}
+): Promise<TimeSlot> => {
   const response = await API.get<TimeSlot>("/api/calendar/slots", {
     params: { date },
+    signal: options.signal,
+    headers: {
+      "Cache-Control": "no-store",
+      Pragma: "no-cache",
+    },
   });
   return response.data;
 };
 export const getMonthAvailability = async (
-  month: string
+  month: string,
+  options: { signal?: AbortSignal } = {}
 ): Promise<MonthAvailability> => {
   const response = await API.get<MonthAvailability>("/api/calendar/month", {
-    params: { month },
+    params: { month, _: Date.now() },
+    signal: options.signal,
+    headers: {
+      "Cache-Control": "no-store",
+      Pragma: "no-cache",
+    },
   });
   return response.data;
 };
