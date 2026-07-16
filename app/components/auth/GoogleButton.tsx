@@ -3,8 +3,10 @@
 import React, { useState } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
 import type { TokenResponse } from "@react-oauth/google";
+import { useRouter } from "next/navigation";
 import API from "@/lib/api";
-import { getPostLoginRedirect } from "@/lib/auth-helpers";
+import { getRoleLandingPath } from "@/lib/auth-routing";
+import { useAuth } from "@/lib/useAuth";
 
 interface GoogleButtonProps {
   className?: string;
@@ -12,79 +14,64 @@ interface GoogleButtonProps {
   onSuccess?: () => void;
 }
 
-export function GoogleButton({
+type AuthTokenResponse = {
+  token: string;
+};
+
+type WindowWithGtag = Window & {
+  gtag?: (event: string, action: string, params: Record<string, string>) => void;
+};
+
+function errorMessage(error: unknown) {
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const response = (error as { response?: { data?: { message?: string } } }).response;
+    if (response?.data?.message) return response.data.message;
+  }
+  return error instanceof Error ? error.message : "Google login failed";
+}
+
+function GoogleButtonInner({
   className = "",
   spanClassName = "",
   onSuccess,
 }: GoogleButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { login: authLogin } = useAuth();
+  const router = useRouter();
 
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-
-  // If Google OAuth is not configured, don't render anything
-  if (!clientId) {
-    return null;
-  }
-
-  // NOTE:
-  // Some versions of @react-oauth/google don't type "clientId" in useGoogleLogin options,
-  // even though it works at runtime. We pass it safely with `as any` to avoid TS errors.
   const login = useGoogleLogin({
-    clientId: clientId as any,
     scope: "openid email profile",
-
     onSuccess: async (tokenResponse: TokenResponse) => {
       setLoading(true);
       setError("");
 
       try {
-        // Fetch profile using Access Token
-        const userInfoResponse = await fetch(
-          "https://www.googleapis.com/oauth2/v3/userinfo",
-          {
-            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-          }
-        );
-
-        if (!userInfoResponse.ok) {
-          throw new Error("Failed to fetch Google user info");
-        }
-
-        const userInfo = await userInfoResponse.json();
-
-        // Send to backend (this is an access token, not an idToken)
-        const { data } = await API.post("/api/auth/google", {
+        const { data } = await API.post<AuthTokenResponse>("/api/auth/google", {
           accessToken: tokenResponse.access_token,
-          email: userInfo.email,
-          name: userInfo.name,
-          googleId: userInfo.sub,
         });
 
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-
-        // Optional analytics
-        if (typeof window !== "undefined" && (window as any).gtag) {
-          (window as any).gtag("event", "login", { method: "Google" });
+        const verifiedUser = await authLogin(data.token);
+        if (!verifiedUser) {
+          throw new Error("We could not verify your Google account. Please try again.");
         }
 
-        const redirectPath = getPostLoginRedirect(data.user.email);
-        window.location.href = redirectPath;
+        const browserWindow = window as WindowWithGtag;
+        browserWindow.gtag?.("event", "login", { method: "Google" });
 
         onSuccess?.();
-      } catch (err: any) {
-        console.error("Google login failed:", err);
-        setError(err?.response?.data?.message || err?.message || "Google login failed");
+        router.replace(getRoleLandingPath(verifiedUser));
+      } catch (loginError: unknown) {
+        console.error("Google login failed:", loginError);
+        setError(errorMessage(loginError));
         setLoading(false);
       }
     },
-
     onError: () => {
       console.error("Google login error");
       setError("Google login was cancelled or failed");
     },
-  } as any);
+  });
 
   return (
     <div className={`relative ${className}`}>
@@ -127,4 +114,10 @@ export function GoogleButton({
       {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
     </div>
   );
+}
+
+export function GoogleButton(props: GoogleButtonProps) {
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  if (!clientId) return null;
+  return <GoogleButtonInner {...props} />;
 }

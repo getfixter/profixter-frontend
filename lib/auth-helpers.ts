@@ -1,10 +1,10 @@
-// Helper function to determine redirect path after login
+import { getRoleLandingPath } from "./auth-routing";
+import type { User } from "./auth-service";
+
+// Compatibility wrapper. New auth redirects should use auth-routing directly.
 export const getPostLoginRedirect = (
   userEmail: string,
   role?: "customer" | "employee" | "admin"
 ): string => {
-  const ADMIN_EMAIL = 'getfixter@gmail.com';
-  return role === "admin" || role === "employee" || userEmail === ADMIN_EMAIL
-    ? "/admin"
-    : "/account";
+  return getRoleLandingPath({ email: userEmail, role } as User);
 };

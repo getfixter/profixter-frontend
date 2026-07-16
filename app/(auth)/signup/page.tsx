@@ -12,6 +12,8 @@ import {
   type ReactNode,
 } from "react";
 import { register } from "@/lib/auth-service";
+import { getRoleLandingPath } from "@/lib/auth-routing";
+import { useAuth } from "@/lib/useAuth";
 import { extractUSNationalPhoneDigits, isValidUSNationalPhoneDigits } from "@/lib/phone";
 import { trackEvent } from "@/lib/analytics";
 import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
@@ -156,6 +158,7 @@ function FieldInput({
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { login: authLogin } = useAuth();
   const [step, setStep] = useState<Step>(1);
   const [agreeTerms, setAgreeTerms] = useState(true);
   const [consentError, setConsentError] = useState(false);
@@ -304,9 +307,11 @@ export default function SignUpPage() {
         consentAt: new Date().toISOString(),
       };
 
-      const { token, user } = await register(registrationPayload);
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
+      const { token } = await register(registrationPayload);
+      const verifiedUser = await authLogin(token);
+      if (!verifiedUser) {
+        throw new Error("We could not verify your new account. Please try again.");
+      }
       const checkoutPromo =
         new URLSearchParams(window.location.search).get("promo")?.trim().toUpperCase() ||
         sessionStorage.getItem("pendingPromoCode") ||
@@ -314,10 +319,11 @@ export default function SignUpPage() {
       if (checkoutPromo) {
         sessionStorage.setItem("pendingPromoCode", checkoutPromo);
       }
-      router.replace("/membership");
+      const landingPath = getRoleLandingPath(verifiedUser);
+      router.replace(landingPath === "/account" ? "/membership" : landingPath);
     } catch (err: unknown) {
-      const errorResponse = err as { response?: { data?: { message?: string } } };
-      const message = errorResponse?.response?.data?.message || "We couldn't finish setting up your home. Please try again.";
+      const errorResponse = err as { response?: { data?: { message?: string } }; message?: string };
+      const message = errorResponse?.response?.data?.message || errorResponse.message || "We couldn't finish setting up your home. Please try again.";
       setError(message);
       setLoading(false);
     }

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
 import { MAIN_NAV_LINKS } from "@/lib/site-architecture";
+import { getRoleLandingPath } from "@/lib/auth-routing";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,6 +20,7 @@ export default function Header() {
     const first = user?.name?.trim().split(/\s+/)[0];
     return first || "Account";
   }, [user?.name]);
+  const accountHref = useMemo(() => getRoleLandingPath(user), [user]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -107,7 +109,7 @@ export default function Header() {
                 {isProfileMenuOpen && (
                   <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-[14px] border border-[#E6E8EF] bg-white py-2 shadow-lg">
                     <Link
-                      href="/account"
+                      href={accountHref}
                       className="block px-4 py-3 text-base text-[#111827] transition-colors hover:bg-[#EEF2FF]"
                       onClick={() => setIsProfileMenuOpen(false)}
                     >
@@ -229,7 +231,7 @@ export default function Header() {
                     </div>
                   </div>
                   <Link
-                    href="/account"
+                    href={accountHref}
                     onClick={() => setIsMenuOpen(false)}
                     className="rounded-[16px] bg-[#0B1628] px-5 py-3.5 text-center text-[15px] font-black text-white transition hover:bg-[#172033] sm:px-6 sm:py-4 sm:text-base"
                   >

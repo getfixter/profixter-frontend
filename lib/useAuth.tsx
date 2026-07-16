@@ -15,10 +15,10 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (token: string, user: User) => void;
+  login: (token: string) => Promise<User | null>;
   logout: () => void;
   updateUser: (user: User) => void;
-  refreshUser: () => Promise<User | null>;
+  refreshUser: (tokenOverride?: string) => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,20 +28,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const persist = (t: string | null, u: User | null) => {
+  const persist = useCallback((t: string | null, u: User | null) => {
     if (t) localStorage.setItem('token', t);
     else localStorage.removeItem('token');
 
     if (u) localStorage.setItem('user', JSON.stringify(u));
     else localStorage.removeItem('user');
-  };
+  }, []);
 
-  const refreshUser = useCallback(async (): Promise<User | null> => {
-    const t = localStorage.getItem('token');
-    if (!t) return null;
+  const refreshUser = useCallback(async (tokenOverride?: string): Promise<User | null> => {
+    const t = tokenOverride || localStorage.getItem('token');
+    if (!t) {
+      setToken(null);
+      setUser(null);
+      persist(null, null);
+      return null;
+    }
+
+    localStorage.setItem('token', t);
 
     try {
-      const fresh = await getCurrentUser(); // ✅ MUST MATCH backend shape
+      const fresh = await getCurrentUser();
       setUser(fresh);
       setToken(t);
       persist(t, fresh);
@@ -54,51 +61,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('rememberedEmail');
       return null;
     }
-  }, []);
+  }, [persist]);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+    localStorage.removeItem('user');
 
     if (storedToken) {
-      setToken(storedToken);
-
-      if (storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (error) {
-          console.error('Failed to parse stored user data:', error);
-          localStorage.removeItem('user');
-        }
-      }
-
-      refreshUser().finally(() => setIsLoading(false));
+      refreshUser(storedToken).finally(() => setIsLoading(false));
       return;
     }
 
-    setIsLoading(false);
+    Promise.resolve().then(() => setIsLoading(false));
   }, [refreshUser]);
 
-  const login = (newToken: string, newUser: User) => {
+  const login = useCallback(async (newToken: string): Promise<User | null> => {
+    setIsLoading(true);
     setToken(newToken);
-    setUser(newUser);
-    persist(newToken, newUser);
+    setUser(null);
+    persist(newToken, null);
 
-    // ✅ server-truth refresh (addresses/default/sub coverage)
-    refreshUser().catch(() => {});
-  };
+    try {
+      return await refreshUser(newToken);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [persist, refreshUser]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setToken(null);
     setUser(null);
     persist(null, null);
     localStorage.removeItem('rememberedEmail');
-  };
+  }, [persist]);
 
-  const updateUser = (updatedUser: User) => {
+  const updateUser = useCallback((updatedUser: User) => {
     setUser(updatedUser);
     persist(token, updatedUser);
-  };
+  }, [persist, token]);
 
   const value: AuthContextType = {
     user,

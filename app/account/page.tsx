@@ -15,6 +15,7 @@ import BookingsSection from "../components/account/BookingsSection";
 import OverviewSection from "../components/account/OverviewSection";
 
 import { useAuth } from "@/lib/useAuth";
+import { getRoleLandingPath } from "@/lib/auth-routing";
 
 function TabSync({ onTab }: { onTab: (tab: string) => void }) {
   const searchParams = useSearchParams();
@@ -54,6 +55,14 @@ export default function AccountPage() {
       router.push("/signin");
     }
   }, [isAuthenticated, isLoading, router]);
+
+  useEffect(() => {
+    if (isLoading || !isAuthenticated || !user) return;
+    const landingPath = getRoleLandingPath(user);
+    if (landingPath !== "/account") {
+      router.replace(landingPath);
+    }
+  }, [isAuthenticated, isLoading, router, user]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -108,6 +117,7 @@ export default function AccountPage() {
   }
 
   if (!isAuthenticated) return null;
+  if (user && getRoleLandingPath(user) !== "/account") return null;
 
   return (
     <div className="min-h-screen bg-[#EEF2FF]">
