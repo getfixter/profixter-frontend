@@ -29,6 +29,7 @@ type DayAvailability = {
   capacity: number;
   slots: string[];
   remaining?: Record<string, number>;
+  availableSlotCount: number;
 };
 
 type BookingAddress = {
@@ -90,6 +91,21 @@ function sameDay(a: Date, b: Date) {
     a.getMonth() === b.getMonth() &&
     a.getFullYear() === b.getFullYear()
   );
+}
+
+function dateFromYMD(ymd: string): Date {
+  const [year, month, day] = ymd.split("-").map(Number);
+  const parsed = new Date(year, (month || 1) - 1, day || 1);
+  parsed.setHours(0, 0, 0, 0);
+  return parsed;
+}
+
+function monthStart(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function addMonths(date: Date, months: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
 }
 
 function ChevronLeft() {
@@ -256,7 +272,10 @@ export default function BookingSection() {
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const dayRequestCacheRef = useRef<Record<string, Promise<DayAvailability | null>>>({});
+  const monthRequestCacheRef = useRef<Record<string, Promise<Record<string, DayAvailability>>>>({});
   const loadedMonthsRef = useRef<Record<string, boolean>>({});
+  const latestMonthRequestRef = useRef(0);
+  const initializationRequestRef = useRef(0);
   const autoSelectedDateRef = useRef(false);
   const dayAvailabilityMapRef = useRef(dayAvailabilityMap);
   dayAvailabilityMapRef.current = dayAvailabilityMap;
@@ -334,6 +353,12 @@ export default function BookingSection() {
     setSelectedDate(null);
     setSelectedTime("");
     setDisplayedTimes([]);
+    setDayAvailabilityMap({});
+    dayAvailabilityMapRef.current = {};
+    dayRequestCacheRef.current = {};
+    monthRequestCacheRef.current = {};
+    loadedMonthsRef.current = {};
+    setLoadingMonthKey(null);
     autoSelectedDateRef.current = false;
     setService("");
     setShowServiceMenu(false);
@@ -354,8 +379,31 @@ export default function BookingSection() {
     return overrideHours?.length ? overrideHours : config.defaultHours;
   }, [config, dayAvailabilityMap]);
 
-  const getMonthKey = (date: Date) =>
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  const getMonthKey = useCallback((date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`, []);
+
+  const toDayAvailability = useCallback((data: {
+    taken?: Record<string, number>;
+    capacityPerSlot?: number;
+    slots?: string[];
+    remaining?: Record<string, number>;
+    availableSlotCount?: number;
+    slotCount?: number;
+  }): DayAvailability => {
+    const slots = Array.isArray(data.slots) ? data.slots : [];
+    const count = Number(data.availableSlotCount ?? data.slotCount ?? slots.length);
+    return {
+      taken: data.taken || {},
+      capacity: data.capacityPerSlot ?? 1,
+      slots,
+      remaining: data.remaining || {},
+      availableSlotCount: Number.isFinite(count) ? count : slots.length,
+    };
+  }, []);
+
+  const isAvailabilityOpen = useCallback((info?: DayAvailability | null) => {
+    return !!info && info.availableSlotCount > 0 && info.slots.length > 0;
+  }, []);
 
   const isDayDisabled = useCallback((date: Date): boolean => {
     if (!config) return true;
@@ -367,43 +415,12 @@ export default function BookingSection() {
     d.setHours(0, 0, 0, 0);
 
     const ymd = formatDateYMD(d);
+    const info = dayAvailabilityMap[ymd];
 
     if (d < today) return true;
 
-    const diffDays = Math.floor(
-      (d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    if (diffDays < config.minLeadDays) return true;
-
-    if (config.engine !== "reservation") {
-      if (config.closedWeekdays.includes(d.getDay())) return true;
-      if (config.holidays.includes(ymd)) return true;
-      if (
-        config.overrides[ymd] !== undefined &&
-        config.overrides[ymd].length === 0
-      ) {
-        return true;
-      }
-    }
-
-    const info = dayAvailabilityMap[ymd];
-    const hours = getHoursForDate(d);
-
-    if (config.engine === "reservation" && info) {
-      return info.slots.length === 0;
-    }
-
-    if (!hours || hours.length === 0) return true;
-
-    if (info) {
-      const allFull = hours.every(
-        (hour) => (info.taken[hour] || 0) >= info.capacity
-      );
-      if (allFull) return true;
-    }
-
-    return false;
-  }, [config, dayAvailabilityMap, getHoursForDate]);
+    return !isAvailabilityOpen(info);
+  }, [config, dayAvailabilityMap, isAvailabilityOpen]);
 
   const isDateSelectable = useCallback((date: Date) => {
     const normalized = new Date(date);
@@ -413,16 +430,15 @@ export default function BookingSection() {
 
   const getClosestAvailableDate = useCallback(() => {
     const entries = Object.entries(dayAvailabilityMap)
-      .filter(([, info]) => Array.isArray(info?.slots) && info.slots.length > 0)
+      .filter(([, info]) => isAvailabilityOpen(info))
       .map(([ymd]) => {
-        const [year, month, day] = ymd.split("-").map(Number);
-        return new Date(year, (month || 1) - 1, day || 1);
+        return dateFromYMD(ymd);
       })
       .filter((date) => isDateSelectable(date))
       .sort((a, b) => a.getTime() - b.getTime());
 
     return entries[0] || null;
-  }, [dayAvailabilityMap, isDateSelectable]);
+  }, [dayAvailabilityMap, isAvailabilityOpen, isDateSelectable]);
 
   const fetchDayAvailability = useCallback(async (
     ymd: string
@@ -436,12 +452,7 @@ export default function BookingSection() {
 
     const request = getTimeSlots(ymd)
       .then((data) => {
-        const nextAvailability: DayAvailability = {
-          taken: data.taken || {},
-          capacity: data.capacityPerSlot ?? 1,
-          slots: data.slots || [],
-          remaining: data.remaining || {},
-        };
+        const nextAvailability = toDayAvailability(data);
 
         setDayAvailabilityMap((prev) => {
           if (prev[ymd]) return prev;
@@ -462,7 +473,7 @@ export default function BookingSection() {
 
     dayRequestCacheRef.current[ymd] = request;
     return request;
-  }, []);
+  }, [toDayAvailability]);
 
   // Load calendar config
   useEffect(() => {
@@ -487,106 +498,158 @@ export default function BookingSection() {
     loadConfig();
   }, []);
 
-// 🔥 Preload availability for the whole visible month
-useEffect(() => {
-  if (!config) return;
+  const monthAvailabilityFromCache = useCallback((monthKey: string) => {
+    return Object.fromEntries(
+      Object.entries(dayAvailabilityMapRef.current).filter(([ymd]) => ymd.startsWith(monthKey))
+    );
+  }, []);
 
-  let cancelled = false;
+  const loadMonthAvailability = useCallback(async (
+    monthDate: Date,
+    options: { markLoading?: boolean } = {}
+  ): Promise<Record<string, DayAvailability>> => {
+    if (!config) return {};
 
-  const preloadMonth = async (monthDate: Date) => {
     const monthKey = getMonthKey(monthDate);
-    if (loadedMonthsRef.current[monthKey]) return;
+    if (loadedMonthsRef.current[monthKey]) {
+      return monthAvailabilityFromCache(monthKey);
+    }
 
-    setLoadingMonthKey(monthKey);
+    const existingRequest = monthRequestCacheRef.current[monthKey];
+    if (existingRequest) {
+      if (options.markLoading === false) return existingRequest;
 
-    const year = monthDate.getFullYear();
-    const month = monthDate.getMonth();
-    const lastDay = new Date(year, month + 1, 0);
+      const loadingRequestId = ++latestMonthRequestRef.current;
+      setLoadingMonthKey(monthKey);
+      return existingRequest.finally(() => {
+        if (latestMonthRequestRef.current === loadingRequestId) {
+          setLoadingMonthKey((current) => (current === monthKey ? null : current));
+        }
+      });
+    }
+
+    const shouldMarkLoading = options.markLoading !== false;
+    const loadingRequestId = shouldMarkLoading ? ++latestMonthRequestRef.current : 0;
+    if (shouldMarkLoading) setLoadingMonthKey(monthKey);
+
+    const request = (async () => {
+      const monthDays: Record<string, DayAvailability> = {};
+
+      try {
+        if (config.engine === "reservation") {
+          const monthData = await getMonthAvailability(monthKey);
+          for (const day of monthData.days) {
+            monthDays[day.date] = toDayAvailability(day);
+          }
+        } else {
+          const year = monthDate.getFullYear();
+          const month = monthDate.getMonth();
+          const lastDay = new Date(year, month + 1, 0);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          const datesToFetch: string[] = [];
+          for (let day = 1; day <= lastDay.getDate(); day += 1) {
+            const date = new Date(year, month, day);
+            date.setHours(0, 0, 0, 0);
+            if (date < today) continue;
+            datesToFetch.push(formatDateYMD(date));
+          }
+
+          const dayResults = await Promise.all(
+            datesToFetch.map(async (ymd) => [ymd, await fetchDayAvailability(ymd)] as const)
+          );
+          for (const [ymd, detail] of dayResults) {
+            if (detail) monthDays[ymd] = detail;
+          }
+        }
+
+        loadedMonthsRef.current[monthKey] = true;
+        setDayAvailabilityMap((prev) => {
+          const next = { ...prev, ...monthDays };
+          dayAvailabilityMapRef.current = next;
+          return next;
+        });
+        return monthDays;
+      } catch (error) {
+        console.error("Failed to load month availability:", error);
+        return monthAvailabilityFromCache(monthKey);
+      } finally {
+        delete monthRequestCacheRef.current[monthKey];
+        if (shouldMarkLoading && latestMonthRequestRef.current === loadingRequestId) {
+          setLoadingMonthKey((current) => (current === monthKey ? null : current));
+        }
+      }
+    })();
+
+    monthRequestCacheRef.current[monthKey] = request;
+    return request;
+  }, [config, fetchDayAvailability, getMonthKey, monthAvailabilityFromCache, toDayAvailability]);
+
+  const firstAvailableDateInMonth = useCallback((
+    monthDate: Date,
+    monthAvailability: Record<string, DayAvailability>
+  ) => {
+    const monthKey = getMonthKey(monthDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const datesToFetch: string[] = [];
-
-    for (let d = 1; d <= lastDay.getDate(); d++) {
-      const date = new Date(year, month, d);
-      date.setHours(0, 0, 0, 0);
-
-      const ymd = formatDateYMD(date);
-      const diffDays = Math.floor((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      const overrideHours = config.overrides[ymd];
-
-      if (date < today) continue;
-      if (diffDays < config.minLeadDays) continue;
-      if (config.engine !== "reservation") {
-        if (config.closedWeekdays.includes(date.getDay())) continue;
-        if (config.holidays.includes(ymd)) continue;
-        if (overrideHours !== undefined && overrideHours.length === 0) continue;
-      }
-      if (dayAvailabilityMapRef.current[ymd]) continue;
-
-      datesToFetch.push(ymd);
-    }
-
-    try {
-      if (config.engine === "reservation") {
-        try {
-          const monthData = await getMonthAvailability(monthKey);
-          if (!cancelled) {
-            setDayAvailabilityMap((prev) => {
-              const next = { ...prev };
-              for (const day of monthData.days) {
-                next[day.date] = {
-                  taken: day.taken || {},
-                  capacity: day.capacityPerSlot ?? 1,
-                  slots: day.slots || [],
-                  remaining: day.remaining || {},
-                };
-              }
-              dayAvailabilityMapRef.current = next;
-              return next;
-            });
-          }
-          loadedMonthsRef.current[monthKey] = true;
-          return;
-        } catch (error) {
-          console.error("Failed to load month availability:", error);
-        }
-      }
-      await Promise.all(datesToFetch.map((ymd) => fetchDayAvailability(ymd)));
-      loadedMonthsRef.current[monthKey] = true;
-    } finally {
-      if (!cancelled) {
-        setLoadingMonthKey((current) => (current === monthKey ? null : current));
-      }
-    }
-  };
-
-  void preloadMonth(currentMonth);
-  void preloadMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-
-  return () => {
-    cancelled = true;
-  };
-}, [config, currentMonth, fetchDayAvailability]);
+    return Object.entries(monthAvailability)
+      .filter(([ymd, info]) => ymd.startsWith(monthKey) && isAvailabilityOpen(info))
+      .map(([ymd]) => dateFromYMD(ymd))
+      .filter((date) => date >= today)
+      .sort((a, b) => a.getTime() - b.getTime())[0] || null;
+  }, [getMonthKey, isAvailabilityOpen]);
 
   useEffect(() => {
     if (!config) return;
-    if (selectedDate && isDateSelectable(selectedDate)) return;
-    if (autoSelectedDateRef.current) return;
+    void loadMonthAvailability(currentMonth, { markLoading: true });
+  }, [config, currentMonth, loadMonthAvailability]);
 
-    const closest = getClosestAvailableDate();
-    if (!closest) return;
+  useEffect(() => {
+    if (!config) return;
 
-    autoSelectedDateRef.current = true;
-    setCurrentMonth(new Date(closest.getFullYear(), closest.getMonth(), 1));
-    setSelectedDate(closest);
-    setSelectedTime("");
-  }, [
-    config,
-    getClosestAvailableDate,
-    isDateSelectable,
-    selectedDate,
-  ]);
+    let cancelled = false;
+    const requestId = ++initializationRequestRef.current;
+
+    const initialize = async () => {
+      const startMonth = monthStart(new Date());
+      const maxAdvanceDays = Number(config.maxAdvanceDays ?? 90);
+      const maxMonths = Math.max(1, Math.ceil(maxAdvanceDays / 31) + 1);
+
+      for (let offset = 0; offset <= maxMonths; offset += 1) {
+        const candidateMonth = addMonths(startMonth, offset);
+        const monthAvailability = await loadMonthAvailability(candidateMonth, {
+          markLoading: offset === 0,
+        });
+        if (cancelled || initializationRequestRef.current !== requestId) return;
+
+        const firstAvailable = firstAvailableDateInMonth(candidateMonth, monthAvailability);
+        if (firstAvailable) {
+          const ymd = formatDateYMD(firstAvailable);
+          const availability = monthAvailability[ymd] || dayAvailabilityMapRef.current[ymd];
+          autoSelectedDateRef.current = true;
+          setCurrentMonth(monthStart(firstAvailable));
+          setSelectedDate(firstAvailable);
+          setSelectedTime("");
+          setDisplayedTimes(availability?.slots || []);
+          return;
+        }
+      }
+
+      if (!cancelled && initializationRequestRef.current === requestId) {
+        setSelectedDate(null);
+        setSelectedTime("");
+        setDisplayedTimes([]);
+      }
+    };
+
+    void initialize();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [config, firstAvailableDateInMonth, loadMonthAvailability, selectedAddressId]);
 
 
 
@@ -731,6 +794,28 @@ if (next?.date) {
       cancelled = true;
     };
   }, [selectedDate, dayAvailabilityMap, fetchDayAvailability]);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    const ymd = formatDateYMD(selectedDate);
+    const info = dayAvailabilityMap[ymd];
+    if (!info || isAvailabilityOpen(info)) return;
+
+    const closest = getClosestAvailableDate();
+    if (closest) {
+      const closestKey = formatDateYMD(closest);
+      const availability = dayAvailabilityMapRef.current[closestKey];
+      setCurrentMonth(monthStart(closest));
+      setSelectedDate(closest);
+      setSelectedTime("");
+      setDisplayedTimes(availability?.slots || []);
+      return;
+    }
+
+    setSelectedDate(null);
+    setSelectedTime("");
+    setDisplayedTimes([]);
+  }, [dayAvailabilityMap, getClosestAvailableDate, isAvailabilityOpen, selectedDate]);
 
   const handleDayClick = async (dayDate: Date, muted: boolean) => {
     if (muted) return;
@@ -1064,6 +1149,34 @@ const canBook =
     ? `${selectedAddress.label ? `${selectedAddress.label}: ` : ""}${selectedAddress.line1}, ${selectedAddress.city} ${selectedAddress.state} ${selectedAddress.zip}`
     : "";
   const visibleMonthKey = getMonthKey(currentMonth);
+  const visibleMonthLoaded = !!loadedMonthsRef.current[visibleMonthKey] && loadingMonthKey !== visibleMonthKey;
+  const visibleMonthHasAvailability = Object.entries(dayAvailabilityMap).some(
+    ([ymd, info]) => ymd.startsWith(visibleMonthKey) && isAvailabilityOpen(info)
+  );
+  const showNoAvailabilityThisMonth = visibleMonthLoaded && !visibleMonthHasAvailability;
+
+  const moveToNextAvailableMonth = async () => {
+    if (!config) return;
+    const maxAdvanceDays = Number(config.maxAdvanceDays ?? 90);
+    const maxMonths = Math.max(1, Math.ceil(maxAdvanceDays / 31) + 1);
+
+    for (let offset = 1; offset <= maxMonths; offset += 1) {
+      const candidateMonth = addMonths(currentMonth, offset);
+      const monthAvailability = await loadMonthAvailability(candidateMonth, { markLoading: true });
+      const firstAvailable = firstAvailableDateInMonth(candidateMonth, monthAvailability);
+      if (firstAvailable) {
+        const ymd = formatDateYMD(firstAvailable);
+        const availability = monthAvailability[ymd] || dayAvailabilityMapRef.current[ymd];
+        setCurrentMonth(monthStart(firstAvailable));
+        setSelectedDate(firstAvailable);
+        setSelectedTime("");
+        setDisplayedTimes(availability?.slots || []);
+        return;
+      }
+    }
+
+    setError("No available appointments were found in the next available booking window.");
+  };
   const slotOptions = useMemo(() => {
     if (!selectedDate || !config) return [];
     const taken = dayAvailabilityMap[ymdSelected]?.taken || {};
@@ -1209,6 +1322,20 @@ const canBook =
                   );
                 })}
               </div>
+              {showNoAvailabilityThisMonth && (
+                <div className="mt-4 rounded-[12px] border border-[#E5E9F2] bg-[#F8FAFF] px-3 py-3 text-center">
+                  <div className="text-[13px] font-semibold text-[#64748B]">
+                    No available appointments in this month.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={moveToNextAvailableMonth}
+                    className="mt-2 rounded-[10px] border border-[#306EEC] px-3 py-2 text-[12px] font-bold text-[#306EEC] transition hover:bg-[#EEF5FF]"
+                  >
+                    Next available month
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Selected date label */}
