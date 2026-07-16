@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { plans, type Plan } from "@/app/data/content";
 import API from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
+import { getRoleLandingPath } from "@/lib/auth-routing";
 import type { PlanType } from "@/lib/stripe-links";
 import type { Address } from "@/lib/auth-service";
 import { trackInitiateCheckout } from "@/lib/analytics";
@@ -130,6 +131,7 @@ export default function PlansSection({ hideCancellationUi = false }: PlansSectio
   const [actionError, setActionError] = useState("");
   const [actionLoadingPlan, setActionLoadingPlan] = useState<string | null>(null);
   const { user, isAuthenticated, token } = useAuth();
+  const roleLandingPath = getRoleLandingPath(user);
 
   const addresses: Address[] = useMemo(() => user?.addresses || [], [user?.addresses]);
 
@@ -485,7 +487,7 @@ export default function PlansSection({ hideCancellationUi = false }: PlansSectio
 
     if (!addresses.length) {
       setActionError("Please add an address to your account first.");
-      window.location.href = "/account";
+      window.location.href = roleLandingPath;
       return;
     }
 
@@ -619,7 +621,7 @@ export default function PlansSection({ hideCancellationUi = false }: PlansSectio
           <div className="mx-auto mb-8 max-w-[520px] rounded-[18px] border border-[#E5E7EB] bg-white p-5 text-center shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
             <p className="font-semibold text-[#111827]">Add an address to start a plan.</p>
             <button
-              onClick={() => (window.location.href = "/account")}
+              onClick={() => (window.location.href = roleLandingPath)}
               className="mt-4 h-11 rounded-full bg-[#111111] px-6 text-sm font-semibold text-white transition hover:bg-black"
             >
               Add Address

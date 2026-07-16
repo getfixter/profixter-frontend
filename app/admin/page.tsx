@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
+import { getRoleLandingPath, isAdminUser, isEmployeeUser } from "@/lib/auth-routing";
 import AdminHeader from "@/app/components/admin/AdminHeader";
 import AdminTabs from "@/app/components/admin/AdminTabs";
 import BottomNav from "@/app/components/admin/BottomNav";
@@ -46,7 +47,6 @@ import type {
 } from "@/lib/admin-service";
 import AdminCalendarSettings from "@/app/components/admin/AdminCalendarSettings";
 
-const ADMIN_EMAIL = "getfixter@gmail.com";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 type BookingQuickFilter = "today" | "upcoming" | "pending" | "confirmed" | "completed" | "custom";
 
@@ -69,9 +69,18 @@ function Toast({ message, onDone }: { message: string; onDone: () => void }) {
   );
 }
 
-export default function AdminPage() {
+function AdminPageFallback() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#EEF2FF] text-[#0B1628]">
+      <div className="text-sm font-bold">Loading admin workspace...</div>
+    </div>
+  );
+}
+
+function AdminPageContent() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [active, setActive] = useState("bookings");
   const [toast, setToast] = useState<string | null>(null);
@@ -97,8 +106,8 @@ export default function AdminPage() {
     user?.employeePosition === "Fixter" ? "me" : "all"
   );
 
-  const isAdmin = user?.role === "admin" || user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-  const isEmployee = user?.role === "employee";
+  const isAdmin = isAdminUser(user);
+  const isEmployee = isEmployeeUser(user);
   const hasWorkspaceAccess = isAdmin || isEmployee;
   const canAssignBookings = isAdmin || user?.employeePosition === "General Fixter";
   const allowedTabs = useMemo(
@@ -108,19 +117,19 @@ export default function AdminPage() {
 
   const handleAdminTabChange = useCallback(
     (tab: string) => {
+      if (!allowedTabs.some((allowedTab) => allowedTab.id === tab)) return;
+
       if (tab === "jarvis") {
         router.push("/admin/jarvis");
         return;
       }
 
       setActive(tab);
-      if (typeof window !== "undefined") {
-        const params = new URLSearchParams(window.location.search);
-        params.set("tab", tab);
-        router.replace(`/admin?${params.toString()}`, { scroll: false });
-      }
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", tab);
+      router.push(`/admin?${params.toString()}`, { scroll: false });
     },
-    [router]
+    [allowedTabs, router, searchParams]
   );
 
   const fetchAll = useCallback(async () => {
@@ -164,13 +173,12 @@ export default function AdminPage() {
     if (authLoading) return;
 
     if (!user) {
-      router.push("/signin");
+      router.replace("/signin");
       return;
     }
 
     if (!hasWorkspaceAccess) {
-      alert("Access denied.");
-      router.push("/");
+      router.replace(getRoleLandingPath(user));
       return;
     }
 
@@ -184,24 +192,23 @@ export default function AdminPage() {
   useEffect(() => {
     if (authLoading || !user || !allowedTabs.length) return;
 
-    const params = new URLSearchParams(window.location.search);
-    const requestedTab = params.get("tab");
-    const requestedQuery = params.get("q");
-    if (!initialQueryAppliedRef.current && requestedQuery !== null && requestedQuery !== q) {
+    const requestedTab = searchParams.get("tab");
+    const requestedQuery = searchParams.get("q");
+    if (!initialQueryAppliedRef.current && requestedQuery !== null) {
       initialQueryAppliedRef.current = true;
       setQ(requestedQuery);
     }
-    if (!requestedTab) return;
 
     if (requestedTab === "jarvis" && isAdmin) {
       router.replace("/admin/jarvis");
       return;
     }
 
-    if (allowedTabs.some((tab) => tab.id === requestedTab) && active !== requestedTab) {
-      setActive(requestedTab);
-    }
-  }, [active, allowedTabs, authLoading, isAdmin, q, router, user]);
+    const nextTab = requestedTab && allowedTabs.some((tab) => tab.id === requestedTab)
+      ? requestedTab
+      : allowedTabs[0].id;
+    setActive((current) => (current === nextTab ? current : nextTab));
+  }, [allowedTabs, authLoading, isAdmin, router, searchParams, user]);
 
   useEffect(() => {
     if (user?.employeePosition === "Fixter") {
@@ -928,5 +935,13 @@ export default function AdminPage() {
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={<AdminPageFallback />}>
+      <AdminPageContent />
+    </Suspense>
   );
 }

@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
+import { getRoleLandingPath } from "@/lib/auth-routing";
 
 import Header from "@/app/components/sections/Header";
 import HeroSection from "@/app/components/sections/HeroSection";
@@ -19,8 +20,6 @@ import Footer from "@/app/components/sections/Footer";
 import StickyMobileCTA from "@/app/components/StickyMobileCTA";
 import BookingsSection from "@/app/components/account/BookingsSection";
 import { PlanSection } from "@/app/components/account/PlanSection";
-
-const ADMIN_EMAIL = "getfixter@gmail.com";
 
 function CustomerPortalSection({
   id,
@@ -164,8 +163,11 @@ export default function MembershipExperience() {
 
   useEffect(() => {
     if (isLoading) return;
-    if (user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-      router.replace("/admin?tab=bookings");
+    if (user) {
+      const landingPath = getRoleLandingPath(user);
+      if (landingPath !== "/account") {
+        router.replace(landingPath);
+      }
     }
   }, [isLoading, user, router]);
 

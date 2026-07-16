@@ -77,16 +77,19 @@ export default function SignInPage() {
     setError("");
     setLoading(true);
     try {
-      const { token, user } = await login({
+      const { token } = await login({
         email: email.toLowerCase().trim(),
         password,
       });
-      authLogin(token, user);
+      const verifiedUser = await authLogin(token);
+      if (!verifiedUser) {
+        throw new Error("We could not verify your account. Please try again.");
+      }
       localStorage.setItem("rememberedEmail", email);
-      router.replace(getRoleLandingPath(user));
+      router.replace(getRoleLandingPath(verifiedUser));
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      const message = error.response?.data?.message || "Invalid email or password";
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
+      const message = error.response?.data?.message || error.message || "Invalid email or password";
       setError(message);
       setLoading(false);
     }

@@ -12,6 +12,7 @@ import {
   CalendarConfig,
 } from "@/lib/booking-service";
 import { compressImage } from "@/lib/compressImage";
+import { getRoleLandingPath } from "@/lib/auth-routing";
 import { useRouter } from "next/navigation";
 import { POPULAR_TASKS } from "./PopularTasksSection";
 
@@ -232,6 +233,8 @@ export default function BookingSection() {
   const bookingUser = user as BookingUser | null;
   const addresses = bookingUser?.addresses || [];
   const defaultAddressId = bookingUser?.defaultAddressId;
+  const roleLandingPath = getRoleLandingPath(user);
+  const manageBookingsPath = roleLandingPath === "/account" ? "/account?tab=bookings" : roleLandingPath;
 
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
@@ -877,7 +880,7 @@ if (next?.date) {
     const addressId = selectedAddressId || defaultAddressId;
     if (!addressId) {
       alert("Please add an address to your account first");
-      window.location.href = "/account";
+      window.location.href = roleLandingPath;
       return;
     }
 
@@ -1224,7 +1227,7 @@ const canBook =
               <div className="mt-3">
                 <button
                   type="button"
-                  onClick={() => router.push("/account?tab=bookings")}
+                  onClick={() => router.push(manageBookingsPath)}
                   className="inline-flex items-center gap-2 w-full justify-center h-[46px] rounded-[14px] border border-[#C5CBD8] bg-white text-[#475569] text-[14px] font-semibold hover:border-[#306EEC] hover:text-[#306EEC] transition"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">

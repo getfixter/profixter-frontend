@@ -4,17 +4,14 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
+import { isAdminUser } from "@/lib/auth-routing";
 import JarvisModule from "@/app/components/admin/JarvisModule";
-
-const ADMIN_EMAIL = "getfixter@gmail.com";
 
 export default function JarvisPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
-  const isAdmin =
-    user?.role === "admin" ||
-    user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  const isAdmin = isAdminUser(user);
 
   useEffect(() => {
     if (authLoading) return;
