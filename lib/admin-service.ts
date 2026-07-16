@@ -731,14 +731,82 @@ export const PROJECT_STATUSES = [
 export type ProjectType = (typeof PROJECT_TYPES)[number];
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
+export type ProjectMembershipStatus =
+  | "active"
+  | "trialing"
+  | "scheduled_for_cancellation"
+  | "past_due"
+  | "canceled"
+  | "none";
+
+export interface ProjectMembershipSummary {
+  overallStatus: ProjectMembershipStatus;
+  planName: string | null;
+  selectedAddressStatus: ProjectMembershipStatus | null;
+  selectedAddressPlanName: string | null;
+  addressId: string | null;
+  activeMembershipAtAnotherAddress?: boolean;
+}
+
+export interface ProjectCustomerAddress {
+  id: string;
+  _id: string;
+  label: string;
+  line1: string;
+  city: string;
+  state: string;
+  zip: string;
+  county?: string;
+  formattedAddress: string;
+  isDefault: boolean;
+  membershipSummary: ProjectMembershipSummary;
+}
+
+export interface ProjectCustomerSearchResult {
+  id: string;
+  customerId: string;
+  userId: string;
+  name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  defaultAddressId: string | null;
+  addresses: ProjectCustomerAddress[];
+  matchingAddress: ProjectCustomerAddress | null;
+  membershipSummary: ProjectMembershipSummary;
+}
+
+export interface ProjectCustomerSearchResponse {
+  customers: ProjectCustomerSearchResult[];
+  nextCursor: string | null;
+  limit: number;
+  message?: string;
+}
+
 export interface Project {
   _id: string;
   projectNumber: string;
   status: ProjectStatus;
+  customerId?: string | null;
+  addressId?: string | null;
   customerName: string;
   phone: string;
   email: string;
   address: string;
+  customerSnapshot?: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+  };
+  propertySnapshot?: {
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    formattedAddress?: string;
+  };
   projectType: ProjectType;
   estimateAmount: number;
   depositAmount: number;
@@ -835,6 +903,18 @@ export interface ContractPaymentScheduleRow {
   order?: number;
 }
 
+export type ContractDiscountType = "fixed" | "percentage";
+
+export interface ProjectContractDiscount {
+  _id?: string;
+  name: string;
+  type: ContractDiscountType;
+  value: number;
+  calculatedAmountCents?: number;
+  note?: string;
+  order?: number;
+}
+
 export interface ProjectContractInput {
   contractId?: string;
   customerSnapshot: {
@@ -852,9 +932,12 @@ export interface ProjectContractInput {
   otherWorkType: string;
   projectDescription: string;
   scopeText: string;
+  originalContractPriceCents: number;
   totalPriceCents: number;
+  discounts: ProjectContractDiscount[];
   depositAmountCents: number;
   fullDepositConfirmed?: boolean;
+  zeroAdjustedPriceConfirmed?: boolean;
   paymentSchedule: ContractPaymentScheduleRow[];
   dates: {
     contractDate: string;
@@ -881,13 +964,18 @@ export interface ProjectContract {
   termsVersion: string;
   legalNoticeVersion?: string;
   fullDepositConfirmed?: boolean;
+  zeroAdjustedPriceConfirmed?: boolean;
   customerSnapshot: ProjectContractInput["customerSnapshot"];
   propertySnapshot: ProjectContractInput["propertySnapshot"];
   workType: ContractWorkType;
   otherWorkType: string;
   projectDescription: string;
   scopeText: string;
+  originalContractPriceCents?: number;
   totalPriceCents: number;
+  discounts?: ProjectContractDiscount[];
+  totalDiscountAmountCents?: number;
+  adjustedContractPriceCents?: number;
   depositAmountCents: number;
   remainingBalanceCents: number;
   paymentSchedule: ContractPaymentScheduleRow[];
@@ -1749,6 +1837,31 @@ export const getProject = async (projectId: string): Promise<Project> => {
   return response.data.project;
 };
 
+export const searchProjectCustomers = async (
+  params: { q: string; limit?: number; cursor?: string | null },
+  signal?: AbortSignal
+): Promise<ProjectCustomerSearchResponse> => {
+  const response = await API.get("/api/admin/projects/customer-search", {
+    params: {
+      q: params.q,
+      limit: params.limit,
+      ...(params.cursor ? { cursor: params.cursor } : {}),
+    },
+    signal,
+  });
+  return response.data;
+};
+
+export const getProjectCustomer = async (
+  customerId: string,
+  addressId?: string | null
+): Promise<ProjectCustomerSearchResult> => {
+  const response = await API.get(`/api/admin/projects/customer/${customerId}`, {
+    params: addressId ? { addressId } : undefined,
+  });
+  return response.data.customer;
+};
+
 export const createProject = async (data: ProjectInput): Promise<Project> => {
   const response = await API.post("/api/admin/projects", data);
   return response.data.project;
@@ -1838,11 +1951,13 @@ export const saveProjectContractDraft = async (
 export const generateProjectContractPdf = async (
   projectId: string,
   contractId: string,
-  fullDepositConfirmed = false
+  fullDepositConfirmed = false,
+  zeroAdjustedPriceConfirmed = false
 ): Promise<ProjectContract> => {
   const response = await API.post(`/api/admin/contracts/${contractId}/generate`, {
     projectId,
     fullDepositConfirmed,
+    zeroAdjustedPriceConfirmed,
   }, {
     timeout: 300000,
   });

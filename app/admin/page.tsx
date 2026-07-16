@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import AdminHeader from "@/app/components/admin/AdminHeader";
@@ -86,6 +86,7 @@ export default function AdminPage() {
   const [requests, setRequests] = useState<RequestLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const initialQueryAppliedRef = useRef(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedDate, setSelectedDate] = useState<string | null>(() => todayNY());
   const [bookingQuickFilter, setBookingQuickFilter] = useState<BookingQuickFilter>("today");
@@ -183,7 +184,13 @@ export default function AdminPage() {
   useEffect(() => {
     if (authLoading || !user || !allowedTabs.length) return;
 
-    const requestedTab = new URLSearchParams(window.location.search).get("tab");
+    const params = new URLSearchParams(window.location.search);
+    const requestedTab = params.get("tab");
+    const requestedQuery = params.get("q");
+    if (!initialQueryAppliedRef.current && requestedQuery !== null && requestedQuery !== q) {
+      initialQueryAppliedRef.current = true;
+      setQ(requestedQuery);
+    }
     if (!requestedTab) return;
 
     if (requestedTab === "jarvis" && isAdmin) {
@@ -194,7 +201,7 @@ export default function AdminPage() {
     if (allowedTabs.some((tab) => tab.id === requestedTab) && active !== requestedTab) {
       setActive(requestedTab);
     }
-  }, [active, allowedTabs, authLoading, isAdmin, router, user]);
+  }, [active, allowedTabs, authLoading, isAdmin, q, router, user]);
 
   useEffect(() => {
     if (user?.employeePosition === "Fixter") {
