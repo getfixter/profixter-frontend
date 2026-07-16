@@ -13,6 +13,24 @@ import {
 } from "@/lib/booking-service";
 import { compressImage } from "@/lib/compressImage";
 import { getRoleLandingPath } from "@/lib/auth-routing";
+import {
+  buildAvailabilityCacheKey,
+  CACHE_TTL_MS,
+  CalendarMode,
+  DayAvailability,
+  MonthAvailabilityMap,
+  MonthLoadState,
+  dateFromYMDLocal,
+  firstBookableDateInMonth,
+  formatDateYMDLocal,
+  getBookableSlots,
+  getMonthKeyLocal,
+  isBookableDay,
+  monthStartLocal,
+  addMonthsLocal,
+  normalizeDayAvailability,
+  resolveInitialCalendarSelection,
+} from "@/lib/booking-calendar-availability";
 import { useRouter } from "next/navigation";
 import { POPULAR_TASKS } from "./PopularTasksSection";
 
@@ -24,13 +42,6 @@ const SERVICES = [
 ] as const;
 
 type ServiceKey = (typeof SERVICES)[number]["key"];
-type DayAvailability = {
-  taken: Record<string, number>;
-  capacity: number;
-  slots: string[];
-  remaining?: Record<string, number>;
-  availableSlotCount: number;
-};
 
 type BookingAddress = {
   _id: string;
@@ -52,6 +63,10 @@ type BookingAccessItem = {
 };
 
 type BookingUser = {
+  _id?: string;
+  id?: string;
+  userId?: string;
+  email?: string;
   addresses?: BookingAddress[];
   defaultAddressId?: string;
 };
@@ -80,10 +95,7 @@ const FALLBACK_HOURS: string[] = (() => {
 })();
 
 function formatDateYMD(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return formatDateYMDLocal(date);
 }
 function sameDay(a: Date, b: Date) {
   return (
@@ -91,21 +103,6 @@ function sameDay(a: Date, b: Date) {
     a.getMonth() === b.getMonth() &&
     a.getFullYear() === b.getFullYear()
   );
-}
-
-function dateFromYMD(ymd: string): Date {
-  const [year, month, day] = ymd.split("-").map(Number);
-  const parsed = new Date(year, (month || 1) - 1, day || 1);
-  parsed.setHours(0, 0, 0, 0);
-  return parsed;
-}
-
-function monthStart(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function addMonths(date: Date, months: number): Date {
-  return new Date(date.getFullYear(), date.getMonth() + months, 1);
 }
 
 function ChevronLeft() {
@@ -137,6 +134,12 @@ function formatTime12(t: string): string {
   return `${h12}:${String(m).padStart(2, "0")} ${period}`;
 }
 
+function isAbortError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const err = error as { name?: string; code?: string };
+  return err.name === "CanceledError" || err.name === "AbortError" || err.code === "ERR_CANCELED";
+}
+
 function TimeSlotGrid({
   slotOptions,
   selectedTime,
@@ -159,6 +162,8 @@ function TimeSlotGrid({
           <button
             key={slot.time}
             type="button"
+            data-booking-time={slot.time}
+            data-booking-time-available={slot.available ? "true" : "false"}
             disabled={!slot.available}
             onClick={() => {
               if (!slot.available) return;
@@ -264,6 +269,9 @@ export default function BookingSection() {
   const [displayedTimes, setDisplayedTimes] = useState<string[]>([]);
   const [dayAvailabilityMap, setDayAvailabilityMap] = useState<Record<string, DayAvailability>>({});
   const [loadingMonthKey, setLoadingMonthKey] = useState<string | null>(null);
+  const [calendarMode, setCalendarMode] = useState<CalendarMode>("initializing");
+  const [monthLoadStateMap, setMonthLoadStateMap] = useState<Record<string, MonthLoadState>>({});
+  const [availabilityRetryToken, setAvailabilityRetryToken] = useState(0);
   const [loadingSelectedDate, setLoadingSelectedDate] = useState(false);
   const [quickBookOpen, setQuickBookOpen] = useState(false);
   const [quickBookingLoading, setQuickBookingLoading] = useState(false);
@@ -272,13 +280,21 @@ export default function BookingSection() {
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const dayRequestCacheRef = useRef<Record<string, Promise<DayAvailability | null>>>({});
-  const monthRequestCacheRef = useRef<Record<string, Promise<Record<string, DayAvailability>>>>({});
-  const loadedMonthsRef = useRef<Record<string, boolean>>({});
-  const latestMonthRequestRef = useRef(0);
-  const initializationRequestRef = useRef(0);
-  const autoSelectedDateRef = useRef(false);
+  const monthRequestCacheRef = useRef<Record<string, Promise<MonthLoadState>>>({});
+  const monthAvailabilityCacheRef = useRef<Record<string, {
+    month: string;
+    loadedAt: number;
+    data: MonthAvailabilityMap;
+  }>>({});
+  const initializationGenerationRef = useRef(0);
+  const initializationAbortRef = useRef<AbortController | null>(null);
+  const monthNavigationAbortRef = useRef<AbortController | null>(null);
   const dayAvailabilityMapRef = useRef(dayAvailabilityMap);
+  const currentMonthRef = useRef(currentMonth);
+  const selectedDateRef = useRef(selectedDate);
   dayAvailabilityMapRef.current = dayAvailabilityMap;
+  currentMonthRef.current = currentMonth;
+  selectedDateRef.current = selectedDate;
 
   const [service, setService] = useState<ServiceKey | "">("");
   const [note, setNote] = useState<string>("");
@@ -340,6 +356,25 @@ export default function BookingSection() {
 
   const currentRank = planRank(plan);
   const isServiceAllowed = (minRank: number) => currentRank >= minRank;
+  const availabilityUserId =
+    bookingUser?._id || bookingUser?.id || bookingUser?.userId || bookingUser?.email || "";
+  const selectedAvailabilityAddressId = selectedAddressId || defaultAddressId || "";
+  const getAvailabilityCacheKey = useCallback((yearMonth: string) =>
+    buildAvailabilityCacheKey({
+      yearMonth,
+      addressId: selectedAvailabilityAddressId,
+      serviceType: "member-booking",
+      membershipId: plan || (hasSubscription ? "active-membership" : "no-membership"),
+      userId: availabilityUserId,
+      timezone: config?.timezone || "America/New_York",
+    }), [
+      availabilityUserId,
+      config?.timezone,
+      hasSubscription,
+      plan,
+      selectedAvailabilityAddressId,
+    ]);
+  const availabilityContextKey = getAvailabilityCacheKey("context");
 
   // ✅ pick default address
   useEffect(() => {
@@ -357,9 +392,10 @@ export default function BookingSection() {
     dayAvailabilityMapRef.current = {};
     dayRequestCacheRef.current = {};
     monthRequestCacheRef.current = {};
-    loadedMonthsRef.current = {};
+    monthAvailabilityCacheRef.current = {};
+    setMonthLoadStateMap({});
     setLoadingMonthKey(null);
-    autoSelectedDateRef.current = false;
+    setCalendarMode("initializing");
     setService("");
     setShowServiceMenu(false);
     setError("");
@@ -373,40 +409,20 @@ export default function BookingSection() {
     if (!config) return [];
     const ymd = formatDateYMD(date);
     if (config.engine === "reservation" && dayAvailabilityMap[ymd]) {
-      return dayAvailabilityMap[ymd].slots;
+      return getBookableSlots(dayAvailabilityMap[ymd]).map((slot) => slot.time);
     }
     const overrideHours = config.overrides[ymd];
     return overrideHours?.length ? overrideHours : config.defaultHours;
   }, [config, dayAvailabilityMap]);
 
-  const getMonthKey = useCallback((date: Date) =>
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`, []);
-
-  const toDayAvailability = useCallback((data: {
-    taken?: Record<string, number>;
-    capacityPerSlot?: number;
-    slots?: string[];
-    remaining?: Record<string, number>;
-    availableSlotCount?: number;
-    slotCount?: number;
-  }): DayAvailability => {
-    const slots = Array.isArray(data.slots) ? data.slots : [];
-    const count = Number(data.availableSlotCount ?? data.slotCount ?? slots.length);
-    return {
-      taken: data.taken || {},
-      capacity: data.capacityPerSlot ?? 1,
-      slots,
-      remaining: data.remaining || {},
-      availableSlotCount: Number.isFinite(count) ? count : slots.length,
-    };
-  }, []);
+  const getMonthKey = useCallback((date: Date) => getMonthKeyLocal(date), []);
 
   const isAvailabilityOpen = useCallback((info?: DayAvailability | null) => {
-    return !!info && info.availableSlotCount > 0 && info.slots.length > 0;
+    return isBookableDay(info);
   }, []);
 
   const isDayDisabled = useCallback((date: Date): boolean => {
-    if (!config) return true;
+    if (!config || calendarMode === "initializing") return true;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -420,7 +436,7 @@ export default function BookingSection() {
     if (d < today) return true;
 
     return !isAvailabilityOpen(info);
-  }, [config, dayAvailabilityMap, isAvailabilityOpen]);
+  }, [calendarMode, config, dayAvailabilityMap, isAvailabilityOpen]);
 
   const isDateSelectable = useCallback((date: Date) => {
     const normalized = new Date(date);
@@ -432,7 +448,7 @@ export default function BookingSection() {
     const entries = Object.entries(dayAvailabilityMap)
       .filter(([, info]) => isAvailabilityOpen(info))
       .map(([ymd]) => {
-        return dateFromYMD(ymd);
+        return dateFromYMDLocal(ymd);
       })
       .filter((date) => isDateSelectable(date))
       .sort((a, b) => a.getTime() - b.getTime());
@@ -441,18 +457,28 @@ export default function BookingSection() {
   }, [dayAvailabilityMap, isAvailabilityOpen, isDateSelectable]);
 
   const fetchDayAvailability = useCallback(async (
-    ymd: string
+    ymd: string,
+    options: { signal?: AbortSignal; generation?: number } = {}
   ): Promise<DayAvailability | null> => {
     if (dayAvailabilityMapRef.current[ymd]) {
       return dayAvailabilityMapRef.current[ymd];
     }
 
-    const existingRequest = dayRequestCacheRef.current[ymd];
+    const requestKey = `${availabilityContextKey}|day|${ymd}`;
+    const existingRequest = dayRequestCacheRef.current[requestKey];
     if (existingRequest) return existingRequest;
 
-    const request = getTimeSlots(ymd)
+    const request = getTimeSlots(ymd, { signal: options.signal })
       .then((data) => {
-        const nextAvailability = toDayAvailability(data);
+        const nextAvailability = normalizeDayAvailability(data);
+
+        if (
+          options.signal?.aborted ||
+          (options.generation !== undefined &&
+            options.generation !== initializationGenerationRef.current)
+        ) {
+          return nextAvailability;
+        }
 
         setDayAvailabilityMap((prev) => {
           if (prev[ymd]) return prev;
@@ -464,16 +490,19 @@ export default function BookingSection() {
         return nextAvailability;
       })
       .catch((err) => {
+        if (options.signal?.aborted || err?.name === "CanceledError" || err?.code === "ERR_CANCELED") {
+          return null;
+        }
         console.error("Failed to load time slots:", err);
         return null;
       })
       .finally(() => {
-        delete dayRequestCacheRef.current[ymd];
+        delete dayRequestCacheRef.current[requestKey];
       });
 
-    dayRequestCacheRef.current[ymd] = request;
+    dayRequestCacheRef.current[requestKey] = request;
     return request;
-  }, [toDayAvailability]);
+  }, [availabilityContextKey]);
 
   // Load calendar config
   useEffect(() => {
@@ -498,48 +527,71 @@ export default function BookingSection() {
     loadConfig();
   }, []);
 
-  const monthAvailabilityFromCache = useCallback((monthKey: string) => {
-    return Object.fromEntries(
-      Object.entries(dayAvailabilityMapRef.current).filter(([ymd]) => ymd.startsWith(monthKey))
-    );
+  const logAvailabilityDiagnostics = useCallback((records: unknown) => {
+    if (process.env.NEXT_PUBLIC_BOOKING_CALENDAR_DEBUG === "1") {
+      console.info("[booking-calendar:init]", records);
+    }
   }, []);
 
   const loadMonthAvailability = useCallback(async (
     monthDate: Date,
-    options: { markLoading?: boolean } = {}
-  ): Promise<Record<string, DayAvailability>> => {
-    if (!config) return {};
+    options: {
+      markLoading?: boolean;
+      signal?: AbortSignal;
+      generation?: number;
+      allowCache?: boolean;
+    } = {}
+  ): Promise<MonthLoadState> => {
+    if (!config) {
+      return {
+        status: "error",
+        month: getMonthKey(monthDate),
+        error: new Error("Calendar config has not loaded."),
+      };
+    }
 
     const monthKey = getMonthKey(monthDate);
-    if (loadedMonthsRef.current[monthKey]) {
-      return monthAvailabilityFromCache(monthKey);
+    const cacheKey = getAvailabilityCacheKey(monthKey);
+    const allowCache = options.allowCache === true;
+    const cached = monthAvailabilityCacheRef.current[cacheKey];
+
+    if (
+      allowCache &&
+      cached &&
+      cached.month === monthKey &&
+      Date.now() - cached.loadedAt <= CACHE_TTL_MS
+    ) {
+      return {
+        status: "success",
+        month: monthKey,
+        data: cached.data,
+        source: "cache",
+      };
     }
 
-    const existingRequest = monthRequestCacheRef.current[monthKey];
-    if (existingRequest) {
-      if (options.markLoading === false) return existingRequest;
-
-      const loadingRequestId = ++latestMonthRequestRef.current;
-      setLoadingMonthKey(monthKey);
-      return existingRequest.finally(() => {
-        if (latestMonthRequestRef.current === loadingRequestId) {
-          setLoadingMonthKey((current) => (current === monthKey ? null : current));
-        }
-      });
-    }
+    const existingRequest = monthRequestCacheRef.current[cacheKey];
+    if (existingRequest) return existingRequest;
 
     const shouldMarkLoading = options.markLoading !== false;
-    const loadingRequestId = shouldMarkLoading ? ++latestMonthRequestRef.current : 0;
-    if (shouldMarkLoading) setLoadingMonthKey(monthKey);
+    if (shouldMarkLoading) {
+      setLoadingMonthKey(monthKey);
+      setMonthLoadStateMap((prev) => ({
+        ...prev,
+        [cacheKey]: { status: "loading", month: monthKey },
+      }));
+    }
 
-    const request = (async () => {
-      const monthDays: Record<string, DayAvailability> = {};
+    const request = (async (): Promise<MonthLoadState> => {
+      const monthDays: MonthAvailabilityMap = {};
 
       try {
         if (config.engine === "reservation") {
-          const monthData = await getMonthAvailability(monthKey);
-          for (const day of monthData.days) {
-            monthDays[day.date] = toDayAvailability(day);
+          const monthData = await getMonthAvailability(monthKey, { signal: options.signal });
+          if (monthData.month && monthData.month !== monthKey) {
+            throw new Error(`Month response mismatch: expected ${monthKey}, got ${monthData.month}`);
+          }
+          for (const day of monthData.days || []) {
+            monthDays[day.date] = normalizeDayAvailability(day);
           }
         } else {
           const year = monthDate.getFullYear();
@@ -557,99 +609,169 @@ export default function BookingSection() {
           }
 
           const dayResults = await Promise.all(
-            datesToFetch.map(async (ymd) => [ymd, await fetchDayAvailability(ymd)] as const)
+            datesToFetch.map(async (ymd) => [
+              ymd,
+              await fetchDayAvailability(ymd, {
+                signal: options.signal,
+                generation: options.generation,
+              }),
+            ] as const)
           );
           for (const [ymd, detail] of dayResults) {
             if (detail) monthDays[ymd] = detail;
           }
         }
 
-        loadedMonthsRef.current[monthKey] = true;
+        if (options.signal?.aborted) {
+          return { status: "aborted", month: monthKey };
+        }
+        if (
+          options.generation !== undefined &&
+          options.generation !== initializationGenerationRef.current
+        ) {
+          return { status: "stale", month: monthKey };
+        }
+
+        monthAvailabilityCacheRef.current[cacheKey] = {
+          month: monthKey,
+          loadedAt: Date.now(),
+          data: monthDays,
+        };
         setDayAvailabilityMap((prev) => {
           const next = { ...prev, ...monthDays };
           dayAvailabilityMapRef.current = next;
           return next;
         });
-        return monthDays;
+        const success: MonthLoadState = {
+          status: "success",
+          month: monthKey,
+          data: monthDays,
+          source: "network",
+        };
+        setMonthLoadStateMap((prev) => ({
+          ...prev,
+          [cacheKey]: success,
+        }));
+        return success;
       } catch (error) {
-        console.error("Failed to load month availability:", error);
-        return monthAvailabilityFromCache(monthKey);
+        if (options.signal?.aborted || isAbortError(error)) {
+          return { status: "aborted", month: monthKey };
+        }
+
+        const loadError =
+          error instanceof Error ? error : new Error("Failed to load month availability.");
+        console.error("Failed to load month availability:", loadError);
+        const errorState: MonthLoadState = {
+          status: "error",
+          month: monthKey,
+          error: loadError,
+        };
+        setMonthLoadStateMap((prev) => ({
+          ...prev,
+          [cacheKey]: errorState,
+        }));
+        return errorState;
       } finally {
-        delete monthRequestCacheRef.current[monthKey];
-        if (shouldMarkLoading && latestMonthRequestRef.current === loadingRequestId) {
+        delete monthRequestCacheRef.current[cacheKey];
+        if (shouldMarkLoading) {
           setLoadingMonthKey((current) => (current === monthKey ? null : current));
         }
       }
     })();
 
-    monthRequestCacheRef.current[monthKey] = request;
+    monthRequestCacheRef.current[cacheKey] = request;
     return request;
-  }, [config, fetchDayAvailability, getMonthKey, monthAvailabilityFromCache, toDayAvailability]);
-
-  const firstAvailableDateInMonth = useCallback((
-    monthDate: Date,
-    monthAvailability: Record<string, DayAvailability>
-  ) => {
-    const monthKey = getMonthKey(monthDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return Object.entries(monthAvailability)
-      .filter(([ymd, info]) => ymd.startsWith(monthKey) && isAvailabilityOpen(info))
-      .map(([ymd]) => dateFromYMD(ymd))
-      .filter((date) => date >= today)
-      .sort((a, b) => a.getTime() - b.getTime())[0] || null;
-  }, [getMonthKey, isAvailabilityOpen]);
+  }, [config, fetchDayAvailability, getAvailabilityCacheKey, getMonthKey]);
 
   useEffect(() => {
-    if (!config) return;
-    void loadMonthAvailability(currentMonth, { markLoading: true });
-  }, [config, currentMonth, loadMonthAvailability]);
+    if (!config || calendarMode === "initializing") return;
+    monthNavigationAbortRef.current?.abort();
+    const controller = new AbortController();
+    monthNavigationAbortRef.current = controller;
+    void loadMonthAvailability(currentMonth, {
+      markLoading: true,
+      signal: controller.signal,
+      allowCache: true,
+    });
+
+    return () => {
+      controller.abort();
+    };
+  }, [calendarMode, config, currentMonth, loadMonthAvailability]);
 
   useEffect(() => {
     if (!config) return;
 
-    let cancelled = false;
-    const requestId = ++initializationRequestRef.current;
+    const generation = ++initializationGenerationRef.current;
+    const controller = new AbortController();
+    initializationAbortRef.current?.abort();
+    monthNavigationAbortRef.current?.abort();
+    initializationAbortRef.current = controller;
+    const visibleMonthBefore = getMonthKey(currentMonthRef.current);
+    const selectedDateBefore = selectedDateRef.current ? formatDateYMD(selectedDateRef.current) : null;
+    const startMonth = monthStartLocal(new Date());
 
-    const initialize = async () => {
-      const startMonth = monthStart(new Date());
-      const maxAdvanceDays = Number(config.maxAdvanceDays ?? 90);
-      const maxMonths = Math.max(1, Math.ceil(maxAdvanceDays / 31) + 1);
+    setCalendarMode("initializing");
+    setCurrentMonth(startMonth);
+    setSelectedDate(null);
+    setSelectedTime("");
+    setDisplayedTimes([]);
+    setLoadingSelectedDate(false);
+    setError("");
 
-      for (let offset = 0; offset <= maxMonths; offset += 1) {
-        const candidateMonth = addMonths(startMonth, offset);
-        const monthAvailability = await loadMonthAvailability(candidateMonth, {
-          markLoading: offset === 0,
-        });
-        if (cancelled || initializationRequestRef.current !== requestId) return;
+    void resolveInitialCalendarSelection({
+      generation,
+      getCurrentGeneration: () => initializationGenerationRef.current,
+      signal: controller.signal,
+      startMonth,
+      maxAdvanceDays: Number(config.maxAdvanceDays ?? 90),
+      visibleMonthBefore,
+      selectedDateBefore,
+      loadMonth: (monthDate) =>
+        loadMonthAvailability(monthDate, {
+          markLoading: getMonthKey(monthDate) === getMonthKey(startMonth),
+          signal: controller.signal,
+          generation,
+          allowCache: false,
+        }),
+    }).then((result) => {
+      logAvailabilityDiagnostics(result.diagnostics);
+      if (controller.signal.aborted || generation !== initializationGenerationRef.current) return;
 
-        const firstAvailable = firstAvailableDateInMonth(candidateMonth, monthAvailability);
-        if (firstAvailable) {
-          const ymd = formatDateYMD(firstAvailable);
-          const availability = monthAvailability[ymd] || dayAvailabilityMapRef.current[ymd];
-          autoSelectedDateRef.current = true;
-          setCurrentMonth(monthStart(firstAvailable));
-          setSelectedDate(firstAvailable);
-          setSelectedTime("");
-          setDisplayedTimes(availability?.slots || []);
-          return;
-        }
+      if (result.status === "success") {
+        setCurrentMonth(monthStartLocal(result.date));
+        setSelectedDate(result.date);
+        setSelectedTime("");
+        setDisplayedTimes(result.slots.map((slot) => slot.time));
+        setCalendarMode("ready");
+        return;
       }
 
-      if (!cancelled && initializationRequestRef.current === requestId) {
+      if (result.status === "none") {
+        setCurrentMonth(startMonth);
         setSelectedDate(null);
         setSelectedTime("");
         setDisplayedTimes([]);
+        setCalendarMode("ready");
+        return;
       }
-    };
 
-    void initialize();
+      if (result.status === "error") {
+        setSelectedDate(null);
+        setSelectedTime("");
+        setDisplayedTimes([]);
+        setCalendarMode("ready");
+        setError("Unable to load appointment availability. Please try again.");
+      }
+    });
 
     return () => {
-      cancelled = true;
+      controller.abort();
+      if (initializationGenerationRef.current === generation) {
+        initializationGenerationRef.current += 1;
+      }
     };
-  }, [config, firstAvailableDateInMonth, loadMonthAvailability, selectedAddressId]);
+  }, [availabilityContextKey, availabilityRetryToken, config, getMonthKey, loadMonthAvailability, logAvailabilityDiagnostics]);
 
 
 
@@ -777,7 +899,7 @@ if (next?.date) {
     const cached = dayAvailabilityMap[dateStr];
 
     if (cached) {
-      setDisplayedTimes(cached.slots);
+      setDisplayedTimes(getBookableSlots(cached).map((slot) => slot.time));
       setLoadingSelectedDate(false);
       return;
     }
@@ -786,7 +908,7 @@ if (next?.date) {
 
     void fetchDayAvailability(dateStr).then((data) => {
       if (cancelled) return;
-      setDisplayedTimes(data?.slots || []);
+      setDisplayedTimes(getBookableSlots(data).map((slot) => slot.time));
       setLoadingSelectedDate(false);
     });
 
@@ -794,28 +916,6 @@ if (next?.date) {
       cancelled = true;
     };
   }, [selectedDate, dayAvailabilityMap, fetchDayAvailability]);
-
-  useEffect(() => {
-    if (!selectedDate) return;
-    const ymd = formatDateYMD(selectedDate);
-    const info = dayAvailabilityMap[ymd];
-    if (!info || isAvailabilityOpen(info)) return;
-
-    const closest = getClosestAvailableDate();
-    if (closest) {
-      const closestKey = formatDateYMD(closest);
-      const availability = dayAvailabilityMapRef.current[closestKey];
-      setCurrentMonth(monthStart(closest));
-      setSelectedDate(closest);
-      setSelectedTime("");
-      setDisplayedTimes(availability?.slots || []);
-      return;
-    }
-
-    setSelectedDate(null);
-    setSelectedTime("");
-    setDisplayedTimes([]);
-  }, [dayAvailabilityMap, getClosestAvailableDate, isAvailabilityOpen, selectedDate]);
 
   const handleDayClick = async (dayDate: Date, muted: boolean) => {
     if (muted) return;
@@ -829,10 +929,11 @@ if (next?.date) {
     const cached = dayAvailabilityMap[ymd];
 
     if (cached) {
-      if (cached.slots.length === 0) return;
+      const slots = getBookableSlots(cached).map((slot) => slot.time);
+      if (slots.length === 0) return;
       setSelectedDate(d);
       setSelectedTime("");
-      setDisplayedTimes(cached.slots);
+      setDisplayedTimes(slots);
       return;
     }
 
@@ -846,13 +947,14 @@ if (next?.date) {
       return;
     }
 
-    if (data.slots.length === 0) {
+    const slots = getBookableSlots(data).map((slot) => slot.time);
+    if (slots.length === 0) {
       setLoadingSelectedDate(false);
       setSelectedDate((current) => (current && sameDay(current, d) ? null : current));
       return;
     }
 
-    setDisplayedTimes(data.slots);
+    setDisplayedTimes(slots);
     setLoadingSelectedDate(false);
   };
 
@@ -909,14 +1011,14 @@ if (next?.date) {
 
     const ymd = formatDateYMD(closest);
     const availability = dayAvailabilityMap[ymd];
-    const firstAvailableSlot = availability?.slots?.[0] || "";
+    const slots = getBookableSlots(availability).map((slot) => slot.time);
+    const firstAvailableSlot = slots[0] || "";
     if (!firstAvailableSlot) return null;
 
-    setCurrentMonth(new Date(closest.getFullYear(), closest.getMonth(), 1));
+    setCurrentMonth(monthStartLocal(closest));
     setSelectedDate(closest);
     setSelectedTime(firstAvailableSlot);
-    setDisplayedTimes(availability.slots);
-    autoSelectedDateRef.current = true;
+    setDisplayedTimes(slots);
 
     return { date: closest, time: firstAvailableSlot };
   };
@@ -1149,28 +1251,47 @@ const canBook =
     ? `${selectedAddress.label ? `${selectedAddress.label}: ` : ""}${selectedAddress.line1}, ${selectedAddress.city} ${selectedAddress.state} ${selectedAddress.zip}`
     : "";
   const visibleMonthKey = getMonthKey(currentMonth);
-  const visibleMonthLoaded = !!loadedMonthsRef.current[visibleMonthKey] && loadingMonthKey !== visibleMonthKey;
+  const visibleMonthLoadState = monthLoadStateMap[getAvailabilityCacheKey(visibleMonthKey)];
+  const visibleMonthLoaded = visibleMonthLoadState?.status === "success" && loadingMonthKey !== visibleMonthKey;
   const visibleMonthHasAvailability = Object.entries(dayAvailabilityMap).some(
     ([ymd, info]) => ymd.startsWith(visibleMonthKey) && isAvailabilityOpen(info)
   );
-  const showNoAvailabilityThisMonth = visibleMonthLoaded && !visibleMonthHasAvailability;
+  const showNoAvailabilityThisMonth =
+    calendarMode !== "initializing" && visibleMonthLoaded && !visibleMonthHasAvailability;
+  const showAvailabilityLoadError =
+    calendarMode !== "initializing" && visibleMonthLoadState?.status === "error";
 
   const moveToNextAvailableMonth = async () => {
     if (!config) return;
+    monthNavigationAbortRef.current?.abort();
+    const controller = new AbortController();
+    monthNavigationAbortRef.current = controller;
+    setCalendarMode("manual-navigation");
     const maxAdvanceDays = Number(config.maxAdvanceDays ?? 90);
     const maxMonths = Math.max(1, Math.ceil(maxAdvanceDays / 31) + 1);
 
     for (let offset = 1; offset <= maxMonths; offset += 1) {
-      const candidateMonth = addMonths(currentMonth, offset);
-      const monthAvailability = await loadMonthAvailability(candidateMonth, { markLoading: true });
-      const firstAvailable = firstAvailableDateInMonth(candidateMonth, monthAvailability);
+      const candidateMonth = addMonthsLocal(currentMonth, offset);
+      const monthAvailability = await loadMonthAvailability(candidateMonth, {
+        markLoading: true,
+        signal: controller.signal,
+        allowCache: true,
+      });
+      if (controller.signal.aborted || monthAvailability.status === "aborted") return;
+      if (monthAvailability.status === "error") {
+        setError("Unable to load appointment availability. Please try again.");
+        return;
+      }
+      if (monthAvailability.status !== "success") return;
+
+      const firstAvailable = firstBookableDateInMonth(candidateMonth, monthAvailability.data);
       if (firstAvailable) {
         const ymd = formatDateYMD(firstAvailable);
-        const availability = monthAvailability[ymd] || dayAvailabilityMapRef.current[ymd];
-        setCurrentMonth(monthStart(firstAvailable));
+        const availability = monthAvailability.data[ymd] || dayAvailabilityMapRef.current[ymd];
+        setCurrentMonth(monthStartLocal(firstAvailable));
         setSelectedDate(firstAvailable);
         setSelectedTime("");
-        setDisplayedTimes(availability?.slots || []);
+        setDisplayedTimes(getBookableSlots(availability).map((slot) => slot.time));
         return;
       }
     }
@@ -1211,6 +1332,10 @@ const canBook =
   return (
     <section
       id="pick-day"
+      data-calendar-mode={calendarMode}
+      data-visible-month={visibleMonthKey}
+      data-selected-date={ymdSelected}
+      data-available-times={displayedTimes.join(",")}
       className="relative w-full overflow-hidden bg-[#F6F8FC] pb-6 pt-6 scroll-mt-[96px] sm:pb-16 sm:pt-16 lg:pb-20 lg:pt-20"
     >
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
@@ -1253,7 +1378,12 @@ const canBook =
               <div className="flex items-center justify-between mb-5">
                 <button
                   aria-label="Prev month"
-                  onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
+                  disabled={calendarMode === "initializing"}
+                  onClick={() => {
+                    if (calendarMode === "initializing") return;
+                    setCalendarMode("manual-navigation");
+                    setCurrentMonth(addMonthsLocal(currentMonth, -1));
+                  }}
                   className="w-10 h-10 rounded-[12px] border border-[#E5E9F2] bg-[#F8FAFF] grid place-items-center text-[#475569] hover:bg-[#EEF5FF] hover:border-[#D9E4FF] transition active:scale-95"
                 >
                   <ChevronLeft />
@@ -1265,7 +1395,12 @@ const canBook =
 
                 <button
                   aria-label="Next month"
-                  onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
+                  disabled={calendarMode === "initializing"}
+                  onClick={() => {
+                    if (calendarMode === "initializing") return;
+                    setCalendarMode("manual-navigation");
+                    setCurrentMonth(addMonthsLocal(currentMonth, 1));
+                  }}
                   className="w-10 h-10 rounded-[12px] border border-[#E5E9F2] bg-[#F8FAFF] grid place-items-center text-[#475569] hover:bg-[#EEF5FF] hover:border-[#D9E4FF] transition active:scale-95"
                 >
                   <ChevronRight />
@@ -1275,6 +1410,21 @@ const canBook =
               {loadingMonthKey === visibleMonthKey && (
                 <div className="mb-4 rounded-[12px] border border-[#D9E4FF] bg-[#F0F7FF] px-3 py-2 text-[12px] font-semibold text-[#475569]">
                   Checking availability...
+                </div>
+              )}
+
+              {showAvailabilityLoadError && (
+                <div className="mb-4 rounded-[12px] border border-red-200 bg-red-50 px-3 py-3 text-center">
+                  <div className="text-[13px] font-semibold text-red-700">
+                    Unable to load appointment availability.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAvailabilityRetryToken((value) => value + 1)}
+                    className="mt-2 rounded-[10px] border border-red-300 px-3 py-2 text-[12px] font-bold text-red-700 transition hover:bg-red-100"
+                  >
+                    Retry
+                  </button>
                 </div>
               )}
 
@@ -1306,6 +1456,9 @@ const canBook =
                     <button
                       key={i}
                       type="button"
+                      data-booking-date={formatDateYMD(day.date)}
+                      data-booking-date-muted={day.muted ? "true" : "false"}
+                      data-booking-date-disabled={disabled ? "true" : "false"}
                       onClick={() => handleDayClick(day.date, day.muted)}
                       disabled={disabled}
                       className={[

@@ -12,6 +12,8 @@
     "start": "next start -p $PORT",
     "lint": "eslint",
     "test:booking-calendar-availability-ui": "node scripts/test_booking_calendar_availability_ui.js",
+    "test:booking-calendar-browser-refresh": "node scripts/test_booking_calendar_browser_refresh.js",
+    "test:booking-calendar-initialization-race": "node scripts/test_booking_calendar_initialization_race.js",
     "test:project-customer-selector-ui": "node scripts/test_project_customer_selector_ui.js",
     "postinstall": "npm run build"
   },
@@ -38,6 +40,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
+    "playwright": "^1.61.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
