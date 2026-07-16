@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import ProjectContracts from "@/app/components/admin/ProjectContracts";
 import ProjectEstimates from "@/app/components/admin/ProjectEstimates";
 import {
@@ -147,6 +147,23 @@ function customerSnapshotFromForm(form: ProjectInput) {
   };
 }
 
+function highlightMatch(value: string | null | undefined, query: string): ReactNode {
+  const text = String(value || "");
+  const needle = query.trim();
+  if (!text || needle.length < 2) return text;
+  const index = text.toLowerCase().indexOf(needle.toLowerCase());
+  if (index < 0) return text;
+  return (
+    <>
+      {text.slice(0, index)}
+      <mark className="rounded bg-yellow-100 px-0.5 text-slate-950">
+        {text.slice(index, index + needle.length)}
+      </mark>
+      {text.slice(index + needle.length)}
+    </>
+  );
+}
+
 function ProjectForm({
   initial,
   title,
@@ -288,7 +305,53 @@ function ProjectForm({
       customer.addresses[0] ||
       null;
     chooseAddress(customer, preferredAddress);
+    setCustomerQuery("");
+    setCustomerResults([]);
+    setCustomerNextCursor(null);
     setShowCustomerSearch(false);
+  };
+
+  const clearSelectedCustomer = () => {
+    if (
+      initial.customerId &&
+      !window.confirm("Changing the linked customer can affect future contracts and documents. Continue?")
+    ) {
+      return;
+    }
+    setSelectedCustomer(null);
+    setShowCustomerSearch(true);
+    setCustomerResults([]);
+    setCustomerNextCursor(null);
+    setForm((current) => ({
+      ...current,
+      customerId: null,
+      addressId: null,
+      customerSnapshot: customerSnapshotFromForm(current),
+      propertySnapshot: propertySnapshotFromAddress(null, current.address),
+    }));
+  };
+
+  const useSearchAsManualCustomer = () => {
+    const manualName = customerQuery.trim();
+    if (!manualName) return;
+    setCustomerSource("manual");
+    setSelectedCustomer(null);
+    setShowCustomerSearch(false);
+    setCustomerResults([]);
+    setCustomerNextCursor(null);
+    setForm((current) => {
+      const next = {
+        ...current,
+        customerId: null,
+        addressId: null,
+        customerName: manualName,
+      };
+      return {
+        ...next,
+        customerSnapshot: customerSnapshotFromForm(next),
+        propertySnapshot: propertySnapshotFromAddress(null, next.address),
+      };
+    });
   };
 
   const switchSource = (source: CustomerSource) => {
@@ -357,6 +420,14 @@ function ProjectForm({
     selectedCustomer?.addresses.find((address) => address.id === form.addressId) || null;
   const selectedMembershipSummary =
     selectedProjectAddress?.membershipSummary || selectedCustomer?.membershipSummary || null;
+  const trimmedCustomerQuery = customerQuery.trim();
+  const showNoRegisteredCustomersFound =
+    showCustomerSearch &&
+    trimmedCustomerQuery.length >= 2 &&
+    !customerSearching &&
+    !customerSearchError &&
+    customerResults.length === 0;
+  const showCustomerDropdown = customerResults.length > 0 || showNoRegisteredCustomersFound;
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-6">
@@ -434,6 +505,13 @@ function ProjectForm({
                     >
                       Change Linked Customer
                     </button>
+                    <button
+                      type="button"
+                      onClick={clearSelectedCustomer}
+                      className="rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50"
+                    >
+                      Clear selected customer
+                    </button>
                   </div>
                 </div>
 
@@ -464,6 +542,12 @@ function ProjectForm({
                   </label>
                 )}
 
+                {selectedCustomer.addresses.length === 0 && (
+                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                    No saved address. Enter a project address manually below.
+                  </div>
+                )}
+
                 <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Membership</p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -487,15 +571,17 @@ function ProjectForm({
 
             {showCustomerSearch && (
               <div className="rounded-2xl border border-slate-200 p-4">
-                <label className="text-sm font-semibold text-slate-700">
-                  Search registered customers
-                  <input
-                    value={customerQuery}
-                    onChange={(event) => setCustomerQuery(event.target.value)}
-                    placeholder="Search by name, email, phone, or address"
-                    className={inputClass}
-                  />
-                </label>
+                <div className="relative">
+                  <label className="text-sm font-semibold text-slate-700">
+                    Search registered customers
+                    <input
+                      value={customerQuery}
+                      onChange={(event) => setCustomerQuery(event.target.value)}
+                      placeholder="Search by name, email, phone, or address"
+                      className={inputClass}
+                    />
+                  </label>
+                </div>
                 {customerSearching && <p className="mt-2 text-xs font-semibold text-blue-700">Searching...</p>}
                 {customerSearchError && (
                   <p className="mt-2 text-xs font-semibold text-rose-600">{customerSearchError}</p>
@@ -503,34 +589,54 @@ function ProjectForm({
                 {customerQuery.trim().length > 0 && customerQuery.trim().length < 2 && (
                   <p className="mt-2 text-xs font-semibold text-slate-500">Enter at least 2 characters.</p>
                 )}
-                <div className="mt-3 space-y-2">
-                  {customerResults.map((customer) => {
-                    const address = customer.matchingAddress;
-                    return (
-                      <button
-                        key={customer.customerId}
-                        type="button"
-                        onClick={() => selectCustomer(customer)}
-                        className="w-full rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-blue-300 hover:bg-blue-50"
-                      >
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                          <div>
-                            <p className="font-black text-slate-950">{customer.name}</p>
-                            <p className="mt-1 text-sm text-slate-600">
-                              {customer.email || "No email"} {customer.phone ? `- ${customer.phone}` : ""}
-                            </p>
-                            <p className="mt-1 text-sm text-slate-500">
-                              {address?.formattedAddress || "No saved property address"}
-                            </p>
+                {showCustomerDropdown && (
+                  <div className="mt-3 space-y-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+                    {customerResults.map((customer) => {
+                      const address = customer.matchingAddress;
+                      return (
+                        <button
+                          key={customer.customerId}
+                          type="button"
+                          onClick={() => selectCustomer(customer)}
+                          className="w-full rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-blue-300 hover:bg-blue-50"
+                        >
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <p className="font-black text-slate-950">
+                                {highlightMatch(customer.name || "Unnamed customer", customerQuery)}
+                              </p>
+                              <p className="mt-1 text-sm text-slate-600">
+                                {highlightMatch(customer.email || "No email", customerQuery)}
+                                {customer.phone ? " - " : ""}
+                                {customer.phone ? highlightMatch(customer.phone, customerQuery) : ""}
+                              </p>
+                              <p className="mt-1 text-sm text-slate-500">
+                                {highlightMatch(address?.formattedAddress || "No saved address.", customerQuery)}
+                              </p>
+                            </div>
+                            <span className={`w-fit rounded-full border px-3 py-1 text-xs font-bold ${membershipBadgeClass(customer.membershipSummary)}`}>
+                              {membershipLabel(customer.membershipSummary)}
+                            </span>
                           </div>
-                          <span className={`w-fit rounded-full border px-3 py-1 text-xs font-bold ${membershipBadgeClass(customer.membershipSummary)}`}>
-                            {membershipLabel(customer.membershipSummary)}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                        </button>
+                      );
+                    })}
+                    {showNoRegisteredCustomersFound && (
+                      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm font-semibold text-slate-600">
+                        No registered customers found
+                      </div>
+                    )}
+                  </div>
+                )}
+                {showNoRegisteredCustomersFound && (
+                  <button
+                    type="button"
+                    onClick={useSearchAsManualCustomer}
+                    className="mt-3 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                  >
+                    Use as Manual Customer
+                  </button>
+                )}
                 {customerNextCursor && (
                   <button
                     type="button"
