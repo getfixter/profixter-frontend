@@ -812,14 +812,39 @@ export interface Project {
   depositAmount: number;
   balanceDue: number;
   notes: string;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+  deletedBy?: string | null;
+  deleteReason?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export type ProjectInput = Omit<
   Project,
-  "_id" | "projectNumber" | "createdAt" | "updatedAt"
+  "_id" | "projectNumber" | "isDeleted" | "deletedAt" | "deletedBy" | "deleteReason" | "createdAt" | "updatedAt"
 >;
+
+export interface ProjectDeletionSummary {
+  contractCount: number;
+  estimateCount: number;
+  generatedPdfCount: number;
+  signedPdfCount: number;
+  storedDocumentCount: number;
+  hasRelatedRecords: boolean;
+  requiresDeleteConfirmation: boolean;
+}
+
+export interface ProjectDeletionResult {
+  message: string;
+  project: Project;
+  deletion: {
+    isDeleted: boolean;
+    deletedAt: string | null;
+    deletedBy?: string | null;
+    relatedRecords: ProjectDeletionSummary;
+  };
+}
 
 export const ESTIMATE_STATUSES = [
   "Draft",
@@ -1012,6 +1037,8 @@ export interface ProjectContract {
     adminEmail?: string;
     details?: Record<string, unknown>;
   }>;
+  parentProjectDeletedAt?: string | null;
+  parentProjectDeletedMessage?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1837,6 +1864,13 @@ export const getProject = async (projectId: string): Promise<Project> => {
   return response.data.project;
 };
 
+export const getProjectDeletionSummary = async (
+  projectId: string
+): Promise<ProjectDeletionSummary> => {
+  const response = await API.get(`/api/admin/projects/${projectId}/deletion-summary`);
+  return response.data.deletionSummary;
+};
+
 export const searchProjectCustomers = async (
   params: { q: string; limit?: number; cursor?: string | null },
   signal?: AbortSignal
@@ -1877,11 +1911,17 @@ export const updateProject = async (
 
 export const deleteProject = async (
   projectId: string,
-  confirmation: string
-): Promise<void> => {
-  await API.delete(`/api/admin/projects/${projectId}`, {
+  confirmation = ""
+): Promise<ProjectDeletionResult> => {
+  const response = await API.delete(`/api/admin/projects/${projectId}`, {
     data: { confirmation },
   });
+  return response.data;
+};
+
+export const restoreProject = async (projectId: string): Promise<Project> => {
+  const response = await API.post(`/api/admin/projects/${projectId}/restore`);
+  return response.data.project;
 };
 
 // Estimates

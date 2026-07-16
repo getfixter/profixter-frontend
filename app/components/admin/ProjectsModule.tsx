@@ -9,12 +9,14 @@ import {
   createProject,
   deleteProject,
   getProjectCustomer,
+  getProjectDeletionSummary,
   getProjects,
   searchProjectCustomers,
   updateProject,
   type Project,
   type ProjectCustomerAddress,
   type ProjectCustomerSearchResult,
+  type ProjectDeletionSummary,
   type ProjectInput,
   type ProjectMembershipSummary,
   type ProjectStatus,
@@ -625,7 +627,10 @@ export default function ProjectsModule() {
   const [customer, setCustomer] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+  const [deleteSummary, setDeleteSummary] = useState<ProjectDeletionSummary | null>(null);
+  const [deleteSummaryLoading, setDeleteSummaryLoading] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -683,24 +688,47 @@ export default function ProjectsModule() {
   const closeDeleteProject = () => {
     if (deleting) return;
     setDeleteTarget(null);
+    setDeleteSummary(null);
+    setDeleteSummaryLoading(false);
     setDeleteConfirmation("");
     setDeleteError("");
   };
 
+  const openDeleteProject = async (project: Project) => {
+    setDeleteTarget(project);
+    setDeleteSummary(null);
+    setDeleteSummaryLoading(true);
+    setDeleteConfirmation("");
+    setDeleteError("");
+    try {
+      setDeleteSummary(await getProjectDeletionSummary(project._id));
+    } catch (summaryError) {
+      setDeleteError(errorMessage(summaryError));
+    } finally {
+      setDeleteSummaryLoading(false);
+    }
+  };
+
+  const deleteRequiresConfirmation = deleteSummary?.requiresDeleteConfirmation === true;
+  const deleteConfirmationMatches =
+    !!deleteSummary && (!deleteRequiresConfirmation || deleteConfirmation.trim() === "DELETE");
+
   const confirmDeleteProject = async () => {
-    if (!deleteTarget || deleteConfirmation !== deleteTarget.projectNumber) return;
+    if (!deleteTarget || deleteSummaryLoading || !deleteConfirmationMatches) return;
     setDeleting(true);
     setDeleteError("");
     try {
-      await deleteProject(deleteTarget._id, deleteConfirmation);
+      await deleteProject(deleteTarget._id, deleteRequiresConfirmation ? "DELETE" : "");
       setProjects((current) => current.filter((project) => project._id !== deleteTarget._id));
       if (selected?._id === deleteTarget._id) {
         setSelected(null);
         setView("list");
       }
       setDeleteTarget(null);
+      setDeleteSummary(null);
       setDeleteConfirmation("");
       setDeleteError("");
+      setSuccess("Project deleted. Contracts and saved records were preserved.");
     } catch (deleteProjectError) {
       setDeleteError(errorMessage(deleteProjectError));
     } finally {
@@ -790,11 +818,7 @@ export default function ProjectsModule() {
             {detailTab === "overview" && (
               <button
                 type="button"
-                onClick={() => {
-                  setDeleteTarget(selected);
-                  setDeleteConfirmation("");
-                  setDeleteError("");
-                }}
+                onClick={() => void openDeleteProject(selected)}
                 className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700"
               >
                 Delete
@@ -891,7 +915,7 @@ export default function ProjectsModule() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-xs font-bold uppercase tracking-[0.18em] text-rose-600">Delete Project</div>
-                <h3 className="mt-1 text-2xl font-black text-slate-950">Delete Project</h3>
+                <h3 className="mt-1 text-2xl font-black text-slate-950">Delete this project?</h3>
               </div>
               <button
                 type="button"
@@ -904,21 +928,26 @@ export default function ProjectsModule() {
               </button>
             </div>
             <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
-              This action cannot be undone. Existing estimates must be deleted before a project can be deleted.
+              {deleteSummaryLoading
+                ? "Checking saved project records..."
+                : deleteRequiresConfirmation
+                  ? "This project contains contracts or other saved documents. It will be removed from the active Projects list, but its contracts, signed files, estimates, and history will be preserved for recordkeeping."
+                  : "This project will be removed from the active Projects list."}
             </div>
-            <div className="mt-4 space-y-2">
-              <div className="text-sm text-slate-600">
-                Type the project number exactly to continue:{' '}
-                <span className="font-bold text-slate-950">{deleteTarget.projectNumber}</span>
+            {deleteRequiresConfirmation && (
+              <div className="mt-4 space-y-2">
+                <div className="text-sm text-slate-600">
+                  Type <span className="font-bold text-slate-950">DELETE</span> to confirm.
+                </div>
+                <input
+                  value={deleteConfirmation}
+                  onChange={(event) => setDeleteConfirmation(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-rose-400 focus:ring-4 focus:ring-rose-100"
+                  placeholder="DELETE"
+                  autoFocus
+                />
               </div>
-              <input
-                value={deleteConfirmation}
-                onChange={(event) => setDeleteConfirmation(event.target.value)}
-                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-rose-400 focus:ring-4 focus:ring-rose-100"
-                placeholder={deleteTarget.projectNumber}
-                autoFocus
-              />
-            </div>
+            )}
             {deleteError && (
               <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
                 {deleteError}
@@ -936,7 +965,7 @@ export default function ProjectsModule() {
               <button
                 type="button"
                 onClick={confirmDeleteProject}
-                disabled={deleting || deleteConfirmation !== deleteTarget.projectNumber}
+                disabled={deleting || deleteSummaryLoading || !deleteConfirmationMatches}
                 className="rounded-2xl bg-rose-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {deleting ? "Deleting..." : "Delete Project"}
@@ -977,6 +1006,7 @@ export default function ProjectsModule() {
       </section>
 
       {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700">{error}</div>}
+      {success && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">{success}</div>}
 
       {loading ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-500">Loading projects...</div>
