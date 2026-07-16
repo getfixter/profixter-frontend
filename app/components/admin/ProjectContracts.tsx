@@ -87,6 +87,17 @@ function moneyFromCents(cents: number) {
   }).format(Number(cents || 0) / 100);
 }
 
+function customerContractNumber(value?: string | null) {
+  const text = String(value || "");
+  const match = text.match(/(\d+)\D*$/);
+  const sequence = match ? match[1] : text.replace(/\D/g, "");
+  return (sequence || "0").padStart(6, "0");
+}
+
+function contractDisplayLabel(value?: string | null) {
+  return `Contract #${customerContractNumber(value)}`;
+}
+
 function centsFromMoney(value: string) {
   const number = Number(String(value || "").replace(/[$,\s]/g, ""));
   return Number.isFinite(number) && number > 0 ? Math.round(number * 100) : 0;
@@ -348,17 +359,24 @@ function contractPayloadSignature(project: Project, form: ContractFormState) {
 
 function contractTitle(contract: ProjectContract | null) {
   if (!contract) return "No Contract";
-  return `${contract.contractNumber} v${contract.version}`;
+  return contractDisplayLabel(contract.contractNumber);
+}
+
+function discountPreviewLabel(discount: DiscountDraft & { calculatedAmountCents?: number }) {
+  const name = discount.name.trim() || "Discount";
+  if (discount.type !== "percentage") return name;
+  const percent = String(discount.value || "").replace(/[%\s]/g, "").trim();
+  return percent ? `${name} (${percent}%)` : name;
 }
 
 function PdfPreview({
   form,
   meta,
-  project,
+  contract,
 }: {
   form: ContractFormState;
   meta: ContractMeta | null;
-  project: Project;
+  contract: ProjectContract | null;
 }) {
   const pricing = pricingFromForm(form);
   const schedule = form.paymentSchedule.length
@@ -367,66 +385,73 @@ function PdfPreview({
         { id: "deposit", label: "Deposit", amount: form.depositRequired, dueCondition: "Due when contract is signed." },
         { id: "balance", label: "Remaining Balance", amount: dollarsFromCents(pricing.remaining), dueCondition: "Due upon substantial completion unless otherwise agreed in writing." },
       ].filter((row) => centsFromMoney(row.amount) > 0);
+  const contractLabel = contract ? contractDisplayLabel(contract.contractNumber) : "Draft Preview";
+  const company = meta?.company;
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Preview</p>
-          <h3 className="mt-1 text-xl font-black text-slate-950">Premium Island Homes Contract</h3>
-          <p className="mt-1 text-sm text-slate-500">
-            {project.projectNumber} / {form.customerName || project.customerName}
+          <h3 className="text-2xl font-black uppercase tracking-normal text-slate-950">Home Improvement Agreement</h3>
+          <p className="mt-1 text-sm font-bold text-slate-900">{company?.legalName || "Premium Island Homes Inc."}</p>
+          <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
+            {(company?.addressLines || ["245 42nd Street", "Lindenhurst, NY 11757"]).join(" | ")} | {company?.phone || "631-599-1363"} | {company?.email || "premiumislandconstruction@gmail.com"} | {company?.website || "profixter.com"} | {company?.homeImprovementLicense || "HI-71484"}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">
-          Agreement Preview
+        <div className="text-left sm:text-right">
+          <p className="text-sm font-black text-slate-950">{contractLabel}</p>
+          <p className="mt-1 text-xs font-semibold text-slate-500">{displayDate(form.contractDate)}</p>
         </div>
       </div>
 
-      <div className="mt-5 grid gap-4 text-sm md:grid-cols-2">
-        <div>
-          <p className="font-bold text-slate-900">Company</p>
-          <p className="mt-1 leading-6 text-slate-600">{meta?.company.legalName || "Premium Island Homes Inc."}</p>
-          <p className="leading-6 text-slate-600">{meta?.company.addressLines.join(", ")}</p>
-          <p className="leading-6 text-slate-600">License {meta?.company.homeImprovementLicense}</p>
-        </div>
-        <div>
-          <p className="font-bold text-slate-900">Customer</p>
-          <p className="mt-1 leading-6 text-slate-600">{form.customerName || "Not set"}</p>
-          <p className="leading-6 text-slate-600">{form.customerEmail || "No email"}</p>
-          <p className="leading-6 text-slate-600">{form.propertyAddress || "No property address"}</p>
-        </div>
+      <div className="mt-5 grid gap-3 text-sm md:grid-cols-3">
+        {[
+          ["Customer", form.customerName || "Not set"],
+          ["Phone", form.customerPhone || "Not specified"],
+          ["Email", form.customerEmail || "Not specified"],
+          ["Property", form.propertyAddress || "Not specified"],
+          ["Work Type", form.workType === "Other" ? form.otherWorkType || "Other" : form.workType],
+          ["Contract Date", displayDate(form.contractDate)],
+        ].map(([label, value]) => (
+          <div key={label}>
+            <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</p>
+            <p className="mt-1 leading-5 text-slate-800">{value}</p>
+          </div>
+        ))}
       </div>
 
       <div className="mt-6 space-y-5">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Project Description</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-700">{form.projectDescription || "No description yet."}</p>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Project Description</p>
+          <p className="mt-2 whitespace-pre-wrap text-[15px] leading-7 text-slate-800">{form.projectDescription || "No description yet."}</p>
         </div>
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Scope of Work</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-700">{form.scopeText || "No scope yet."}</p>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Scope of Work</p>
+          <p className="mt-2 whitespace-pre-wrap text-[15px] leading-7 text-slate-800">{form.scopeText || "No scope yet."}</p>
         </div>
-        <div className="space-y-3 rounded-xl bg-slate-50 p-4 text-sm">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div><p className="text-slate-500">Original price</p><strong>{moneyFromCents(pricing.original)}</strong></div>
-            <div><p className="text-slate-500">Adjusted price</p><strong>{moneyFromCents(pricing.adjusted)}</strong></div>
-            <div><p className="text-slate-500">Remaining</p><strong>{moneyFromCents(pricing.remaining)}</strong></div>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
+          <div className="grid gap-4 md:grid-cols-[1.1fr_1fr]">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">Final Contract Price</p>
+              <p className="mt-2 text-3xl font-black text-slate-950">{moneyFromCents(pricing.adjusted)}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><p className="text-slate-500">Original Price</p><strong>{moneyFromCents(pricing.original)}</strong></div>
+              <div><p className="text-slate-500">Discounts</p><strong>{pricing.totalDiscount ? `-${moneyFromCents(pricing.totalDiscount).replace("-", "")}` : moneyFromCents(0)}</strong></div>
+              <div><p className="text-slate-500">Deposit</p><strong>{moneyFromCents(pricing.deposit)}</strong></div>
+              <div><p className="text-slate-500">Remaining Balance</p><strong>{moneyFromCents(pricing.remaining)}</strong></div>
+            </div>
           </div>
           {pricing.discounts.length > 0 && (
-            <div className="divide-y divide-slate-200 rounded-lg bg-white">
+            <div className="mt-4 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
               {pricing.discounts.map((discount) => (
                 <div key={discount.id} className="flex items-center justify-between gap-3 px-3 py-2 text-xs">
-                  <span className="font-semibold text-slate-700">{discount.name || "Discount"}</span>
-                  <span className="font-bold text-emerald-700">-{moneyFromCents(discount.calculatedAmountCents)}</span>
+                  <span className="font-semibold text-slate-700">{discountPreviewLabel(discount)}</span>
+                  <span className="font-bold text-slate-950">-{moneyFromCents(discount.calculatedAmountCents)}</span>
                 </div>
               ))}
             </div>
           )}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div><p className="text-slate-500">Deposit</p><strong>{moneyFromCents(pricing.deposit)}</strong></div>
-            <div><p className="text-slate-500">Total discounts</p><strong>{moneyFromCents(pricing.totalDiscount)}</strong></div>
-          </div>
         </div>
         <div className="overflow-hidden rounded-xl border border-slate-200">
           {schedule.map((row) => (
@@ -440,9 +465,6 @@ function PdfPreview({
         <div className="grid gap-3 text-sm sm:grid-cols-2">
           <div><p className="text-slate-500">Start</p><strong>{displayDate(form.estimatedStartDate)}</strong></div>
           <div><p className="text-slate-500">Completion</p><strong>{displayDate(form.estimatedCompletionDate)}</strong></div>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-600">
-          Cancellation notice: {meta?.cancellationNotice?.includeCancellationNotice ? "Included from centralized legal notice config. No manual calendar deadline is generated." : "Disabled in centralized legal notice config."}
         </div>
       </div>
     </section>
@@ -674,10 +696,11 @@ export default function ProjectContracts({ project }: { project: Project }) {
     setError("");
     try {
       const blob = await downloadProjectContractPdf(project._id, selectedContract._id, type);
+      const displayNumber = contractDisplayLabel(selectedContract.contractNumber).replace("#", "").replace(/\s+/g, "-");
       const filename =
         type === "signed"
-          ? selectedContract.signedPdf?.fileName || `${selectedContract.contractNumber}-signed.pdf`
-          : selectedContract.generatedPdf?.fileName || `${selectedContract.contractNumber}-Contract.pdf`;
+          ? selectedContract.signedPdf?.fileName || `${displayNumber}-signed.pdf`
+          : selectedContract.generatedPdf?.fileName || `${displayNumber}-Contract.pdf`;
       downloadBlob(blob, filename);
       await loadContracts();
     } catch (downloadError) {
@@ -936,7 +959,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
                     : "border-slate-200 text-slate-600 hover:border-slate-300"
                 }`}
               >
-                {contract.contractNumber} v{contract.version}
+                {contractDisplayLabel(contract.contractNumber)}
                 <span className="ml-2 font-semibold text-slate-400">{contract.status}</span>
               </button>
             ))}
@@ -1161,7 +1184,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
         </form>
 
         <div className="space-y-5">
-          <PdfPreview form={form} meta={meta} project={project} />
+          <PdfPreview form={form} meta={meta} contract={selectedContract} />
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Actions</p>
