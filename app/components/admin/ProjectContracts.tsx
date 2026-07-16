@@ -12,6 +12,7 @@ import {
   saveProjectContractDraft,
   uploadSignedProjectContract,
   type ContractMeta,
+  type ContractDiscountType,
   type ContractStatus,
   type ContractWorkType,
   type Project,
@@ -26,6 +27,14 @@ type PaymentScheduleDraft = {
   dueCondition: string;
 };
 
+type DiscountDraft = {
+  id: string;
+  name: string;
+  type: ContractDiscountType;
+  value: string;
+  note: string;
+};
+
 type ContractFormState = {
   contractId?: string;
   customerName: string;
@@ -38,9 +47,11 @@ type ContractFormState = {
   projectDescription: string;
   scopeText: string;
   totalPrice: string;
+  discounts: DiscountDraft[];
   depositRequired: string;
   paymentSchedule: PaymentScheduleDraft[];
   fullDepositConfirmed: boolean;
+  zeroAdjustedPriceConfirmed: boolean;
   contractDate: string;
   estimatedStartDate: string;
   estimatedCompletionDate: string;
@@ -87,7 +98,78 @@ function dollarsFromCents(cents: number) {
 }
 
 const FULL_DEPOSIT_WARNING =
-  "The entered deposit equals 100% of the contract price. Confirm that full payment is intentionally due before work begins.";
+  "The entered deposit equals 100% of the adjusted contract price. Confirm that full payment is intentionally due before work begins.";
+const ZERO_ADJUSTED_PRICE_WARNING =
+  "Discounts reduce the adjusted contract price to $0. Confirm that this contract is intentionally being generated at no charge.";
+const HIGH_DISCOUNT_WARNING =
+  "Total discounts exceed 30% of the original contract price. Review before generating.";
+
+function basisPointsFromPercentInput(value: string) {
+  const normalized = String(value || "").replace(/[%\s]/g, "");
+  if (!/^\d+(?:\.\d{0,2})?$/.test(normalized) || normalized === "") return 0;
+  const [wholePart, decimalPart = ""] = normalized.split(".");
+  return Number(wholePart) * 100 + Number(decimalPart.padEnd(2, "0"));
+}
+
+function percentInputFromBasisPoints(value: number) {
+  const basisPoints = Number(value || 0);
+  const whole = Math.floor(basisPoints / 100);
+  const fraction = basisPoints % 100;
+  if (!fraction) return String(whole);
+  return `${whole}.${String(fraction).padStart(2, "0").replace(/0+$/g, "")}`;
+}
+
+function calculatePercentageDiscountCents(originalCents: number, basisPoints: number) {
+  return Math.floor((Number(originalCents || 0) * Number(basisPoints || 0) + 5000) / 10000);
+}
+
+function isBlankDiscount(discount: DiscountDraft) {
+  return !discount.name.trim() && !discount.value.trim() && !discount.note.trim();
+}
+
+function discountAmountCents(originalCents: number, discount: DiscountDraft) {
+  if (discount.type === "percentage") {
+    return calculatePercentageDiscountCents(originalCents, basisPointsFromPercentInput(discount.value));
+  }
+  return centsFromMoney(discount.value);
+}
+
+function pricingFromForm(form: ContractFormState) {
+  const original = centsFromMoney(form.totalPrice);
+  const discounts = form.discounts
+    .filter((discount) => !isBlankDiscount(discount))
+    .map((discount) => ({
+      ...discount,
+      calculatedAmountCents: discountAmountCents(original, discount),
+    }));
+  const totalDiscount = discounts.reduce(
+    (sum, discount) => sum + Number(discount.calculatedAmountCents || 0),
+    0
+  );
+  const adjusted = Math.max(original - totalDiscount, 0);
+  const deposit = centsFromMoney(form.depositRequired);
+  const remaining = Math.max(adjusted - deposit, 0);
+  const percentage = adjusted > 0 ? Math.round((deposit / adjusted) * 1000) / 10 : 0;
+  const scheduleTotal = form.paymentSchedule.reduce(
+    (sum, row) => sum + centsFromMoney(row.amount),
+    0
+  );
+  const duplicateDiscountNames = discounts
+    .map((discount) => discount.name.trim().toLowerCase())
+    .filter(Boolean)
+    .filter((name, index, names) => names.indexOf(name) !== index);
+  return {
+    original,
+    discounts,
+    totalDiscount,
+    adjusted,
+    deposit,
+    remaining,
+    percentage,
+    scheduleTotal,
+    duplicateDiscountNames,
+  };
+}
 
 function normalizeComparableText(value: string) {
   return String(value || "")
@@ -135,19 +217,21 @@ function defaultForm(project: Project): ContractFormState {
     ? (project.projectType as ContractWorkType)
     : "Other";
   return {
-    customerName: project.customerName || "",
-    customerEmail: project.email || "",
-    customerPhone: project.phone || "",
-    customerId: "",
-    propertyAddress: project.address || "",
+    customerName: project.customerSnapshot?.fullName || project.customerName || "",
+    customerEmail: project.customerSnapshot?.email || project.email || "",
+    customerPhone: project.customerSnapshot?.phone || project.phone || "",
+    customerId: project.customerId || "",
+    propertyAddress: project.propertySnapshot?.formattedAddress || project.address || "",
     workType: projectType,
     otherWorkType: projectType === "Other" ? project.projectType : "",
     projectDescription: project.notes || `${project.projectType} project for ${project.customerName}`,
     scopeText: "",
     totalPrice: project.estimateAmount ? String(project.estimateAmount) : "",
+    discounts: [],
     depositRequired: project.depositAmount ? String(project.depositAmount) : "",
     paymentSchedule: [],
     fullDepositConfirmed: false,
+    zeroAdjustedPriceConfirmed: false,
     contractDate: todayDate(),
     estimatedStartDate: "",
     estimatedCompletionDate: "",
@@ -171,9 +255,20 @@ function formFromContract(contract: ProjectContract): ContractFormState {
     otherWorkType: contract.otherWorkType || "",
     projectDescription: contract.projectDescription || "",
     scopeText: contract.scopeText || "",
-    totalPrice: dollarsFromCents(contract.totalPriceCents),
+    totalPrice: dollarsFromCents(contract.originalContractPriceCents ?? contract.totalPriceCents),
+    discounts: (contract.discounts || []).map((discount, index) => ({
+      id: discount._id || `${index}-${discount.name}`,
+      name: discount.name || "",
+      type: discount.type || "fixed",
+      value:
+        discount.type === "percentage"
+          ? percentInputFromBasisPoints(discount.value)
+          : dollarsFromCents(discount.value),
+      note: discount.note || "",
+    })),
     depositRequired: dollarsFromCents(contract.depositAmountCents),
     fullDepositConfirmed: !!contract.fullDepositConfirmed,
+    zeroAdjustedPriceConfirmed: !!contract.zeroAdjustedPriceConfirmed,
     paymentSchedule: (contract.paymentSchedule || []).map((row, index) => ({
       id: row._id || `${index}-${row.label}`,
       label: row.label,
@@ -209,9 +304,23 @@ function buildPayload(project: Project, form: ContractFormState): ProjectContrac
     otherWorkType: form.otherWorkType,
     projectDescription: form.projectDescription,
     scopeText: form.scopeText,
+    originalContractPriceCents: centsFromMoney(form.totalPrice),
     totalPriceCents: centsFromMoney(form.totalPrice),
+    discounts: form.discounts
+      .filter((discount) => !isBlankDiscount(discount))
+      .map((discount, index) => ({
+        name: discount.name,
+        type: discount.type,
+        value:
+          discount.type === "percentage"
+            ? basisPointsFromPercentInput(discount.value)
+            : centsFromMoney(discount.value),
+        note: discount.note,
+        order: index,
+      })),
     depositAmountCents: centsFromMoney(form.depositRequired),
     fullDepositConfirmed: form.fullDepositConfirmed,
+    zeroAdjustedPriceConfirmed: form.zeroAdjustedPriceConfirmed,
     paymentSchedule: form.paymentSchedule.map((row, index) => ({
       label: row.label,
       amountCents: centsFromMoney(row.amount),
@@ -251,14 +360,12 @@ function PdfPreview({
   meta: ContractMeta | null;
   project: Project;
 }) {
-  const total = centsFromMoney(form.totalPrice);
-  const deposit = centsFromMoney(form.depositRequired);
-  const remaining = Math.max(total - deposit, 0);
+  const pricing = pricingFromForm(form);
   const schedule = form.paymentSchedule.length
     ? form.paymentSchedule
     : [
         { id: "deposit", label: "Deposit", amount: form.depositRequired, dueCondition: "Due when contract is signed." },
-        { id: "balance", label: "Remaining Balance", amount: dollarsFromCents(remaining), dueCondition: "Due upon substantial completion unless otherwise agreed in writing." },
+        { id: "balance", label: "Remaining Balance", amount: dollarsFromCents(pricing.remaining), dueCondition: "Due upon substantial completion unless otherwise agreed in writing." },
       ].filter((row) => centsFromMoney(row.amount) > 0);
 
   return (
@@ -300,10 +407,26 @@ function PdfPreview({
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Scope of Work</p>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-700">{form.scopeText || "No scope yet."}</p>
         </div>
-        <div className="grid gap-3 rounded-xl bg-slate-50 p-4 text-sm sm:grid-cols-3">
-          <div><p className="text-slate-500">Price</p><strong>{moneyFromCents(total)}</strong></div>
-          <div><p className="text-slate-500">Deposit</p><strong>{moneyFromCents(deposit)}</strong></div>
-          <div><p className="text-slate-500">Remaining</p><strong>{moneyFromCents(remaining)}</strong></div>
+        <div className="space-y-3 rounded-xl bg-slate-50 p-4 text-sm">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div><p className="text-slate-500">Original price</p><strong>{moneyFromCents(pricing.original)}</strong></div>
+            <div><p className="text-slate-500">Adjusted price</p><strong>{moneyFromCents(pricing.adjusted)}</strong></div>
+            <div><p className="text-slate-500">Remaining</p><strong>{moneyFromCents(pricing.remaining)}</strong></div>
+          </div>
+          {pricing.discounts.length > 0 && (
+            <div className="divide-y divide-slate-200 rounded-lg bg-white">
+              {pricing.discounts.map((discount) => (
+                <div key={discount.id} className="flex items-center justify-between gap-3 px-3 py-2 text-xs">
+                  <span className="font-semibold text-slate-700">{discount.name || "Discount"}</span>
+                  <span className="font-bold text-emerald-700">-{moneyFromCents(discount.calculatedAmountCents)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div><p className="text-slate-500">Deposit</p><strong>{moneyFromCents(pricing.deposit)}</strong></div>
+            <div><p className="text-slate-500">Total discounts</p><strong>{moneyFromCents(pricing.totalDiscount)}</strong></div>
+          </div>
         </div>
         <div className="overflow-hidden rounded-xl border border-slate-200">
           {schedule.map((row) => (
@@ -347,27 +470,48 @@ export default function ProjectContracts({ project }: { project: Project }) {
     [contracts, selectedContractId]
   );
 
-  const totals = useMemo(() => {
-    const total = centsFromMoney(form.totalPrice);
-    const deposit = centsFromMoney(form.depositRequired);
-    const remaining = Math.max(total - deposit, 0);
-    const percentage = total > 0 ? Math.round((deposit / total) * 1000) / 10 : 0;
-    const scheduleTotal = form.paymentSchedule.reduce(
-      (sum, row) => sum + centsFromMoney(row.amount),
-      0
-    );
-    return { total, deposit, remaining, percentage, scheduleTotal };
-  }, [form.depositRequired, form.paymentSchedule, form.totalPrice]);
+  const totals = useMemo(() => pricingFromForm(form), [form]);
   const contractWarnings = useMemo(() => {
     const warnings: Array<{ code: string; message: string; requiresConfirmation?: boolean }> = [];
     const description = normalizeComparableText(form.projectDescription);
     const scope = normalizeComparableText(form.scopeText);
 
-    if (totals.total > 0 && totals.deposit === totals.total) {
+    if (totals.adjusted > 0 && totals.deposit === totals.adjusted) {
       warnings.push({
         code: "full_deposit",
         message: FULL_DEPOSIT_WARNING,
         requiresConfirmation: true,
+      });
+    }
+    if (totals.totalDiscount > totals.original) {
+      warnings.push({
+        code: "discount_total_exceeds_price",
+        message: "Total discounts exceed the original contract price.",
+      });
+    }
+    if (totals.original > 0 && totals.totalDiscount > Math.floor((totals.original * 30) / 100)) {
+      warnings.push({
+        code: "high_discount_total",
+        message: HIGH_DISCOUNT_WARNING,
+      });
+    }
+    if (totals.original > 0 && totals.adjusted === 0) {
+      warnings.push({
+        code: "zero_adjusted_price",
+        message: ZERO_ADJUSTED_PRICE_WARNING,
+        requiresConfirmation: true,
+      });
+    }
+    if (totals.deposit > totals.adjusted) {
+      warnings.push({
+        code: "deposit_exceeds_adjusted",
+        message: "Deposit cannot exceed the adjusted contract price.",
+      });
+    }
+    if (totals.duplicateDiscountNames.length > 0) {
+      warnings.push({
+        code: "duplicate_discount_names",
+        message: "One or more discount names are repeated. Duplicate names are allowed, but review them before generating.",
       });
     }
     if (description && scope && description === scope) {
@@ -401,13 +545,21 @@ export default function ProjectContracts({ project }: { project: Project }) {
     form.propertyAddress,
     form.scopeText,
     totals.deposit,
-    totals.total,
+    totals.adjusted,
+    totals.duplicateDiscountNames.length,
+    totals.original,
+    totals.totalDiscount,
   ]);
   const requiresFullDepositConfirmation = contractWarnings.some(
     (warning) => warning.code === "full_deposit"
   );
   const missingFullDepositConfirmation =
     requiresFullDepositConfirmation && !form.fullDepositConfirmed;
+  const requiresZeroAdjustedPriceConfirmation = contractWarnings.some(
+    (warning) => warning.code === "zero_adjusted_price"
+  );
+  const missingZeroAdjustedPriceConfirmation =
+    requiresZeroAdjustedPriceConfirmation && !form.zeroAdjustedPriceConfirmed;
   const currentSignature = useMemo(
     () => contractPayloadSignature(project, form),
     [form, project]
@@ -452,7 +604,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
       ...current,
       [field]: value,
       ...(field === "totalPrice" || field === "depositRequired"
-        ? { fullDepositConfirmed: false }
+        ? { fullDepositConfirmed: false, zeroAdjustedPriceConfirmed: false }
         : {}),
     }));
   };
@@ -464,6 +616,10 @@ export default function ProjectContracts({ project }: { project: Project }) {
     }
     if (missingFullDepositConfirmation) {
       setError(FULL_DEPOSIT_WARNING);
+      return null;
+    }
+    if (missingZeroAdjustedPriceConfirmation) {
+      setError(ZERO_ADJUSTED_PRICE_WARNING);
       return null;
     }
     setSaving(true);
@@ -497,7 +653,8 @@ export default function ProjectContracts({ project }: { project: Project }) {
       const generated = await generateProjectContractPdf(
         project._id,
         saved._id,
-        form.fullDepositConfirmed
+        form.fullDepositConfirmed,
+        form.zeroAdjustedPriceConfirmed
       );
       setContracts((current) => current.map((contract) => (contract._id === generated._id ? generated : contract)));
       setSelectedContractId(generated._id);
@@ -539,7 +696,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
         `Hi ${selectedContract.customerSnapshot.fullName || "there"},`,
         "",
         "Attached is your Premium Island Homes contract for review.",
-        "Please review the scope, payment schedule, terms, and signature page. If everything looks good, sign and return the contract so we can move forward.",
+        "Please review the scope, pricing, discounts if listed, payment schedule, terms, and signature page. If everything looks good, sign and return the contract so we can move forward.",
         "",
         "Thank you,",
         "Premium Island Homes Inc.",
@@ -652,6 +809,42 @@ export default function ProjectContracts({ project }: { project: Project }) {
     }));
   };
 
+  const addDiscountRow = () => {
+    setForm((current) => ({
+      ...current,
+      fullDepositConfirmed: false,
+      zeroAdjustedPriceConfirmed: false,
+      discounts: [
+        ...current.discounts,
+        { id: `${Date.now()}`, name: "", type: "fixed", value: "", note: "" },
+      ],
+    }));
+  };
+
+  const updateDiscountRow = (
+    index: number,
+    field: keyof Omit<DiscountDraft, "id">,
+    value: DiscountDraft[keyof Omit<DiscountDraft, "id">]
+  ) => {
+    setForm((current) => ({
+      ...current,
+      fullDepositConfirmed: false,
+      zeroAdjustedPriceConfirmed: false,
+      discounts: current.discounts.map((discount, discountIndex) =>
+        discountIndex === index ? { ...discount, [field]: value } : discount
+      ),
+    }));
+  };
+
+  const removeDiscountRow = (index: number) => {
+    setForm((current) => ({
+      ...current,
+      fullDepositConfirmed: false,
+      zeroAdjustedPriceConfirmed: false,
+      discounts: current.discounts.filter((_discount, discountIndex) => discountIndex !== index),
+    }));
+  };
+
   const inputClass =
     "mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
 
@@ -682,10 +875,10 @@ export default function ProjectContracts({ project }: { project: Project }) {
             <button type="button" onClick={createNewDraft} className="rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-white hover:bg-white/10">
               New Draft
             </button>
-            <button type="button" onClick={saveDraft} disabled={saving || !!workingAction || missingFullDepositConfirmation} className="rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-950 hover:bg-slate-100 disabled:opacity-60">
+            <button type="button" onClick={saveDraft} disabled={saving || !!workingAction || missingFullDepositConfirmation || missingZeroAdjustedPriceConfirmation} className="rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-950 hover:bg-slate-100 disabled:opacity-60">
               {saving ? "Saving..." : "Save Draft"}
             </button>
-            <button type="button" onClick={handleGenerate} disabled={!canSaveOrGenerateDraft || saving || !!workingAction || missingFullDepositConfirmation} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-60">
+            <button type="button" onClick={handleGenerate} disabled={!canSaveOrGenerateDraft || saving || !!workingAction || missingFullDepositConfirmation || missingZeroAdjustedPriceConfirmation} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-60">
               Generate PDF
             </button>
           </div>
@@ -713,6 +906,17 @@ export default function ProjectContracts({ project }: { project: Project }) {
                 className="mt-1 h-4 w-4 rounded border-amber-300"
               />
               <span>I confirm full payment is intentionally due before work begins.</span>
+            </label>
+          )}
+          {requiresZeroAdjustedPriceConfirmation && (
+            <label className="mt-3 flex gap-3 rounded-xl border border-amber-200 bg-white/70 p-3 font-semibold text-amber-950">
+              <input
+                type="checkbox"
+                checked={form.zeroAdjustedPriceConfirmed}
+                onChange={(event) => updateField("zeroAdjustedPriceConfirmed", event.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-amber-300"
+              />
+              <span>I confirm this contract is intentionally being generated at no charge.</span>
             </label>
           )}
         </section>
@@ -799,7 +1003,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Pricing</p>
             <div className="mt-4 grid gap-4 md:grid-cols-3">
               <label className="text-sm font-semibold text-slate-700">
-                Total contract price *
+                Original contract price *
                 <input required inputMode="decimal" value={form.totalPrice} onChange={(event) => updateField("totalPrice", event.target.value)} className={inputClass} />
               </label>
               <label className="text-sm font-semibold text-slate-700">
@@ -807,9 +1011,85 @@ export default function ProjectContracts({ project }: { project: Project }) {
                 <input required inputMode="decimal" value={form.depositRequired} onChange={(event) => updateField("depositRequired", event.target.value)} className={inputClass} />
               </label>
               <div className="rounded-xl bg-slate-50 p-4 text-sm">
-                <p className="text-slate-500">Remaining balance</p>
-                <p className="mt-1 text-xl font-black text-slate-950">{moneyFromCents(totals.remaining)}</p>
+                <p className="text-slate-500">Adjusted contract price</p>
+                <p className="mt-1 text-xl font-black text-slate-950">{moneyFromCents(totals.adjusted)}</p>
                 <p className="mt-1 text-xs font-semibold text-slate-500">{totals.percentage}% deposit</p>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-slate-900">Discounts</p>
+                  <p className="text-xs text-slate-500">Optional. Each discount is calculated from the original price.</p>
+                </div>
+                <button type="button" onClick={addDiscountRow} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                  Add Discount
+                </button>
+              </div>
+              {form.discounts.length > 0 && (
+                <div className="mt-3 space-y-3">
+                  {form.discounts.map((discount, index) => {
+                    const amount = discountAmountCents(totals.original, discount);
+                    return (
+                      <div key={discount.id} className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 lg:grid-cols-[1fr_135px_135px_1fr_auto]">
+                        <input
+                          placeholder="Discount name"
+                          value={discount.name}
+                          onChange={(event) => updateDiscountRow(index, "name", event.target.value)}
+                          className={inputClass.replace("mt-1.5 ", "")}
+                        />
+                        <select
+                          value={discount.type}
+                          onChange={(event) => updateDiscountRow(index, "type", event.target.value as ContractDiscountType)}
+                          className={inputClass.replace("mt-1.5 ", "")}
+                        >
+                          <option value="fixed">Fixed</option>
+                          <option value="percentage">Percentage</option>
+                        </select>
+                        <input
+                          placeholder={discount.type === "percentage" ? "10" : "500.00"}
+                          inputMode="decimal"
+                          value={discount.value}
+                          onChange={(event) => updateDiscountRow(index, "value", event.target.value)}
+                          className={inputClass.replace("mt-1.5 ", "")}
+                        />
+                        <input
+                          placeholder="Optional note"
+                          value={discount.note}
+                          onChange={(event) => updateDiscountRow(index, "note", event.target.value)}
+                          className={inputClass.replace("mt-1.5 ", "")}
+                        />
+                        <div className="flex items-center gap-2">
+                          <span className="min-w-[92px] rounded-lg bg-emerald-50 px-3 py-2 text-right text-xs font-black text-emerald-700">
+                            -{moneyFromCents(amount)}
+                          </span>
+                          <button type="button" onClick={() => removeDiscountRow(index)} className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50">
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <div className="mt-4 grid gap-3 text-sm sm:grid-cols-4">
+                <div>
+                  <p className="text-slate-500">Original price</p>
+                  <p className="font-black text-slate-950">{moneyFromCents(totals.original)}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Total discounts</p>
+                  <p className="font-black text-emerald-700">-{moneyFromCents(totals.totalDiscount)}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Adjusted price</p>
+                  <p className="font-black text-slate-950">{moneyFromCents(totals.adjusted)}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Remaining balance</p>
+                  <p className="font-black text-slate-950">{moneyFromCents(totals.remaining)}</p>
+                </div>
               </div>
             </div>
 
@@ -836,8 +1116,8 @@ export default function ProjectContracts({ project }: { project: Project }) {
                 ))}
               </div>
               {form.paymentSchedule.length > 0 && (
-                <p className={`mt-2 text-xs font-semibold ${totals.scheduleTotal > totals.total ? "text-rose-600" : "text-slate-500"}`}>
-                  Schedule total: {moneyFromCents(totals.scheduleTotal)}
+                <p className={`mt-2 text-xs font-semibold ${totals.scheduleTotal > totals.adjusted ? "text-rose-600" : "text-slate-500"}`}>
+                  Schedule total: {moneyFromCents(totals.scheduleTotal)} of {moneyFromCents(totals.adjusted)} adjusted price
                 </p>
               )}
             </div>

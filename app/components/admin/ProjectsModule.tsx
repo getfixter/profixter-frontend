@@ -8,23 +8,44 @@ import {
   PROJECT_TYPES,
   createProject,
   deleteProject,
+  getProjectCustomer,
   getProjects,
+  searchProjectCustomers,
   updateProject,
   type Project,
+  type ProjectCustomerAddress,
+  type ProjectCustomerSearchResult,
   type ProjectInput,
+  type ProjectMembershipSummary,
   type ProjectStatus,
   type ProjectType,
 } from "@/lib/admin-service";
 
 type View = "list" | "create" | "details" | "edit";
 type ProjectDetailTab = "overview" | "contract" | "estimates";
+type CustomerSource = "existing" | "manual";
 
 const EMPTY_PROJECT: ProjectInput = {
   status: "Lead",
+  customerId: null,
+  addressId: null,
   customerName: "",
   phone: "",
   email: "",
   address: "",
+  customerSnapshot: {
+    fullName: "",
+    email: "",
+    phone: "",
+  },
+  propertySnapshot: {
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    formattedAddress: "",
+  },
   projectType: "Roofing",
   estimateAmount: 0,
   depositAmount: 0,
@@ -70,6 +91,62 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong";
 }
 
+function hasManualContactData(form: ProjectInput) {
+  return Boolean(
+    String(form.customerName || "").trim() ||
+      String(form.email || "").trim() ||
+      String(form.phone || "").trim() ||
+      String(form.address || "").trim()
+  );
+}
+
+function membershipLabel(summary?: ProjectMembershipSummary | null) {
+  if (!summary) return "No Active Membership";
+  const status = summary.selectedAddressStatus || summary.overallStatus;
+  const plan = summary.selectedAddressPlanName || summary.planName;
+  if ((status === "active" || status === "trialing") && plan) return `Active - ${plan}`;
+  if (status === "scheduled_for_cancellation" && plan) return `Scheduled for Cancellation - ${plan}`;
+  if (status === "past_due") return plan ? `Past Due - ${plan}` : "Past Due";
+  if (status === "canceled") return "Past Member";
+  return "No Active Membership";
+}
+
+function membershipBadgeClass(summary?: ProjectMembershipSummary | null) {
+  const status = summary?.selectedAddressStatus || summary?.overallStatus;
+  if (status === "active" || status === "trialing") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+  if (status === "scheduled_for_cancellation") {
+    return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+  if (status === "past_due") {
+    return "border-orange-200 bg-orange-50 text-orange-700";
+  }
+  if (status === "canceled") {
+    return "border-slate-200 bg-slate-100 text-slate-600";
+  }
+  return "border-slate-200 bg-white text-slate-600";
+}
+
+function propertySnapshotFromAddress(address: ProjectCustomerAddress | null, fallbackAddress = "") {
+  return {
+    addressLine1: address?.line1 || fallbackAddress,
+    addressLine2: "",
+    city: address?.city || "",
+    state: address?.state || "",
+    postalCode: address?.zip || "",
+    formattedAddress: address?.formattedAddress || fallbackAddress,
+  };
+}
+
+function customerSnapshotFromForm(form: ProjectInput) {
+  return {
+    fullName: form.customerName,
+    email: form.email,
+    phone: form.phone,
+  };
+}
+
 function ProjectForm({
   initial,
   title,
@@ -84,11 +161,171 @@ function ProjectForm({
   onCancel: () => void;
 }) {
   const [form, setForm] = useState<ProjectInput>(initial);
+  const [customerSource, setCustomerSource] = useState<CustomerSource>(
+    initial.customerId ? "existing" : "manual"
+  );
+  const [selectedCustomer, setSelectedCustomer] = useState<ProjectCustomerSearchResult | null>(null);
+  const [showCustomerSearch, setShowCustomerSearch] = useState(!initial.customerId);
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [customerResults, setCustomerResults] = useState<ProjectCustomerSearchResult[]>([]);
+  const [customerNextCursor, setCustomerNextCursor] = useState<string | null>(null);
+  const [customerSearching, setCustomerSearching] = useState(false);
+  const [customerSearchError, setCustomerSearchError] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const set = <K extends keyof ProjectInput>(key: K, value: ProjectInput[K]) => {
-    setForm((current) => ({ ...current, [key]: value }));
+    setForm((current) => {
+      const next = { ...current, [key]: value };
+      if (key === "customerName" || key === "email" || key === "phone") {
+        next.customerSnapshot = customerSnapshotFromForm(next);
+      }
+      if (key === "address") {
+        next.propertySnapshot = {
+          ...(next.propertySnapshot || {}),
+          formattedAddress: String(value || ""),
+          addressLine1: next.propertySnapshot?.addressLine1 || String(value || ""),
+        };
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    let canceled = false;
+    if (!initial.customerId) return;
+    setCustomerSource("existing");
+    setShowCustomerSearch(false);
+    getProjectCustomer(initial.customerId, initial.addressId || null)
+      .then((customer) => {
+        if (!canceled) setSelectedCustomer(customer);
+      })
+      .catch(() => {
+        if (!canceled) setSelectedCustomer(null);
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [initial.addressId, initial.customerId]);
+
+  useEffect(() => {
+    if (customerSource !== "existing" || customerQuery.trim().length < 2) {
+      setCustomerResults([]);
+      setCustomerNextCursor(null);
+      setCustomerSearchError("");
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      setCustomerSearching(true);
+      setCustomerSearchError("");
+      searchProjectCustomers({ q: customerQuery, limit: 12 }, controller.signal)
+        .then((response) => {
+          setCustomerResults(response.customers);
+          setCustomerNextCursor(response.nextCursor);
+        })
+        .catch((searchError) => {
+          if (controller.signal.aborted) return;
+          setCustomerSearchError(errorMessage(searchError));
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setCustomerSearching(false);
+        });
+    }, 300);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
+  }, [customerQuery, customerSource]);
+
+  const loadMoreCustomers = async () => {
+    if (!customerNextCursor || customerSearching) return;
+    setCustomerSearching(true);
+    setCustomerSearchError("");
+    try {
+      const response = await searchProjectCustomers({
+        q: customerQuery,
+        limit: 12,
+        cursor: customerNextCursor,
+      });
+      setCustomerResults((current) => [...current, ...response.customers]);
+      setCustomerNextCursor(response.nextCursor);
+    } catch (loadError) {
+      setCustomerSearchError(errorMessage(loadError));
+    } finally {
+      setCustomerSearching(false);
+    }
+  };
+
+  const chooseAddress = (
+    customer: ProjectCustomerSearchResult,
+    address: ProjectCustomerAddress | null
+  ) => {
+    setSelectedCustomer(customer);
+    setForm((current) => ({
+      ...current,
+      customerId: customer.customerId,
+      addressId: address?.id || null,
+      customerName: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      address: address?.formattedAddress || current.address,
+      customerSnapshot: {
+        fullName: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+      },
+      propertySnapshot: propertySnapshotFromAddress(address, address?.formattedAddress || current.address),
+    }));
+  };
+
+  const selectCustomer = (customer: ProjectCustomerSearchResult) => {
+    const preferredAddress =
+      customer.matchingAddress ||
+      customer.addresses.find((address) => address.isDefault) ||
+      customer.addresses[0] ||
+      null;
+    chooseAddress(customer, preferredAddress);
+    setShowCustomerSearch(false);
+  };
+
+  const switchSource = (source: CustomerSource) => {
+    if (source === customerSource) return;
+    if (
+      source === "existing" &&
+      customerSource === "manual" &&
+      hasManualContactData(form) &&
+      !window.confirm(
+        "Selecting a registered customer will replace the currently entered customer and property information. Continue?"
+      )
+    ) {
+      return;
+    }
+    if (
+      source === "existing" &&
+      initial.customerId &&
+      form.customerId &&
+      !window.confirm("Changing the linked customer can affect future contracts and documents. Continue?")
+    ) {
+      return;
+    }
+    if (source === "manual") {
+      setCustomerSource("manual");
+      setSelectedCustomer(null);
+      setShowCustomerSearch(false);
+      setForm((current) => ({
+        ...current,
+        customerId: null,
+        addressId: null,
+        customerSnapshot: customerSnapshotFromForm(current),
+        propertySnapshot: propertySnapshotFromAddress(null, current.address),
+      }));
+      return;
+    }
+    setCustomerSource("existing");
+    setShowCustomerSearch(true);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -96,7 +333,17 @@ function ProjectForm({
     setSaving(true);
     setError("");
     try {
-      await onSubmit(form);
+      const payload: ProjectInput = {
+        ...form,
+        customerId: customerSource === "existing" ? form.customerId || null : null,
+        addressId: customerSource === "existing" ? form.addressId || null : null,
+        customerSnapshot: customerSnapshotFromForm(form),
+        propertySnapshot: {
+          ...(form.propertySnapshot || propertySnapshotFromAddress(null, form.address)),
+          formattedAddress: form.address,
+        },
+      };
+      await onSubmit(payload);
     } catch (submitError) {
       setError(errorMessage(submitError));
     } finally {
@@ -106,6 +353,10 @@ function ProjectForm({
 
   const inputClass =
     "mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
+  const selectedProjectAddress =
+    selectedCustomer?.addresses.find((address) => address.id === form.addressId) || null;
+  const selectedMembershipSummary =
+    selectedProjectAddress?.membershipSummary || selectedCustomer?.membershipSummary || null;
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-6">
@@ -127,7 +378,186 @@ function ProjectForm({
 
       {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">{error}</div>}
 
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Customer Source</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {([
+            ["existing", "Existing Registered Customer"],
+            ["manual", "New / Manual Customer"],
+          ] as const).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => switchSource(value)}
+              className={`rounded-2xl border px-4 py-3 text-left text-sm font-bold transition ${
+                customerSource === value
+                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  : "border-slate-200 text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {customerSource === "existing" ? (
+          <div className="mt-5 space-y-4">
+            {selectedCustomer && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Linked Customer</p>
+                    <h3 className="mt-1 text-lg font-black text-slate-950">{selectedCustomer.name}</h3>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {selectedCustomer.email || "No email"} {selectedCustomer.phone ? `- ${selectedCustomer.phone}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href={`/admin?tab=users&q=${encodeURIComponent(selectedCustomer.email || selectedCustomer.name)}`}
+                      className="rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50"
+                    >
+                      Open Customer Account
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (
+                          initial.customerId &&
+                          !window.confirm("Changing the linked customer can affect future contracts and documents. Continue?")
+                        ) {
+                          return;
+                        }
+                        setShowCustomerSearch(true);
+                      }}
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                    >
+                      Change Linked Customer
+                    </button>
+                  </div>
+                </div>
+
+                {selectedCustomer.addresses.length > 0 && (
+                  <label className="mt-4 block text-sm font-semibold text-slate-700">
+                    Project Property
+                    <select
+                      value={form.addressId || ""}
+                      onChange={(event) => {
+                        const nextAddress =
+                          selectedCustomer.addresses.find((address) => address.id === event.target.value) ||
+                          null;
+                        chooseAddress(selectedCustomer, nextAddress);
+                      }}
+                      className={inputClass}
+                    >
+                      <option value="">No saved property selected</option>
+                      {selectedCustomer.addresses.map((address) => (
+                        <option key={address.id || address.formattedAddress} value={address.id}>
+                          {address.formattedAddress}
+                          {address.isDefault ? " - Default" : ""}
+                          {address.membershipSummary.selectedAddressPlanName
+                            ? ` - ${address.membershipSummary.selectedAddressPlanName}`
+                            : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+
+                <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Membership</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className={`rounded-full border px-3 py-1 text-xs font-bold ${membershipBadgeClass(selectedMembershipSummary)}`}>
+                      {membershipLabel(selectedMembershipSummary)}
+                    </span>
+                    {selectedMembershipSummary?.activeMembershipAtAnotherAddress && (
+                      <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                        Active membership exists at another saved property
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {form.address
+                      ? `Property: ${form.address}`
+                      : "No saved property has been matched to this project yet."}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {showCustomerSearch && (
+              <div className="rounded-2xl border border-slate-200 p-4">
+                <label className="text-sm font-semibold text-slate-700">
+                  Search registered customers
+                  <input
+                    value={customerQuery}
+                    onChange={(event) => setCustomerQuery(event.target.value)}
+                    placeholder="Search by name, email, phone, or address"
+                    className={inputClass}
+                  />
+                </label>
+                {customerSearching && <p className="mt-2 text-xs font-semibold text-blue-700">Searching...</p>}
+                {customerSearchError && (
+                  <p className="mt-2 text-xs font-semibold text-rose-600">{customerSearchError}</p>
+                )}
+                {customerQuery.trim().length > 0 && customerQuery.trim().length < 2 && (
+                  <p className="mt-2 text-xs font-semibold text-slate-500">Enter at least 2 characters.</p>
+                )}
+                <div className="mt-3 space-y-2">
+                  {customerResults.map((customer) => {
+                    const address = customer.matchingAddress;
+                    return (
+                      <button
+                        key={customer.customerId}
+                        type="button"
+                        onClick={() => selectCustomer(customer)}
+                        className="w-full rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-blue-300 hover:bg-blue-50"
+                      >
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <p className="font-black text-slate-950">{customer.name}</p>
+                            <p className="mt-1 text-sm text-slate-600">
+                              {customer.email || "No email"} {customer.phone ? `- ${customer.phone}` : ""}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-500">
+                              {address?.formattedAddress || "No saved property address"}
+                            </p>
+                          </div>
+                          <span className={`w-fit rounded-full border px-3 py-1 text-xs font-bold ${membershipBadgeClass(customer.membershipSummary)}`}>
+                            {membershipLabel(customer.membershipSummary)}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                {customerNextCursor && (
+                  <button
+                    type="button"
+                    onClick={loadMoreCustomers}
+                    disabled={customerSearching}
+                    className="mt-3 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  >
+                    Load more results
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            This project will be saved as a manual customer project and will not be linked to a registered account.
+          </div>
+        )}
+      </section>
+
       <section className="grid gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
+        <div className="md:col-span-2">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Editable Snapshot Fields</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Project contact details are saved as a snapshot. Changes here do not update the customer account.
+          </p>
+        </div>
         <label className="text-sm font-semibold text-slate-700">
           Customer name *
           <input required value={form.customerName} onChange={(e) => set("customerName", e.target.value)} className={inputClass} />
@@ -199,6 +629,7 @@ export default function ProjectsModule() {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [detailCustomer, setDetailCustomer] = useState<ProjectCustomerSearchResult | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -215,6 +646,22 @@ export default function ProjectsModule() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    let canceled = false;
+    setDetailCustomer(null);
+    if (view !== "details" || !selected?.customerId) return;
+    getProjectCustomer(selected.customerId, selected.addressId || null)
+      .then((customer) => {
+        if (!canceled) setDetailCustomer(customer);
+      })
+      .catch(() => {
+        if (!canceled) setDetailCustomer(null);
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [selected?.addressId, selected?.customerId, view]);
 
   const visible = useMemo(() => {
     const q = customer.trim().toLowerCase();
@@ -282,10 +729,25 @@ export default function ProjectsModule() {
   if (view === "edit" && selected) {
     const initial: ProjectInput = {
       status: selected.status,
+      customerId: selected.customerId || null,
+      addressId: selected.addressId || null,
       customerName: selected.customerName,
       phone: selected.phone,
       email: selected.email,
       address: selected.address,
+      customerSnapshot: selected.customerSnapshot || {
+        fullName: selected.customerName,
+        email: selected.email,
+        phone: selected.phone,
+      },
+      propertySnapshot: selected.propertySnapshot || {
+        addressLine1: selected.address,
+        addressLine2: "",
+        city: "",
+        state: "",
+        postalCode: "",
+        formattedAddress: selected.address,
+      },
       projectType: selected.projectType,
       estimateAmount: selected.estimateAmount,
       depositAmount: selected.depositAmount,
@@ -372,6 +834,30 @@ export default function ProjectsModule() {
                   <div className="sm:col-span-2"><p className="text-slate-400">Address</p><p className="mt-1 font-semibold text-slate-800">{selected.address}</p></div>
                   <div><p className="text-slate-400">Project type</p><p className="mt-1 font-semibold text-slate-800">{selected.projectType}</p></div>
                 </div>
+                {selected.customerId ? (
+                  <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                        Customer Account Linked
+                      </span>
+                      <span className={`rounded-full border px-3 py-1 text-xs font-bold ${membershipBadgeClass(detailCustomer?.membershipSummary)}`}>
+                        {membershipLabel(detailCustomer?.membershipSummary)}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {detailCustomer?.matchingAddress?.formattedAddress || selected.address}
+                    </p>
+                    {detailCustomer?.membershipSummary.activeMembershipAtAnotherAddress && (
+                      <p className="mt-2 text-xs font-semibold text-blue-700">
+                        Active membership exists at another saved property.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
+                    Manual customer project. This project is not linked to a registered account.
+                  </div>
+                )}
               </section>
               <section className="rounded-2xl bg-slate-950 p-6 text-white shadow-sm">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Financials</p>
