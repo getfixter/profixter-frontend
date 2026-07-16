@@ -20,6 +20,8 @@ export interface CalendarConfig {
 
 export interface TimeSlot {
   date: string;
+  available?: boolean;
+  availableSlotCount?: number;
   slots: string[];
   taken: Record<string, number>;
   capacityPerSlot: number;
@@ -33,6 +35,8 @@ export interface MonthAvailability {
   visitDurationMinutes: number;
   days: Array<{
     date: string;
+    available?: boolean;
+    availableSlotCount?: number;
     open: boolean;
     slotCount: number;
     slots: string[];

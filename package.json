@@ -11,6 +11,7 @@
     "build": "next build",
     "start": "next start -p $PORT",
     "lint": "eslint",
+    "test:booking-calendar-availability-ui": "node scripts/test_booking_calendar_availability_ui.js",
     "test:project-customer-selector-ui": "node scripts/test_project_customer_selector_ui.js",
     "postinstall": "npm run build"
   },
