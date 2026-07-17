@@ -828,8 +828,10 @@ export type ProjectInput = Omit<
 export interface ProjectDeletionSummary {
   contractCount: number;
   estimateCount: number;
+  invoiceCount?: number;
   generatedPdfCount: number;
   signedPdfCount: number;
+  invoicePdfCount?: number;
   storedDocumentCount: number;
   hasRelatedRecords: boolean;
   requiresDeleteConfirmation: boolean;
@@ -1067,6 +1069,217 @@ export interface ContractMeta {
   sourceUrls: string[];
   attorneyReviewNote: string;
   maxSignedPdfBytes: number;
+}
+
+export const INVOICE_STATUSES = [
+  "Draft",
+  "Sent",
+  "Partially Paid",
+  "Paid in Full",
+  "Overdue",
+  "Voided",
+  "Superseded",
+] as const;
+
+export const INVOICE_LINE_ITEM_CATEGORIES = [
+  "Contract work",
+  "Change order",
+  "Materials",
+  "Labor",
+  "Permit/fee",
+  "Credit",
+  "Other",
+] as const;
+
+export const INVOICE_DISCOUNT_TYPES = ["fixed", "percentage", "credit"] as const;
+
+export const INVOICE_PAYMENT_METHODS = [
+  "Cash",
+  "Check",
+  "Credit Card",
+  "ACH / Bank Transfer",
+  "Zelle",
+  "Financing",
+  "Other",
+] as const;
+
+export const INVOICE_TAX_TREATMENTS = [
+  "Capital Improvement - No Sales Tax",
+  "Taxable Repair / Maintenance",
+  "Tax Exempt",
+  "Not Determined",
+] as const;
+
+export const INVOICE_DUE_TERMS = [
+  "due_on_receipt",
+  "net_7",
+  "net_15",
+  "net_30",
+  "custom",
+] as const;
+
+export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
+export type InvoiceLineItemCategory = (typeof INVOICE_LINE_ITEM_CATEGORIES)[number];
+export type InvoiceDiscountType = (typeof INVOICE_DISCOUNT_TYPES)[number];
+export type InvoicePaymentMethod = (typeof INVOICE_PAYMENT_METHODS)[number];
+export type InvoiceTaxTreatment = (typeof INVOICE_TAX_TREATMENTS)[number];
+export type InvoiceDueTerm = (typeof INVOICE_DUE_TERMS)[number];
+
+export interface InvoiceLineItem {
+  _id?: string;
+  description: string;
+  quantity: number;
+  unitPriceCents: number;
+  amountCents: number;
+  category: InvoiceLineItemCategory;
+  order?: number;
+}
+
+export interface InvoiceDiscount {
+  _id?: string;
+  name: string;
+  type: InvoiceDiscountType;
+  value: number;
+  calculatedAmountCents?: number;
+  note?: string;
+  order?: number;
+}
+
+export interface InvoicePayment {
+  _id?: string;
+  amountCents: number;
+  paymentDate: string;
+  method: InvoicePaymentMethod;
+  reference?: string;
+  note?: string;
+  recordedBy?: string | null;
+  recordedByEmail?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface InvoicePdfRecord {
+  available?: boolean;
+  version?: number;
+  fileName?: string;
+  size?: number;
+  generatedAt?: string | null;
+  generatedBy?: string | null;
+  status?: "Current" | "Superseded" | "Voided" | "";
+}
+
+export interface ProjectInvoiceInput {
+  invoiceId?: string;
+  source?: "manual" | "contract";
+  createFromContract?: boolean;
+  contractId?: string | null;
+  customerSnapshot: {
+    fullName: string;
+    email: string;
+    phone: string;
+    customerId?: string;
+  };
+  propertySnapshot: {
+    address: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    formattedAddress?: string;
+  };
+  projectSnapshot: {
+    projectId?: string;
+    projectNumber: string;
+    workType: string;
+    projectDescription: string;
+  };
+  contractSnapshot?: {
+    contractId?: string;
+    contractNumber?: string;
+    finalContractPriceCents?: number;
+    importedAt?: string | null;
+  };
+  lineItems: Array<Omit<InvoiceLineItem, "_id" | "amountCents">>;
+  discounts: Array<Omit<InvoiceDiscount, "_id" | "calculatedAmountCents">>;
+  taxTreatment: InvoiceTaxTreatment;
+  taxRateBasisPoints: number;
+  dueTerm: InvoiceDueTerm;
+  dates: {
+    invoiceDate: string;
+    dueDate: string;
+    serviceDate?: string | null;
+  };
+  publicNote: string;
+  internalNote: string;
+  paymentInstructions: string;
+}
+
+export interface ProjectInvoice {
+  _id: string;
+  id: string;
+  invoiceNumber: string;
+  version: number;
+  projectId: string;
+  customerId?: string | null;
+  contractId?: string | null;
+  source: "manual" | "contract";
+  status: InvoiceStatus;
+  customerSnapshot: ProjectInvoiceInput["customerSnapshot"];
+  propertySnapshot: Required<ProjectInvoiceInput["propertySnapshot"]>;
+  projectSnapshot: ProjectInvoiceInput["projectSnapshot"];
+  contractSnapshot?: ProjectInvoiceInput["contractSnapshot"];
+  lineItems: InvoiceLineItem[];
+  discounts: InvoiceDiscount[];
+  taxTreatment: InvoiceTaxTreatment;
+  taxRateBasisPoints: number;
+  subtotalCents: number;
+  totalDiscountCents: number;
+  taxableAmountCents: number;
+  taxAmountCents: number;
+  invoiceTotalCents: number;
+  payments: InvoicePayment[];
+  totalPaidCents: number;
+  remainingBalanceCents: number;
+  dueTerm: InvoiceDueTerm;
+  dates: {
+    invoiceDate: string;
+    dueDate: string;
+    serviceDate?: string | null;
+    paidInFullAt?: string | null;
+  };
+  publicNote: string;
+  internalNote: string;
+  paymentInstructions: string;
+  generatedPdfs: InvoicePdfRecord[];
+  currentPdf?: InvoicePdfRecord;
+  requiresRegeneration?: boolean;
+  sentAt?: string | null;
+  lastEmailedAt?: string | null;
+  emailHistory?: Array<{
+    _id?: string;
+    recipient: string;
+    subject: string;
+    message: string;
+    pdfVersion?: number;
+    sentAt: string;
+    sentBy?: string | null;
+    providerResponse?: string;
+  }>;
+  eventHistory?: Array<{
+    _id?: string;
+    event: string;
+    at: string;
+    adminId?: string | null;
+    adminEmail?: string;
+    details?: Record<string, unknown>;
+  }>;
+  voidedAt?: string | null;
+  voidReason?: string;
+  parentProjectDeletedAt?: string | null;
+  parentProjectDeletedMessage?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Users
@@ -2048,6 +2261,127 @@ export const downloadProjectContractPdf = async (
     timeout: 300000,
   });
   return response.data as Blob;
+};
+
+// Invoices
+export const getProjectInvoices = async (
+  projectId: string
+): Promise<ProjectInvoice[]> => {
+  const response = await API.get(`/api/admin/invoices/project/${projectId}`);
+  return response.data.invoices;
+};
+
+export const saveProjectInvoiceDraft = async (
+  projectId: string,
+  data: ProjectInvoiceInput
+): Promise<ProjectInvoice> => {
+  const response = await API.post(`/api/admin/invoices/project/${projectId}/draft`, data);
+  return response.data.invoice;
+};
+
+export const createProjectInvoiceFromContract = async (
+  projectId: string,
+  contractId?: string
+): Promise<ProjectInvoice> => {
+  const response = await API.post(`/api/admin/invoices/project/${projectId}/draft`, {
+    createFromContract: true,
+    source: "contract",
+    ...(contractId ? { contractId } : {}),
+  });
+  return response.data.invoice;
+};
+
+export const generateProjectInvoicePdf = async (
+  projectId: string,
+  invoiceId: string
+): Promise<ProjectInvoice> => {
+  const response = await API.post(`/api/admin/invoices/${invoiceId}/generate`, { projectId }, {
+    timeout: 300000,
+  });
+  return response.data.invoice;
+};
+
+export const downloadProjectInvoicePdf = async (
+  projectId: string,
+  invoiceId: string,
+  version?: number
+): Promise<Blob> => {
+  const response = await API.get(`/api/admin/invoices/${invoiceId}/download`, {
+    params: { projectId, ...(version ? { version } : {}) },
+    responseType: "blob",
+    timeout: 300000,
+  });
+  return response.data as Blob;
+};
+
+export const emailProjectInvoice = async (
+  invoiceId: string,
+  data: { projectId: string; recipient: string; subject: string; message: string }
+): Promise<ProjectInvoice> => {
+  const response = await API.post(`/api/admin/invoices/${invoiceId}/email`, data, {
+    timeout: 300000,
+  });
+  return response.data.invoice;
+};
+
+export const addProjectInvoicePayment = async (
+  projectId: string,
+  invoiceId: string,
+  data: {
+    amountCents: number;
+    paymentDate: string;
+    method: InvoicePaymentMethod;
+    reference?: string;
+    note?: string;
+  }
+): Promise<ProjectInvoice> => {
+  const response = await API.post(`/api/admin/invoices/${invoiceId}/payments`, {
+    ...data,
+    projectId,
+  });
+  return response.data.invoice;
+};
+
+export const updateProjectInvoicePayment = async (
+  projectId: string,
+  invoiceId: string,
+  paymentId: string,
+  data: Partial<{
+    amountCents: number;
+    paymentDate: string;
+    method: InvoicePaymentMethod;
+    reference: string;
+    note: string;
+  }>
+): Promise<ProjectInvoice> => {
+  const response = await API.patch(`/api/admin/invoices/${invoiceId}/payments/${paymentId}`, {
+    ...data,
+    projectId,
+  });
+  return response.data.invoice;
+};
+
+export const deleteProjectInvoicePayment = async (
+  projectId: string,
+  invoiceId: string,
+  paymentId: string
+): Promise<ProjectInvoice> => {
+  const response = await API.delete(`/api/admin/invoices/${invoiceId}/payments/${paymentId}`, {
+    data: { projectId },
+  });
+  return response.data.invoice;
+};
+
+export const voidProjectInvoice = async (
+  projectId: string,
+  invoiceId: string,
+  data: { confirmation: "VOID"; reason?: string }
+): Promise<ProjectInvoice> => {
+  const response = await API.post(`/api/admin/invoices/${invoiceId}/void`, {
+    ...data,
+    projectId,
+  });
+  return response.data.invoice;
 };
 
 // GHL AI Commander
