@@ -3,6 +3,7 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import ProjectContracts from "@/app/components/admin/ProjectContracts";
 import ProjectEstimates from "@/app/components/admin/ProjectEstimates";
+import ProjectInvoices from "@/app/components/admin/ProjectInvoices";
 import {
   PROJECT_STATUSES,
   PROJECT_TYPES,
@@ -22,7 +23,7 @@ import {
 } from "@/lib/admin-service";
 
 type View = "list" | "create" | "details" | "edit";
-type ProjectDetailTab = "overview" | "contract" | "estimates";
+type ProjectDetailTab = "overview" | "contract" | "invoice" | "estimates";
 type CustomerSource = "existing" | "manual";
 
 const EMPTY_PROJECT: ProjectInput = {
@@ -925,7 +926,7 @@ export default function ProjectsModule() {
         {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">{error}</div>}
 
         <div className="flex gap-2 overflow-x-auto border-b border-slate-200">
-          {(["overview", "contract", "estimates"] as const).map((tab) => (
+          {(["overview", "contract", "invoice", "estimates"] as const).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -994,6 +995,8 @@ export default function ProjectsModule() {
           </>
         ) : detailTab === "contract" ? (
           <ProjectContracts project={selected} />
+        ) : detailTab === "invoice" ? (
+          <ProjectInvoices project={selected} />
         ) : (
           <ProjectEstimates project={selected} />
         )}
