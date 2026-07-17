@@ -272,6 +272,7 @@ export default function BookingSection() {
   const [calendarMode, setCalendarMode] = useState<CalendarMode>("initializing");
   const [monthLoadStateMap, setMonthLoadStateMap] = useState<Record<string, MonthLoadState>>({});
   const [availabilityRetryToken, setAvailabilityRetryToken] = useState(0);
+  const [availabilityError, setAvailabilityError] = useState("");
   const [loadingSelectedDate, setLoadingSelectedDate] = useState(false);
   const [quickBookOpen, setQuickBookOpen] = useState(false);
   const [quickBookingLoading, setQuickBookingLoading] = useState(false);
@@ -396,6 +397,7 @@ export default function BookingSection() {
     setMonthLoadStateMap({});
     setLoadingMonthKey(null);
     setCalendarMode("initializing");
+    setAvailabilityError("");
     setService("");
     setShowServiceMenu(false);
     setError("");
@@ -712,6 +714,7 @@ export default function BookingSection() {
     const startMonth = monthStartLocal(new Date());
 
     setCalendarMode("initializing");
+    setAvailabilityError("");
     setCurrentMonth(startMonth);
     setSelectedDate(null);
     setSelectedTime("");
@@ -739,6 +742,7 @@ export default function BookingSection() {
       if (controller.signal.aborted || generation !== initializationGenerationRef.current) return;
 
       if (result.status === "success") {
+        setAvailabilityError("");
         setCurrentMonth(monthStartLocal(result.date));
         setSelectedDate(result.date);
         setSelectedTime("");
@@ -748,6 +752,7 @@ export default function BookingSection() {
       }
 
       if (result.status === "none") {
+        setAvailabilityError("");
         setCurrentMonth(startMonth);
         setSelectedDate(null);
         setSelectedTime("");
@@ -761,7 +766,7 @@ export default function BookingSection() {
         setSelectedTime("");
         setDisplayedTimes([]);
         setCalendarMode("ready");
-        setError("Unable to load appointment availability. Please try again.");
+        setAvailabilityError("Unable to load appointment availability.");
       }
     });
 
@@ -1076,6 +1081,15 @@ if (next?.date) {
   return;
 }
 
+    if (calendarMode !== "ready" || showAvailabilityLoadError || availabilityError) {
+      setAvailabilityError("Unable to load appointment availability.");
+      return;
+    }
+
+    if ((selectedDate && !selectedDateIsBookable) || (selectedTime && !selectedTimeIsBookable)) {
+      setAvailabilityError("This appointment time is no longer available. Please choose another time.");
+      return;
+    }
 
     if (!service) {
       setError("Choose a service type.");
@@ -1234,16 +1248,12 @@ if (next?.date) {
 
   const days = generateCalendarDays();
 
-const canBook =
-  !loading &&
-  !checkingAccess &&
-  (hasSubscription || !isAuthenticated) &&
-  !hasActiveBooking;
-
-
   const wordsCount = note.trim().split(/\s+/).filter(Boolean).length;
 
   const ymdSelected = selectedDate ? formatDateYMD(selectedDate) : "";
+  const selectedAvailability = ymdSelected ? dayAvailabilityMap[ymdSelected] : null;
+  const selectedDateIsBookable = isAvailabilityOpen(selectedAvailability);
+  const selectedTimeIsBookable = Boolean(selectedTime && displayedTimes.includes(selectedTime));
   const selectedAddress = addresses.find(
     (address) => String(address._id) === String(selectedAddressId ?? defaultAddressId ?? "")
   );
@@ -1259,10 +1269,29 @@ const canBook =
   const showNoAvailabilityThisMonth =
     calendarMode !== "initializing" && visibleMonthLoaded && !visibleMonthHasAvailability;
   const showAvailabilityLoadError =
-    calendarMode !== "initializing" && visibleMonthLoadState?.status === "error";
+    calendarMode !== "initializing" && (Boolean(availabilityError) || visibleMonthLoadState?.status === "error");
+  const availabilityCanSubmit =
+    calendarMode === "ready" &&
+    !showAvailabilityLoadError &&
+    selectedDateIsBookable &&
+    selectedTimeIsBookable;
+  const requiredBookingFieldsComplete =
+    Boolean(service) &&
+    Boolean(selectedDate) &&
+    Boolean(selectedTime) &&
+    wordsCount >= 3 &&
+    uploadedPhotos.length > 0;
+  const canBook =
+    !loading &&
+    !checkingAccess &&
+    availabilityCanSubmit &&
+    requiredBookingFieldsComplete &&
+    (hasSubscription || !isAuthenticated) &&
+    !hasActiveBooking;
 
   const moveToNextAvailableMonth = async () => {
     if (!config) return;
+    setAvailabilityError("");
     monthNavigationAbortRef.current?.abort();
     const controller = new AbortController();
     monthNavigationAbortRef.current = controller;
@@ -1279,7 +1308,7 @@ const canBook =
       });
       if (controller.signal.aborted || monthAvailability.status === "aborted") return;
       if (monthAvailability.status === "error") {
-        setError("Unable to load appointment availability. Please try again.");
+        setAvailabilityError("Unable to load appointment availability.");
         return;
       }
       if (monthAvailability.status !== "success") return;
@@ -1296,7 +1325,7 @@ const canBook =
       }
     }
 
-    setError("No available appointments were found in the next available booking window.");
+    setAvailabilityError("No available appointments were found in the next available booking window.");
   };
   const slotOptions = useMemo(() => {
     if (!selectedDate || !config) return [];
@@ -1420,7 +1449,10 @@ const canBook =
                   </div>
                   <button
                     type="button"
-                    onClick={() => setAvailabilityRetryToken((value) => value + 1)}
+                    onClick={() => {
+                      setAvailabilityError("");
+                      setAvailabilityRetryToken((value) => value + 1);
+                    }}
                     className="mt-2 rounded-[10px] border border-red-300 px-3 py-2 text-[12px] font-bold text-red-700 transition hover:bg-red-100"
                   >
                     Retry
@@ -1882,6 +1914,10 @@ const canBook =
               >
                 {checkingAccess
                   ? "Checking access..."
+                  : calendarMode === "initializing"
+                  ? "Loading Availability..."
+                  : showAvailabilityLoadError
+                  ? "Availability Unavailable"
                   : loading
                   ? "Booking..."
                   : hasActiveBooking

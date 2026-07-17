@@ -24,7 +24,10 @@ function excludes(text, snippet, message) {
 }
 
 includes(service, "availableSlotCount?: number;", "API types should expose authoritative available slot counts");
-includes(service, "headers: {\n      \"Cache-Control\": \"no-store\"", "availability requests should explicitly bypass caches");
+includes(service, "params: { month, _: Date.now() }", "month availability should bypass caches without custom request headers");
+includes(service, "params: { date, _: Date.now() }", "day availability should bypass caches without custom request headers");
+excludes(service, "\"Cache-Control\": \"no-store\"", "availability requests should not add custom cache headers that trigger CORS preflight");
+excludes(service, "Pragma: \"no-cache\"", "availability requests should not add custom pragma headers that trigger CORS preflight");
 includes(controller, "export function getBookableSlots", "bookable slots should be normalized in one helper");
 includes(controller, "day.available !== true || day.availableSlotCount <= 0", "bookable helper should require authoritative availability fields");
 includes(controller, "slot.available === true", "bookable helper should require slot-level availability");
@@ -41,6 +44,9 @@ includes(source, "setDisplayedTimes(result.slots.map((slot) => slot.time))", "in
 includes(source, "visibleMonthLoadState?.status === \"success\"", "empty month state should wait for authoritative success");
 includes(source, "calendarMode !== \"initializing\" && visibleMonthLoaded", "empty month state should not appear during initialization");
 includes(source, "data-selected-date={ymdSelected}", "browser tests should be able to assert selected date without CSS scraping");
+includes(source, "const [availabilityError, setAvailabilityError] = useState(\"\");", "availability errors should not reuse the global form error banner");
+includes(source, "availabilityCanSubmit", "booking submit state should require availability readiness");
+includes(source, "? \"Availability Unavailable\"", "booking button should communicate availability error state");
 includes(controller, "const parsed = new Date(year, (month || 1) - 1, day || 1);", "date keys should be parsed as local calendar dates");
 includes(controller, "const year = date.getFullYear();", "date keys should be formatted from local calendar parts");
 includes(source, "No available appointments in this month.", "empty month state should be shown when backend returns no slots");
