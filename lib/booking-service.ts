@@ -176,12 +176,8 @@ export const getTimeSlots = async (
   options: { signal?: AbortSignal } = {}
 ): Promise<TimeSlot> => {
   const response = await API.get<TimeSlot>("/api/calendar/slots", {
-    params: { date },
+    params: { date, _: Date.now() },
     signal: options.signal,
-    headers: {
-      "Cache-Control": "no-store",
-      Pragma: "no-cache",
-    },
   });
   return response.data;
 };
@@ -192,10 +188,6 @@ export const getMonthAvailability = async (
   const response = await API.get<MonthAvailability>("/api/calendar/month", {
     params: { month, _: Date.now() },
     signal: options.signal,
-    headers: {
-      "Cache-Control": "no-store",
-      Pragma: "no-cache",
-    },
   });
   return response.data;
 };
