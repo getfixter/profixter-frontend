@@ -177,6 +177,38 @@ select:-webkit-autofill:active {
   animation: typing 1.4s infinite;
 }
 
+@keyframes pricing-crossfade {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.pricing-crossfade {
+  animation: pricing-crossfade 200ms ease-out;
+}
+
+@keyframes plan-selection {
+  0% {
+    opacity: 0.72;
+    box-shadow: inset 0 0 0 1px rgba(48, 110, 236, 0);
+  }
+  55% {
+    opacity: 1;
+    box-shadow: inset 0 0 0 1px rgba(48, 110, 236, 0.3);
+  }
+  100% {
+    opacity: 1;
+    box-shadow: inset 0 0 0 1px rgba(48, 110, 236, 0.22);
+  }
+}
+
+.plan-selection {
+  animation: plan-selection 190ms ease-out;
+}
+
 /* =========================
    Respect reduced motion
    ========================= */
@@ -186,7 +218,9 @@ select:-webkit-autofill:active {
   }
   .animate-fadeIn,
   .animate-blink,
-  .animate-typing {
+  .animate-typing,
+  .pricing-crossfade,
+  .plan-selection {
     animation: none !important;
   }
 }

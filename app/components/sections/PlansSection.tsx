@@ -120,6 +120,17 @@ function getDisplayPrice(plan: Plan, billing: BillingCycle): number {
   return billing === "annual" ? monthly * 11 : monthly;
 }
 
+function getAnnualPromotion(plan: Plan) {
+  const monthly = toNumberPrice(plan.price);
+  const original = monthly * 12;
+  const discounted = monthly * 10;
+  return {
+    original,
+    discounted,
+    monthlyEquivalent: Math.round(discounted / 12),
+  };
+}
+
 type PlansSectionProps = {
   hideCancellationUi?: boolean;
   compact?: boolean;
@@ -560,7 +571,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
   );
 
   const BillingToggle = () => (
-    <div className="mt-7 flex flex-col items-center">
+    <div className={compact ? "mt-3 flex flex-col items-center" : "mt-7 flex flex-col items-center"}>
       <div className="inline-grid rounded-full bg-[#E8E8ED] p-1 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)]">
         <div className="grid grid-cols-2 gap-1">
           {(["monthly", "annual"] as const).map((cycle) => {
@@ -585,11 +596,6 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           })}
         </div>
       </div>
-      {billing === "annual" ? (
-        <p className="mt-3 text-sm font-medium text-[#6E6E73]">
-          Pay for 11 months, get 12 months of service.
-        </p>
-      ) : null}
     </div>
   );
 
@@ -609,11 +615,17 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
       label: string;
       values: Record<Plan["name"], string>;
     }> = [
-      { label: "Visits", values: { Basic: "2+", Plus: "4+", Premium: "4+", Elite: "4+" } },
-      { label: "Materials", values: { Basic: "-", Plus: "✓", Premium: "✓", Elite: "✓" } },
+      {
+        label: "Visits",
+        values:
+          billing === "annual"
+            ? { Basic: "2+/mo", Plus: "4+/mo", Premium: "4+/mo", Elite: "4+/mo" }
+            : { Basic: "2+", Plus: "4+", Premium: "4+", Elite: "4+" },
+      },
+      { label: "Supply", values: { Basic: "-", Plus: "✓", Premium: "✓", Elite: "✓" } },
       { label: "Rush", values: { Basic: "-", Plus: "-", Premium: "1/mo", Elite: "2/mo" } },
       { label: "Full day", values: { Basic: "-", Plus: "-", Premium: "-", Elite: "1/mo" } },
-      { label: "Length", values: { Basic: "90m", Plus: "90m", Premium: "90m", Elite: "90m" } },
+      { label: "Length", values: { Basic: "90 min/visit", Plus: "90 min/visit", Premium: "90 min/visit", Elite: "90 min/visit" } },
     ];
     const summaryFeatures: Record<Plan["name"], string[]> = {
       Basic: ["2+ visits over time", "90-minute visits", "All handyman services"],
@@ -623,11 +635,14 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     };
     const cellClass = (planName: Plan["name"]) =>
       selectedComparisonPlan === planName
-        ? "bg-[#EEF4FF] text-[#1F5ED8]"
+        ? "plan-selection bg-[#EEF4FF] text-[#1F5ED8] shadow-[inset_0_0_0_1px_rgba(48,110,236,0.22)]"
         : "bg-white text-[#1D1D1F] hover:bg-[#F8FAFF]";
 
     return (
       <div className="mx-auto max-w-[920px]">
+        <p className="mb-2 text-center text-[11px] font-medium text-[#86868B] sm:text-[12px]">
+          <span aria-hidden="true">&#9757; </span>Tap a plan to select
+        </p>
         <div className="overflow-hidden rounded-[18px] border border-[#D9DCE3] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
           <div className="grid grid-cols-[68px_repeat(4,minmax(0,1fr))] sm:grid-cols-[112px_repeat(4,minmax(0,1fr))]">
             <div className="border-b border-[#E8E8ED] bg-[#FAFAFC]" aria-hidden="true" />
@@ -638,16 +653,49 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                 onClick={() => setSelectedComparisonPlan(plan.name)}
                 aria-pressed={selectedComparisonPlan === plan.name}
                 aria-label={`Select ${plan.name} plan`}
-                className={`min-w-0 border-b border-l border-[#E8E8ED] px-0.5 py-3 text-center transition sm:px-2 sm:py-4 ${cellClass(plan.name)}`}
+                className={`relative min-w-0 border-b border-l border-[#E8E8ED] px-0.5 pb-3 pt-5 text-center transition sm:px-2 sm:pb-4 sm:pt-6 ${cellClass(plan.name)}`}
               >
-                <span className="block truncate text-[9px] font-bold leading-3 min-[360px]:text-[10px] sm:text-[13px]">
-                  {plan.name}
+                {plan.name === "Plus" ? (
+                  <span className="absolute left-1/2 top-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#306EEC] px-1.5 py-0.5 text-[6px] font-semibold leading-3 text-white sm:top-1.5 sm:px-2 sm:text-[8px]">
+                    Popular
+                  </span>
+                ) : null}
+                <span className="flex min-w-0 items-center justify-center gap-0.5 text-[9px] font-bold leading-3 min-[360px]:text-[10px] sm:gap-1 sm:text-[13px]">
+                  <span className="truncate">{plan.name}</span>
+                  {selectedComparisonPlan === plan.name ? (
+                    <span className="flex h-3 w-3 shrink-0 items-center justify-center rounded-full bg-[#306EEC] text-[7px] font-bold leading-none text-white sm:h-3.5 sm:w-3.5 sm:text-[8px]" aria-hidden="true">
+                      ✓
+                    </span>
+                  ) : null}
                 </span>
-                <span className="mt-1 block text-[13px] font-semibold leading-4 min-[360px]:text-[14px] sm:text-[17px]">
-                  ${formatMoney(getDisplayPrice(plan, billing))}
-                </span>
-                <span className="block text-[8px] leading-3 text-[#86868B] sm:text-[10px]">
-                  /{billing === "annual" ? "yr" : "mo"}
+                <span key={billing} className="pricing-crossfade mt-1 block">
+                  {billing === "annual" ? (() => {
+                    const annual = getAnnualPromotion(plan);
+                    return (
+                      <>
+                        <span className="block text-[8px] leading-3 text-[#86868B] line-through sm:text-[10px]">
+                          ${formatMoney(annual.original)}
+                        </span>
+                        <span className={`block text-[12px] font-bold leading-4 min-[360px]:text-[13px] sm:text-[17px] ${selectedComparisonPlan === plan.name ? "text-[#1F5ED8]" : "text-[#111111]"}`}>
+                          ${formatMoney(annual.discounted)}
+                        </span>
+                        <span className="block whitespace-nowrap text-[7px] font-semibold leading-3 text-[#306EEC] min-[360px]:text-[8px] sm:text-[10px]">
+                          Only ${formatMoney(annual.monthlyEquivalent)}/mo
+                        </span>
+                        <span className="block whitespace-nowrap text-[6px] leading-3 text-[#86868B] min-[360px]:text-[7px] sm:text-[9px]">Billed annually</span>
+                        <span className="mx-auto mt-1 block w-fit max-w-full whitespace-nowrap rounded-full bg-[#EAF7EF] px-0.5 py-0.5 text-[5px] font-bold leading-3 text-[#277447] min-[360px]:text-[6px] sm:px-2 sm:text-[9px]">
+                          2 MONTHS FREE
+                        </span>
+                      </>
+                    );
+                  })() : (
+                    <>
+                      <span className="block text-[13px] font-semibold leading-4 min-[360px]:text-[14px] sm:text-[17px]">
+                        ${formatMoney(getDisplayPrice(plan, billing))}
+                      </span>
+                      <span className="block text-[8px] leading-3 text-[#86868B] sm:text-[10px]">/mo</span>
+                    </>
+                  )}
                 </span>
               </button>
             ))}
@@ -662,8 +710,13 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                     key={`${row.label}-${plan.name}`}
                     type="button"
                     onClick={() => setSelectedComparisonPlan(plan.name)}
+                    aria-pressed={selectedComparisonPlan === plan.name}
                     aria-label={`${plan.name}: ${row.label} ${row.values[plan.name]}`}
-                    className={`min-w-0 border-b border-l border-[#EEEEF2] px-0.5 text-center text-[11px] font-semibold transition sm:px-2 sm:text-[13px] ${cellClass(plan.name)}`}
+                    className={`min-w-0 whitespace-nowrap border-b border-l border-[#EEEEF2] px-0.5 text-center font-semibold transition sm:px-2 ${
+                      row.label === "Length"
+                        ? "text-[6px] tracking-[-0.025em] min-[360px]:text-[7px] sm:text-[11px] sm:tracking-normal"
+                        : "text-[11px] sm:text-[13px]"
+                    } ${cellClass(plan.name)}`}
                   >
                     {row.values[plan.name]}
                   </button>
@@ -673,15 +726,16 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           </div>
         </div>
 
+        <p className="mt-2 px-1 text-[9px] leading-4 text-[#86868B] sm:text-[11px]">
+          Available visits depend on appointment completion. Basic supports one active booking at a time. Plus, Premium and Elite support two active bookings at a time.
+        </p>
+
         <div className="mt-4 rounded-[18px] border border-[#D9DCE3] bg-white p-4 shadow-[0_10px_32px_rgba(15,23,42,0.05)] sm:p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#306EEC]">{selectedPlan.name}</p>
               <h3 className="mt-1 text-[17px] font-semibold text-[#111111] sm:text-[19px]">{planDisplayContent[selectedPlan.name].description}</h3>
             </div>
-            {selectedPlan.name === "Plus" ? (
-              <span className="shrink-0 rounded-full bg-[#EEF4FF] px-2.5 py-1 text-[10px] font-semibold text-[#306EEC]">Popular</span>
-            ) : null}
           </div>
           <ul className="mt-3 grid gap-2 sm:grid-cols-3">
             {summaryFeatures[selectedPlan.name].map((feature) => (
@@ -724,6 +778,14 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           {promoCode ? (
             <div className="mt-5 inline-flex rounded-full border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm font-semibold text-[#166534]">
               Promo code {promoCode} will be applied at checkout
+            </div>
+          ) : null}
+          {compact ? (
+            <div className="mx-auto mt-5 max-w-[360px] rounded-[16px] border border-[#D9E4FA] bg-white/80 px-4 py-3 shadow-[0_8px_24px_rgba(48,110,236,0.06)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#306EEC]">&#127881; Annual special</p>
+              <p className="mt-1 text-[13px] leading-5 text-[#4B5563]">
+                Pay for <strong className="font-semibold text-[#111111]">10 months</strong>. Get <strong className="font-semibold text-[#111111]">12 months of Membership.</strong>
+              </p>
             </div>
           ) : null}
           <BillingToggle />
