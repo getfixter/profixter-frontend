@@ -15,7 +15,11 @@ const TRUST_BADGES = [
   "Nassau & Suffolk County",
 ];
 
-export default function Footer() {
+export default function Footer({ compact = false }: { compact?: boolean }) {
+  const companyLinks = compact
+    ? COMPANY_LINKS.filter((link) => ["About Us", "Privacy Policy", "Terms of Service"].includes(link.label))
+    : COMPANY_LINKS;
+
   return (
     <footer
       id="contact-us"
@@ -36,22 +40,22 @@ export default function Footer() {
         style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.20), transparent)" }}
       />
 
-      <div className="relative mx-auto max-w-[1240px] px-4 py-10 sm:px-6 sm:py-16 lg:px-5">
-        <div className="grid grid-cols-1 items-start gap-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-[1.35fr_0.62fr_0.72fr_0.68fr_0.78fr] lg:gap-8">
-          <div>
+      <div className={`relative mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-5 ${compact ? "py-8 sm:py-10" : "py-10 sm:py-16"}`}>
+        <div className={`grid items-start ${compact ? "grid-cols-2 gap-7 sm:gap-8 lg:grid-cols-[1.3fr_0.7fr_0.7fr_0.9fr] lg:gap-10" : "grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-[1.35fr_0.62fr_0.72fr_0.68fr_0.78fr] lg:gap-8"}`}>
+          <div className={compact ? "col-span-2 lg:col-span-1" : ""}>
             <Image
               src="/images/logo-footer.svg"
               alt="Profixter"
               width={200}
               height={48}
-              className="mb-4 h-auto w-[160px] sm:mb-5 sm:w-[180px]"
+              className={`h-auto ${compact ? "mb-3 w-[150px] sm:w-[160px]" : "mb-4 w-[160px] sm:mb-5 sm:w-[180px]"}`}
             />
 
-            <p className="mb-6 max-w-[430px] text-[14px] leading-relaxed text-[#9AA3B2] sm:mb-7 sm:text-[15px]">
-              Monthly home maintenance Membership, $99 One-Time Handyman Visits, and renovation estimates for Long Island homeowners.
+            <p className={`max-w-[430px] text-[#9AA3B2] ${compact ? "text-[13px] leading-5" : "mb-6 text-[14px] leading-relaxed sm:mb-7 sm:text-[15px]"}`}>
+              Membership, one-time handyman visits, and larger home projects for Long Island homeowners.
             </p>
 
-            <a
+            {!compact ? <a
               href="tel:+16315991363"
               className="group inline-flex items-center gap-3 rounded-[15px] border border-white/[0.14] bg-white/[0.06] px-4 py-3 transition-all hover:border-white/[0.22] hover:bg-white/[0.12] sm:gap-3.5 sm:rounded-[16px] sm:px-5 sm:py-3.5"
             >
@@ -74,7 +78,7 @@ export default function Footer() {
                   631-599-1363
                 </div>
               </div>
-            </a>
+            </a> : null}
           </div>
 
           <div>
@@ -99,7 +103,7 @@ export default function Footer() {
               Company
             </div>
             <nav className="flex flex-col gap-3" aria-label="Footer company">
-              {COMPANY_LINKS.map((link) => (
+              {companyLinks.map((link) => (
                 <Link
                   key={link.label}
                   href={link.href}
@@ -111,7 +115,7 @@ export default function Footer() {
             </nav>
           </div>
 
-          <div>
+          {!compact ? <div>
             <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 sm:mb-5">
               Services
             </div>
@@ -126,9 +130,9 @@ export default function Footer() {
                 </Link>
               ))}
             </nav>
-          </div>
+          </div> : null}
 
-          <div>
+          <div className={compact ? "col-span-2 lg:col-span-1" : ""}>
             <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 sm:mb-5">
               Contact
             </div>
@@ -139,14 +143,18 @@ export default function Footer() {
               >
                 {PUBLIC_CONTACT_EMAIL}
               </a>
-              <a
+              {compact ? (
+                <a href="tel:+16315991363" className="text-[14px] font-medium text-[#9AA3B2] transition-colors hover:text-white sm:text-[15px]">
+                  631-599-1363
+                </a>
+              ) : <a
                 href="https://instagram.com/mrfixter.ny"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[14px] font-medium text-[#9AA3B2] transition-colors hover:text-white sm:text-[15px]"
               >
                 @mrfixter.ny
-              </a>
+              </a>}
               <p className="text-[13px] leading-6 text-white/32">
                 Based near Babylon. Serving Nassau and Suffolk Counties.
               </p>
@@ -154,18 +162,18 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-9 flex flex-col items-center justify-between gap-3 border-t border-white/[0.09] pt-5 sm:mt-12 sm:flex-row sm:pt-6">
+        <div className={`flex flex-col items-center justify-between gap-3 border-t border-white/[0.09] pt-5 sm:flex-row ${compact ? "mt-7" : "mt-9 sm:mt-12 sm:pt-6"}`}>
           <p className="text-[13px] text-[#4A5568]">
             &copy; 2026 Profixter. All rights reserved. &middot; NY State Licensed HI-71484
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+          {!compact ? <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
             {TRUST_BADGES.map((item) => (
               <div key={item} className="flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#86EFAC]" />
                 <span className="text-[12px] font-semibold text-white/28">{item}</span>
               </div>
             ))}
-          </div>
+          </div> : null}
         </div>
       </div>
     </footer>
