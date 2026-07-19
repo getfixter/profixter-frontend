@@ -20,13 +20,6 @@ import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
 
 type Step = 1 | 2 | 3 | 4;
 
-const onboardingSteps: Array<{ id: Step; label: string }> = [
-  { id: 1, label: "Property" },
-  { id: 2, label: "You" },
-  { id: 3, label: "Contact" },
-  { id: 4, label: "Security" },
-];
-
 const stepCopy: Record<Step, { title: string; subtitle: string }> = {
   1: {
     title: "Where should we come?",
@@ -42,7 +35,7 @@ const stepCopy: Record<Step, { title: string; subtitle: string }> = {
   },
   4: {
     title: "Almost done",
-    subtitle: "Create a secure password to manage your home, appointments and membership.",
+    subtitle: "Create a secure password for your account.",
   },
 };
 
@@ -84,12 +77,12 @@ function PasswordToggle({
         onChange={onChange}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className="w-full rounded-[14px] border border-white/[0.14] bg-white/[0.07] px-4 py-3.5 pr-12 text-[15px] text-white placeholder-white/32 outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
+        className="h-12 w-full rounded-[11px] border border-white/[0.14] bg-white/[0.07] px-3.5 pr-11 text-[14px] text-white placeholder-white/32 outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
       />
       <button
         type="button"
         onClick={() => setShow(!show)}
-        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/38 transition hover:text-white/72"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/38 transition hover:text-white/72"
         aria-label={show ? "Hide password" : "Show password"}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -119,7 +112,7 @@ function detectCounty(zip: string): string {
 
 function FieldLabel({ htmlFor, children }: { htmlFor: string; children: ReactNode }) {
   return (
-    <label htmlFor={htmlFor} className="mb-2 block text-[12px] font-bold uppercase tracking-[0.13em] text-white/58">
+    <label htmlFor={htmlFor} className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-white/58">
       {children}
     </label>
   );
@@ -151,7 +144,7 @@ function FieldInput({
       placeholder={placeholder}
       autoComplete={autoComplete}
       maxLength={maxLength}
-      className="w-full rounded-[14px] border border-white/[0.14] bg-white/[0.07] px-4 py-3.5 text-[15px] text-white placeholder-white/32 outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
+      className="h-12 w-full rounded-[11px] border border-white/[0.14] bg-white/[0.07] px-3.5 text-[14px] text-white placeholder-white/32 outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
     />
   );
 }
@@ -340,7 +333,7 @@ export default function SignUpPage() {
 
   return (
     <RoleEntryGate loadingLabel="Checking your session..." redirectLabel="Opening Your Home...">
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#050B18] px-4 py-5 text-white sm:px-6 sm:py-8">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#050B18] px-3.5 py-3.5 text-white sm:px-6 sm:py-6">
       <Image
         src="/images/hero-bg.webp"
         alt="Long Island home cared for by Profixter"
@@ -353,14 +346,14 @@ export default function SignUpPage() {
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#050B18] to-transparent" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-[1120px] flex-1 flex-col">
-        <div className="flex items-center justify-end gap-4 py-2 lg:justify-between">
+        <div className="flex items-center justify-end gap-3 py-1 lg:justify-between">
           <Link href="/" className="hidden items-center lg:inline-flex">
             <Image
               src="/images/logo.svg"
               alt="Profixter"
               width={132}
               height={44}
-              className="h-8 w-auto sm:h-10"
+              className="h-9 w-auto sm:h-11"
             />
           </Link>
           <Link
@@ -371,7 +364,7 @@ export default function SignUpPage() {
           </Link>
         </div>
 
-        <main className="grid flex-1 items-center gap-8 py-8 lg:grid-cols-[0.82fr_1fr] lg:gap-12 lg:py-10">
+        <main className="grid flex-1 items-center gap-6 py-5 lg:grid-cols-[0.82fr_1fr] lg:gap-10 lg:py-7">
           <section className="hidden max-w-[440px] lg:block">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.08] px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white/58">
               <span className="h-1.5 w-1.5 rounded-full bg-[#86EFAC]" />
@@ -398,45 +391,13 @@ export default function SignUpPage() {
           </section>
 
           <section className="mx-auto w-full max-w-[570px]">
-            <div className="rounded-[28px] border border-white/[0.10] bg-white/[0.075] p-4 shadow-[0_28px_90px_rgba(0,0,0,0.24)] backdrop-blur-2xl sm:p-6 lg:p-7">
-              <div className="rounded-[22px] border border-white/[0.09] bg-[#071225]/72 p-4 sm:p-6">
-                <nav aria-label="Home setup progress" className="mb-6">
-                  <ol className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-[0.13em] text-white/35 sm:flex-nowrap sm:gap-2.5">
-                    {onboardingSteps.map((item, index) => {
-                      const active = item.id === step;
-                      const complete = item.id < step;
-
-                      return (
-                        <li key={item.id} className="flex items-center gap-2">
-                          <span
-                            aria-current={active ? "step" : undefined}
-                            className={[
-                              "rounded-full px-2.5 py-1.5 transition",
-                              active
-                                ? "bg-white text-[#0B1628]"
-                                : complete
-                                  ? "bg-[#86EFAC]/16 text-[#86EFAC]"
-                                  : "bg-white/[0.06] text-white/40",
-                            ].join(" ")}
-                          >
-                            {item.label}
-                          </span>
-                          {index < onboardingSteps.length - 1 ? (
-                            <span className="text-white/22" aria-hidden="true">
-                              -&gt;
-                            </span>
-                          ) : null}
-                        </li>
-                      );
-                    })}
-                  </ol>
-                </nav>
-
+            <div className="rounded-[22px] border border-white/[0.10] bg-white/[0.075] p-3 shadow-[0_20px_60px_rgba(0,0,0,0.20)] backdrop-blur-2xl sm:p-5 lg:p-6">
+              <div className="rounded-[17px] border border-white/[0.09] bg-[#071225]/72 p-3.5 sm:p-5">
                 {step > 1 ? (
                   <button
                     type="button"
                     onClick={handleBackStep}
-                    className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/[0.10] bg-white/[0.05] px-3.5 py-2 text-[13px] font-bold text-white/58 transition hover:bg-white/[0.09] hover:text-white"
+                    className="mb-3.5 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/[0.10] bg-white/[0.05] px-3 py-1.5 text-[12px] font-bold text-white/58 transition hover:bg-white/[0.09] hover:text-white"
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                       <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
@@ -445,16 +406,16 @@ export default function SignUpPage() {
                   </button>
                 ) : null}
 
-                <div className="mb-5 sm:mb-6">
-                  <h2 className="text-[31px] font-black leading-[0.98] tracking-[-0.035em] text-white sm:text-[40px]">
+                <div className="mb-4 sm:mb-5">
+                  <h2 className="text-[27px] font-black leading-none tracking-[-0.03em] text-white sm:text-[34px]">
                     {stepCopy[step].title}
                   </h2>
-                  <p className="mt-3 max-w-[430px] text-[14px] font-medium leading-6 text-white/58 sm:text-[15px]">
+                  <p className="mt-2 max-w-[430px] text-[13px] font-medium leading-5 text-white/58 sm:text-[14px]">
                     {stepCopy[step].subtitle}
                   </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-3">
                   {step === 1 ? (
                     <>
                       <div>
@@ -468,7 +429,7 @@ export default function SignUpPage() {
                         />
                       </div>
 
-                      <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="grid gap-3 sm:grid-cols-2">
                         <div>
                           <FieldLabel htmlFor="city">City</FieldLabel>
                           <FieldInput
@@ -492,7 +453,7 @@ export default function SignUpPage() {
                         </div>
                       </div>
 
-                      <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="grid gap-3 sm:grid-cols-2">
                         <div>
                           <FieldLabel htmlFor="county">County</FieldLabel>
                           <select
@@ -500,7 +461,7 @@ export default function SignUpPage() {
                             value={formData.county}
                             onChange={(e) => handleChange("county", e.target.value)}
                             autoComplete="address-level3"
-                            className="auth-dark-select h-[51px] w-full rounded-[14px] border border-white/[0.14] bg-white/[0.07] px-4 text-[15px] text-white outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
+                            className="auth-dark-select h-12 w-full rounded-[11px] border border-white/[0.14] bg-white/[0.07] px-3.5 text-[14px] text-white outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
                           >
                             <option value="">Select County</option>
                             <option value="Nassau">Nassau</option>
@@ -597,7 +558,7 @@ export default function SignUpPage() {
                         ) : null}
                       </div>
 
-                      <label className="flex cursor-pointer items-start gap-3 rounded-[16px] border border-white/[0.09] bg-white/[0.04] p-3.5">
+                      <label className="flex cursor-pointer items-start gap-2.5 rounded-[12px] border border-white/[0.09] bg-white/[0.04] p-3">
                         <span className="relative mt-0.5 flex flex-shrink-0">
                           <input
                             type="checkbox"
@@ -616,7 +577,7 @@ export default function SignUpPage() {
                             ) : null}
                           </span>
                         </span>
-                        <span className="text-[13px] leading-relaxed text-white/56">
+                        <span className="text-[12px] leading-relaxed text-white/56">
                           I agree to the{" "}
                           <Link href="/terms" className="text-white/82 underline decoration-white/30 underline-offset-4 transition hover:text-white">
                             Terms of Service
@@ -631,7 +592,7 @@ export default function SignUpPage() {
                   ) : null}
 
                   {error ? (
-                    <div className="rounded-[14px] border border-red-400/25 bg-red-500/[0.10] px-4 py-3 text-center text-[13px] font-semibold text-red-200">
+                    <div className="rounded-[11px] border border-red-400/25 bg-red-500/[0.10] px-3.5 py-2.5 text-center text-[12px] font-semibold text-red-200">
                       {error}
                     </div>
                   ) : null}
@@ -639,16 +600,16 @@ export default function SignUpPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="mt-1 flex h-[52px] w-full items-center justify-center rounded-[16px] bg-[#306EEC] text-[15px] font-black text-white shadow-[0_16px_42px_rgba(48,110,236,0.34)] transition hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-55"
+                    className="mt-0.5 flex h-12 w-full items-center justify-center rounded-[12px] bg-[#306EEC] text-[14px] font-black text-white shadow-[0_10px_28px_rgba(48,110,236,0.28)] transition hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-55"
                   >
                     {step === 4 ? (loading ? "Finishing..." : "Finish") : "Continue"}
                   </button>
                 </form>
 
-                <p className="mt-5 text-center text-[14px] text-white/48">
-                  Already with Profixter?{" "}
+                <p className="mt-4 text-center text-[13px] text-white/48">
+                  Already have an account?{" "}
                   <Link href="/signin" className="font-bold text-white transition hover:text-white/80">
-                    My Home
+                    Log In
                   </Link>
                 </p>
               </div>

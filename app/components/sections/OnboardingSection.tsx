@@ -90,7 +90,7 @@ export default function OnboardingSection() {
               href="/signup"
               className="mt-6 inline-flex min-h-[54px] items-center justify-center rounded-[14px] bg-[#306EEC] px-8 text-[15px] font-extrabold text-white shadow-[0_12px_32px_rgba(48,110,236,0.28)] transition hover:-translate-y-0.5 hover:bg-[#2558c9]"
             >
-              Start My Membership
+              Create Account
             </Link>
           </div>
 

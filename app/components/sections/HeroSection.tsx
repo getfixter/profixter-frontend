@@ -119,7 +119,7 @@ export default function HeroSection() {
             secondaryAction: goToOneTimeBooking,
           }
         : {
-            primaryLabel: "Become a Member",
+            primaryLabel: "Create Account",
             primaryAction: goToSignupForMembership,
             secondaryLabel: "Need just one visit?",
             secondaryAction: goToOneTimeBooking,

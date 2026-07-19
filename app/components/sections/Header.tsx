@@ -131,13 +131,13 @@ export default function Header() {
                   href="/signup?redirect=%2Fmembership%23plans"
                   className="rounded-full bg-[#0B1628] px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#172033]"
                 >
-                  Become a Member
+                  Create Account
                 </Link>
                 <Link
                   href="/signin"
                   className="rounded-full border border-[#C5CBD8] bg-white/90 px-5 py-3 text-sm font-black text-[#111827] shadow-sm transition hover:bg-white"
                 >
-                  My Home
+                  Log In
                 </Link>
               </>
             )}
@@ -251,14 +251,14 @@ export default function Header() {
                     onClick={() => setIsMenuOpen(false)}
                     className="w-full rounded-[16px] bg-[#0B1628] px-5 py-3.5 text-center text-[15px] font-black text-white transition hover:bg-[#172033] sm:px-6 sm:py-4 sm:text-base"
                   >
-                    Become a Member
+                    Create Account
                   </Link>
                   <Link
                     href="/signin"
                     onClick={() => setIsMenuOpen(false)}
                     className="w-full rounded-[16px] border border-[#D7DEE9] bg-white px-5 py-3.5 text-center text-[15px] font-black text-[#0B1628] transition hover:bg-[#F8FAFF] sm:px-6 sm:py-4 sm:text-base"
                   >
-                    My Home
+                    Log In
                   </Link>
                 </>
               )}

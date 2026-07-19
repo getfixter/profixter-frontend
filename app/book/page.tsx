@@ -829,13 +829,13 @@ export default function BookPage() {
                         href="/signin"
                         className="rounded-[14px] bg-[#306EEC] px-5 py-3 text-[14px] font-extrabold text-white"
                       >
-                        My Home
+                        Log In
                       </Link>
                       <Link
                         href="/signup"
                         className="rounded-[14px] border border-[#C5CBD8] px-5 py-3 text-[14px] font-extrabold text-[#0B1628]"
                       >
-                        Add Property
+                        Create Account
                       </Link>
                     </div>
                   </div>

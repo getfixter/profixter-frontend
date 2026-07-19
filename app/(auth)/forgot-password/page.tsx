@@ -198,7 +198,7 @@ export default function ForgotPasswordPage() {
                   {loading ? 'Sending...' : 'Reset password'}
                 </button>
                 <Link href="/signin" className="block text-white text-base hover:underline">
-                  Back to login
+                  Log In
                 </Link>
               </form>
             </div>
@@ -251,7 +251,7 @@ export default function ForgotPasswordPage() {
                   {loading ? 'Verifying...' : 'Verify code'}
                 </button>
                 <Link href="/signin" className="block text-white text-base hover:underline">
-                  Back to login
+                  Log In
                 </Link>
               </form>
             </div>
@@ -307,7 +307,7 @@ export default function ForgotPasswordPage() {
               </div>
               <p className="text-[#C5CBD8] text-base mb-12">Your password has been updated</p>
               <Link href="/signin" className="block w-full py-4 bg-[#306EEC] text-white rounded-[14px] text-base font-medium hover:bg-[#2557C7] transition-colors">
-                Sing in
+                Log In
               </Link>
             </div>
           )}
