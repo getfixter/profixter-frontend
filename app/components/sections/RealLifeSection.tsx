@@ -55,7 +55,7 @@ export default function RealLifeSection() {
             <span className="text-[#306EEC]"> use Profixter</span>
           </h2>
           <p className="text-[15px] sm:text-[17px] text-[#475569] max-w-[520px] mx-auto leading-relaxed">
-            Not one giant repair day. Just small, consistent care — month after month — that keeps your home in great shape.
+            Not one giant repair day. Just small, consistent care - month after month - that keeps your home in great shape.
           </p>
         </div>
 
@@ -97,7 +97,7 @@ export default function RealLifeSection() {
               &ldquo;Instead of waiting until everything breaks, you stay ahead of your home.&rdquo;
             </p>
             <p className="text-[14px] text-[#64748B] leading-relaxed">
-              Members handle 8–12 tasks over a typical quarter — things that would otherwise pile up into a stressful to-do list or an expensive emergency call.
+              Members handle 8–12 tasks over a typical quarter - things that would otherwise pile up into a stressful to-do list or an expensive emergency call.
             </p>
           </div>
         </div>

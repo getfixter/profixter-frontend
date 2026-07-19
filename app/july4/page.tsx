@@ -48,7 +48,7 @@ const steps = [
   },
   {
     title: "Tell us what needs attention",
-    text: "Schedule a visit through your account—no estimate appointment for everyday handyman tasks.",
+    text: "Schedule a visit through your account-no estimate appointment for everyday handyman tasks.",
   },
   {
     title: "Cross it off your list",

@@ -17,28 +17,28 @@ const ROOFING_CONFIG = {
   eyebrow: "Premium Roofing · Long Island",
   headline: "One Roof For Life",
   subhead:
-    "Stop paying for temporary repairs. Protect your home with a roof built to last — backed by warranty, installed by a local licensed team.",
+    "Stop paying for temporary repairs. Protect your home with a roof built to last - backed by warranty, installed by a local licensed team.",
   cta: "Get Free Roofing Estimate",
   image: "/images/projects/p1.jpg",
   alt: "Completed roofing project on Long Island home",
   trustBadges: ["Licensed HI-71484", "Fully Insured", "Long Island Local", "50-Year Warranty", "Financing Available"],
   benefits: [
     { title: "Built for Long Island Weather", body: "Roofing systems selected for harsh winters, summer storms, and coastal conditions unique to Long Island." },
-    { title: "50-Year Warranty Available", body: "Premium manufacturer warranty coverage reviewed and explained clearly before any work begins — no surprises." },
+    { title: "50-Year Warranty Available", body: "Premium manufacturer warranty coverage reviewed and explained clearly before any work begins - no surprises." },
     { title: "Licensed & Fully Insured", body: "Licensed HI-71484. Every job is fully insured, protecting you and your home throughout the project." },
     { title: "Clear Process, No Surprises", body: "Estimate, materials, timeline, and cost are all reviewed together before work begins. You decide, then we build." },
     { title: "Financing Available", body: "Qualified homeowners can finance their roof replacement. No need to delay protecting your home." },
-    { title: "Local Long Island Team", body: "We work exclusively on Long Island. This is our neighborhood — we're accountable to this community." },
+    { title: "Local Long Island Team", body: "We work exclusively on Long Island. This is our neighborhood - we're accountable to this community." },
   ],
   signs: [
-    { title: "Recurring Leaks", body: "If the same area keeps leaking after patch repairs, the issue is systemic — not fixable with another patch." },
+    { title: "Recurring Leaks", body: "If the same area keeps leaking after patch repairs, the issue is systemic - not fixable with another patch." },
     { title: "Curling or Missing Shingles", body: "Shingles pulling away or going missing expose the underlayment and dramatically accelerate moisture damage." },
     { title: "Storm or Wind Damage", body: "Post-storm damage that looks minor on the surface can compromise the structural integrity of the full roof system." },
     { title: "Roof Age Becoming a Concern", body: "Most roofs have a 20–25 year lifespan. If yours is approaching that, a professional assessment makes sense now." },
   ],
   warrantyTitle: "50-Year Warranty Options",
   warrantyBody:
-    "We work with premium roofing systems that carry long-life manufacturer warranties. Every option is reviewed clearly with you before work begins — what's covered, what isn't, and for how long. No fine print you have to chase down later.",
+    "We work with premium roofing systems that carry long-life manufacturer warranties. Every option is reviewed clearly with you before work begins - what's covered, what isn't, and for how long. No fine print you have to chase down later.",
   faq: [
     { q: "Is the estimate free?", a: "Yes. We review your project and follow up with the right next step for an on-site estimate. No cost, no commitment." },
     { q: "Do you offer financing?", a: "Yes. Financing options are available for qualified homeowners. We'll walk you through options during the estimate process." },
@@ -59,10 +59,10 @@ const SIDING_CONFIG = {
   alt: "Long Island home with premium siding",
   trustBadges: ["Licensed HI-71484", "Fully Insured", "Long Island Local", "Warranty-Backed", "Financing Available"],
   benefits: [
-    { title: "Cleaner Exterior, Less Maintenance", body: "Modern siding systems resist weathering, moisture, and discoloration — so your home stays sharp with less ongoing effort." },
+    { title: "Cleaner Exterior, Less Maintenance", body: "Modern siding systems resist weathering, moisture, and discoloration - so your home stays sharp with less ongoing effort." },
     { title: "Built for Long Island Weather", body: "Siding selected for Long Island's coastal humidity, temperature swings, and seasonal storm exposure." },
     { title: "Licensed & Fully Insured", body: "Licensed HI-71484. All siding work is fully insured for your protection." },
-    { title: "Stronger Structural Protection", body: "New siding adds a moisture barrier and insulation layer that protects the bones of your home — not just the surface." },
+    { title: "Stronger Structural Protection", body: "New siding adds a moisture barrier and insulation layer that protects the bones of your home - not just the surface." },
     { title: "Financing Available", body: "Qualified homeowners can finance exterior siding projects. Protect your home without putting it on hold." },
     { title: "Local Long Island Team", body: "We work exclusively on Long Island. No revolving crew. A team you can actually reach." },
   ],
@@ -70,11 +70,11 @@ const SIDING_CONFIG = {
     { title: "Cracked or Warped Panels", body: "Visible cracking or warping means the siding can no longer protect the wall from moisture. That damage is spreading." },
     { title: "Moisture or Mold Issues", body: "Moisture getting behind siding causes structural damage that compounds quickly and gets far more expensive the longer it waits." },
     { title: "Fading and Tired Curb Appeal", body: "Heavily faded siding that no longer cleans up has run its service life. No amount of power washing fixes oxidized material." },
-    { title: "Repeated Patch Repairs", body: "Constantly patching individual panels often costs more over time — and never fully solves the underlying exposure." },
+    { title: "Repeated Patch Repairs", body: "Constantly patching individual panels often costs more over time - and never fully solves the underlying exposure." },
   ],
   warrantyTitle: "Long-Lasting Exterior Protection",
   warrantyBody:
-    "We help homeowners choose siding systems designed for durability and clean finish. Warranty-backed materials are reviewed and explained before any work begins — so you know exactly what you're getting, and for how long.",
+    "We help homeowners choose siding systems designed for durability and clean finish. Warranty-backed materials are reviewed and explained before any work begins - so you know exactly what you're getting, and for how long.",
   faq: [
     { q: "Can I request siding only?", a: "Yes. Use the form and select Siding, or select Both if you want roofing reviewed at the same time." },
     { q: "Is financing available?", a: "Yes. Financing options are available for qualified homeowners. We'll walk through the options during your estimate." },
@@ -258,8 +258,8 @@ export default function ExteriorLandingPage({ project }: Props) {
               </h2>
               <p className="mx-auto mt-4 max-w-[560px] text-[15px] leading-relaxed text-[#475569]">
                 {project === "roofing"
-                  ? "From material selection to warranty coverage — everything reviewed clearly before work begins."
-                  : "From moisture protection to curb appeal — durable siding that ends the patch-repair cycle."}
+                  ? "From material selection to warranty coverage - everything reviewed clearly before work begins."
+                  : "From moisture protection to curb appeal - durable siding that ends the patch-repair cycle."}
               </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -340,7 +340,7 @@ export default function ExteriorLandingPage({ project }: Props) {
               </h2>
               <p className="mt-4 text-[14px] leading-relaxed text-[#475569]">
                 Financing is available for qualified homeowners, so a necessary exterior project doesn&rsquo;t have to
-                stay on hold. We&rsquo;ll walk you through options clearly during your estimate — no pressure.
+                stay on hold. We&rsquo;ll walk you through options clearly during your estimate - no pressure.
               </p>
               <div className="mt-5 flex items-start gap-2 text-[13px] font-semibold text-[#306EEC]">
                 <CheckMark color="#306EEC" />
@@ -417,14 +417,14 @@ export default function ExteriorLandingPage({ project }: Props) {
                 </h2>
                 <p className="mt-4 text-[15px] leading-relaxed text-[#475569]">
                   We don&rsquo;t rush estimates, oversell materials, or send crews you&rsquo;ve never met. You get local
-                  accountability, honest recommendations, and a team focused on protecting the home — not closing a
+                  accountability, honest recommendations, and a team focused on protecting the home - not closing a
                   sale.
                 </p>
                 <div className="mt-6 space-y-4">
                   {[
                     { title: "Local accountability", body: "We're on Long Island. This is our neighborhood, and we're accountable to it." },
                     { title: "Clear process, no surprises", body: "Estimate → material review → install. You know every step and cost before work starts." },
-                    { title: "Real warranty coverage", body: "We explain what's covered, what isn't, and for how long — before you agree to anything." },
+                    { title: "Real warranty coverage", body: "We explain what's covered, what isn't, and for how long - before you agree to anything." },
                     { title: "Financing options explained", body: "If financing makes sense for your project, we help you understand the options clearly." },
                   ].map(({ title, body }) => (
                     <div key={title} className="flex items-start gap-3.5">
@@ -472,7 +472,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                 </p>
                 <div className="mt-7 space-y-3">
                   {[
-                    "Free estimate — no cost, no commitment",
+                    "Free estimate - no cost, no commitment",
                     "Financing available for qualified homeowners",
                     "Licensed HI-71484 · Fully insured",
                     "Local Long Island team · 9+ years",
@@ -509,10 +509,10 @@ export default function ExteriorLandingPage({ project }: Props) {
             <h2 className="text-[28px] font-black leading-tight tracking-[-0.03em] text-white sm:text-[34px]">
               {project === "roofing"
                 ? "Your roof should not be something you keep worrying about."
-                : "Your home's exterior should protect and impress — not stress you out."}
+                : "Your home's exterior should protect and impress - not stress you out."}
             </h2>
             <p className="mx-auto mt-4 max-w-[500px] text-[15px] leading-relaxed text-white/45">
-              Get a free estimate from a Long Island team that will give you a straight answer — and the time to decide.
+              Get a free estimate from a Long Island team that will give you a straight answer - and the time to decide.
             </p>
             <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <a

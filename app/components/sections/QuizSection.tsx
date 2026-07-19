@@ -212,7 +212,7 @@ export default function QuizSection() {
           </h2>
 
           <p className="mx-auto max-w-[520px] text-[15px] sm:text-[17px] leading-relaxed text-[#475569]">
-            Answer 3 quick questions and we&rsquo;ll recommend the best fit — no
+            Answer 3 quick questions and we&rsquo;ll recommend the best fit - no
             obligations, no sign-up required.
           </p>
         </div>

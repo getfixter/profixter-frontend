@@ -33,7 +33,7 @@ export default function BlacklistTable({
             {blacklist.map((bl) => (
               <tr key={bl._id} className="border-b border-[#edf0f6]">
                 <td className="p-3">{bl.userId}</td>
-                <td className="p-3">{bl.name || '—'}</td>
+                <td className="p-3">{bl.name || '-'}</td>
                 <td className="p-3">
                   <a
                     href={`mailto:${bl.email}`}
@@ -42,12 +42,12 @@ export default function BlacklistTable({
                     {bl.email}
                   </a>
                 </td>
-                <td className="p-3">{bl.phone || '—'}</td>
+                <td className="p-3">{bl.phone || '-'}</td>
                 <td className="p-3 text-sm">
                   {bl.address || ''}, {bl.city || ''}, {bl.state || ''}{' '}
                   {bl.zip || ''}
                 </td>
-                <td className="p-3 text-sm text-[#64748b]">{bl.reason || '—'}</td>
+                <td className="p-3 text-sm text-[#64748b]">{bl.reason || '-'}</td>
                 <td className="p-3">
                   <button
                     onClick={() => onUnblacklist(bl._id)}

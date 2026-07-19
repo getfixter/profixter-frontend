@@ -7,7 +7,7 @@ import { trackEvent } from "@/lib/analytics";
 const STATS = [
   { value: "5.0", label: "Google Rating" },
   { value: "9+", label: "Years on Long Island" },
-  { value: "$0", label: "Estimates — ever" },
+  { value: "$0", label: "Estimates - ever" },
   { value: "HI-71484", label: "NY State Licensed" },
 ];
 
@@ -171,7 +171,7 @@ export default function ServicesSection() {
             </p>
           </div>
 
-          {/* Stats — desktop */}
+          {/* Stats - desktop */}
           <div className="hidden lg:grid grid-cols-2 gap-3 flex-shrink-0 w-[280px]">
             {STATS.map(({ value, label }) => (
               <div

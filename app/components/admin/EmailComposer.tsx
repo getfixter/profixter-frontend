@@ -396,7 +396,7 @@ export default function EmailComposer() {
                     {item.label}
                   </span>
                   <span className="mt-1 block text-xl font-semibold text-slate-950">
-                    {counts ? counts[item.id] : '—'}
+                    {counts ? counts[item.id] : '-'}
                   </span>
                 </button>
               );

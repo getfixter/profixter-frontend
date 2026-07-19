@@ -27,20 +27,20 @@ type Question = {
 const QUESTIONS: readonly Question[] = [
   {
     id: "q1",
-    title: "Be honest — do you have at least 3 small things in your home that annoy you?",
+    title: "Be honest - do you have at least 3 small things in your home that annoy you?",
     sub: "Loose handle, dripping faucet, squeaky door, hole in wall, shelves, caulk, drafts, etc.",
     options: [
       {
         id: "good",
-        label: "Yes — at least 3 things",
+        label: "Yes - at least 3 things",
         feedback:
-          "That’s exactly who this is for. Those “small” issues stack up fast — and they usually get worse when ignored.",
+          "That’s exactly who this is for. Those “small” issues stack up fast - and they usually get worse when ignored.",
       },
       {
         id: "wrong",
-        label: "No — everything is perfect",
+        label: "No - everything is perfect",
         feedback:
-          "That’s not realistic for most homeowners. Even “perfect” homes have small issues over time — that’s why prevention and quick fixes matter.",
+          "That’s not realistic for most homeowners. Even “perfect” homes have small issues over time - that’s why prevention and quick fixes matter.",
       },
     ],
   },
@@ -53,13 +53,13 @@ const QUESTIONS: readonly Question[] = [
         id: "good",
         label: "I keep postponing because it’s annoying to deal with",
         feedback:
-          "Exactly. You’re not lazy — it’s just friction. A simple system is what turns “later” into “done.”",
+          "Exactly. You’re not lazy - it’s just friction. A simple system is what turns “later” into “done.”",
       },
       {
         id: "wrong",
         label: "I love hunting for handymen and scheduling",
         feedback:
-          "That’s not the best answer. If you truly enjoy spending time searching, negotiating, and waiting — you may not need a membership.",
+          "That’s not the best answer. If you truly enjoy spending time searching, negotiating, and waiting - you may not need a membership.",
       },
     ],
   },
@@ -72,7 +72,7 @@ const QUESTIONS: readonly Question[] = [
         id: "good",
         label: "A reliable person I can book quickly (no stress)",
         feedback:
-          "Correct. Reliability and speed beat “cheapest” — because the cheapest usually becomes the most expensive over time.",
+          "Correct. Reliability and speed beat “cheapest” - because the cheapest usually becomes the most expensive over time.",
       },
       {
         id: "wrong",
@@ -85,17 +85,17 @@ const QUESTIONS: readonly Question[] = [
   {
     id: "q4",
     title: "Does this sound useful?",
-    sub: "One visit is up to 90 minutes — perfect for knocking out a bunch of small tasks.",
+    sub: "One visit is up to 90 minutes - perfect for knocking out a bunch of small tasks.",
     options: [
       {
         id: "good",
-        label: "Yes — that’s exactly what I need",
+        label: "Yes - that’s exactly what I need",
         feedback:
           "Perfect. Most homeowners get the biggest relief from consistent “small fixes” that remove daily stress.",
       },
       {
         id: "wrong",
-        label: "No — I only do massive renovations",
+        label: "No - I only do massive renovations",
         feedback:
           "Not the best fit for the membership visits. Large projects can be quoted separately, but the membership is built for quick wins.",
       },
@@ -108,13 +108,13 @@ const QUESTIONS: readonly Question[] = [
     options: [
       {
         id: "good",
-        label: "Yes — I want it handled",
+        label: "Yes - I want it handled",
         feedback:
-          "Great. That mindset is how you stay ahead. Small fixes prevent big repairs — and you feel the difference immediately.",
+          "Great. That mindset is how you stay ahead. Small fixes prevent big repairs - and you feel the difference immediately.",
       },
       {
         id: "wrong",
-        label: "No — I prefer living with problems",
+        label: "No - I prefer living with problems",
         feedback:
           "That’s not the best answer. Living with issues costs more long-term and adds daily irritation you don’t need.",
       },
@@ -123,19 +123,19 @@ const QUESTIONS: readonly Question[] = [
   {
     id: "q6",
     title: "Last one: want to see memberships?",
-    sub: "No pressure — month-to-month, no long-term contracts.",
+    sub: "No pressure - month-to-month, no long-term contracts.",
     options: [
       {
         id: "good",
-        label: "Yes — show me memberships",
+        label: "Yes - show me memberships",
         feedback:
           "Perfect. You're going to pick the membership that matches your home.",
       },
       {
         id: "wrong",
-        label: "No — I want to talk first",
+        label: "No - I want to talk first",
         feedback:
-          "That’s fair. A quick call is best if you want to confirm what’s included and availability — call us now.",
+          "That’s fair. A quick call is best if you want to confirm what’s included and availability - call us now.",
       },
     ],
   },
@@ -344,7 +344,7 @@ export default function NeedItQuizModal({
           {q.id === "q6" ? (
             <div className="mt-6 rounded-[14px] border border-[#c5cbd8] bg-white/60 p-4">
               <div className="text-[14px] font-semibold text-[#313234]">
-                If you choose “Yes — show me plans”
+                If you choose “Yes - show me plans”
               </div>
               <div className="text-[13px] text-[#6A6D71] mt-1">
                 we’ll take you to plans to {ctaLabel.toLowerCase()}.

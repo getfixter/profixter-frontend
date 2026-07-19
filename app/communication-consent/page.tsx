@@ -233,7 +233,7 @@ export default function CommunicationConsentPage() {
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">8. Permitted Use of Your Contact Information</h2>
             <p>
               We use your contact information to operate the Service, provide customer support, schedule visits, prevent fraud,
-              provide receipts/updates, and—only if you opt in—send marketing.
+              provide receipts/updates, and-only if you opt in-send marketing.
             </p>
           </section>
 

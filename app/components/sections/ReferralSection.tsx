@@ -35,7 +35,7 @@ export default function ReferralSection() {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const shareText = `I've been using Profixter — a handyman membership on Long Island that sends the same team every month. You get ${REFERRED_REWARD} off your first month: ${referralLink}`;
+  const shareText = `I've been using Profixter - a handyman membership on Long Island that sends the same team every month. You get ${REFERRED_REWARD} off your first month: ${referralLink}`;
   const smsHref = `sms:&body=${encodeURIComponent(shareText)}`;
   const waHref = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
@@ -159,7 +159,7 @@ export default function ReferralSection() {
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="#306EEC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <p className="text-[13px] text-[#475569] leading-relaxed">
-              <span className="font-semibold text-[#0B1628]">Most of our members come from referrals</span> — homeowners trust recommendations from people they know.
+              <span className="font-semibold text-[#0B1628]">Most of our members come from referrals</span> - homeowners trust recommendations from people they know.
             </p>
           </div>
 
@@ -169,7 +169,7 @@ export default function ReferralSection() {
               <polyline points="9 22 9 12 15 12 15 22" stroke="#306EEC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <p className="text-[13px] text-[#475569] leading-relaxed">
-              Help your neighbors take care of their homes — and make your life easier too.
+              Help your neighbors take care of their homes - and make your life easier too.
             </p>
           </div>
 

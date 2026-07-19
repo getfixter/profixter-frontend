@@ -649,7 +649,7 @@ export default function AdminCalendarSettings({
             <option value="company">All Company</option>
             {technicians.map((technician) => (
               <option key={technician.id} value={technician.id}>
-                {technician.name} — {technician.position}
+                {technician.name} - {technician.position}
               </option>
             ))}
           </select>
@@ -1591,7 +1591,7 @@ export default function AdminCalendarSettings({
               >
                 {technicians.map((technician) => (
                   <option key={technician.id} value={technician.id}>
-                    {technician.name} — {technician.position}
+                    {technician.name} - {technician.position}
                   </option>
                 ))}
               </select>
@@ -1743,7 +1743,7 @@ function TimeOffEditor({
     <div className="rounded-lg bg-slate-50 p-3 text-sm">
       <div className="flex items-center justify-between gap-3">
         <span>
-          <b>{technicianName}</b> — {entry.type}
+          <b>{technicianName}</b> - {entry.type}
         </span>
         {!readOnly && (
         <div className="flex gap-3">

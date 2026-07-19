@@ -86,7 +86,7 @@ export default function HandymenSection() {
                     sizes="(max-width: 768px) 100vw, 480px"
                     priority
                   />
-                  {/* Premium dark bottom gradient — smooth into white card body */}
+                  {/* Premium dark bottom gradient - smooth into white card body */}
                   <div
                     className="absolute inset-0"
                     style={{ background: "linear-gradient(to bottom, transparent 45%, rgba(255,255,255,0.95) 100%)" }}
@@ -94,7 +94,7 @@ export default function HandymenSection() {
                   {/* Cinematic vignette */}
                   <div className="absolute inset-0 shadow-[inset_0_0_60px_rgba(15,23,42,0.12)] rounded-t-[28px]" />
 
-                  {/* Role badge — top left */}
+                  {/* Role badge - top left */}
                   {role && (
                     <div className="absolute top-5 left-5 inline-flex items-center gap-2 rounded-full bg-[#306EEC] px-3.5 py-1.5 shadow-[0_4px_20px_rgba(48,110,236,0.40)]">
                       <span className="h-1.5 w-1.5 rounded-full bg-white/70 flex-shrink-0" />
@@ -104,7 +104,7 @@ export default function HandymenSection() {
                     </div>
                   )}
 
-                  {/* Verified badge — top right */}
+                  {/* Verified badge - top right */}
                   <div className="absolute top-5 right-5 inline-flex items-center gap-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 px-3 py-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#86EFAC] flex-shrink-0" style={{ boxShadow: "0 0 6px rgba(134,239,172,0.8)" }} />
                     <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/85">Vetted</span>

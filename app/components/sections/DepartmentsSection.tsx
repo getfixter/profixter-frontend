@@ -98,7 +98,7 @@ export default function DepartmentsSection() {
           </h2>
 
           <p className="mx-auto max-w-[520px] text-[15px] sm:text-[17px] leading-relaxed text-[#475569]">
-            From monthly memberships to one-time repairs and full renovations —
+            From monthly memberships to one-time repairs and full renovations -
             pick the service that fits your situation.
           </p>
         </div>

@@ -26,7 +26,7 @@ function errorMessage(error: unknown) {
 }
 
 function formatTime(value?: string | null) {
-  if (!value) return '—';
+  if (!value) return '-';
   return new Date(value).toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -36,7 +36,7 @@ function formatTime(value?: string | null) {
 }
 
 function formatFullTime(value?: string | null) {
-  if (!value) return '—';
+  if (!value) return '-';
   return new Date(value).toLocaleString('en-US', {
     weekday: 'short',
     month: 'short',
@@ -53,7 +53,7 @@ function displayNameEmail(name?: string, email?: string) {
   const cleanName = String(name || '').trim();
   const cleanEmail = String(email || '').trim();
   if (cleanName && cleanEmail) return `${cleanName} <${cleanEmail}>`;
-  return cleanName || cleanEmail || '—';
+  return cleanName || cleanEmail || '-';
 }
 
 function StatusPill({ status }: { status: EmailLogItem['status'] }) {
@@ -341,9 +341,9 @@ export default function EmailHistory() {
                   <div>
                     <StatusPill status={item.status} />
                   </div>
-                  <div className="text-slate-700">{item.emailType || '—'}</div>
+                  <div className="text-slate-700">{item.emailType || '-'}</div>
                   <div className="break-all font-semibold text-slate-900">
-                    {item.templateKey || '—'}
+                    {item.templateKey || '-'}
                   </div>
                   <div className="break-words text-slate-700">
                     {displayNameEmail(item.recipientName, item.recipientEmail)}
@@ -352,9 +352,9 @@ export default function EmailHistory() {
                     {displayNameEmail(item.customerName, item.customerEmail)}
                   </div>
                   <div className="font-semibold text-slate-800">
-                    {item.bookingNumber || '—'}
+                    {item.bookingNumber || '-'}
                   </div>
-                  <div className="break-words text-slate-700">{item.subject || '—'}</div>
+                  <div className="break-words text-slate-700">{item.subject || '-'}</div>
                   <div className="break-words text-red-700">
                     {item.errorMessage || item.errorCode || (
                       <span className="text-slate-400">View</span>
@@ -370,7 +370,7 @@ export default function EmailHistory() {
           <div>
             {data
               ? `${data.total} result${data.total === 1 ? '' : 's'} · Page ${data.page} of ${data.totalPages}`
-              : '—'}
+              : '-'}
           </div>
           <div className="flex gap-2">
             <button
@@ -433,7 +433,7 @@ export default function EmailHistory() {
                 ['Booking #', selected.bookingNumber],
                 ['Campaign #', selected.campaignNumber],
                 ['Provider message ID', selected.providerMessageId],
-                ['Error', selected.errorMessage || selected.errorCode || '—'],
+                ['Error', selected.errorMessage || selected.errorCode || '-'],
                 ['Response code', selected.responseCode],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
@@ -441,7 +441,7 @@ export default function EmailHistory() {
                     {label}
                   </p>
                   <p className="mt-1 break-words font-medium text-slate-800">
-                    {value || '—'}
+                    {value || '-'}
                   </p>
                 </div>
               ))}

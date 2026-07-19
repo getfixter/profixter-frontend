@@ -43,7 +43,7 @@ export default function OnboardingSection() {
 
         <div className="grid lg:grid-cols-[1fr_1fr] gap-12 lg:gap-16 items-start">
 
-          {/* LEFT — What happens after you start */}
+          {/* LEFT - What happens after you start */}
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-[#EEF2FF] px-4 py-1.5 mb-5">
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
@@ -94,7 +94,7 @@ export default function OnboardingSection() {
             </Link>
           </div>
 
-          {/* RIGHT — What most homeowners book first */}
+          {/* RIGHT - What most homeowners book first */}
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-[#EEF2FF] px-4 py-1.5 mb-5">
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">

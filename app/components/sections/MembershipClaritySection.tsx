@@ -68,7 +68,7 @@ const WHY_BETTER = [
 ];
 
 const EXPECTATIONS = [
-  { icon: "📅", text: "Visits are scheduled in advance — not on-demand" },
+  { icon: "📅", text: "Visits are scheduled in advance - not on-demand" },
   { icon: "⏱️", text: "Each visit has a 90-minute time limit" },
   { icon: "🔧", text: "Best for ongoing home care, not urgent or emergency repairs" },
   { icon: "📋", text: "Larger or more complex work may require multiple visits" },
@@ -90,7 +90,7 @@ export default function MembershipClaritySection() {
               </span>
             </div>
             <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[#94A3B8] mb-3">
-              Profixter isn&rsquo;t for everyone — and that&rsquo;s intentional.
+              Profixter isn&rsquo;t for everyone - and that&rsquo;s intentional.
             </p>
             <h2 className="text-[30px] sm:text-[44px] font-extrabold text-[#0B1628] leading-[1.08] tracking-[-0.03em]">
               Is This Right for You?
@@ -161,7 +161,7 @@ export default function MembershipClaritySection() {
                 Without a system like this&hellip;
               </h3>
               <p className="text-[14px] sm:text-[15px] text-white/45 leading-relaxed">
-                Most homeowners don&rsquo;t realize what reactive home care actually costs them — in money, time, and stress.
+                Most homeowners don&rsquo;t realize what reactive home care actually costs them - in money, time, and stress.
               </p>
             </div>
             <ul className="space-y-4">
@@ -252,7 +252,7 @@ export default function MembershipClaritySection() {
             Profixter was built to fix that.&rdquo;
           </blockquote>
           <p className="mt-6 text-[13px] font-bold text-white/35">
-            — Taras Bandura, Founder &middot; Licensed HI-71484 &middot; 9+ Years on Long Island
+            - Taras Bandura, Founder &middot; Licensed HI-71484 &middot; 9+ Years on Long Island
           </p>
         </div>
       </section>

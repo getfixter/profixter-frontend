@@ -949,8 +949,8 @@ export default function ProjectsModule() {
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Customer</p>
                 <h3 className="mt-2 text-xl font-bold text-slate-950">{selected.customerName}</h3>
                 <div className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
-                  <div><p className="text-slate-400">Phone</p><p className="mt-1 font-semibold text-slate-800">{selected.phone || "—"}</p></div>
-                  <div><p className="text-slate-400">Email</p><p className="mt-1 break-all font-semibold text-slate-800">{selected.email || "—"}</p></div>
+                  <div><p className="text-slate-400">Phone</p><p className="mt-1 font-semibold text-slate-800">{selected.phone || "-"}</p></div>
+                  <div><p className="text-slate-400">Email</p><p className="mt-1 break-all font-semibold text-slate-800">{selected.email || "-"}</p></div>
                   <div className="sm:col-span-2"><p className="text-slate-400">Address</p><p className="mt-1 font-semibold text-slate-800">{selected.address}</p></div>
                   <div><p className="text-slate-400">Project type</p><p className="mt-1 font-semibold text-slate-800">{selected.projectType}</p></div>
                 </div>

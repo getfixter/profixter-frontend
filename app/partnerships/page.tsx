@@ -52,7 +52,7 @@ export default function PartnershipsPage() {
           <br className="hidden sm:block" />
           Profixter is a{" "}
           <span className="font-semibold">unique home protection and handyman Membership</span>{" "}
-          that makes home repairs simple — and that’s why partnerships work so well.
+          that makes home repairs simple - and that’s why partnerships work so well.
         </p>
 
         <div className="space-y-10 text-sm sm:text-base text-white/85 leading-relaxed">
@@ -66,7 +66,7 @@ export default function PartnershipsPage() {
               <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
                 <p className="font-semibold">A service everyone needs</p>
                 <p className="text-white/75 mt-1">
-                  Homeowners always have a list — small repairs, installs, maintenance, “can you fix this?”
+                  Homeowners always have a list - small repairs, installs, maintenance, “can you fix this?”
                   We make it easy to handle without stress.
                 </p>
               </div>
@@ -89,13 +89,13 @@ export default function PartnershipsPage() {
               <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
                 <p className="font-semibold">We offer strong partnership deals</p>
                 <p className="text-white/75 mt-1">
-                  We have multiple partnership programs and we make it worth it — fair, simple, and designed to grow together.
+                  We have multiple partnership programs and we make it worth it - fair, simple, and designed to grow together.
                 </p>
               </div>
             </div>
 
             <p className="text-white/70 mt-4">
-              If you have an audience, clients, or properties — this is a partnership that actually helps people,
+              If you have an audience, clients, or properties - this is a partnership that actually helps people,
               not just “another promo”.
             </p>
           </section>
@@ -169,7 +169,7 @@ export default function PartnershipsPage() {
 
             <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
               <p className="text-white/85">
-                Your rental is a business. When something breaks, it’s not just annoying —
+                Your rental is a business. When something breaks, it’s not just annoying -
                 it can cost bookings and reviews. Profixter helps keep your property running smoothly.
               </p>
 

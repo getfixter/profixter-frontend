@@ -53,7 +53,7 @@ export default function TermsPage() {
           <span className="font-semibold">&quot;Mr. Fixter&quot;</span> (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;).
           <br />
           <span className="text-white/55">
-            This is general website terms language—consider a NY attorney review for your exact operations and insurance coverage.
+            This is general website terms language-consider a NY attorney review for your exact operations and insurance coverage.
           </span>
         </p>
 

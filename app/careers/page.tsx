@@ -46,7 +46,7 @@ export default function CareersPage() {
         </h1>
 
         <p className="text-sm sm:text-base text-white/65 text-center mb-10 leading-relaxed">
-          Join <span className="font-semibold">Profixter</span> — a fast-growing home service company
+          Join <span className="font-semibold">Profixter</span> - a fast-growing home service company
           changing how homeowners handle repairs, maintenance, and peace of mind.
         </p>
 
@@ -61,7 +61,7 @@ export default function CareersPage() {
               <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
                 <p className="font-semibold">We’re building something real</p>
                 <p className="text-white/75 mt-1">
-                  This isn’t a boring corporate job — we’re building a modern service brand with ambition, speed, and impact.
+                  This isn’t a boring corporate job - we’re building a modern service brand with ambition, speed, and impact.
                 </p>
               </div>
 
@@ -75,14 +75,14 @@ export default function CareersPage() {
               <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
                 <p className="font-semibold">We reward performance</p>
                 <p className="text-white/75 mt-1">
-                  Strong performance is noticed — bonuses, raises, commissions, and real career progress.
+                  Strong performance is noticed - bonuses, raises, commissions, and real career progress.
                 </p>
               </div>
 
               <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
                 <p className="font-semibold">Modern, creative, and flexible</p>
                 <p className="text-white/75 mt-1">
-                  We value initiative, creativity, independence, and problem-solving — not bureaucracy.
+                  We value initiative, creativity, independence, and problem-solving - not bureaucracy.
                 </p>
               </div>
             </div>
@@ -109,7 +109,7 @@ export default function CareersPage() {
               </ul>
 
               <p className="text-white/70 mt-4">
-                If you’re driven, organized, creative, or great with people — we want to hear from you.
+                If you’re driven, organized, creative, or great with people - we want to hear from you.
               </p>
             </div>
           </section>
@@ -124,7 +124,7 @@ export default function CareersPage() {
               <ul className="list-disc list-inside space-y-2 text-white/75">
                 <li>Fast-moving & ambitious</li>
                 <li>Respectful, honest, and direct</li>
-                <li>Focused on results — not excuses</li>
+                <li>Focused on results - not excuses</li>
                 <li>Supportive, but performance-driven</li>
                 <li>We grow together</li>
               </ul>
@@ -155,7 +155,7 @@ export default function CareersPage() {
               </p>
 
               <p className="text-white/60 text-sm mt-2">
-                Tip: Tell us why you want to work with Profixter — we love motivated people.
+                Tip: Tell us why you want to work with Profixter - we love motivated people.
               </p>
             </div>
           </section>

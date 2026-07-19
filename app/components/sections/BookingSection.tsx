@@ -1853,7 +1853,7 @@ if (next?.date) {
               aria-modal="true"
               aria-labelledby="booking-success-title"
             >
-              {/* Drag handle — mobile only */}
+              {/* Drag handle - mobile only */}
               <div className="min-h-0 overflow-y-auto px-5 pb-4 pt-6 sm:px-7 sm:pb-5 sm:pt-7">
                 <div className="mb-4 flex justify-center">
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#EAF8EF] ring-1 ring-[#CDEBD8]">

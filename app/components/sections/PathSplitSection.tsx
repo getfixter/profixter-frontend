@@ -28,7 +28,7 @@ export default function PathSplitSection() {
             One team. Every visit.
           </h2>
           <p className="text-[15px] sm:text-[17px] text-white/45 max-w-[540px] mx-auto leading-relaxed">
-            A monthly handyman membership that keeps your Long Island home in shape — year after year, no hunting for contractors.
+            A monthly handyman membership that keeps your Long Island home in shape - year after year, no hunting for contractors.
           </p>
         </div>
 
@@ -74,7 +74,7 @@ export default function PathSplitSection() {
                 Everything handled,<br />every month.
               </h3>
               <p className="text-[15px] text-white/50 leading-relaxed mb-7 max-w-[480px]">
-                One trusted team. Predictable pricing. Regular visits and steady maintenance — your home stays in shape without you lifting a finger.
+                One trusted team. Predictable pricing. Regular visits and steady maintenance - your home stays in shape without you lifting a finger.
               </p>
 
               {/* Divider */}
@@ -85,7 +85,7 @@ export default function PathSplitSection() {
                 {[
                   "Request help whenever your home needs it",
                   "Same trusted team, every single visit",
-                  "Wide range of tasks covered — no per-task estimates",
+                  "Wide range of tasks covered - no per-task estimates",
                   "Priority scheduling for members",
               "Month-to-month with no long-term contract",
                 ].map((b) => (

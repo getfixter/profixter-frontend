@@ -26,23 +26,23 @@ const PLAN_PRICES: Record<PlanKey, number> = {
 
 const PLAN_INCLUDES: Record<PlanKey, string[]> = {
   basic: [
-    "Home Care Membership — your home, handled",
+    "Home Care Membership - your home, handled",
     "1 active appointment at a time",
     "Each visit covers up to 90 minutes of work",
   ],
   plus: [
-    "Home Care Plus — stay ahead of your home",
+    "Home Care Plus - stay ahead of your home",
     "2 active appointments at a time",
     "Same trusted team, every visit",
   ],
   premium: [
-    "Home Protection — cared for and protected",
+    "Home Protection - cared for and protected",
     "2 active appointments at a time",
     "One Rush Visit per month",
     "Rush Visits don't require waiting for the next standard appointment slot",
   ],
   elite: [
-    "Whole-Home Care — everything about your home, handled",
+    "Whole-Home Care - everything about your home, handled",
     "2 active appointments at a time",
     "Two Rush Visits per month",
     "One full project day per month (up to 8 hours)",
