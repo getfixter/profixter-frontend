@@ -122,9 +122,10 @@ function getDisplayPrice(plan: Plan, billing: BillingCycle): number {
 
 type PlansSectionProps = {
   hideCancellationUi?: boolean;
+  compact?: boolean;
 };
 
-export default function PlansSection({ hideCancellationUi = false }: PlansSectionProps = {}) {
+export default function PlansSection({ hideCancellationUi = false, compact = false }: PlansSectionProps = {}) {
   const [billing, setBilling] = useState<BillingCycle>("monthly");
   const [promoCode, setPromoCode] = useState("");
   const [actionMessage, setActionMessage] = useState("");
@@ -598,14 +599,14 @@ export default function PlansSection({ hideCancellationUi = false }: PlansSectio
   );
 
   return (
-    <section id="plans" className="w-full scroll-mt-[140px] bg-[#F5F5F7] px-4 py-12 sm:px-5 sm:py-20 lg:py-24">
+    <section id="plans" className={`w-full scroll-mt-[140px] bg-[#F5F5F7] px-4 sm:px-5 ${compact ? "py-12 sm:py-16" : "py-12 sm:py-20 lg:py-24"}`}>
       <div className="mx-auto max-w-[1280px]">
-        <div className="mx-auto mb-8 max-w-[720px] text-center sm:mb-14">
+        <div className={`mx-auto max-w-[720px] text-center ${compact ? "mb-7 sm:mb-9" : "mb-8 sm:mb-14"}`}>
           <h2 className="text-[32px] font-semibold tracking-normal text-[#111111] sm:text-5xl">
             Choose the membership for your home
           </h2>
           <p className="mt-3 text-[15px] leading-6 text-[#6E6E73] sm:mt-4 sm:text-lg sm:leading-7">
-            Start with the level of care that fits today. You can adjust as your home needs change.
+            Start with the level of support that fits today. You can change plans as your home needs change.
           </p>
           {promoCode ? (
             <div className="mt-5 inline-flex rounded-full border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm font-semibold text-[#166534]">
@@ -644,16 +645,16 @@ export default function PlansSection({ hideCancellationUi = false }: PlansSectio
           </div>
         )}
 
-        <div className="mx-auto mb-6 max-w-[720px] text-center sm:mb-8">
+        {!compact && <div className="mx-auto mb-6 max-w-[720px] text-center sm:mb-8">
           <h3 className="text-[18px] font-semibold tracking-normal text-[#111111] sm:text-2xl">
             Membership is the home base
           </h3>
           <p className="mt-2 text-[13px] leading-5 text-[#6E6E73] sm:text-base sm:leading-6">
             Your plan determines appointment capacity, scheduling benefits, and the level of ongoing support available to your home.
           </p>
-        </div>
+        </div>}
 
-        <div className="mx-auto mb-7 max-w-[780px] rounded-[24px] border border-[#E5E7EB] bg-white p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:mb-10 sm:p-5">
+        {!compact && <div className="mx-auto mb-7 max-w-[780px] rounded-[24px] border border-[#E5E7EB] bg-white p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:mb-10 sm:p-5">
           <div className="grid items-stretch gap-3 text-left sm:grid-cols-[1.15fr_0.85fr]">
             <div className="rounded-[18px] bg-[#0B1628] px-4 py-4 text-white">
               <div className="text-[11px] font-black uppercase tracking-[0.16em] text-white/55">
@@ -678,7 +679,7 @@ export default function PlansSection({ hideCancellationUi = false }: PlansSectio
               </div>
             </div>
           </div>
-        </div>
+        </div>}
 
         <div className="grid gap-4 lg:hidden">
           {mobilePlans.map((plan) => {
@@ -692,14 +693,14 @@ export default function PlansSection({ hideCancellationUi = false }: PlansSectio
                 <article
                   key={plan.name}
                   className={[
-                    "relative flex w-full max-w-full min-w-0 flex-col overflow-hidden rounded-[24px] border bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.07)] transition duration-300 sm:rounded-[28px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.07)]",
+                    `relative flex w-full max-w-full min-w-0 flex-col overflow-hidden border bg-white transition duration-300 ${compact ? "rounded-[20px] p-4 shadow-[0_10px_34px_rgba(15,23,42,0.05)] sm:p-5" : "rounded-[24px] p-5 shadow-[0_16px_54px_rgba(15,23,42,0.07)] sm:rounded-[28px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.07)]"}`,
                     isPopular
-                      ? "border-[#111111] ring-2 ring-[#111111]"
+                      ? compact ? "border-[#8FB3FF] ring-1 ring-[#8FB3FF]" : "border-[#111111] ring-2 ring-[#111111]"
                       : "border-[#E5E7EB]",
                   ].join(" ")}
                 >
                   {isPopular ? (
-                    <div className="absolute right-5 top-5 rounded-full bg-[#111111] px-3 py-1 text-[12px] font-semibold text-white">
+                    <div className={`absolute rounded-full px-3 py-1 text-[11px] font-semibold ${compact ? "right-4 top-4 bg-[#EEF4FF] text-[#306EEC]" : "right-5 top-5 bg-[#111111] text-white"}`}>
                       Most Popular
                     </div>
                   ) : null}
@@ -710,22 +711,22 @@ export default function PlansSection({ hideCancellationUi = false }: PlansSectio
                     </h3>
                   </div>
 
-                  <div className="mt-6 sm:mt-8">
+                  <div className={compact ? "mt-4" : "mt-6 sm:mt-8"}>
                     <div className="flex items-end gap-1">
-                      <span className="text-[42px] font-semibold leading-none tracking-normal text-[#111111] sm:text-5xl">
+                      <span className={`${compact ? "text-[36px] sm:text-[40px]" : "text-[42px] sm:text-5xl"} font-semibold leading-none tracking-normal text-[#111111]`}>
                         ${formatMoney(displayPrice)}
                       </span>
                       <span className="pb-1 text-sm font-medium text-[#6E6E73]">
                         /{billing === "annual" ? "year" : "mo"}
                       </span>
                     </div>
-                    <p className="mt-4 min-h-[46px] text-[14px] leading-5 text-[#6E6E73] sm:mt-5 sm:min-h-[52px] sm:text-[15px] sm:leading-6">
+                    <p className={`${compact ? "mt-3" : "mt-4 min-h-[46px] sm:mt-5 sm:min-h-[52px]"} text-[14px] leading-5 text-[#6E6E73] sm:text-[15px] sm:leading-6`}>
                       {content.description}
                     </p>
                   </div>
 
-                  <ul className="mt-6 space-y-3 sm:mt-7 sm:space-y-4">
-                    {content.features.map((feature) => (
+                  <ul className={compact ? "mt-4 space-y-2.5" : "mt-6 space-y-3 sm:mt-7 sm:space-y-4"}>
+                    {content.features.slice(0, compact ? 4 : undefined).map((feature) => (
                       <li key={feature} className="flex min-w-0 gap-2.5 text-[14px] leading-5 text-[#1D1D1F] sm:gap-3 sm:text-[15px] sm:leading-6">
                         <PlanCheck />
                         <span className="min-w-0 break-words">{feature}</span>
@@ -738,15 +739,15 @@ export default function PlansSection({ hideCancellationUi = false }: PlansSectio
                     data-track="plans-cta"
                     disabled={disabled}
                     className={[
-                      "mt-auto h-12 w-full max-w-full rounded-full border text-sm font-semibold transition duration-200",
+                      `${compact ? "mt-5" : "mt-auto"} h-12 w-full max-w-full rounded-full border text-sm font-semibold transition duration-200`,
                       disabled
                         ? "cursor-not-allowed border-[#D1D5DB] bg-[#D1D5DB] text-white"
                         : isPopular
-                          ? "border-[#111111] bg-[#111111] text-white hover:bg-black"
+                          ? compact ? "border-[#306EEC] bg-[#306EEC] text-white hover:bg-[#2558C9]" : "border-[#111111] bg-[#111111] text-white hover:bg-black"
                           : "border-[#111111]/20 bg-white text-[#111111] hover:border-[#111111] hover:bg-[#F8F8F8]",
                     ].join(" ")}
                   >
-                    {actionLoadingPlan === plan.name ? "Working..." : action.label}
+                    {actionLoadingPlan === plan.name ? "Working..." : action.kind === "subscribe" && compact ? `Choose ${plan.name}` : action.label}
                   </button>
                 </article>
               );
@@ -765,14 +766,14 @@ export default function PlansSection({ hideCancellationUi = false }: PlansSectio
               <article
                 key={plan.name}
                 className={[
-                  "relative flex min-h-[500px] flex-col rounded-[28px] border bg-white p-6 shadow-[0_20px_70px_rgba(15,23,42,0.07)] transition duration-300 sm:p-7",
-                  isPopular
-                    ? "border-[#111111] ring-2 ring-[#111111]"
+                    `relative flex flex-col border bg-white transition duration-300 ${compact ? "min-h-[390px] rounded-[20px] p-5 shadow-[0_10px_34px_rgba(15,23,42,0.05)]" : "min-h-[500px] rounded-[28px] p-6 shadow-[0_20px_70px_rgba(15,23,42,0.07)] sm:p-7"}`,
+                    isPopular
+                    ? compact ? "border-[#8FB3FF] ring-1 ring-[#8FB3FF]" : "border-[#111111] ring-2 ring-[#111111]"
                     : "border-[#E5E7EB]",
                 ].join(" ")}
               >
                 {isPopular ? (
-                  <div className="absolute right-5 top-5 rounded-full bg-[#111111] px-3 py-1 text-[12px] font-semibold text-white">
+                  <div className={`absolute right-5 top-5 rounded-full px-3 py-1 text-[11px] font-semibold ${compact ? "bg-[#EEF4FF] text-[#306EEC]" : "bg-[#111111] text-white"}`}>
                     Most Popular
                   </div>
                 ) : null}
@@ -783,22 +784,22 @@ export default function PlansSection({ hideCancellationUi = false }: PlansSectio
                   </h3>
                 </div>
 
-                <div className="mt-8">
+                <div className={compact ? "mt-5" : "mt-8"}>
                   <div className="flex items-end gap-1">
-                    <span className="text-5xl font-semibold leading-none tracking-normal text-[#111111]">
+                    <span className={`${compact ? "text-[40px]" : "text-5xl"} font-semibold leading-none tracking-normal text-[#111111]`}>
                       ${formatMoney(displayPrice)}
                     </span>
                     <span className="pb-1 text-sm font-medium text-[#6E6E73]">
                       /{billing === "annual" ? "year" : "mo"}
                     </span>
                   </div>
-                  <p className="mt-5 min-h-[52px] break-words text-[15px] leading-6 text-[#6E6E73]">
+                  <p className={`${compact ? "mt-3" : "mt-5 min-h-[52px]"} break-words text-[15px] leading-6 text-[#6E6E73]`}>
                     {content.description}
                   </p>
                 </div>
 
-                <ul className="mt-7 space-y-4">
-                  {content.features.map((feature) => (
+                <ul className={compact ? "mt-5 space-y-2.5" : "mt-7 space-y-4"}>
+                  {content.features.slice(0, compact ? 4 : undefined).map((feature) => (
                     <li key={feature} className="flex min-w-0 gap-3 text-[15px] leading-6 text-[#1D1D1F]">
                       <PlanCheck />
                       <span className="min-w-0 break-words">{feature}</span>
@@ -811,24 +812,24 @@ export default function PlansSection({ hideCancellationUi = false }: PlansSectio
                   data-track="plans-cta"
                   disabled={disabled}
                   className={[
-                    "mt-auto h-12 w-full max-w-full rounded-full border text-sm font-semibold transition duration-200",
+                      "mt-auto h-12 w-full max-w-full rounded-full border text-sm font-semibold transition duration-200",
                     disabled
                       ? "cursor-not-allowed border-[#D1D5DB] bg-[#D1D5DB] text-white"
                       : isPopular
-                        ? "border-[#111111] bg-[#111111] text-white hover:bg-black"
+                        ? compact ? "border-[#306EEC] bg-[#306EEC] text-white hover:bg-[#2558C9]" : "border-[#111111] bg-[#111111] text-white hover:bg-black"
                         : "border-[#111111]/20 bg-white text-[#111111] hover:border-[#111111] hover:bg-[#F8F8F8]",
                   ].join(" ")}
                 >
-                  {actionLoadingPlan === plan.name ? "Working..." : action.label}
+                  {actionLoadingPlan === plan.name ? "Working..." : action.kind === "subscribe" && compact ? `Choose ${plan.name}` : action.label}
                 </button>
               </article>
             );
           })}
         </div>
 
-        <p className="mx-auto mt-8 max-w-[760px] text-center text-sm leading-6 text-[#6E6E73] sm:text-base">
+        {!compact && <p className="mx-auto mt-8 max-w-[760px] text-center text-sm leading-6 text-[#6E6E73] sm:text-base">
           All Membership plans include the same trusted team, online booking, and access to every Profixter service.
-        </p>
+        </p>}
       </div>
     </section>
   );

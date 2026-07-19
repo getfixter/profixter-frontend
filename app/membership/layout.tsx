@@ -6,7 +6,7 @@ export const metadata: Metadata = {
     absolute: "Profixter Membership | Home Maintenance on Long Island",
   },
   description:
-    "Stop chasing handymen. Become a Member for ongoing Long Island home maintenance, small repairs, priority benefits, and better value over time.",
+    "A monthly handyman membership for Long Island homeowners. Book small repairs, maintenance, and installations with one trusted Profixter team.",
   alternates: {
     canonical: "/membership",
   },

@@ -102,6 +102,7 @@ export default function InstallAppPrompt() {
   const [isIphoneSafari, setIsIphoneSafari] = useState(false);
   const [showSteps, setShowSteps] = useState(false);
   const [ready, setReady] = useState(false);
+  const [engagedPath, setEngagedPath] = useState<string | null>(null);
 
   useEffect(() => {
     const updateEnvironment = () => {
@@ -144,6 +145,20 @@ export default function InstallAppPrompt() {
     };
   }, []);
 
+  useEffect(() => {
+    const reveal = () => setEngagedPath(pathname);
+    const timer = window.setTimeout(reveal, 10000);
+    const handleScroll = () => {
+      if (window.scrollY >= 480) reveal();
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [pathname]);
+
   const promptMode = useMemo<"android" | "ios" | null>(() => {
     if (deferredPrompt) return "android";
     if (isIphoneSafari) return "ios";
@@ -155,6 +170,7 @@ export default function InstallAppPrompt() {
     isMobile &&
     !isInstalled &&
     !isDismissed &&
+    engagedPath === pathname &&
     routeAllowsPrompt(pathname) &&
     !!promptMode;
 
@@ -186,6 +202,7 @@ export default function InstallAppPrompt() {
   if (!canShow) return null;
 
   const isAccountArea = pathname?.startsWith("/account");
+  const isMembershipArea = pathname?.startsWith("/membership");
   const title =
     promptMode === "ios"
       ? "Add Profixter to your iPhone"
@@ -199,14 +216,16 @@ export default function InstallAppPrompt() {
     <>
       <aside
         aria-label="Install Profixter app"
-        className={`fixed left-3 right-3 z-[60] mx-auto max-w-[420px] rounded-[24px] border border-white/70 bg-white/95 p-3.5 text-slate-950 shadow-[0_18px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl ${
+        className={`fixed left-3 right-3 z-[60] mx-auto max-w-[400px] rounded-[20px] border border-white/70 bg-white/95 p-3 text-slate-950 shadow-[0_18px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl ${
           isAccountArea
             ? "bottom-[calc(96px+env(safe-area-inset-bottom,0px))]"
-            : "bottom-[calc(14px+env(safe-area-inset-bottom,0px))]"
+            : isMembershipArea
+              ? "bottom-[calc(160px+env(safe-area-inset-bottom,0px))]"
+              : "bottom-[calc(84px+env(safe-area-inset-bottom,0px))]"
         }`}
       >
         <div className="flex gap-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-2xl bg-[#0B1628] text-[15px] font-black text-white shadow-inner">
+          <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#0B1628] text-[14px] font-black text-white shadow-inner">
             P
           </div>
 
@@ -216,7 +235,7 @@ export default function InstallAppPrompt() {
                 <p className="text-[14px] font-semibold leading-tight tracking-[-0.01em]">
                   {title}
                 </p>
-                <p className="mt-1 max-w-[280px] text-[12.5px] leading-[1.45] text-slate-600">
+                <p className="mt-1 max-w-[280px] text-[12px] leading-[1.4] text-slate-600">
                   {body}
                 </p>
               </div>
@@ -231,7 +250,7 @@ export default function InstallAppPrompt() {
               </button>
             </div>
 
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-2.5 flex items-center gap-2">
               <button
                 type="button"
                 onClick={
