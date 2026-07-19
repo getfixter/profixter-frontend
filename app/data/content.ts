@@ -274,11 +274,11 @@ export const homepageFaqs: Faq[] = [
 ];
 
 export type Plan = {
-  // Internal name — used for Stripe links, plan-rank logic, billing actions.
+  // Internal name - used for Stripe links, plan-rank logic, billing actions.
   // DO NOT change without also updating subscription-service + stripe-links.
   name: "Basic" | "Plus" | "Premium" | "Elite";
 
-  // Display name shown to homeowners — retention-first membership framing.
+  // Display name shown to homeowners - retention-first membership framing.
   displayName: string;
 
   // One-line outcome promise (replaces old "positioning label").
@@ -297,7 +297,7 @@ export type Plan = {
   // "this is something people keep" frame at decision time.
   retentionLine: string;
 
-  // Card badge label — only used by 1-2 plans to anchor the ladder.
+  // Card badge label - only used by 1-2 plans to anchor the ladder.
   badge?: "StartHere" | "StayHere";
 
   stripeLink: string;

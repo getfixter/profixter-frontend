@@ -38,7 +38,7 @@ const PROOF_STATS = [
   },
   {
     value: "Long Island",
-    label: "Suffolk & Nassau Counties — locally accountable",
+    label: "Suffolk & Nassau Counties - locally accountable",
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -201,7 +201,7 @@ export default function RoofingSection() {
               </div>
               <p className="text-[16px] font-bold text-white/82 leading-[1.4]">
                 Full roof replacement from start to
-                clean-up — in a single day on most projects.
+                clean-up - in a single day on most projects.
               </p>
             </div>
 

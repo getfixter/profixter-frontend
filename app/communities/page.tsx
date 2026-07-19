@@ -7,7 +7,7 @@ import { PUBLIC_CONTACT_EMAIL as CONTACT_EMAIL } from "@/lib/contact";
 
 const CONTACT_PHONE_DISPLAY = "631-599-1363";
 const CONTACT_PHONE_TEL = "tel:6315991363";
-const SUCCESS_MESSAGE = "Thank you — we received your request. We’ll reach out shortly.";
+const SUCCESS_MESSAGE = "Thank you - we received your request. We’ll reach out shortly.";
 
 type FormState = {
   communityName: string;
@@ -240,7 +240,7 @@ export default function CommunitiesPage() {
       }
 
       setStatus("success");
-      setMessage("Thank you — we received your request. We’ll reach out shortly.");
+      setMessage("Thank you - we received your request. We’ll reach out shortly.");
       setMessage(SUCCESS_MESSAGE);
       setForm(initialForm);
     } catch {

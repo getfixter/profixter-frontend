@@ -9,7 +9,7 @@ import Image from "next/image";
  * Two premium service cards with strong visual hierarchy, clear value props,
  * and direct CTA to contact Taras directly.
  *
- * Both services are positioned as complete transformations —
+ * Both services are positioned as complete transformations -
  * not handyman-level patches.
  */
 
@@ -28,7 +28,7 @@ const SERVICES = [
       </svg>
     ),
     label: "Full Bathroom Remodeling",
-    headline: "Complete bathroom transformations — start to finish.",
+    headline: "Complete bathroom transformations - start to finish.",
     description:
       "Full gut-and-rebuild or strategic upgrades. We handle tile, fixtures, plumbing coordination, vanities, lighting, and every detail in between. One team. One project. No subcontractor chaos.",
     features: [
@@ -59,7 +59,7 @@ const SERVICES = [
     label: "Full Kitchen Remodeling",
     headline: "A kitchen that matches how you actually live.",
     description:
-      "Cabinets, countertops, backsplash, appliance vendor coordination, lighting, and layout — all managed by a single trusted team. We bring the vision together without the month-long disruption of juggling multiple contractors.",
+      "Cabinets, countertops, backsplash, appliance vendor coordination, lighting, and layout - all managed by a single trusted team. We bring the vision together without the month-long disruption of juggling multiple contractors.",
     features: [
       "Custom cabinetry & hardware",
       "Countertop & backsplash installation",
@@ -242,7 +242,7 @@ export default function RemodelingSection() {
           </h2>
 
           <p className="text-[15px] sm:text-[17px] text-[#475569] leading-relaxed max-w-[560px] mx-auto">
-            Full bathroom and kitchen remodels — managed by the same licensed,
+            Full bathroom and kitchen remodels - managed by the same licensed,
             insured team you already trust for your home care membership.
             One team, no subcontractor chaos.
           </p>
@@ -263,7 +263,7 @@ export default function RemodelingSection() {
               <p className="text-[15px] sm:text-[16px] leading-relaxed text-[#0F172A]">
                 <span className="font-bold">Every remodeling project is personally reviewed and overseen by Taras.</span>{" "}
                 <span className="text-[#475569]">
-                  You get direct access to the founder — not a sales team.
+                  You get direct access to the founder - not a sales team.
                   Real estimates, real timelines, real accountability.
                 </span>
               </p>

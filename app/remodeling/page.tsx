@@ -22,23 +22,23 @@ const GALLERY = [
 const FAQS = [
   {
     q: "How long does a full bathroom remodel take?",
-    a: "Most full bathroom remodels on Long Island take 2–4 weeks from demo day to final punch list. The exact timeline depends on scope: a standard tub-to-shower conversion with tile, vanity, and fixtures runs about 2 weeks. A full gut renovation — all new plumbing, layout changes, custom tile — typically runs 3–4 weeks. We give you a precise schedule before any work begins.",
+    a: "Most full bathroom remodels on Long Island take 2–4 weeks from demo day to final punch list. The exact timeline depends on scope: a standard tub-to-shower conversion with tile, vanity, and fixtures runs about 2 weeks. A full gut renovation - all new plumbing, layout changes, custom tile - typically runs 3–4 weeks. We give you a precise schedule before any work begins.",
   },
   {
     q: "What does a bathroom remodel cost on Long Island?",
-    a: "A professional full bathroom remodel in Nassau and Suffolk County typically ranges from $18,000–$55,000+ depending on the size, materials, and scope. We don't believe in giving you a price before we see your space. We provide a detailed written estimate after a free in-home consultation — with line items, not vague ballparks. No surprises.",
+    a: "A professional full bathroom remodel in Nassau and Suffolk County typically ranges from $18,000–$55,000+ depending on the size, materials, and scope. We don't believe in giving you a price before we see your space. We provide a detailed written estimate after a free in-home consultation - with line items, not vague ballparks. No surprises.",
   },
   {
     q: "Do you handle permits?",
-    a: "Yes. We are licensed NY State Home Improvement Contractor HI-71484 and we handle the permit process. Plumbing and electrical work requires permits in most Long Island municipalities. We pull them, coordinate with inspectors, and make sure every phase passes. This is non-negotiable — it protects you legally and protects your home's resale value.",
+    a: "Yes. We are licensed NY State Home Improvement Contractor HI-71484 and we handle the permit process. Plumbing and electrical work requires permits in most Long Island municipalities. We pull them, coordinate with inspectors, and make sure every phase passes. This is non-negotiable - it protects you legally and protects your home's resale value.",
   },
   {
     q: "Do you do design, or do I need to hire a designer?",
-    a: "We guide you through all material and fixture selections. For most projects, homeowners work directly with us — we bring samples, help with tile selection, vanity choices, lighting, and layout decisions. For high-complexity custom designs, we can coordinate with a designer. Most Long Island homeowners find our consultation process more than sufficient.",
+    a: "We guide you through all material and fixture selections. For most projects, homeowners work directly with us - we bring samples, help with tile selection, vanity choices, lighting, and layout decisions. For high-complexity custom designs, we can coordinate with a designer. Most Long Island homeowners find our consultation process more than sufficient.",
   },
   {
     q: "Will there be waterproofing behind the tile?",
-    a: "Always. We use a waterproofing membrane system — not just cement board — behind all wet areas. Moisture intrusion is the #1 cause of bathroom failures that lead to mold, structural damage, and costly re-dos. We do this correctly every time, which is why our projects don't come back with problems.",
+    a: "Always. We use a waterproofing membrane system - not just cement board - behind all wet areas. Moisture intrusion is the #1 cause of bathroom failures that lead to mold, structural damage, and costly re-dos. We do this correctly every time, which is why our projects don't come back with problems.",
   },
   {
     q: "Can I stay in my home during the remodel?",
@@ -50,19 +50,19 @@ const FAQS = [
   },
   {
     q: "Are you licensed and insured?",
-    a: "Yes. NY State Licensed Home Improvement Contractor HI-71484, verifiable through the NYS Department of State. Fully insured for property damage and general liability. We provide proof of insurance before any work begins — always. Don't hire a contractor who can't hand you a COI immediately.",
+    a: "Yes. NY State Licensed Home Improvement Contractor HI-71484, verifiable through the NYS Department of State. Fully insured for property damage and general liability. We provide proof of insurance before any work begins - always. Don't hire a contractor who can't hand you a COI immediately.",
   },
   {
     q: "What tile brands and materials do you work with?",
-    a: "We work with a wide range of materials from mid-tier to luxury — porcelain, natural stone, large-format slabs, mosaic, wood-look tile, and more. We bring samples to your home and help you choose based on your style, maintenance tolerance, and budget. We'll tell you honestly which materials perform best in Long Island bathrooms.",
+    a: "We work with a wide range of materials from mid-tier to luxury - porcelain, natural stone, large-format slabs, mosaic, wood-look tile, and more. We bring samples to your home and help you choose based on your style, maintenance tolerance, and budget. We'll tell you honestly which materials perform best in Long Island bathrooms.",
   },
   {
     q: "Do you offer any warranty on the work?",
-    a: "Yes — we warranty our workmanship. Manufacturer warranties apply to fixtures and materials. If something we installed fails due to our installation, we come back and fix it. The specifics are in your contract. Ask us at your consultation.",
+    a: "Yes - we warranty our workmanship. Manufacturer warranties apply to fixtures and materials. If something we installed fails due to our installation, we come back and fix it. The specifics are in your contract. Ask us at your consultation.",
   },
   {
     q: "Can I finance my bathroom remodel?",
-    a: "Yes — monthly payment options are available for qualified homeowners. Financing your bathroom remodel means you don't have to delay the project while saving. You get the result now — the better bathroom, the better start to every morning — and pay over time. We discuss financing at your free consultation. No commitment required, and you decide what works for your situation.",
+    a: "Yes - monthly payment options are available for qualified homeowners. Financing your bathroom remodel means you don't have to delay the project while saving. You get the result now - the better bathroom, the better start to every morning - and pay over time. We discuss financing at your free consultation. No commitment required, and you decide what works for your situation.",
   },
 ];
 
@@ -187,7 +187,7 @@ export default function RemodelingPage() {
                 </p>
                 <p className="text-[16px] sm:text-[17px] leading-[1.75] text-white/45 max-w-[480px] mb-10">
                   A bathroom remodel is the highest-return renovation you can
-                  make. We do it properly — licensed, permitted, waterproofed,
+                  make. We do it properly - licensed, permitted, waterproofed,
                   and finished to a standard your home deserves.
                 </p>
 
@@ -263,15 +263,15 @@ export default function RemodelingPage() {
 
                   <div className="relative p-8">
                     <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/30 mb-6">
-                      What&rsquo;s Included — Every Project
+                      What&rsquo;s Included - Every Project
                     </div>
 
                     <div className="space-y-4 mb-8">
                       {[
-                        { title: "Full Demolition", sub: "Everything out — tile, fixtures, drywall, plumbing" },
-                        { title: "Waterproofing System", sub: "Membrane behind all wet areas — not just cement board" },
+                        { title: "Full Demolition", sub: "Everything out - tile, fixtures, drywall, plumbing" },
+                        { title: "Waterproofing System", sub: "Membrane behind all wet areas - not just cement board" },
                         { title: "Plumbing Updates", sub: "New supply lines, drains, and rough-in as needed" },
-                        { title: "Premium Tile Work", sub: "Floor, walls, and shower — set and grouted properly" },
+                        { title: "Premium Tile Work", sub: "Floor, walls, and shower - set and grouted properly" },
                         { title: "Vanity & Lighting", sub: "Install, connect, level, and finish" },
                         { title: "Shower / Tub Enclosure", sub: "Frameless glass, acrylic, or custom tile surround" },
                         { title: "Final Punch List", sub: "Walk-through with you before we call it done" },
@@ -406,7 +406,7 @@ export default function RemodelingPage() {
               </h2>
               <p className="text-[15px] sm:text-[17px] leading-relaxed text-[#475569] max-w-[520px]">
                 From demolition day to the moment you turn on your new shower
-                for the first time — every trade, every detail, fully
+                for the first time - every trade, every detail, fully
                 coordinated by our team.
               </p>
             </div>
@@ -415,7 +415,7 @@ export default function RemodelingPage() {
               {[
                 {
                   title: "Full Demolition",
-                  body: "Tile, drywall, fixtures, tub, vanity — all removed cleanly. Debris hauled same day. No half-done demo left sitting.",
+                  body: "Tile, drywall, fixtures, tub, vanity - all removed cleanly. Debris hauled same day. No half-done demo left sitting.",
                   icon: (
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -424,7 +424,7 @@ export default function RemodelingPage() {
                 },
                 {
                   title: "Waterproofing System",
-                  body: "Waterproof membrane applied behind every wet area — not just cement board. This is what separates a lasting bathroom from one that fails in three years.",
+                  body: "Waterproof membrane applied behind every wet area - not just cement board. This is what separates a lasting bathroom from one that fails in three years.",
                   icon: (
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -442,7 +442,7 @@ export default function RemodelingPage() {
                 },
                 {
                   title: "Tile Work",
-                  body: "Floor, walls, and shower niche — set level, grouted properly, sealed. Large-format tile, subway, mosaic, natural stone. We work with your selection.",
+                  body: "Floor, walls, and shower niche - set level, grouted properly, sealed. Large-format tile, subway, mosaic, natural stone. We work with your selection.",
                   icon: (
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <rect x="3" y="3" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="1.7" />
@@ -454,7 +454,7 @@ export default function RemodelingPage() {
                 },
                 {
                   title: "Vanity & Cabinetry",
-                  body: "Single or double vanity installed, leveled, and secured. Plumbing connected. Custom cabinetry or pre-built — both done to a finish standard that lasts.",
+                  body: "Single or double vanity installed, leveled, and secured. Plumbing connected. Custom cabinetry or pre-built - both done to a finish standard that lasts.",
                   icon: (
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <rect x="2" y="7" width="20" height="13" rx="2" stroke="currentColor" strokeWidth="1.7" />
@@ -476,7 +476,7 @@ export default function RemodelingPage() {
                 },
                 {
                   title: "Lighting & Electrical",
-                  body: "Vanity lighting, recessed fixtures, exhaust fans — installed and wired. All electrical work permitted. We coordinate with licensed electricians.",
+                  body: "Vanity lighting, recessed fixtures, exhaust fans - installed and wired. All electrical work permitted. We coordinate with licensed electricians.",
                   icon: (
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -485,7 +485,7 @@ export default function RemodelingPage() {
                 },
                 {
                   title: "Flooring",
-                  body: "Tile, luxury vinyl, or stone — installed with proper substrate, leveling compound where needed, and transitions finished clean.",
+                  body: "Tile, luxury vinyl, or stone - installed with proper substrate, leveling compound where needed, and transitions finished clean.",
                   icon: (
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M4 6h16M4 10h16M4 14h16M4 18h16" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
@@ -559,7 +559,7 @@ export default function RemodelingPage() {
                   <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#306EEC] mb-1">Financing</div>
                   <h4 className="text-[16px] font-bold text-[#0B1628] mb-2 leading-snug">Start your remodel sooner.</h4>
                   <p className="text-[13px] leading-relaxed text-[#64748B]">
-                    Monthly payment options are available for qualified homeowners. Don&rsquo;t delay your bathroom remodel while saving the full amount — start enjoying the result now and pay over time. Ask about financing at your free consultation.
+                    Monthly payment options are available for qualified homeowners. Don&rsquo;t delay your bathroom remodel while saving the full amount - start enjoying the result now and pay over time. Ask about financing at your free consultation.
                   </p>
                 </div>
               </div>
@@ -602,7 +602,7 @@ export default function RemodelingPage() {
                   </span>
                 </h2>
                 <p className="text-[15px] sm:text-[17px] text-white/45 leading-relaxed">
-                  Real results from Long Island bathrooms — the craftsmanship
+                  Real results from Long Island bathrooms - the craftsmanship
                   behind every remodel we complete.
                 </p>
               </div>
@@ -786,7 +786,7 @@ export default function RemodelingPage() {
               </h2>
               <p className="text-[15px] sm:text-[17px] text-[#475569] leading-relaxed">
                 A typical Long Island bathroom remodel follows this sequence.
-                We keep you informed at every phase — no surprises.
+                We keep you informed at every phase - no surprises.
               </p>
             </div>
 
@@ -798,7 +798,7 @@ export default function RemodelingPage() {
                 {
                   time: "Week 1",
                   phase: "Consult & Design",
-                  body: "Free in-home consultation. We measure, assess, discuss materials, and walk you through the scope. Written estimate with line items — no vague quotes.",
+                  body: "Free in-home consultation. We measure, assess, discuss materials, and walk you through the scope. Written estimate with line items - no vague quotes.",
                 },
                 {
                   time: "Week 2",
@@ -839,7 +839,7 @@ export default function RemodelingPage() {
               className="mt-12 sm:mt-14 rounded-[20px] border border-[#306EEC]/15 px-6 py-5 text-center bg-white shadow-[0_4px_20px_rgba(15,23,42,0.05)]"
             >
               <p className="text-[14px] text-[#64748B] leading-relaxed max-w-[680px] mx-auto">
-                <span className="text-[#0B1628] font-semibold">Timeline note:</span> Complex projects with layout changes, custom tile work, or structural modifications may run 4–6 weeks. We give you a precise schedule — not an estimate — before any work begins.
+                <span className="text-[#0B1628] font-semibold">Timeline note:</span> Complex projects with layout changes, custom tile work, or structural modifications may run 4–6 weeks. We give you a precise schedule - not an estimate - before any work begins.
               </p>
             </div>
           </div>
@@ -884,7 +884,7 @@ export default function RemodelingPage() {
               {[
                 {
                   headline: "Waterproofing is not optional.",
-                  body: "We use a membrane system behind every wet area — not just cement board. Most callbacks in bathroom remodeling trace to one skipped step. We don't skip it.",
+                  body: "We use a membrane system behind every wet area - not just cement board. Most callbacks in bathroom remodeling trace to one skipped step. We don't skip it.",
                   accent: "#306EEC",
                 },
                 {
@@ -904,12 +904,12 @@ export default function RemodelingPage() {
                 },
                 {
                   headline: "No sub-contractors. Our crew, always.",
-                  body: "The team who shows up is our team — trained, vetted, and accountable. No strangers from a sub-list. The same hands that demo your bathroom tile your shower.",
+                  body: "The team who shows up is our team - trained, vetted, and accountable. No strangers from a sub-list. The same hands that demo your bathroom tile your shower.",
                   accent: "#D4A574",
                 },
                 {
                   headline: "Your home stays livable.",
-                  body: "We contain the work area, protect your floors and adjacent rooms, and clean up daily. Your family can live normally during the project — not around it.",
+                  body: "We contain the work area, protect your floors and adjacent rooms, and clean up daily. Your family can live normally during the project - not around it.",
                   accent: "#16A34A",
                 },
               ].map(({ headline, body, accent }) => (
@@ -949,7 +949,7 @@ export default function RemodelingPage() {
                       you can make.
                     </h3>
                     <p className="text-[14px] sm:text-[15px] text-[#475569] leading-relaxed">
-                      Long Island homes with professionally remodeled bathrooms see significant increases in appraised value and resale speed. This is not just comfort — it&rsquo;s a financial decision that pays back.
+                      Long Island homes with professionally remodeled bathrooms see significant increases in appraised value and resale speed. This is not just comfort - it&rsquo;s a financial decision that pays back.
                     </p>
                   </div>
 
@@ -975,13 +975,13 @@ export default function RemodelingPage() {
                       No surprise invoices.
                     </h3>
                     <p className="text-[14px] sm:text-[15px] text-[#475569] leading-relaxed">
-                      You receive a written, line-item estimate before any work begins. Not a rough range — a real number for the exact scope discussed. If anything changes, we tell you before touching it.
+                      You receive a written, line-item estimate before any work begins. Not a rough range - a real number for the exact scope discussed. If anything changes, we tell you before touching it.
                     </p>
                   </div>
 
                   <div className="space-y-3">
                     {[
-                      "Written line-item estimate — not a ballpark",
+                      "Written line-item estimate - not a ballpark",
                       "No change orders without your approval",
                       "Payment by milestone, not all upfront",
                       "Monthly payment options for qualified homeowners",
@@ -1126,7 +1126,7 @@ export default function RemodelingPage() {
                   </div>
 
                   <blockquote className="border-l-2 border-[#306EEC] pl-5 text-[15px] sm:text-[16px] leading-relaxed text-[#1E293B]">
-                    &ldquo;A bathroom remodel is an intimate project — you&rsquo;re trusting people in your home, around your family, for weeks. I personally review every project we accept. I know what our team can deliver, and I only agree to jobs we can do right. If anything isn&rsquo;t right, you call me directly.&rdquo;
+                    &ldquo;A bathroom remodel is an intimate project - you&rsquo;re trusting people in your home, around your family, for weeks. I personally review every project we accept. I know what our team can deliver, and I only agree to jobs we can do right. If anything isn&rsquo;t right, you call me directly.&rdquo;
                   </blockquote>
 
                   <div className="flex flex-wrap gap-5">
@@ -1144,10 +1144,10 @@ export default function RemodelingPage() {
                 <div className="px-8 py-10 sm:px-10 sm:py-12 lg:px-12 bg-[#F0F4FF] flex flex-col justify-between gap-6">
                   <div>
                     <div className="text-[22px] sm:text-[26px] font-extrabold leading-tight text-[#0B1628] mb-3">
-                      Your bathroom deserves to be done once — and done right.
+                      Your bathroom deserves to be done once - and done right.
                     </div>
                     <p className="text-[14px] sm:text-[15px] text-[#475569] leading-relaxed">
-                      A properly remodeled bathroom lasts 15–20 years before it needs attention. A poorly done one starts showing problems in 2–3. The difference is in the decisions made behind the walls — where you can&rsquo;t see them.
+                      A properly remodeled bathroom lasts 15–20 years before it needs attention. A poorly done one starts showing problems in 2–3. The difference is in the decisions made behind the walls - where you can&rsquo;t see them.
                     </p>
                   </div>
 
@@ -1214,7 +1214,7 @@ export default function RemodelingPage() {
 
               <p className="text-[18px] sm:text-[22px] font-semibold text-white/50 leading-[1.4] max-w-[580px] mx-auto mb-10 sm:mb-12">
                 A free consultation costs you nothing. Seeing exactly what your
-                bathroom could become — that changes everything.
+                bathroom could become - that changes everything.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-stretch sm:items-center mb-7">

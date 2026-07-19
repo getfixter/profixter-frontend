@@ -41,7 +41,7 @@ const FAQS = [
   },
   {
     q: "Can I cancel anytime?",
-    a: "Yes — month-to-month, no contracts, no cancellation fees. Go to My Plan → Manage Billing. Your service continues until the end of the current billing period.",
+    a: "Yes - month-to-month, no contracts, no cancellation fees. Go to My Plan → Manage Billing. Your service continues until the end of the current billing period.",
   },
   {
     q: "How do I get a copy of my invoice or receipt?",
@@ -54,7 +54,7 @@ const FAQS = [
 ];
 
 const PRE_VISIT_TIPS = [
-  "Have all materials, fixtures, and parts on-site and ready — we focus on labor, not supply runs.",
+  "Have all materials, fixtures, and parts on-site and ready - we focus on labor, not supply runs.",
   "Clear access to work areas before we arrive to make the most of the 90-minute window.",
   "Write your full task list in advance and walk through it with your technician at the start.",
   "Your Profixter pro may arrive up to 30 min early or late - keep your phone nearby.",
@@ -284,7 +284,7 @@ export default function OverviewSection({
             </svg>
           }
           label="Next Visit"
-          value={loadingData ? "—" : nextVisitFormatted || "None booked"}
+          value={loadingData ? "-" : nextVisitFormatted || "None booked"}
           sub={nextVisit?.service || undefined}
           accent="#306EEC"
         />
@@ -295,7 +295,7 @@ export default function OverviewSection({
             </svg>
           }
           label="Visits Completed"
-          value={loadingData ? "—" : String(completedCount)}
+          value={loadingData ? "-" : String(completedCount)}
           sub={totalBookings > 0 ? `${totalBookings} total bookings` : undefined}
           accent="#16A34A"
         />
@@ -306,8 +306,8 @@ export default function OverviewSection({
             </svg>
           }
           label="Active Plan"
-          value={loadingData ? "—" : planName || "No plan"}
-          sub={activeSub ? `$${activeSub.planPrice || "—"}/mo` : undefined}
+          value={loadingData ? "-" : planName || "No plan"}
+          sub={activeSub ? `$${activeSub.planPrice || "-"}/mo` : undefined}
           accent="#D4A574"
         />
         <StatTile
@@ -528,7 +528,7 @@ export default function OverviewSection({
         <div className="mt-5 rounded-[12px] bg-[#0B1628] px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <div className="text-[13px] font-bold text-white">Still have a question?</div>
-            <div className="text-[12px] text-white/45 mt-0.5">Call Taras directly — straight answer in 2 minutes.</div>
+            <div className="text-[12px] text-white/45 mt-0.5">Call Taras directly - straight answer in 2 minutes.</div>
           </div>
           <a
             href="tel:+16315991363"

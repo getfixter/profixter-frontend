@@ -322,7 +322,7 @@ export default function GoogleReviewsLiveMini() {
           {/* Author + dots */}
           <div className="mt-3 flex items-center justify-between gap-3">
             <div className="text-white/80 text-[13px] font-semibold truncate">
-              — {current.author_name}
+              - {current.author_name}
             </div>
 
             <div className="flex items-center gap-2">

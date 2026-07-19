@@ -432,7 +432,7 @@ export default function BookingsTable({
                             <option value="">Unassigned</option>
                             {assignees.map((assignee) => (
                               <option key={assignee.id} value={assignee.id}>
-                                {assignee.name} — {assignee.employeePosition}
+                                {assignee.name} - {assignee.employeePosition}
                                 {assignee.isDefaultFixter ? " (Default)" : ""}
                               </option>
                             ))}
@@ -531,7 +531,7 @@ export default function BookingsTable({
                               <option value="">Unassigned</option>
                               {assignees.map((assignee) => (
                                 <option key={assignee.id} value={assignee.id}>
-                                  {assignee.name} — {assignee.employeePosition}
+                                  {assignee.name} - {assignee.employeePosition}
                                   {assignee.isDefaultFixter ? " (Default)" : ""}
                                 </option>
                               ))}

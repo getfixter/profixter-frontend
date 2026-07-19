@@ -77,7 +77,7 @@ export default function ProjectsSection() {
                 <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
               </svg>
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60">
-                Our Work — Real Long Island Homes
+                Our Work - Real Long Island Homes
               </span>
             </div>
 
@@ -93,12 +93,12 @@ export default function ProjectsSection() {
             </h2>
 
             <p className="text-[15px] sm:text-[17px] text-white/55 leading-relaxed">
-              Real results from real Long Island homes — the craftsmanship
+              Real results from real Long Island homes - the craftsmanship
               our members see visit after visit.
             </p>
           </div>
 
-          {/* Stats — desktop */}
+          {/* Stats - desktop */}
           <div className="hidden lg:flex gap-4 flex-shrink-0">
             {AUTHORITY_STATS.map(({ value, label }) => (
               <div
@@ -241,7 +241,7 @@ export default function ProjectsSection() {
                 {[
                   { icon: "★", text: "4.9 Google Rating" },
                   { icon: "✓", text: "Same team, every visit" },
-                  { icon: "✓", text: "No estimates — ever" },
+                  { icon: "✓", text: "No estimates - ever" },
                   { icon: "✓", text: "Licensed HI-71484" },
                   { icon: "✓", text: "9+ years on Long Island" },
                 ].map(({ text }) => (
@@ -261,7 +261,7 @@ export default function ProjectsSection() {
                   That&rsquo;s rare.&rdquo;
                 </p>
                 <p className="mt-1.5 text-[11px] font-bold text-white/25 uppercase tracking-[0.15em]">
-                  — Long Island homeowner
+                  - Long Island homeowner
                 </p>
               </div>
             </div>
@@ -276,7 +276,7 @@ export default function ProjectsSection() {
                   Your home could look like this.
                 </p>
                 <p className="text-[13px] text-white/45 leading-relaxed">
-                  Members get the same trusted team — every single visit. Your
+                  Members get the same trusted team - every single visit. Your
                   home gets better, not just fixed.
                 </p>
               </div>

@@ -78,7 +78,7 @@ section[id] {
   background-color: transparent;
 }
 
-/* Chrome / Edge / Safari autofill — keep glass look */
+/* Chrome / Edge / Safari autofill - keep glass look */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,

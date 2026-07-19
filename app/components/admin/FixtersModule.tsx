@@ -213,7 +213,7 @@ export default function FixtersModule() {
                   <>
                     <p className="mt-1 line-clamp-2">
                       Latest:{" "}
-                      {formatOffDay(row.offDaysSummary.recent[0].date)} —{" "}
+                      {formatOffDay(row.offDaysSummary.recent[0].date)} -{" "}
                       {row.offDaysSummary.recent[0].reason ||
                         row.offDaysSummary.recent[0].status}
                     </p>

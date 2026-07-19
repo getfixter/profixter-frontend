@@ -50,7 +50,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         />
       </div>
 
-      {/* Mobile logo — desktop logo lives inside the left panel */}
+      {/* Mobile logo - desktop logo lives inside the left panel */}
       <div className="absolute top-6 left-6 sm:top-8 sm:left-8 z-20 lg:hidden">
         <Link href="/">
           <Image src="/images/logo.svg" alt="Profixter" width={80} height={32} />

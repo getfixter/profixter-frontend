@@ -108,7 +108,7 @@ export default function ExteriorLeadForm({ defaultProject, accentLabel }: Props)
       }
 
       setStatus("success");
-      setMessage("Thanks — your request was sent. A real person will review it and follow up shortly.");
+      setMessage("Thanks - your request was sent. A real person will review it and follow up shortly.");
       setForm({ ...INITIAL_FORM, projectType: defaultProject });
     } catch {
       setStatus("error");
@@ -247,7 +247,7 @@ export default function ExteriorLeadForm({ defaultProject, accentLabel }: Props)
       <textarea
         value={form.notes}
         onChange={(e) => update("notes", e.target.value)}
-        placeholder="Message / notes (optional — describe the project or any concerns)"
+        placeholder="Message / notes (optional - describe the project or any concerns)"
         rows={3}
         className="mt-3 w-full resize-none rounded-[14px] border border-white/12 bg-white/[0.07] px-4 py-3 text-[15px] text-white outline-none placeholder:text-white/32 focus:border-[#D4A574] transition-colors"
       />
