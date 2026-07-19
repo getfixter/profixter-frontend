@@ -150,7 +150,7 @@ function TimeSlotGrid({
   onSelect: (value: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 xl:grid-cols-5">
+    <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 sm:gap-1.5 xl:grid-cols-5">
       {slotOptions.map((slot) => {
         const isSelected = slot.time === selectedTime;
         const availabilityLabel = slot.available
@@ -170,7 +170,7 @@ function TimeSlotGrid({
               onSelect(slot.time);
             }}
             className={[
-              "group relative min-h-11 overflow-hidden rounded-[10px] border px-1.5 py-1.5 text-center transition-all duration-150 ease-out active:scale-[0.99] sm:min-h-11 sm:px-2.5",
+              "group relative min-h-11 overflow-hidden rounded-[9px] border px-1 py-1 text-center transition-all duration-150 ease-out active:scale-[0.99] sm:px-2.5 sm:py-1.5",
               isSelected
                 ? "border-[#306EEC] bg-[#EEF5FF] text-[#0B1628] shadow-[0_8px_24px_rgba(48,110,236,0.12)] ring-2 ring-[#306EEC]/20"
                 : slot.available
@@ -191,7 +191,7 @@ function TimeSlotGrid({
 
             <div className="relative z-[1] flex items-center justify-center gap-1">
               <div
-                  className={`text-[13px] font-bold leading-tight tracking-[-0.01em] sm:text-[14px] ${
+                  className={`text-[12px] font-bold leading-tight tracking-[-0.01em] sm:text-[14px] ${
                   slot.available ? "" : "line-through"
                 } ${isSelected ? "text-[#0B1628]" : ""}`}
               >
@@ -1332,17 +1332,17 @@ if (next?.date) {
       data-visible-month={visibleMonthKey}
       data-selected-date={ymdSelected}
       data-available-times={displayedTimes.join(",")}
-      className="relative w-full overflow-hidden bg-[#F6F8FC] pb-4 pt-3 scroll-mt-[96px] sm:pb-10 sm:pt-8 lg:pb-14 lg:pt-12"
+      className="relative w-full overflow-hidden bg-[#F6F8FC] pb-3 pt-2 scroll-mt-[96px] sm:pb-10 sm:pt-8 lg:pb-14 lg:pt-12"
     >
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
         {/* ── Header ── */}
-        <div className="mb-2 flex items-center justify-between gap-3 sm:mb-5">
-          <h2 className="text-[22px] font-black leading-tight tracking-[-0.025em] text-[#0B1628] sm:text-[32px] lg:text-[38px]">
+        <div className="mb-1.5 flex items-center justify-between gap-2 sm:mb-5 sm:gap-3">
+          <h2 className="text-[20px] font-black leading-tight tracking-[-0.025em] text-[#0B1628] sm:text-[32px] lg:text-[38px]">
             Book Your Visit
           </h2>
           {isAuthenticated && hasSubscription && (
-            <button type="button" onClick={() => router.push(manageBookingsPath)} className="flex-shrink-0 text-[12px] font-semibold text-[#64748B] underline decoration-[#CBD5E1] underline-offset-4 transition hover:text-[#306EEC] sm:text-[13px]">
+            <button type="button" onClick={() => router.push(manageBookingsPath)} className="min-h-11 flex-shrink-0 text-[11px] font-semibold text-[#64748B] underline decoration-[#CBD5E1] underline-offset-4 transition hover:text-[#306EEC] sm:text-[13px]">
               Manage visits
             </button>
           )}
@@ -1350,15 +1350,15 @@ if (next?.date) {
 
 
         {/* ── Main grid ── */}
-        <div className="grid grid-cols-1 gap-2 sm:gap-3 lg:grid-cols-12 lg:gap-5">
+        <div className="grid grid-cols-1 gap-1.5 sm:gap-3 lg:grid-cols-12 lg:gap-5">
 
           {/* ── Calendar (left) ── */}
           <div className="order-2 lg:order-1 lg:col-span-5">
 
             {/* Calendar card */}
-            <div className="rounded-[13px] border border-[#D7DEE9] bg-white p-2.5 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:p-4">
+            <div className="rounded-[12px] border border-[#D7DEE9] bg-white p-2 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:p-4">
               {/* Month navigation */}
-              <div className="mb-2 flex items-center justify-between sm:mb-4">
+              <div className="mb-1 flex items-center justify-between sm:mb-4">
                 <button
                   aria-label="Prev month"
                   disabled={calendarMode === "initializing"}
@@ -1372,7 +1372,7 @@ if (next?.date) {
                   <ChevronLeft />
                 </button>
 
-                <div className="text-[14px] font-extrabold text-[#0B1628] sm:text-[18px]">
+                <div className="text-[13px] font-extrabold text-[#0B1628] sm:text-[18px]">
                   {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 </div>
 
@@ -1415,11 +1415,11 @@ if (next?.date) {
               )}
 
               {/* Week headers */}
-              <div className="mb-0.5 grid grid-cols-7 text-center sm:mb-1">
+              <div className="grid grid-cols-7 text-center sm:mb-1">
                 {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d, i) => (
                   <div
                     key={d}
-                    className={`text-[11px] font-bold ${i === 0 ? "text-[#EF4444]" : "text-[#94A3B8]"}`}
+                    className={`text-[10px] font-bold ${i === 0 ? "text-[#EF4444]" : "text-[#94A3B8]"}`}
                   >
                     {d}
                   </div>
@@ -1427,7 +1427,7 @@ if (next?.date) {
               </div>
 
               {/* Days grid */}
-              <div className="grid grid-cols-7 gap-y-0.5">
+              <div className="grid grid-cols-7 gap-y-px">
                 {days.map((day, i) => {
                   const disabled = day.muted || isDayDisabled(new Date(day.date));
                   const isSelected = selectedDate ? sameDay(day.date, selectedDate) : false;
@@ -1448,7 +1448,7 @@ if (next?.date) {
                       onClick={() => handleDayClick(day.date, day.muted)}
                       disabled={disabled}
                       className={[
-                        "mx-auto grid h-9 w-9 place-items-center rounded-[10px] text-[13px] font-semibold transition-all duration-150 sm:h-10 sm:w-10 sm:text-[15px]",
+                        "mx-auto grid h-9 w-9 place-items-center rounded-[9px] text-[12px] font-semibold transition-all duration-150 sm:h-10 sm:w-10 sm:text-[15px]",
                         day.muted ? "text-[#C5CBD8] cursor-not-allowed" : "",
                         disabled && !day.muted ? "text-[#C5CBD8] cursor-not-allowed" : "",
                         !disabled && !isSelected ? "bg-[#EEF5FF] text-[#1D4ED8] hover:bg-[#DBEAFE] hover:scale-105" : "",
@@ -1479,12 +1479,12 @@ if (next?.date) {
 
             {/* Selected date label */}
             {selectedDate && (
-              <div className="mt-1 flex items-center gap-1.5 px-1 py-1 sm:mt-2">
+              <div className="mt-0.5 flex items-center gap-1 px-1 py-0.5 sm:mt-2 sm:py-1">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="text-[#306EEC] flex-shrink-0" aria-hidden="true">
                   <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
                   <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                 </svg>
-                <span className="text-[13px] font-semibold text-[#0B1628]">{selectedDateLabel}</span>
+                <span className="text-[12px] font-semibold text-[#0B1628] sm:text-[13px]">{selectedDateLabel}</span>
               </div>
             )}
 
@@ -1493,15 +1493,15 @@ if (next?.date) {
           {/* ── Right column ── */}
           <div className="contents lg:order-2 lg:col-span-7 lg:flex lg:flex-col lg:gap-4">
 
-            <div className="order-1 rounded-[13px] border border-[#D7DEE9] bg-white px-2.5 py-2 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:p-3.5 lg:order-none">
+            <div className="order-1 rounded-[12px] border border-[#D7DEE9] bg-white px-2 py-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:p-3.5 lg:order-none">
               {selectedAddressLabel ? (
                 <>
-                  <div className="flex min-h-11 items-center gap-2">
+                  <div className="flex min-h-11 items-center gap-1.5">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-[#306EEC]" aria-hidden="true">
                       <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" stroke="currentColor" strokeWidth="1.8" />
                       <circle cx="12" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.8" />
                     </svg>
-                    <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-[#0B1628] sm:text-[14px]" title={selectedAddressLabel}>
+                    <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-[#0B1628] sm:text-[14px]" title={selectedAddressLabel}>
                       {selectedAddressLabel}
                     </span>
                     {addresses.length >= 2 && (
@@ -1516,7 +1516,7 @@ if (next?.date) {
                       aria-label="Booking address"
                       value={selectedAddressId ?? defaultAddressId ?? ""}
                       onChange={(event) => setSelectedAddressId(event.target.value)}
-                      className="mt-2 min-h-11 w-full rounded-[11px] border border-[#C5CBD8] bg-[#F8FAFF] px-3 text-[13px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15"
+                      className="mt-1 min-h-11 w-full rounded-[10px] border border-[#C5CBD8] bg-[#F8FAFF] px-2.5 text-[12px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:mt-2 sm:text-[13px]"
                     >
                       {addresses.map((address) => (
                         <option key={address._id} value={address._id}>
@@ -1534,14 +1534,14 @@ if (next?.date) {
             </div>
 
             {/* Time slot card */}
-            <div className="order-3 rounded-[13px] border border-[#D7DEE9] bg-white p-2.5 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:p-4 lg:order-none">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <h3 className="text-[14px] font-extrabold text-[#0B1628] sm:text-[15px]">Time</h3>
+            <div className="order-3 rounded-[12px] border border-[#D7DEE9] bg-white p-2 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:p-4 lg:order-none">
+              <div className="mb-1 flex items-center justify-between gap-1.5 sm:mb-2">
+                <h3 className="text-[13px] font-extrabold text-[#0B1628] sm:text-[15px]">Time</h3>
                 <button
                   type="button"
                   onClick={() => setQuickBookOpen(true)}
                   disabled={checkingAccess || loadingMonthKey === visibleMonthKey}
-                  className="inline-flex h-11 flex-shrink-0 items-center gap-1 rounded-[10px] border border-[#306EEC] px-2 text-[11px] font-bold text-[#306EEC] transition hover:bg-[#EEF5FF] disabled:cursor-not-allowed disabled:opacity-50 sm:px-2.5 sm:text-[12px]"
+                  className="inline-flex h-11 flex-shrink-0 items-center gap-1 rounded-[9px] border border-[#306EEC] px-1.5 text-[10px] font-bold text-[#306EEC] transition hover:bg-[#EEF5FF] disabled:cursor-not-allowed disabled:opacity-50 sm:px-2.5 sm:text-[12px]"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -1552,7 +1552,7 @@ if (next?.date) {
 
               {selectedDate && config ? (
                 loadingSelectedDate && displayedTimes.length === 0 ? (
-                  <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+                  <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 sm:gap-1.5">
                     {[1, 2, 3, 4, 5, 6].map((n) => (
                       <div key={n} className="h-11 animate-pulse rounded-[11px] bg-[#F1F5F9]" />
                     ))}
@@ -1575,14 +1575,14 @@ if (next?.date) {
               )}
 
               {loadingSelectedDate && displayedTimes.length > 0 && (
-                <div className="mt-2 text-[11px] text-[#94A3B8]">Updating times...</div>
+                <div className="mt-1 text-[10px] text-[#94A3B8] sm:mt-2 sm:text-[11px]">Updating times...</div>
               )}
 
             </div>
 
             {/* Task details card */}
-            <div className="order-4 rounded-[13px] border border-[#D7DEE9] bg-white p-2.5 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:p-4 lg:order-none">
-              <h3 className="mb-2 text-[14px] font-extrabold text-[#0B1628] sm:text-[15px]">Task details</h3>
+            <div className="order-4 rounded-[12px] border border-[#D7DEE9] bg-white p-2 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:p-4 lg:order-none">
+              <h3 className="mb-1.5 text-[13px] font-extrabold text-[#0B1628] sm:mb-2 sm:text-[15px]">Task details</h3>
 
               <textarea
                 value={note}
@@ -1592,22 +1592,22 @@ if (next?.date) {
                 }}
                 placeholder="Describe your task. If we need to bring any materials or special tools, please let us know."
                 rows={3}
-                className={`w-full min-h-[72px] max-h-[170px] rounded-[11px] border bg-[#F8FAFF] p-2.5 text-[13px] text-[#0B1628] placeholder-[#94A3B8] resize-y transition focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] sm:min-h-[82px] sm:text-[14px] ${
+                className={`w-full min-h-[66px] max-h-[160px] rounded-[10px] border bg-[#F8FAFF] p-2 text-[12px] text-[#0B1628] placeholder-[#94A3B8] resize-y transition focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] sm:min-h-[82px] sm:p-2.5 sm:text-[14px] ${
                   error === "Describe the task in at least a few words."
                     ? "border-red-300"
                     : "border-[#C5CBD8]"
                 }`}
               />
               {/* Photo upload */}
-              <div className="mt-2.5">
-                <div className="mb-1.5 text-[11px] font-semibold text-[#64748B]">
+              <div className="mt-1.5 sm:mt-2.5">
+                <div className="mb-1 text-[10px] font-semibold text-[#64748B] sm:mb-1.5 sm:text-[11px]">
                   Photos required
                 </div>
-                <div className="flex gap-1.5">
+                <div className="flex gap-1 sm:gap-1.5">
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
-                    className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-[10px] border border-[#C5CBD8] bg-[#F8FAFF] px-0.5 text-[11px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:text-[13px]"
+                    className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-[9px] border border-[#C5CBD8] bg-[#F8FAFF] px-0.5 text-[10px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:text-[13px]"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -1618,7 +1618,7 @@ if (next?.date) {
                   <button
                     type="button"
                     onClick={() => galleryInputRef.current?.click()}
-                    className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-[10px] border border-[#C5CBD8] bg-[#F8FAFF] px-0.5 text-[11px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:text-[13px]"
+                    className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-[9px] border border-[#C5CBD8] bg-[#F8FAFF] px-0.5 text-[10px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:text-[13px]"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
@@ -1648,7 +1648,7 @@ if (next?.date) {
 
                 {/* Photo previews */}
                 {uploadedPhotos.length > 0 && (
-                  <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+                  <div className="mt-2 grid grid-cols-3 gap-1.5 sm:mt-3 sm:grid-cols-4 sm:gap-2 lg:grid-cols-5">
                     {uploadedPhotos.map((_file, idx) => {
                       const url = photoUrls[idx];
                       return (
