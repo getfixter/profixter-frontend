@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
-import { getRoleLandingPath } from "@/lib/auth-routing";
+import { usePathname, useRouter } from "next/navigation";
+import { getAutomaticEntryPath } from "@/lib/auth-routing";
 import { useAuth } from "@/lib/useAuth";
 
 function EntryLoading({ label }: { label: string }) {
@@ -26,8 +26,11 @@ export default function RoleEntryGate({
   redirectLabel?: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isAuthenticated, isLoading } = useAuth();
-  const target = isAuthenticated && user ? getRoleLandingPath(user) : null;
+  const automaticTarget = isAuthenticated && user ? getAutomaticEntryPath(user) : null;
+  const targetPathname = automaticTarget?.split("?")[0] || null;
+  const target = targetPathname && targetPathname !== pathname ? automaticTarget : null;
 
   useEffect(() => {
     if (!isLoading && target) {

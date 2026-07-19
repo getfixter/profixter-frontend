@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { login } from "@/lib/auth-service";
 import { useAuth } from "@/lib/useAuth";
-import { getRoleLandingPath } from "@/lib/auth-routing";
+import { getAutomaticEntryPath } from "@/lib/auth-routing";
 import { trackEvent } from "@/lib/analytics";
 import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
 
@@ -86,7 +86,7 @@ export default function SignInPage() {
         throw new Error("We could not verify your account. Please try again.");
       }
       localStorage.setItem("rememberedEmail", email);
-      router.replace(getRoleLandingPath(verifiedUser));
+      router.replace(getAutomaticEntryPath(verifiedUser));
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } }; message?: string };
       const message = error.response?.data?.message || error.message || "Invalid email or password";

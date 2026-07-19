@@ -30,3 +30,17 @@ export function getRoleLandingPath(user: User | null | undefined) {
   if (kind === "customer") return "/account";
   return "/";
 }
+
+export function hasActiveMembership(user: User | null | undefined) {
+  if (!user || getRoleLandingKind(user) !== "customer") return false;
+  return Boolean(user.addresses?.some((address) => address.hasActiveSubscription === true));
+}
+
+/** Destination used only for automatic app entry and successful sign-in. */
+export function getAutomaticEntryPath(user: User | null | undefined) {
+  const kind = getRoleLandingKind(user);
+  if (kind === "admin") return "/admin";
+  if (kind === "general_fixter" || kind === "fixter") return "/admin?tab=bookings";
+  if (kind === "customer" && hasActiveMembership(user)) return "/membership";
+  return "/";
+}
