@@ -209,15 +209,15 @@ function RushServiceCallout({ rushIncluded }: { rushIncluded: boolean }) {
       <div className="rounded-[14px] border border-[#F2C46D] bg-[#FFFBF2] p-3 shadow-[0_10px_30px_rgba(146,86,18,0.07)] sm:p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-[15px] font-black text-[#0B1628] sm:text-[18px]">Need help today?</h2>
+            <h2 className="text-[15px] font-black text-[#0B1628] sm:text-[18px]">Need help sooner?</h2>
             <p className="mt-1 text-[11px] leading-4 text-[#64748B] sm:text-[13px] sm:leading-5">
-              Ask about Rush Service. We&rsquo;ll do our best to send someone as soon as availability allows.
+              Emergency Service is designed for situations where you need help before the next available appointment. We&rsquo;ll do our best to dispatch a technician as quickly as availability allows.
             </p>
           </div>
           <a href="tel:6315991363" onClick={() => trackEvent("rush_service_call_clicked", { placement: "book_rush_service_callout" })} className="inline-flex h-10 flex-shrink-0 items-center rounded-[10px] bg-[#F59E0B] px-3 text-[11px] font-black text-[#0B1628] sm:h-11 sm:text-[13px]">Call Now</a>
         </div>
         <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-semibold text-[#8A5A10] sm:text-[12px]">
-          <span>Priority scheduling</span><span>Rush dispatch when available</span><span>$300 fee</span>
+          <span>Priority scheduling</span><span>Subject to technician availability</span><span>$300 fee</span>
         </div>
         <a href="tel:6315991363" className="mt-1 inline-flex text-[11px] font-bold text-[#B45309] sm:text-[12px]">(631) 599-1363</a>
       </div>
@@ -225,7 +225,7 @@ function RushServiceCallout({ rushIncluded }: { rushIncluded: boolean }) {
         <div>
           <h3 className="text-[12px] font-extrabold text-[#0B1628] sm:text-[14px]">Included with Premium &amp; Elite</h3>
           <p className="mt-0.5 text-[10px] leading-4 text-[#64748B] sm:text-[12px]">
-            {rushIncluded ? "Rush Visits are included with your membership without the $300 fee." : "Rush Visits are included with Premium and Elite memberships without the $300 fee."}
+            {rushIncluded ? "Emergency Visits are included with your membership without the $300 fee." : "Emergency Visits are included with Premium and Elite memberships without the $300 fee."}
           </p>
         </div>
         <Link href="/membership#plans" onClick={() => trackEvent("membership_cta_clicked", { placement: "book_rush_service_callout" })} className="flex-shrink-0 text-[10px] font-bold text-[#306EEC] sm:text-[12px]">View Plans</Link>

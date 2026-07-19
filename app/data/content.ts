@@ -57,9 +57,9 @@ export const services: Service[] = [
   },
   {
     id: "06",
-    title: "Rush scheduling support",
+    title: "Emergency scheduling support",
     description:
-      "Need help sooner? Rush Visits don't require waiting for the next standard appointment slot.",
+      "Emergency Visits help when you need service before the next standard appointment slot, subject to technician availability.",
     color: "dark",
     size: "small",
     offset: -100,
@@ -68,7 +68,7 @@ export const services: Service[] = [
     id: "07",
     title: "Second pro when needed",
     description:
-      "Rush Visits let eligible members schedule without waiting for the next standard appointment slot.",
+      "Emergency Visits help eligible members request service before the next standard appointment slot, subject to technician availability.",
     color: "dark",
     size: "normal",
     offset: 10,
@@ -134,7 +134,7 @@ export const faqs: Faq[] = [
     id: "03",
     question: "How does Membership work?",
     answer:
-      "Members can request help whenever they need it. Plans differ by active appointment capacity, basic materials, Rush Visit benefits, project time, and premium support. Appointment availability still depends on the schedule.",
+      "Members can request help whenever they need it. Plans differ by active appointment capacity, basic materials, Emergency Visit benefits, project time, and premium support. Appointment availability still depends on the schedule.",
     color: "dark",
     size: "normal",
     offset: 0,
@@ -266,7 +266,7 @@ export const homepageFaqs: Faq[] = [
     id: "05",
     question: "What if I need more flexibility?",
     answer:
-      "Higher Memberships add more flexibility: more active appointment capacity, Rush Visit benefits, basic materials, project time, and premium support.",
+      "Higher Memberships add more flexibility: more active appointment capacity, Emergency Visit benefits, basic materials, project time, and premium support.",
     color: "blue",
     size: "normal",
     offset: -50,
@@ -348,15 +348,15 @@ export const plans: Plan[] = [
     name: "Premium",
     displayName: "Home Protection",
     tagline: "Cared for. And protected.",
-    cadence: "More flexibility + one Rush Visit",
+    cadence: "More flexibility + one Emergency Visit",
     description:
       "Ongoing care, plus faster scheduling when something can't wait.",
     price: 349,
     subtitle: "Everything in Home Care Plus",
     features: [
       "2 active appointments at a time",
-      "One Rush Visit per month",
-      "Rush Visits don't require waiting for the next standard appointment slot",
+      "One Emergency Visit per month",
+      "Emergency Visits help when you need service before the next standard appointment slot, subject to technician availability",
       "Same trusted team - on call for the moments that matter",
       "Direct line to Taras, the founder",
     ],
@@ -372,14 +372,14 @@ export const plans: Plan[] = [
     tagline: "Everything about your home - handled.",
     cadence: "Maximum flexibility + project time",
     description:
-      "Ongoing care, two Rush Visits, and a dedicated project day every month.",
+      "Ongoing care, two Emergency Visits, and a dedicated project day every month.",
     price: 499,
     subtitle: "Everything in Home Protection",
     features: [
       "2 active appointments at a time",
-      "Two Rush Visits per month",
+      "Two Emergency Visits per month",
       "One full project day per month (up to 8 hours)",
-      "Rush Visits don't require waiting for the next standard appointment slot",
+      "Emergency Visits help when you need service before the next standard appointment slot, subject to technician availability",
       "10% off home improvement projects (roofing, remodeling, kitchen)",
     ],
     buttonText: "Become a Member",
