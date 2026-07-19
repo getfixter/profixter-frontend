@@ -131,6 +131,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
   const [actionMessage, setActionMessage] = useState("");
   const [actionError, setActionError] = useState("");
   const [actionLoadingPlan, setActionLoadingPlan] = useState<string | null>(null);
+  const [selectedComparisonPlan, setSelectedComparisonPlan] = useState<Plan["name"]>("Plus");
   const { user, isAuthenticated, token } = useAuth();
   const roleLandingPath = getRoleLandingPath(user);
 
@@ -598,6 +599,118 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     </svg>
   );
 
+  const CompactPlanComparison = () => {
+    const selectedPlan = mobilePlans.find((plan) => plan.name === selectedComparisonPlan) || mobilePlans[0];
+    if (!selectedPlan) return null;
+
+    const action = getActionForPlan(selectedPlan.name);
+    const disabled = action.disabled || !!actionLoadingPlan || checkingAddr;
+    const comparisonRows: Array<{
+      label: string;
+      values: Record<Plan["name"], string>;
+    }> = [
+      { label: "Visits", values: { Basic: "2+", Plus: "4+", Premium: "4+", Elite: "4+" } },
+      { label: "Materials", values: { Basic: "-", Plus: "✓", Premium: "✓", Elite: "✓" } },
+      { label: "Rush", values: { Basic: "-", Plus: "-", Premium: "1/mo", Elite: "2/mo" } },
+      { label: "Full day", values: { Basic: "-", Plus: "-", Premium: "-", Elite: "1/mo" } },
+      { label: "Length", values: { Basic: "90m", Plus: "90m", Premium: "90m", Elite: "90m" } },
+    ];
+    const summaryFeatures: Record<Plan["name"], string[]> = {
+      Basic: ["2+ visits over time", "90-minute visits", "All handyman services"],
+      Plus: ["4+ visits over time", "Basic materials included", "90-minute visits"],
+      Premium: ["4+ visits over time", "Basic materials included", "1 Rush Visit per month"],
+      Elite: ["4+ visits over time", "1 full project day per month", "2 Rush Visits per month"],
+    };
+    const cellClass = (planName: Plan["name"]) =>
+      selectedComparisonPlan === planName
+        ? "bg-[#EEF4FF] text-[#1F5ED8]"
+        : "bg-white text-[#1D1D1F] hover:bg-[#F8FAFF]";
+
+    return (
+      <div className="mx-auto max-w-[920px]">
+        <div className="overflow-hidden rounded-[18px] border border-[#D9DCE3] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
+          <div className="grid grid-cols-[68px_repeat(4,minmax(0,1fr))] sm:grid-cols-[112px_repeat(4,minmax(0,1fr))]">
+            <div className="border-b border-[#E8E8ED] bg-[#FAFAFC]" aria-hidden="true" />
+            {mobilePlans.map((plan) => (
+              <button
+                key={plan.name}
+                type="button"
+                onClick={() => setSelectedComparisonPlan(plan.name)}
+                aria-pressed={selectedComparisonPlan === plan.name}
+                aria-label={`Select ${plan.name} plan`}
+                className={`min-w-0 border-b border-l border-[#E8E8ED] px-0.5 py-3 text-center transition sm:px-2 sm:py-4 ${cellClass(plan.name)}`}
+              >
+                <span className="block truncate text-[9px] font-bold leading-3 min-[360px]:text-[10px] sm:text-[13px]">
+                  {plan.name}
+                </span>
+                <span className="mt-1 block text-[13px] font-semibold leading-4 min-[360px]:text-[14px] sm:text-[17px]">
+                  ${formatMoney(getDisplayPrice(plan, billing))}
+                </span>
+                <span className="block text-[8px] leading-3 text-[#86868B] sm:text-[10px]">
+                  /{billing === "annual" ? "yr" : "mo"}
+                </span>
+              </button>
+            ))}
+
+            {comparisonRows.map((row) => (
+              <React.Fragment key={row.label}>
+                <div className="flex min-h-10 items-center border-b border-[#EEEEF2] bg-[#FAFAFC] px-2 text-[9px] font-semibold leading-3 text-[#6E6E73] sm:min-h-12 sm:px-3 sm:text-[12px]">
+                  {row.label}
+                </div>
+                {mobilePlans.map((plan) => (
+                  <button
+                    key={`${row.label}-${plan.name}`}
+                    type="button"
+                    onClick={() => setSelectedComparisonPlan(plan.name)}
+                    aria-label={`${plan.name}: ${row.label} ${row.values[plan.name]}`}
+                    className={`min-w-0 border-b border-l border-[#EEEEF2] px-0.5 text-center text-[11px] font-semibold transition sm:px-2 sm:text-[13px] ${cellClass(plan.name)}`}
+                  >
+                    {row.values[plan.name]}
+                  </button>
+                ))}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-[18px] border border-[#D9DCE3] bg-white p-4 shadow-[0_10px_32px_rgba(15,23,42,0.05)] sm:p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#306EEC]">{selectedPlan.name}</p>
+              <h3 className="mt-1 text-[17px] font-semibold text-[#111111] sm:text-[19px]">{planDisplayContent[selectedPlan.name].description}</h3>
+            </div>
+            {selectedPlan.name === "Plus" ? (
+              <span className="shrink-0 rounded-full bg-[#EEF4FF] px-2.5 py-1 text-[10px] font-semibold text-[#306EEC]">Popular</span>
+            ) : null}
+          </div>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-3">
+            {summaryFeatures[selectedPlan.name].map((feature) => (
+              <li key={feature} className="flex items-center gap-2 text-[13px] text-[#4B5563]">
+                <span className="font-bold text-[#306EEC]" aria-hidden="true">✓</span>
+                {feature}
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={() => handleSubscribe(selectedPlan.name)}
+            data-track="plans-cta"
+            disabled={disabled}
+            className={`mt-4 h-12 w-full rounded-full text-[14px] font-semibold text-white transition ${
+              disabled ? "cursor-not-allowed bg-[#B8C0CE]" : "bg-[#306EEC] hover:bg-[#2558C9]"
+            }`}
+          >
+            {actionLoadingPlan === selectedPlan.name
+              ? "Working..."
+              : action.kind === "subscribe"
+                ? `Choose ${selectedPlan.name}`
+                : action.label}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <section id="plans" className={`w-full scroll-mt-[140px] bg-[#F5F5F7] px-4 sm:px-5 ${compact ? "py-12 sm:py-16" : "py-12 sm:py-20 lg:py-24"}`}>
       <div className="mx-auto max-w-[1280px]">
@@ -681,7 +794,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           </div>
         </div>}
 
-        <div className="grid gap-4 lg:hidden">
+        {compact ? <CompactPlanComparison /> : <><div className="grid gap-4 lg:hidden">
           {mobilePlans.map((plan) => {
               const action = getActionForPlan(plan.name);
               const isPopular = plan.name === "Plus";
@@ -693,14 +806,14 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                 <article
                   key={plan.name}
                   className={[
-                    `relative flex w-full max-w-full min-w-0 flex-col overflow-hidden border bg-white transition duration-300 ${compact ? "rounded-[20px] p-4 shadow-[0_10px_34px_rgba(15,23,42,0.05)] sm:p-5" : "rounded-[24px] p-5 shadow-[0_16px_54px_rgba(15,23,42,0.07)] sm:rounded-[28px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.07)]"}`,
+                    "relative flex w-full max-w-full min-w-0 flex-col overflow-hidden rounded-[24px] border bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.07)] transition duration-300 sm:rounded-[28px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.07)]",
                     isPopular
-                      ? compact ? "border-[#8FB3FF] ring-1 ring-[#8FB3FF]" : "border-[#111111] ring-2 ring-[#111111]"
+                      ? "border-[#111111] ring-2 ring-[#111111]"
                       : "border-[#E5E7EB]",
                   ].join(" ")}
                 >
                   {isPopular ? (
-                    <div className={`absolute rounded-full px-3 py-1 text-[11px] font-semibold ${compact ? "right-4 top-4 bg-[#EEF4FF] text-[#306EEC]" : "right-5 top-5 bg-[#111111] text-white"}`}>
+                    <div className="absolute right-5 top-5 rounded-full bg-[#111111] px-3 py-1 text-[12px] font-semibold text-white">
                       Most Popular
                     </div>
                   ) : null}
@@ -711,22 +824,22 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                     </h3>
                   </div>
 
-                  <div className={compact ? "mt-4" : "mt-6 sm:mt-8"}>
+                  <div className="mt-6 sm:mt-8">
                     <div className="flex items-end gap-1">
-                      <span className={`${compact ? "text-[36px] sm:text-[40px]" : "text-[42px] sm:text-5xl"} font-semibold leading-none tracking-normal text-[#111111]`}>
+                      <span className="text-[42px] font-semibold leading-none tracking-normal text-[#111111] sm:text-5xl">
                         ${formatMoney(displayPrice)}
                       </span>
                       <span className="pb-1 text-sm font-medium text-[#6E6E73]">
                         /{billing === "annual" ? "year" : "mo"}
                       </span>
                     </div>
-                    <p className={`${compact ? "mt-3" : "mt-4 min-h-[46px] sm:mt-5 sm:min-h-[52px]"} text-[14px] leading-5 text-[#6E6E73] sm:text-[15px] sm:leading-6`}>
+                    <p className="mt-4 min-h-[46px] text-[14px] leading-5 text-[#6E6E73] sm:mt-5 sm:min-h-[52px] sm:text-[15px] sm:leading-6">
                       {content.description}
                     </p>
                   </div>
 
-                  <ul className={compact ? "mt-4 space-y-2.5" : "mt-6 space-y-3 sm:mt-7 sm:space-y-4"}>
-                    {content.features.slice(0, compact ? 4 : undefined).map((feature) => (
+                  <ul className="mt-6 space-y-3 sm:mt-7 sm:space-y-4">
+                    {content.features.map((feature) => (
                       <li key={feature} className="flex min-w-0 gap-2.5 text-[14px] leading-5 text-[#1D1D1F] sm:gap-3 sm:text-[15px] sm:leading-6">
                         <PlanCheck />
                         <span className="min-w-0 break-words">{feature}</span>
@@ -739,15 +852,15 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                     data-track="plans-cta"
                     disabled={disabled}
                     className={[
-                      `${compact ? "mt-5" : "mt-auto"} h-12 w-full max-w-full rounded-full border text-sm font-semibold transition duration-200`,
+                      "mt-auto h-12 w-full max-w-full rounded-full border text-sm font-semibold transition duration-200",
                       disabled
                         ? "cursor-not-allowed border-[#D1D5DB] bg-[#D1D5DB] text-white"
                         : isPopular
-                          ? compact ? "border-[#306EEC] bg-[#306EEC] text-white hover:bg-[#2558C9]" : "border-[#111111] bg-[#111111] text-white hover:bg-black"
+                          ? "border-[#111111] bg-[#111111] text-white hover:bg-black"
                           : "border-[#111111]/20 bg-white text-[#111111] hover:border-[#111111] hover:bg-[#F8F8F8]",
                     ].join(" ")}
                   >
-                    {actionLoadingPlan === plan.name ? "Working..." : action.kind === "subscribe" && compact ? `Choose ${plan.name}` : action.label}
+                    {actionLoadingPlan === plan.name ? "Working..." : action.label}
                   </button>
                 </article>
               );
@@ -766,14 +879,14 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
               <article
                 key={plan.name}
                 className={[
-                    `relative flex flex-col border bg-white transition duration-300 ${compact ? "min-h-[390px] rounded-[20px] p-5 shadow-[0_10px_34px_rgba(15,23,42,0.05)]" : "min-h-[500px] rounded-[28px] p-6 shadow-[0_20px_70px_rgba(15,23,42,0.07)] sm:p-7"}`,
+                    "relative flex min-h-[500px] flex-col rounded-[28px] border bg-white p-6 shadow-[0_20px_70px_rgba(15,23,42,0.07)] transition duration-300 sm:p-7",
                     isPopular
-                    ? compact ? "border-[#8FB3FF] ring-1 ring-[#8FB3FF]" : "border-[#111111] ring-2 ring-[#111111]"
+                    ? "border-[#111111] ring-2 ring-[#111111]"
                     : "border-[#E5E7EB]",
                 ].join(" ")}
               >
                 {isPopular ? (
-                  <div className={`absolute right-5 top-5 rounded-full px-3 py-1 text-[11px] font-semibold ${compact ? "bg-[#EEF4FF] text-[#306EEC]" : "bg-[#111111] text-white"}`}>
+                  <div className="absolute right-5 top-5 rounded-full bg-[#111111] px-3 py-1 text-[12px] font-semibold text-white">
                     Most Popular
                   </div>
                 ) : null}
@@ -784,22 +897,22 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                   </h3>
                 </div>
 
-                <div className={compact ? "mt-5" : "mt-8"}>
+                <div className="mt-8">
                   <div className="flex items-end gap-1">
-                    <span className={`${compact ? "text-[40px]" : "text-5xl"} font-semibold leading-none tracking-normal text-[#111111]`}>
+                    <span className="text-5xl font-semibold leading-none tracking-normal text-[#111111]">
                       ${formatMoney(displayPrice)}
                     </span>
                     <span className="pb-1 text-sm font-medium text-[#6E6E73]">
                       /{billing === "annual" ? "year" : "mo"}
                     </span>
                   </div>
-                  <p className={`${compact ? "mt-3" : "mt-5 min-h-[52px]"} break-words text-[15px] leading-6 text-[#6E6E73]`}>
+                  <p className="mt-5 min-h-[52px] break-words text-[15px] leading-6 text-[#6E6E73]">
                     {content.description}
                   </p>
                 </div>
 
-                <ul className={compact ? "mt-5 space-y-2.5" : "mt-7 space-y-4"}>
-                  {content.features.slice(0, compact ? 4 : undefined).map((feature) => (
+                <ul className="mt-7 space-y-4">
+                  {content.features.map((feature) => (
                     <li key={feature} className="flex min-w-0 gap-3 text-[15px] leading-6 text-[#1D1D1F]">
                       <PlanCheck />
                       <span className="min-w-0 break-words">{feature}</span>
@@ -816,16 +929,16 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                     disabled
                       ? "cursor-not-allowed border-[#D1D5DB] bg-[#D1D5DB] text-white"
                       : isPopular
-                        ? compact ? "border-[#306EEC] bg-[#306EEC] text-white hover:bg-[#2558C9]" : "border-[#111111] bg-[#111111] text-white hover:bg-black"
+                        ? "border-[#111111] bg-[#111111] text-white hover:bg-black"
                         : "border-[#111111]/20 bg-white text-[#111111] hover:border-[#111111] hover:bg-[#F8F8F8]",
                   ].join(" ")}
                 >
-                  {actionLoadingPlan === plan.name ? "Working..." : action.kind === "subscribe" && compact ? `Choose ${plan.name}` : action.label}
+                  {actionLoadingPlan === plan.name ? "Working..." : action.label}
                 </button>
               </article>
             );
           })}
-        </div>
+        </div></>}
 
         {!compact && <p className="mx-auto mt-8 max-w-[760px] text-center text-sm leading-6 text-[#6E6E73] sm:text-base">
           All Membership plans include the same trusted team, online booking, and access to every Profixter service.
