@@ -123,7 +123,7 @@ const faqs = [
 
 function CTA({
   className = "",
-  label = "Start My Free Month",
+  label = "Create Account",
 }: {
   className?: string;
   label?: string;
@@ -284,7 +284,7 @@ export default function July4Page() {
               </div>
             </div>
 
-            <CTA className="mt-5 w-full" label="Claim My Free Month" />
+            <CTA className="mt-5 w-full" label="Create Account" />
             <p className="mt-3 text-center text-[10px] font-semibold leading-4 text-white/48">
               Basic Plan only. Card required. Renews at $149/month unless canceled before renewal.
             </p>
@@ -595,7 +595,7 @@ export default function July4Page() {
             Try Profixter Basic for one month at $0 and see what it feels like to finally have a reliable answer for the
             small jobs around your home.
           </p>
-          <CTA className="mt-8 w-full sm:w-auto" label="Get One Less Thing to Worry About" />
+          <CTA className="mt-8 w-full sm:w-auto" label="Create Account" />
           <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] font-semibold text-white/48 sm:text-[12px]">
             <span>First month $0</span>
             <span aria-hidden="true">•</span>
@@ -633,7 +633,7 @@ export default function July4Page() {
       </footer>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#DDE3EE] bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+9px)] pt-2.5 shadow-[0_-12px_35px_rgba(15,23,42,0.12)] backdrop-blur-lg sm:hidden">
-        <CTA className="min-h-12 w-full" label="Start My Free Month" />
+        <CTA className="min-h-12 w-full" label="Create Account" />
         <p className="mt-1.5 text-center text-[9px] font-bold text-[#667085]">
           Basic only · First month $0 · Then $149/mo · Cancel anytime
         </p>

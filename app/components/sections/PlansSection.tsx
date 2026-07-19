@@ -756,6 +756,8 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           >
             {actionLoadingPlan === selectedPlan.name
               ? "Working..."
+              : !isAuthenticated
+                ? "Create Account"
               : action.kind === "subscribe"
                 ? `Choose ${selectedPlan.name}`
                 : action.label}
@@ -922,7 +924,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                           : "border-[#111111]/20 bg-white text-[#111111] hover:border-[#111111] hover:bg-[#F8F8F8]",
                     ].join(" ")}
                   >
-                    {actionLoadingPlan === plan.name ? "Working..." : action.label}
+                    {actionLoadingPlan === plan.name ? "Working..." : !isAuthenticated ? "Create Account" : action.label}
                   </button>
                 </article>
               );
@@ -995,7 +997,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                         : "border-[#111111]/20 bg-white text-[#111111] hover:border-[#111111] hover:bg-[#F8F8F8]",
                   ].join(" ")}
                 >
-                  {actionLoadingPlan === plan.name ? "Working..." : action.label}
+                  {actionLoadingPlan === plan.name ? "Working..." : !isAuthenticated ? "Create Account" : action.label}
                 </button>
               </article>
             );

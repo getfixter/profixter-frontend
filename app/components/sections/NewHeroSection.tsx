@@ -39,7 +39,7 @@ export default function NewHeroSection() {
             }
             className="inline-block px-6 py-3 rounded-xl bg-white/10 text-white/90 border border-white/20 font-bold text-base sm:text-lg hover:bg-white/20 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white"
           >
-            {isAuthenticated ? "General Contractor" : "Add Property"}
+            {isAuthenticated ? "General Contractor" : "Create Account"}
           </Link>
         </div>
       </div>

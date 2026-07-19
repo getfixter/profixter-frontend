@@ -31,7 +31,7 @@ export default function MembershipCtaLink({
       style={style}
       {...anchorProps}
     >
-      {children}
+      {isAuthenticated ? children : "Create Account"}
     </Link>
   );
 }

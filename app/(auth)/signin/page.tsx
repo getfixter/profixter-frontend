@@ -31,12 +31,12 @@ function PasswordToggle({
         onChange={onChange}
         placeholder={placeholder}
         autoComplete="current-password"
-        className="w-full rounded-[12px] border border-white/[0.12] bg-white/[0.06] px-4 py-3.5 text-[15px] text-white placeholder-white/25 focus:outline-none focus:border-[#306EEC]/80 focus:bg-white/[0.09] transition-all backdrop-blur-sm pr-12"
+        className="h-12 w-full rounded-[10px] border border-white/[0.12] bg-white/[0.06] px-3.5 pr-11 text-[14px] text-white placeholder-white/25 transition-all backdrop-blur-sm focus:border-[#306EEC]/80 focus:bg-white/[0.09] focus:outline-none"
       />
       <button
         type="button"
         onClick={() => setShow(!show)}
-        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/35 hover:text-white/65 transition"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/35 transition hover:text-white/65"
         aria-label={show ? "Hide password" : "Show password"}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -97,47 +97,47 @@ export default function SignInPage() {
 
   return (
     <RoleEntryGate loadingLabel="Checking your session..." redirectLabel="Opening Your Home...">
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f42] to-[#0f1429] flex flex-col items-center justify-center px-6 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-[#0a0e27] via-[#1a1f42] to-[#0f1429] px-4 py-8 sm:px-6 sm:py-10">
       {/* Container */}
       <div className="w-full max-w-[440px]">
         
         {/* Logo */}
-        <div className="text-center mb-12">
+        <div className="mb-7 text-center sm:mb-8">
           <Link href="/" className="inline-block">
             <Image
               src="/images/logo.svg"
               alt="Profixter"
-              width={120}
-              height={40}
-              className="h-10 w-auto"
+              width={132}
+              height={44}
+              className="h-11 w-auto"
             />
           </Link>
         </div>
 
         {/* Card */}
-        <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-8 sm:p-10">
+        <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.03] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7">
           <Link
             href="/"
-            className="mb-6 inline-flex min-h-[40px] items-center rounded-[12px] border border-white/[0.10] bg-white/[0.04] px-3.5 text-[13px] font-semibold text-white/60 transition hover:border-white/[0.18] hover:bg-white/[0.07] hover:text-white sm:mb-7"
+            className="mb-4 inline-flex min-h-[40px] items-center rounded-[10px] border border-white/[0.10] bg-white/[0.04] px-3 text-[12px] font-semibold text-white/60 transition hover:border-white/[0.18] hover:bg-white/[0.07] hover:text-white sm:mb-5"
           >
             ← Back to Home
           </Link>
           
           {/* Heading */}
-          <div className="mb-8 text-center">
-            <h1 className="text-[32px] sm:text-[36px] font-black tracking-[-0.02em] text-white mb-2">
+          <div className="mb-5 text-center sm:mb-6">
+            <h1 className="mb-1.5 text-[28px] font-black tracking-[-0.02em] text-white sm:text-[32px]">
               Welcome Back
             </h1>
-            <p className="text-[15px] text-white/50">
-              Open My Home to manage visits, Membership, and property details.
+            <p className="text-[13px] text-white/50 sm:text-[14px]">
+              Sign in to access your account.
             </p>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-[12px] font-semibold text-white/60 mb-2">
+              <label htmlFor="email" className="mb-1.5 block text-[11px] font-semibold text-white/60">
                 Email Address
               </label>
               <input
@@ -148,13 +148,13 @@ export default function SignInPage() {
                 placeholder="you@example.com"
                 autoComplete="email"
                 required
-                className="w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-[#306EEC]/60 focus:bg-white/[0.08] transition-all"
+                className="h-12 w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-3.5 text-[14px] text-white placeholder-white/30 transition-all focus:border-[#306EEC]/60 focus:bg-white/[0.08] focus:outline-none"
               />
             </div>
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-[12px] font-semibold text-white/60 mb-2">
+              <label htmlFor="password" className="mb-1.5 block text-[11px] font-semibold text-white/60">
                 Password
               </label>
               <PasswordToggle
@@ -172,10 +172,10 @@ export default function SignInPage() {
             )}
 
             {/* Forgot Password */}
-            <div className="text-right pt-1">
+            <div className="text-right">
               <Link
                 href="/forgot-password"
-                className="text-[13px] font-medium text-[#7BAEFF] hover:text-white transition"
+                className="text-[12px] font-medium text-[#7BAEFF] transition hover:text-white"
               >
                 Forgot password?
               </Link>
@@ -185,44 +185,44 @@ export default function SignInPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-12 rounded-[12px] bg-[#306EEC] text-white text-[15px] font-bold hover:bg-[#2558c9] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-3"
-              style={{ boxShadow: "0 12px 32px rgba(48,110,236,0.28)" }}
+              className="mt-2 h-12 w-full rounded-[11px] bg-[#306EEC] text-[14px] font-bold text-white transition-all hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50"
+              style={{ boxShadow: "0 10px 24px rgba(48,110,236,0.24)" }}
             >
-              {loading ? "Opening My Home..." : "Open My Home"}
+              {loading ? "Logging In..." : "Log In"}
             </button>
           </form>
 
           {/* Add property link */}
-          <p className="mt-6 text-center text-[14px] text-white/50">
-            New to Profixter?{" "}
+          <p className="mt-4 text-center text-[13px] text-white/50">
+            Don&apos;t have an account?{" "}
             <Link
               href="/signup"
               className="font-semibold text-white hover:text-white/80 transition"
             >
-              Add Property
+              Create Account
             </Link>
           </p>
         </div>
 
         {/* Trust Strip */}
-        <div className="mt-12 grid grid-cols-3 gap-4 text-center">
-          <div className="flex flex-col items-center gap-2">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white/40">
+        <div className="mt-7 grid grid-cols-3 gap-3 text-center sm:mt-8">
+          <div className="flex flex-col items-center gap-1.5">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white/40">
               <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
             </svg>
-            <p className="text-[12px] font-medium text-white/50">Licensed HI-71484</p>
+            <p className="text-[11px] font-medium text-white/50">Licensed HI-71484</p>
           </div>
-          <div className="flex flex-col items-center gap-2">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white/40">
+          <div className="flex flex-col items-center gap-1.5">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white/40">
               <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
             </svg>
-            <p className="text-[12px] font-medium text-white/50">Fully Insured</p>
+            <p className="text-[11px] font-medium text-white/50">Fully Insured</p>
           </div>
-          <div className="flex flex-col items-center gap-2">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white/40">
+          <div className="flex flex-col items-center gap-1.5">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white/40">
               <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
             </svg>
-            <p className="text-[12px] font-medium text-white/50">Long Island Local</p>
+            <p className="text-[11px] font-medium text-white/50">Long Island Local</p>
           </div>
         </div>
       </div>
