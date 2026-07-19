@@ -150,7 +150,7 @@ function TimeSlotGrid({
   onSelect: (value: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 sm:gap-1.5 xl:grid-cols-5">
+    <div className="grid grid-cols-3 gap-0.5 sm:grid-cols-4 sm:gap-1.5 xl:grid-cols-5">
       {slotOptions.map((slot) => {
         const isSelected = slot.time === selectedTime;
         const availabilityLabel = slot.available
@@ -170,7 +170,7 @@ function TimeSlotGrid({
               onSelect(slot.time);
             }}
             className={[
-              "group relative min-h-[42px] overflow-hidden rounded-[8px] border px-1 py-0.5 text-center transition-all duration-150 ease-out active:scale-[0.99] sm:min-h-11 sm:rounded-[9px] sm:px-2.5 sm:py-1.5",
+              "group relative min-h-9 overflow-hidden rounded-[7px] border px-0.5 py-0 text-center transition-all duration-150 ease-out active:scale-[0.99] sm:min-h-11 sm:rounded-[9px] sm:px-2.5 sm:py-1.5",
               isSelected
                 ? "border-[#306EEC] bg-[#EEF5FF] text-[#0B1628] shadow-[0_8px_24px_rgba(48,110,236,0.12)] ring-2 ring-[#306EEC]/20"
                 : slot.available
@@ -189,9 +189,9 @@ function TimeSlotGrid({
               />
             )}
 
-            <div className="relative z-[1] flex items-center justify-center gap-1">
+            <div className="relative z-[1] flex items-center justify-center gap-0.5 sm:gap-1">
               <div
-                  className={`text-[12px] font-bold leading-tight tracking-[-0.01em] sm:text-[14px] ${
+                  className={`text-[11px] font-bold leading-tight tracking-[-0.01em] sm:text-[14px] ${
                   slot.available ? "" : "line-through"
                 } ${isSelected ? "text-[#0B1628]" : ""}`}
               >
@@ -199,7 +199,7 @@ function TimeSlotGrid({
               </div>
               {isSelected && (
                 <div className="inline-flex items-center text-[#306EEC]">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" className="flex-shrink-0">
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true" className="flex-shrink-0 sm:h-3 sm:w-3">
                     <path
                       d="M2.5 6.2L4.8 8.5L9.5 3.7"
                       stroke="currentColor"
@@ -1332,17 +1332,17 @@ if (next?.date) {
       data-visible-month={visibleMonthKey}
       data-selected-date={ymdSelected}
       data-available-times={displayedTimes.join(",")}
-      className="relative w-full overflow-hidden bg-[#F6F8FC] pb-3 pt-2 scroll-mt-[96px] sm:pb-10 sm:pt-8 lg:pb-14 lg:pt-12"
+      className="relative w-full overflow-hidden bg-[#F6F8FC] pb-2 pt-1 scroll-mt-[96px] sm:pb-10 sm:pt-8 lg:pb-14 lg:pt-12"
     >
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
         {/* ── Header ── */}
-        <div className="mb-1 flex items-center justify-between gap-1.5 sm:mb-5 sm:gap-3">
-          <h2 className="text-[18px] font-black leading-tight tracking-[-0.025em] text-[#0B1628] sm:text-[32px] lg:text-[38px]">
+        <div className="mb-0.5 flex items-center justify-between gap-1 sm:mb-5 sm:gap-3">
+          <h2 className="text-[16px] font-black leading-tight tracking-[-0.025em] text-[#0B1628] sm:text-[32px] lg:text-[38px]">
             Book Your Visit
           </h2>
           {isAuthenticated && hasSubscription && (
-            <button type="button" onClick={() => router.push(manageBookingsPath)} className="min-h-10 flex-shrink-0 text-[10px] font-semibold text-[#64748B] underline decoration-[#CBD5E1] underline-offset-4 transition hover:text-[#306EEC] sm:min-h-11 sm:text-[13px]">
+            <button type="button" onClick={() => router.push(manageBookingsPath)} className="min-h-8 flex-shrink-0 text-[9px] font-semibold text-[#64748B] underline decoration-[#CBD5E1] underline-offset-2 transition hover:text-[#306EEC] sm:min-h-11 sm:text-[13px] sm:underline-offset-4">
               Manage visits
             </button>
           )}
@@ -1350,13 +1350,13 @@ if (next?.date) {
 
 
         {/* ── Main grid ── */}
-        <div className="grid grid-cols-1 gap-1 sm:gap-3 lg:grid-cols-12 lg:gap-5">
+        <div className="grid grid-cols-1 gap-0.5 sm:gap-3 lg:grid-cols-12 lg:gap-5">
 
           {/* ── Calendar (left) ── */}
           <div className="order-2 lg:order-1 lg:col-span-5">
 
             {/* Calendar card */}
-            <div className="rounded-[10px] border border-[#D7DEE9] bg-white p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:rounded-[12px] sm:p-4">
+            <div className="rounded-[8px] border border-[#D7DEE9] bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:rounded-[12px] sm:p-4">
               {/* Month navigation */}
               <div className="mb-1 flex items-center justify-between sm:mb-4">
                 <button
@@ -1367,12 +1367,12 @@ if (next?.date) {
                     setCalendarMode("manual-navigation");
                     setCurrentMonth(addMonthsLocal(currentMonth, -1));
                   }}
-                  className="grid h-10 w-10 place-items-center rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 sm:h-11 sm:w-11 sm:rounded-[10px]"
+                  className="grid h-[34px] w-[34px] place-items-center rounded-[7px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 [&_svg]:h-4 [&_svg]:w-4 sm:h-11 sm:w-11 sm:rounded-[10px] sm:[&_svg]:h-5 sm:[&_svg]:w-5"
                 >
                   <ChevronLeft />
                 </button>
 
-                <div className="text-[12px] font-extrabold text-[#0B1628] sm:text-[18px]">
+                <div className="text-[11px] font-extrabold text-[#0B1628] sm:text-[18px]">
                   {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 </div>
 
@@ -1384,7 +1384,7 @@ if (next?.date) {
                     setCalendarMode("manual-navigation");
                     setCurrentMonth(addMonthsLocal(currentMonth, 1));
                   }}
-                  className="grid h-10 w-10 place-items-center rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 sm:h-11 sm:w-11 sm:rounded-[10px]"
+                  className="grid h-[34px] w-[34px] place-items-center rounded-[7px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 [&_svg]:h-4 [&_svg]:w-4 sm:h-11 sm:w-11 sm:rounded-[10px] sm:[&_svg]:h-5 sm:[&_svg]:w-5"
                 >
                   <ChevronRight />
                 </button>
@@ -1419,7 +1419,7 @@ if (next?.date) {
                 {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d, i) => (
                   <div
                     key={d}
-                    className={`text-[9px] font-bold sm:text-[10px] ${i === 0 ? "text-[#EF4444]" : "text-[#94A3B8]"}`}
+                    className={`text-[8px] font-bold sm:text-[10px] ${i === 0 ? "text-[#EF4444]" : "text-[#94A3B8]"}`}
                   >
                     {d}
                   </div>
@@ -1448,7 +1448,7 @@ if (next?.date) {
                       onClick={() => handleDayClick(day.date, day.muted)}
                       disabled={disabled}
                       className={[
-                        "mx-auto grid h-8 w-8 place-items-center rounded-[8px] text-[11px] font-semibold transition-all duration-150 sm:h-10 sm:w-10 sm:rounded-[9px] sm:text-[15px]",
+                        "mx-auto grid h-7 w-7 place-items-center rounded-[7px] text-[10px] font-semibold transition-all duration-150 sm:h-10 sm:w-10 sm:rounded-[9px] sm:text-[15px]",
                         day.muted ? "text-[#C5CBD8] cursor-not-allowed" : "",
                         disabled && !day.muted ? "text-[#C5CBD8] cursor-not-allowed" : "",
                         !disabled && !isSelected ? "bg-[#EEF5FF] text-[#1D4ED8] hover:bg-[#DBEAFE] hover:scale-105" : "",
@@ -1480,11 +1480,11 @@ if (next?.date) {
             {/* Selected date label */}
             {selectedDate && (
               <div className="flex items-center gap-1 px-0.5 py-px sm:mt-2 sm:px-1 sm:py-1">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="text-[#306EEC] flex-shrink-0" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-[#306EEC] sm:h-[15px] sm:w-[15px]" aria-hidden="true">
                   <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
                   <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                 </svg>
-                <span className="text-[11px] font-semibold text-[#0B1628] sm:text-[13px]">{selectedDateLabel}</span>
+                <span className="text-[10px] font-semibold text-[#0B1628] sm:text-[13px]">{selectedDateLabel}</span>
               </div>
             )}
 
@@ -1493,19 +1493,19 @@ if (next?.date) {
           {/* ── Right column ── */}
           <div className="contents lg:order-2 lg:col-span-7 lg:flex lg:flex-col lg:gap-4">
 
-            <div className="order-1 rounded-[10px] border border-[#D7DEE9] bg-white px-1.5 py-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:rounded-[12px] sm:p-3.5 lg:order-none">
+            <div className="order-1 rounded-[8px] border border-[#D7DEE9] bg-white px-1 py-0.5 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:rounded-[12px] sm:p-3.5 lg:order-none">
               {selectedAddressLabel ? (
                 <>
-                  <div className="flex min-h-10 items-center gap-1 sm:min-h-11 sm:gap-1.5">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-[#306EEC] sm:h-[17px] sm:w-[17px]" aria-hidden="true">
+                  <div className="flex min-h-[34px] items-center gap-0.5 sm:min-h-11 sm:gap-1.5">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-[#306EEC] sm:h-[17px] sm:w-[17px]" aria-hidden="true">
                       <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" stroke="currentColor" strokeWidth="1.8" />
                       <circle cx="12" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.8" />
                     </svg>
-                    <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-[#0B1628] sm:text-[14px]" title={selectedAddressLabel}>
+                    <span className="min-w-0 flex-1 truncate text-[10px] font-semibold text-[#0B1628] sm:text-[14px]" title={selectedAddressLabel}>
                       {selectedAddressLabel}
                     </span>
                     {addresses.length >= 2 && (
-                      <button type="button" onClick={() => setShowAddressPicker((open) => !open)} className="h-10 flex-shrink-0 px-1 text-[11px] font-bold text-[#306EEC] sm:h-11 sm:text-[12px]">
+                      <button type="button" onClick={() => setShowAddressPicker((open) => !open)} className="h-[34px] flex-shrink-0 px-0.5 text-[10px] font-bold text-[#306EEC] sm:h-11 sm:px-1 sm:text-[12px]">
                         {showAddressPicker ? "Done" : "Change"}
                       </button>
                     )}
@@ -1516,7 +1516,7 @@ if (next?.date) {
                       aria-label="Booking address"
                       value={selectedAddressId ?? defaultAddressId ?? ""}
                       onChange={(event) => setSelectedAddressId(event.target.value)}
-                      className="mt-0.5 min-h-10 w-full rounded-[8px] border border-[#C5CBD8] bg-[#F8FAFF] px-2 text-[11px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:mt-2 sm:min-h-11 sm:rounded-[10px] sm:px-2.5 sm:text-[13px]"
+                      className="mt-px min-h-[34px] w-full rounded-[7px] border border-[#C5CBD8] bg-[#F8FAFF] px-1.5 text-[10px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:mt-2 sm:min-h-11 sm:rounded-[10px] sm:px-2.5 sm:text-[13px]"
                     >
                       {addresses.map((address) => (
                         <option key={address._id} value={address._id}>
@@ -1534,16 +1534,16 @@ if (next?.date) {
             </div>
 
             {/* Time slot card */}
-            <div className="order-3 rounded-[10px] border border-[#D7DEE9] bg-white p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:rounded-[12px] sm:p-4 lg:order-none">
-              <div className="mb-0.5 flex items-center justify-between gap-1 sm:mb-2">
-                <h3 className="text-[12px] font-extrabold text-[#0B1628] sm:text-[15px]">Time</h3>
+            <div className="order-3 rounded-[8px] border border-[#D7DEE9] bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:rounded-[12px] sm:p-4 lg:order-none">
+              <div className="flex items-center justify-between gap-0.5 sm:mb-2 sm:gap-1">
+                <h3 className="text-[11px] font-extrabold text-[#0B1628] sm:text-[15px]">Time</h3>
                 <button
                   type="button"
                   onClick={() => setQuickBookOpen(true)}
                   disabled={checkingAccess || loadingMonthKey === visibleMonthKey}
-                  className="inline-flex h-10 flex-shrink-0 items-center gap-0.5 rounded-[8px] border border-[#306EEC] px-1 text-[10px] font-bold text-[#306EEC] transition hover:bg-[#EEF5FF] disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:gap-1 sm:rounded-[9px] sm:px-2.5 sm:text-[12px]"
+                  className="inline-flex h-[34px] flex-shrink-0 items-center gap-px rounded-[7px] border border-[#306EEC] px-0.5 text-[9px] font-bold text-[#306EEC] transition hover:bg-[#EEF5FF] disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:gap-1 sm:rounded-[9px] sm:px-2.5 sm:text-[12px]"
                 >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sm:h-[13px] sm:w-[13px]">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sm:h-[13px] sm:w-[13px]">
                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   Quick Book
@@ -1554,7 +1554,7 @@ if (next?.date) {
                 loadingSelectedDate && displayedTimes.length === 0 ? (
                   <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 sm:gap-1.5">
                     {[1, 2, 3, 4, 5, 6].map((n) => (
-                      <div key={n} className="h-[42px] animate-pulse rounded-[8px] bg-[#F1F5F9] sm:h-11 sm:rounded-[11px]" />
+                      <div key={n} className="h-9 animate-pulse rounded-[7px] bg-[#F1F5F9] sm:h-11 sm:rounded-[11px]" />
                     ))}
                   </div>
                 ) : slotOptions.length > 0 ? (
@@ -1581,8 +1581,8 @@ if (next?.date) {
             </div>
 
             {/* Task details card */}
-            <div className="order-4 rounded-[10px] border border-[#D7DEE9] bg-white p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:rounded-[12px] sm:p-4 lg:order-none">
-              <h3 className="mb-1 text-[12px] font-extrabold text-[#0B1628] sm:mb-2 sm:text-[15px]">Task details</h3>
+            <div className="order-4 rounded-[8px] border border-[#D7DEE9] bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:rounded-[12px] sm:p-4 lg:order-none">
+              <h3 className="mb-0.5 text-[11px] font-extrabold text-[#0B1628] sm:mb-2 sm:text-[15px]">Task details</h3>
 
               <textarea
                 value={note}
@@ -1592,24 +1592,24 @@ if (next?.date) {
                 }}
                 placeholder="Describe your task. If we need to bring any materials or special tools, please let us know."
                 rows={3}
-                className={`w-full min-h-[56px] max-h-[150px] rounded-[8px] border bg-[#F8FAFF] p-1.5 text-[11px] text-[#0B1628] placeholder-[#94A3B8] resize-y transition focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] sm:min-h-[82px] sm:rounded-[10px] sm:p-2.5 sm:text-[14px] ${
+                className={`w-full min-h-12 max-h-[140px] rounded-[7px] border bg-[#F8FAFF] p-1 text-[10px] text-[#0B1628] placeholder-[#94A3B8] resize-y transition focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] sm:min-h-[82px] sm:rounded-[10px] sm:p-2.5 sm:text-[14px] ${
                   error === "Describe the task in at least a few words."
                     ? "border-red-300"
                     : "border-[#C5CBD8]"
                 }`}
               />
               {/* Photo upload */}
-              <div className="mt-1 sm:mt-2.5">
-                <div className="mb-0.5 text-[10px] font-semibold text-[#64748B] sm:mb-1.5 sm:text-[11px]">
+              <div className="mt-0.5 sm:mt-2.5">
+                <div className="text-[9px] font-semibold leading-tight text-[#64748B] sm:mb-1.5 sm:text-[11px]">
                   Photos required
                 </div>
-                <div className="flex gap-0.5 sm:gap-1.5">
+                <div className="flex gap-px sm:gap-1.5">
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
-                    className="flex h-[42px] min-w-0 flex-1 items-center justify-center gap-0.5 rounded-[8px] border border-[#C5CBD8] bg-[#F8FAFF] px-0.5 text-[10px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-11 sm:gap-1 sm:rounded-[9px] sm:text-[13px]"
+                    className="flex h-9 min-w-0 flex-1 items-center justify-center gap-px rounded-[7px] border border-[#C5CBD8] bg-[#F8FAFF] px-px text-[9px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-11 sm:gap-1 sm:rounded-[9px] sm:px-0.5 sm:text-[13px]"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sm:h-4 sm:w-4">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sm:h-4 sm:w-4">
                       <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                       <circle cx="12" cy="13" r="4" stroke="currentColor" strokeWidth="1.8" />
                     </svg>
@@ -1618,9 +1618,9 @@ if (next?.date) {
                   <button
                     type="button"
                     onClick={() => galleryInputRef.current?.click()}
-                    className="flex h-[42px] min-w-0 flex-1 items-center justify-center gap-0.5 rounded-[8px] border border-[#C5CBD8] bg-[#F8FAFF] px-0.5 text-[10px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-11 sm:gap-1 sm:rounded-[9px] sm:text-[13px]"
+                    className="flex h-9 min-w-0 flex-1 items-center justify-center gap-px rounded-[7px] border border-[#C5CBD8] bg-[#F8FAFF] px-px text-[9px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-11 sm:gap-1 sm:rounded-[9px] sm:px-0.5 sm:text-[13px]"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sm:h-4 sm:w-4">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sm:h-4 sm:w-4">
                       <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
                       <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="1.8" />
                       <path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -1648,13 +1648,13 @@ if (next?.date) {
 
                 {/* Photo previews */}
                 {uploadedPhotos.length > 0 && (
-                  <div className="mt-1.5 grid grid-cols-3 gap-1 sm:mt-3 sm:grid-cols-4 sm:gap-2 lg:grid-cols-5">
+                  <div className="mt-1 grid grid-cols-3 gap-0.5 sm:mt-3 sm:grid-cols-4 sm:gap-2 lg:grid-cols-5">
                     {uploadedPhotos.map((_file, idx) => {
                       const url = photoUrls[idx];
                       return (
                         <div
                           key={idx}
-                          className="relative overflow-hidden rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF] sm:rounded-[12px]"
+                          className="relative overflow-hidden rounded-[6px] border border-[#E5E9F2] bg-[#F8FAFF] sm:rounded-[12px]"
                           style={{ aspectRatio: "1" }}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1681,9 +1681,9 @@ if (next?.date) {
 
             {/* Subscription warning */}
             {isAuthenticated && !checkingAccess && !hasSubscription && subscriptionError && (
-              <div className="order-5 rounded-[12px] border border-red-200 bg-red-50 p-5 lg:order-none">
-                <div className="text-[15px] font-extrabold text-red-700 mb-1">Booking unavailable for this address</div>
-                <div className="text-[13px] text-red-600 mb-4">{subscriptionError}</div>
+              <div className="order-5 rounded-[8px] border border-red-200 bg-red-50 p-2 sm:rounded-[12px] sm:p-5 lg:order-none">
+                <div className="mb-0.5 text-[12px] font-extrabold text-red-700 sm:mb-1 sm:text-[15px]">Booking unavailable for this address</div>
+                <div className="mb-2 text-[10px] text-red-600 sm:mb-4 sm:text-[13px]">{subscriptionError}</div>
                 <a
                   href="/account"
                   className="inline-flex h-[40px] items-center px-5 rounded-[12px] bg-[#306EEC] text-white text-[14px] font-bold hover:bg-[#2558c9] transition"
@@ -1695,16 +1695,16 @@ if (next?.date) {
 
             {/* Booking limit warning */}
             {isAuthenticated && hasSubscription && hasActiveBooking && (
-              <div className="order-5 rounded-[12px] border border-amber-200 bg-amber-50 p-5 lg:order-none">
-                <div className="text-[15px] font-extrabold text-amber-800 mb-1">Visit limit reached</div>
-                <div className="text-[13px] text-amber-700 mb-2">
+              <div className="order-5 rounded-[8px] border border-amber-200 bg-amber-50 p-2 sm:rounded-[12px] sm:p-5 lg:order-none">
+                <div className="mb-0.5 text-[12px] font-extrabold text-amber-800 sm:mb-1 sm:text-[15px]">Visit limit reached</div>
+                <div className="mb-1 text-[10px] text-amber-700 sm:mb-2 sm:text-[13px]">
                   You have{" "}
                   <span className="font-semibold">{activeBookingCount}</span> of{" "}
                   <span className="font-semibold">{activeBookingLimit}</span> scheduled{" "}
                   {activeBookingLimit === 1 ? "visit" : "visits"} booked.
                 </div>
                 {existingBookingDate && (
-                  <div className="text-[13px] text-amber-700 mb-4">
+                  <div className="mb-2 text-[10px] text-amber-700 sm:mb-4 sm:text-[13px]">
                     Next visit:{" "}
                     <span className="font-semibold">
                       {existingBookingDate.toLocaleString("en-US", {
@@ -1730,12 +1730,12 @@ if (next?.date) {
 
             {/* Notice / Error banners */}
             {notice && (
-              <div className="order-6 rounded-[12px] border border-green-200 bg-green-50 px-5 py-4 text-[14px] text-green-700 font-semibold lg:order-none">
+              <div className="order-6 rounded-[8px] border border-green-200 bg-green-50 px-2 py-1.5 text-[10px] font-semibold text-green-700 sm:rounded-[12px] sm:px-5 sm:py-4 sm:text-[14px] lg:order-none">
                 {notice}
               </div>
             )}
             {error && (
-              <div className="order-6 rounded-[12px] border border-red-200 bg-red-50 px-5 py-4 text-[14px] text-red-700 lg:order-none">
+              <div className="order-6 rounded-[8px] border border-red-200 bg-red-50 px-2 py-1.5 text-[10px] text-red-700 sm:rounded-[12px] sm:px-5 sm:py-4 sm:text-[14px] lg:order-none">
                 {error}
               </div>
             )}
@@ -1746,7 +1746,7 @@ if (next?.date) {
                 onClick={handleBookNow}
                 data-track="booking-cta"
                 disabled={!canBook}
-                className="h-11 w-full rounded-[10px] bg-[#306EEC] text-[13px] font-extrabold text-white transition-all hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99] sm:h-14 sm:rounded-[15px] sm:text-[16px]"
+                className="h-11 w-full rounded-[8px] bg-[#306EEC] text-[12px] font-extrabold text-white transition-all hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99] sm:h-14 sm:rounded-[15px] sm:text-[16px]"
                 style={{ boxShadow: canBook ? "0 10px 30px rgba(48,110,236,0.25)" : undefined }}
               >
                 {checkingAccess

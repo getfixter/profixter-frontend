@@ -5,7 +5,7 @@ import { useGoogleLogin } from "@react-oauth/google";
 import type { TokenResponse } from "@react-oauth/google";
 import { useRouter } from "next/navigation";
 import API from "@/lib/api";
-import { getRoleLandingPath } from "@/lib/auth-routing";
+import { getAutomaticEntryPath } from "@/lib/auth-routing";
 import { useAuth } from "@/lib/useAuth";
 
 interface GoogleButtonProps {
@@ -60,7 +60,7 @@ function GoogleButtonInner({
         browserWindow.gtag?.("event", "login", { method: "Google" });
 
         onSuccess?.();
-        router.replace(getRoleLandingPath(verifiedUser));
+        router.replace(getAutomaticEntryPath(verifiedUser));
       } catch (loginError: unknown) {
         console.error("Google login failed:", loginError);
         setError(errorMessage(loginError));

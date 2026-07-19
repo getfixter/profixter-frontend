@@ -202,116 +202,32 @@ function StepHeader({
   );
 }
 
-function RushServiceCallout() {
+function RushServiceCallout({ rushIncluded }: { rushIncluded: boolean }) {
   return (
-    <div className="mb-5 overflow-hidden rounded-[24px] border border-[#F2C46D]/70 bg-[linear-gradient(135deg,#FFF8E8_0%,#FFFFFF_50%,#FFF1C4_100%)] shadow-[0_24px_76px_rgba(146,86,18,0.13)] sm:mb-7 sm:rounded-[30px]">
-      <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[1.12fr_0.88fr] lg:items-center lg:p-7">
-        <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#0B1628] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-white shadow-[0_12px_28px_rgba(11,22,40,0.16)]">
-            <span className="grid h-5 w-5 place-items-center rounded-full bg-[#F59E0B] text-white">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M13 2 4.5 13h6L9 22l10.5-13h-6L13 2Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </span>
-            Need Help Today?
-          </div>
-          <p className="max-w-[680px] text-[15px] font-semibold leading-6 text-[#34435C] sm:text-[17px] sm:leading-7">
-            Don&apos;t want to wait for the next available appointment?
-          </p>
-          <p className="mt-2 max-w-[720px] text-[15px] font-semibold leading-6 text-[#34435C] sm:text-[17px] sm:leading-7">
-            Ask about our <span className="font-black text-[#0B1628]">Rush Service</span>. When technician availability allows, we&apos;ll do our best to get someone to your home as soon as possible.
-          </p>
-          <h2 className="mt-3 text-[24px] font-black leading-[1.02] tracking-[-0.035em] text-[#0B1628] sm:text-[34px] sm:tracking-[-0.045em]">
-            Rush Service
-          </h2>
-          <div className="mt-4 grid gap-2.5">
-            {[
-              "Priority scheduling",
-              "Rush dispatch when available",
-              "$300 Rush Service Fee",
-              "Labor is charged separately",
-            ].map((item) => (
-              <div key={item} className="flex items-start gap-2.5 text-[13px] font-bold leading-5 text-[#34435C] sm:text-[14px]">
-                <span className="mt-0.5 grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-[#F59E0B]/14 text-[#B45309]">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path
-                      d="M5 12.5l4 4 10-10"
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2.6"
-                    />
-                  </svg>
-                </span>
-                {item}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-[20px] bg-white/82 p-4 shadow-[0_18px_50px_rgba(146,86,18,0.10)] ring-1 ring-[#F2C46D]/55 sm:rounded-[24px] sm:p-5">
-          <div className="text-[12px] font-black uppercase tracking-[0.16em] text-[#B45309]">
-            Call to check today&apos;s availability
-          </div>
-          <p className="mt-2 flex items-center gap-2 text-[14px] font-semibold text-[#64748B]">
-            <span className="grid h-7 w-7 place-items-center rounded-full bg-[#FEF3C7] text-[#B45309]">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M6.6 10.8c1.5 3 3.9 5.3 6.8 6.8l2.3-2.3c.3-.3.8-.4 1.2-.3 1.3.4 2.6.6 4 .6.7 0 1.1.5 1.1 1.1v3.7c0 .7-.5 1.1-1.1 1.1C10.6 21.5 2.5 13.4 2.5 3.1 2.5 2.5 3 2 3.7 2h3.7c.7 0 1.1.5 1.1 1.1 0 1.4.2 2.7.6 4 .1.4 0 .8-.3 1.2l-2.2 2.5Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </span>
-            Call us now:
-          </p>
-          <a
-            href="tel:6315991363"
-            className="mt-1 inline-flex text-[26px] font-black tracking-[-0.04em] text-[#0B1628] transition hover:text-[#B45309] sm:text-[32px]"
-          >
-            (631) 599-1363
-          </a>
-          <a
-            href="tel:6315991363"
-            onClick={() =>
-              trackEvent("rush_service_call_clicked", {
-                placement: "book_rush_service_callout",
-              })
-            }
-            className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full bg-[#F59E0B] px-5 text-[14px] font-black text-[#0B1628] shadow-[0_16px_34px_rgba(245,158,11,0.26)] transition hover:-translate-y-0.5 hover:bg-[#FBBF24] active:translate-y-0"
-          >
-            Call Now
-          </a>
-          <p className="mt-3 text-[11px] font-bold leading-4 text-[#8A5A10]">
-            *Rush Service is subject to technician availability and cannot be guaranteed.
-          </p>
-        </div>
-      </div>
-
-      <div className="border-t border-[#F2C46D]/55 bg-white/60 p-4 sm:p-6 lg:p-7">
-        <div className="grid gap-3 rounded-[20px] bg-white/78 p-4 shadow-[0_14px_44px_rgba(15,23,42,0.07)] ring-1 ring-[#E5E9F2] sm:grid-cols-[1fr_auto] sm:items-center sm:rounded-[24px] sm:p-5">
+    <div className="mb-3 grid gap-2 sm:mb-5 sm:gap-3">
+      <div className="rounded-[14px] border border-[#F2C46D] bg-[#FFFBF2] p-3 shadow-[0_10px_30px_rgba(146,86,18,0.07)] sm:p-4">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-[18px] font-black tracking-[-0.025em] text-[#0B1628] sm:text-[22px]">
-              Included with Premium &amp; Elite Memberships
-            </h3>
-            <p className="mt-1 max-w-[820px] text-[13px] font-semibold leading-5 text-[#64748B] sm:text-[14px] sm:leading-6">
-              Rush Visits are already included with our Premium and Elite memberships. Members receive priority scheduling and can request Rush Visits without paying the $300 Rush Service Fee.
+            <h2 className="text-[15px] font-black text-[#0B1628] sm:text-[18px]">Need help today?</h2>
+            <p className="mt-1 text-[11px] leading-4 text-[#64748B] sm:text-[13px] sm:leading-5">
+              Ask about Rush Service. We&rsquo;ll do our best to send someone as soon as availability allows.
             </p>
           </div>
-          <Link
-            href="/membership"
-            onClick={() =>
-              trackEvent("membership_cta_clicked", {
-                placement: "book_rush_service_callout",
-              })
-            }
-            className="inline-flex h-11 items-center justify-center rounded-full bg-[#0B1628] px-5 text-[13px] font-black text-white shadow-[0_14px_34px_rgba(11,22,40,0.18)] transition hover:-translate-y-0.5 hover:bg-[#1B2A44] active:translate-y-0 sm:h-12"
-          >
-            View Membership Plans
-          </Link>
+          <a href="tel:6315991363" onClick={() => trackEvent("rush_service_call_clicked", { placement: "book_rush_service_callout" })} className="inline-flex h-10 flex-shrink-0 items-center rounded-[10px] bg-[#F59E0B] px-3 text-[11px] font-black text-[#0B1628] sm:h-11 sm:text-[13px]">Call Now</a>
         </div>
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-semibold text-[#8A5A10] sm:text-[12px]">
+          <span>Priority scheduling</span><span>Rush dispatch when available</span><span>$300 fee</span><span>Labor separate</span>
+        </div>
+        <a href="tel:6315991363" className="mt-1 inline-flex text-[11px] font-bold text-[#B45309] sm:text-[12px]">(631) 599-1363</a>
+      </div>
+      <div className="flex items-center justify-between gap-3 rounded-[12px] border border-[#E5E9F2] bg-white px-3 py-2.5">
+        <div>
+          <h3 className="text-[12px] font-extrabold text-[#0B1628] sm:text-[14px]">Included with Premium &amp; Elite</h3>
+          <p className="mt-0.5 text-[10px] leading-4 text-[#64748B] sm:text-[12px]">
+            {rushIncluded ? "Rush Visits are included with your membership without the $300 fee." : "Rush Visits are included with Premium and Elite memberships without the $300 fee."}
+          </p>
+        </div>
+        <Link href="/membership#plans" onClick={() => trackEvent("membership_cta_clicked", { placement: "book_rush_service_callout" })} className="flex-shrink-0 text-[10px] font-bold text-[#306EEC] sm:text-[12px]">View Plans</Link>
       </div>
     </div>
   );
@@ -325,6 +241,7 @@ export default function BookPage() {
   );
   const [configError, setConfigError] = useState("");
   const [addressId, setAddressId] = useState("");
+  const [addressPickerOpen, setAddressPickerOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState("");
   const [servicePickerOpen, setServicePickerOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -565,6 +482,10 @@ export default function BookPage() {
     () => addresses.some((address) => Boolean(address.hasActiveSubscription)),
     [addresses]
   );
+  const hasRushIncluded = useMemo(
+    () => addresses.some((address) => Boolean(address.hasActiveSubscription) && (address.plan === "premium" || address.plan === "elite")),
+    [addresses]
+  );
   const priceLabel = formatPrice(config.priceCents, config.currency);
   const pageCopy = useMemo(
     () =>
@@ -731,24 +652,17 @@ export default function BookPage() {
     <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
       <Header />
 
-      <section className="relative w-full overflow-hidden pb-6 pt-5 sm:pb-14 sm:pt-14 lg:pt-16">
+      <section className="relative w-full overflow-hidden pb-5 pt-3 sm:pb-12 sm:pt-10 lg:pt-12">
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-          <div className="mb-5 max-w-[820px] sm:mb-10">
-            <div className="mb-3 inline-flex items-center gap-2.5 rounded-full bg-white px-3.5 py-1.5 shadow-sm sm:mb-4 sm:px-4 sm:py-2">
-              <span
-                className="h-2 w-2 flex-shrink-0 rounded-full bg-[#306EEC]"
-                style={{ boxShadow: "0 0 8px rgba(48,110,236,0.7)" }}
-              />
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
-                {pageCopy.navLabel}
-              </span>
-            </div>
-            <h1 className="mb-3 text-[40px] font-black leading-[0.92] tracking-[-0.052em] text-[#071325] sm:mb-4 sm:text-[72px] sm:leading-[0.88] sm:tracking-[-0.06em] lg:text-[86px]">
-              {pageCopy.title}
+          <div className="mb-3 max-w-[820px] sm:mb-6">
+            <div className="mb-1 text-[9px] font-bold uppercase tracking-[0.18em] text-[#306EEC] sm:text-[11px]">Extra Visit</div>
+            <h1 className="text-[24px] font-black leading-tight tracking-[-0.035em] text-[#071325] sm:text-[44px] lg:text-[52px]">
+              Book an Extra Visit
             </h1>
-            <p className="max-w-[640px] text-[15px] font-semibold leading-6 text-[#475569] sm:text-[20px] sm:leading-7">
-              {pageCopy.subtitle}
+            <p className="mt-1 max-w-[640px] text-[11px] font-semibold leading-4 text-[#475569] sm:text-[14px] sm:leading-5">
+              Book an additional visit anytime before your membership renews.
             </p>
+            {hasActiveMembership && <Link href="/membership#pick-day" className="mt-1 inline-flex text-[10px] font-bold text-[#306EEC] sm:text-[12px]">Need your included visit? Book here</Link>}
             {configError && (
               <div className="mt-4 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] font-semibold text-amber-800">
                 {configError}
@@ -756,7 +670,7 @@ export default function BookPage() {
             )}
           </div>
 
-          {!hasActiveMembership && (
+          {false && !hasActiveMembership && (
             <div className="mb-5 overflow-hidden rounded-[24px] border border-[#E5E9F2] bg-white/92 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:mb-7 sm:rounded-[30px] sm:p-6 lg:p-7">
               <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
                 <div>
@@ -798,12 +712,14 @@ export default function BookPage() {
             </div>
           )}
 
-          <RushServiceCallout />
+          <RushServiceCallout rushIncluded={hasRushIncluded} />
+
+          <h2 className="mb-2 text-[16px] font-black text-[#0B1628] sm:mb-3 sm:text-[22px]">Book your extra visit</h2>
 
           <div id="booking-form" className="grid grid-cols-1 gap-3 scroll-mt-6 sm:gap-4 lg:grid-cols-12 lg:gap-6">
             <div className="order-2 lg:order-1 lg:col-span-5">
-              <div className="rounded-[24px] bg-white/95 p-3.5 shadow-[0_18px_54px_rgba(15,23,42,0.08)] sm:rounded-[30px] sm:p-5 sm:shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-                <div className="mb-4 flex items-center justify-between sm:mb-5">
+              <div className="rounded-[10px] border border-[#E5E9F2] bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[16px] sm:p-4">
+                <div className="mb-1 flex items-center justify-between sm:mb-3">
                   <button
                     type="button"
                     aria-label="Previous month"
@@ -816,11 +732,11 @@ export default function BookPage() {
                         )
                       )
                     }
-                    className="grid h-10 w-10 place-items-center rounded-[12px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95"
+                    className="grid h-[34px] w-[34px] place-items-center rounded-[7px] border border-[#E5E9F2] bg-[#F8FAFF] text-[12px] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 sm:h-10 sm:w-10 sm:rounded-[10px]"
                   >
                     &lt;
                   </button>
-                  <div className="text-[16px] font-extrabold text-[#0B1628] sm:text-[20px]">
+                  <div className="text-[11px] font-extrabold text-[#0B1628] sm:text-[17px]">
                     {monthLabel(currentMonth)}
                   </div>
                   <button
@@ -835,17 +751,17 @@ export default function BookPage() {
                         )
                       )
                     }
-                    className="grid h-10 w-10 place-items-center rounded-[12px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95"
+                    className="grid h-[34px] w-[34px] place-items-center rounded-[7px] border border-[#E5E9F2] bg-[#F8FAFF] text-[12px] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 sm:h-10 sm:w-10 sm:rounded-[10px]"
                   >
                     &gt;
                   </button>
                 </div>
 
-                <div className="mb-2 grid grid-cols-7 text-center">
+                <div className="grid grid-cols-7 text-center sm:mb-1">
                   {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day, index) => (
                     <div
                       key={day}
-                      className={`text-[12px] font-bold ${
+                      className={`text-[8px] font-bold sm:text-[11px] ${
                         index === 0 ? "text-[#EF4444]" : "text-[#94A3B8]"
                       }`}
                     >
@@ -854,7 +770,7 @@ export default function BookPage() {
                   ))}
                 </div>
 
-                <div className="grid grid-cols-7 gap-y-1">
+                <div className="grid grid-cols-7">
                   {days.map((day) => {
                     const knownSlots = availabilityByDate[day.ymd];
                     const disabled =
@@ -868,7 +784,7 @@ export default function BookPage() {
                         disabled={disabled}
                         onClick={() => chooseDate(day.ymd)}
                         className={[
-                          "mx-auto grid h-9 w-9 place-items-center rounded-[12px] text-[14px] font-semibold transition-all duration-150 sm:h-10 sm:w-10 sm:text-[15px]",
+                          "mx-auto grid h-7 w-7 place-items-center rounded-[7px] text-[10px] font-semibold transition-all duration-150 sm:h-10 sm:w-10 sm:rounded-[10px] sm:text-[14px]",
                           day.muted ? "text-[#C5CBD8]" : "",
                           disabled ? "cursor-not-allowed text-[#C5CBD8]" : "",
                           !disabled && !selected
@@ -888,7 +804,7 @@ export default function BookPage() {
             </div>
 
             <div className="contents lg:order-2 lg:col-span-7 lg:flex lg:flex-col lg:gap-5">
-              <div className="order-1 rounded-[24px] bg-white/95 p-3.5 shadow-[0_18px_54px_rgba(15,23,42,0.08)] sm:rounded-[30px] sm:p-5 sm:shadow-[0_24px_70px_rgba(15,23,42,0.08)] lg:order-none">
+              <div className="order-1 rounded-[10px] border border-[#E5E9F2] bg-white/95 p-2 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[16px] sm:p-4 lg:order-none">
                 {isLoading ? (
                   <div className="py-12 text-center text-[14px] font-semibold text-[#64748B]">
                     Loading your account...
@@ -916,29 +832,22 @@ export default function BookPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    <StepHeader
-                      step="1 Details"
-                      title="Visit details"
-                      subtitle="Choose the home and the type of small job."
-                    />
+                  <div className="space-y-2 sm:space-y-3">
 
                     <div>
-                      <div className="mb-2 text-[13px] font-semibold text-[#0B1628]">
-                        Booking address
-                      </div>
-                      <select
+                      {selectedAddress ? (
+                        <div className="flex min-h-9 items-center gap-1">
+                          <span className="text-[#306EEC]" aria-hidden="true">⌖</span>
+                          <span className="min-w-0 flex-1 truncate text-[10px] font-semibold text-[#0B1628] sm:text-[13px]">{addressLabel(selectedAddress)}</span>
+                          {addresses.length > 1 && <button type="button" onClick={() => setAddressPickerOpen((open) => !open)} className="h-9 text-[9px] font-bold text-[#306EEC] sm:text-[11px]">{addressPickerOpen ? "Done" : "Change"}</button>}
+                        </div>
+                      ) : <div className="text-[10px] font-semibold text-[#64748B]">Choose an address</div>}
+                      {(addressPickerOpen || !selectedAddress) && <select
                         value={addressId}
                         onChange={(event) => setAddressId(event.target.value)}
-                        className="min-h-[48px] w-full rounded-[12px] border border-[#C5CBD8] bg-[#F8FAFF] px-3 py-2 text-[14px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15"
-                      >
-                        <option value="">Choose address</option>
-                        {addresses.map((address) => (
-                          <option key={address._id} value={address._id}>
-                            {addressLabel(address)}
-                          </option>
-                        ))}
-                      </select>
+                        aria-label="Booking address"
+                        className="mt-1 min-h-9 w-full rounded-[8px] border border-[#C5CBD8] bg-[#F8FAFF] px-2 text-[10px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:min-h-11 sm:text-[13px]"
+                      ><option value="">Choose address</option>{addresses.map((address) => <option key={address._id} value={address._id}>{addressLabel(address)}</option>)}</select>}
                       {!addresses.length && (
                         <Link
                           href="/account?tab=personal"
@@ -950,28 +859,25 @@ export default function BookPage() {
                     </div>
 
                     <div ref={servicePickerRef} className="relative">
-                      <div className="mb-2 text-[13px] font-semibold text-[#0B1628]">
-                        What do you need help with?
+                      <div className="mb-1 text-[10px] font-semibold text-[#0B1628] sm:text-[12px]">
+                        Small job
                       </div>
                       <button
                         type="button"
                         onClick={() => setServicePickerOpen((open) => !open)}
                         aria-expanded={servicePickerOpen}
                         className={[
-                          "group flex min-h-[62px] w-full items-center justify-between gap-3 rounded-[20px] bg-[#F7F8FB] px-3.5 py-3 text-left shadow-inner transition duration-200 hover:bg-white hover:shadow-[0_18px_48px_rgba(15,23,42,0.08)] focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 sm:min-h-[70px] sm:gap-4 sm:rounded-[24px] sm:px-4",
+                          "group flex min-h-10 w-full items-center justify-between gap-2 rounded-[8px] bg-[#F7F8FB] px-2 py-1 text-left transition duration-200 hover:bg-white focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 sm:min-h-12 sm:rounded-[12px] sm:px-3",
                           selectedTask ? "ring-1 ring-[#D7E4FF]" : "ring-1 ring-[#E5E9F2]",
                         ].join(" ")}
                       >
                         <span className="min-w-0">
-                          <span className="block text-[11px] font-black uppercase tracking-[0.16em] text-[#7C879A]">
-                            {pageCopy.taskEyebrow}
-                          </span>
-                          <span className={`mt-1 block truncate text-[16px] font-black tracking-[-0.018em] sm:text-[18px] sm:tracking-[-0.02em] ${selectedTask ? "text-[#0B1628]" : "text-[#7C879A]"}`}>
+                          <span className={`block truncate text-[10px] font-bold sm:text-[13px] ${selectedTask ? "text-[#0B1628]" : "text-[#7C879A]"}`}>
                             {selectedTask || "Choose a small job"}
                           </span>
                         </span>
-                        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#0B1628] shadow-sm transition group-hover:scale-105 sm:h-10 sm:w-10">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#0B1628] transition sm:h-9 sm:w-9">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path
                               d={servicePickerOpen ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"}
                               stroke="currentColor"
@@ -1038,14 +944,8 @@ export default function BookPage() {
                       )}
                     </div>
 
-                    <div className="rounded-[20px] border border-[#E5E9F2] bg-[#F8FAFF] p-3.5 sm:rounded-[22px] sm:p-4">
-                      <div className="text-[14px] font-black text-[#0B1628]">
-                        Don&apos;t see your task?
-                      </div>
-                      <p className="mt-1 text-[13px] font-semibold leading-5 text-[#64748B]">
-                        This service is designed for specific small handyman jobs. If your project is different or larger,
-                        request a free Renovation Estimate instead.
-                      </p>
+                    <div className="flex items-center justify-between gap-2 border-t border-[#E5E9F2] pt-2">
+                      <p className="text-[10px] font-semibold text-[#64748B] sm:text-[12px]">Larger project? Request a free estimate.</p>
                       <Link
                         href="/projects#estimate"
                         onClick={() =>
@@ -1053,13 +953,13 @@ export default function BookPage() {
                             placement: "book_service_selector_note",
                           })
                         }
-                        className="mt-3 inline-flex h-10 items-center justify-center rounded-full bg-white px-4 text-[13px] font-black text-[#0B1628] shadow-sm ring-1 ring-[#DDE4F0] transition hover:-translate-y-0.5 hover:bg-[#EEF4FF]"
+                        className="flex-shrink-0 text-[9px] font-bold text-[#306EEC] sm:text-[11px]"
                       >
-                        Request Renovation Estimate -&gt;
+                        Get Estimate
                       </Link>
                     </div>
 
-                    <div className="overflow-hidden rounded-[22px] bg-[#0B1628] p-3.5 text-white shadow-[0_18px_54px_rgba(7,19,37,0.14)] sm:rounded-[26px] sm:p-5 sm:shadow-[0_24px_70px_rgba(7,19,37,0.16)]">
+                    <div className="hidden">
                       {hasActiveMembership ? (
                         <>
                           <div className="text-[11px] font-black uppercase tracking-[0.18em] text-white/55">
@@ -1143,12 +1043,8 @@ export default function BookPage() {
 
               {isAuthenticated && (
                 <>
-                  <div className="order-3 rounded-[24px] bg-white/95 p-3.5 shadow-[0_18px_54px_rgba(15,23,42,0.08)] sm:rounded-[30px] sm:p-5 sm:shadow-[0_24px_70px_rgba(15,23,42,0.08)] lg:order-none">
-                    <StepHeader
-                      step="2 Time"
-                      title="Choose a time"
-                      subtitle={`Each visit is up to ${config.durationMinutes} minutes.`}
-                    />
+                  <div className="order-3 rounded-[10px] border border-[#E5E9F2] bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[16px] sm:p-4 lg:order-none">
+                    <h2 className="mb-1 text-[11px] font-extrabold text-[#0B1628] sm:text-[15px]">Time</h2>
 
                     {autoSelectingDate ? (
                       <div className="rounded-[16px] border border-[#D9E4FF] bg-[#F0F7FF] px-4 py-5 text-center text-[14px] font-semibold text-[#475569]">
@@ -1159,20 +1055,20 @@ export default function BookPage() {
                         {noAvailabilityMessage}
                       </div>
                     ) : loadingSlots ? (
-                      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                      <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 sm:gap-2">
                         {[1, 2, 3, 4, 5, 6].map((item) => (
-                          <div key={item} className="h-[58px] animate-pulse rounded-[18px] bg-[#F1F5F9]" />
+                          <div key={item} className="h-9 animate-pulse rounded-[7px] bg-[#F1F5F9] sm:h-11 sm:rounded-[10px]" />
                         ))}
                       </div>
                     ) : slots.length ? (
-                      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                      <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 sm:gap-2">
                         {slots.map((slot) => (
                           <button
                             key={slot}
                             type="button"
                             onClick={() => setSelectedTime(slot)}
                             className={[
-                              "min-h-[50px] rounded-[16px] border text-[13px] font-extrabold transition active:scale-[0.99] sm:min-h-[58px] sm:rounded-[18px] sm:text-[14px]",
+                              "min-h-9 rounded-[7px] border px-1 text-[10px] font-extrabold transition active:scale-[0.99] sm:min-h-11 sm:rounded-[10px] sm:text-[13px]",
                               selectedTime === slot
                                 ? "border-[#306EEC] bg-[#306EEC] text-white shadow-[0_10px_28px_rgba(48,110,236,0.28)]"
                                 : "border-[#E5E9F2] bg-[#F8FAFF] text-[#1D4ED8] hover:border-[#D9E4FF] hover:bg-[#EEF5FF]",
@@ -1189,43 +1085,30 @@ export default function BookPage() {
                     )}
                   </div>
 
-                  <div className="order-4 rounded-[24px] bg-white/95 p-3.5 shadow-[0_18px_54px_rgba(15,23,42,0.08)] sm:rounded-[30px] sm:p-5 sm:shadow-[0_24px_70px_rgba(15,23,42,0.08)] lg:order-none">
-                    <StepHeader
-                      step="3 Notes / Photos"
-                      title="Tell us what you need"
-                      subtitle="Add a short note and at least one photo so the team can prepare."
-                    />
+                  <div className="order-4 rounded-[10px] border border-[#E5E9F2] bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[16px] sm:p-4 lg:order-none">
+                    <h2 className="mb-1 text-[11px] font-extrabold text-[#0B1628] sm:text-[15px]">Task details</h2>
 
                     <textarea
                       value={note}
                       onChange={(event) => setNote(event.target.value)}
-                      rows={4}
-                      placeholder="Example: Replace the bathroom faucet. I already bought the new faucet and shutoff valves are under the sink."
-                      className="min-h-[110px] w-full resize-none rounded-[16px] border border-[#C5CBD8] bg-[#F8FAFF] p-3.5 text-[14px] text-[#0B1628] outline-none transition placeholder:text-[#94A3B8] focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15"
+                      rows={3}
+                      placeholder="Describe your task. If we need to bring any materials or special tools, please let us know."
+                      className="min-h-12 w-full resize-y rounded-[7px] border border-[#C5CBD8] bg-[#F8FAFF] p-1 text-[10px] text-[#0B1628] outline-none transition placeholder:text-[#94A3B8] focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:min-h-[82px] sm:rounded-[10px] sm:p-2.5 sm:text-[14px]"
                     />
-                    <div className="mt-1.5 flex items-center justify-between">
-                      <span className="text-[11px] text-[#94A3B8]">Minimum 3 words</span>
-                      <span className={`text-[11px] font-bold ${wordsCount >= 3 ? "text-[#16A34A]" : "text-[#DC2626]"}`}>
-                        {wordsCount} {wordsCount === 1 ? "word" : "words"}
-                      </span>
-                    </div>
 
-                    <div className="mt-4">
-                      <div className="mb-2 text-[13px] font-semibold text-[#0B1628]">
-                        Photos <span className="text-[#DC2626]">*</span>
-                        <span className="ml-1 font-normal text-[#64748B]">
-                          required - helps us prepare.
-                        </span>
+                    <div className="mt-1">
+                      <div className="text-[9px] font-semibold text-[#64748B] sm:mb-1 sm:text-[11px]">
+                        Photos required
                       </div>
-                      <div className="flex gap-2.5">
+                      <div className="flex gap-1">
                         <button
                           type="button"
                           onClick={() => cameraInputRef.current?.click()}
-                          className="flex h-[46px] flex-1 items-center justify-center gap-2 rounded-[14px] border border-[#C5CBD8] bg-[#F8FAFF] text-[14px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC]"
+                          className="flex h-9 flex-1 items-center justify-center gap-1 rounded-[7px] border border-[#C5CBD8] bg-[#F8FAFF] text-[9px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-11 sm:text-[13px]"
                         >
                           <svg
-                            width="16"
-                            height="16"
+                            width="12"
+                            height="12"
                             viewBox="0 0 24 24"
                             fill="none"
                             aria-hidden="true"
@@ -1250,11 +1133,11 @@ export default function BookPage() {
                         <button
                           type="button"
                           onClick={() => galleryInputRef.current?.click()}
-                          className="flex h-[46px] flex-1 items-center justify-center gap-2 rounded-[14px] border border-[#C5CBD8] bg-[#F8FAFF] text-[14px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC]"
+                          className="flex h-9 flex-1 items-center justify-center gap-1 rounded-[7px] border border-[#C5CBD8] bg-[#F8FAFF] text-[9px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-11 sm:text-[13px]"
                         >
                           <svg
-                            width="16"
-                            height="16"
+                            width="12"
+                            height="12"
                             viewBox="0 0 24 24"
                             fill="none"
                             aria-hidden="true"
@@ -1283,7 +1166,7 @@ export default function BookPage() {
                               strokeWidth="1.8"
                             />
                           </svg>
-                          Add Photos{photos.length > 0 ? ` (${photos.length})` : ""}
+                          Choose Photos{photos.length > 0 ? ` (${photos.length})` : ""}
                         </button>
                       </div>
                       <input
@@ -1309,7 +1192,7 @@ export default function BookPage() {
                         className="hidden"
                       />
                       {photos.length > 0 && (
-                        <div className="mt-4 grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-5">
+                        <div className="mt-1 grid grid-cols-3 gap-1 sm:mt-3 sm:grid-cols-4 sm:gap-2 lg:grid-cols-5">
                           {photos.map((_photo, index) => (
                             <div
                               key={`${_photo.name}-${index}`}
@@ -1337,57 +1220,42 @@ export default function BookPage() {
                     </div>
                   </div>
 
-                  <div className="order-5 rounded-[24px] bg-white/95 p-3.5 shadow-[0_18px_54px_rgba(15,23,42,0.08)] sm:rounded-[30px] sm:p-5 sm:shadow-[0_24px_70px_rgba(15,23,42,0.08)] lg:order-none">
-                    <StepHeader
-                      step="4 Payment"
-                      title="Review and continue"
-                      subtitle="Payment starts the admin approval review and holds your selected slot during checkout."
-                    />
+                  <div className="order-5 rounded-[10px] border border-[#E5E9F2] bg-white/95 p-2 pb-[calc(76px+env(safe-area-inset-bottom,0px))] shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[16px] sm:p-4 lg:order-none">
+                    <h2 className="mb-1 text-[11px] font-extrabold text-[#0B1628] sm:text-[15px]">Payment summary</h2>
 
-                    <div className="mb-4 grid gap-2 text-[14px] text-[#475569]">
-                      <div className="flex justify-between gap-4 rounded-[14px] bg-[#F8FAFF] px-4 py-3">
-                        <span>{pageCopy.visitLabel}</span>
+                    <div className="mb-1 grid gap-1 text-[9px] text-[#475569] sm:text-[12px]">
+                      <div className="flex justify-between gap-2 rounded-[7px] bg-[#F8FAFF] px-2 py-1.5">
+                        <span>Extra Visit</span>
                         <strong className="text-right text-[#0B1628]">
                           {priceLabel} / {config.durationMinutes} minutes
                         </strong>
                       </div>
-                      <div className="flex justify-between gap-4 rounded-[14px] bg-[#F8FAFF] px-4 py-3">
-                        <span>Help needed</span>
+                      <div className="flex justify-between gap-2 rounded-[7px] bg-[#F8FAFF] px-2 py-1.5">
+                        <span>Task</span>
                         <strong className="text-right text-[#0B1628]">
                           {selectedTask || "Not selected"}
                         </strong>
                       </div>
-                      <div className="flex justify-between gap-4 rounded-[14px] bg-[#F8FAFF] px-4 py-3">
-                        <span>Time</span>
+                      <div className="flex justify-between gap-2 rounded-[7px] bg-[#F8FAFF] px-2 py-1.5">
+                        <span>Date &amp; time</span>
                         <strong className="text-right text-[#0B1628]">
                           {selectedDate ? dayLabel(selectedDate) : "Not selected"}
                           {selectedTime ? ` at ${formatTime12(selectedTime)}` : ""}
                         </strong>
                       </div>
                       {selectedAddress && (
-                        <div className="rounded-[14px] bg-[#F8FAFF] px-4 py-3 text-[13px] font-semibold text-[#64748B]">
-                          Booking for {addressLabel(selectedAddress)}
+                        <div className="truncate rounded-[7px] bg-[#F8FAFF] px-2 py-1.5 font-semibold text-[#64748B]">
+                          {addressLabel(selectedAddress)}
                         </div>
                       )}
                     </div>
 
-                    <div className="mb-4 rounded-[16px] border border-[#D9E4FF] bg-[#F0F7FF] px-4 py-3 text-[13px] leading-6 text-[#475569]">
-                      You do not pay anything else for the visit itself. If materials are needed, please have them ready or approved separately. Profixter brings the tools.
-                    </div>
-
-                    <div className="mb-4 rounded-[16px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-3 text-[13px] leading-6 text-[#64748B]">
-                      {pageCopy.changeText}{" "}
-                      <a
-                        href={`tel:${config.cancellationPhone}`}
-                        className="font-extrabold text-[#306EEC]"
-                      >
-                        {config.cancellationPhone}
-                      </a>{" "}
-                      if plans change.
+                    <div className="mb-1 text-[9px] leading-3 text-[#64748B] sm:text-[11px] sm:leading-4">
+                      Materials are separate. Let us know in the task description if you want us to bring anything.
                     </div>
 
                     {error && (
-                      <div className="mb-4 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-semibold text-red-700">
+                      <div className="mb-1 rounded-[7px] border border-red-200 bg-red-50 px-2 py-1.5 text-[10px] font-semibold text-red-700 sm:text-[13px]">
                         {error}
                       </div>
                     )}
@@ -1396,7 +1264,7 @@ export default function BookPage() {
                       type="button"
                       onClick={submit}
                       disabled={loading || !config.enabled}
-                      className="h-[50px] w-full rounded-[15px] bg-[#306EEC] text-[15px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-y-0 active:scale-[0.99] sm:h-[54px] sm:rounded-[16px] sm:text-[16px]"
+                      className="h-11 w-full rounded-[9px] bg-[#306EEC] text-[12px] font-extrabold text-white transition hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99] sm:h-[54px] sm:rounded-[14px] sm:text-[15px]"
                       style={{ boxShadow: !loading && config.enabled ? "0 16px 48px rgba(48,110,236,0.30)" : undefined }}
                     >
                       {loading
@@ -1413,51 +1281,17 @@ export default function BookPage() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-[1280px] gap-3 px-4 pb-8 sm:gap-4 sm:px-6 sm:pb-10 lg:grid-cols-3 lg:px-8">
-        <div className="rounded-[24px] bg-white/88 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:p-5">
-          <h2 className="text-[18px] font-extrabold text-[#0B1628]">What your visit includes</h2>
-          <p className="mt-3 text-[14px] leading-6 text-[#64748B]">
-            {pageCopy.includeText}
-          </p>
-        </div>
-        <div className="rounded-[24px] bg-white/88 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:p-5">
-          <h2 className="text-[18px] font-extrabold text-[#0B1628]">Before we arrive</h2>
-          <p className="mt-3 text-[14px] leading-6 text-[#64748B]">
-            Please prepare or provide materials if materials are needed. Appliance repair is not offered. Larger or multi-day work should use a{" "}
-            <Link
-              href="/projects"
-              onClick={() => trackEvent("estimate_cta_clicked", { placement: "book_scope_card" })}
-              className="font-extrabold text-[#306EEC]"
-            >
-              Project Estimate
-            </Link>
-            .
-          </p>
-        </div>
-        <div className="rounded-[24px] bg-white/88 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:p-5">
-          <h2 className="text-[18px] font-extrabold text-[#0B1628]">What happens after payment</h2>
-          <p className="mt-3 text-[14px] leading-6 text-[#64748B]">
-            Admin reviews the paid request and sends confirmation shortly. If we cannot approve the job, cannot complete it within scope, or must cancel before service, you receive a full refund. Changes are handled by calling {config.cancellationPhone}.
-          </p>
-        </div>
-      </section>
-
-      {isAuthenticated && (
-        <section className="mx-auto max-w-[1280px] px-4 pb-10 sm:px-6 lg:px-8">
-          <div className="rounded-[28px] bg-[#EEF5FF] p-5 shadow-[0_18px_54px_rgba(48,110,236,0.08)]">
-            <h2 className="text-[18px] font-extrabold text-[#0B1628]">Your bookings</h2>
-            <p className="mt-2 text-[14px] leading-6 text-[#64748B]">
-              {pageCopy.bookingsText}
-            </p>
-            <Link
-              href="/account?tab=bookings"
-              className="mt-4 inline-flex h-[44px] items-center rounded-[14px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white"
-            >
-              View my bookings
-            </Link>
+      <section className="mx-auto max-w-[1280px] px-4 pb-8 sm:px-6 lg:px-8">
+        <details className="rounded-[12px] border border-[#E5E9F2] bg-white px-3 py-2 text-[#0B1628]">
+          <summary className="cursor-pointer text-[11px] font-extrabold sm:text-[13px]">Important information</summary>
+          <div className="mt-2 grid gap-2 border-t border-[#E5E9F2] pt-2 text-[10px] leading-4 text-[#64748B] sm:grid-cols-3 sm:text-[12px]">
+            <p><strong className="text-[#0B1628]">What&rsquo;s included:</strong> {pageCopy.includeText}</p>
+            <p><strong className="text-[#0B1628]">Materials and exclusions:</strong> Materials are separate. Appliance repair and larger projects are excluded.</p>
+            <p><strong className="text-[#0B1628]">After payment:</strong> Admin reviews the request. If it cannot be approved, you receive a full refund.</p>
+            {isAuthenticated && <Link href="/account?tab=bookings" className="font-bold text-[#306EEC]">Manage bookings</Link>}
           </div>
-        </section>
-      )}
+        </details>
+      </section>
 
       <Footer />
     </main>
