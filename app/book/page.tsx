@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
@@ -32,6 +32,7 @@ const ONE_TIME_SERVICE_OPTIONS = [
 
 const AUTO_SELECT_MONTHS_TO_CHECK = 6;
 const FALLBACK_DAYS_TO_CHECK = 120;
+const CUSTOMER_MOBILE_NAV_HEIGHT_PX = 76;
 
 const FALLBACK_ONE_TIME_CONFIG: OneTimeVisitConfig = {
   enabled: true,
@@ -262,6 +263,7 @@ export default function BookPage() {
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const servicePickerRef = useRef<HTMLDivElement | null>(null);
+  const servicePickerTriggerRef = useRef<HTMLButtonElement | null>(null);
   const autoSelectStartedRef = useRef(false);
   const availabilityByDateRef = useRef<Record<string, string[]>>({});
 
@@ -280,6 +282,10 @@ export default function BookPage() {
   useEffect(() => {
     if (!servicePickerOpen) return;
 
+    const previousOverflow = document.body.style.overflow;
+    const trigger = servicePickerTriggerRef.current;
+    document.body.style.overflow = "hidden";
+
     const closeOnOutsideClick = (event: PointerEvent) => {
       if (
         servicePickerRef.current &&
@@ -296,8 +302,10 @@ export default function BookPage() {
     document.addEventListener("pointerdown", closeOnOutsideClick);
     document.addEventListener("keydown", closeOnEscape);
     return () => {
+      document.body.style.overflow = previousOverflow;
       document.removeEventListener("pointerdown", closeOnOutsideClick);
       document.removeEventListener("keydown", closeOnEscape);
+      trigger?.focus({ preventScroll: true });
     };
   }, [servicePickerOpen]);
 
@@ -863,6 +871,7 @@ export default function BookPage() {
                         Small job
                       </div>
                       <button
+                        ref={servicePickerTriggerRef}
                         type="button"
                         onClick={() => setServicePickerOpen((open) => !open)}
                         aria-expanded={servicePickerOpen}
@@ -893,14 +902,20 @@ export default function BookPage() {
                         <>
                           <button
                             type="button"
-                            className="fixed inset-0 z-[60] bg-[#071325]/20 backdrop-blur-[2px] sm:hidden"
+                            className="fixed inset-0 z-[80] bg-[#071325]/20 backdrop-blur-[2px] sm:hidden"
                             aria-label="Close service picker"
                             onClick={() => setServicePickerOpen(false)}
                           />
-                          <div className="fixed inset-x-3 bottom-3 z-[70] rounded-[26px] bg-white p-2.5 shadow-[0_30px_90px_rgba(7,19,37,0.28)] sm:absolute sm:inset-x-0 sm:bottom-auto sm:top-[calc(100%+10px)] sm:z-30 sm:rounded-[26px] sm:p-3">
-                            <div className="mb-2 flex items-center justify-between px-2 py-1">
+                          <div
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="service-picker-title"
+                            style={{ "--customer-nav-height": `${CUSTOMER_MOBILE_NAV_HEIGHT_PX}px` } as CSSProperties}
+                            className="fixed inset-x-3 bottom-[calc(var(--customer-nav-height)_+_env(safe-area-inset-bottom,0px)_+_8px)] z-[90] flex max-h-[calc(100dvh_-_var(--customer-nav-height)_-_env(safe-area-inset-bottom,0px)_-_24px)] flex-col overflow-hidden rounded-[20px] bg-white shadow-[0_30px_90px_rgba(7,19,37,0.28)] sm:absolute sm:inset-x-0 sm:bottom-auto sm:top-[calc(100%+10px)] sm:z-30 sm:max-h-[420px] sm:rounded-[22px]"
+                          >
+                            <div className="flex flex-shrink-0 items-center justify-between border-b border-[#E5E9F2] px-3 py-2.5">
                               <div>
-                                <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#306EEC]">
+                                <div id="service-picker-title" className="text-[11px] font-black uppercase tracking-[0.16em] text-[#306EEC]">
                                   Select service
                                 </div>
                                 <div className="mt-0.5 text-[13px] font-semibold text-[#64748B]">
@@ -916,7 +931,10 @@ export default function BookPage() {
                                 &times;
                               </button>
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div
+                              className="grid min-h-0 grid-cols-2 gap-2 overflow-y-auto overscroll-contain p-2 pb-4 touch-pan-y"
+                              style={{ WebkitOverflowScrolling: "touch" }}
+                            >
                               {ONE_TIME_SERVICE_OPTIONS.map((task) => {
                                 const active = selectedTask === task;
                                 return (
@@ -928,7 +946,7 @@ export default function BookPage() {
                                       setServicePickerOpen(false);
                                     }}
                                     className={[
-                                      "min-h-[52px] rounded-[16px] px-3 text-left text-[12px] font-black leading-4 transition duration-150 active:scale-[0.98] sm:min-h-[58px] sm:rounded-[18px] sm:text-[13px]",
+                                      "min-h-[52px] whitespace-normal break-words rounded-[12px] px-3 py-2 text-left text-[12px] font-black leading-4 transition duration-150 active:scale-[0.98] sm:min-h-[58px] sm:rounded-[14px] sm:text-[13px]",
                                       active
                                         ? "bg-[#0B1628] text-white shadow-[0_16px_34px_rgba(11,22,40,0.22)]"
                                         : "bg-[#F5F7FA] text-[#0B1628] hover:bg-[#EEF4FF]",
