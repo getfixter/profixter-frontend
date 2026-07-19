@@ -217,7 +217,7 @@ function RushServiceCallout({ rushIncluded }: { rushIncluded: boolean }) {
           <a href="tel:6315991363" onClick={() => trackEvent("rush_service_call_clicked", { placement: "book_rush_service_callout" })} className="inline-flex h-10 flex-shrink-0 items-center rounded-[10px] bg-[#F59E0B] px-3 text-[11px] font-black text-[#0B1628] sm:h-11 sm:text-[13px]">Call Now</a>
         </div>
         <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-semibold text-[#8A5A10] sm:text-[12px]">
-          <span>Priority scheduling</span><span>Rush dispatch when available</span><span>$300 fee</span><span>Labor separate</span>
+          <span>Priority scheduling</span><span>Rush dispatch when available</span><span>$300 fee</span>
         </div>
         <a href="tel:6315991363" className="mt-1 inline-flex text-[11px] font-bold text-[#B45309] sm:text-[12px]">(631) 599-1363</a>
       </div>
