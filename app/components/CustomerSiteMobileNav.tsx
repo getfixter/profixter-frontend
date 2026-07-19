@@ -46,8 +46,8 @@ const items: NavItem[] = [
   },
   {
     label: "Book",
-    href: "/book",
-    match: (pathname) => pathname === "/book" || pathname.startsWith("/book/"),
+    href: "/membership",
+    match: (pathname) => pathname === "/membership" || pathname === "/membership-info",
     icon: (
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
@@ -56,9 +56,9 @@ const items: NavItem[] = [
     ),
   },
   {
-    label: "Member",
-    href: "/membership",
-    match: (pathname) => pathname === "/membership" || pathname === "/membership-info",
+    label: "Extra",
+    href: "/book",
+    match: (pathname) => pathname === "/book" || pathname.startsWith("/book/"),
     icon: (
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="m12 3 2.8 5.67 6.25.91-4.52 4.4 1.07 6.22L12 17.26 6.4 20.2l1.07-6.22-4.52-4.4 6.25-.91L12 3Z" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />

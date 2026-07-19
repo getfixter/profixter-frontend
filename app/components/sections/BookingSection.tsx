@@ -150,7 +150,7 @@ function TimeSlotGrid({
   onSelect: (value: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-4">
+    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-5">
       {slotOptions.map((slot) => {
         const isSelected = slot.time === selectedTime;
         const availabilityLabel = slot.available
@@ -170,7 +170,7 @@ function TimeSlotGrid({
               onSelect(slot.time);
             }}
             className={[
-              "group relative min-h-[60px] overflow-hidden rounded-[12px] border px-3 py-2.5 text-left transition-all duration-150 ease-out active:scale-[0.99] sm:min-h-[72px] sm:px-3.5 sm:py-3",
+              "group relative min-h-11 overflow-hidden rounded-[11px] border px-2 py-2 text-center transition-all duration-150 ease-out active:scale-[0.99] sm:min-h-12 sm:px-3",
               isSelected
                 ? "border-[#306EEC] bg-[#EEF5FF] text-[#0B1628] shadow-[0_8px_24px_rgba(48,110,236,0.12)] ring-2 ring-[#306EEC]/20"
                 : slot.available
@@ -189,16 +189,16 @@ function TimeSlotGrid({
               />
             )}
 
-            <div className="relative z-[1] flex flex-col gap-1">
+            <div className="relative z-[1] flex items-center justify-center gap-1">
               <div
-                  className={`text-[15px] font-black leading-tight tracking-[-0.01em] sm:text-[16px] ${
+                  className={`text-[13px] font-bold leading-tight tracking-[-0.01em] sm:text-[14px] ${
                   slot.available ? "" : "line-through"
                 } ${isSelected ? "text-[#0B1628]" : ""}`}
               >
                 {formatTime12(slot.time)}
               </div>
               {isSelected && (
-                <div className="inline-flex items-center gap-1 text-[11px] font-black leading-tight text-[#306EEC]">
+                <div className="inline-flex items-center text-[#306EEC]">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" className="flex-shrink-0">
                     <path
                       d="M2.5 6.2L4.8 8.5L9.5 3.7"
@@ -208,40 +208,13 @@ function TimeSlotGrid({
                       strokeLinejoin="round"
                     />
                   </svg>
-                  Selected
                 </div>
               )}
             </div>
-            <div
-              className={`relative z-[1] mt-1 text-[11px] font-semibold ${
-                isSelected ? "text-[#306EEC]" : slot.available ? "text-[#64748B]" : "text-[#8C94A3]"
-              }`}
-            >
-              {availabilityLabel}
-            </div>
+            <span className="sr-only">{availabilityLabel}</span>
           </button>
         );
       })}
-    </div>
-  );
-}
-
-function StepHeader({
-  step,
-  title,
-  subtitle,
-}: {
-  step: string;
-  title: string;
-  subtitle?: string;
-}) {
-  return (
-    <div className="mb-3 sm:mb-4">
-      <div className="mb-1.5 inline-flex items-center rounded-full bg-[#EEF5FF] px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-[#306EEC]">
-        {step}
-      </div>
-      <div className="text-[16px] font-extrabold text-[#0B1628]">{title}</div>
-      {subtitle && <div className="mt-0.5 text-[13px] leading-snug text-[#64748B]">{subtitle}</div>}
     </div>
   );
 }
@@ -301,30 +274,31 @@ export default function BookingSection() {
   const [note, setNote] = useState<string>("");
   const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-  const [showServiceMenu, setShowServiceMenu] = useState(false);
-
-  // close service dropdown on outside click
-  const serviceWrapRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (!serviceWrapRef.current) return;
-      if (!serviceWrapRef.current.contains(e.target as Node)) setShowServiceMenu(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, []);
+  const [showAddressPicker, setShowAddressPicker] = useState(false);
 
   // UI state
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [bookingNumber, setBookingNumber] = useState("");
-
   // Modal display data
-  const [confirmedService, setConfirmedService] = useState("");
   const [confirmedDate, setConfirmedDate] = useState<Date | null>(null);
   const [confirmedTime, setConfirmedTime] = useState("");
+  const [confirmedAddress, setConfirmedAddress] = useState("");
+
+  useEffect(() => {
+    if (!showModal) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowModal(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [showModal]);
 
   // Existing booking + limits
   const [hasActiveBooking, setHasActiveBooking] = useState(false);
@@ -345,18 +319,8 @@ export default function BookingSection() {
   // Plan used to lock services (basic | plus | premium | elite | free)
   const [plan, setPlan] = useState<string>("");
 
-  const planRank = (p?: string) => {
-    const x = String(p || "").toLowerCase();
-    // if (x === "free") return 1; // ❌ no free visits anymore
-    if (x === "basic") return 1;
-    if (x === "plus") return 2;
-    if (x === "premium") return 3;
-    if (x === "elite") return 4;
-    return 0;
-  };
-
-  const currentRank = planRank(plan);
-  const isServiceAllowed = (minRank: number) => currentRank >= minRank;
+  /* Membership visits submit the API's existing labor-only service value automatically. */
+  const memberService: ServiceKey = "labor_only";
   const availabilityUserId =
     bookingUser?._id || bookingUser?.id || bookingUser?.userId || bookingUser?.email || "";
   const selectedAvailabilityAddressId = selectedAddressId || defaultAddressId || "";
@@ -398,8 +362,8 @@ export default function BookingSection() {
     setLoadingMonthKey(null);
     setCalendarMode("initializing");
     setAvailabilityError("");
-    setService("");
-    setShowServiceMenu(false);
+    setService(memberService);
+    setShowAddressPicker(false);
     setError("");
     setNotice("");
     setUploadedPhotos([]);
@@ -1045,8 +1009,7 @@ if (next?.date) {
     } else {
       setNote(QUICK_BOOKING_DESCRIPTIONS[taskTitle] || taskTitle);
     }
-    setService("labor_only");
-    setShowServiceMenu(false);
+    setService(memberService);
 
     setQuickBookOpen(false);
     setQuickBookingLoading(false);
@@ -1121,7 +1084,7 @@ if (next?.date) {
 
 
 
-      const result = await createBooking({
+      await createBooking({
         service: serviceLabel,
         date: bookingDate.toISOString(),
         note: note.trim(),
@@ -1131,16 +1094,20 @@ if (next?.date) {
         requestedTime: selectedTime,
       });
 
-      setBookingNumber(result.booking.bookingNumber);
-      setConfirmedService(serviceLabel);
       setConfirmedDate(new Date(selectedDate));
       setConfirmedTime(selectedTime);
+      const bookedAddress = addresses.find((address) => address._id === addressId);
+      setConfirmedAddress(
+        [bookedAddress?.line1, bookedAddress?.city, bookedAddress?.state, bookedAddress?.zip]
+          .filter(Boolean)
+          .join(", "),
+      );
 
       setHasActiveBooking(activeBookingCount + 1 >= activeBookingLimit);
       setActiveBookingCount((c) => c + 1);
       setExistingBookingDate(bookingDate);
 
-      setService("");
+      setService(memberService);
       setSelectedDate(null);
       setSelectedTime("");
       setNote("");
@@ -1365,46 +1332,33 @@ if (next?.date) {
       data-visible-month={visibleMonthKey}
       data-selected-date={ymdSelected}
       data-available-times={displayedTimes.join(",")}
-      className="relative w-full overflow-hidden bg-[#F6F8FC] pb-6 pt-6 scroll-mt-[96px] sm:pb-16 sm:pt-16 lg:pb-20 lg:pt-20"
+      className="relative w-full overflow-hidden bg-[#F6F8FC] pb-5 pt-4 scroll-mt-[96px] sm:pb-12 sm:pt-10 lg:pb-16 lg:pt-14"
     >
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
         {/* ── Header ── */}
-        <div className="mb-5 max-w-[720px] sm:mb-8">
-          <div className="mb-3 inline-flex items-center gap-2.5 rounded-[8px] border border-[#D9E4FF] bg-white px-3 py-2">
-            <span
-              className="h-2 w-2 flex-shrink-0 rounded-full bg-[#306EEC]"
-              style={{ boxShadow: "0 0 8px rgba(48,110,236,0.7)" }}
-            />
-            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
-              Member booking
-            </span>
-          </div>
-
-          <h2 className="mb-2 text-[26px] font-black leading-[1.06] text-[#0B1628] sm:text-[40px] sm:leading-[1.02] lg:text-[48px]">
-            Book Your Next Visit
+        <div className="mb-3 flex items-center justify-between gap-4 sm:mb-6">
+          <h2 className="text-[24px] font-black leading-tight tracking-[-0.025em] text-[#0B1628] sm:text-[34px] lg:text-[40px]">
+            Book Your Visit
           </h2>
-
-          <p className="mb-1.5 max-w-[520px] text-[14px] leading-relaxed text-[#475569] sm:text-[16px]">
-            Choose a time, tell us what you need, and we&rsquo;ll handle the rest.
-          </p>
-
-          <p className="max-w-[560px] text-[12px] leading-relaxed text-[#64748B] sm:text-[13px]">
-            Your visit includes up to 90 minutes of handyman labor. Add notes and photos so our team can come prepared.
-          </p>
+          {isAuthenticated && hasSubscription && (
+            <button type="button" onClick={() => router.push(manageBookingsPath)} className="flex-shrink-0 text-[12px] font-semibold text-[#64748B] underline decoration-[#CBD5E1] underline-offset-4 transition hover:text-[#306EEC] sm:text-[13px]">
+              Manage visits
+            </button>
+          )}
         </div>
 
 
         {/* ── Main grid ── */}
-        <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-12 lg:gap-6">
+        <div className="grid grid-cols-1 gap-2.5 sm:gap-4 lg:grid-cols-12 lg:gap-6">
 
           {/* ── Calendar (left) ── */}
           <div className="order-2 lg:order-1 lg:col-span-5">
 
             {/* Calendar card */}
-            <div className="rounded-[12px] border border-[#D7DEE9] bg-white p-3.5 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5">
+            <div className="rounded-[14px] border border-[#D7DEE9] bg-white p-3 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:p-5">
               {/* Month navigation */}
-              <div className="flex items-center justify-between mb-5">
+              <div className="mb-3 flex items-center justify-between sm:mb-5">
                 <button
                   aria-label="Prev month"
                   disabled={calendarMode === "initializing"}
@@ -1413,12 +1367,12 @@ if (next?.date) {
                     setCalendarMode("manual-navigation");
                     setCurrentMonth(addMonthsLocal(currentMonth, -1));
                   }}
-                  className="w-10 h-10 rounded-[12px] border border-[#E5E9F2] bg-[#F8FAFF] grid place-items-center text-[#475569] hover:bg-[#EEF5FF] hover:border-[#D9E4FF] transition active:scale-95"
+                  className="grid h-9 w-9 place-items-center rounded-[10px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 sm:h-10 sm:w-10"
                 >
                   <ChevronLeft />
                 </button>
 
-                <div className="text-[16px] font-extrabold text-[#0B1628] sm:text-[20px]">
+                <div className="text-[15px] font-extrabold text-[#0B1628] sm:text-[19px]">
                   {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 </div>
 
@@ -1430,7 +1384,7 @@ if (next?.date) {
                     setCalendarMode("manual-navigation");
                     setCurrentMonth(addMonthsLocal(currentMonth, 1));
                   }}
-                  className="w-10 h-10 rounded-[12px] border border-[#E5E9F2] bg-[#F8FAFF] grid place-items-center text-[#475569] hover:bg-[#EEF5FF] hover:border-[#D9E4FF] transition active:scale-95"
+                  className="grid h-9 w-9 place-items-center rounded-[10px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 sm:h-10 sm:w-10"
                 >
                   <ChevronRight />
                 </button>
@@ -1461,7 +1415,7 @@ if (next?.date) {
               )}
 
               {/* Week headers */}
-              <div className="grid grid-cols-7 text-center mb-2">
+              <div className="mb-1 grid grid-cols-7 text-center sm:mb-2">
                 {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d, i) => (
                   <div
                     key={d}
@@ -1494,7 +1448,7 @@ if (next?.date) {
                       onClick={() => handleDayClick(day.date, day.muted)}
                       disabled={disabled}
                       className={[
-                        "mx-auto w-9 h-9 sm:w-10 sm:h-10 grid place-items-center rounded-[12px] text-[14px] sm:text-[15px] font-semibold transition-all duration-150",
+                        "mx-auto grid h-9 w-9 place-items-center rounded-[10px] text-[13px] font-semibold transition-all duration-150 sm:h-10 sm:w-10 sm:text-[15px]",
                         day.muted ? "text-[#C5CBD8] cursor-not-allowed" : "",
                         disabled && !day.muted ? "text-[#C5CBD8] cursor-not-allowed" : "",
                         !disabled && !isSelected ? "bg-[#EEF5FF] text-[#1D4ED8] hover:bg-[#DBEAFE] hover:scale-105" : "",
@@ -1525,7 +1479,7 @@ if (next?.date) {
 
             {/* Selected date label */}
             {selectedDate && (
-              <div className="mt-3 flex items-center gap-2.5 rounded-[14px] border border-[#D9E4FF] bg-white px-4 py-3">
+              <div className="mt-2 flex items-center gap-2 px-1 py-1.5 sm:mt-3">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="text-[#306EEC] flex-shrink-0" aria-hidden="true">
                   <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
                   <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -1534,149 +1488,60 @@ if (next?.date) {
               </div>
             )}
 
-            {/* Manage bookings */}
-            {isAuthenticated && hasSubscription && (
-              <div className="mt-3">
-                <button
-                  type="button"
-                  onClick={() => router.push(manageBookingsPath)}
-                  className="inline-flex items-center gap-2 w-full justify-center h-[46px] rounded-[14px] border border-[#C5CBD8] bg-white text-[#475569] text-[14px] font-semibold hover:border-[#306EEC] hover:text-[#306EEC] transition"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
-                    <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                    <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                  Manage my visits
-                </button>
-              </div>
-            )}
           </div>
 
           {/* ── Right column ── */}
           <div className="contents lg:order-2 lg:col-span-7 lg:flex lg:flex-col lg:gap-5">
 
-            <div className="order-1 rounded-[12px] border border-[#D7DEE9] bg-white p-3.5 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5 lg:order-none">
-              <StepHeader
-                step="1 Details"
-                title="Visit details"
-                subtitle="Confirm the home and type of help."
-              />
-
-              <div className="space-y-4">
-                <div>
-                  <div className="text-[13px] font-semibold text-[#0B1628] mb-2">Booking address</div>
-                  {(addresses?.length || 0) >= 2 ? (
+            <div className="order-1 rounded-[14px] border border-[#D7DEE9] bg-white px-3 py-2.5 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:p-4 lg:order-none">
+              {selectedAddressLabel ? (
+                <>
+                  <div className="flex min-h-10 items-center gap-2.5">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-[#306EEC]" aria-hidden="true">
+                      <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" stroke="currentColor" strokeWidth="1.8" />
+                      <circle cx="12" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.8" />
+                    </svg>
+                    <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-[#0B1628] sm:text-[14px]" title={selectedAddressLabel}>
+                      {selectedAddressLabel}
+                    </span>
+                    {addresses.length >= 2 && (
+                      <button type="button" onClick={() => setShowAddressPicker((open) => !open)} className="flex-shrink-0 px-1 py-2 text-[12px] font-bold text-[#306EEC]">
+                        {showAddressPicker ? "Done" : "Change"}
+                      </button>
+                    )}
+                  </div>
+                  {showAddressPicker && addresses.length >= 2 && (
                     <select
+                      autoFocus
+                      aria-label="Booking address"
                       value={selectedAddressId ?? defaultAddressId ?? ""}
-                      onChange={(e) => setSelectedAddressId(e.target.value)}
-                      className="w-full min-h-[48px] rounded-[12px] border border-[#C5CBD8] bg-[#F8FAFF] px-3 py-2 text-[#0B1628] text-[14px] font-semibold outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] transition"
+                      onChange={(event) => setSelectedAddressId(event.target.value)}
+                      className="mt-2 min-h-11 w-full rounded-[11px] border border-[#C5CBD8] bg-[#F8FAFF] px-3 text-[13px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15"
                     >
-                      {addresses.map((a) => (
-                        <option key={a._id} value={a._id}>
-                          {a.label ? `${a.label}: ` : ""}
-                          {a.line1}, {a.city} {a.state} {a.zip}
+                      {addresses.map((address) => (
+                        <option key={address._id} value={address._id}>
+                          {address.label ? `${address.label}: ` : ""}{address.line1}, {address.city} {address.state} {address.zip}
                         </option>
                       ))}
                     </select>
-                  ) : selectedAddressLabel ? (
-                    <div className="rounded-[12px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-3 text-[14px] font-semibold text-[#0B1628]">
-                      {selectedAddressLabel}
-                    </div>
-                  ) : (
-                    <div className="rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] font-semibold text-amber-800">
-                      Add a service address in your account before booking.
-                    </div>
                   )}
+                </>
+              ) : (
+                <div className="rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] font-semibold text-amber-800">
+                  Add a service address in your account before booking.
                 </div>
-
-                <div>
-                  <div className="text-[13px] font-semibold text-[#0B1628] mb-2">Service type</div>
-                  <div ref={serviceWrapRef} className="relative">
-                    <button
-                      type="button"
-                      disabled={checkingAccess || !hasSubscription}
-                      onClick={() => {
-                        if (checkingAccess || !hasSubscription) return;
-                        setShowServiceMenu((v) => !v);
-                      }}
-                      className={[
-                        "min-h-[48px] w-full px-4 py-2 rounded-[12px] border text-[14px] font-semibold flex items-center justify-between gap-3 transition",
-                        checkingAccess || !hasSubscription
-                          ? "border-[#E5E9F2] bg-[#F8FAFF] text-[#94A3B8] cursor-not-allowed"
-                          : "border-[#C5CBD8] bg-[#F8FAFF] text-[#0B1628] hover:border-[#306EEC] hover:bg-white",
-                      ].join(" ")}
-                    >
-                      <span className={service ? "text-[#0B1628]" : "text-[#94A3B8]"}>
-                        {service ? SERVICES.find((x) => x.key === service)?.label : "Select service type"}
-                      </span>
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        className={`flex-shrink-0 transition-transform ${showServiceMenu ? "rotate-180" : ""}`}
-                        aria-hidden="true"
-                      >
-                        <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-
-                    {showServiceMenu && (
-                      <div className="absolute top-[54px] left-0 w-full bg-white border border-[#C5CBD8] rounded-[12px] shadow-[0_16px_48px_rgba(15,23,42,0.12)] z-20 overflow-hidden">
-                        {SERVICES.map((s) => {
-                          const allowed = isServiceAllowed(s.minRank);
-                          return (
-                            <button
-                              key={s.key}
-                              type="button"
-                              disabled={!allowed}
-                              onClick={() => {
-                                if (!allowed) return;
-                                setService(s.key);
-                                setShowServiceMenu(false);
-                              }}
-                              className={[
-                                "flex w-full items-center justify-between gap-3 px-4 py-3.5 text-[14px] text-left transition border-b border-[#F1F5F9] last:border-0",
-                                allowed
-                                  ? "text-[#0B1628] font-semibold hover:bg-[#F8FAFF]"
-                                  : "text-[#94A3B8] cursor-not-allowed",
-                              ].join(" ")}
-                            >
-                              <span>{s.label}</span>
-                              {!allowed && (
-                                <span className="text-[11px] bg-[#F1F5F9] px-2 py-0.5 rounded-full text-[#94A3B8] font-normal">
-                                  Not available
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                  {!hasSubscription && isAuthenticated && !checkingAccess && (
-                    <div className="mt-2 text-[12px] text-[#64748B]">
-                      Booking opens when this address has an active membership.
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Time slot card */}
-            <div className="order-3 rounded-[12px] border border-[#D7DEE9] bg-white p-4 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5 lg:order-none">
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <StepHeader
-                  step="2 Time"
-                  title="Choose a time"
-                  subtitle="Each visit is up to 90 minutes."
-                />
+            <div className="order-3 rounded-[14px] border border-[#D7DEE9] bg-white p-3 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:p-5 lg:order-none">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h3 className="text-[15px] font-extrabold text-[#0B1628] sm:text-[16px]">Time</h3>
                 <button
                   type="button"
                   onClick={() => setQuickBookOpen(true)}
                   disabled={checkingAccess || loadingMonthKey === visibleMonthKey}
-                  className="inline-flex h-[38px] flex-shrink-0 items-center gap-2 rounded-[12px] border border-[#306EEC] px-3 text-[12px] font-bold text-[#306EEC] transition hover:bg-[#EEF5FF] disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-[13px]"
+                  className="inline-flex h-9 flex-shrink-0 items-center gap-1.5 rounded-[10px] border border-[#306EEC] px-2.5 text-[11px] font-bold text-[#306EEC] transition hover:bg-[#EEF5FF] disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 sm:text-[12px]"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -1687,9 +1552,9 @@ if (next?.date) {
 
               {selectedDate && config ? (
                 loadingSelectedDate && displayedTimes.length === 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                     {[1, 2, 3, 4, 5, 6].map((n) => (
-                      <div key={n} className="h-[64px] rounded-[18px] bg-[#F1F5F9] animate-pulse" />
+                      <div key={n} className="h-11 animate-pulse rounded-[11px] bg-[#F1F5F9]" />
                     ))}
                   </div>
                 ) : slotOptions.length > 0 ? (
@@ -1716,12 +1581,8 @@ if (next?.date) {
             </div>
 
             {/* Task details card */}
-            <div className="order-4 rounded-[12px] border border-[#D7DEE9] bg-white p-4 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5 lg:order-none">
-              <StepHeader
-                step="3 Notes / Photos"
-                title="Tell us what you need"
-                subtitle="Add a short note and at least one photo."
-              />
+            <div className="order-4 rounded-[14px] border border-[#D7DEE9] bg-white p-3 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:p-5 lg:order-none">
+              <h3 className="mb-2.5 text-[15px] font-extrabold text-[#0B1628] sm:text-[16px]">Task details</h3>
 
               <textarea
                 value={note}
@@ -1729,32 +1590,24 @@ if (next?.date) {
                   setNote(e.target.value);
                   if (error === "Describe the task in at least a few words.") setError("");
                 }}
-                placeholder="E.g. leaking faucet, loose door handle, light fixture swap, shelf to hang..."
-                className={`w-full min-h-[96px] max-h-[220px] rounded-[16px] border bg-[#F8FAFF] p-3.5 text-[14px] text-[#0B1628] placeholder-[#94A3B8] resize-none transition focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] sm:min-h-[120px] sm:p-4 sm:text-[15px] ${
+                placeholder="Describe what you’d like us to do…"
+                rows={3}
+                className={`w-full min-h-[76px] max-h-[180px] rounded-[12px] border bg-[#F8FAFF] p-3 text-[14px] text-[#0B1628] placeholder-[#94A3B8] resize-y transition focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] sm:min-h-[88px] sm:text-[15px] ${
                   error === "Describe the task in at least a few words."
                     ? "border-red-300"
                     : "border-[#C5CBD8]"
                 }`}
               />
-              <div className="mt-1.5 flex items-center justify-between">
-                <span className="text-[11px] text-[#94A3B8]">Minimum 3 words</span>
-                <span className={`text-[11px] font-bold ${wordsCount >= 3 ? "text-[#16A34A]" : "text-[#DC2626]"}`}>
-                  {wordsCount} {wordsCount === 1 ? "word" : "words"}
-                </span>
-              </div>
-
               {/* Photo upload */}
-              <div className="mt-4">
-                <div className="text-[13px] font-semibold text-[#0B1628] mb-2">
-                  Photos{" "}
-                  <span className="text-[#DC2626]">*</span>
-                  <span className="ml-1 text-[#64748B] font-normal">required - helps us prepare.</span>
+              <div className="mt-3">
+                <div className="mb-2 text-[12px] font-semibold text-[#64748B]">
+                  Photos required
                 </div>
-                <div className="flex gap-2.5">
+                <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
-                    className="flex-1 h-[46px] rounded-[14px] border border-[#C5CBD8] bg-[#F8FAFF] text-[14px] font-semibold text-[#475569] flex items-center justify-center gap-2 hover:border-[#306EEC] hover:text-[#306EEC] hover:bg-white transition"
+                    className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[11px] border border-[#C5CBD8] bg-[#F8FAFF] px-1 text-[12px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-[46px] sm:text-[14px]"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -1765,14 +1618,14 @@ if (next?.date) {
                   <button
                     type="button"
                     onClick={() => galleryInputRef.current?.click()}
-                    className="flex-1 h-[46px] rounded-[14px] border border-[#C5CBD8] bg-[#F8FAFF] text-[14px] font-semibold text-[#475569] flex items-center justify-center gap-2 hover:border-[#306EEC] hover:text-[#306EEC] hover:bg-white transition"
+                    className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[11px] border border-[#C5CBD8] bg-[#F8FAFF] px-1 text-[12px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-[46px] sm:text-[14px]"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
                       <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="1.8" />
                       <path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
-                    Add Photos{uploadedPhotos.length > 0 ? ` (${uploadedPhotos.length})` : ""}
+                    Choose Photos{uploadedPhotos.length > 0 ? ` (${uploadedPhotos.length})` : ""}
                   </button>
                 </div>
 
@@ -1888,29 +1741,13 @@ if (next?.date) {
             )}
 
             {/* Confirm card */}
-            <div className="order-7 rounded-[12px] border border-[#D7DEE9] bg-white p-4 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-5 lg:order-none">
-              <StepHeader step="4 Confirm" title="Ready to book" />
-              <div className="mb-4 flex flex-wrap gap-x-4 gap-y-2">
-                {[
-                  "1 task per visit, up to 90 min",
-                  "Upload at least one photo",
-                  "Materials are not included",
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-2">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M5 12.5l4 4 10-10" stroke="#306EEC" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <span className="text-[12px] text-[#64748B]">{item}</span>
-                  </div>
-                ))}
-              </div>
-
+            <div className="order-7 pb-[calc(80px+env(safe-area-inset-bottom,0px))] pt-0.5 sm:pb-0 lg:order-none">
               <button
                 onClick={handleBookNow}
                 data-track="booking-cta"
                 disabled={!canBook}
-                className="h-[50px] w-full rounded-[15px] bg-[#306EEC] text-[15px] font-extrabold text-white transition-all hover:-translate-y-0.5 hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-y-0 active:scale-[0.99] sm:h-[58px] sm:rounded-[16px] sm:text-[17px]"
-                style={{ boxShadow: canBook ? "0 16px 48px rgba(48,110,236,0.30)" : undefined }}
+                className="h-12 w-full rounded-[13px] bg-[#306EEC] text-[15px] font-extrabold text-white transition-all hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99] sm:h-14 sm:rounded-[15px] sm:text-[16px]"
+                style={{ boxShadow: canBook ? "0 10px 30px rgba(48,110,236,0.25)" : undefined }}
               >
                 {checkingAccess
                   ? "Checking access..."
@@ -1925,9 +1762,6 @@ if (next?.date) {
                   : "Book Your Visit"}
               </button>
 
-              <div className="mt-3 text-[12px] text-[#94A3B8] text-center">
-                You&rsquo;ll receive a confirmation once your visit is reviewed.
-              </div>
             </div>
           </div>
         </div>
@@ -2003,100 +1837,59 @@ if (next?.date) {
         {/* ── Confirmation Modal ── */}
         {showModal && (
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-[2px] flex items-end sm:items-center justify-center z-50 sm:px-4"
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 backdrop-blur-[3px] sm:items-center sm:p-5"
+            style={{
+              paddingTop: "max(16px, env(safe-area-inset-top, 0px))",
+              paddingBottom: "max(16px, env(safe-area-inset-bottom, 0px))",
+            }}
             onClick={() => setShowModal(false)}
+            role="presentation"
           >
             <div
-              className="bg-white rounded-t-[32px] sm:rounded-[28px] w-full sm:max-w-[520px] shadow-[0_-8px_60px_rgba(0,0,0,0.18)] sm:shadow-[0_32px_100px_rgba(0,0,0,0.25)] max-h-[92vh] overflow-y-auto"
-              style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))" }}
+              className="flex w-full max-w-[440px] flex-col overflow-hidden rounded-[22px] border border-black/[0.08] bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.22)] backdrop-blur-xl sm:rounded-[24px]"
+              style={{ maxHeight: "calc(100dvh - max(16px, env(safe-area-inset-top, 0px)) - max(16px, env(safe-area-inset-bottom, 0px)))" }}
               onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="booking-success-title"
             >
               {/* Drag handle — mobile only */}
-              <div className="flex justify-center pt-3 pb-1 sm:hidden" aria-hidden="true">
-                <div className="h-1 w-10 rounded-full bg-[#E2E8F0]" />
-              </div>
-
-              <div className="px-5 pb-2 pt-4 sm:px-9 sm:pb-9 sm:pt-9">
-                {/* Success icon with pulse ring */}
-                <div className="flex items-center justify-center mb-6">
-                  <div className="relative">
-                    <span className="absolute inset-0 rounded-full bg-[#DCFCE7] animate-ping opacity-60" />
-                    <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-[#DCFCE7] sm:h-20 sm:w-20">
-                      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path
-                          d="M5 12.5l4.5 4.5L19 8"
-                          stroke="#16A34A"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
+              <div className="min-h-0 overflow-y-auto px-5 pb-4 pt-6 sm:px-7 sm:pb-5 sm:pt-7">
+                <div className="mb-4 flex justify-center">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#EAF8EF] ring-1 ring-[#CDEBD8]">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M5 12.5l4.5 4.5L19 8" stroke="#16803C" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                   </div>
                 </div>
-
-                <h2 className="mb-2 text-center text-[22px] font-extrabold text-[#0B1628] sm:text-[30px]">
-                  Booking Confirmed
+                <h2 id="booking-success-title" className="text-center text-[21px] font-extrabold tracking-[-0.02em] text-[#0B1628] sm:text-[24px]">
+                  Visit booked
                 </h2>
-                <p className="text-[14px] text-[#64748B] text-center mb-6">
-                  We&rsquo;ll reach out to confirm your visit details.
+                <p className="mt-2 text-center text-[15px] font-semibold leading-snug text-[#334155]">
+                  {confirmedDate?.toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                  })} at {formatTime12(confirmedTime)}
                 </p>
-
-                {/* Booking details */}
-                <div className="rounded-[18px] border border-[#E5E9F2] bg-[#F8FAFF] p-5 space-y-3 mb-5">
-                  {(
-                    [
-                      ["Visit #", bookingNumber],
-                      ["Service", confirmedService],
-                      [
-                        "Date",
-                        confirmedDate?.toLocaleDateString("en-US", {
-                          weekday: "long",
-                          month: "long",
-                          day: "numeric",
-                          year: "numeric",
-                        }),
-                      ],
-                      ["Time", formatTime12(confirmedTime)],
-                    ] as [string, string | undefined][]
-                  )
-                    .filter(([, v]) => !!v)
-                    .map(([label, value]) => (
-                      <div key={label} className="flex items-start justify-between gap-4">
-                        <span className="text-[13px] font-semibold text-[#64748B] flex-shrink-0">{label}</span>
-                        <span className="text-[14px] font-semibold text-[#0B1628] text-right">{value}</span>
-                      </div>
-                    ))}
-                </div>
-
-                {/* Pre-visit checklist */}
-                <div className="rounded-[18px] border border-[#D9E4FF] bg-[#EEF5FF] p-5 mb-6">
-                  <div className="text-[14px] font-extrabold text-[#1D4ED8] mb-3">Before your visit</div>
-                  <div className="space-y-2.5">
-                    {[
-                      "Have all materials & fixtures on-site and ready",
-                      "Your Profixter pro may arrive up to 30 min early or late",
-                      "Questions? Call Taras: 631-599-1363",
-                    ].map((item) => (
-                      <div key={item} className="flex items-start gap-2.5">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="mt-0.5 flex-shrink-0" aria-hidden="true">
-                          <path d="M5 12.5l4 4 10-10" stroke="#306EEC" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        <span className="text-[13px] text-[#1D4ED8]">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
+                {confirmedAddress && (
+                  <p className="mx-auto mt-2 max-w-full truncate text-center text-[13px] text-[#64748B]" title={confirmedAddress}>
+                    {confirmedAddress}
+                  </p>
+                )}
+                <p className="mt-4 text-center text-[14px] leading-relaxed text-[#64748B]">
+                  We&rsquo;ll notify you when your visit is confirmed.
+                </p>
+              </div>
+              <div className="flex-shrink-0 border-t border-black/[0.06] px-5 pb-5 pt-4 sm:px-7 sm:pb-6">
                 <button
                   onClick={() => {
                     setShowModal(false);
-                    window.location.reload();
+                    router.push(manageBookingsPath);
                   }}
-                  className="h-[50px] w-full rounded-[15px] bg-[#306EEC] text-[15px] font-extrabold text-white transition hover:bg-[#2558c9] active:scale-[0.99] sm:h-[56px] sm:rounded-[16px] sm:text-[16px]"
-                  style={{ boxShadow: "0 12px 36px rgba(48,110,236,0.30)" }}
+                  className="h-12 w-full rounded-[14px] bg-[#306EEC] text-[15px] font-bold text-white shadow-[0_8px_24px_rgba(48,110,236,0.24)] transition hover:bg-[#2558c9] active:scale-[0.99]"
                 >
-                  Done
+                  View My Visit
                 </button>
               </div>
             </div>
