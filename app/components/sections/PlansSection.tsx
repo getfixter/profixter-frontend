@@ -571,8 +571,8 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
   );
 
   const BillingToggle = () => (
-    <div className={compact ? "mt-3 flex flex-col items-center" : "mt-7 flex flex-col items-center"}>
-      <div className="inline-grid rounded-full bg-[#E8E8ED] p-1 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)]">
+    <div className={compact ? "mt-3 flex flex-col items-center lg:mt-5" : "mt-7 flex flex-col items-center"}>
+      <div className="inline-grid rounded-full bg-[#E8E8ED] p-1 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)] lg:p-1.5">
         <div className="grid grid-cols-2 gap-1">
           {(["monthly", "annual"] as const).map((cycle) => {
             const active = billing === cycle;
@@ -584,7 +584,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                 aria-pressed={active}
                 onClick={() => setBilling(cycle)}
                 className={[
-                  "h-9 min-w-[104px] rounded-full px-5 text-sm font-semibold capitalize transition duration-200",
+                  "h-9 min-w-[104px] rounded-full px-5 text-sm font-semibold capitalize transition duration-200 lg:h-11 lg:min-w-[124px] lg:px-7 lg:text-[15px]",
                   active
                     ? "bg-white text-[#111111] shadow-[0_6px_18px_rgba(15,23,42,0.10)]"
                     : "text-[#6E6E73] hover:text-[#111111]",
@@ -639,12 +639,12 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         : "bg-white text-[#1D1D1F] hover:bg-[#F8FAFF]";
 
     return (
-      <div className="mx-auto max-w-[920px]">
-        <p className="mb-2 text-center text-[11px] font-medium text-[#86868B] sm:text-[12px]">
+      <div className="mx-auto max-w-[920px] lg:max-w-[1220px]">
+        <p className="mb-2 text-center text-[11px] font-medium text-[#86868B] sm:text-[12px] lg:mb-3 lg:text-[14px]">
           <span aria-hidden="true">&#9757; </span>Tap a plan to select
         </p>
-        <div className="overflow-hidden rounded-[18px] border border-[#D9DCE3] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
-          <div className="grid grid-cols-[68px_repeat(4,minmax(0,1fr))] sm:grid-cols-[112px_repeat(4,minmax(0,1fr))]">
+        <div className="overflow-hidden rounded-[18px] border border-[#D9DCE3] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.06)] lg:rounded-[24px] lg:shadow-[0_18px_54px_rgba(15,23,42,0.07)]">
+          <div className="grid grid-cols-[68px_repeat(4,minmax(0,1fr))] sm:grid-cols-[112px_repeat(4,minmax(0,1fr))] lg:grid-cols-[170px_repeat(4,minmax(0,1fr))]">
             <div className="border-b border-[#E8E8ED] bg-[#FAFAFC]" aria-hidden="true" />
             {mobilePlans.map((plan) => (
               <button
@@ -653,17 +653,17 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                 onClick={() => setSelectedComparisonPlan(plan.name)}
                 aria-pressed={selectedComparisonPlan === plan.name}
                 aria-label={`Select ${plan.name} plan`}
-                className={`relative min-w-0 border-b border-l border-[#E8E8ED] px-0.5 pb-3 pt-5 text-center transition sm:px-2 sm:pb-4 sm:pt-6 ${cellClass(plan.name)}`}
+                className={`relative min-w-0 border-b border-l border-[#E8E8ED] px-0.5 pb-3 pt-5 text-center transition sm:px-2 sm:pb-4 sm:pt-6 lg:min-h-[108px] lg:px-4 lg:pb-5 lg:pt-7 ${cellClass(plan.name)}`}
               >
                 {plan.name === "Plus" ? (
-                  <span className="absolute left-1/2 top-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#306EEC] px-1.5 py-0.5 text-[6px] font-semibold leading-3 text-white sm:top-1.5 sm:px-2 sm:text-[8px]">
+                  <span className="absolute left-1/2 top-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#306EEC] px-1.5 py-0.5 text-[6px] font-semibold leading-3 text-white sm:top-1.5 sm:px-2 sm:text-[8px] lg:top-2 lg:px-2.5 lg:py-0.5 lg:text-[10px]">
                     Popular
                   </span>
                 ) : null}
-                <span className="flex min-w-0 items-center justify-center gap-0.5 text-[9px] font-bold leading-3 min-[360px]:text-[10px] sm:gap-1 sm:text-[13px]">
+                <span className="flex min-w-0 items-center justify-center gap-0.5 text-[9px] font-bold leading-3 min-[360px]:text-[10px] sm:gap-1 sm:text-[13px] lg:gap-1.5 lg:text-[17px] lg:leading-5">
                   <span className="truncate">{plan.name}</span>
                   {selectedComparisonPlan === plan.name ? (
-                    <span className="flex h-3 w-3 shrink-0 items-center justify-center rounded-full bg-[#306EEC] text-[7px] font-bold leading-none text-white sm:h-3.5 sm:w-3.5 sm:text-[8px]" aria-hidden="true">
+                    <span className="flex h-3 w-3 shrink-0 items-center justify-center rounded-full bg-[#306EEC] text-[7px] font-bold leading-none text-white sm:h-3.5 sm:w-3.5 sm:text-[8px] lg:h-5 lg:w-5 lg:text-[11px]" aria-hidden="true">
                       ✓
                     </span>
                   ) : null}
@@ -673,27 +673,27 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                     const annual = getAnnualPromotion(plan);
                     return (
                       <>
-                        <span className="block text-[8px] leading-3 text-[#86868B] line-through sm:text-[10px]">
+                        <span className="block text-[8px] leading-3 text-[#86868B] line-through sm:text-[10px] lg:text-[12px] lg:leading-4">
                           ${formatMoney(annual.original)}
                         </span>
-                        <span className={`block text-[12px] font-bold leading-4 min-[360px]:text-[13px] sm:text-[17px] ${selectedComparisonPlan === plan.name ? "text-[#1F5ED8]" : "text-[#111111]"}`}>
+                        <span className={`block text-[12px] font-bold leading-4 min-[360px]:text-[13px] sm:text-[17px] lg:text-[27px] lg:leading-8 ${selectedComparisonPlan === plan.name ? "text-[#1F5ED8]" : "text-[#111111]"}`}>
                           ${formatMoney(annual.discounted)}
                         </span>
-                        <span className="block whitespace-nowrap text-[7px] font-semibold leading-3 text-[#306EEC] min-[360px]:text-[8px] sm:text-[10px]">
+                        <span className="block whitespace-nowrap text-[7px] font-semibold leading-3 text-[#306EEC] min-[360px]:text-[8px] sm:text-[10px] lg:text-[13px] lg:leading-5">
                           Only ${formatMoney(annual.monthlyEquivalent)}/mo
                         </span>
-                        <span className="block whitespace-nowrap text-[6px] leading-3 text-[#86868B] min-[360px]:text-[7px] sm:text-[9px]">Billed annually</span>
-                        <span className="mx-auto mt-1 block w-fit max-w-full whitespace-nowrap rounded-full bg-[#EAF7EF] px-0.5 py-0.5 text-[5px] font-bold leading-3 text-[#277447] min-[360px]:text-[6px] sm:px-2 sm:text-[9px]">
+                        <span className="block whitespace-nowrap text-[6px] leading-3 text-[#86868B] min-[360px]:text-[7px] sm:text-[9px] lg:text-[11px] lg:leading-4">Billed annually</span>
+                        <span className="mx-auto mt-1 block w-fit max-w-full whitespace-nowrap rounded-full bg-[#EAF7EF] px-0.5 py-0.5 text-[5px] font-bold leading-3 text-[#277447] min-[360px]:text-[6px] sm:px-2 sm:text-[9px] lg:mt-1.5 lg:px-3 lg:py-0.5 lg:text-[10px]">
                           2 MONTHS FREE
                         </span>
                       </>
                     );
                   })() : (
                     <>
-                      <span className="block text-[13px] font-semibold leading-4 min-[360px]:text-[14px] sm:text-[17px]">
+                      <span className="block text-[13px] font-semibold leading-4 min-[360px]:text-[14px] sm:text-[17px] lg:text-[27px] lg:leading-8">
                         ${formatMoney(getDisplayPrice(plan, billing))}
                       </span>
-                      <span className="block text-[8px] leading-3 text-[#86868B] sm:text-[10px]">/mo</span>
+                      <span className="block text-[8px] leading-3 text-[#86868B] sm:text-[10px] lg:text-[13px] lg:leading-5">/mo</span>
                     </>
                   )}
                 </span>
@@ -702,7 +702,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
 
             {comparisonRows.map((row) => (
               <React.Fragment key={row.label}>
-                <div className="flex min-h-10 items-center border-b border-[#EEEEF2] bg-[#FAFAFC] px-2 text-[9px] font-semibold leading-3 text-[#6E6E73] sm:min-h-12 sm:px-3 sm:text-[12px]">
+                <div className="flex min-h-10 items-center border-b border-[#EEEEF2] bg-[#FAFAFC] px-2 text-[9px] font-semibold leading-3 text-[#6E6E73] sm:min-h-12 sm:px-3 sm:text-[12px] lg:min-h-[68px] lg:px-5 lg:text-[15px] lg:leading-5">
                   {row.label}
                 </div>
                 {mobilePlans.map((plan) => (
@@ -712,10 +712,10 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                     onClick={() => setSelectedComparisonPlan(plan.name)}
                     aria-pressed={selectedComparisonPlan === plan.name}
                     aria-label={`${plan.name}: ${row.label} ${row.values[plan.name]}`}
-                    className={`min-w-0 whitespace-nowrap border-b border-l border-[#EEEEF2] px-0.5 text-center font-semibold transition sm:px-2 ${
+                    className={`min-w-0 whitespace-nowrap border-b border-l border-[#EEEEF2] px-0.5 text-center font-semibold transition sm:px-2 lg:min-h-[68px] lg:px-4 ${
                       row.label === "Length"
-                        ? "text-[6px] tracking-[-0.025em] min-[360px]:text-[7px] sm:text-[11px] sm:tracking-normal"
-                        : "text-[11px] sm:text-[13px]"
+                        ? "text-[6px] tracking-[-0.025em] min-[360px]:text-[7px] sm:text-[11px] sm:tracking-normal lg:text-[15px]"
+                        : "text-[11px] sm:text-[13px] lg:text-[17px]"
                     } ${cellClass(plan.name)}`}
                   >
                     {row.values[plan.name]}
@@ -726,20 +726,20 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           </div>
         </div>
 
-        <p className="mt-2 px-1 text-[9px] leading-4 text-[#86868B] sm:text-[11px]">
+        <p className="mt-2 px-1 text-[9px] leading-4 text-[#86868B] sm:text-[11px] lg:mt-4 lg:px-2 lg:text-[13px] lg:leading-5">
           Available visits depend on appointment completion. Basic supports one active booking at a time. Plus, Premium and Elite support two active bookings at a time.
         </p>
 
-        <div className="mt-4 rounded-[18px] border border-[#D9DCE3] bg-white p-4 shadow-[0_10px_32px_rgba(15,23,42,0.05)] sm:p-5">
-          <div className="flex items-start justify-between gap-4">
+        <div className="mt-4 rounded-[18px] border border-[#D9DCE3] bg-white p-4 shadow-[0_10px_32px_rgba(15,23,42,0.05)] sm:p-5 lg:mt-8 lg:rounded-[24px] lg:p-8 lg:shadow-[0_16px_48px_rgba(15,23,42,0.06)]">
+          <div className="flex items-start justify-between gap-4 lg:gap-6">
             <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#306EEC]">{selectedPlan.name}</p>
-              <h3 className="mt-1 text-[17px] font-semibold text-[#111111] sm:text-[19px]">{planDisplayContent[selectedPlan.name].description}</h3>
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#306EEC] lg:text-[13px]">{selectedPlan.name}</p>
+              <h3 className="mt-1 text-[17px] font-semibold text-[#111111] sm:text-[19px] lg:mt-2 lg:text-[24px]">{planDisplayContent[selectedPlan.name].description}</h3>
             </div>
           </div>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-3">
+          <ul className="mt-3 grid gap-2 sm:grid-cols-3 lg:mt-5 lg:gap-5">
             {summaryFeatures[selectedPlan.name].map((feature) => (
-              <li key={feature} className="flex items-center gap-2 text-[13px] text-[#4B5563]">
+              <li key={feature} className="flex items-center gap-2 text-[13px] text-[#4B5563] lg:gap-2.5 lg:text-[15px]">
                 <span className="font-bold text-[#306EEC]" aria-hidden="true">✓</span>
                 {feature}
               </li>
@@ -750,7 +750,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
             onClick={() => handleSubscribe(selectedPlan.name)}
             data-track="plans-cta"
             disabled={disabled}
-            className={`mt-4 h-12 w-full rounded-full text-[14px] font-semibold text-white transition ${
+            className={`mt-4 h-12 w-full rounded-full text-[14px] font-semibold text-white transition lg:mt-6 lg:h-14 lg:text-[16px] ${
               disabled ? "cursor-not-allowed bg-[#B8C0CE]" : "bg-[#306EEC] hover:bg-[#2558C9]"
             }`}
           >
@@ -783,9 +783,9 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
             </div>
           ) : null}
           {compact ? (
-            <div className="mx-auto mt-5 max-w-[360px] rounded-[16px] border border-[#D9E4FA] bg-white/80 px-4 py-3 shadow-[0_8px_24px_rgba(48,110,236,0.06)]">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#306EEC]">&#127881; Annual special</p>
-              <p className="mt-1 text-[13px] leading-5 text-[#4B5563]">
+            <div className="mx-auto mt-5 max-w-[360px] rounded-[16px] border border-[#D9E4FA] bg-white/80 px-4 py-3 shadow-[0_8px_24px_rgba(48,110,236,0.06)] lg:mt-6 lg:max-w-[480px] lg:rounded-[18px] lg:px-6 lg:py-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#306EEC] lg:text-[12px]">Annual special</p>
+              <p className="mt-1 text-[13px] leading-5 text-[#4B5563] lg:mt-1.5 lg:text-[15px] lg:leading-6">
                 Pay for <strong className="font-semibold text-[#111111]">10 months</strong>. Get <strong className="font-semibold text-[#111111]">12 months of Membership.</strong>
               </p>
             </div>
