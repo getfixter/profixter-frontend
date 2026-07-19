@@ -34,7 +34,7 @@ export default function ValuePropsSection() {
               <span className="text-2xl">⏱️</span>
             </div>
             <h3 className="font-bold text-gray-800 mb-2">Fast Scheduling</h3>
-            <p className="text-sm text-gray-600">Book appointments online 24/7. Eligible plans include Rush Visits when you need help sooner.</p>
+            <p className="text-sm text-gray-600">Book appointments online 24/7. Eligible plans include Emergency Visits when you need help sooner, subject to technician availability.</p>
           </div>
           <div className="flex flex-col items-center text-center">
             <div className="w-12 h-12 rounded-full bg-[#E6F8EC] text-[#34A853] flex items-center justify-center mb-3">
@@ -76,7 +76,7 @@ export default function ValuePropsSection() {
                 <td className="px-4 py-2 border-b border-gray-200">Included in elite plan*</td>
               </tr>
               <tr>
-                <td className="px-4 py-2 border-b border-gray-200">Rush Visit</td>
+                <td className="px-4 py-2 border-b border-gray-200">Emergency Visit</td>
                 <td className="px-4 py-2 border-b border-gray-200">$300+/visit</td>
                 <td className="px-4 py-2 border-b border-gray-200">Included with Premium and Elite</td>
               </tr>

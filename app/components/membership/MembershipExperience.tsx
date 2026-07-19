@@ -153,7 +153,7 @@ function ProspectMembershipFlow() {
   const faqs = [
     ["What kinds of jobs are included?", "Membership covers everyday handyman repairs, maintenance, and installations. Larger or multi-day work is quoted separately as a Project Estimate."],
     ["How long is each visit?", "Standard membership visits are up to 90 minutes. Elite also includes one full project day each month."],
-    ["How often can I book?", "You can request visits as needed. Your plan determines how many appointments can be active at one time and whether Rush Visits are included."],
+    ["How often can I book?", "You can request visits as needed. Your plan determines how many appointments can be active at one time and whether Emergency Visits are included."],
     ["Are materials included?", "Plus and Premium include basic materials. For other materials, tell us what the task needs when you book so the team can prepare."],
     ["Can I change my plan?", "Yes. You can adjust your plan as your home's needs change."],
     ["What if I need a larger project?", "Use Project Estimates for renovations, multi-day work, or tasks that need a larger scope."],

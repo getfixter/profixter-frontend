@@ -64,8 +64,8 @@ const planDisplayContent: Record<
       "Request membership visits as needed",
       "2 active appointments at a time",
       "Basic materials included",
-      "1 Rush Visit per month",
-      "Need help sooner? Rush Visits don't require waiting for the next standard appointment slot.",
+      "1 Emergency Visit per month",
+      "Emergency Visits help when you need service before the next standard appointment slot, subject to technician availability.",
     ],
   },
   Elite: {
@@ -74,8 +74,8 @@ const planDisplayContent: Record<
       "Request membership visits as needed",
       "2 active appointments at a time",
       "1 full project day per month (up to 8 hours)",
-      "2 Rush Visits per month",
-      "Need help sooner? Rush Visits don't require waiting for the next standard appointment slot.",
+      "2 Emergency Visits per month",
+      "Emergency Visits help when you need service before the next standard appointment slot, subject to technician availability.",
     ],
   },
 };
@@ -623,15 +623,15 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
             : { Basic: "2+", Plus: "4+", Premium: "4+", Elite: "4+" },
       },
       { label: "Supply", values: { Basic: "-", Plus: "✓", Premium: "✓", Elite: "✓" } },
-      { label: "Rush", values: { Basic: "-", Plus: "-", Premium: "1/mo", Elite: "2/mo" } },
+      { label: "Emergency", values: { Basic: "-", Plus: "-", Premium: "1/mo", Elite: "2/mo" } },
       { label: "Full day", values: { Basic: "-", Plus: "-", Premium: "-", Elite: "1/mo" } },
       { label: "Length", values: { Basic: "90 min/visit", Plus: "90 min/visit", Premium: "90 min/visit", Elite: "90 min/visit" } },
     ];
     const summaryFeatures: Record<Plan["name"], string[]> = {
       Basic: ["2+ visits over time", "90-minute visits", "All handyman services"],
       Plus: ["4+ visits over time", "Basic materials included", "90-minute visits"],
-      Premium: ["4+ visits over time", "Basic materials included", "1 Rush Visit per month"],
-      Elite: ["4+ visits over time", "1 full project day per month", "2 Rush Visits per month"],
+      Premium: ["4+ visits over time", "Basic materials included", "1 Emergency Visit per month"],
+      Elite: ["4+ visits over time", "1 full project day per month", "2 Emergency Visits per month"],
     };
     const cellClass = (planName: Plan["name"]) =>
       selectedComparisonPlan === planName

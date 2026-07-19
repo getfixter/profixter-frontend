@@ -21,7 +21,7 @@ type Booking = {
 const FAQS = [
   {
     q: "How often can I book a visit?",
-    a: "Members can request visits as needed. Your plan determines active appointment capacity, materials, Rush Visit benefits, and project benefits. You book online from Your Home.",
+    a: "Members can request visits as needed. Your plan determines active appointment capacity, materials, Emergency Visit benefits, and project benefits. You book online from Your Home.",
   },
   {
     q: "Can I request the same technician every time?",

@@ -52,9 +52,9 @@ export const PLAN_DETAILS: PlanDetails[] = [
     isPopular: true,
     features: [
       "2 active bookings",
-      "1 Rush Visit per month",
+      "1 Emergency Visit per month",
       "Each visit covers up to 90 minutes of work",
-      "Rush Visits don't require waiting for the next standard appointment slot",
+      "Emergency Visits help when you need service before the next standard appointment slot, subject to technician availability",
     ],
   },
   {
@@ -65,7 +65,7 @@ export const PLAN_DETAILS: PlanDetails[] = [
     subtitle: "Everything in Premium, plus",
     features: [
       "2-3 active bookings",
-      "2 Rush Visits per month",
+      "2 Emergency Visits per month",
       "1 full-day visit per month (up to 8 hours)",
       "Each standard visit covers up to 90 minutes of work",
       "Full-day visit must be scheduled in advance",
