@@ -46,6 +46,17 @@ const SERVICES = [
 
 type ServiceKey = (typeof SERVICES)[number]["key"];
 
+type BookingFieldErrors = Partial<Record<"address" | "date" | "time" | "note" | "photos", string>>;
+
+function RequiredAsterisk() {
+  return (
+    <>
+      <span className="ml-0.5 text-red-500" aria-hidden="true">*</span>
+      <span className="sr-only"> required</span>
+    </>
+  );
+}
+
 type BookingAddress = {
   _id: string;
   label?: string;
@@ -256,6 +267,11 @@ export default function BookingSection() {
 
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const calendarFieldRef = useRef<HTMLDivElement | null>(null);
+  const timeFieldRef = useRef<HTMLDivElement | null>(null);
+  const noteFieldRef = useRef<HTMLTextAreaElement | null>(null);
+  const photosFieldRef = useRef<HTMLDivElement | null>(null);
+  const addressFieldRef = useRef<HTMLDivElement | null>(null);
   const dayRequestCacheRef = useRef<Record<string, Promise<DayAvailability | null>>>({});
   const monthRequestCacheRef = useRef<Record<string, Promise<MonthLoadState>>>({});
   const monthAvailabilityCacheRef = useRef<Record<string, {
@@ -285,11 +301,20 @@ export default function BookingSection() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<BookingFieldErrors>({});
   const closeBookingConfirmation = useCallback(() => setBookingConfirmation(null), []);
   const viewConfirmedVisit = useCallback(() => {
     setBookingConfirmation(null);
     router.push(manageBookingsPath);
   }, [manageBookingsPath, router]);
+  const clearFieldError = useCallback((field: keyof BookingFieldErrors) => {
+    setFieldErrors((current) => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  }, []);
 
   // Existing booking + limits
   const [hasActiveBooking, setHasActiveBooking] = useState(false);
@@ -336,8 +361,9 @@ export default function BookingSection() {
   useEffect(() => {
     if (defaultAddressId) {
       setSelectedAddressId((prev) => prev ?? String(defaultAddressId));
+      clearFieldError("address");
     }
-  }, [defaultAddressId]);
+  }, [clearFieldError, defaultAddressId]);
 
   // ✅ reset when address changes
   useEffect(() => {
@@ -915,6 +941,7 @@ if (next?.date) {
     d.setHours(0, 0, 0, 0);
 
     if (isDayDisabled(d)) return;
+    clearFieldError("date");
 
     const ymd = formatDateYMD(d);
     const cached = dayAvailabilityMap[ymd];
@@ -986,6 +1013,7 @@ if (next?.date) {
     }
 
     setUploadedPhotos((prev) => [...prev, ...compressed].slice(0, 10));
+    if (compressed.length > 0) clearFieldError("photos");
     if (error === "Add at least one photo so our team can prepare.") {
       setError("");
     }
@@ -1030,7 +1058,10 @@ if (next?.date) {
       setNote("");
     } else {
       setNote(QUICK_BOOKING_DESCRIPTIONS[taskTitle] || taskTitle);
+      clearFieldError("note");
     }
+    clearFieldError("date");
+    clearFieldError("time");
     setService(memberService);
 
     setQuickBookOpen(false);
@@ -1055,11 +1086,38 @@ if (next?.date) {
     }
 
     const addressId = selectedAddressId || defaultAddressId;
-    if (!addressId) {
-      alert("Please add an address to your account first");
-      window.location.href = roleLandingPath;
+    const nextFieldErrors: BookingFieldErrors = {};
+    if (!addressId) nextFieldErrors.address = "Choose or add a service address.";
+    if (!selectedDate) nextFieldErrors.date = "Choose a date.";
+    if (!selectedTime) nextFieldErrors.time = "Choose a time.";
+    if (note.trim().split(/\s+/).filter(Boolean).length < 3) {
+      nextFieldErrors.note = "Tell us what you need help with.";
+    }
+    if (uploadedPhotos.length === 0) nextFieldErrors.photos = "Add at least one photo.";
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError("");
+      const firstMissing = (["address", "date", "time", "note", "photos"] as const).find(
+        (field) => nextFieldErrors[field]
+      );
+      window.requestAnimationFrame(() => {
+        const target = firstMissing === "address"
+          ? addressFieldRef.current
+          : firstMissing === "date"
+            ? calendarFieldRef.current
+            : firstMissing === "time"
+              ? timeFieldRef.current
+              : firstMissing === "note"
+                ? noteFieldRef.current
+                : photosFieldRef.current;
+        target?.focus({ preventScroll: true });
+        target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
       return;
     }
+    setFieldErrors({});
+    if (!addressId || !selectedDate || !selectedTime) return;
 
     if (!hasSubscription) {
   setError("This address does not have an active membership for booking.");
@@ -1080,19 +1138,6 @@ if (next?.date) {
       setError("Choose a service type.");
       return;
     }
-    if (!selectedDate || !selectedTime) {
-      setError("Choose a date and time.");
-      return;
-    }
-    if (note.trim().split(/\s+/).filter(Boolean).length < 3) {
-      setError("Describe the task in at least a few words.");
-      return;
-    }
-    if (uploadedPhotos.length === 0) {
-      setError("Add at least one photo so our team can prepare.");
-      return;
-    }
-
     setLoading(true);
     setError("");
     setNotice("");
@@ -1244,8 +1289,6 @@ if (next?.date) {
 
   const days = generateCalendarDays();
 
-  const wordsCount = note.trim().split(/\s+/).filter(Boolean).length;
-
   const ymdSelected = selectedDate ? formatDateYMD(selectedDate) : "";
   const selectedAvailability = ymdSelected ? dayAvailabilityMap[ymdSelected] : null;
   const selectedDateIsBookable = isAvailabilityOpen(selectedAvailability);
@@ -1266,24 +1309,13 @@ if (next?.date) {
     calendarMode !== "initializing" && visibleMonthLoaded && !visibleMonthHasAvailability;
   const showAvailabilityLoadError =
     calendarMode !== "initializing" && (Boolean(availabilityError) || visibleMonthLoadState?.status === "error");
-  const availabilityCanSubmit =
-    calendarMode === "ready" &&
-    !showAvailabilityLoadError &&
-    selectedDateIsBookable &&
-    selectedTimeIsBookable;
-  const requiredBookingFieldsComplete =
-    Boolean(service) &&
-    Boolean(selectedDate) &&
-    Boolean(selectedTime) &&
-    wordsCount >= 3 &&
-    uploadedPhotos.length > 0;
-  const canBook =
-    !loading &&
-    !checkingAccess &&
-    availabilityCanSubmit &&
-    requiredBookingFieldsComplete &&
-    (hasSubscription || !isAuthenticated) &&
-    !hasActiveBooking;
+  const bookingActionDisabled =
+    loading ||
+    checkingAccess ||
+    calendarMode === "initializing" ||
+    showAvailabilityLoadError ||
+    !hasSubscription ||
+    hasActiveBooking;
 
   const moveToNextAvailableMonth = async () => {
     if (!config) return;
@@ -1377,6 +1409,10 @@ if (next?.date) {
           )}
         </div>
 
+        <p className="mb-1.5 text-[10px] leading-4 text-[#64748B] sm:-mt-3 sm:mb-4 sm:text-[13px]">
+          Choose a date and time, describe the task, and add at least one photo.
+        </p>
+
 
         {/* ── Main grid ── */}
         <div className="grid grid-cols-1 gap-0.5 sm:gap-3 lg:grid-cols-12 lg:gap-5">
@@ -1385,7 +1421,14 @@ if (next?.date) {
           <div className="order-2 lg:order-1 lg:col-span-5">
 
             {/* Calendar card */}
-            <div className="rounded-[8px] border border-[#D7DEE9] bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:rounded-[12px] sm:p-4">
+            <div
+              ref={calendarFieldRef}
+              role="group"
+              tabIndex={-1}
+              aria-labelledby="booking-date-label"
+              aria-describedby={fieldErrors.date ? "booking-date-error" : undefined}
+              className={`rounded-[8px] border bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] outline-none sm:rounded-[12px] sm:p-4 ${fieldErrors.date ? "border-red-300" : "border-[#D7DEE9]"}`}
+            >
               {/* Month navigation */}
               <div className="mb-1 flex items-center justify-between sm:mb-4">
                 <button
@@ -1397,8 +1440,13 @@ if (next?.date) {
                   <ChevronLeft />
                 </button>
 
-                <div className="text-[11px] font-extrabold text-[#0B1628] sm:text-[18px]">
-                  {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                <div className="text-center">
+                  <div id="booking-date-label" className="text-[8px] font-bold text-[#64748B] sm:text-[10px]">
+                    Date<RequiredAsterisk />
+                  </div>
+                  <div className="text-[11px] font-extrabold text-[#0B1628] sm:text-[18px]">
+                    {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                  </div>
                 </div>
 
                 <button
@@ -1410,6 +1458,11 @@ if (next?.date) {
                   <ChevronRight />
                 </button>
               </div>
+              {fieldErrors.date ? (
+                <p id="booking-date-error" role="alert" className="mt-1 px-1 text-[10px] font-semibold text-red-600 sm:mt-2 sm:text-[12px]">
+                  {fieldErrors.date}
+                </p>
+              ) : null}
 
               {loadingMonthKey === visibleMonthKey && (
                 <div className="mb-4 rounded-[12px] border border-[#D9E4FF] bg-[#F0F7FF] px-3 py-2 text-[12px] font-semibold text-[#475569]">
@@ -1517,7 +1570,13 @@ if (next?.date) {
           {/* ── Right column ── */}
           <div className="contents lg:order-2 lg:col-span-7 lg:flex lg:flex-col lg:gap-4">
 
-            <div className="order-1 rounded-[8px] border border-[#D7DEE9] bg-white px-1 py-0.5 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:rounded-[12px] sm:p-3.5 lg:order-none">
+            <div
+              ref={addressFieldRef}
+              role="group"
+              tabIndex={-1}
+              aria-describedby={fieldErrors.address ? "booking-address-error" : undefined}
+              className={`order-1 rounded-[8px] border bg-white px-1 py-0.5 shadow-[0_10px_30px_rgba(15,23,42,0.035)] outline-none sm:rounded-[12px] sm:p-3.5 lg:order-none ${fieldErrors.address ? "border-red-300" : "border-[#D7DEE9]"}`}
+            >
               {selectedAddressLabel ? (
                 <>
                   <div className="flex min-h-[34px] items-center gap-0.5 sm:min-h-11 sm:gap-1.5">
@@ -1525,6 +1584,7 @@ if (next?.date) {
                       <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" stroke="currentColor" strokeWidth="1.8" />
                       <circle cx="12" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.8" />
                     </svg>
+                    <span className="flex-none text-[8px] font-bold text-[#64748B] sm:text-[10px]">Address<RequiredAsterisk /></span>
                     <span className="min-w-0 flex-1 truncate text-[10px] font-semibold text-[#0B1628] sm:text-[14px]" title={selectedAddressLabel}>
                       {selectedAddressLabel}
                     </span>
@@ -1539,7 +1599,11 @@ if (next?.date) {
                       autoFocus
                       aria-label="Booking address"
                       value={selectedAddressId ?? defaultAddressId ?? ""}
-                      onChange={(event) => setSelectedAddressId(event.target.value)}
+                      onChange={(event) => {
+                        setSelectedAddressId(event.target.value);
+                        clearFieldError("address");
+                      }}
+                      aria-required="true"
                       className="mt-px min-h-[34px] w-full rounded-[7px] border border-[#C5CBD8] bg-[#F8FAFF] px-1.5 text-[10px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:mt-2 sm:min-h-11 sm:rounded-[10px] sm:px-2.5 sm:text-[13px]"
                     >
                       {addresses.map((address) => (
@@ -1555,12 +1619,24 @@ if (next?.date) {
                   Add a service address in your account before booking.
                 </div>
               )}
+              {fieldErrors.address ? (
+                <p id="booking-address-error" role="alert" className="mt-1 px-1 text-[10px] font-semibold text-red-600 sm:mt-2 sm:text-[12px]">
+                  {fieldErrors.address}
+                </p>
+              ) : null}
             </div>
 
             {/* Time slot card */}
-            <div className="order-3 rounded-[8px] border border-[#D7DEE9] bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:rounded-[12px] sm:p-4 lg:order-none">
+            <div
+              ref={timeFieldRef}
+              role="group"
+              tabIndex={-1}
+              aria-labelledby="booking-time-label"
+              aria-describedby={fieldErrors.time ? "booking-time-error" : undefined}
+              className={`order-3 rounded-[8px] border bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] outline-none sm:rounded-[12px] sm:p-4 lg:order-none ${fieldErrors.time ? "border-red-300" : "border-[#D7DEE9]"}`}
+            >
               <div className="flex items-center justify-between gap-0.5 sm:mb-2 sm:gap-1">
-                <h3 className="text-[11px] font-extrabold text-[#0B1628] sm:text-[15px]">Time</h3>
+                <h3 id="booking-time-label" className="text-[11px] font-extrabold text-[#0B1628] sm:text-[15px]">Time<RequiredAsterisk /></h3>
                 <button
                   type="button"
                   onClick={() => setQuickBookOpen(true)}
@@ -1585,7 +1661,10 @@ if (next?.date) {
                   <TimeSlotGrid
                     slotOptions={slotOptions}
                     selectedTime={selectedTime}
-                    onSelect={(t) => setSelectedTime(t)}
+                    onSelect={(t) => {
+                      setSelectedTime(t);
+                      clearFieldError("time");
+                    }}
                   />
                 ) : (
                   <div className="rounded-[9px] border border-[#E5E9F2] bg-[#F8FAFF] px-2 py-2 text-center text-[11px] text-[#64748B] sm:rounded-[12px] sm:px-3 sm:py-3 sm:text-[13px]">
@@ -1601,32 +1680,57 @@ if (next?.date) {
               {loadingSelectedDate && displayedTimes.length > 0 && (
                 <div className="mt-1 text-[10px] text-[#94A3B8] sm:mt-2 sm:text-[11px]">Updating times...</div>
               )}
+              {fieldErrors.time ? (
+                <p id="booking-time-error" role="alert" className="mt-1 text-[10px] font-semibold text-red-600 sm:mt-2 sm:text-[12px]">
+                  {fieldErrors.time}
+                </p>
+              ) : null}
 
             </div>
 
             {/* Task details card */}
             <div className="order-4 rounded-[8px] border border-[#D7DEE9] bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:rounded-[12px] sm:p-4 lg:order-none">
-              <h3 className="mb-0.5 text-[11px] font-extrabold text-[#0B1628] sm:mb-2 sm:text-[15px]">Task details</h3>
+              <h3 className="mb-0.5 text-[11px] font-extrabold text-[#0B1628] sm:mb-2 sm:text-[15px]">Task details<RequiredAsterisk /></h3>
 
               <textarea
+                ref={noteFieldRef}
                 value={note}
                 onChange={(e) => {
                   setNote(e.target.value);
-                  if (error === "Describe the task in at least a few words.") setError("");
+                  if (e.target.value.trim().split(/\s+/).filter(Boolean).length >= 3) clearFieldError("note");
                 }}
+                aria-required="true"
+                aria-invalid={Boolean(fieldErrors.note)}
+                aria-describedby={fieldErrors.note ? "booking-note-error" : undefined}
                 placeholder="Describe your task. If we need to bring any materials or special tools, please let us know."
                 rows={3}
                 className={`w-full min-h-12 max-h-[140px] rounded-[7px] border bg-[#F8FAFF] p-1 text-[10px] text-[#0B1628] placeholder-[#94A3B8] resize-y transition focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] sm:min-h-[82px] sm:rounded-[10px] sm:p-2.5 sm:text-[14px] ${
-                  error === "Describe the task in at least a few words."
+                  fieldErrors.note
                     ? "border-red-300"
                     : "border-[#C5CBD8]"
                 }`}
               />
+              {fieldErrors.note ? (
+                <p id="booking-note-error" role="alert" className="mt-1 text-[10px] font-semibold text-red-600 sm:text-[12px]">
+                  {fieldErrors.note}
+                </p>
+              ) : null}
               {/* Photo upload */}
-              <div className="mt-0.5 sm:mt-2.5">
+              <div
+                ref={photosFieldRef}
+                role="group"
+                tabIndex={-1}
+                aria-describedby={fieldErrors.photos ? "booking-photos-error" : undefined}
+                className="mt-0.5 outline-none sm:mt-2.5"
+              >
                 <div className="text-[9px] font-semibold leading-tight text-[#64748B] sm:mb-1.5 sm:text-[11px]">
-                  Photos required
+                  Photos<RequiredAsterisk />
                 </div>
+                {fieldErrors.photos ? (
+                  <p id="booking-photos-error" role="alert" className="mt-1 text-[10px] font-semibold text-red-600 sm:text-[12px]">
+                    {fieldErrors.photos}
+                  </p>
+                ) : null}
                 <div className="flex gap-px sm:gap-1.5">
                   <button
                     type="button"
@@ -1659,6 +1763,8 @@ if (next?.date) {
                   accept="image/*"
                   capture="environment"
                   onChange={handlePhotoUpload}
+                  aria-required="true"
+                  aria-describedby={fieldErrors.photos ? "booking-photos-error" : undefined}
                   className="hidden"
                 />
                 <input
@@ -1667,6 +1773,8 @@ if (next?.date) {
                   accept="image/*"
                   multiple
                   onChange={handlePhotoUpload}
+                  aria-required="true"
+                  aria-describedby={fieldErrors.photos ? "booking-photos-error" : undefined}
                   className="hidden"
                 />
 
@@ -1769,9 +1877,9 @@ if (next?.date) {
               <button
                 onClick={handleBookNow}
                 data-track="booking-cta"
-                disabled={!canBook}
+                disabled={bookingActionDisabled}
                 className="h-11 w-full rounded-[8px] bg-[#306EEC] text-[12px] font-extrabold text-white transition-all hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99] sm:h-14 sm:rounded-[15px] sm:text-[16px]"
-                style={{ boxShadow: canBook ? "0 10px 30px rgba(48,110,236,0.25)" : undefined }}
+                style={{ boxShadow: !bookingActionDisabled ? "0 10px 30px rgba(48,110,236,0.25)" : undefined }}
               >
                 {checkingAccess
                   ? "Checking access..."
@@ -1785,9 +1893,59 @@ if (next?.date) {
                   ? "Visit limit reached"
                   : "Book Your Visit"}
               </button>
-
+              <p className="mt-1 text-center text-[9px] text-[#94A3B8] sm:mt-2 sm:text-[11px]">
+                <span className="text-red-500" aria-hidden="true">*</span> Required to book your visit
+              </p>
             </div>
           </div>
+        </div>
+
+        <div className="mx-auto mt-3 max-w-[1180px] sm:mt-6">
+          <section aria-labelledby="how-to-book-title">
+            <h3 id="how-to-book-title" className="text-[14px] font-extrabold text-[#0B1628] sm:text-[18px]">
+              How to book a visit
+            </h3>
+            <ol className="mt-2 grid grid-cols-2 gap-1.5 sm:mt-3 sm:gap-2 lg:grid-cols-4">
+              {[
+                ["Choose a date and time", "Select any available day and appointment time."],
+                ["Describe the task", "Tell us what needs to be repaired, installed, or completed."],
+                ["Add photos", "Photos help us prepare the right tools and materials."],
+                ["Submit your visit", "We’ll review it and notify you when it is confirmed."],
+              ].map(([title, description], index) => (
+                <li key={title} className="flex gap-2 rounded-[9px] border border-[#D7DEE9] bg-white px-2 py-2 sm:rounded-[12px] sm:px-3 sm:py-3">
+                  <span className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-[#EEF5FF] text-[9px] font-extrabold text-[#306EEC] sm:h-6 sm:w-6 sm:text-[11px]">
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <h4 className="text-[10px] font-bold leading-4 text-[#0B1628] sm:text-[13px]">{title}</h4>
+                    <p className="mt-0.5 text-[9px] leading-3 text-[#64748B] sm:text-[11px] sm:leading-4">{description}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section aria-labelledby="good-to-know-title" className="mt-3 rounded-[10px] border border-[#D7DEE9] bg-white px-3 py-3 sm:mt-4 sm:rounded-[14px] sm:px-4 sm:py-4">
+            <h3 id="good-to-know-title" className="text-[13px] font-extrabold text-[#0B1628] sm:text-[17px]">Good to know</h3>
+            <div className="mt-2 grid gap-2 text-[10px] leading-4 text-[#64748B] sm:grid-cols-3 sm:gap-4 sm:text-[12px] sm:leading-5">
+              <div>
+                <h4 className="font-bold text-[#0B1628]">Active visit limits</h4>
+                <p>Basic: 1 active visit at a time. Plus, Premium, and Elite: up to 2 active visits at a time.</p>
+                <p className="mt-1">These are simultaneous appointments, not total visits. Once one is completed or canceled, you can book another.</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-[#0B1628]">Visit details</h4>
+                <p>Standard visits are 90 minutes.</p>
+                <p className="mt-1">Need same-day or emergency service? <a href="tel:6315991363" aria-label="Call Profixter at 631-599-1363 for same-day or emergency service" className="font-bold text-[#306EEC] underline underline-offset-2">631-599-1363</a>.</p>
+                <p>Subject to availability and additional fees.</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-[#0B1628]">Materials and special tools</h4>
+                <p>Already have materials? Please have them ready before your visit.</p>
+                <p className="mt-1">Need us to bring materials or special tools? Include that in the task details.</p>
+              </div>
+            </div>
+          </section>
         </div>
 
         {/* ── Quick Booking Modal ── */}

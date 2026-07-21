@@ -48,10 +48,14 @@ async function main() {
   const { chromium } = await loadPlaywright();
   const baseUrl = process.env.BOOKING_CALENDAR_URL || "http://localhost:3000";
   const runs = Number(process.env.BOOKING_CALENDAR_BROWSER_RUNS || 20);
+  const viewportWidth = Number(process.env.BOOKING_CALENDAR_VIEWPORT_WIDTH || 1280);
+  const viewportHeight = Number(process.env.BOOKING_CALENDAR_VIEWPORT_HEIGHT || 800);
   const browser = await chromium.launch({ headless: true });
 
   try {
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      viewport: { width: viewportWidth, height: viewportHeight },
+    });
     await context.addInitScript(() => {
       window.localStorage.setItem("token", "browser-refresh-test-token");
       window.localStorage.removeItem("user");
@@ -180,6 +184,16 @@ async function main() {
       await page.waitForSelector('#pick-day[data-calendar-mode="ready"][data-selected-date="2026-07-22"]', {
         timeout: 15000,
       });
+      assert.equal(
+        await page.locator('a[href="tel:6315991363"]').count(),
+        1,
+        `run ${i} should expose the emergency phone link`
+      );
+      assert.equal(
+        await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),
+        false,
+        `run ${i} should not create horizontal overflow at ${viewportWidth}px`
+      );
 
       const state = await page.locator("#pick-day").evaluate((node) => ({
         visibleMonth: node.getAttribute("data-visible-month"),
@@ -189,6 +203,12 @@ async function main() {
       assert.equal(state.visibleMonth, "2026-07", `run ${i} visible month`);
       assert.equal(state.selectedDate, "2026-07-22", `run ${i} selected date`);
       assert(state.availableTimes && state.availableTimes.includes("09:00"), `run ${i} visible slots`);
+
+      const bookButton = page.getByRole("button", { name: "Book Your Visit" });
+      await bookButton.click();
+      await page.getByText("Choose a time.", { exact: true }).waitFor();
+      await page.getByText("Tell us what you need help with.", { exact: true }).waitFor();
+      await page.getByText("Add at least one photo.", { exact: true }).waitFor();
 
       const enabledDates = await page
         .locator('[data-booking-date^="2026-07"][data-booking-date-muted="false"][data-booking-date-disabled="false"]')
@@ -209,6 +229,8 @@ async function main() {
         requestedMonths.includes("2026-08"),
         `run ${i} should request availability with month=2026-08`
       );
+      await bookButton.click();
+      await page.getByText("Choose a date.", { exact: true }).waitFor();
 
       const augustFirst = page.locator('[data-booking-date="2026-08-01"]');
       await augustFirst.waitFor({ state: "visible" });
@@ -230,7 +252,6 @@ async function main() {
         mimeType: "image/png",
         buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64"),
       });
-      const bookButton = page.getByRole("button", { name: "Book Your Visit" });
       await bookButton.waitFor({ state: "visible" });
       await page.waitForFunction(() => {
         const button = document.querySelector('[data-track="booking-cta"]');
