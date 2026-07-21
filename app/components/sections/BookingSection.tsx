@@ -33,6 +33,9 @@ import {
 } from "@/lib/booking-calendar-availability";
 import { useRouter } from "next/navigation";
 import { POPULAR_TASKS } from "./PopularTasksSection";
+import BookingConfirmationDialog, {
+  type BookingConfirmation,
+} from "@/app/components/booking/BookingConfirmationDialog";
 
 const SERVICES = [
   { key: "labor_only", label: "Labor Only", minRank: 1 }, // Basic+
@@ -278,28 +281,15 @@ export default function BookingSection() {
   const [showAddressPicker, setShowAddressPicker] = useState(false);
 
   // UI state
-  const [showModal, setShowModal] = useState(false);
+  const [bookingConfirmation, setBookingConfirmation] = useState<BookingConfirmation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  // Modal display data
-  const [confirmedDate, setConfirmedDate] = useState<Date | null>(null);
-  const [confirmedTime, setConfirmedTime] = useState("");
-  const [confirmedAddress, setConfirmedAddress] = useState("");
-
-  useEffect(() => {
-    if (!showModal) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setShowModal(false);
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [showModal]);
+  const closeBookingConfirmation = useCallback(() => setBookingConfirmation(null), []);
+  const viewConfirmedVisit = useCallback(() => {
+    setBookingConfirmation(null);
+    router.push(manageBookingsPath);
+  }, [manageBookingsPath, router]);
 
   // Existing booking + limits
   const [hasActiveBooking, setHasActiveBooking] = useState(false);
@@ -1116,7 +1106,7 @@ if (next?.date) {
 
 
 
-      await createBooking({
+      const bookingResult = await createBooking({
         service: serviceLabel,
         date: bookingDate.toISOString(),
         note: note.trim(),
@@ -1126,14 +1116,22 @@ if (next?.date) {
         requestedTime: selectedTime,
       });
 
-      setConfirmedDate(new Date(selectedDate));
-      setConfirmedTime(selectedTime);
       const bookedAddress = addresses.find((address) => address._id === addressId);
-      setConfirmedAddress(
-        [bookedAddress?.line1, bookedAddress?.city, bookedAddress?.state, bookedAddress?.zip]
+      const confirmedDateValue = bookingResult.booking.date || formatDateYMD(selectedDate);
+      const confirmedTimeValue = bookingResult.booking.time || selectedTime;
+      const confirmedDateOnly = dateFromYMDLocal(confirmedDateValue.slice(0, 10));
+      setBookingConfirmation({
+        dateLabel: `${confirmedDateOnly.toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+        })} at ${formatTime12(confirmedTimeValue)}`,
+        address: [bookedAddress?.line1, bookedAddress?.city, bookedAddress?.state, bookedAddress?.zip]
           .filter(Boolean)
           .join(", "),
-      );
+        bookingReference: bookingResult.booking.bookingNumber,
+        status: "pending",
+      });
 
       setHasActiveBooking(activeBookingCount + 1 >= activeBookingLimit);
       setActiveBookingCount((c) => c + 1);
@@ -1145,7 +1143,6 @@ if (next?.date) {
       setNote("");
       setUploadedPhotos([]);
 
-      setShowModal(true);
     } catch (err: unknown) {
       const bookingError = err as Error & {
         code?: string;
@@ -1862,66 +1859,11 @@ if (next?.date) {
         )}
 
         {/* ── Confirmation Modal ── */}
-        {showModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 backdrop-blur-[3px] sm:items-center sm:p-5"
-            style={{
-              paddingTop: "max(16px, env(safe-area-inset-top, 0px))",
-              paddingBottom: "max(16px, env(safe-area-inset-bottom, 0px))",
-            }}
-            onClick={() => setShowModal(false)}
-            role="presentation"
-          >
-            <div
-              className="flex w-full max-w-[440px] flex-col overflow-hidden rounded-[22px] border border-black/[0.08] bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.22)] backdrop-blur-xl sm:rounded-[24px]"
-              style={{ maxHeight: "calc(100dvh - max(16px, env(safe-area-inset-top, 0px)) - max(16px, env(safe-area-inset-bottom, 0px)))" }}
-              onClick={(e) => e.stopPropagation()}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="booking-success-title"
-            >
-              {/* Drag handle - mobile only */}
-              <div className="min-h-0 overflow-y-auto px-5 pb-4 pt-6 sm:px-7 sm:pb-5 sm:pt-7">
-                <div className="mb-4 flex justify-center">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#EAF8EF] ring-1 ring-[#CDEBD8]">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M5 12.5l4.5 4.5L19 8" stroke="#16803C" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                </div>
-                <h2 id="booking-success-title" className="text-center text-[21px] font-extrabold tracking-[-0.02em] text-[#0B1628] sm:text-[24px]">
-                  Visit booked
-                </h2>
-                <p className="mt-2 text-center text-[15px] font-semibold leading-snug text-[#334155]">
-                  {confirmedDate?.toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                  })} at {formatTime12(confirmedTime)}
-                </p>
-                {confirmedAddress && (
-                  <p className="mx-auto mt-2 max-w-full truncate text-center text-[13px] text-[#64748B]" title={confirmedAddress}>
-                    {confirmedAddress}
-                  </p>
-                )}
-                <p className="mt-4 text-center text-[14px] leading-relaxed text-[#64748B]">
-                  We&rsquo;ll notify you when your visit is confirmed.
-                </p>
-              </div>
-              <div className="flex-shrink-0 border-t border-black/[0.06] px-5 pb-5 pt-4 sm:px-7 sm:pb-6">
-                <button
-                  onClick={() => {
-                    setShowModal(false);
-                    router.push(manageBookingsPath);
-                  }}
-                  className="h-12 w-full rounded-[14px] bg-[#306EEC] text-[15px] font-bold text-white shadow-[0_8px_24px_rgba(48,110,236,0.24)] transition hover:bg-[#2558c9] active:scale-[0.99]"
-                >
-                  View My Visit
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <BookingConfirmationDialog
+          confirmation={bookingConfirmation}
+          onClose={closeBookingConfirmation}
+          onViewVisit={viewConfirmedVisit}
+        />
 
       </div>
     </section>
