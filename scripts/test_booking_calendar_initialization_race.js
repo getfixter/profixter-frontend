@@ -22,6 +22,9 @@ function loadController() {
 }
 
 const {
+  addMonthsLocal,
+  formatDateYMDLocal,
+  getMonthKeyLocal,
   normalizeDayAvailability,
   resolveInitialCalendarSelection,
 } = loadController();
@@ -104,6 +107,10 @@ async function runInitialization({
 }
 
 async function main() {
+  const january = addMonthsLocal(new Date(2026, 11, 1), 1);
+  assert.equal(getMonthKeyLocal(january), "2027-01", "December navigation should cross into January");
+  assert.equal(formatDateYMDLocal(new Date(2027, 0, 1)), "2027-01-01", "January dates should remain local date-only values");
+
   for (let i = 0; i < 100; i += 1) {
     const julyDelay = Math.floor(Math.random() * 501);
     const augustDelay = Math.floor(Math.random() * 501);
