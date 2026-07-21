@@ -43,6 +43,9 @@ includes(source, "getMonthAvailability(monthKey, { signal: options.signal })", "
 includes(source, "setDisplayedTimes(result.slots.map((slot) => slot.time))", "initial selected times should come from the same availability result");
 includes(source, "visibleMonthLoadState?.status === \"success\"", "empty month state should wait for authoritative success");
 includes(source, "calendarMode !== \"initializing\" && visibleMonthLoaded", "empty month state should not appear during initialization");
+includes(source, "setCalendarMode(\"ready\");", "successful manual month navigation should restore booking readiness");
+includes(source, "getMonthKey(currentMonthRef.current) !== requestedMonth", "stale month responses should not update the visible month state");
+includes(source, "loadingMonthKey === visibleMonthKey", "visible dates should remain disabled while their month loads");
 includes(source, "data-selected-date={ymdSelected}", "browser tests should be able to assert selected date without CSS scraping");
 includes(source, "const [availabilityError, setAvailabilityError] = useState(\"\");", "availability errors should not reuse the global form error banner");
 includes(source, "availabilityCanSubmit", "booking submit state should require availability readiness");

@@ -261,6 +261,7 @@ export default function BookingSection() {
     data: MonthAvailabilityMap;
   }>>({});
   const initializationGenerationRef = useRef(0);
+  const monthNavigationGenerationRef = useRef(0);
   const initializationAbortRef = useRef<AbortController | null>(null);
   const monthNavigationAbortRef = useRef<AbortController | null>(null);
   const dayAvailabilityMapRef = useRef(dayAvailabilityMap);
@@ -651,6 +652,8 @@ export default function BookingSection() {
 
   useEffect(() => {
     if (!config || calendarMode === "initializing") return;
+    const generation = ++monthNavigationGenerationRef.current;
+    const requestedMonth = getMonthKey(currentMonth);
     monthNavigationAbortRef.current?.abort();
     const controller = new AbortController();
     monthNavigationAbortRef.current = controller;
@@ -658,12 +661,41 @@ export default function BookingSection() {
       markLoading: true,
       signal: controller.signal,
       allowCache: true,
+    }).then((result) => {
+      if (
+        controller.signal.aborted ||
+        generation !== monthNavigationGenerationRef.current ||
+        getMonthKey(currentMonthRef.current) !== requestedMonth
+      ) {
+        return;
+      }
+
+      if (result.status === "success" && result.month === requestedMonth) {
+        setAvailabilityError("");
+        setCalendarMode("ready");
+      } else if (result.status === "error") {
+        setAvailabilityError("Unable to load appointment availability.");
+        setCalendarMode("ready");
+      }
     });
 
     return () => {
       controller.abort();
     };
-  }, [calendarMode, config, currentMonth, loadMonthAvailability]);
+  }, [calendarMode, config, currentMonth, getMonthKey, loadMonthAvailability]);
+
+  const navigateCalendarMonth = (offset: number) => {
+    if (calendarMode === "initializing") return;
+
+    const nextMonth = addMonthsLocal(currentMonthRef.current, offset);
+    setAvailabilityError("");
+    setCalendarMode("manual-navigation");
+    setCurrentMonth(nextMonth);
+    setSelectedDate(null);
+    setSelectedTime("");
+    setDisplayedTimes([]);
+    setLoadingSelectedDate(false);
+  };
 
   useEffect(() => {
     if (!config) return;
@@ -1362,11 +1394,7 @@ if (next?.date) {
                 <button
                   aria-label="Prev month"
                   disabled={calendarMode === "initializing"}
-                  onClick={() => {
-                    if (calendarMode === "initializing") return;
-                    setCalendarMode("manual-navigation");
-                    setCurrentMonth(addMonthsLocal(currentMonth, -1));
-                  }}
+                  onClick={() => navigateCalendarMonth(-1)}
                   className="grid h-[34px] w-[34px] place-items-center rounded-[7px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 [&_svg]:h-4 [&_svg]:w-4 sm:h-11 sm:w-11 sm:rounded-[10px] sm:[&_svg]:h-5 sm:[&_svg]:w-5"
                 >
                   <ChevronLeft />
@@ -1379,11 +1407,7 @@ if (next?.date) {
                 <button
                   aria-label="Next month"
                   disabled={calendarMode === "initializing"}
-                  onClick={() => {
-                    if (calendarMode === "initializing") return;
-                    setCalendarMode("manual-navigation");
-                    setCurrentMonth(addMonthsLocal(currentMonth, 1));
-                  }}
+                  onClick={() => navigateCalendarMonth(1)}
                   className="grid h-[34px] w-[34px] place-items-center rounded-[7px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 [&_svg]:h-4 [&_svg]:w-4 sm:h-11 sm:w-11 sm:rounded-[10px] sm:[&_svg]:h-5 sm:[&_svg]:w-5"
                 >
                   <ChevronRight />
@@ -1429,7 +1453,10 @@ if (next?.date) {
               {/* Days grid */}
               <div className="grid grid-cols-7 gap-y-0 sm:gap-y-px">
                 {days.map((day, i) => {
-                  const disabled = day.muted || isDayDisabled(new Date(day.date));
+                  const disabled =
+                    day.muted ||
+                    loadingMonthKey === visibleMonthKey ||
+                    isDayDisabled(new Date(day.date));
                   const isSelected = selectedDate ? sameDay(day.date, selectedDate) : false;
                   const isCheckingDay =
                     !day.muted &&
