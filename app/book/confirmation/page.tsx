@@ -2,6 +2,7 @@ import Link from "next/link";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import BookConfirmationTracker from "./BookConfirmationTracker";
+import OneTimeBookingConfirmation from "./OneTimeBookingConfirmation";
 
 const nextSteps = [
   {
@@ -38,6 +39,7 @@ export default async function BookConfirmationPage({
         bookingId={params.booking_id}
         sessionId={params.session_id}
       />
+      <OneTimeBookingConfirmation bookingId={params.booking_id} />
       <Header />
 
       <section className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
