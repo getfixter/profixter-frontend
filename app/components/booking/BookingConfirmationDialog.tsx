@@ -8,6 +8,8 @@ export type BookingConfirmation = {
   address?: string;
   bookingReference?: string;
   status?: string;
+  /** Set when this booking used the free introductory visit. */
+  isFreeVisit?: boolean;
 };
 
 export default function BookingConfirmationDialog({
@@ -124,6 +126,11 @@ export default function BookingConfirmationDialog({
           <h2 id="booking-success-title" className="mt-3 text-[22px] font-extrabold tracking-[-0.025em] text-[#0B1628] sm:text-[24px]">
             Visit booked
           </h2>
+          {confirmation.isFreeVisit ? (
+            <p className="mt-1.5 text-[15px] font-semibold text-[#306EEC]">
+              Your first visit is on us.
+            </p>
+          ) : null}
           {confirmation.dateLabel ? (
             <p className="mt-2 text-[15px] font-semibold leading-6 text-[#334155]">
               {confirmation.dateLabel}
@@ -145,12 +152,21 @@ export default function BookingConfirmationDialog({
 
           <div className="mt-4 border-t border-black/[0.07] pt-4">
             <h3 className="text-[13px] font-bold text-[#0B1628]">Before your visit</h3>
-            <p className="mt-1.5 text-[13px] leading-5 text-[#64748B]">
-              Please have any materials you already purchased ready for your Fixter.
-            </p>
-            <p className="mt-1.5 text-[13px] leading-5 text-[#64748B]">
-              Need us to bring materials or special tools? Add a note to your visit as early as possible so we can prepare.
-            </p>
+            {confirmation.isFreeVisit ? (
+              <p className="mt-1.5 text-[13px] leading-5 text-[#64748B]">
+                Have the items you&rsquo;d like us to look at ready. If there is anything we
+                should know before the visit, let us know.
+              </p>
+            ) : (
+              <>
+                <p className="mt-1.5 text-[13px] leading-5 text-[#64748B]">
+                  Please have any materials you already purchased ready for your Fixter.
+                </p>
+                <p className="mt-1.5 text-[13px] leading-5 text-[#64748B]">
+                  Need us to bring materials or special tools? Add a note to your visit as early as possible so we can prepare.
+                </p>
+              </>
+            )}
           </div>
         </div>
 

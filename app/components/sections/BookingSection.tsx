@@ -1,8 +1,10 @@
 "use client";
 
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
+import { trackEvent } from "@/lib/analytics";
 import {
   getCalendarConfig,
   getTimeSlots,
@@ -328,7 +330,9 @@ export default function BookingSection() {
 
   // Subscription / access (per address)
   const [hasSubscription, setHasSubscription] = useState(false);
-  const [, setFreeFirstVisitAvailable] = useState(false);
+  const [freeFirstVisitAvailable, setFreeFirstVisitAvailable] = useState(false);
+  const [introVisitConsumed, setIntroVisitConsumed] = useState(false);
+  const [outOfServiceArea, setOutOfServiceArea] = useState(false);
   const [subscriptionError, setSubscriptionError] = useState("");
   const [checkingAccess, setCheckingAccess] = useState(false);
 
@@ -811,6 +815,8 @@ useEffect(() => {
     if (!addressId || !isAuthenticated) {
       setHasSubscription(false);
       setFreeFirstVisitAvailable(false);
+      setIntroVisitConsumed(false);
+      setOutOfServiceArea(false);
       setPlan("");
       setHasActiveBooking(false);
       setActiveBookingCount(0);
@@ -830,11 +836,17 @@ useEffect(() => {
 
       const hasSub = !!data?.hasSubscription;
 
+const freeVisit = !hasSub && !!data?.freeFirstVisitAvailable;
+
 setHasSubscription(hasSub);
-setFreeFirstVisitAvailable(false); // keep if you want, but always false
+setFreeFirstVisitAvailable(freeVisit);
+setIntroVisitConsumed(!hasSub && data?.introVisitStatus === "consumed");
+setOutOfServiceArea(!hasSub && data?.introVisitServiceable === false && data?.introVisitStatus === "available");
 setPlan(String(data?.plan || ""));
 
-if (!hasSub) {
+// A non-member with an unclaimed introductory visit can book. Only warn when
+// there is neither a membership nor an available first visit.
+if (!hasSub && !freeVisit) {
   setSubscriptionError("This address does not have an active membership for booking.");
 } else {
   setSubscriptionError("");
@@ -893,6 +905,8 @@ if (next?.date) {
     } catch {
       setHasSubscription(false);
       setFreeFirstVisitAvailable(false);
+      setIntroVisitConsumed(false);
+      setOutOfServiceArea(false);
       setPlan("");
       setSubscriptionError("Unable to verify booking access.");
       setActiveBookings([]);
@@ -1093,7 +1107,12 @@ if (next?.date) {
     if (note.trim().split(/\s+/).filter(Boolean).length < 3) {
       nextFieldErrors.note = "Tell us what you need help with.";
     }
-    if (uploadedPhotos.length === 0) nextFieldErrors.photos = "Add at least one photo.";
+    // At least one photo is required for every booking, including First Visit
+    // Free. Technicians review job photos before the visit so they arrive with
+    // the right tools and materials.
+    if (uploadedPhotos.length === 0) {
+      nextFieldErrors.photos = "Add at least one photo so your technician can review the job.";
+    }
 
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
@@ -1119,7 +1138,7 @@ if (next?.date) {
     setFieldErrors({});
     if (!addressId || !selectedDate || !selectedTime) return;
 
-    if (!hasSubscription) {
+    if (!hasSubscription && !freeFirstVisitAvailable) {
   setError("This address does not have an active membership for booking.");
   return;
 }
@@ -1176,6 +1195,7 @@ if (next?.date) {
           .join(", "),
         bookingReference: bookingResult.booking.bookingNumber,
         status: "pending",
+        isFreeVisit: freeFirstVisitAvailable,
       });
 
       setHasActiveBooking(activeBookingCount + 1 >= activeBookingLimit);
@@ -1314,7 +1334,7 @@ if (next?.date) {
     checkingAccess ||
     calendarMode === "initializing" ||
     showAvailabilityLoadError ||
-    !hasSubscription ||
+    (!hasSubscription && !freeFirstVisitAvailable) ||
     hasActiveBooking;
 
   const moveToNextAvailableMonth = async () => {
@@ -1723,21 +1743,24 @@ if (next?.date) {
                 aria-describedby={fieldErrors.photos ? "booking-photos-error" : undefined}
                 className="mt-0.5 outline-none sm:mt-2.5"
               >
-                <div className="text-[9px] font-semibold leading-tight text-[#64748B] sm:mb-1.5 sm:text-[11px]">
+                <div className="text-[11px] font-semibold leading-tight text-[#64748B] sm:mb-1.5 sm:text-[12px]">
                   Photos<RequiredAsterisk />
                 </div>
+                <p className="mb-1.5 text-[11px] leading-4 text-[#94A3B8] sm:text-[12px]">
+                  Add at least one photo so your technician can review the job and arrive prepared.
+                </p>
                 {fieldErrors.photos ? (
                   <p id="booking-photos-error" role="alert" className="mt-1 text-[10px] font-semibold text-red-600 sm:text-[12px]">
                     {fieldErrors.photos}
                   </p>
                 ) : null}
-                <div className="flex gap-px sm:gap-1.5">
+                <div className="flex gap-2 sm:gap-2.5">
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
-                    className="flex h-9 min-w-0 flex-1 items-center justify-center gap-px rounded-[7px] border border-[#C5CBD8] bg-[#F8FAFF] px-px text-[9px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-11 sm:gap-1 sm:rounded-[9px] sm:px-0.5 sm:text-[13px]"
+                    className="flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-[#C5CBD8] bg-[#F8FAFF] px-2 text-[12px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] active:scale-[0.99] sm:h-12 sm:gap-1.5 sm:rounded-[10px] sm:text-[13px]"
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sm:h-4 sm:w-4">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="flex-none">
                       <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                       <circle cx="12" cy="13" r="4" stroke="currentColor" strokeWidth="1.8" />
                     </svg>
@@ -1746,9 +1769,9 @@ if (next?.date) {
                   <button
                     type="button"
                     onClick={() => galleryInputRef.current?.click()}
-                    className="flex h-9 min-w-0 flex-1 items-center justify-center gap-px rounded-[7px] border border-[#C5CBD8] bg-[#F8FAFF] px-px text-[9px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-11 sm:gap-1 sm:rounded-[9px] sm:px-0.5 sm:text-[13px]"
+                    className="flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-[#C5CBD8] bg-[#F8FAFF] px-2 text-[12px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] active:scale-[0.99] sm:h-12 sm:gap-1.5 sm:rounded-[10px] sm:text-[13px]"
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sm:h-4 sm:w-4">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="flex-none">
                       <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
                       <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="1.8" />
                       <path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -1780,13 +1803,13 @@ if (next?.date) {
 
                 {/* Photo previews */}
                 {uploadedPhotos.length > 0 && (
-                  <div className="mt-1 grid grid-cols-3 gap-0.5 sm:mt-3 sm:grid-cols-4 sm:gap-2 lg:grid-cols-5">
+                  <div className="mt-2.5 grid grid-cols-3 gap-2 sm:mt-3 sm:grid-cols-4 lg:grid-cols-5">
                     {uploadedPhotos.map((_file, idx) => {
                       const url = photoUrls[idx];
                       return (
                         <div
                           key={idx}
-                          className="relative overflow-hidden rounded-[6px] border border-[#E5E9F2] bg-[#F8FAFF] sm:rounded-[12px]"
+                          className="relative overflow-hidden rounded-[10px] border border-[#E5E9F2] bg-[#F8FAFF] sm:rounded-[12px]"
                           style={{ aspectRatio: "1" }}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1798,7 +1821,7 @@ if (next?.date) {
                           <button
                             type="button"
                             onClick={() => removePhoto(idx)}
-                            className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/75 transition text-[12px] font-bold leading-none"
+                            className="absolute top-1 right-1 flex h-8 w-8 items-center justify-center rounded-full bg-black/65 text-[16px] font-bold leading-none text-white transition hover:bg-black/80 active:scale-95"
                             aria-label="Remove photo"
                           >
                             &times;
@@ -1811,8 +1834,65 @@ if (next?.date) {
               </div>
             </div>
 
+            {/* First Visit Free — eligible non-members only. Members never see this. */}
+            {isAuthenticated && !checkingAccess && !hasSubscription && freeFirstVisitAvailable && (
+              <div className="order-5 rounded-[8px] border border-[#D7E0F5] bg-white p-3 sm:rounded-[12px] sm:p-5 lg:order-none">
+                <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#306EEC] sm:text-[11px]">
+                  First Visit Free
+                </div>
+                <div className="mt-1.5 text-[13px] font-black leading-tight text-[#0B1628] sm:text-[18px]">
+                  Your first 90-minute handyman visit is on us.
+                </div>
+                <div className="mt-1.5 text-[10px] leading-4 text-[#64748B] sm:text-[13px] sm:leading-5">
+                  $0 due for your first eligible visit. No membership required, and no credit card needed to book.
+                </div>
+                <div className="mt-2 text-[9px] leading-4 text-[#94A3B8] sm:text-[11px]">
+                  One free visit per property. Standard handyman labor, up to 90 minutes. Materials not included. Subject to availability.
+                </div>
+              </div>
+            )}
+
+            {/* Property outside the service area — friendly, not an error. */}
+            {isAuthenticated && !checkingAccess && !hasSubscription && outOfServiceArea && (
+              <div className="order-5 rounded-[8px] border border-[#D7E0F5] bg-white p-3 sm:rounded-[12px] sm:p-5 lg:order-none">
+                <div className="text-[13px] font-black leading-tight text-[#0B1628] sm:text-[16px]">
+                  We don&rsquo;t reach this address yet
+                </div>
+                <div className="mt-1.5 text-[10px] leading-4 text-[#64748B] sm:text-[13px] sm:leading-5">
+                  We currently offer First Visit Free for homes in Nassau and Suffolk Counties.
+                  If you have another property on Long Island, add it to your account and
+                  we&rsquo;ll take it from there.
+                </div>
+              </div>
+            )}
+
+            {/* Free visit completed — natural next step into the existing membership funnel. */}
+            {isAuthenticated && !checkingAccess && !hasSubscription && introVisitConsumed && (
+              <div className="order-5 rounded-[8px] border border-[#D7E0F5] bg-white p-3 sm:rounded-[12px] sm:p-5 lg:order-none">
+                <div className="text-[13px] font-black leading-tight text-[#0B1628] sm:text-[18px]">
+                  Your first visit is complete.
+                </div>
+                <div className="mt-1.5 text-[12px] font-bold text-[#0B1628] sm:text-[15px]">
+                  Keep ProFixter for your home.
+                </div>
+                <div className="mt-1.5 text-[10px] leading-4 text-[#64748B] sm:text-[13px] sm:leading-5">
+                  Membership gives you ongoing access to book ProFixter whenever something around your home needs attention.
+                </div>
+                <Link
+                  href="/membership#plans"
+                  onClick={() => trackEvent("membership_plans_viewed_after_free_visit", { placement: "booking_section" })}
+                  className="mt-3 inline-flex h-[40px] items-center rounded-[12px] bg-[#306EEC] px-5 text-[14px] font-bold text-white transition hover:bg-[#2558c9]"
+                >
+                  View Membership Plans
+                </Link>
+                <div className="mt-2 text-[9px] leading-4 text-[#94A3B8] sm:text-[11px]">
+                  Prefer a single visit? A one-time handyman visit is also available.
+                </div>
+              </div>
+            )}
+
             {/* Subscription warning */}
-            {isAuthenticated && !checkingAccess && !hasSubscription && subscriptionError && (
+            {isAuthenticated && !checkingAccess && !hasSubscription && !freeFirstVisitAvailable && !introVisitConsumed && subscriptionError && (
               <div className="order-5 rounded-[8px] border border-red-200 bg-red-50 p-2 sm:rounded-[12px] sm:p-5 lg:order-none">
                 <div className="mb-0.5 text-[12px] font-extrabold text-red-700 sm:mb-1 sm:text-[15px]">Booking unavailable for this address</div>
                 <div className="mb-2 text-[10px] text-red-600 sm:mb-4 sm:text-[13px]">{subscriptionError}</div>

@@ -1,11 +1,16 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { getRoleLandingPath } from "@/lib/auth-routing";
+import { getNextBooking } from "@/lib/booking-service";
+import { trackEvent } from "@/lib/analytics";
+
+/** Which non-member flow to render on /membership. */
+type IntroState = "loading" | "eligible" | "consumed" | "ineligible";
 
 import Header from "@/app/components/sections/Header";
 import BookingSection from "@/app/components/sections/BookingSection";
@@ -134,7 +139,102 @@ function SubscribedCustomerFlow() {
   );
 }
 
-function ProspectMembershipFlow() {
+/**
+ * First Visit Free acquisition flow.
+ *
+ * Reuses the existing BookingSection/calendar rather than introducing a second
+ * booking system. Only rendered for authenticated non-members whose property is
+ * eligible; members never reach this branch.
+ */
+function FreeVisitFlow() {
+  return (
+    <>
+      <section className="bg-white px-4 pb-8 pt-10 sm:px-6 sm:pb-10 sm:pt-14">
+        <div className="mx-auto max-w-[820px] text-center">
+          <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">
+            Profixter
+          </p>
+          <h1 className="mx-auto mt-3 max-w-[720px] text-[34px] font-semibold leading-[1.06] tracking-[-0.04em] text-[#111111] sm:text-[48px] lg:text-[56px]">
+            Your first visit is free.
+          </h1>
+          <p className="mx-auto mt-4 max-w-[560px] text-[15px] leading-6 text-[#6E6E73] sm:text-[17px] sm:leading-7">
+            Pick a day, tell us what needs doing, and our team will take care of it.
+            Nothing to pay, and no membership required.
+          </p>
+          <p className="mx-auto mt-5 max-w-[600px] text-[12px] leading-5 text-[#86868B] sm:text-[13px]">
+            90 minutes of handyman labor &middot; No card required &middot; One per home &middot; Subject to availability
+          </p>
+        </div>
+      </section>
+
+      <BookingSection />
+
+      <section className="bg-[#F5F5F7] px-4 py-10 sm:px-6 sm:py-14">
+        <div className="mx-auto max-w-[680px] text-center">
+          <h2 className="text-[22px] font-semibold tracking-[-0.025em] text-[#111111] sm:text-[28px]">
+            After your visit
+          </h2>
+          <p className="mt-3 text-[14px] leading-6 text-[#6E6E73] sm:text-[15px]">
+            Most homes have more than one thing on the list. If you&rsquo;d like the same
+            team to keep handling it, membership is there when you&rsquo;re ready &mdash;
+            no obligation either way.
+          </p>
+          <Link
+            href="/membership-info"
+            className="mt-5 inline-flex text-[14px] font-semibold text-[#306EEC] hover:underline"
+          >
+            See how membership works
+          </Link>
+        </div>
+      </section>
+
+      <Footer />
+    </>
+  );
+}
+
+/**
+ * Shown to a non-member whose introductory visit has been completed.
+ * Replaces the previous dead-end "no active membership" state.
+ */
+function PostFreeVisitFlow() {
+  return (
+    <section className="bg-white px-4 pb-10 pt-10 sm:px-6 sm:pb-12 sm:pt-14">
+      <div className="mx-auto max-w-[720px] text-center">
+        <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">
+          Profixter
+        </p>
+        <h1 className="mx-auto mt-3 max-w-[620px] text-[30px] font-semibold leading-[1.08] tracking-[-0.035em] text-[#111111] sm:text-[42px]">
+          Your first visit is complete.
+        </h1>
+        <p className="mx-auto mt-4 max-w-[540px] text-[15px] leading-6 text-[#6E6E73] sm:text-[17px] sm:leading-7">
+          Keep the same team for the rest of your list with a Profixter membership.
+        </p>
+        <div className="mt-7 flex flex-col justify-center gap-3 min-[380px]:flex-row">
+          <a
+            href="#plans"
+            onClick={() =>
+              trackEvent("membership_plans_viewed_after_free_visit", {
+                placement: "post_free_visit_state",
+              })
+            }
+            className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#306EEC] px-7 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]"
+          >
+            See Membership Plans
+          </a>
+          <Link
+            href="/book"
+            className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#D2D2D7] bg-white px-7 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]"
+          >
+            Book a One-Time Visit
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProspectMembershipFlow({ postFreeVisit = false }: { postFreeVisit?: boolean } = {}) {
   const steps = [
     ["Choose a plan", "Pick the level of home support that fits your needs."],
     ["Book when needed", "Choose a date, add notes and photos, and request your visit."],
@@ -161,7 +261,9 @@ function ProspectMembershipFlow() {
 
   return (
     <>
-      <section className="bg-white px-4 pb-12 pt-12 sm:px-6 sm:pb-16 sm:pt-16 lg:pb-20 lg:pt-20">
+      {postFreeVisit && <PostFreeVisitFlow />}
+
+      <section className={`bg-white px-4 sm:px-6 ${postFreeVisit ? "pb-12 pt-2 sm:pb-16 sm:pt-4" : "pb-12 pt-12 sm:pb-16 sm:pt-16 lg:pb-20 lg:pt-20"}`}>
         <div className="mx-auto max-w-[860px] text-center">
           <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">Profixter Membership</p>
           <h1 className="mx-auto mt-4 max-w-[820px] text-[38px] font-semibold leading-[1.05] tracking-[-0.04em] text-[#111111] sm:text-[54px] lg:text-[64px]">
@@ -258,6 +360,48 @@ export default function MembershipExperience() {
     !!isAuthenticated &&
     !!user?.addresses?.some((addr: { hasActiveSubscription?: boolean }) => addr.hasActiveSubscription);
 
+  // Acquisition state for the default property. Drives which non-member flow
+  // renders. Members never trigger this fetch.
+  const [introState, setIntroState] = useState<IntroState>("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      if (isLoading) return;
+      if (!isAuthenticated || isSubscribed) {
+        if (!cancelled) setIntroState("ineligible");
+        return;
+      }
+
+      const addressId =
+        (user as { defaultAddressId?: string | null })?.defaultAddressId ||
+        user?.addresses?.[0]?._id;
+
+      if (!addressId) {
+        if (!cancelled) setIntroState("ineligible");
+        return;
+      }
+
+      try {
+        const data = await getNextBooking(String(addressId));
+        if (cancelled) return;
+        if (data?.freeFirstVisitAvailable) setIntroState("eligible");
+        else if (data?.introVisitStatus === "consumed") setIntroState("consumed");
+        else setIntroState("ineligible");
+      } catch {
+        // Fail closed: show the normal membership page rather than promising
+        // an offer we could not confirm.
+        if (!cancelled) setIntroState("ineligible");
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoading, isAuthenticated, isSubscribed, user]);
+
   useEffect(() => {
     if (isLoading) return;
     if (user) {
@@ -283,11 +427,31 @@ export default function MembershipExperience() {
       </div>
 
       <main className="relative">
+        {/* Member experience - unchanged. */}
         {isSubscribed && (
           <SubscribedCustomerFlow />
         )}
 
-        {isAuthenticated && !isSubscribed && (
+        {/* Non-member: wait for eligibility before choosing a branch so the
+            page does not flash the wrong flow. */}
+        {isAuthenticated && !isSubscribed && introState === "loading" && (
+          <div className="flex min-h-[60vh] items-center justify-center px-6">
+            <div className="text-center">
+              <div className="mx-auto mb-4 h-9 w-9 animate-spin rounded-full border-[3px] border-[#306EEC] border-t-transparent" />
+              <p className="text-sm font-semibold text-[#6E6E73]">Checking your home&hellip;</p>
+            </div>
+          </div>
+        )}
+
+        {isAuthenticated && !isSubscribed && introState === "eligible" && (
+          <FreeVisitFlow />
+        )}
+
+        {isAuthenticated && !isSubscribed && introState === "consumed" && (
+          <ProspectMembershipFlow postFreeVisit />
+        )}
+
+        {isAuthenticated && !isSubscribed && introState === "ineligible" && (
           <ProspectMembershipFlow />
         )}
 
@@ -296,7 +460,7 @@ export default function MembershipExperience() {
         )}
       </main>
 
-      {!isSubscribed && <StickyMobileCTA />}
+      {!isSubscribed && introState !== "eligible" && <StickyMobileCTA />}
     </div>
   );
 }
