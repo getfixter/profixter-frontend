@@ -371,10 +371,11 @@ export default function SignUpPage() {
               Long Island home care
             </div>
             <h1 className="mt-6 text-[58px] font-black leading-[0.92] tracking-[-0.048em] text-white">
-              Let us get your home ready.
+              Book your first visit free.
             </h1>
             <p className="mt-5 text-[17px] font-medium leading-8 text-white/62">
-              Add the property once, then book visits, manage Membership, and keep your home details in one calm place.
+              Let&rsquo;s set up your home. Once it&rsquo;s added you can book your first
+              90-minute handyman visit &mdash; no card required.
             </p>
             <div className="mt-8 grid gap-3">
               {["Licensed HI-71484", "Fully insured", "Nassau and Suffolk Counties"].map((item) => (
@@ -405,6 +406,19 @@ export default function SignUpPage() {
                     Back
                   </button>
                 ) : null}
+
+                {/* Keeps the reason for the form visible at every step, and on
+                    mobile where the left value panel is hidden. */}
+                <div className="mb-4 flex items-center gap-2.5 rounded-[12px] border border-[#86EFAC]/25 bg-[#86EFAC]/[0.07] px-3 py-2.5">
+                  <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#86EFAC]/18 text-[#86EFAC]">
+                    <svg width="11" height="9" viewBox="0 0 11 9" fill="none" aria-hidden="true">
+                      <path d="M1 4.5L4 7.5L10 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                  <span className="text-[12px] font-bold leading-4 text-white/78 sm:text-[13px]">
+                    Your first 90-minute visit is free &middot; No card required
+                  </span>
+                </div>
 
                 <div className="mb-4 sm:mb-5">
                   <h2 className="text-[27px] font-black leading-none tracking-[-0.03em] text-white sm:text-[34px]">

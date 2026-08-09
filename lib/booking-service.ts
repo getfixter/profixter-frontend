@@ -121,6 +121,10 @@ export interface NextBookingResponse {
   plan?: string;
   hasSubscription?: boolean;
   freeFirstVisitAvailable?: boolean;
+  /** Acquisition state for this property: available | claimed | consumed. */
+  introVisitStatus?: "available" | "claimed" | "consumed" | null;
+  /** Whether this property's ZIP falls inside the serviced area. */
+  introVisitServiceable?: boolean;
   bookingLimit?: number;
   activeCount?: number;
   hasAnyBookings?: boolean;
