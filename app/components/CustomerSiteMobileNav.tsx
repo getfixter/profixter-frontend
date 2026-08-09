@@ -34,20 +34,20 @@ const items: NavItem[] = [
     ),
   },
   {
-    label: "AI",
-    href: "/home-support",
-    match: (pathname) => pathname === "/home-support",
+    label: "Membership",
+    href: "/membership",
+    match: (pathname) => pathname === "/membership" || pathname === "/membership-info",
     icon: (
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M12 3v3M12 18v3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M3 12h3M18 12h3M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
-        <circle cx="12" cy="12" r="3.4" stroke="currentColor" strokeWidth="1.9" />
+        <rect x="2.5" y="5" width="19" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.9" />
+        <path d="M2.5 10h19M6 14.5h4" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
       </svg>
     ),
   },
   {
     label: "Book",
-    href: "/membership",
-    match: (pathname) => pathname === "/membership" || pathname === "/membership-info",
+    href: "/book",
+    match: (pathname) => pathname === "/book" || pathname.startsWith("/book/"),
     icon: (
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
@@ -56,12 +56,13 @@ const items: NavItem[] = [
     ),
   },
   {
-    label: "Extra",
-    href: "/book",
-    match: (pathname) => pathname === "/book" || pathname.startsWith("/book/"),
+    label: "Account",
+    href: "/account",
+    match: (pathname) => pathname === "/account" || pathname === "/signin" || pathname === "/signup",
     icon: (
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="m12 3 2.8 5.67 6.25.91-4.52 4.4 1.07 6.22L12 17.26 6.4 20.2l1.07-6.22-4.52-4.4 6.25-.91L12 3Z" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+        <circle cx="12" cy="8" r="3.6" stroke="currentColor" strokeWidth="1.9" />
+        <path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -103,7 +104,7 @@ export default function CustomerSiteMobileNav() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={[
-                  "flex min-h-[54px] flex-col items-center justify-center gap-0.5 rounded-[13px] px-1 text-[10px] font-extrabold transition active:scale-[0.98] sm:min-h-[58px] sm:gap-1 sm:rounded-[14px] sm:text-[11px]",
+                  "flex min-h-[54px] flex-col items-center justify-center gap-0.5 rounded-[13px] px-1 text-[11px] font-bold transition active:scale-[0.98] sm:min-h-[58px] sm:gap-1 sm:rounded-[14px] sm:text-[11px]",
                   active
                     ? "bg-[#EEF5FF] text-[#306EEC]"
                     : "text-[#64748B] hover:bg-[#F8FAFF] hover:text-[#0B1628]",

@@ -19,7 +19,10 @@ export default function MembershipInfoPage() {
         <HowItWorksSection />
         <PopularTasksSection />
         <IncludedVisitsSection />
-        <PlansSection />
+        {/* Same presentation as /membership. Previously this page rendered the
+            non-compact variant, which computed annual price differently and
+            showed a different yearly total for the same plan. */}
+        <PlansSection compact />
         <TrustSection />
         <FAQSection />
         <Footer />
