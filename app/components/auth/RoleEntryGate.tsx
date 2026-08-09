@@ -38,7 +38,14 @@ export default function RoleEntryGate({
     }
   }, [isLoading, router, target]);
 
-  if (isLoading) return <EntryLoading label={loadingLabel} />;
+  // A visitor with no stored token is definitively anonymous, so there is
+  // nothing to resolve and nothing to redirect to. Render immediately rather
+  // than showing a spinner in front of the page - cold traffic should see
+  // content on first paint.
+  const hasStoredToken =
+    typeof window !== "undefined" && !!window.localStorage.getItem("token");
+
+  if (isLoading && hasStoredToken) return <EntryLoading label={loadingLabel} />;
   if (target) return <EntryLoading label={redirectLabel} />;
 
   return <>{children}</>;

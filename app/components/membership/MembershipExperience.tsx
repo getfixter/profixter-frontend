@@ -234,7 +234,10 @@ function PostFreeVisitFlow() {
   );
 }
 
-function ProspectMembershipFlow({ postFreeVisit = false }: { postFreeVisit?: boolean } = {}) {
+function ProspectMembershipFlow({
+  postFreeVisit = false,
+  showFreeVisitOffer = false,
+}: { postFreeVisit?: boolean; showFreeVisitOffer?: boolean } = {}) {
   const steps = [
     ["Choose a plan", "Pick the level of home support that fits your needs."],
     ["Book when needed", "Choose a date, add notes and photos, and request your visit."],
@@ -253,7 +256,7 @@ function ProspectMembershipFlow({ postFreeVisit = false }: { postFreeVisit?: boo
   const faqs = [
     ["What kinds of jobs are included?", "Membership covers everyday handyman repairs, maintenance, and installations. Larger or multi-day work is quoted separately as a Project Estimate."],
     ["How long is each visit?", "Standard membership visits are up to 90 minutes. Elite also includes one full project day each month."],
-    ["How often can I book?", "You can request visits as needed. Your plan determines how many appointments can be active at one time and whether Emergency Visits are included."],
+    ["How often can I book?", "There is no fixed monthly visit count for standard member bookings. Home Care keeps one visit on the calendar at a time; the other plans allow two. Book the next as soon as one is done."],
     ["Are materials included?", "Plus and Premium include basic materials. For other materials, tell us what the task needs when you book so the team can prepare."],
     ["Can I change my plan?", "Yes. You can adjust your plan as your home's needs change."],
     ["What if I need a larger project?", "Use Project Estimates for renovations, multi-day work, or tasks that need a larger scope."],
@@ -273,12 +276,31 @@ function ProspectMembershipFlow({ postFreeVisit = false }: { postFreeVisit?: boo
             Book small repairs, maintenance, and installations when you need them&mdash;without searching for a new contractor every time.
           </p>
           <p className="mt-3 text-[13px] font-medium text-[#86868B]">Ongoing handyman care for Long Island homes.</p>
-          <div className="mt-7 flex flex-col justify-center gap-3 min-[380px]:flex-row">
-            <a href="#plans" className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#306EEC] px-7 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]">
-              Choose a Plan
+
+          {showFreeVisitOffer ? (
+            <div className="mx-auto mt-7 max-w-[520px] rounded-[18px] border border-[#E5E5EA] bg-[#F5F5F7] px-5 py-5">
+              <p className="text-[19px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[21px]">
+                Your first visit is free.
+              </p>
+              <p className="mt-1.5 text-[13px] leading-5 text-[#6E6E73] sm:text-[14px]">
+                90-minute first visit · No card required · One per home
+              </p>
+              <Link
+                href="/signup?redirect=%2Fmembership"
+                onClick={() => trackEvent("free_visit_cta_clicked", { placement: "membership_hero" })}
+                className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#306EEC] px-7 text-[15px] font-semibold text-white transition hover:bg-[#2558C9] sm:w-auto"
+              >
+                Book Your First Visit Free
+              </Link>
+            </div>
+          ) : null}
+
+          <div className="mt-6 flex flex-col justify-center gap-3 min-[380px]:flex-row">
+            <a href="#plans" className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#D2D2D7] bg-white px-7 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]">
+              See memberships
             </a>
             <a href="#how-it-works" className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#D2D2D7] bg-white px-7 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]">
-              See How It Works
+              How it works
             </a>
           </div>
         </div>
@@ -456,7 +478,7 @@ export default function MembershipExperience() {
         )}
 
         {!isAuthenticated && (
-          <ProspectMembershipFlow />
+          <ProspectMembershipFlow showFreeVisitOffer />
         )}
       </main>
 

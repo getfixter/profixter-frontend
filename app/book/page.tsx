@@ -663,12 +663,16 @@ export default function BookPage() {
       <section className="relative w-full overflow-hidden pb-5 pt-3 sm:pb-12 sm:pt-10 lg:pt-12">
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
           <div className="mb-3 max-w-[820px] sm:mb-6">
-            <div className="mb-1 text-[9px] font-bold uppercase tracking-[0.18em] text-[#306EEC] sm:text-[11px]">Extra Visit</div>
+            <div className="mb-1 text-[9px] font-bold uppercase tracking-[0.18em] text-[#306EEC] sm:text-[11px]">
+              {hasActiveMembership ? "Extra Visit" : "One-Time Visit"}
+            </div>
             <h1 className="text-[24px] font-black leading-tight tracking-[-0.035em] text-[#071325] sm:text-[44px] lg:text-[52px]">
-              Book an Extra Visit
+              {hasActiveMembership ? "Book an Extra Visit" : "Book a one-time handyman visit"}
             </h1>
             <p className="mt-1 max-w-[640px] text-[11px] font-semibold leading-4 text-[#475569] sm:text-[14px] sm:leading-5">
-              Book an additional visit anytime before your membership renews.
+              {hasActiveMembership
+                ? "Book an additional visit anytime before your membership renews."
+                : "One 90-minute visit, no membership needed. We bring the tools."}
             </p>
             {hasActiveMembership && <Link href="/membership#pick-day" className="mt-1 inline-flex text-[10px] font-bold text-[#306EEC] sm:text-[12px]">Need your included visit? Book here</Link>}
             {configError && (

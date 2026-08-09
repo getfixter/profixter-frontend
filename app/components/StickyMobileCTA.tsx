@@ -35,25 +35,21 @@ export default function StickyMobileCTA() {
         {isAuthenticated ? (
           <Link
             href="/membership#plans"
-            className="flex w-full h-[52px] items-center justify-center rounded-[13px] bg-[#306EEC] text-[15px] font-extrabold text-white shadow-[0_8px_22px_rgba(48,110,236,0.30)] active:bg-[#2558c9]"
+            className="flex w-full h-[52px] items-center justify-center rounded-[13px] bg-[#306EEC] text-[15px] font-bold text-white shadow-[0_8px_22px_rgba(48,110,236,0.30)] active:bg-[#2558c9]"
           >
-            Start Membership &mdash; from $149/mo
+            See memberships &mdash; from $149/mo
           </Link>
         ) : (
-          <div className="flex gap-3">
-            <Link
-              href="/signin"
-              className="flex-1 inline-flex h-[52px] items-center justify-center rounded-[13px] border border-[#C5CBD8] bg-white text-[14px] font-bold text-[#0B1628] active:bg-[#F1F5F9]"
-            >
-              Log In
-            </Link>
-            <Link
-              href="/signup?redirect=%2Fmembership%23plans"
-              className="flex-[2] inline-flex h-[52px] items-center justify-center rounded-[13px] bg-[#306EEC] text-[14px] font-extrabold text-white shadow-[0_8px_22px_rgba(48,110,236,0.28)] active:bg-[#2558c9]"
-            >
-              Create Account
-            </Link>
-          </div>
+          /* Cold traffic gets the offer, not an account chore. */
+          <Link
+            href="/signup?redirect=%2Fmembership"
+            className="flex w-full h-[54px] flex-col items-center justify-center rounded-[13px] bg-[#306EEC] text-white shadow-[0_8px_22px_rgba(48,110,236,0.28)] active:bg-[#2558c9]"
+          >
+            <span className="text-[15px] font-bold leading-tight">Book Your First Visit Free</span>
+            <span className="text-[11px] font-medium leading-tight text-white/75">
+              90 minutes · No card required
+            </span>
+          </Link>
         )}
       </div>
     </div>

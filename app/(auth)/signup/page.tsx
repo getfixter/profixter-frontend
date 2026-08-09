@@ -171,6 +171,7 @@ export default function SignUpPage() {
 
   useEffect(() => {
     trackEvent("view_signup", { page: "/signup" });
+    trackEvent("signup_started", { page: "/signup" });
     const code = new URLSearchParams(window.location.search).get("promo")?.trim().toUpperCase() || "";
     if (code) {
       sessionStorage.setItem("pendingPromoCode", code);
@@ -305,6 +306,7 @@ export default function SignUpPage() {
       if (!verifiedUser) {
         throw new Error("We could not verify your new account. Please try again.");
       }
+      trackEvent("signup_completed", { source: "website_signup" });
       const checkoutPromo =
         new URLSearchParams(window.location.search).get("promo")?.trim().toUpperCase() ||
         sessionStorage.getItem("pendingPromoCode") ||
