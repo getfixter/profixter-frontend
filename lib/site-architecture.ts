@@ -54,12 +54,16 @@ export const COMPANY_LINKS = [
   { label: "Terms of Service", href: "/terms" },
 ] as const;
 
+/**
+ * Public navigation. Membership leads because it is the business; the one-time
+ * visit is a fallback, not a peer product. Home Support AI is intentionally not
+ * a top-level item - it competes with the primary conversion journey and is
+ * reachable from the footer.
+ */
 export const MAIN_NAV_LINKS = [
-  ...CORE_PRODUCTS.map((product) => ({
-    label: product.label,
-    href: product.href,
-  })),
-  { label: HOME_SUPPORT_AI.label, href: HOME_SUPPORT_AI.href },
+  { label: "Membership", href: "/membership" },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "Projects", href: "/projects" },
   { label: "About Us", href: "/about" },
 ] as const;
 

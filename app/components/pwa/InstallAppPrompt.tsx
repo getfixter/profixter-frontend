@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/lib/useAuth";
 
 type BeforeInstallPromptChoice = {
   outcome: "accepted" | "dismissed";
@@ -94,6 +95,7 @@ function routeAllowsPrompt(pathname: string | null) {
 
 export default function InstallAppPrompt() {
   const pathname = usePathname();
+  const { isAuthenticated } = useAuth();
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -199,6 +201,10 @@ export default function InstallAppPrompt() {
     }
   };
 
+  // Don't ask a first-time visitor to install an app before they have used the
+  // service - it stacks a third fixed bar over the acquisition CTA and the
+  // bottom nav. Signed-in customers have a reason to install it.
+  if (!isAuthenticated) return null;
   if (!canShow) return null;
 
   const isAccountArea = pathname?.startsWith("/account");

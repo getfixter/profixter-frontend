@@ -1184,6 +1184,11 @@ if (next?.date) {
       const confirmedDateValue = bookingResult.booking.date || formatDateYMD(selectedDate);
       const confirmedTimeValue = bookingResult.booking.time || selectedTime;
       const confirmedDateOnly = dateFromYMDLocal(confirmedDateValue.slice(0, 10));
+      trackEvent(
+        freeFirstVisitAvailable ? "free_visit_booked" : "member_visit_booked",
+        { bookingReference: String(bookingResult.booking.bookingNumber || "") }
+      );
+
       setBookingConfirmation({
         dateLabel: `${confirmedDateOnly.toLocaleDateString("en-US", {
           weekday: "long",

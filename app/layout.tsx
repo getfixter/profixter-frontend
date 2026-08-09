@@ -20,17 +20,19 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   applicationName: SITE_NAME,
   title: {
-    default: "Long Island Handyman | $99 Visits & Home Maintenance Membership",
+    default: "Handyman Membership for Long Island Homes | Profixter",
     template: "%s | Profixter",
   },
   description:
-    "Monthly home maintenance Membership, $99 One-Time Handyman Visits, and renovation help for Long Island homeowners.",
+    "A handyman membership for the repairs, installations and small jobs around your home. First visit free for new Nassau and Suffolk customers.",
   alternates: {
     canonical: "/",
   },
   keywords: [
     "Profixter",
     "Long Island handyman",
+    "handyman membership",
+    "handyman subscription",
     "home maintenance membership",
     "home support AI",
     "Nassau County handyman",
@@ -38,9 +40,9 @@ export const metadata: Metadata = {
     "home project estimates",
   ],
   openGraph: {
-    title: "Long Island Handyman | $99 Visits & Home Maintenance Membership",
+    title: "Handyman Membership for Long Island Homes | Profixter",
     description:
-      "Monthly home maintenance Membership, $99 One-Time Handyman Visits, and renovation help for Long Island homeowners.",
+      "A handyman membership for the repairs, installations and small jobs around your home. First visit free for new Nassau and Suffolk customers.",
     url: SITE_URL,
     siteName: SITE_NAME,
     type: "website",
@@ -49,9 +51,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Long Island Handyman | $99 Visits & Home Maintenance Membership",
+    title: "Handyman Membership for Long Island Homes | Profixter",
     description:
-      "Monthly home maintenance Membership, $99 One-Time Handyman Visits, and renovation help for Long Island homeowners.",
+      "A handyman membership for the repairs, installations and small jobs around your home. First visit free for new Nassau and Suffolk customers.",
     images: [DEFAULT_OG_IMAGE.url],
   },
   robots: {
