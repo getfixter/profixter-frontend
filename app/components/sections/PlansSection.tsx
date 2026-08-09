@@ -142,7 +142,6 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
   const [actionMessage, setActionMessage] = useState("");
   const [actionError, setActionError] = useState("");
   const [actionLoadingPlan, setActionLoadingPlan] = useState<string | null>(null);
-  const [selectedComparisonPlan, setSelectedComparisonPlan] = useState<Plan["name"]>("Plus");
   const { user, isAuthenticated, token } = useAuth();
   const roleLandingPath = getRoleLandingPath(user);
 
@@ -605,164 +604,133 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     </svg>
   );
 
+  /**
+   * Mobile-first plan presentation.
+   *
+   * Replaces the previous 5-column comparison grid, which forced 6-8px type on
+   * a phone. Each plan is an independent card a customer can understand on its
+   * own; the shared basics are stated once above the list instead of repeated
+   * as table rows.
+   */
   const CompactPlanComparison = () => {
-    const selectedPlan = mobilePlans.find((plan) => plan.name === selectedComparisonPlan) || mobilePlans[0];
-    if (!selectedPlan) return null;
-
-    const action = getActionForPlan(selectedPlan.name);
-    const disabled = action.disabled || !!actionLoadingPlan || checkingAddr;
-    const comparisonRows: Array<{
-      label: string;
-      values: Record<Plan["name"], string>;
-    }> = [
-      {
-        label: "Visits",
-        values:
-          billing === "annual"
-            ? { Basic: "2+/mo", Plus: "4+/mo", Premium: "4+/mo", Elite: "4+/mo" }
-            : { Basic: "2+", Plus: "4+", Premium: "4+", Elite: "4+" },
-      },
-      { label: "Supply", values: { Basic: "-", Plus: "✓", Premium: "✓", Elite: "✓" } },
-      { label: "Emergency", values: { Basic: "-", Plus: "-", Premium: "1/mo", Elite: "2/mo" } },
-      { label: "Full day", values: { Basic: "-", Plus: "-", Premium: "-", Elite: "1/mo" } },
-      { label: "Length", values: { Basic: "90 min/visit", Plus: "90 min/visit", Premium: "90 min/visit", Elite: "90 min/visit" } },
-    ];
-    const summaryFeatures: Record<Plan["name"], string[]> = {
-      Basic: ["2+ visits over time", "90-minute visits", "All handyman services"],
-      Plus: ["4+ visits over time", "Basic materials included", "90-minute visits"],
-      Premium: ["4+ visits over time", "Basic materials included", "1 Emergency Visit per month"],
-      Elite: ["4+ visits over time", "1 full project day per month", "2 Emergency Visits per month"],
+    const planCopy: Record<Plan["name"], { adds: string[] }> = {
+      Basic: { adds: [] },
+      Plus: { adds: ["Everyday materials included", "A second visit can be on the calendar at once"] },
+      Premium: { adds: ["Everything in Home Care Plus", "One Emergency Visit each month", "Direct line to Taras, the founder"] },
+      Elite: { adds: ["Everything in Home Protection", "Two Emergency Visits each month", "One full project day each month", "10% off larger home projects"] },
     };
-    const cellClass = (planName: Plan["name"]) =>
-      selectedComparisonPlan === planName
-        ? "plan-selection bg-[#EEF4FF] text-[#1F5ED8] shadow-[inset_0_0_0_1px_rgba(48,110,236,0.22)]"
-        : "bg-white text-[#1D1D1F] hover:bg-[#F8FAFF]";
 
     return (
-      <div className="mx-auto max-w-[920px] lg:max-w-[1220px]">
-        <p className="mb-2 text-center text-[11px] font-medium text-[#86868B] sm:text-[12px] lg:mb-3 lg:text-[14px]">
-          <span aria-hidden="true">&#9757; </span>Tap a plan to select
-        </p>
-        <div className="overflow-hidden rounded-[18px] border border-[#D9DCE3] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.06)] lg:rounded-[24px] lg:shadow-[0_18px_54px_rgba(15,23,42,0.07)]">
-          <div className="grid grid-cols-[68px_repeat(4,minmax(0,1fr))] sm:grid-cols-[112px_repeat(4,minmax(0,1fr))] lg:grid-cols-[170px_repeat(4,minmax(0,1fr))]">
-            <div className="border-b border-[#E8E8ED] bg-[#FAFAFC]" aria-hidden="true" />
-            {mobilePlans.map((plan) => (
-              <button
-                key={plan.name}
-                type="button"
-                onClick={() => setSelectedComparisonPlan(plan.name)}
-                aria-pressed={selectedComparisonPlan === plan.name}
-                aria-label={`Select ${plan.name} plan`}
-                className={`relative min-w-0 border-b border-l border-[#E8E8ED] px-0.5 pb-3 pt-5 text-center transition sm:px-2 sm:pb-4 sm:pt-6 lg:min-h-[108px] lg:px-4 lg:pb-5 lg:pt-7 ${cellClass(plan.name)}`}
-              >
-                {plan.name === "Plus" ? (
-                  <span className="absolute left-1/2 top-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#306EEC] px-1.5 py-0.5 text-[6px] font-semibold leading-3 text-white sm:top-1.5 sm:px-2 sm:text-[8px] lg:top-2 lg:px-2.5 lg:py-0.5 lg:text-[10px]">
-                    Popular
-                  </span>
-                ) : null}
-                <span className="flex min-w-0 items-center justify-center gap-0.5 text-[9px] font-bold leading-3 min-[360px]:text-[10px] sm:gap-1 sm:text-[13px] lg:gap-1.5 lg:text-[17px] lg:leading-5">
-                  <span className="truncate">{plan.name}</span>
-                  {selectedComparisonPlan === plan.name ? (
-                    <span className="flex h-3 w-3 shrink-0 items-center justify-center rounded-full bg-[#306EEC] text-[7px] font-bold leading-none text-white sm:h-3.5 sm:w-3.5 sm:text-[8px] lg:h-5 lg:w-5 lg:text-[11px]" aria-hidden="true">
-                      ✓
-                    </span>
-                  ) : null}
-                </span>
-                <span key={billing} className="pricing-crossfade mt-1 block">
-                  {billing === "annual" ? (() => {
-                    const annual = getAnnualPromotion(plan);
-                    return (
-                      <>
-                        <span className="block text-[8px] leading-3 text-[#86868B] line-through sm:text-[10px] lg:text-[12px] lg:leading-4">
-                          ${formatMoney(annual.original)}
-                        </span>
-                        <span className={`block text-[12px] font-bold leading-4 min-[360px]:text-[13px] sm:text-[17px] lg:text-[27px] lg:leading-8 ${selectedComparisonPlan === plan.name ? "text-[#1F5ED8]" : "text-[#111111]"}`}>
-                          ${formatMoney(annual.discounted)}
-                        </span>
-                        <span className="block whitespace-nowrap text-[7px] font-semibold leading-3 text-[#306EEC] min-[360px]:text-[8px] sm:text-[10px] lg:text-[13px] lg:leading-5">
-                          Only ${formatMoney(annual.monthlyEquivalent)}/mo
-                        </span>
-                        <span className="block whitespace-nowrap text-[6px] leading-3 text-[#86868B] min-[360px]:text-[7px] sm:text-[9px] lg:text-[11px] lg:leading-4">Billed annually</span>
-                        <span className="mx-auto mt-1 block w-fit max-w-full whitespace-nowrap rounded-full bg-[#EAF7EF] px-0.5 py-0.5 text-[5px] font-bold leading-3 text-[#277447] min-[360px]:text-[6px] sm:px-2 sm:text-[9px] lg:mt-1.5 lg:px-3 lg:py-0.5 lg:text-[10px]">
-                          2 MONTHS FREE
-                        </span>
-                      </>
-                    );
-                  })() : (
-                    <>
-                      <span className="block text-[13px] font-semibold leading-4 min-[360px]:text-[14px] sm:text-[17px] lg:text-[27px] lg:leading-8">
-                        ${formatMoney(getDisplayPrice(plan, billing))}
-                      </span>
-                      <span className="block text-[8px] leading-3 text-[#86868B] sm:text-[10px] lg:text-[13px] lg:leading-5">/mo</span>
-                    </>
-                  )}
-                </span>
-              </button>
-            ))}
-
-            {comparisonRows.map((row) => (
-              <React.Fragment key={row.label}>
-                <div className="flex min-h-10 items-center border-b border-[#EEEEF2] bg-[#FAFAFC] px-2 text-[9px] font-semibold leading-3 text-[#6E6E73] sm:min-h-12 sm:px-3 sm:text-[12px] lg:min-h-[68px] lg:px-5 lg:text-[15px] lg:leading-5">
-                  {row.label}
-                </div>
-                {mobilePlans.map((plan) => (
-                  <button
-                    key={`${row.label}-${plan.name}`}
-                    type="button"
-                    onClick={() => setSelectedComparisonPlan(plan.name)}
-                    aria-pressed={selectedComparisonPlan === plan.name}
-                    aria-label={`${plan.name}: ${row.label} ${row.values[plan.name]}`}
-                    className={`min-w-0 whitespace-nowrap border-b border-l border-[#EEEEF2] px-0.5 text-center font-semibold transition sm:px-2 lg:min-h-[68px] lg:px-4 ${
-                      row.label === "Length"
-                        ? "text-[6px] tracking-[-0.025em] min-[360px]:text-[7px] sm:text-[11px] sm:tracking-normal lg:text-[15px]"
-                        : "text-[11px] sm:text-[13px] lg:text-[17px]"
-                    } ${cellClass(plan.name)}`}
-                  >
-                    {row.values[plan.name]}
-                  </button>
-                ))}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-
-        <p className="mt-2 px-1 text-[9px] leading-4 text-[#86868B] sm:text-[11px] lg:mt-4 lg:px-2 lg:text-[13px] lg:leading-5">
-          Available visits depend on appointment completion. Basic supports one active booking at a time. Plus, Premium and Elite support two active bookings at a time.
-        </p>
-
-        <div className="mt-4 rounded-[18px] border border-[#D9DCE3] bg-white p-4 shadow-[0_10px_32px_rgba(15,23,42,0.05)] sm:p-5 lg:mt-8 lg:rounded-[24px] lg:p-8 lg:shadow-[0_16px_48px_rgba(15,23,42,0.06)]">
-          <div className="flex items-start justify-between gap-4 lg:gap-6">
-            <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#306EEC] lg:text-[13px]">{selectedPlan.name}</p>
-              <h3 className="mt-1 text-[17px] font-semibold text-[#111111] sm:text-[19px] lg:mt-2 lg:text-[24px]">{planDisplayContent[selectedPlan.name].description}</h3>
-            </div>
-          </div>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-3 lg:mt-5 lg:gap-5">
-            {summaryFeatures[selectedPlan.name].map((feature) => (
-              <li key={feature} className="flex items-center gap-2 text-[13px] text-[#4B5563] lg:gap-2.5 lg:text-[15px]">
-                <span className="font-bold text-[#306EEC]" aria-hidden="true">✓</span>
-                {feature}
+      <div className="mx-auto max-w-[640px] lg:max-w-[1120px]">
+        {/* Shared basics, said once. */}
+        <div className="rounded-[18px] border border-[#E5E5EA] bg-white p-5 sm:p-6">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#306EEC]">
+            Every membership
+          </p>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {[
+              "No fixed monthly visit count",
+              "90 minutes of work per visit",
+              "The same local team each time",
+              "Month to month, cancel any time",
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-2.5 text-[15px] leading-[1.45] text-[#1D1D1F]">
+                <svg className="mt-[3px] shrink-0 text-[#306EEC]" width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="m5 12.5 4 4 10-10" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {item}
               </li>
             ))}
           </ul>
-          <button
-            type="button"
-            onClick={() => handleSubscribe(selectedPlan.name)}
-            data-track="plans-cta"
-            disabled={disabled}
-            className={`mt-4 h-12 w-full rounded-full text-[14px] font-semibold text-white transition lg:mt-6 lg:h-14 lg:text-[16px] ${
-              disabled ? "cursor-not-allowed bg-[#B8C0CE]" : "bg-[#306EEC] hover:bg-[#2558C9]"
-            }`}
-          >
-            {actionLoadingPlan === selectedPlan.name
-              ? "Working..."
-              : !isAuthenticated
-                ? "Create Account"
-              : action.kind === "subscribe"
-                ? `Choose ${selectedPlan.name}`
-                : action.label}
-          </button>
         </div>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          {mobilePlans.map((plan) => {
+            const action = getActionForPlan(plan.name);
+            const disabled = action.disabled || !!actionLoadingPlan || checkingAddr;
+            const isPopular = plan.name === "Plus";
+            const annual = getAnnualPromotion(plan);
+            const adds = planCopy[plan.name].adds;
+
+            return (
+              <article
+                key={plan.name}
+                className={[
+                  "relative flex flex-col rounded-[18px] border bg-white p-5 sm:p-6",
+                  isPopular ? "border-[#306EEC] ring-1 ring-[#306EEC]" : "border-[#E5E5EA]",
+                ].join(" ")}
+              >
+                {isPopular ? (
+                  <span className="absolute right-5 top-5 rounded-full bg-[#EEF4FF] px-2.5 py-1 text-[11px] font-semibold text-[#1F5ED8]">
+                    Most chosen
+                  </span>
+                ) : null}
+
+                <h3 className="pr-24 text-[19px] font-semibold tracking-[-0.02em] text-[#111111]">
+                  {plan.displayName}
+                </h3>
+                <p className="mt-1 text-[14px] leading-[1.45] text-[#6E6E73]">{plan.tagline}</p>
+
+                <div className="mt-4 flex items-baseline gap-1.5">
+                  <span className="text-[32px] font-semibold tracking-[-0.03em] text-[#111111]">
+                    ${billing === "annual" ? formatMoney(annual.monthlyEquivalent) : formatMoney(plan.price)}
+                  </span>
+                  <span className="text-[15px] font-medium text-[#86868B]">/mo</span>
+                </div>
+                {billing === "annual" ? (
+                  <p className="mt-1 text-[13px] text-[#6E6E73]">
+                    ${formatMoney(annual.discounted)} billed yearly &mdash; 12 months for the price of 10
+                  </p>
+                ) : null}
+
+                {adds.length ? (
+                  <ul className="mt-4 space-y-2 border-t border-[#EDEDF0] pt-4">
+                    {adds.map((item) => (
+                      <li key={item} className="flex items-start gap-2.5 text-[15px] leading-[1.45] text-[#1D1D1F]">
+                        <svg className="mt-[3px] shrink-0 text-[#306EEC]" width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="m5 12.5 4 4 10-10" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-4 border-t border-[#EDEDF0] pt-4 text-[15px] leading-[1.45] text-[#6E6E73]">
+                    {plan.description}
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => handleSubscribe(plan.name)}
+                  data-track="plans-cta"
+                  disabled={disabled}
+                  className={[
+                    "mt-5 h-[52px] w-full rounded-full text-[15px] font-semibold transition active:scale-[0.99]",
+                    disabled
+                      ? "cursor-not-allowed bg-[#D1D5DB] text-white"
+                      : isPopular
+                        ? "bg-[#306EEC] text-white hover:bg-[#2558C9]"
+                        : "border border-[#D2D2D7] bg-white text-[#1D1D1F] hover:bg-[#F5F5F7]",
+                  ].join(" ")}
+                >
+                  {actionLoadingPlan === plan.name
+                    ? "Working..."
+                    : !isAuthenticated
+                      ? `Start with ${plan.displayName}`
+                      : action.kind === "subscribe"
+                        ? `Start with ${plan.displayName}`
+                        : action.label}
+                </button>
+              </article>
+            );
+          })}
+        </div>
+
+        <p className="mt-5 text-[13px] leading-5 text-[#86868B]">
+          Standard member visits have no fixed monthly count. Home Care keeps one visit on the
+          calendar at a time; the other plans allow two. Larger renovations are quoted separately.
+        </p>
       </div>
     );
   };

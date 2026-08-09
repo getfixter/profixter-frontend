@@ -71,7 +71,7 @@ export default function Header() {
 
   return (
     <header className="relative z-50 w-full py-[8px] sm:py-[12px]">
-      <div className="mx-2.5 rounded-[18px] border border-white/50 bg-white/82 shadow-[0_14px_48px_rgba(9,22,43,0.14)] backdrop-blur-xl sm:mx-5 sm:rounded-[20px]">
+      <div className="mx-2.5 rounded-[18px] border border-white/50 bg-white/92 shadow-[0_14px_48px_rgba(9,22,43,0.14)] backdrop-blur-xl sm:mx-5 sm:rounded-[20px]">
         <div className="mx-auto flex max-w-[1240px] items-center justify-between px-[12px] py-[8px] sm:px-[18px] sm:py-[10px]">
           <Link href="/" className="relative z-50 flex items-center">
             <Image src="/images/logo.svg" alt="Profixter Long Island" width={80} height={32} priority className="brightness-0" />
@@ -128,10 +128,10 @@ export default function Header() {
             ) : (
               <>
                 <Link
-                  href="/signup?redirect=%2Fmembership%23plans"
-                  className="rounded-full bg-[#0B1628] px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#172033]"
+                  href="/signup?redirect=%2Fmembership"
+                  className="rounded-full bg-[#306EEC] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#2558C9]"
                 >
-                  Create Account
+                  First Visit Free
                 </Link>
                 <Link
                   href="/signin"
@@ -196,7 +196,7 @@ export default function Header() {
                 Profixter Long Island
               </div>
               <h2 className="mt-2 text-2xl font-black leading-tight text-[#0B1628] sm:mt-3 sm:text-3xl">
-                What do you need at home today?
+                What does your home need?
               </h2>
             </div>
 
@@ -247,11 +247,11 @@ export default function Header() {
               ) : (
                 <>
                   <Link
-                    href="/signup?redirect=%2Fmembership%23plans"
+                    href="/signup?redirect=%2Fmembership"
                     onClick={() => setIsMenuOpen(false)}
-                    className="w-full rounded-[16px] bg-[#0B1628] px-5 py-3.5 text-center text-[15px] font-black text-white transition hover:bg-[#172033] sm:px-6 sm:py-4 sm:text-base"
+                    className="w-full rounded-[16px] bg-[#306EEC] px-5 py-3.5 text-center text-[15px] font-bold text-white transition hover:bg-[#2558C9] sm:px-6 sm:py-4 sm:text-base"
                   >
-                    Create Account
+                    Book Your First Visit Free
                   </Link>
                   <Link
                     href="/signin"
