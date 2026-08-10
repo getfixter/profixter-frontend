@@ -131,7 +131,7 @@ export default function Header() {
                   href="/signup?redirect=%2Fmembership"
                   className="rounded-full bg-[#306EEC] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#2558C9]"
                 >
-                  First Visit Free
+                  Book free visit
                 </Link>
                 <Link
                   href="/signin"
@@ -156,14 +156,6 @@ export default function Header() {
         </div>
       </div>
 
-      <div className="hidden items-center justify-center gap-5 px-4 pt-2.5 sm:flex">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-white/80 px-4 py-1.5 shadow-sm">
-          <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#86EFAC]" style={{ boxShadow: "0 0 6px rgba(134,239,172,0.9)" }} />
-          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#306EEC]">
-            Serving Nassau & Suffolk Counties
-          </span>
-        </div>
-      </div>
 
       <div
         className={`fixed inset-0 z-[65] overflow-y-auto bg-white pb-[calc(env(safe-area-inset-bottom)+120px)] pt-[env(safe-area-inset-top)] transition-all duration-300 lg:hidden ${
@@ -195,9 +187,11 @@ export default function Header() {
               <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
                 Profixter Long Island
               </div>
-              <h2 className="mt-2 text-2xl font-black leading-tight text-[#0B1628] sm:mt-3 sm:text-3xl">
+              {/* Not a heading: this sits inside the nav dialog and would
+                  otherwise precede the page H1 in document order. */}
+              <p className="mt-2 text-2xl font-black leading-tight text-[#0B1628] sm:mt-3 sm:text-3xl">
                 What does your home need?
-              </h2>
+              </p>
             </div>
 
             <div className="flex w-full max-w-sm flex-col gap-2.5 rounded-[22px] border border-[#E6E8EF] bg-white p-2.5 shadow-[0_16px_50px_rgba(17,24,39,0.08)] sm:gap-3 sm:rounded-[24px] sm:p-3">
@@ -251,7 +245,7 @@ export default function Header() {
                     onClick={() => setIsMenuOpen(false)}
                     className="w-full rounded-[16px] bg-[#306EEC] px-5 py-3.5 text-center text-[15px] font-bold text-white transition hover:bg-[#2558C9] sm:px-6 sm:py-4 sm:text-base"
                   >
-                    Book Your First Visit Free
+                    Book your free visit
                   </Link>
                   <Link
                     href="/signin"

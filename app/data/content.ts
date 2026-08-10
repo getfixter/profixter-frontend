@@ -369,7 +369,7 @@ export const plans: Plan[] = [
   {
     name: "Elite",
     displayName: "Whole-Home Care",
-    tagline: "Everything about your home - handled.",
+    tagline: "Everything about your home — handled.",
     cadence: "Maximum flexibility + project time",
     description:
       "Ongoing care, two Emergency Visits, and a dedicated project day every month.",

@@ -37,7 +37,7 @@ export default function StickyMobileCTA() {
             href="/membership#plans"
             className="flex w-full h-[52px] items-center justify-center rounded-[13px] bg-[#306EEC] text-[15px] font-bold text-white shadow-[0_8px_22px_rgba(48,110,236,0.30)] active:bg-[#2558c9]"
           >
-            See memberships &mdash; from $149/mo
+            See membership &mdash; from $149/mo
           </Link>
         ) : (
           /* Cold traffic gets the offer, not an account chore. */
@@ -45,7 +45,7 @@ export default function StickyMobileCTA() {
             href="/signup?redirect=%2Fmembership"
             className="flex w-full h-[54px] flex-col items-center justify-center rounded-[13px] bg-[#306EEC] text-white shadow-[0_8px_22px_rgba(48,110,236,0.28)] active:bg-[#2558c9]"
           >
-            <span className="text-[15px] font-bold leading-tight">Book Your First Visit Free</span>
+            <span className="text-[15px] font-bold leading-tight">Book your free visit</span>
             <span className="text-[11px] font-medium leading-tight text-white/75">
               90 minutes · No card required
             </span>
