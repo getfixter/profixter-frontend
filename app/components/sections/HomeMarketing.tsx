@@ -44,17 +44,6 @@ const STEPS = [
   },
 ];
 
-const HANDLES = [
-  "Mounting & hanging",
-  "Small repairs",
-  "Installations",
-  "Doors & hardware",
-  "Drywall patching",
-  "Caulking & sealing",
-  "Fixtures & lighting",
-  "Assembly",
-  "Seasonal upkeep",
-];
 
 const PROJECTS = [
   { src: "/images/projects/Kitchen Project.jpg", label: "Kitchen" },
@@ -304,36 +293,6 @@ export default function HomeMarketing() {
         </div>
       </section>
 
-      {/* ========================== WHAT WE HANDLE ===================== */}
-      <section className="px-5 py-16 sm:px-8 sm:py-28">
-        <div className="mx-auto max-w-[1120px]">
-          <Reveal>
-            <Eyebrow>What we handle</Eyebrow>
-            <H2 className="mt-4 max-w-[20ch]">If it belongs on the handyman list, start here.</H2>
-          </Reveal>
-
-          <Reveal delay={60}>
-            <ul className="mt-9 flex flex-wrap gap-2.5 sm:mt-11">
-              {HANDLES.map((h) => (
-                <li
-                  key={h}
-                  className="rounded-full border border-[#E5E5EA] px-4 py-2.5 text-[15px] text-[#1D1D1F] sm:text-[16px]"
-                >
-                  {h}
-                </li>
-              ))}
-            </ul>
-          </Reveal>
-
-          <Reveal delay={110}>
-            <Lede className="mt-9 max-w-[52ch]">
-              Bigger work &mdash; a remodel, a roof, a full room &mdash; gets its own estimate.
-              Same company, different path.
-            </Lede>
-          </Reveal>
-        </div>
-      </section>
-
       {/* =========================== MEMBERSHIP ======================== */}
       <section className="bg-[#0B1628] px-5 py-20 text-white sm:px-8 sm:py-28">
         <div className="mx-auto max-w-[1120px]">
@@ -343,22 +302,29 @@ export default function HomeMarketing() {
               One membership. Help around your home.
             </h2>
             <p className="mt-5 max-w-[46ch] text-pretty text-[17px] leading-[1.5] text-white/60 sm:text-[19px]">
-              Instead of finding someone each time, you have a company already set up for your
-              home. Book as often as you need &mdash; there&rsquo;s no monthly visit count.
+              Instead of finding someone each time, you have a company already set up for
+              your home. Mounting, repairs, installations, drywall, caulking, fixtures &mdash;
+              book as often as you need. There&rsquo;s no monthly visit count.
             </p>
           </Reveal>
 
           <div className="mt-11 grid gap-3 sm:mt-14 sm:grid-cols-2 lg:grid-cols-4">
             {plans.map((plan, i) => (
               <Reveal key={plan.name} delay={i * 60}>
-                <div className="flex h-full flex-col rounded-[20px] border border-white/[0.10] bg-white/[0.04] p-6">
-                  <p className="text-[17px] font-semibold tracking-[-0.015em]">{plan.displayName}</p>
-                  <p className="mt-1.5 min-h-[40px] text-[14px] leading-[1.4] text-white/50">
-                    {plan.tagline}
-                  </p>
-                  <p className="mt-5 text-[30px] font-semibold tracking-[-0.03em] tabular-nums">
+                {/* Compact row on phones so four plans stay scannable; a card
+                    from sm up, where the grid has room to breathe. */}
+                <div className="flex h-full items-center justify-between gap-4 rounded-[16px] border border-white/[0.10] bg-white/[0.04] px-5 py-4 sm:flex-col sm:items-start sm:justify-start sm:rounded-[20px] sm:p-6">
+                  <div className="min-w-0">
+                    <p className="text-[16px] font-semibold tracking-[-0.015em] sm:text-[17px]">
+                      {plan.displayName}
+                    </p>
+                    <p className="mt-1 text-[13.5px] leading-[1.35] text-white/50 sm:mt-1.5 sm:min-h-[40px] sm:text-[14px] sm:leading-[1.4]">
+                      {plan.tagline}
+                    </p>
+                  </div>
+                  <p className="flex-none text-[22px] font-semibold tracking-[-0.03em] tabular-nums sm:mt-5 sm:text-[30px]">
                     ${plan.price}
-                    <span className="text-[15px] font-medium text-white/45">/mo</span>
+                    <span className="text-[13px] font-medium text-white/45 sm:text-[15px]">/mo</span>
                   </p>
                 </div>
               </Reveal>
@@ -420,7 +386,7 @@ export default function HomeMarketing() {
             <H2 className="mt-4 max-w-[20ch]">Small fix today. Bigger project later.</H2>
             <Lede className="mt-5 max-w-[46ch]">
               The same company that hangs your shelf also does kitchens, bathrooms, roofing
-              and siding.
+              and siding. Work at that scale gets its own estimate.
             </Lede>
           </Reveal>
 
