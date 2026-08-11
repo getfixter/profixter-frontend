@@ -13,10 +13,15 @@ import {
   downloadProjectInvoicePdf,
   emailProjectInvoice,
   generateProjectInvoicePdf,
+  getProjectFinancials,
   getProjectInvoices,
   saveProjectInvoiceDraft,
   updateProjectInvoicePayment,
   voidProjectInvoice,
+  type InvoiceBillingIntent,
+  type InvoiceBillingMode,
+  type InvoiceFinancialWarning,
+  type ProjectFinancials,
   type InvoiceDiscountType,
   type InvoiceDueTerm,
   type InvoiceLineItemCategory,
@@ -28,6 +33,7 @@ import {
   type ProjectInvoice,
   type ProjectInvoiceInput,
 } from "@/lib/admin-service";
+import { ProjectFinancialSummaryView } from "@/app/components/admin/ProjectFinancialSummary";
 
 type InvoiceView = "list" | "create" | "details" | "edit";
 
@@ -384,6 +390,34 @@ function emptyPaymentForm(): PaymentFormState {
   };
 }
 
+/**
+ * What this invoice is meant to bill.
+ *
+ * Deliberately a separate decision from what the project is worth. The
+ * approved Agreement value is context the Admin reads; the amount is a choice
+ * the Admin makes.
+ */
+type BillingFormState = {
+  mode: InvoiceBillingMode;
+  amount: string;
+  label: string;
+  changeOrderIds: string[];
+};
+
+const BILLING_CHOICES: { mode: InvoiceBillingMode; title: string; blurb: string }[] = [
+  { mode: "amount", title: "A set amount", blurb: "Deposit, progress payment or milestone." },
+  { mode: "remaining", title: "Remaining approved", blurb: "Everything approved that is not yet invoiced." },
+  { mode: "changeOrders", title: "Change orders only", blurb: "Bill executed change order work on its own." },
+  { mode: "full", title: "Full Agreement", blurb: "Agreement plus every executed change order." },
+];
+
+const emptyBillingForm: BillingFormState = {
+  mode: "amount",
+  amount: "",
+  label: "",
+  changeOrderIds: [],
+};
+
 function paymentFormFromPayment(payment: InvoicePayment): PaymentFormState {
   return {
     amount: dollarsFromCents(payment.amountCents),
@@ -701,6 +735,88 @@ function InvoiceEditor({
   );
 }
 
+/**
+ * The agreement position this invoice was issued against.
+ *
+ * Read from the invoice's own frozen snapshot, not from the live project, so
+ * an invoice sent months ago keeps showing the figures it was actually sent
+ * against. Invoices predating the snapshot simply have none and show nothing.
+ */
+function AgreementPosition({ invoice }: { invoice: ProjectInvoice }) {
+  const snapshot = invoice.projectFinancialSnapshot;
+  if (!snapshot?.capturedAt || !snapshot.approvedAgreementCents) return null;
+
+  const totalInvoiced = snapshot.previouslyInvoicedCents + invoice.invoiceTotalCents;
+  const remaining = snapshot.approvedAgreementCents - totalInvoiced;
+  const issued = !!invoice.sentAt;
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+          Agreement position
+        </p>
+        <p className="text-[11px] text-slate-400">
+          {issued
+            ? `Frozen when this invoice was issued on ${displayDate(invoice.sentAt)}`
+            : "Draft - updates until this invoice is issued"}
+        </p>
+      </div>
+      <div className="mt-3 grid gap-x-8 gap-y-1 sm:grid-cols-2">
+        <div className="flex justify-between border-b border-slate-100 py-1.5 text-sm">
+          <span className="text-slate-600">Original Agreement</span>
+          <span className="tabular-nums font-bold text-slate-900">{moneyFromCents(snapshot.originalAgreementCents)}</span>
+        </div>
+        <div className="flex justify-between border-b border-slate-100 py-1.5 text-sm">
+          <span className="text-slate-600">
+            Executed change orders{snapshot.executedChangeOrders.length ? ` (${snapshot.executedChangeOrders.length})` : ""}
+          </span>
+          <span className="tabular-nums font-bold text-slate-900">
+            {snapshot.executedChangeOrderCents < 0 ? "-" : "+"}
+            {moneyFromCents(Math.abs(snapshot.executedChangeOrderCents))}
+          </span>
+        </div>
+        <div className="flex justify-between border-b border-slate-100 py-1.5 text-sm">
+          <span className="text-slate-600">Approved Agreement Value</span>
+          <span className="tabular-nums font-black text-slate-950">{moneyFromCents(snapshot.approvedAgreementCents)}</span>
+        </div>
+        <div className="flex justify-between border-b border-slate-100 py-1.5 text-sm">
+          <span className="text-slate-600">Previously invoiced</span>
+          <span className="tabular-nums font-bold text-slate-900">{moneyFromCents(snapshot.previouslyInvoicedCents)}</span>
+        </div>
+        <div className="flex justify-between border-b border-slate-100 py-1.5 text-sm">
+          <span className="text-slate-600">This invoice</span>
+          <span className="tabular-nums font-bold text-slate-900">{moneyFromCents(invoice.invoiceTotalCents)}</span>
+        </div>
+        <div className="flex justify-between border-b border-slate-100 py-1.5 text-sm">
+          <span className={remaining < 0 ? "text-rose-700" : "text-slate-600"}>
+            {remaining < 0 ? "Invoiced above approved" : "Approved, not yet invoiced"}
+          </span>
+          <span className={`tabular-nums font-bold ${remaining < 0 ? "text-rose-700" : "text-slate-900"}`}>
+            {moneyFromCents(Math.abs(remaining))}
+          </span>
+        </div>
+      </div>
+      {snapshot.executedChangeOrders.length > 0 && (
+        <ul className="mt-3 space-y-1 border-t border-slate-100 pt-3">
+          {snapshot.executedChangeOrders.map((entry) => (
+            <li key={entry.changeOrderNumber} className="flex justify-between gap-3 text-xs">
+              <span className="truncate text-slate-500">
+                {entry.changeOrderNumber}
+                {entry.title ? ` - ${entry.title}` : ""}
+              </span>
+              <span className="shrink-0 tabular-nums font-semibold text-slate-600">
+                {entry.netAdjustmentCents < 0 ? "-" : "+"}
+                {moneyFromCents(Math.abs(entry.netAdjustmentCents))}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export default function ProjectInvoices({ project }: { project: Project }) {
   const [invoices, setInvoices] = useState<ProjectInvoice[]>([]);
   const [selected, setSelected] = useState<ProjectInvoice | null>(null);
@@ -714,6 +830,10 @@ export default function ProjectInvoices({ project }: { project: Project }) {
   const [showPayment, setShowPayment] = useState(false);
   const [editingPayment, setEditingPayment] = useState<InvoicePayment | null>(null);
   const [paymentForm, setPaymentForm] = useState<PaymentFormState>(emptyPaymentForm);
+  const [financials, setFinancials] = useState<ProjectFinancials | null>(null);
+  const [showBilling, setShowBilling] = useState(false);
+  const [billing, setBilling] = useState<BillingFormState>(emptyBillingForm);
+  const [warnings, setWarnings] = useState<InvoiceFinancialWarning[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -729,9 +849,23 @@ export default function ProjectInvoices({ project }: { project: Project }) {
     }
   }, [project._id]);
 
+  /**
+   * The project's approved position, reloaded whenever billing changes it.
+   * Read-only context: it tells the Admin what the project is worth, never
+   * what this invoice should be.
+   */
+  const loadFinancials = useCallback(async () => {
+    try {
+      setFinancials(await getProjectFinancials(project._id));
+    } catch {
+      setFinancials(null);
+    }
+  }, [project._id]);
+
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadFinancials();
+  }, [load, loadFinancials]);
 
   const upsertInvoice = (invoice: ProjectInvoice) => {
     setInvoices((current) => {
@@ -739,6 +873,8 @@ export default function ProjectInvoices({ project }: { project: Project }) {
       return [invoice, ...without].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     });
     setSelected(invoice);
+    // Issuing, voiding or paying an invoice all move the project totals.
+    void loadFinancials();
   };
 
   const createNew = () => {
@@ -749,14 +885,26 @@ export default function ProjectInvoices({ project }: { project: Project }) {
   };
 
   const createFromContract = async () => {
-    setWorkingAction("Creating invoice from contract...");
+    setWorkingAction("Creating invoice...");
     setError("");
     setSuccess("");
+    setWarnings([]);
     try {
-      const invoice = await createProjectInvoiceFromContract(project._id);
-      upsertInvoice(invoice);
-      setView("edit");
-      setSuccess("Invoice draft created from contract.");
+      const intent: InvoiceBillingIntent =
+        billing.mode === "amount"
+          ? { mode: "amount", amountCents: centsFromMoney(billing.amount), label: billing.label.trim() }
+          : billing.mode === "changeOrders"
+            ? { mode: "changeOrders", changeOrderIds: billing.changeOrderIds }
+            : { mode: billing.mode };
+      const result = await createProjectInvoiceFromContract(project._id, undefined, intent);
+      upsertInvoice(result.invoice);
+      setWarnings(result.financialWarnings);
+      setShowBilling(false);
+      setBilling(emptyBillingForm);
+      // Review before editing: money was just prefilled on the Admin's behalf.
+      setView("details");
+      setSuccess("Invoice draft created. Review the amounts before generating the PDF.");
+      void loadFinancials();
     } catch (createError) {
       setError(errorMessage(createError));
     } finally {
@@ -957,6 +1105,13 @@ export default function ProjectInvoices({ project }: { project: Project }) {
 
         {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">{error}</div>}
         {success && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">{success}</div>}
+        {warnings.map((warning) => (
+          <div key={warning.code} className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-bold text-amber-900">
+            {warning.message}
+          </div>
+        ))}
+
+        <AgreementPosition invoice={selected} />
 
         <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -1141,8 +1296,16 @@ export default function ProjectInvoices({ project }: { project: Project }) {
           <p className="mt-1 text-sm text-slate-500">Customer-facing invoices attached to {project.projectNumber}.</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <button type="button" onClick={createFromContract} disabled={!!workingAction} className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-            {workingAction || "Create from Contract"}
+          <button
+            type="button"
+            onClick={() => {
+              setShowBilling((current) => !current);
+              setError("");
+              setSuccess("");
+            }}
+            className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
+          >
+            {showBilling ? "Cancel" : "Bill from Agreement"}
           </button>
           <button type="button" onClick={createNew} className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700">
             New Invoice
@@ -1150,8 +1313,156 @@ export default function ProjectInvoices({ project }: { project: Project }) {
         </div>
       </div>
 
+      {financials ? <ProjectFinancialSummaryView financials={financials} compact /> : null}
+
+      {showBilling && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <h4 className="text-sm font-black text-slate-950">What is this invoice billing?</h4>
+          <p className="mt-1 text-xs text-slate-500">
+            The figures above are the project&apos;s position. The amount billed is your decision.
+          </p>
+
+          {!financials?.agreement ? (
+            <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
+              This project has no Agreement yet. Create one first, or use New Invoice for manual billing.
+            </p>
+          ) : (
+            <>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {BILLING_CHOICES.map((choice) => {
+                  const active = billing.mode === choice.mode;
+                  return (
+                    <button
+                      key={choice.mode}
+                      type="button"
+                      onClick={() => setBilling((current) => ({ ...current, mode: choice.mode }))}
+                      aria-pressed={active}
+                      className={`rounded-xl border p-3 text-left transition ${
+                        active
+                          ? "border-blue-500 bg-blue-50 ring-1 ring-blue-200"
+                          : "border-slate-200 bg-white hover:border-slate-300"
+                      }`}
+                    >
+                      <span className="block text-sm font-bold text-slate-900">{choice.title}</span>
+                      <span className="mt-0.5 block text-xs text-slate-500">{choice.blurb}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {billing.mode === "amount" && (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <label className="text-sm font-semibold text-slate-700">
+                    This invoice amount
+                    <input
+                      inputMode="decimal"
+                      placeholder="5,000.00"
+                      value={billing.amount}
+                      onChange={(event) => setBilling((current) => ({ ...current, amount: event.target.value }))}
+                      className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm"
+                    />
+                  </label>
+                  <label className="text-sm font-semibold text-slate-700">
+                    Description on the invoice
+                    <input
+                      placeholder="Deposit"
+                      maxLength={240}
+                      value={billing.label}
+                      onChange={(event) => setBilling((current) => ({ ...current, label: event.target.value }))}
+                      className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm"
+                    />
+                  </label>
+                </div>
+              )}
+
+              {billing.mode === "remaining" && (
+                <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                  Bills <strong className="tabular-nums">{moneyFromCents(financials.totals.uninvoicedApprovedCents)}</strong>
+                  {" "}- the approved Agreement value not yet invoiced.
+                </p>
+              )}
+
+              {billing.mode === "changeOrders" && (
+                <div className="mt-4">
+                  {financials.changeOrders.executed.length === 0 ? (
+                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
+                      No executed change orders on this Agreement yet.
+                    </p>
+                  ) : (
+                    <div className="grid gap-2">
+                      {financials.changeOrders.executed.map((changeOrder) => {
+                        const checked =
+                          billing.changeOrderIds.length === 0 ||
+                          billing.changeOrderIds.includes(changeOrder.id);
+                        return (
+                          <label
+                            key={changeOrder.id}
+                            className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
+                          >
+                            <span className="flex min-w-0 items-center gap-2.5">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() =>
+                                  setBilling((current) => {
+                                    const explicit = current.changeOrderIds.length
+                                      ? current.changeOrderIds
+                                      : financials.changeOrders.executed.map((item) => item.id);
+                                    const next = explicit.includes(changeOrder.id)
+                                      ? explicit.filter((id) => id !== changeOrder.id)
+                                      : [...explicit, changeOrder.id];
+                                    return { ...current, changeOrderIds: next };
+                                  })
+                                }
+                                className="h-4 w-4 shrink-0 rounded border-slate-300"
+                              />
+                              <span className="truncate text-slate-800">
+                                {changeOrder.changeOrderNumber}
+                                {changeOrder.title ? ` - ${changeOrder.title}` : ""}
+                              </span>
+                            </span>
+                            <span className="shrink-0 tabular-nums font-bold text-slate-900">
+                              {changeOrder.netAdjustmentCents < 0 ? "-" : "+"}
+                              {moneyFromCents(Math.abs(changeOrder.netAdjustmentCents))}
+                            </span>
+                          </label>
+                        );
+                      })}
+                      <p className="text-xs text-slate-500">
+                        Deductions become credits on the invoice. A no-cost change order bills nothing.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {billing.mode === "full" && financials.totals.invoicedCents > 0 && (
+                <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
+                  {moneyFromCents(financials.totals.invoicedCents)} has already been invoiced on this project.
+                  Billing the full Agreement again would double-bill it.
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={createFromContract}
+                disabled={!!workingAction || (billing.mode === "amount" && centsFromMoney(billing.amount) <= 0)}
+                className="mt-5 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50 sm:w-auto"
+              >
+                {workingAction || "Create Invoice Draft"}
+              </button>
+            </>
+          )}
+        </section>
+      )}
+
       {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">{error}</div>}
       {success && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">{success}</div>}
+      {warnings.map((warning) => (
+        <div key={warning.code} className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-bold text-amber-900">
+          {warning.message}
+        </div>
+      ))}
 
       {loading ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500">Loading invoices...</div>

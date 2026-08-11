@@ -944,6 +944,8 @@ export interface ProjectContractDiscount {
 
 export interface ProjectContractInput {
   contractId?: string;
+  /** The Estimate this Agreement is being created from, when there is one. */
+  estimateId?: string;
   customerSnapshot: {
     fullName: string;
     email: string;
@@ -992,6 +994,16 @@ export interface ProjectContract {
   legalNoticeVersion?: string;
   fullDepositConfirmed?: boolean;
   zeroAdjustedPriceConfirmed?: boolean;
+  /** The Estimate this Agreement came from, when there was one. */
+  estimateId?: string | null;
+  /** What that Estimate said at the moment this Agreement was created. */
+  estimateSnapshot?: {
+    estimateNumber: string;
+    title: string;
+    totalCents: number;
+    lineItemCount: number;
+    importedAt: string | null;
+  };
   customerSnapshot: ProjectContractInput["customerSnapshot"];
   propertySnapshot: ProjectContractInput["propertySnapshot"];
   workType: ContractWorkType;
@@ -1237,6 +1249,108 @@ export interface ContractValueSummary {
   pendingCount: number;
 }
 
+/**
+ * A project's financial position, exactly as the backend computed it.
+ *
+ * Every figure here is served by /api/admin/projects/:id/financials. The UI
+ * renders these numbers and derives none of its own: a second implementation
+ * of the money rules in the browser is how "approved" and "invoiced" start
+ * quietly disagreeing.
+ */
+export interface ProjectFinancialTotals {
+  originalAgreementCents: number;
+  executedChangeOrderCents: number;
+  approvedAgreementCents: number;
+  pendingChangeOrderCents: number;
+  projectedAgreementCents: number;
+  executedChangeOrderCount: number;
+  pendingChangeOrderCount: number;
+  invoicedCents: number;
+  paidCents: number;
+  outstandingInvoicedCents: number;
+  uninvoicedApprovedCents: number;
+  overInvoicedCents: number;
+  countedInvoiceCount: number;
+}
+
+export interface ProjectFinancialChangeOrderRef {
+  id: string;
+  changeOrderNumber: string;
+  title: string;
+  status: string;
+  netAdjustmentCents: number;
+  executedAt: string | null;
+}
+
+export interface ProjectFinancialInvoiceRef {
+  id: string;
+  invoiceNumber: string;
+  status: InvoiceStatus;
+  invoiceTotalCents: number;
+  paidCents: number;
+  countsTowardInvoiced: boolean;
+  issuedAt: string | null;
+  invoiceDate: string | null;
+  hasFinancialSnapshot: boolean;
+}
+
+export interface ProjectFinancials {
+  projectId: string;
+  projectNumber: string;
+  agreement: {
+    id: string;
+    contractNumber: string;
+    version: number;
+    status: string;
+    isBinding: boolean;
+    contractDate: string | null;
+    estimate: {
+      id: string;
+      estimateNumber: string;
+      title: string;
+      totalCents: number;
+      importedAt: string | null;
+    } | null;
+  } | null;
+  /** Other Agreement numbers on this project, if it carries more than one. */
+  otherAgreementNumbers: string[];
+  changeOrders: {
+    executed: ProjectFinancialChangeOrderRef[];
+    pending: ProjectFinancialChangeOrderRef[];
+  };
+  invoices: ProjectFinancialInvoiceRef[];
+  totals: ProjectFinancialTotals;
+}
+
+/** An Estimate an Agreement can be built from. */
+export interface ContractEstimateOption {
+  id: string;
+  estimateNumber: string;
+  title: string;
+  description: string;
+  status: string;
+  totalCents: number;
+  lineItems: { description: string; quantity: number; totalCents: number }[];
+  createdAt: string;
+}
+
+/** How much of the project a new invoice is meant to bill. */
+export type InvoiceBillingMode = "full" | "amount" | "remaining" | "changeOrders";
+
+export interface InvoiceBillingIntent {
+  mode: InvoiceBillingMode;
+  amountCents?: number;
+  label?: string;
+  changeOrderIds?: string[];
+}
+
+/** A caution shown before billing. Never a block. */
+export interface InvoiceFinancialWarning {
+  code: string;
+  message: string;
+  overageCents?: number;
+}
+
 export interface ChangeOrderMeta {
   company: ContractMeta["company"];
   statuses: ChangeOrderStatus[];
@@ -1436,6 +1550,28 @@ export interface ProjectInvoice {
   propertySnapshot: Required<ProjectInvoiceInput["propertySnapshot"]>;
   projectSnapshot: ProjectInvoiceInput["projectSnapshot"];
   contractSnapshot?: ProjectInvoiceInput["contractSnapshot"];
+  /**
+   * The project's approved position frozen at issue. Absent on invoices
+   * created before this existed, which keep rendering from their own figures.
+   */
+  projectFinancialSnapshot?: {
+    agreementId: string;
+    agreementNumber: string;
+    agreementVersion: number;
+    originalAgreementCents: number;
+    executedChangeOrders: Array<{
+      changeOrderId: string;
+      changeOrderNumber: string;
+      title: string;
+      netAdjustmentCents: number;
+    }>;
+    executedChangeOrderCents: number;
+    approvedAgreementCents: number;
+    previouslyInvoicedCents: number;
+    previouslyPaidCents: number;
+    uninvoicedApprovedCents: number;
+    capturedAt: string | null;
+  };
   lineItems: InvoiceLineItem[];
   discounts: InvoiceDiscount[];
   taxTreatment: InvoiceTaxTreatment;
@@ -2384,6 +2520,20 @@ export const deleteEstimate = async (estimateId: string): Promise<void> => {
   await API.delete(`/api/admin/estimates/${estimateId}`);
 };
 
+/**
+ * The project's whole financial story in one call.
+ *
+ * The only place the Admin reads these numbers from. Do not recompute any of
+ * them client-side, even the obvious subtractions - the backend owns which
+ * invoice statuses count and which change orders are approved.
+ */
+export const getProjectFinancials = async (
+  projectId: string
+): Promise<ProjectFinancials> => {
+  const response = await API.get(`/api/admin/projects/${projectId}/financials`);
+  return response.data;
+};
+
 // Contracts
 export const getContractMeta = async (): Promise<ContractMeta> => {
   const response = await API.get("/api/admin/contracts/meta");
@@ -2395,6 +2545,15 @@ export const getProjectContracts = async (
 ): Promise<ProjectContract[]> => {
   const response = await API.get(`/api/admin/contracts/project/${projectId}`);
   return response.data.contracts;
+};
+
+export const getContractEstimateOptions = async (
+  projectId: string
+): Promise<ContractEstimateOption[]> => {
+  const response = await API.get(
+    `/api/admin/contracts/project/${projectId}/estimate-options`
+  );
+  return response.data.estimates || [];
 };
 
 export const saveProjectContractDraft = async (
@@ -2706,14 +2865,19 @@ export const saveProjectInvoiceDraft = async (
 
 export const createProjectInvoiceFromContract = async (
   projectId: string,
-  contractId?: string
-): Promise<ProjectInvoice> => {
+  contractId?: string,
+  billing?: InvoiceBillingIntent
+): Promise<{ invoice: ProjectInvoice; financialWarnings: InvoiceFinancialWarning[] }> => {
   const response = await API.post(`/api/admin/invoices/project/${projectId}/draft`, {
     createFromContract: true,
     source: "contract",
     ...(contractId ? { contractId } : {}),
+    ...(billing ? { billing } : {}),
   });
-  return response.data.invoice;
+  return {
+    invoice: response.data.invoice,
+    financialWarnings: response.data.financialWarnings || [],
+  };
 };
 
 export const generateProjectInvoicePdf = async (
