@@ -4,6 +4,7 @@ import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react
 import ProjectChangeOrders from "@/app/components/admin/ProjectChangeOrders";
 import ProjectContracts from "@/app/components/admin/ProjectContracts";
 import ProjectEstimates from "@/app/components/admin/ProjectEstimates";
+import ProjectFinancialSummary from "@/app/components/admin/ProjectFinancialSummary";
 import ProjectInvoices from "@/app/components/admin/ProjectInvoices";
 import {
   PROJECT_STATUSES,
@@ -994,14 +995,22 @@ export default function ProjectsModule() {
                 )}
               </section>
               <section className="rounded-2xl bg-slate-950 p-6 text-white shadow-sm">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Financials</p>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Project record</p>
                 <div className="mt-5 space-y-4">
                   <div className="flex justify-between"><span className="text-slate-400">Estimate</span><strong>{money(selected.estimateAmount)}</strong></div>
                   <div className="flex justify-between"><span className="text-slate-400">Deposit</span><strong>{money(selected.depositAmount)}</strong></div>
                   <div className="flex justify-between border-t border-white/10 pt-4 text-lg"><span>Balance due</span><strong>{money(selected.balanceDue)}</strong></div>
                 </div>
+                <p className="mt-4 text-xs leading-5 text-slate-400">
+                  Manually entered on the project. The Agreement, Change Order and Invoice figures below are
+                  the system of record.
+                </p>
               </section>
             </div>
+            <section>
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Financials</p>
+              <ProjectFinancialSummary projectId={selected._id} />
+            </section>
             <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Notes</p>
               <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">{selected.notes || "No notes yet."}</p>

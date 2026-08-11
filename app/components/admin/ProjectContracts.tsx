@@ -10,6 +10,7 @@ import {
   downloadProjectContractPdf,
   emailProjectContract,
   generateProjectContractPdf,
+  getContractEstimateOptions,
   getContractMeta,
   getDocumentSignatures,
   getProjectContracts,
@@ -22,6 +23,7 @@ import {
   downloadNativeDocument,
   uploadManuallySignedDocument,
   uploadSignedProjectContract,
+  type ContractEstimateOption,
   type ContractMeta,
   type ContractDiscountType,
   type DocumentSignature,
@@ -50,6 +52,12 @@ type DiscountDraft = {
 
 type ContractFormState = {
   contractId?: string;
+  /**
+   * The Estimate this Agreement is being built from. Sent once, on the draft
+   * that first records it; the backend freezes its own copy from the database
+   * and ignores later attempts to change it.
+   */
+  estimateId?: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -270,6 +278,7 @@ function defaultForm(project: Project): ContractFormState {
 function formFromContract(contract: ProjectContract): ContractFormState {
   return {
     contractId: contract._id,
+    estimateId: contract.estimateId || undefined,
     customerName: contract.customerSnapshot.fullName || "",
     customerEmail: contract.customerSnapshot.email || "",
     customerPhone: contract.customerSnapshot.phone || "",
@@ -313,6 +322,7 @@ function formFromContract(contract: ProjectContract): ContractFormState {
 function buildPayload(project: Project, form: ContractFormState): ProjectContractInput {
   return {
     contractId: form.contractId,
+    ...(form.estimateId ? { estimateId: form.estimateId } : {}),
     customerSnapshot: {
       fullName: form.customerName,
       email: form.customerEmail,
@@ -484,6 +494,93 @@ function PdfPreview({
   );
 }
 
+/**
+ * Where this Agreement came from.
+ *
+ * Once an Agreement has frozen an Estimate the link is permanent and shown
+ * read-only: the Agreement is the baseline from that point, and re-importing a
+ * later revision of the proposal would move a number the customer signed.
+ */
+function EstimateSource({
+  estimates,
+  form,
+  frozen,
+  onPick,
+  onClear,
+}: {
+  estimates: ContractEstimateOption[];
+  form: ContractFormState;
+  frozen?: ProjectContract["estimateSnapshot"];
+  onPick: (estimate: ContractEstimateOption) => void;
+  onClear: () => void;
+}) {
+  if (frozen?.importedAt) {
+    return (
+      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Created from Estimate</p>
+        <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+          <p className="font-bold text-slate-900">
+            {frozen.estimateNumber}
+            {frozen.title ? ` - ${frozen.title}` : ""}
+          </p>
+          <p className="tabular-nums font-bold text-slate-700">{moneyFromCents(frozen.totalCents)} estimated</p>
+        </div>
+        <p className="mt-1 text-xs text-slate-500">
+          Frozen on {displayDate(frozen.importedAt)}. Later edits to the Estimate do not change this Agreement.
+        </p>
+      </section>
+    );
+  }
+
+  if (!estimates.length) return null;
+  const picked = estimates.find((estimate) => estimate.id === form.estimateId) || null;
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Create from Estimate</p>
+      <p className="mt-1 text-sm text-slate-500">
+        Optional. Links this Agreement to the proposal it came from and fills in the price.
+      </p>
+      <div className="mt-4 grid gap-2">
+        {estimates.slice(0, 6).map((estimate) => {
+          const active = picked?.id === estimate.id;
+          return (
+            <button
+              key={estimate.id}
+              type="button"
+              onClick={() => (active ? onClear() : onPick(estimate))}
+              aria-pressed={active}
+              className={`flex flex-wrap items-baseline justify-between gap-2 rounded-xl border p-3 text-left transition ${
+                active ? "border-blue-500 bg-blue-50 ring-1 ring-blue-200" : "border-slate-200 hover:border-slate-300"
+              }`}
+            >
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-bold text-slate-900">
+                  {estimate.estimateNumber}
+                  {estimate.title ? ` - ${estimate.title}` : ""}
+                </span>
+                <span className="text-xs text-slate-500">
+                  {estimate.status} - {estimate.lineItems.length} line item
+                  {estimate.lineItems.length === 1 ? "" : "s"}
+                </span>
+              </span>
+              <span className="shrink-0 tabular-nums font-bold text-slate-900">
+                {moneyFromCents(estimate.totalCents)}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {picked ? (
+        <p className="mt-3 text-xs font-semibold text-blue-700">
+          The Agreement price has been set to {moneyFromCents(picked.totalCents)}. Adjust it below if the
+          agreed figure differs - the Estimate is a record of the proposal, not a constraint.
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 export default function ProjectContracts({ project }: { project: Project }) {
   const [contracts, setContracts] = useState<ProjectContract[]>([]);
   const [selectedContractId, setSelectedContractId] = useState("");
@@ -505,6 +602,24 @@ export default function ProjectContracts({ project }: { project: Project }) {
    */
   const [inPersonToken, setInPersonToken] = useState<string | null>(null);
   const [emailForm, setEmailForm] = useState({ recipient: "", subject: "", message: "" });
+  const [estimateOptions, setEstimateOptions] = useState<ContractEstimateOption[]>([]);
+
+  /**
+   * Prefill from an Estimate. Only the price and the wording move across;
+   * everything else stays the Admin's to decide, and the backend takes its own
+   * frozen copy of the Estimate rather than trusting anything sent from here.
+   */
+  const applyEstimate = (estimate: ContractEstimateOption) => {
+    setForm((current) => ({
+      ...current,
+      estimateId: estimate.id,
+      totalPrice: dollarsFromCents(estimate.totalCents),
+      projectDescription: current.projectDescription || estimate.title,
+      scopeText:
+        current.scopeText ||
+        estimate.lineItems.map((item) => `- ${item.description}`).join("\n"),
+    }));
+  };
 
   const selectedContract = useMemo(
     () =>
@@ -623,14 +738,16 @@ export default function ProjectContracts({ project }: { project: Project }) {
     setLoading(true);
     setError("");
     try {
-      const [nextMeta, nextContracts, nextSignatureMeta] = await Promise.all([
+      const [nextMeta, nextContracts, nextSignatureMeta, nextEstimates] = await Promise.all([
         getContractMeta(),
         getProjectContracts(project._id),
         getSignatureMeta().catch(() => null),
+        getContractEstimateOptions(project._id).catch(() => []),
       ]);
       setMeta(nextMeta);
       setContracts(nextContracts);
       setSignatureMeta(nextSignatureMeta);
+      setEstimateOptions(nextEstimates);
       const nextSelected = nextContracts.find((contract) => contract.current) || nextContracts[0] || null;
       setSelectedContractId(nextSelected?._id || "");
       setForm(nextSelected ? formFromContract(nextSelected) : defaultForm(project));
@@ -1173,6 +1290,14 @@ export default function ProjectContracts({ project }: { project: Project }) {
 
       <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
         <form className="space-y-5" onSubmit={(event) => { event.preventDefault(); void saveDraft(); }}>
+          <EstimateSource
+            estimates={estimateOptions}
+            form={form}
+            frozen={selectedContract?.estimateSnapshot}
+            onPick={applyEstimate}
+            onClear={() => setForm((current) => ({ ...current, estimateId: undefined }))}
+          />
+
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Customer Snapshot</p>
             <p className="mt-1 text-sm text-slate-500">Edits here affect this contract only. Project and customer records stay unchanged.</p>
