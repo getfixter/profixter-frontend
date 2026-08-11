@@ -1071,6 +1071,199 @@ export interface ContractMeta {
   maxSignedPdfBytes: number;
 }
 
+/* ------------------------------------------------------------------ */
+/* Change Orders                                                       */
+/* ------------------------------------------------------------------ */
+
+export const CHANGE_ORDER_STATUSES = [
+  "Draft",
+  "Ready to Send",
+  "Sent",
+  "Viewed",
+  "Awaiting Signature",
+  "Partially Signed",
+  "Executed",
+  "Declined",
+  "Voided",
+] as const;
+
+export type ChangeOrderStatus = (typeof CHANGE_ORDER_STATUSES)[number];
+
+export type ChangeLineDirection = "add" | "deduct" | "none";
+
+export type ScheduleImpactType = "none" | "add_days" | "reduce_days" | "custom";
+
+export interface ChangeOrderLine {
+  _id?: string;
+  description: string;
+  direction: ChangeLineDirection;
+  /** Always a magnitude; the direction carries the sign. */
+  amountCents: number;
+  order?: number;
+}
+
+export interface ChangeOrderInput {
+  title: string;
+  lines: Array<Omit<ChangeOrderLine, "_id">>;
+  scheduleImpact: { type: ScheduleImpactType; days: number; note: string };
+  notes: string;
+}
+
+export interface SignatureSigner {
+  role: "CUSTOMER" | "COMPANY";
+  name: string;
+  email: string;
+  order: number;
+  status: string;
+  viewedAt?: string | null;
+  signedAt?: string | null;
+}
+
+export type SignatureStatus =
+  | "Draft"
+  | "Sent"
+  | "Viewed"
+  | "Awaiting Signature"
+  | "Partially Signed"
+  | "Completed"
+  | "Declined"
+  | "Cancelled"
+  | "Expired"
+  | "Failed";
+
+export interface DocumentSignature {
+  id: string;
+  projectId?: string;
+  documentType?: "CONTRACT" | "CHANGE_ORDER";
+  documentId?: string;
+  documentNumber?: string;
+  provider: string;
+  providerAgreementId: string;
+  status: SignatureStatus;
+  providerStatus: string;
+  signers: SignatureSigner[];
+  message?: string;
+  sentAt?: string | null;
+  completedAt?: string | null;
+  declinedAt?: string | null;
+  voidedAt?: string | null;
+  expiredAt?: string | null;
+  declineReason?: string;
+  originalPdfAvailable: boolean;
+  executedPdfAvailable: boolean;
+  auditTrailAvailable: boolean;
+  documentRetrieval: {
+    state: "not_needed" | "pending" | "succeeded" | "failed";
+    attempts: number;
+    lastAttemptAt?: string | null;
+    lastError?: string;
+  };
+  events?: Array<{ eventType: string; receivedAt: string }>;
+  eventCount: number;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface ProjectChangeOrder {
+  _id: string;
+  id: string;
+  changeOrderNumber: string;
+  sequence: number;
+  projectId: string;
+  contractId: string;
+  status: ChangeOrderStatus;
+  termsVersion: string;
+  title: string;
+  customerSnapshot: { fullName: string; email: string; phone: string };
+  propertySnapshot: { address: string; projectNumber: string };
+  contractSnapshot: {
+    contractNumber: string;
+    contractDate?: string | null;
+    originalContractAmountCents: number;
+  };
+  lines: ChangeOrderLine[];
+  netAdjustmentCents: number;
+  contractAmountBeforeChangeCents: number;
+  newContractAmountCents: number;
+  previousChangeOrderAdjustmentCents: number;
+  scheduleImpact: { type: ScheduleImpactType; days: number; note: string };
+  notes: string;
+  generatedPdf?: { available?: boolean; fileName?: string; size?: number; generatedAt?: string | null };
+  executedPdf?: {
+    available?: boolean;
+    fileName?: string;
+    size?: number;
+    uploadedAt?: string | null;
+    source?: string;
+  };
+  signatureId?: string | null;
+  signature?: DocumentSignature | null;
+  emailHistory?: Array<{
+    _id?: string;
+    recipient: string;
+    subject: string;
+    message: string;
+    sentAt: string;
+    providerResponse?: string;
+  }>;
+  auditHistory?: Array<{
+    _id?: string;
+    event: string;
+    at: string;
+    adminEmail?: string;
+    details?: Record<string, unknown>;
+  }>;
+  sentAt?: string | null;
+  executedAt?: string | null;
+  declinedAt?: string | null;
+  voidedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Executed vs projected contract value for one contract. */
+export interface ContractValueSummary {
+  contractId: string;
+  contractNumber: string;
+  contractStatus: string;
+  originalContractCents: number;
+  executedAdjustmentCents: number;
+  executedContractCents: number;
+  pendingAdjustmentCents: number;
+  projectedContractCents: number;
+  executedCount: number;
+  pendingCount: number;
+}
+
+export interface ChangeOrderMeta {
+  company: ContractMeta["company"];
+  statuses: ChangeOrderStatus[];
+  scheduleImpactTypes: ScheduleImpactType[];
+  termsVersion: string;
+  amendableContractStatuses: string[];
+  maxSignedPdfBytes: number;
+}
+
+export interface SignatureMeta {
+  provider: string;
+  configured: boolean;
+  /** Which credential style the server is using — never the credentials. */
+  authMode: "" | "oauth" | "integration_key";
+  companySignerConfigured: boolean;
+  webhookConfigured: boolean;
+  webhookPath: string;
+  /** The registered provider webhook, or null if none is recorded. */
+  webhook: {
+    registered: boolean;
+    providerWebhookId: string;
+    state: string;
+    eventCount: number;
+    url: string;
+    lastCheckedAt?: string | null;
+    lastError?: string;
+  } | null;
+}
+
 export const INVOICE_STATUSES = [
   "Draft",
   "Sent",
@@ -2261,6 +2454,166 @@ export const downloadProjectContractPdf = async (
     timeout: 300000,
   });
   return response.data as Blob;
+};
+
+// Change Orders
+export const getChangeOrderMeta = async (): Promise<ChangeOrderMeta> => {
+  const response = await API.get("/api/admin/change-orders/meta");
+  return response.data;
+};
+
+export const getProjectChangeOrders = async (
+  projectId: string
+): Promise<{ changeOrders: ProjectChangeOrder[]; contractSummaries: ContractValueSummary[] }> => {
+  const response = await API.get(`/api/admin/change-orders/project/${projectId}`);
+  return {
+    changeOrders: response.data.changeOrders || [],
+    contractSummaries: response.data.contractSummaries || [],
+  };
+};
+
+export const createChangeOrder = async (
+  contractId: string,
+  data: ChangeOrderInput
+): Promise<ProjectChangeOrder> => {
+  const response = await API.post(`/api/admin/change-orders/contract/${contractId}`, data);
+  return response.data.changeOrder;
+};
+
+export const updateChangeOrder = async (
+  changeOrderId: string,
+  data: ChangeOrderInput
+): Promise<ProjectChangeOrder> => {
+  const response = await API.put(`/api/admin/change-orders/${changeOrderId}`, data);
+  return response.data.changeOrder;
+};
+
+export const deleteChangeOrder = async (changeOrderId: string): Promise<void> => {
+  await API.delete(`/api/admin/change-orders/${changeOrderId}`);
+};
+
+export const generateChangeOrderPdf = async (
+  changeOrderId: string
+): Promise<ProjectChangeOrder> => {
+  const response = await API.post(
+    `/api/admin/change-orders/${changeOrderId}/generate`,
+    {},
+    { timeout: 300000 }
+  );
+  return response.data.changeOrder;
+};
+
+export const downloadChangeOrderPdf = async (
+  changeOrderId: string,
+  type: "generated" | "executed" = "generated"
+): Promise<Blob> => {
+  const response = await API.get(`/api/admin/change-orders/${changeOrderId}/download`, {
+    params: { type },
+    responseType: "blob",
+    timeout: 300000,
+  });
+  return response.data as Blob;
+};
+
+export const emailChangeOrder = async (
+  changeOrderId: string,
+  data: { recipient: string; subject: string; message: string }
+): Promise<ProjectChangeOrder> => {
+  const response = await API.post(`/api/admin/change-orders/${changeOrderId}/email`, data, {
+    timeout: 300000,
+  });
+  return response.data.changeOrder;
+};
+
+export const uploadExecutedChangeOrder = async (
+  changeOrderId: string,
+  file: File
+): Promise<ProjectChangeOrder> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await API.post(`/api/admin/change-orders/${changeOrderId}/executed`, formData, {
+    timeout: 300000,
+  });
+  return response.data.changeOrder;
+};
+
+export const voidChangeOrder = async (
+  changeOrderId: string,
+  reason = ""
+): Promise<ProjectChangeOrder> => {
+  const response = await API.post(`/api/admin/change-orders/${changeOrderId}/void`, { reason });
+  return response.data.changeOrder;
+};
+
+// E-signatures
+export const getSignatureMeta = async (): Promise<SignatureMeta> => {
+  const response = await API.get("/api/admin/signatures/meta");
+  return response.data;
+};
+
+export const sendDocumentForSignature = async (data: {
+  documentType: "CONTRACT" | "CHANGE_ORDER";
+  documentId: string;
+  message?: string;
+  signers?: Array<{ role: "CUSTOMER" | "COMPANY"; name?: string; email: string; order?: number }>;
+}): Promise<DocumentSignature> => {
+  const response = await API.post("/api/admin/signatures/send", data, { timeout: 300000 });
+  return response.data.signature;
+};
+
+export const getDocumentSignatures = async (
+  documentType: "CONTRACT" | "CHANGE_ORDER",
+  documentId: string
+): Promise<DocumentSignature[]> => {
+  const response = await API.get(`/api/admin/signatures/document/${documentType}/${documentId}`);
+  return response.data.signatures || [];
+};
+
+export const getSignature = async (signatureId: string): Promise<DocumentSignature> => {
+  const response = await API.get(`/api/admin/signatures/${signatureId}`);
+  return response.data.signature;
+};
+
+export const downloadSignaturePdf = async (
+  signatureId: string,
+  type: "executed" | "original" | "audit" = "executed"
+): Promise<Blob> => {
+  const response = await API.get(`/api/admin/signatures/${signatureId}/download`, {
+    params: { type },
+    responseType: "blob",
+    timeout: 300000,
+  });
+  return response.data as Blob;
+};
+
+export const refreshSignatureStatus = async (
+  signatureId: string
+): Promise<DocumentSignature> => {
+  const response = await API.post(
+    `/api/admin/signatures/${signatureId}/refresh`,
+    {},
+    { timeout: 120000 }
+  );
+  return response.data.signature;
+};
+
+export const retrySignatureRetrieval = async (
+  signatureId: string
+): Promise<DocumentSignature> => {
+  const response = await API.post(
+    `/api/admin/signatures/${signatureId}/retry-retrieval`,
+    {},
+    { timeout: 300000 }
+  );
+  return response.data.signature;
+};
+
+export const cancelSignatureRequest = async (
+  signatureId: string,
+  reason = ""
+): Promise<DocumentSignature> => {
+  const response = await API.post(`/api/admin/signatures/${signatureId}/cancel`, { reason });
+  return response.data.signature;
 };
 
 // Invoices
