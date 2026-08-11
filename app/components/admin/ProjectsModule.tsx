@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import ProjectChangeOrders from "@/app/components/admin/ProjectChangeOrders";
 import ProjectContracts from "@/app/components/admin/ProjectContracts";
 import ProjectEstimates from "@/app/components/admin/ProjectEstimates";
 import ProjectInvoices from "@/app/components/admin/ProjectInvoices";
@@ -23,7 +24,20 @@ import {
 } from "@/lib/admin-service";
 
 type View = "list" | "create" | "details" | "edit";
-type ProjectDetailTab = "overview" | "contract" | "invoice" | "estimates";
+type ProjectDetailTab =
+  | "overview"
+  | "contract"
+  | "changeOrders"
+  | "invoice"
+  | "estimates";
+
+const DETAIL_TAB_LABELS: Record<ProjectDetailTab, string> = {
+  overview: "Overview",
+  contract: "Contract",
+  changeOrders: "Change Orders",
+  invoice: "Invoice",
+  estimates: "Estimates",
+};
 type CustomerSource = "existing" | "manual";
 
 const EMPTY_PROJECT: ProjectInput = {
@@ -926,18 +940,18 @@ export default function ProjectsModule() {
         {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">{error}</div>}
 
         <div className="flex gap-2 overflow-x-auto border-b border-slate-200">
-          {(["overview", "contract", "invoice", "estimates"] as const).map((tab) => (
+          {(["overview", "contract", "changeOrders", "invoice", "estimates"] as const).map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => setDetailTab(tab)}
-              className={`border-b-2 px-4 py-3 text-sm font-bold capitalize ${
+              className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm font-bold ${
                 detailTab === tab
                   ? "border-blue-600 text-blue-700"
                   : "border-transparent text-slate-500 hover:text-slate-800"
               }`}
             >
-              {tab}
+              {DETAIL_TAB_LABELS[tab]}
             </button>
           ))}
         </div>
@@ -995,6 +1009,8 @@ export default function ProjectsModule() {
           </>
         ) : detailTab === "contract" ? (
           <ProjectContracts project={selected} />
+        ) : detailTab === "changeOrders" ? (
+          <ProjectChangeOrders project={selected} />
         ) : detailTab === "invoice" ? (
           <ProjectInvoices project={selected} />
         ) : (

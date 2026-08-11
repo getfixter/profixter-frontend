@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ESignStatusBadge from "@/app/components/admin/ESignStatusBadge";
+import SignatureDetails from "@/app/components/admin/SignaturePanel";
 import {
   CONTRACT_WORK_TYPES,
   cancelProjectContract,
@@ -8,11 +10,16 @@ import {
   emailProjectContract,
   generateProjectContractPdf,
   getContractMeta,
+  getDocumentSignatures,
   getProjectContracts,
+  getSignatureMeta,
   saveProjectContractDraft,
+  sendDocumentForSignature,
   uploadSignedProjectContract,
   type ContractMeta,
   type ContractDiscountType,
+  type DocumentSignature,
+  type SignatureMeta,
   type ContractStatus,
   type ContractWorkType,
   type Project,
@@ -482,6 +489,10 @@ export default function ProjectContracts({ project }: { project: Project }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showEmail, setShowEmail] = useState(false);
+  const [signatureMeta, setSignatureMeta] = useState<SignatureMeta | null>(null);
+  const [signature, setSignature] = useState<DocumentSignature | null>(null);
+  const [showSendForSignature, setShowSendForSignature] = useState(false);
+  const [signatureMessage, setSignatureMessage] = useState("");
   const [emailForm, setEmailForm] = useState({ recipient: "", subject: "", message: "" });
 
   const selectedContract = useMemo(
@@ -601,12 +612,14 @@ export default function ProjectContracts({ project }: { project: Project }) {
     setLoading(true);
     setError("");
     try {
-      const [nextMeta, nextContracts] = await Promise.all([
+      const [nextMeta, nextContracts, nextSignatureMeta] = await Promise.all([
         getContractMeta(),
         getProjectContracts(project._id),
+        getSignatureMeta().catch(() => null),
       ]);
       setMeta(nextMeta);
       setContracts(nextContracts);
+      setSignatureMeta(nextSignatureMeta);
       const nextSelected = nextContracts.find((contract) => contract.current) || nextContracts[0] || null;
       setSelectedContractId(nextSelected?._id || "");
       setForm(nextSelected ? formFromContract(nextSelected) : defaultForm(project));
@@ -620,6 +633,48 @@ export default function ProjectContracts({ project }: { project: Project }) {
   useEffect(() => {
     void loadContracts();
   }, [loadContracts]);
+
+  const selectedContractId2 = selectedContract?._id || "";
+  const refreshSignature = useCallback(async () => {
+    if (!selectedContractId2) {
+      setSignature(null);
+      return;
+    }
+    try {
+      const list = await getDocumentSignatures("CONTRACT", selectedContractId2);
+      setSignature(list[0] || null);
+    } catch {
+      // A signature history that cannot be read must not break the contract UI.
+      setSignature(null);
+    }
+  }, [selectedContractId2]);
+
+  useEffect(() => {
+    void refreshSignature();
+  }, [refreshSignature]);
+
+  const handleSendForSignature = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedContract) return;
+    setWorkingAction("Sending for signature...");
+    setError("");
+    try {
+      await sendDocumentForSignature({
+        documentType: "CONTRACT",
+        documentId: selectedContract._id,
+        message: signatureMessage,
+      });
+      setShowSendForSignature(false);
+      setSignatureMessage("");
+      setSuccess("Contract sent for signature. Status updates arrive automatically.");
+      await refreshSignature();
+      await loadContracts();
+    } catch (sendError) {
+      setError(errorMessage(sendError));
+    } finally {
+      setWorkingAction("");
+    }
+  };
 
   const updateField = <K extends keyof ContractFormState>(field: K, value: ContractFormState[K]) => {
     setForm((current) => ({
@@ -1188,6 +1243,9 @@ export default function ProjectContracts({ project }: { project: Project }) {
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Actions</p>
+            <div className="mt-3">
+              <ESignStatusBadge meta={signatureMeta} />
+            </div>
             <div className="mt-4 grid gap-2">
               <button type="button" disabled={!selectedContract?.generatedPdf?.available || !!workingAction} onClick={() => void handleDownload("generated")} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
                 Download Generated PDF
@@ -1202,11 +1260,40 @@ export default function ProjectContracts({ project }: { project: Project }) {
               <button type="button" disabled={!selectedContract?.signedPdf?.available || !!workingAction} onClick={() => void handleDownload("signed")} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
                 Download Signed PDF
               </button>
+              <button
+                type="button"
+                disabled={
+                  !selectedContract?.generatedPdf?.available ||
+                  !!workingAction ||
+                  selectedContract?.status === "Signed" ||
+                  selectedContract?.status === "Canceled"
+                }
+                onClick={() => setShowSendForSignature(true)}
+                className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-50"
+              >
+                Send for Signature
+              </button>
               <button type="button" disabled={!selectedContract || !!workingAction} onClick={handleCancel} className="rounded-xl border border-rose-200 px-4 py-3 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50">
                 Cancel Contract
               </button>
             </div>
           </section>
+
+          {selectedContract && (
+            <SignatureDetails
+              signature={signature}
+              providerConfigured={signatureMeta?.configured ?? false}
+              webhookConfigured={signatureMeta?.webhook?.state === "ACTIVE"}
+              working={workingAction}
+              onChanged={async () => {
+                await refreshSignature();
+                await loadContracts();
+              }}
+              setError={setError}
+              setSuccess={setSuccess}
+              setWorking={setWorkingAction}
+            />
+          )}
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Event History</p>
@@ -1243,6 +1330,68 @@ export default function ProjectContracts({ project }: { project: Project }) {
           </details>
         </div>
       </div>
+
+      {showSendForSignature && selectedContract && (
+        <div
+          className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/60 px-3 py-4 backdrop-blur-sm sm:items-center"
+          onClick={() => setShowSendForSignature(false)}
+        >
+          <form
+            onSubmit={handleSendForSignature}
+            className="w-full max-w-lg rounded-[28px] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.30)] sm:p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h4 className="text-lg font-black text-slate-900">
+              Send {contractDisplayLabel(selectedContract.contractNumber)} for signature
+            </h4>
+            {!signatureMeta?.configured ? (
+              <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-900">
+                Adobe Acrobat Sign is not configured on the server.
+              </p>
+            ) : (
+              <p className="mt-3 text-sm font-medium text-slate-600">
+                {selectedContract.customerSnapshot.email
+                  ? `${selectedContract.customerSnapshot.fullName || "The customer"} will receive a signing link at ${selectedContract.customerSnapshot.email}.`
+                  : "This contract has no customer email on file."}
+                {signatureMeta?.companySignerConfigured
+                  ? " Premium Island Homes will countersign afterwards."
+                  : ""}
+              </p>
+            )}
+            <label className="mt-4 block">
+              <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
+                Message to signer (optional)
+              </span>
+              <textarea
+                value={signatureMessage}
+                onChange={(event) => setSignatureMessage(event.target.value)}
+                rows={4}
+                className={inputClass}
+              />
+            </label>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowSendForSignature(false)}
+                className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={
+                  !!workingAction ||
+                  !signatureMeta?.configured ||
+                  !selectedContract.customerSnapshot.email
+                }
+                className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-50"
+              >
+                Send for Signature
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {showEmail && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/60 px-3 py-4 backdrop-blur-sm sm:items-center" onClick={() => setShowEmail(false)}>
