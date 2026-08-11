@@ -13,6 +13,10 @@ type NavItem = {
 
 const hiddenPathPrefixes = [
   "/admin",
+  // Document signing is a focused ceremony. The site nav is fixed to the bottom
+  // of the viewport, so it both covers the signing controls and offers the
+  // customer a way out of the page mid-signature.
+  "/sign",
   "/signin",
   "/signup",
   "/register",
