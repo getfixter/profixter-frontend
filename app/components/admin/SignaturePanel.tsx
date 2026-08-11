@@ -1,15 +1,31 @@
 "use client";
 
+import { useState } from "react";
 import {
-  cancelSignatureRequest,
-  downloadSignaturePdf,
-  refreshSignatureStatus,
-  retrySignatureRetrieval,
+  downloadNativeDocument,
   type DocumentSignature,
 } from "@/lib/admin-service";
 
-const SIGNATURE_STATUS_STYLES: Record<string, string> = {
+/**
+ * Signature details.
+ *
+ * Native-first and provider-aware. It answers the questions an admin actually
+ * has in front of a customer - has this been signed, how, by whom, and when -
+ * and nothing else.
+ *
+ * Deliberately NOT shown here: SHA-256 hashes, IP addresses, user agents, token
+ * state, database ids and storage keys. That material is evidence and lives in
+ * the Signature Certificate and the audit record. Putting it in everyday Admin
+ * makes the panel unreadable and leaks internals onto a screen that gets turned
+ * toward customers.
+ *
+ * A manual upload is labelled as such and never dressed up as a native
+ * ceremony, because it did not go through one.
+ */
+
+const STATUS_STYLES: Record<string, string> = {
   Draft: "border-slate-200 bg-slate-100 text-slate-700",
+  Ready: "border-blue-200 bg-blue-50 text-blue-700",
   Sent: "border-indigo-200 bg-indigo-50 text-indigo-700",
   Viewed: "border-indigo-200 bg-indigo-50 text-indigo-700",
   "Awaiting Signature": "border-amber-200 bg-amber-50 text-amber-800",
@@ -21,8 +37,27 @@ const SIGNATURE_STATUS_STYLES: Record<string, string> = {
   Failed: "border-rose-200 bg-rose-50 text-rose-700",
 };
 
-function formatDateTime(value?: string | null) {
-  if (!value) return "";
+/** What an admin should read, not the raw enum. */
+function statusLabel(signature: DocumentSignature) {
+  if (signature.signingMode === "MANUAL_UPLOAD") return "Signed — Manual Upload";
+  if (signature.status === "Completed") return "Signed";
+  if (signature.status === "Cancelled") return "Revoked";
+  return signature.status;
+}
+
+function methodLabel(signature: DocumentSignature) {
+  switch (signature.signingMode) {
+    case "IN_PERSON":
+      return "In Person";
+    case "MANUAL_UPLOAD":
+      return "Manual Upload";
+    default:
+      return "Remote";
+  }
+}
+
+function formatStamp(value?: string | null) {
+  if (!value) return null;
   return new Date(value).toLocaleString("en-US", {
     month: "short",
     day: "numeric",
@@ -30,11 +65,6 @@ function formatDateTime(value?: string | null) {
     hour: "numeric",
     minute: "2-digit",
   });
-}
-
-function errorMessage(error: unknown) {
-  const response = (error as { response?: { data?: { message?: string } } })?.response;
-  return response?.data?.message || (error as Error)?.message || "Something went wrong";
 }
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -48,250 +78,152 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+function Row({ label, value }: { label: string; value: React.ReactNode }) {
+  if (!value) return null;
+  return (
+    <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-100 py-2 last:border-0">
+      <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</dt>
+      <dd className="break-words text-right text-sm font-semibold text-slate-900">{value}</dd>
+    </div>
+  );
+}
+
+interface Props {
+  signature: DocumentSignature | null;
+  providerConfigured?: boolean;
+  webhookConfigured?: boolean;
+  working?: string;
+  documentWord?: "Agreement" | "Change Order";
+  onChanged?: () => Promise<void> | void;
+  setError?: (value: string) => void;
+  setSuccess?: (value: string) => void;
+  setWorking?: (value: string) => void;
+}
+
 export default function SignatureDetails({
   signature,
-  providerConfigured,
-  webhookConfigured,
-  working,
-  onChanged,
+  working = "",
+  documentWord = "Agreement",
   setError,
-  setSuccess,
   setWorking,
-}: {
-  signature: DocumentSignature | null;
-  providerConfigured: boolean;
-  webhookConfigured: boolean;
-  working: string;
-  onChanged: () => Promise<void>;
-  setError: (value: string) => void;
-  setSuccess: (value: string) => void;
-  setWorking: (value: string) => void;
-}) {
+}: Props) {
+  const [busy, setBusy] = useState(false);
+
   if (!signature) {
     return (
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-          E-Signature
-        </p>
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Signature</p>
         <p className="mt-2 text-sm font-medium text-slate-600">
-          {providerConfigured
-            ? "Not sent for signature yet."
-            : "Adobe Acrobat Sign is not configured on the server yet."}
+          This {documentWord.toLowerCase()} has not been sent for signature yet.
         </p>
       </section>
     );
   }
 
-  const run = async (label: string, action: () => Promise<unknown>, done: string) => {
-    setWorking(label);
-    setError("");
-    setSuccess("");
+  const isLegacy = signature.provider === "adobe_sign";
+  const isManual = signature.signingMode === "MANUAL_UPLOAD";
+  const customer = (signature.signers || []).find((s) => s.role === "CUSTOMER");
+
+  const download = async (kind: "frozen" | "executed" | "certificate") => {
+    setBusy(true);
+    setError?.("");
+    setWorking?.("Preparing download...");
     try {
-      await action();
-      setSuccess(done);
-      await onChanged();
-    } catch (actionError) {
-      setError(errorMessage(actionError));
+      const blob = await downloadNativeDocument(signature.id, kind);
+      const names = {
+        frozen: `original-${documentWord.toLowerCase().replace(/\s+/g, "-")}.pdf`,
+        executed: `signed-${documentWord.toLowerCase().replace(/\s+/g, "-")}.pdf`,
+        certificate: "signature-certificate.pdf",
+      };
+      downloadBlob(blob, names[kind]);
+    } catch {
+      setError?.("That document could not be downloaded. Please try again.");
     } finally {
-      setWorking("");
+      setBusy(false);
+      setWorking?.("");
     }
   };
 
-  const downloadSigned = async (type: "executed" | "original" | "audit") => {
-    setWorking("Preparing download...");
-    setError("");
-    try {
-      const blob = await downloadSignaturePdf(signature.id, type);
-      downloadBlob(blob, `${signature.documentNumber || "document"}-${type}.pdf`);
-    } catch (downloadError) {
-      setError(errorMessage(downloadError));
-    } finally {
-      setWorking("");
-    }
-  };
-
-  const terminal = ["Completed", "Declined", "Cancelled", "Expired"].includes(signature.status);
+  const disabled = busy || Boolean(working);
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-          E-Signature
-        </p>
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Signature</p>
         <span
           className={`rounded-full border px-3 py-1 text-xs font-bold ${
-            SIGNATURE_STATUS_STYLES[signature.status] || "border-slate-200 bg-slate-100 text-slate-700"
+            STATUS_STYLES[signature.status] || "border-slate-200 bg-slate-100 text-slate-700"
           }`}
         >
-          {signature.status}
+          {statusLabel(signature)}
         </span>
       </div>
 
-      <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-          <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Provider</dt>
-          <dd className="text-sm font-semibold text-slate-800">
-            {signature.provider === "adobe_sign" ? "Adobe Acrobat Sign" : signature.provider}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-            Agreement ID
-          </dt>
-          <dd className="break-all text-xs font-medium text-slate-600">
-            {signature.providerAgreementId || "—"}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Sent</dt>
-          <dd className="text-sm font-semibold text-slate-800">
-            {formatDateTime(signature.sentAt) || "—"}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-            Completed
-          </dt>
-          <dd className="text-sm font-semibold text-slate-800">
-            {formatDateTime(signature.completedAt) || "—"}
-          </dd>
-        </div>
+      <dl className="mt-3">
+        <Row label="Signing method" value={methodLabel(signature)} />
+        <Row label="Customer" value={customer?.name || "—"} />
+        <Row label="Email" value={customer?.email} />
+        {!isManual && <Row label="Sent" value={formatStamp(signature.sentAt)} />}
+        {!isManual && <Row label="Opened" value={formatStamp(customer?.viewedAt)} />}
+        <Row
+          label={isManual ? "Recorded" : "Signed"}
+          value={formatStamp(signature.completedAt)}
+        />
+        <Row label="Declined" value={formatStamp(signature.declinedAt)} />
+        {isLegacy && <Row label="Provider" value="Adobe Acrobat Sign (historical)" />}
       </dl>
 
-      <div className="mt-4">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Signers</p>
-        <ul className="mt-2 space-y-2">
-          {signature.signers.map((signer) => (
-            <li
-              key={`${signer.email}-${signer.order}`}
-              className="flex flex-wrap items-baseline justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3"
-            >
-              <div>
-                <p className="text-sm font-bold text-slate-900">{signer.name || signer.email}</p>
-                <p className="text-xs font-medium text-slate-500">
-                  {signer.email} · {signer.role === "COMPANY" ? "Company" : "Customer"} · order{" "}
-                  {signer.order}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs font-bold text-slate-700">{signer.status}</p>
-                {signer.signedAt && (
-                  <p className="text-[11px] font-medium text-emerald-700">
-                    Signed {formatDateTime(signer.signedAt)}
-                  </p>
-                )}
-                {!signer.signedAt && signer.viewedAt && (
-                  <p className="text-[11px] font-medium text-slate-500">
-                    Viewed {formatDateTime(signer.viewedAt)}
-                  </p>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {isManual && (
+        <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-medium leading-5 text-slate-600">
+          This document was signed outside ProFixter and uploaded by an administrator. It does not
+          carry electronic signature evidence such as a consent record or signing certificate.
+        </p>
+      )}
 
       {signature.declineReason && (
         <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">
-          Declined: {signature.declineReason}
+          Reason given: {signature.declineReason}
         </p>
       )}
 
-      {!webhookConfigured && !["Completed", "Declined", "Cancelled", "Expired"].includes(signature.status) && (
-        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-900">
-          The signature webhook is not configured, so status updates will not arrive on their own.
-          Use Refresh Status to pull the current state from Adobe.
+      {!isManual && !isLegacy && signature.status === "Completed" && (
+        <p className="mt-3 text-[11px] font-medium text-slate-500">
+          Electronic disclosure PIH-ESIGN-DISCLOSURE-2026-001 was accepted before signing.
         </p>
       )}
 
-      {signature.status === "Completed" && signature.documentRetrieval.state === "failed" && (
-        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-900">
-          The signature completed, but downloading the executed PDF failed
-          {signature.documentRetrieval.attempts
-            ? ` after ${signature.documentRetrieval.attempts} attempt(s)`
-            : ""}
-          . The signature record is safe — retry the retrieval below.
-        </p>
+      {signature.status === "Completed" && (
+        <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-200 pt-4">
+          <button
+            type="button"
+            onClick={() => void download("executed")}
+            disabled={disabled}
+            className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+          >
+            View Signed {documentWord}
+          </button>
+          {!isManual && (
+            <>
+              <button
+                type="button"
+                onClick={() => void download("frozen")}
+                disabled={disabled}
+                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                View Original
+              </button>
+              <button
+                type="button"
+                onClick={() => void download("certificate")}
+                disabled={disabled}
+                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Signature Certificate
+              </button>
+            </>
+          )}
+        </div>
       )}
-
-      <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-200 pt-4">
-        {signature.executedPdfAvailable && (
-          <button
-            type="button"
-            onClick={() => downloadSigned("executed")}
-            disabled={!!working}
-            className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-60"
-          >
-            Download Executed PDF
-          </button>
-        )}
-        {signature.auditTrailAvailable && (
-          <button
-            type="button"
-            onClick={() => downloadSigned("audit")}
-            disabled={!!working}
-            className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-          >
-            Audit Trail
-          </button>
-        )}
-        {signature.originalPdfAvailable && (
-          <button
-            type="button"
-            onClick={() => downloadSigned("original")}
-            disabled={!!working}
-            className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-          >
-            Original Sent PDF
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() =>
-            run(
-              "Refreshing status...",
-              () => refreshSignatureStatus(signature.id),
-              "Signature status refreshed."
-            )
-          }
-          disabled={!!working || !providerConfigured}
-          className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
-        >
-          Refresh Status
-        </button>
-        {signature.status === "Completed" && !signature.executedPdfAvailable && (
-          <button
-            type="button"
-            onClick={() =>
-              run(
-                "Retrieving executed PDF...",
-                () => retrySignatureRetrieval(signature.id),
-                "Executed document retrieved."
-              )
-            }
-            disabled={!!working || !providerConfigured}
-            className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-40"
-          >
-            Retry Retrieval
-          </button>
-        )}
-        {!terminal && (
-          <button
-            type="button"
-            onClick={() =>
-              run(
-                "Cancelling...",
-                () => cancelSignatureRequest(signature.id, "Cancelled by Premium Island Homes Inc."),
-                "Signature request cancelled."
-              )
-            }
-            disabled={!!working || !providerConfigured}
-            className="rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-40"
-          >
-            Cancel Request
-          </button>
-        )}
-      </div>
     </section>
   );
 }

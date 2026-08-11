@@ -33,7 +33,7 @@ type ProjectDetailTab =
 
 const DETAIL_TAB_LABELS: Record<ProjectDetailTab, string> = {
   overview: "Overview",
-  contract: "Contract",
+  contract: "Agreement",
   changeOrders: "Change Orders",
   invoice: "Invoice",
   estimates: "Estimates",

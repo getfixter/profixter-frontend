@@ -17,7 +17,8 @@
     "test:booking-calendar-live-request": "node scripts/test_booking_calendar_live_request.js",
     "test:project-customer-selector-ui": "node scripts/test_project_customer_selector_ui.js",
     "postinstall": "npm run build",
-    "test:free-visit-e2e": "node scripts/test_free_visit_e2e.js"
+    "test:free-visit-e2e": "node scripts/test_free_visit_e2e.js",
+    "test:native-signing-ui": "node scripts/test_native_signing_ui.js"
   },
   "engines": {
     "node": "20.x"

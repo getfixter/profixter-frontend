@@ -1133,6 +1133,8 @@ export type SignatureStatus =
 
 export interface DocumentSignature {
   id: string;
+  /** How the signature was obtained. Absent on historical Adobe records. */
+  signingMode?: "REMOTE" | "IN_PERSON" | "MANUAL_UPLOAD";
   projectId?: string;
   documentType?: "CONTRACT" | "CHANGE_ORDER";
   documentId?: string;
@@ -1242,6 +1244,18 @@ export interface ChangeOrderMeta {
   termsVersion: string;
   amendableContractStatuses: string[];
   maxSignedPdfBytes: number;
+}
+
+/** A native signing request created from the Admin. */
+export interface NativeSignatureRequest {
+  signature: DocumentSignature;
+  /**
+   * Returned exactly once by the server. Treat as a credential: never persist
+   * it, never log it, never send it to analytics.
+   */
+  signingUrl: string;
+  mode: "REMOTE" | "IN_PERSON";
+  emailed?: boolean;
 }
 
 export interface SignatureMeta {
@@ -2614,6 +2628,64 @@ export const cancelSignatureRequest = async (
 ): Promise<DocumentSignature> => {
   const response = await API.post(`/api/admin/signatures/${signatureId}/cancel`, { reason });
   return response.data.signature;
+};
+
+// Native e-signature
+export const sendForNativeSignature = async (data: {
+  documentType: "CONTRACT" | "CHANGE_ORDER";
+  documentId: string;
+  mode: "REMOTE" | "IN_PERSON";
+  message?: string;
+}): Promise<NativeSignatureRequest> => {
+  const response = await API.post("/api/admin/signatures/native/send", data, { timeout: 300000 });
+  return response.data;
+};
+
+export const resendNativeSignature = async (
+  signatureId: string
+): Promise<NativeSignatureRequest> => {
+  const response = await API.post(
+    `/api/admin/signatures/native/${signatureId}/resend`,
+    {},
+    { timeout: 120000 }
+  );
+  return response.data;
+};
+
+export const revokeNativeSignature = async (
+  signatureId: string,
+  reason = ""
+): Promise<{ signature: DocumentSignature }> => {
+  const response = await API.post(`/api/admin/signatures/native/${signatureId}/revoke`, { reason });
+  return response.data;
+};
+
+/** frozen = the exact document signed; executed = completed; certificate = evidence. */
+export const downloadNativeDocument = async (
+  signatureId: string,
+  kind: "frozen" | "executed" | "certificate" = "executed"
+): Promise<Blob> => {
+  const response = await API.get(`/api/admin/signatures/native/${signatureId}/document`, {
+    params: { kind },
+    responseType: "blob",
+    timeout: 300000,
+  });
+  return response.data as Blob;
+};
+
+export const uploadManuallySignedDocument = async (
+  documentType: "CONTRACT" | "CHANGE_ORDER",
+  documentId: string,
+  file: File
+): Promise<{ signature: DocumentSignature }> => {
+  const formData = new FormData();
+  formData.append("documentType", documentType);
+  formData.append("documentId", documentId);
+  formData.append("file", file);
+  const response = await API.post("/api/admin/signatures/native/manual-upload", formData, {
+    timeout: 300000,
+  });
+  return response.data;
 };
 
 // Invoices

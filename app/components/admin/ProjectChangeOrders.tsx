@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ESignStatusBadge from "@/app/components/admin/ESignStatusBadge";
+import InPersonSigning from "@/app/components/signing/InPersonSigning";
 import SignatureDetails from "@/app/components/admin/SignaturePanel";
 import {
   createChangeOrder,
@@ -13,7 +14,11 @@ import {
   getProjectChangeOrders,
   getProjectContracts,
   getSignatureMeta,
-  sendDocumentForSignature,
+  sendForNativeSignature,
+  resendNativeSignature,
+  revokeNativeSignature,
+  downloadNativeDocument,
+  uploadManuallySignedDocument,
   updateChangeOrder,
   uploadExecutedChangeOrder,
   voidChangeOrder,
@@ -193,6 +198,8 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
   const [emailForm, setEmailForm] = useState({ recipient: "", subject: "", message: "" });
   const [showSend, setShowSend] = useState(false);
   const [sendMessage, setSendMessage] = useState("");
+  /** In-person signing credential. Memory only - never persisted or logged. */
+  const [inPersonToken, setInPersonToken] = useState<string | null>(null);
 
   const executedInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -421,23 +428,125 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
     }
   };
 
+  /**
+   * Turn a backend failure into copy an admin can act on. A missing company
+   * signature is a configuration problem, not an error the customer caused, and
+   * the raw message would expose server internals.
+   */
+  const signingError = (caught: unknown) => {
+    const response = (caught as { response?: { data?: { code?: string } } })?.response;
+    if (response?.data?.code === "SIGNING_NOT_CONFIGURED") {
+      return "Company signature needs to be configured before this Change Order can be sent for signing.";
+    }
+    return errorMessage(caught);
+  };
+
   const handleSendForSignature = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selected) return;
     setWorking("Sending for signature...");
     setError("");
     try {
-      await sendDocumentForSignature({
+      const result = await sendForNativeSignature({
         documentType: "CHANGE_ORDER",
         documentId: selected._id,
+        mode: "REMOTE",
         message: sendMessage,
       });
       setShowSend(false);
       setSendMessage("");
-      setSuccess("Sent for signature. Status updates arrive automatically.");
+      setSuccess(
+        result.emailed
+          ? "Change Order sent. The customer has been emailed a secure signing link."
+          : "Change Order is ready to sign, but the email could not be delivered. Use Resend Link."
+      );
       await load();
     } catch (sendError) {
-      setError(errorMessage(sendError));
+      setError(signingError(sendError));
+    } finally {
+      setWorking("");
+    }
+  };
+
+  /** In person: freeze, then hand this device to the customer. No email. */
+  const handleSignInPerson = async () => {
+    if (!selected) return;
+    setWorking("Preparing signing session...");
+    setError("");
+    try {
+      const result = await sendForNativeSignature({
+        documentType: "CHANGE_ORDER",
+        documentId: selected._id,
+        mode: "IN_PERSON",
+      });
+      setInPersonToken(result.signingUrl.split("/sign/")[1] || null);
+    } catch (sendError) {
+      setError(signingError(sendError));
+    } finally {
+      setWorking("");
+    }
+  };
+
+  const handleResend = async () => {
+    if (!selected?.signature) return;
+    setWorking("Resending...");
+    setError("");
+    try {
+      await resendNativeSignature(selected.signature.id);
+      setSuccess("A new signing link has been emailed. The previous link no longer works.");
+      await load();
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setWorking("");
+    }
+  };
+
+  const handleRevoke = async () => {
+    if (!selected?.signature) return;
+    if (!window.confirm("Revoke this signature request? The link will stop working.")) return;
+    setWorking("Revoking...");
+    try {
+      await revokeNativeSignature(selected.signature.id, "Revoked by admin");
+      setSuccess("Signature request revoked.");
+      await load();
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setWorking("");
+    }
+  };
+
+  const handleNativeDownload = async (kind: "frozen" | "executed" | "certificate") => {
+    if (!selected?.signature) return;
+    setWorking("Preparing download...");
+    try {
+      const blob = await downloadNativeDocument(selected.signature.id, kind);
+      const names = {
+        frozen: `${selected.changeOrderNumber}-original.pdf`,
+        executed: `${selected.changeOrderNumber}-signed.pdf`,
+        certificate: `${selected.changeOrderNumber}-certificate.pdf`,
+      };
+      downloadBlob(blob, names[kind]);
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setWorking("");
+    }
+  };
+
+  const handleManualUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !selected) return;
+    setWorking("Uploading signed Change Order...");
+    setError("");
+    try {
+      await uploadManuallySignedDocument("CHANGE_ORDER", selected._id, file);
+      setSuccess("Signed Change Order recorded as a manual upload.");
+      await load();
+    } catch (caught) {
+      setError(errorMessage(caught));
     } finally {
       setWorking("");
     }
@@ -534,6 +643,18 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
     );
   }
 
+  if (inPersonToken) {
+    return (
+      <InPersonSigning
+        token={inPersonToken}
+        onExit={() => {
+          setInPersonToken(null);
+          void load();
+        }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-5">
       <section className="rounded-2xl bg-slate-950 p-5 text-white shadow-sm">
@@ -560,7 +681,7 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
               </span>
               {activeSummary && (
                 <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-slate-300">
-                  Contract #{activeSummary.contractNumber}
+                  Agreement #{activeSummary.contractNumber}
                 </span>
               )}
             </div>
@@ -609,7 +730,7 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
         {working && <p className="mt-4 text-sm font-semibold text-blue-200">{working}</p>}
         {!amendable.length && (
           <p className="mt-4 text-sm font-semibold text-amber-200">
-            A change order amends an issued contract. Generate a contract on the Contract tab first.
+            A Change Order amends an issued Agreement. Generate an Agreement on the Agreement tab first.
           </p>
         )}
       </section>
@@ -631,7 +752,7 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
       {summaries.length > 0 && (
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-            Contract Value
+            Agreement Value
           </p>
           <div className="mt-3 space-y-3">
             {summaries.map((summary) => (
@@ -640,7 +761,7 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
                 className="rounded-xl border border-slate-200 bg-slate-50 p-3"
               >
                 <p className="text-sm font-black text-slate-900">
-                  Contract #{summary.contractNumber}
+                  Agreement #{summary.contractNumber}
                 </p>
                 <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <div>
@@ -664,7 +785,7 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
                   </div>
                   <div>
                     <dt className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">
-                      Current contract
+                      Current Agreement
                     </dt>
                     <dd className="text-sm font-black text-emerald-700 tabular-nums">
                       {moneyFromCents(summary.executedContractCents)}
@@ -690,7 +811,7 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
             ))}
           </div>
           <p className="mt-3 text-xs font-medium text-slate-500">
-            Only executed change orders move the contract value. Pending ones are shown separately.
+            Only executed change orders move the Agreement amount. Pending ones are shown separately.
           </p>
         </section>
       )}
@@ -737,7 +858,7 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
           {composing && (
             <label className="block">
               <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
-                Amends contract
+                Amends Agreement
               </span>
               <select
                 value={contractId}
@@ -746,7 +867,7 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
               >
                 {amendable.map((contract) => (
                   <option key={contract._id} value={contract._id}>
-                    Contract #{contract.contractNumber} — {contract.status} —{" "}
+                    Agreement #{contract.contractNumber} — {contract.status} —{" "}
                     {moneyFromCents(contract.adjustedContractPriceCents || 0)}
                   </option>
                 ))}
@@ -812,8 +933,8 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
                         disabled={!isEditable}
                         className={`${inputClass} disabled:bg-white disabled:text-slate-600`}
                       >
-                        <option value="add">Add to contract</option>
-                        <option value="deduct">Deduct from contract</option>
+                        <option value="add">Add to Agreement</option>
+                        <option value="deduct">Deduct from Agreement</option>
                         <option value="none">No cost change</option>
                       </select>
                     </label>
@@ -850,7 +971,7 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
             <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div className="flex items-baseline justify-between sm:block">
                 <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                  Contract before
+                  Agreement before
                 </dt>
                 <dd className="text-sm font-bold tabular-nums text-slate-900">
                   {moneyFromCents(totals.before)}
@@ -874,7 +995,7 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
               </div>
               <div className="flex items-baseline justify-between sm:block">
                 <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                  New contract total
+                  New Agreement total
                 </dt>
                 <dd className="text-base font-black tabular-nums text-slate-900">
                   {moneyFromCents(totals.after)}
@@ -981,27 +1102,56 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
                   >
                     Email
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowSend(true)}
-                    disabled={
-                      !!working ||
-                      selected.status === "Executed" ||
-                      selected.status === "Voided" ||
-                      selected.status === "Declined"
-                    }
-                    className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-40"
-                  >
-                    Send for Signature
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => executedInputRef.current?.click()}
-                    disabled={!!working || selected.status === "Executed"}
-                    className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
-                  >
-                    Upload Signed Copy
-                  </button>
+                  {!["Executed", "Voided", "Declined"].includes(selected.status) &&
+                    selected.signature?.status !== "Completed" && (
+                      <>
+                        <button type="button" onClick={handleSignInPerson} disabled={!!working}
+                          className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-40">
+                          Sign In Person
+                        </button>
+                        <button type="button" onClick={() => setShowSend(true)} disabled={!!working}
+                          className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-40">
+                          Send for Signature
+                        </button>
+                      </>
+                    )}
+
+                  {selected.signature &&
+                    !["Completed", "Declined", "Cancelled", "Expired"].includes(selected.signature.status) && (
+                      <>
+                        <button type="button" onClick={handleResend} disabled={!!working}
+                          className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40">
+                          Resend Link
+                        </button>
+                        <button type="button" onClick={handleRevoke} disabled={!!working}
+                          className="rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-40">
+                          Revoke Request
+                        </button>
+                      </>
+                    )}
+
+                  {selected.signature?.status === "Completed" && (
+                    <>
+                      <button type="button" onClick={() => void handleNativeDownload("executed")} disabled={!!working}
+                        className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-40">
+                        Download Signed Change Order
+                      </button>
+                      <button type="button" onClick={() => void handleNativeDownload("certificate")} disabled={!!working}
+                        className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40">
+                        Signature Certificate
+                      </button>
+                      <button type="button" onClick={() => void handleNativeDownload("frozen")} disabled={!!working}
+                        className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40">
+                        View Original
+                      </button>
+                    </>
+                  )}
+
+                  <label className={`rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm font-bold text-slate-700 ${selected.status === "Executed" ? "opacity-40" : "cursor-pointer hover:bg-slate-50"}`}>
+                    Upload Signed Change Order
+                    <input type="file" accept="application/pdf,.pdf" onChange={handleManualUpload}
+                      disabled={!!working || selected.status === "Executed"} className="hidden" />
+                  </label>
                 </>
               )}
               {selected.executedPdf?.available && (

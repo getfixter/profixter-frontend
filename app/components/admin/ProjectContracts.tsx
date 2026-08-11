@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ESignStatusBadge from "@/app/components/admin/ESignStatusBadge";
+import InPersonSigning from "@/app/components/signing/InPersonSigning";
 import SignatureDetails from "@/app/components/admin/SignaturePanel";
 import {
   CONTRACT_WORK_TYPES,
@@ -15,6 +16,11 @@ import {
   getSignatureMeta,
   saveProjectContractDraft,
   sendDocumentForSignature,
+  sendForNativeSignature,
+  resendNativeSignature,
+  revokeNativeSignature,
+  downloadNativeDocument,
+  uploadManuallySignedDocument,
   uploadSignedProjectContract,
   type ContractMeta,
   type ContractDiscountType,
@@ -418,7 +424,7 @@ function PdfPreview({
           ["Email", form.customerEmail || "Not specified"],
           ["Property", form.propertyAddress || "Not specified"],
           ["Work Type", form.workType === "Other" ? form.otherWorkType || "Other" : form.workType],
-          ["Contract Date", displayDate(form.contractDate)],
+          ["Agreement Date", displayDate(form.contractDate)],
         ].map(([label, value]) => (
           <div key={label}>
             <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</p>
@@ -439,7 +445,7 @@ function PdfPreview({
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
           <div className="grid gap-4 md:grid-cols-[1.1fr_1fr]">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">Final Contract Price</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">Final Agreement Amount</p>
               <p className="mt-2 text-3xl font-black text-slate-950">{moneyFromCents(pricing.adjusted)}</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -493,6 +499,11 @@ export default function ProjectContracts({ project }: { project: Project }) {
   const [signature, setSignature] = useState<DocumentSignature | null>(null);
   const [showSendForSignature, setShowSendForSignature] = useState(false);
   const [signatureMessage, setSignatureMessage] = useState("");
+  /**
+   * In-person session token. Held in memory for the life of the ceremony only -
+   * never persisted, never logged: it is a signing credential.
+   */
+  const [inPersonToken, setInPersonToken] = useState<string | null>(null);
   const [emailForm, setEmailForm] = useState({ recipient: "", subject: "", message: "" });
 
   const selectedContract = useMemo(
@@ -653,6 +664,131 @@ export default function ProjectContracts({ project }: { project: Project }) {
     void refreshSignature();
   }, [refreshSignature]);
 
+  /**
+   * Turn a backend failure into copy an admin can act on. A missing company
+   * signature is a configuration problem; the raw message would expose server
+   * internals such as the storage key and env var name.
+   */
+  const signingError = (caught: unknown) => {
+    const response = (caught as { response?: { data?: { code?: string } } })?.response;
+    if (response?.data?.code === "SIGNING_NOT_CONFIGURED") {
+      return "Company signature needs to be configured before this Agreement can be sent for signing.";
+    }
+    return errorMessage(caught);
+  };
+
+  /** Remote: freeze, email the customer a secure link. */
+  const handleNativeSend = async () => {
+    if (!selectedContract) return;
+    setWorkingAction("Sending for signature...");
+    setError("");
+    try {
+      const result = await sendForNativeSignature({
+        documentType: "CONTRACT",
+        documentId: selectedContract._id,
+        mode: "REMOTE",
+      });
+      setSuccess(
+        result.emailed
+          ? "Agreement sent. The customer has been emailed a secure signing link."
+          : "Agreement is ready to sign, but the email could not be delivered. Use Resend to try again."
+      );
+      await refreshSignature();
+      await loadContracts();
+    } catch (sendError) {
+      setError(signingError(sendError));
+    } finally {
+      setWorkingAction("");
+    }
+  };
+
+  /** In person: freeze, then open the ceremony on this device. No email. */
+  const handleSignInPerson = async () => {
+    if (!selectedContract) return;
+    setWorkingAction("Preparing signing session...");
+    setError("");
+    try {
+      const result = await sendForNativeSignature({
+        documentType: "CONTRACT",
+        documentId: selectedContract._id,
+        mode: "IN_PERSON",
+      });
+      const token = result.signingUrl.split("/sign/")[1];
+      setInPersonToken(token || null);
+    } catch (sendError) {
+      setError(signingError(sendError));
+    } finally {
+      setWorkingAction("");
+    }
+  };
+
+  const handleResend = async () => {
+    if (!signature) return;
+    setWorkingAction("Resending...");
+    setError("");
+    try {
+      await resendNativeSignature(signature.id);
+      setSuccess("A new signing link has been emailed. The previous link no longer works.");
+      await refreshSignature();
+    } catch (resendError) {
+      setError(errorMessage(resendError));
+    } finally {
+      setWorkingAction("");
+    }
+  };
+
+  const handleRevoke = async () => {
+    if (!signature) return;
+    if (!window.confirm("Revoke this signature request? The link will stop working.")) return;
+    setWorkingAction("Revoking...");
+    try {
+      await revokeNativeSignature(signature.id, "Revoked by admin");
+      setSuccess("Signature request revoked.");
+      await refreshSignature();
+      await loadContracts();
+    } catch (revokeError) {
+      setError(errorMessage(revokeError));
+    } finally {
+      setWorkingAction("");
+    }
+  };
+
+  const handleNativeDownload = async (kind: "frozen" | "executed" | "certificate") => {
+    if (!signature) return;
+    setWorkingAction("Preparing download...");
+    try {
+      const blob = await downloadNativeDocument(signature.id, kind);
+      const names = {
+        frozen: "original-agreement.pdf",
+        executed: "signed-agreement.pdf",
+        certificate: "signature-certificate.pdf",
+      };
+      downloadBlob(blob, names[kind]);
+    } catch (downloadError) {
+      setError(errorMessage(downloadError));
+    } finally {
+      setWorkingAction("");
+    }
+  };
+
+  const handleManualUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !selectedContract) return;
+    setWorkingAction("Uploading signed Agreement...");
+    setError("");
+    try {
+      await uploadManuallySignedDocument("CONTRACT", selectedContract._id, file);
+      setSuccess("Signed Agreement recorded as a manual upload.");
+      await refreshSignature();
+      await loadContracts();
+    } catch (uploadError) {
+      setError(errorMessage(uploadError));
+    } finally {
+      setWorkingAction("");
+    }
+  };
+
   const handleSendForSignature = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selectedContract) return;
@@ -666,7 +802,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
       });
       setShowSendForSignature(false);
       setSignatureMessage("");
-      setSuccess("Contract sent for signature. Status updates arrive automatically.");
+      setSuccess("Agreement sent for signature. Status updates arrive automatically.");
       await refreshSignature();
       await loadContracts();
     } catch (sendError) {
@@ -710,7 +846,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
       });
       setSelectedContractId(saved._id);
       setForm(formFromContract(saved));
-      setSuccess("Contract draft saved.");
+      setSuccess("Agreement draft saved.");
       return saved;
     } catch (saveError) {
       setError(errorMessage(saveError));
@@ -797,7 +933,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
       setSelectedContractId(emailed._id);
       setForm(formFromContract(emailed));
       setShowEmail(false);
-      setSuccess("Contract emailed and history saved.");
+      setSuccess("Agreement emailed and history saved.");
     } catch (emailError) {
       setError(errorMessage(emailError));
     } finally {
@@ -835,7 +971,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
       setContracts((current) => current.map((contract) => (contract._id === canceled._id ? canceled : contract)));
       setSelectedContractId(canceled._id);
       setForm(formFromContract(canceled));
-      setSuccess("Contract canceled.");
+      setSuccess("Agreement canceled.");
     } catch (cancelError) {
       setError(errorMessage(cancelError));
     } finally {
@@ -927,7 +1063,20 @@ export default function ProjectContracts({ project }: { project: Project }) {
     "mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
 
   if (loading) {
-    return <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm font-semibold text-slate-500">Loading contract workspace...</div>;
+    return <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm font-semibold text-slate-500">Loading Agreement workspace...</div>;
+  }
+
+  if (inPersonToken) {
+    return (
+      <InPersonSigning
+        token={inPersonToken}
+        onExit={() => {
+          setInPersonToken(null);
+          void refreshSignature();
+          void loadContracts();
+        }}
+      />
+    );
   }
 
   return (
@@ -957,7 +1106,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
               {saving ? "Saving..." : "Save Draft"}
             </button>
             <button type="button" onClick={handleGenerate} disabled={!canSaveOrGenerateDraft || saving || !!workingAction || missingFullDepositConfirmation || missingZeroAdjustedPriceConfirmation} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-60">
-              Generate PDF
+              Generate Agreement
             </button>
           </div>
         </div>
@@ -1248,33 +1397,108 @@ export default function ProjectContracts({ project }: { project: Project }) {
             </div>
             <div className="mt-4 grid gap-2">
               <button type="button" disabled={!selectedContract?.generatedPdf?.available || !!workingAction} onClick={() => void handleDownload("generated")} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
-                Download Generated PDF
+                Download Agreement
               </button>
               <button type="button" disabled={!selectedContract?.generatedPdf?.available || !!workingAction} onClick={openEmail} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
-                Email Contract
+                Email Agreement
               </button>
               <label className={`rounded-xl border border-slate-200 px-4 py-3 text-center text-sm font-bold text-slate-800 ${selectedContract ? "cursor-pointer hover:bg-slate-50" : "opacity-50"}`}>
-                Upload Signed PDF
+                Upload Signed Agreement
                 <input disabled={!selectedContract || !!workingAction} type="file" accept="application/pdf,.pdf" onChange={handleSignedUpload} className="hidden" />
               </label>
               <button type="button" disabled={!selectedContract?.signedPdf?.available || !!workingAction} onClick={() => void handleDownload("signed")} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
-                Download Signed PDF
+                Download Signed Agreement
               </button>
-              <button
-                type="button"
-                disabled={
-                  !selectedContract?.generatedPdf?.available ||
-                  !!workingAction ||
-                  selectedContract?.status === "Signed" ||
-                  selectedContract?.status === "Canceled"
-                }
-                onClick={() => setShowSendForSignature(true)}
-                className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-50"
-              >
-                Send for Signature
-              </button>
+              {/* Signing actions appear only when they apply to the current state. */}
+              {selectedContract?.generatedPdf?.available &&
+                selectedContract.status !== "Signed" &&
+                selectedContract.status !== "Canceled" &&
+                signature?.status !== "Completed" && (
+                  <>
+                    <button
+                      type="button"
+                      disabled={!!workingAction}
+                      onClick={handleSignInPerson}
+                      className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+                    >
+                      Sign In Person
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!!workingAction}
+                      onClick={handleNativeSend}
+                      className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-50"
+                    >
+                      Send for Signature
+                    </button>
+                  </>
+                )}
+
+              {/* A live request can be nudged or withdrawn. */}
+              {signature &&
+                !["Completed", "Declined", "Cancelled", "Expired"].includes(signature.status) && (
+                  <>
+                    <button
+                      type="button"
+                      disabled={!!workingAction}
+                      onClick={handleResend}
+                      className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      Resend Link
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!!workingAction}
+                      onClick={handleRevoke}
+                      className="rounded-xl border border-rose-200 px-4 py-3 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                    >
+                      Revoke Request
+                    </button>
+                  </>
+                )}
+
+              {/* Completed: the three artifacts worth keeping. */}
+              {signature?.status === "Completed" && (
+                <>
+                  <button
+                    type="button"
+                    disabled={!!workingAction}
+                    onClick={() => void handleNativeDownload("executed")}
+                    className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+                  >
+                    Download Signed Agreement
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!!workingAction}
+                    onClick={() => void handleNativeDownload("certificate")}
+                    className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Signature Certificate
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!!workingAction}
+                    onClick={() => void handleNativeDownload("frozen")}
+                    className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    View Original Agreement
+                  </button>
+                </>
+              )}
+
+              <label className={`rounded-xl border border-slate-200 px-4 py-3 text-center text-sm font-bold text-slate-800 ${selectedContract ? "cursor-pointer hover:bg-slate-50" : "opacity-50"}`}>
+                Upload Signed Agreement
+                <input
+                  disabled={!selectedContract || !!workingAction}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  onChange={handleManualUpload}
+                  className="hidden"
+                />
+              </label>
               <button type="button" disabled={!selectedContract || !!workingAction} onClick={handleCancel} className="rounded-xl border border-rose-200 px-4 py-3 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50">
-                Cancel Contract
+                Cancel Agreement
               </button>
             </div>
           </section>
@@ -1398,7 +1622,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
           <form onSubmit={handleEmail} className="w-full max-w-2xl rounded-[28px] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.30)] sm:p-6" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">Email Contract</p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">Email Agreement</p>
                 <h3 className="mt-1 text-2xl font-black text-slate-950">{contractTitle(selectedContract)}</h3>
               </div>
               <button type="button" onClick={() => setShowEmail(false)} className="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-bold text-slate-600 hover:bg-slate-50">
