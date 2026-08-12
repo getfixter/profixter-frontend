@@ -50,8 +50,13 @@ function TextIcon() {
   );
 }
 
-function FixterPortrait({ fixter, size }: { fixter: Fixter; size: "md" | "lg" }) {
-  const dimension = size === "lg" ? "h-20 w-20 sm:h-24 sm:w-24" : "h-16 w-16 sm:h-[68px] sm:w-[68px]";
+function FixterPortrait({ fixter, size }: { fixter: Fixter; size: "sm" | "md" | "lg" }) {
+  const dimension =
+    size === "lg"
+      ? "h-20 w-20 sm:h-24 sm:w-24"
+      : size === "sm"
+        ? "h-12 w-12 sm:h-14 sm:w-14"
+        : "h-16 w-16 sm:h-[68px] sm:w-[68px]";
   return (
     <div className={`relative ${dimension} shrink-0 overflow-hidden rounded-full bg-[#EEF2F8]`}>
       <Image
@@ -159,6 +164,85 @@ export default function YourFixter({
 
       <ContactActions fixter={fixter} />
       <CustomerCareNote />
+    </section>
+  );
+}
+
+/**
+ * The Fixter as a contact row, for pages whose real job is something else.
+ *
+ * Written for the top of the booking page, where the customer has already
+ * tapped through to book and the calendar is the thing they came for. So this
+ * is deliberately a row and not a card: it says who is looking after the home
+ * and makes reaching him one tap, then gets out of the way. Anything taller
+ * would push the calendar down the screen to say something the member already
+ * knows.
+ *
+ * The layout changes shape rather than scale. On a phone it stacks into a
+ * profile row with the actions beneath; from small screens up it becomes a
+ * single bar with the identity at one end and the actions at the other, so a
+ * wide screen is filled by composition instead of by a stretched phone card.
+ *
+ * Same rule as everywhere else: Roman answers questions about the work and the
+ * home, and the booking itself stays inside ProFixter. On this page in
+ * particular, the booking form is directly below, so the copy points there.
+ */
+export function YourFixterRow({ className = "" }: { className?: string }) {
+  const fixter = getPrimaryFixter();
+
+  return (
+    <section
+      aria-labelledby="your-fixter-row-heading"
+      className={`rounded-[16px] border border-[#E6ECF5] bg-white p-3.5 sm:p-4 ${className}`}
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+        <div className="flex min-w-0 items-center gap-3 sm:shrink-0">
+          <FixterPortrait fixter={fixter} size="sm" />
+          <div className="min-w-0">
+            <p
+              id="your-fixter-row-heading"
+              className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8A94A6]"
+            >
+              Your Fixter
+            </p>
+            <p className="text-[17px] font-semibold leading-tight tracking-[-0.02em] text-[#111111] sm:text-[19px]">
+              {fixter.firstName}
+            </p>
+            <p className="mt-0.5 text-[12px] leading-4 text-[#6E6E73]">Your primary Fixter</p>
+          </div>
+        </div>
+
+        {/*
+         * One paragraph, three behaviours. Stacked on a phone it sits between
+         * the name and the actions, which is the order the member reads in.
+         * Between sm and lg the row is too tight to carry it, so it steps out
+         * of the way. From lg it becomes the middle column and fills the space
+         * a wide screen would otherwise leave empty.
+         */}
+        <p className="min-w-0 flex-1 text-[12.5px] leading-5 text-[#6E6E73] sm:hidden lg:block lg:text-[13px]">
+          Questions about the work or your home? {fixter.firstName} is your go-to.
+          Booking stays on this page.
+        </p>
+
+        <div className="flex gap-2 sm:ml-auto sm:shrink-0">
+          <a
+            href={fixterCallHref(fixter)}
+            aria-label={`Call ${fixter.firstName} at ${fixter.phoneDisplay}`}
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-[#0B1628] px-4 text-[13.5px] font-semibold text-white transition hover:bg-[#172033] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] sm:flex-none"
+          >
+            <CallIcon />
+            Call {fixter.firstName}
+          </a>
+          <a
+            href={fixterTextHref(fixter)}
+            aria-label={`Text ${fixter.firstName} at ${fixter.phoneDisplay}`}
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[12px] border border-[#D7DEE9] bg-white px-4 text-[13.5px] font-semibold text-[#0B1628] transition hover:bg-[#F8FAFF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] sm:flex-none"
+          >
+            <TextIcon />
+            Text {fixter.firstName}
+          </a>
+        </div>
+      </div>
     </section>
   );
 }

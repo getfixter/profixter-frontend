@@ -13,6 +13,12 @@ import Link from "next/link";
  * and refreshing keeps you where you were.
  */
 
+/*
+ * The URL values are deliberately left alone. "membership" is an internal
+ * routing key, not a label, and rewriting it would break every link and
+ * bookmark already pointing at /book?visit=membership for the sake of a word
+ * nobody sees.
+ */
 export const VISIT_TYPES = ["membership", "additional", "priority"] as const;
 export type VisitType = (typeof VISIT_TYPES)[number];
 
@@ -22,12 +28,22 @@ export function parseVisitType(value: string | null | undefined): VisitType {
   return VISIT_TYPES.includes(value as VisitType) ? (value as VisitType) : DEFAULT_VISIT_TYPE;
 }
 
-const TABS: { type: VisitType; short: string; full: string }[] = [
-  { type: "membership", short: "Membership", full: "Membership Visit" },
+/*
+ * "Book Fixter" rather than "Membership". The tab is a destination, and what
+ * the member is doing there is getting their Fixter to the house; naming it
+ * after the product they already bought described the entitlement rather than
+ * the action. The membership product keeps its name everywhere else.
+ *
+ * One label at every width now. "Membership Visit" needed a shorter phone
+ * variant; this one already fits, and two names for one tab is a difference
+ * without a reason.
+ */
+const TABS: { type: VisitType; label: string }[] = [
+  { type: "membership", label: "Book Fixter" },
   // No price on the tab. It is a label, not an offer, and the price is
   // unmissable inside the section itself.
-  { type: "additional", short: "Extra", full: "Extra Visit" },
-  { type: "priority", short: "Priority", full: "Priority Visit" },
+  { type: "additional", label: "Extra" },
+  { type: "priority", label: "Priority" },
 ];
 
 export default function VisitTypeNav({ active }: { active: VisitType }) {
@@ -53,8 +69,7 @@ export default function VisitTypeNav({ active }: { active: VisitType }) {
                   : "text-[#5C6672] hover:text-[#0B1628]",
               ].join(" ")}
             >
-              <span className="sm:hidden">{tab.short}</span>
-              <span className="hidden sm:inline">{tab.full}</span>
+              {tab.label}
             </Link>
           );
         })}

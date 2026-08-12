@@ -19,6 +19,7 @@ import { trackEvent, trackInitiateCheckout } from "@/lib/analytics";
 import { useSearchParams } from "next/navigation";
 import BookingSection from "@/app/components/sections/BookingSection";
 import VisitTypeNav, { parseVisitType } from "@/app/components/booking/VisitTypeNav";
+import { YourFixterRow } from "@/app/components/fixter/YourFixter";
 import PriorityVisitPanel from "@/app/components/booking/PriorityVisitPanel";
 import MembershipUpgradePrompt, { normalizePlanKey } from "@/app/components/membership/MembershipUpgradePrompt";
 import { hasActiveMembership as hasActiveMembershipFor } from "@/lib/auth-routing";
@@ -683,7 +684,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
                   <Link
-                    href="/membership#plans"
+                    href="/membership/plans"
                     onClick={() =>
                       trackEvent("membership_cta_clicked", {
                         placement: "book_non_member_recommendation",
@@ -999,7 +1000,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                               </h3>
                             </div>
                             <Link
-                              href="/membership#plans"
+                              href="/membership/plans"
                               onClick={() =>
                                 trackEvent("membership_cta_clicked", {
                                   placement: "book_service_selector_card",
@@ -1033,7 +1034,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                             ))}
                           </div>
                           <Link
-                            href="/membership#plans"
+                            href="/membership/plans"
                             onClick={() =>
                               trackEvent("membership_cta_clicked", {
                                 placement: "book_service_selector_card_mobile",
@@ -1343,17 +1344,18 @@ function BookExperience() {
         <PriorityVisitPanel currentPlan={currentPlanKey} />
       ) : (
         <>
-          <section className="mx-auto w-full max-w-[1280px] px-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
-            <div className="max-w-[640px]">
-              <h1 className="text-[26px] font-semibold leading-[1.1] tracking-[-0.035em] text-[#0B1628] sm:text-[36px]">
-                Membership Visit
-              </h1>
-              <p className="mt-2 text-[15px] leading-6 text-[#6E6E73]">
-                Included with your membership. Pick a day and tell your Fixter what
-                needs doing.
-              </p>
-            </div>
+          {/*
+           * No heading above the form. The member tapped Book, then tapped Book
+           * Fixter, and the form below says what it is; a hero here only
+           * restated that and pushed the calendar off the first screen.
+           *
+           * The Fixter row takes its place: smaller than what it replaced, and
+           * about the person rather than the product.
+           */}
+          <section className="mx-auto w-full max-w-[1280px] px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
+            <YourFixterRow />
           </section>
+
           {/* The existing member booking experience, unchanged. */}
           <BookingSection />
 

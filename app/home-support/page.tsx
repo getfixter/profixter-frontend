@@ -52,7 +52,7 @@ const NEXT_STEPS = {
   },
   membership: {
     label: "Become a Member",
-    href: "/membership#plans",
+    href: "/membership/plans",
   },
   renovation: {
     label: "Request Renovation Estimate",

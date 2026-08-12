@@ -1839,7 +1839,7 @@ if (next?.date) {
               </div>
             </div>
 
-            {/* First Visit Free — eligible non-members only. Members never see this. */}
+            {/* First Visit Free, eligible non-members only. Members never see this. */}
             {isAuthenticated && !checkingAccess && !hasSubscription && freeFirstVisitAvailable && (
               <div className="order-5 rounded-[8px] border border-[#D7E0F5] bg-white p-3 sm:rounded-[12px] sm:p-5 lg:order-none">
                 <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#306EEC] sm:text-[11px]">
@@ -1857,7 +1857,7 @@ if (next?.date) {
               </div>
             )}
 
-            {/* Property outside the service area — friendly, not an error. */}
+            {/* Property outside the service area: friendly, not an error. */}
             {isAuthenticated && !checkingAccess && !hasSubscription && outOfServiceArea && (
               <div className="order-5 rounded-[8px] border border-[#D7E0F5] bg-white p-3 sm:rounded-[12px] sm:p-5 lg:order-none">
                 <div className="text-[13px] font-black leading-tight text-[#0B1628] sm:text-[16px]">
@@ -1871,7 +1871,7 @@ if (next?.date) {
               </div>
             )}
 
-            {/* Free visit completed — natural next step into the existing membership funnel. */}
+            {/* Free visit completed: natural next step into the existing membership funnel. */}
             {isAuthenticated && !checkingAccess && !hasSubscription && introVisitConsumed && (
               <div className="order-5 rounded-[8px] border border-[#D7E0F5] bg-white p-3 sm:rounded-[12px] sm:p-5 lg:order-none">
                 <div className="text-[13px] font-black leading-tight text-[#0B1628] sm:text-[18px]">
@@ -1884,7 +1884,7 @@ if (next?.date) {
                   Membership gives you ongoing access to book ProFixter whenever something around your home needs attention.
                 </div>
                 <Link
-                  href="/membership#plans"
+                  href="/membership/plans"
                   onClick={() => trackEvent("membership_plans_viewed_after_free_visit", { placement: "booking_section" })}
                   className="mt-3 inline-flex h-[40px] items-center rounded-[12px] bg-[#306EEC] px-5 text-[14px] font-bold text-white transition hover:bg-[#2558c9]"
                 >

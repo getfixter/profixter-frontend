@@ -3,6 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
+import { hasActiveMembership } from "@/lib/auth-routing";
+import MembershipCallbackForm from "@/app/components/home/MembershipCallbackForm";
 import { trackEvent } from "@/lib/analytics";
 import { plans } from "@/app/data/content";
 import Reveal from "@/app/components/ui/Reveal";
@@ -70,7 +72,7 @@ function Eyebrow({ children, tone = "dark" }: { children: React.ReactNode; tone?
 function H2({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <h2
-      className={`text-balance text-[30px] font-semibold leading-[1.08] tracking-[-0.035em] text-[#111111] sm:text-[42px] lg:text-[48px] ${className}`}
+      className={`text-balance text-[26px] font-semibold leading-[1.1] tracking-[-0.03em] text-[#111111] sm:text-[34px] lg:text-[38px] ${className}`}
     >
       {children}
     </h2>
@@ -79,7 +81,7 @@ function H2({ children, className = "" }: { children: React.ReactNode; className
 
 function Lede({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <p className={`text-pretty text-[17px] leading-[1.5] text-[#6E6E73] sm:text-[19px] ${className}`}>
+    <p className={`text-pretty text-[16px] leading-[1.55] text-[#6E6E73] sm:text-[17px] ${className}`}>
       {children}
     </p>
   );
@@ -91,25 +93,28 @@ function BookFree({
   placement,
   tone = "accent",
   className = "",
+  label = "Book your free visit",
 }: {
   href: string;
   placement: string;
   tone?: "accent" | "light";
   className?: string;
+  /** Members are never offered a free visit, so the CTA says what they can do. */
+  label?: string;
 }) {
   return (
     <Link
       href={href}
       onClick={() => trackEvent("free_visit_cta_clicked", { placement })}
       className={[
-        "inline-flex min-h-[54px] w-full items-center justify-center rounded-full px-8 text-[16px] font-semibold transition-transform duration-200 active:scale-[0.985] sm:w-auto",
+        "inline-flex min-h-[50px] w-full items-center justify-center rounded-[13px] px-7 text-[15px] font-semibold transition-transform duration-200 active:scale-[0.985] sm:w-auto",
         tone === "accent"
           ? "bg-[#306EEC] text-white shadow-[0_12px_28px_-8px_rgba(48,110,236,0.55)] hover:bg-[#2558C9]"
           : "bg-white text-[#0B1628] shadow-[0_12px_28px_-10px_rgba(0,0,0,0.45)] hover:bg-[#F5F5F7]",
         className,
       ].join(" ")}
     >
-      Book your free visit
+      {label}
     </Link>
   );
 }
@@ -129,7 +134,7 @@ function QuietLink({
     <Link
       href={href}
       onClick={() => trackEvent("membership_explainer_clicked", { placement })}
-      className={`inline-flex min-h-[54px] w-full items-center justify-center rounded-full border px-8 text-[16px] font-semibold transition sm:w-auto ${
+      className={`inline-flex min-h-[50px] w-full items-center justify-center rounded-[13px] border px-7 text-[15px] font-semibold transition sm:w-auto ${
         tone === "light"
           ? "border-white/25 text-white hover:bg-white/10"
           : "border-[#D2D2D7] text-[#1D1D1F] hover:bg-[#F5F5F7]"
@@ -145,11 +150,23 @@ function QuietLink({
 /* ------------------------------------------------------------------ */
 
 export default function HomeMarketing() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+
+  /*
+   * Home stays the real Home page for everybody. What changes is only what
+   * would be untrue to say to a paying member: a free first visit is an
+   * acquisition offer, and telling somebody who already pays us that their
+   * first visit is free reads as though we do not know who they are.
+   */
+  const isMember = hasActiveMembership(user);
 
   // Signed-in customers go straight to booking, which resolves their own
   // eligibility. Everyone else sets up their home first.
-  const bookHref = isAuthenticated ? "/membership" : "/signup?redirect=%2Fmembership";
+  const bookHref = isMember
+    ? "/book?visit=membership"
+    : isAuthenticated
+      ? "/membership"
+      : "/signup?redirect=%2Fmembership";
 
   return (
     <main className="bg-white text-[#111111]">
@@ -175,25 +192,29 @@ export default function HomeMarketing() {
             </Reveal>
 
             <Reveal delay={70}>
-              <h1 className="mt-4 text-balance text-[38px] font-semibold leading-[1.04] tracking-[-0.04em] text-white sm:text-[58px] lg:text-[66px]">
+              <h1 className="mt-3.5 text-balance text-[32px] font-semibold leading-[1.06] tracking-[-0.035em] text-white sm:text-[46px] lg:text-[52px]">
                 A handyman you don&rsquo;t have to find.
               </h1>
             </Reveal>
 
             <Reveal delay={140}>
-              <p className="mt-4 max-w-[40ch] text-pretty text-[16.5px] leading-[1.45] text-white/65 sm:mt-5 sm:text-[20px]">
-                Small jobs keep coming up around a house. Book them whenever they do &mdash;
-                the same local team takes care of them.
+              <p className="mt-3.5 max-w-[42ch] text-pretty text-[15.5px] leading-[1.5] text-white/65 sm:mt-4 sm:text-[17px]">
+                Small jobs keep coming up around a house. Book them whenever they
+                do, and the same local team takes care of them.
               </p>
             </Reveal>
 
             <Reveal delay={210}>
-              <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center">
-                <BookFree href={bookHref} placement="hero" />
+              <div className="mt-6 flex flex-col gap-3 sm:mt-7 sm:flex-row sm:items-center">
+                <BookFree
+                  href={bookHref}
+                  placement="hero"
+                  label={isMember ? "Book your Fixter" : "Book your free visit"}
+                />
                 <Link
                   href="#how-it-works"
                   onClick={() => trackEvent("membership_explainer_clicked", { placement: "hero" })}
-                  className="hidden min-h-[54px] items-center justify-center rounded-full border border-white/25 px-8 text-[16px] font-semibold text-white transition hover:bg-white/10 sm:inline-flex"
+                  className="hidden min-h-[50px] items-center justify-center rounded-[13px] border border-white/25 px-7 text-[15px] font-semibold text-white transition hover:bg-white/10 sm:inline-flex"
                 >
                   How it works
                 </Link>
@@ -207,28 +228,44 @@ export default function HomeMarketing() {
               </div>
             </Reveal>
 
-            <Reveal delay={280}>
-              <p className="mt-5 text-[14px] leading-[1.5] text-white/45">
-                Your first 90-minute visit is free. No card required.
-              </p>
-            </Reveal>
+            {!isMember && (
+              <Reveal delay={280}>
+                <p className="mt-4 text-[13.5px] leading-[1.5] text-white/45">
+                  Your first 90-minute visit is free. No card required.
+                </p>
+              </Reveal>
+            )}
+
+            {/*
+              The callback form, for the visitor who is interested but not
+              ready to read a plan comparison or make an account. On a phone it
+              sits under the CTA as a compact block; from lg it moves into the
+              second column, so it never pushes the proposition down.
+             */}
+            {!isMember && (
+              <Reveal delay={340}>
+                <MembershipCallbackForm className="mt-6 max-w-[420px] lg:hidden" />
+              </Reveal>
+            )}
           </div>
 
-          {/* Product, not a stock photo. */}
-          <Reveal delay={200} className="hidden justify-center lg:flex lg:justify-end">
-            <div className="relative">
+          {/* Product, not a stock photo. The form rides with it on desktop so
+              the width is used by composition rather than left empty. */}
+          <Reveal delay={200} className="hidden lg:flex lg:justify-end">
+            <div className="relative w-full max-w-[380px]">
               <div
                 aria-hidden="true"
                 className="absolute -inset-8 rounded-full bg-[#306EEC]/18 blur-3xl"
               />
-              <BookingPreview className="relative" />
+              <BookingPreview className="relative mx-auto" />
+              {!isMember && <MembershipCallbackForm className="relative mt-4" />}
             </div>
           </Reveal>
         </div>
       </section>
 
       {/* ========================= RECOGNITION ========================= */}
-      <section className="px-5 py-16 sm:px-8 sm:py-28">
+      <section className="px-5 py-14 sm:px-8 sm:py-20">
         <div className="mx-auto max-w-[1120px]">
           <Reveal>
             <Eyebrow>The list</Eyebrow>
@@ -258,7 +295,7 @@ export default function HomeMarketing() {
       </section>
 
       {/* ========================== HOW IT WORKS ======================= */}
-      <section id="how-it-works" className="scroll-mt-2 bg-[#F5F5F7] px-5 py-16 sm:px-8 sm:py-28">
+      <section id="how-it-works" className="scroll-mt-2 bg-[#F5F5F7] px-5 py-14 sm:px-8 sm:py-20">
         <div className="mx-auto max-w-[1120px]">
           <Reveal>
             <Eyebrow>How it works</Eyebrow>
@@ -294,7 +331,7 @@ export default function HomeMarketing() {
       </section>
 
       {/* =========================== MEMBERSHIP ======================== */}
-      <section className="bg-[#0B1628] px-5 py-20 text-white sm:px-8 sm:py-28">
+      <section className="bg-[#0B1628] px-5 py-16 text-white sm:px-8 sm:py-20">
         <div className="mx-auto max-w-[1120px]">
           <Reveal>
             <Eyebrow tone="light">Membership</Eyebrow>
@@ -303,8 +340,8 @@ export default function HomeMarketing() {
             </h2>
             <p className="mt-5 max-w-[46ch] text-pretty text-[17px] leading-[1.5] text-white/60 sm:text-[19px]">
               Instead of finding someone each time, you have a company already set up for
-              your home. Mounting, repairs, installations, drywall, caulking, fixtures &mdash;
-              book as often as you need. There&rsquo;s no monthly visit count.
+              your home. Mounting, repairs, installations, drywall, caulking and
+              fixtures. Book as often as you need. There&rsquo;s no monthly visit count.
             </p>
           </Reveal>
 
@@ -333,8 +370,8 @@ export default function HomeMarketing() {
 
           <Reveal delay={80}>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <QuietLink href="/membership" placement="membership_band" tone="light">
-                See membership
+              <QuietLink href="/membership/plans" placement="membership_band" tone="light">
+                {isMember ? "Compare plans" : "See membership"}
               </QuietLink>
               <p className="text-[14px] text-white/40 sm:ml-2">Month to month. Cancel any time.</p>
             </div>
@@ -342,8 +379,11 @@ export default function HomeMarketing() {
         </div>
       </section>
 
-      {/* =========================== FREE VISIT ======================== */}
-      <section className="px-5 py-16 sm:px-8 sm:py-28">
+      {/* =========================== FREE VISIT ========================
+          Acquisition only. A member already pays us, so an offer for their
+          "first" visit is both untrue and slightly insulting. */}
+      {!isMember && (
+      <section className="px-5 py-14 sm:px-8 sm:py-20">
         <div className="mx-auto max-w-[820px]">
           <Reveal>
             <Eyebrow>Try it first</Eyebrow>
@@ -371,15 +411,16 @@ export default function HomeMarketing() {
           </Reveal>
 
           <Reveal delay={120}>
-            <div className="mt-10">
+            <div className="mt-9">
               <BookFree href={bookHref} placement="offer_section" />
             </div>
           </Reveal>
         </div>
       </section>
+      )}
 
       {/* ========================== BIGGER PROJECTS ==================== */}
-      <section className="bg-[#F5F5F7] px-5 py-16 sm:px-8 sm:py-24">
+      <section className="bg-[#F5F5F7] px-5 py-14 sm:px-8 sm:py-18">
         <div className="mx-auto max-w-[1120px]">
           <Reveal>
             <Eyebrow>Bigger projects</Eyebrow>
@@ -422,7 +463,7 @@ export default function HomeMarketing() {
       </section>
 
       {/* ========================= TRUST + CLOSE ======================= */}
-      <section className="px-5 py-16 sm:px-8 sm:py-28">
+      <section className="px-5 py-14 sm:px-8 sm:py-20">
         <div className="mx-auto max-w-[1120px]">
           <div className="grid gap-12 lg:grid-cols-[1fr_380px] lg:gap-16">
             <Reveal>
@@ -464,7 +505,7 @@ export default function HomeMarketing() {
                   <p className="text-[16px] font-semibold text-[#111111]">Taras Bandura</p>
                   <p className="text-[14px] text-[#A1A1A6]">Founder</p>
                   <p className="mt-3 text-[15px] leading-[1.5] text-[#6E6E73]">
-                    &ldquo;Every small job used to mean starting over &mdash; searching,
+                    &ldquo;Every small job used to mean starting over: searching,
                     explaining, waiting. We built ProFixter so it doesn&rsquo;t.&rdquo;
                   </p>
                 </figcaption>
@@ -476,22 +517,31 @@ export default function HomeMarketing() {
           <Reveal delay={60}>
             <div className="mt-20 border-t border-[#EDEDF0] pt-14 text-center sm:mt-24 sm:pt-16">
               <H2 className="mx-auto max-w-[17ch]">Start with whatever&rsquo;s been waiting longest.</H2>
-              <p className="mx-auto mt-4 max-w-[38ch] text-[17px] leading-[1.5] text-[#6E6E73]">
-                Your first 90-minute visit is free. No card required.
+              <p className="mx-auto mt-3.5 max-w-[38ch] text-[16px] leading-[1.5] text-[#6E6E73]">
+                {isMember
+                  ? "Your membership covers it. Pick a day that suits you."
+                  : "Your first 90-minute visit is free. No card required."}
               </p>
-              <div className="mt-8 flex justify-center">
-                <BookFree href={bookHref} placement="final" className="sm:min-w-[280px]" />
+              <div className="mt-7 flex justify-center">
+                <BookFree
+                  href={bookHref}
+                  placement="final"
+                  className="sm:min-w-[260px]"
+                  label={isMember ? "Book your Fixter" : "Book your free visit"}
+                />
               </div>
-              <p className="mt-7 text-[15px] text-[#A1A1A6]">
-                Not ready for a membership?{" "}
-                <Link
-                  href="/book"
-                  onClick={() => trackEvent("one_time_link_clicked", { placement: "final" })}
-                  className="inline-block py-1 font-semibold text-[#306EEC] underline-offset-4 hover:underline"
-                >
-                  Book a one-time visit
-                </Link>
-              </p>
+              {!isMember && (
+                <p className="mt-6 text-[14px] text-[#A1A1A6]">
+                  Not ready for a membership?{" "}
+                  <Link
+                    href="/book"
+                    onClick={() => trackEvent("one_time_link_clicked", { placement: "final" })}
+                    className="inline-block py-1 font-semibold text-[#306EEC] underline-offset-4 hover:underline"
+                  >
+                    Book a one-time visit
+                  </Link>
+                </p>
+              )}
             </div>
           </Reveal>
         </div>

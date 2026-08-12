@@ -61,7 +61,7 @@ export default function ServicesPage() {
           eyebrow="Handyman services"
           title="Small home tasks, handled through the right Profixter path."
           description="Browse common handyman services, then choose what fits: become a Member for ongoing help, book one $99 One-Time Visit, or move larger work into a renovation estimate."
-          primaryCta={{ label: "Become a Member", href: "/membership#plans" }}
+          primaryCta={{ label: "Become a Member", href: "/membership/plans" }}
           secondaryCta={{ label: "Book One-Time Visit", href: "/book" }}
           breadcrumb={{ label: "Services", href: "/services" }}
         />
@@ -96,7 +96,7 @@ export default function ServicesPage() {
               ))}
             </div>
             <Link
-              href="/membership#plans"
+              href="/membership/plans"
               className="mt-7 inline-flex min-h-[50px] items-center justify-center rounded-[14px] bg-[#0B1628] px-6 text-[14px] font-black text-white transition hover:bg-[#172033]"
             >
               See Membership options
