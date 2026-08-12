@@ -27,10 +27,10 @@ function projectLabel(value: ProjectType) {
 }
 
 const inputClass =
-  "h-[52px] w-full rounded-[14px] border border-white/12 bg-white/[0.07] px-4 text-[15px] text-white outline-none placeholder:text-white/32 focus:border-[#D4A574] transition-colors";
+  "h-[46px] w-full rounded-[14px] border border-white/12 bg-white/[0.07] px-4 text-[15px] text-white outline-none placeholder:text-white/32 focus:border-[#D4A574] transition-colors";
 
 const selectClass =
-  "h-[52px] w-full rounded-[14px] border border-white/12 bg-[#101A2B] px-4 text-[15px] text-white outline-none focus:border-[#D4A574] transition-colors appearance-none";
+  "h-[46px] w-full rounded-[14px] border border-white/12 bg-[#101A2B] px-4 text-[15px] text-white outline-none focus:border-[#D4A574] transition-colors appearance-none";
 
 export default function ExteriorLeadForm({ defaultProject, accentLabel }: Props) {
   const [form, setForm] = useState({ ...INITIAL_FORM, projectType: defaultProject });
@@ -119,11 +119,11 @@ export default function ExteriorLeadForm({ defaultProject, accentLabel }: Props)
   return (
     <form
       onSubmit={submit}
-      className="rounded-[28px] border border-white/10 bg-white/[0.06] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.28)] backdrop-blur-md sm:p-7"
+      className="rounded-[16px] border border-white/10 bg-white/[0.06] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.28)] backdrop-blur-md sm:p-7"
     >
       <div className="mb-6">
         <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#E8C49A]">{accentLabel}</div>
-        <h3 className="mt-2 text-[24px] font-black leading-tight text-white">Request your free estimate</h3>
+        <h3 className="mt-2 text-[23px] font-black leading-tight text-white">Request your free estimate</h3>
         <p className="mt-1.5 text-[13px] leading-relaxed text-white/50">
           Share the basics. A real person will review the project and follow up.
         </p>
@@ -268,7 +268,7 @@ export default function ExteriorLeadForm({ defaultProject, accentLabel }: Props)
       <button
         type="submit"
         disabled={status === "loading"}
-        className="mt-5 inline-flex min-h-[58px] w-full items-center justify-center rounded-[16px] bg-[#D4A574] px-6 text-[16px] font-extrabold text-[#111827] shadow-[0_12px_32px_rgba(212,165,116,0.22)] transition hover:-translate-y-0.5 hover:bg-[#E0B886] disabled:cursor-not-allowed disabled:opacity-65"
+        className="mt-5 inline-flex min-h-[48px] w-full items-center justify-center rounded-[16px] bg-[#D4A574] px-6 text-[16px] font-extrabold text-[#111827] shadow-[0_12px_32px_rgba(212,165,116,0.22)] transition hover:-translate-y-0.5 hover:bg-[#E0B886] disabled:cursor-not-allowed disabled:opacity-65"
       >
         {status === "loading" ? (
           <span className="flex items-center gap-2">

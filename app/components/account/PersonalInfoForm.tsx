@@ -41,8 +41,8 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
         defaultAddressId={formData?.defaultAddressId ? String(formData.defaultAddressId) : null}
       />
 
-      <details className="mt-5 rounded-[18px] border border-[#E0E6F5] bg-white">
-        <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between px-4 py-3 text-[15px] font-bold text-[#313234]">
+      <details className="mt-5 rounded-[13px] border border-[#E0E6F5] bg-white">
+        <summary className="flex min-h-[46px] cursor-pointer list-none items-center justify-between px-4 py-3 text-[15px] font-bold text-[#313234]">
           Account details
           <span className="text-[12px] font-semibold text-[#6A6D71]">Show</span>
         </summary>

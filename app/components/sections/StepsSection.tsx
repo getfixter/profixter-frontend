@@ -21,7 +21,7 @@ export default function StepsSection() {
     <section
       id="how-it-works"
       aria-label="How it works"
-      className="relative w-full py-12 sm:py-16 lg:py-20 overflow-hidden scroll-mt-[140px]"
+      className="relative w-full py-8 sm:py-11 lg:py-14 overflow-hidden scroll-mt-[140px]"
     >
       {/* ✅ Force readable background on ALL screens */}
       <div className="absolute inset-0 -z-10 bg-[#EEF2FF]" />
@@ -48,10 +48,10 @@ export default function StepsSection() {
 
           {/* Heading */}
           <div className="text-center mb-8 sm:mb-12 lg:mb-14">
-            <h2 className="text-3xl sm:text-5xl lg:text-[64px] font-extrabold tracking-[-0.05em] leading-[1.0] text-[#313234]">
+            <h2 className="text-3xl sm:text-5xl lg:text-[46px] font-extrabold tracking-[-0.05em] leading-[1.0] text-[#313234]">
               <span>3 EASY STEPS</span>
             </h2>
-            <h2 className="mt-1 text-3xl sm:text-5xl lg:text-[64px] font-extrabold tracking-[-0.05em] leading-[1.0] text-[#313234]">
+            <h2 className="mt-1 text-3xl sm:text-5xl lg:text-[46px] font-extrabold tracking-[-0.05em] leading-[1.0] text-[#313234]">
               TO EASIER HOME CARE
             </h2>
             <p className="mt-4 text-[#6a6c71] text-sm sm:text-base max-w-[680px] mx-auto">
@@ -67,7 +67,7 @@ export default function StepsSection() {
               <div
                 key={s.id}
                 className={[
-                  "relative rounded-[22px] border border-black/10 bg-white/70 backdrop-blur-md",
+                  "relative rounded-[14px] border border-black/10 bg-white/70 backdrop-blur-md",
                   "shadow-[0_16px_80px_rgba(0,0,0,0.10)]",
                   "p-6 sm:p-7 lg:p-8",
                   "transition-colors duration-200",
@@ -78,7 +78,7 @@ export default function StepsSection() {
 
                 {/* big number */}
                 <div className="flex items-start justify-between gap-4">
-                  <div className="text-[64px] sm:text-[72px] lg:text-[84px] font-extrabold leading-none bg-gradient-to-b from-[#313234] to-transparent bg-clip-text text-transparent select-none">
+                  <div className="text-[46px] sm:text-[46px] lg:text-[50px] font-extrabold leading-none bg-gradient-to-b from-[#313234] to-transparent bg-clip-text text-transparent select-none">
                     {s.id}
                   </div>
 

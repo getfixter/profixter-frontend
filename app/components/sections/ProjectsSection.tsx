@@ -42,7 +42,7 @@ export default function ProjectsSection() {
   return (
     <section
       id="projects"
-      className="w-full overflow-hidden relative scroll-mt-[110px] py-16 sm:py-20 lg:py-28"
+      className="w-full overflow-hidden relative scroll-mt-[110px] py-10 sm:py-13 lg:py-12"
       style={{
         background:
           "linear-gradient(160deg, #080F1E 0%, #0A1421 60%, #0B1628 100%)",
@@ -67,7 +67,7 @@ export default function ProjectsSection() {
       <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* ── Header ── */}
-        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-12 lg:mb-14">
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-8 lg:mb-14">
           <div className="max-w-[580px]">
             <div className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.05] px-4 py-2 mb-7 backdrop-blur-sm">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-[#86EFAC]" aria-hidden="true">
@@ -81,7 +81,7 @@ export default function ProjectsSection() {
               </span>
             </div>
 
-            <h2 className="text-[40px] sm:text-[56px] lg:text-[68px] font-black leading-[0.88] tracking-[-0.045em] text-white mb-5">
+            <h2 className="text-[34px] sm:text-[43px] lg:text-[46px] font-black leading-[0.88] tracking-[-0.045em] text-white mb-5">
               Results we&rsquo;re
               <br />
               <span
@@ -103,9 +103,9 @@ export default function ProjectsSection() {
             {AUTHORITY_STATS.map(({ value, label }) => (
               <div
                 key={label}
-                className="rounded-[18px] border border-white/[0.09] bg-white/[0.04] px-5 py-4 text-center min-w-[100px]"
+                className="rounded-[13px] border border-white/[0.09] bg-white/[0.04] px-5 py-4 text-center min-w-[100px]"
               >
-                <div className="text-[22px] font-extrabold text-white leading-none mb-1.5">
+                <div className="text-[21px] font-extrabold text-white leading-none mb-1.5">
                   {value}
                 </div>
                 <div className="text-[11px] font-semibold text-white/38">{label}</div>
@@ -122,7 +122,7 @@ export default function ProjectsSection() {
 
             {/* Featured image */}
             <div
-              className="relative w-full overflow-hidden rounded-[24px] group"
+              className="relative w-full overflow-hidden rounded-[16px] group"
               style={{ aspectRatio: "16/10" }}
             >
               {/* Main photo */}
@@ -136,7 +136,7 @@ export default function ProjectsSection() {
               />
 
               {/* Premium cinematic vignette */}
-              <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.40)] rounded-[24px]" />
+              <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.40)] rounded-[16px]" />
 
               {/* Bottom gradient overlay */}
               <div
@@ -160,7 +160,7 @@ export default function ProjectsSection() {
               {/* Bottom overlay: room label + location */}
               <div className="absolute bottom-0 left-0 right-0 px-6 pb-6 pt-8 flex items-end justify-between">
                 <div>
-                  <div className="text-[28px] sm:text-[34px] font-black text-white leading-none tracking-[-0.025em] mb-1">
+                  <div className="text-[26px] sm:text-[30px] font-black text-white leading-none tracking-[-0.025em] mb-1">
                     {active.label}
                   </div>
                   <div className="text-[12px] font-semibold text-white/45 uppercase tracking-[0.18em]">
@@ -205,7 +205,7 @@ export default function ProjectsSection() {
                   type="button"
                   onClick={() => setActiveIdx(i)}
                   aria-label={`View ${p.label}`}
-                  className={`relative flex-shrink-0 w-[72px] h-[54px] rounded-[10px] overflow-hidden border-2 transition-all duration-200 focus:outline-none ${
+                  className={`relative flex-shrink-0 w-[72px] h-[46px] rounded-[10px] overflow-hidden border-2 transition-all duration-200 focus:outline-none ${
                     i === activeIdx
                       ? "border-[#86EFAC] shadow-[0_0_14px_rgba(134,239,172,0.22)]"
                       : "border-white/[0.08] hover:border-white/25 opacity-60 hover:opacity-90"
@@ -225,7 +225,7 @@ export default function ProjectsSection() {
 
             {/* Trust card */}
             <div
-              className="rounded-[22px] border border-white/[0.09] p-6 flex flex-col gap-5"
+              className="rounded-[14px] border border-white/[0.09] p-6 flex flex-col gap-5"
               style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)" }}
             >
               <div>
@@ -268,7 +268,7 @@ export default function ProjectsSection() {
 
             {/* CTA card */}
             <div
-              className="rounded-[22px] border border-[#306EEC]/20 p-6 flex flex-col gap-4"
+              className="rounded-[14px] border border-[#306EEC]/20 p-6 flex flex-col gap-4"
               style={{ background: "linear-gradient(145deg, rgba(48,110,236,0.12) 0%, rgba(48,110,236,0.06) 100%)" }}
             >
               <div>
@@ -283,7 +283,7 @@ export default function ProjectsSection() {
               <button
                 type="button"
                 onClick={scrollToPlans}
-                className="w-full min-h-[52px] rounded-[14px] bg-[#306EEC] text-white text-[15px] font-extrabold transition-all hover:bg-[#2558c9] active:scale-[0.99]"
+                className="w-full min-h-[46px] rounded-[14px] bg-[#306EEC] text-white text-[15px] font-extrabold transition-all hover:bg-[#2558c9] active:scale-[0.99]"
                 style={{ boxShadow: "0 12px 36px rgba(48,110,236,0.30)" }}
               >
                 See Membership Plans

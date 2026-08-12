@@ -116,14 +116,14 @@ export function HubHero({
   breadcrumb: LinkItem;
 }) {
   return (
-    <section className="px-4 pb-10 pt-3 sm:px-6 sm:pb-16 lg:px-8">
+    <section className="px-4 pb-10 pt-3 sm:px-6 sm:pb-11 lg:px-8">
       <div className="mx-auto max-w-[1180px]">
         <Breadcrumbs items={[breadcrumb]} />
         <div className="max-w-[880px]">
           <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
             {eyebrow}
           </div>
-          <h1 className="mt-4 text-[38px] font-black leading-[0.96] tracking-[-0.04em] text-[#0B1628] sm:text-[68px] sm:leading-[0.92] sm:tracking-[-0.05em]">
+          <h1 className="mt-4 text-[32px] font-black leading-[0.96] tracking-[-0.04em] text-[#0B1628] sm:text-[46px] sm:leading-[0.92] sm:tracking-[-0.05em]">
             {title}
           </h1>
           <p className="mt-5 max-w-[720px] text-[15px] font-medium leading-7 text-[#475569] sm:text-[18px] sm:leading-8">
@@ -132,14 +132,14 @@ export function HubHero({
           <div className="mt-7 flex flex-col gap-2.5 sm:flex-row">
             <SmartCtaLink
               cta={primaryCta}
-              className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-[14px] bg-[#306EEC] px-6 text-[14px] font-black text-white shadow-[0_16px_42px_rgba(48,110,236,0.26)] transition hover:bg-[#2558C9] sm:min-h-[54px] sm:text-[15px]"
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-[14px] bg-[#306EEC] px-6 text-[14px] font-black text-white shadow-[0_16px_42px_rgba(48,110,236,0.26)] transition hover:bg-[#2558C9] sm:min-h-[54px] sm:text-[15px]"
             >
               {primaryCta.label}
               <ArrowIcon />
             </SmartCtaLink>
             <SmartCtaLink
               cta={secondaryCta}
-              className="inline-flex min-h-[50px] items-center justify-center rounded-[14px] border border-[#D7DEE9] bg-white px-6 text-[14px] font-black text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] sm:min-h-[54px] sm:text-[15px]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-[14px] border border-[#D7DEE9] bg-white px-6 text-[14px] font-black text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] sm:min-h-[54px] sm:text-[15px]"
             >
               {secondaryCta.label}
             </SmartCtaLink>
@@ -162,13 +162,13 @@ export function CardGrid({
   items: LinkItem[];
 }) {
   return (
-    <section className="px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+    <section className="px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
       <div className="mx-auto max-w-[1180px]">
         <div className="max-w-[720px]">
           <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
             {eyebrow}
           </div>
-          <h2 className="mt-3 text-[30px] font-black leading-tight tracking-[-0.035em] text-[#0B1628] sm:text-[48px]">
+          <h2 className="mt-3 text-[26px] font-black leading-tight tracking-[-0.035em] text-[#0B1628] sm:text-[36px]">
             {title}
           </h2>
           {description ? (
@@ -182,7 +182,7 @@ export function CardGrid({
             <Link
               key={item.href}
               href={item.href}
-              className="group rounded-[22px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:border-[#BFD2FF] hover:shadow-[0_22px_70px_rgba(48,110,236,0.10)]"
+              className="group rounded-[14px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:border-[#BFD2FF] hover:shadow-[0_22px_70px_rgba(48,110,236,0.10)]"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -221,14 +221,14 @@ export function ConversionBand({
   ];
 
   return (
-    <section className="px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-      <div className="mx-auto max-w-[1180px] rounded-[28px] bg-[#0B1628] p-5 text-white shadow-[0_22px_70px_rgba(15,23,42,0.18)] sm:p-8 lg:p-10">
+    <section className="px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-[1180px] rounded-[16px] bg-[#0B1628] p-5 text-white shadow-[0_22px_70px_rgba(15,23,42,0.18)] sm:p-8 lg:p-10">
         <div className="grid gap-7 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
           <div>
             <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#93C5FD]">
               Next step
             </div>
-            <h2 className="mt-3 text-[28px] font-black leading-tight tracking-[-0.034em] sm:text-[46px]">
+            <h2 className="mt-3 text-[26px] font-black leading-tight tracking-[-0.034em] sm:text-[36px]">
               {title}
             </h2>
             <p className="mt-4 text-[15px] leading-7 text-white/68">
@@ -240,7 +240,7 @@ export function ConversionBand({
               <SmartCtaLink
                 key={link.href}
                 cta={link}
-                className="inline-flex min-h-[50px] items-center justify-between gap-3 rounded-[16px] border border-white/12 bg-white/[0.07] px-5 text-[14px] font-black text-white transition hover:bg-white hover:text-[#0B1628]"
+                className="inline-flex min-h-[44px] items-center justify-between gap-3 rounded-[16px] border border-white/12 bg-white/[0.07] px-5 text-[14px] font-black text-white transition hover:bg-white hover:text-[#0B1628]"
               >
                 {link.label}
                 <ArrowIcon />
@@ -298,7 +298,7 @@ export function DetailPage({
   return (
     <SeoPageShell>
       <main>
-        <section className="px-4 pb-10 pt-3 sm:px-6 sm:pb-16 lg:px-8">
+        <section className="px-4 pb-10 pt-3 sm:px-6 sm:pb-11 lg:px-8">
           <div className="mx-auto max-w-[1180px]">
             <Breadcrumbs
               items={[
@@ -311,18 +311,18 @@ export function DetailPage({
                 <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
                   Profixter {type === "service" ? "handyman service" : "renovation service"}
                 </div>
-                <h1 className="mt-4 text-[38px] font-black leading-[0.96] tracking-[-0.04em] text-[#0B1628] sm:text-[68px] sm:leading-[0.92] sm:tracking-[-0.05em]">
+                <h1 className="mt-4 text-[32px] font-black leading-[0.96] tracking-[-0.04em] text-[#0B1628] sm:text-[46px] sm:leading-[0.92] sm:tracking-[-0.05em]">
                   {content.h1}
                 </h1>
                 <p className="mt-5 max-w-[720px] text-[15px] font-medium leading-7 text-[#475569] sm:text-[18px] sm:leading-8">
                   {content.intro}
                 </p>
               </div>
-              <aside className="rounded-[24px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:p-6">
+              <aside className="rounded-[16px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:p-6">
                 <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
                   Homeowner intent
                 </div>
-                <p className="mt-3 text-[22px] font-black leading-tight text-[#0B1628]">
+                <p className="mt-3 text-[21px] font-black leading-tight text-[#0B1628]">
                   {content.homeownerNeed}
                 </p>
                 <div className="mt-5 grid gap-2">
@@ -342,10 +342,10 @@ export function DetailPage({
           </div>
         </section>
 
-        <section className="px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <section className="px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
           <div className="mx-auto grid max-w-[1180px] gap-5 lg:grid-cols-2">
-            <div className="rounded-[24px] border border-[#DDE5F0] bg-white p-5 shadow-sm sm:p-7">
-              <h2 className="text-[24px] font-black text-[#0B1628]">Good fit for</h2>
+            <div className="rounded-[16px] border border-[#DDE5F0] bg-white p-5 shadow-sm sm:p-7">
+              <h2 className="text-[23px] font-black text-[#0B1628]">Good fit for</h2>
               <div className="mt-5 grid gap-3">
                 {content.goodFit.map((item) => (
                   <div key={item} className="flex gap-3 text-[14px] font-semibold leading-6 text-[#334155]">
@@ -357,8 +357,8 @@ export function DetailPage({
                 ))}
               </div>
             </div>
-            <div className="rounded-[24px] border border-[#DDE5F0] bg-[#FBFCFF] p-5 shadow-sm sm:p-7">
-              <h2 className="text-[24px] font-black text-[#0B1628]">Not the right path for</h2>
+            <div className="rounded-[16px] border border-[#DDE5F0] bg-[#FBFCFF] p-5 shadow-sm sm:p-7">
+              <h2 className="text-[23px] font-black text-[#0B1628]">Not the right path for</h2>
               <div className="mt-5 grid gap-3">
                 {(content.notAFit || []).map((item) => (
                   <div key={item} className="flex gap-3 text-[14px] font-semibold leading-6 text-[#64748B]">
@@ -371,14 +371,14 @@ export function DetailPage({
           </div>
         </section>
 
-        <section className="px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <section className="px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
           <div className="mx-auto max-w-[1180px]">
             <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
               <div>
                 <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
                   How to use Profixter
                 </div>
-                <h2 className="mt-3 text-[30px] font-black leading-tight tracking-[-0.035em] text-[#0B1628] sm:text-[46px]">
+                <h2 className="mt-3 text-[26px] font-black leading-tight tracking-[-0.035em] text-[#0B1628] sm:text-[36px]">
                   Pick the path that matches the scope.
                 </h2>
                 <p className="mt-4 text-[15px] leading-7 text-[#64748B] sm:text-[16px]">
@@ -389,7 +389,7 @@ export function DetailPage({
                 {pathCards.map((card) => (
                   <div
                     key={card.title}
-                    className="rounded-[20px] border border-[#DDE5F0] bg-white p-5 shadow-[0_16px_46px_rgba(15,23,42,0.045)]"
+                    className="rounded-[14px] border border-[#DDE5F0] bg-white p-5 shadow-[0_16px_46px_rgba(15,23,42,0.045)]"
                   >
                     <h3 className="text-[17px] font-black text-[#0B1628]">{card.title}</h3>
                     <p className="mt-2 text-[14px] leading-6 text-[#64748B]">{card.body}</p>
@@ -400,10 +400,10 @@ export function DetailPage({
           </div>
         </section>
 
-        <section className="px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <section className="px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
           <div className="mx-auto grid max-w-[1180px] gap-5 lg:grid-cols-[1fr_0.9fr]">
-            <div className="rounded-[24px] border border-[#DDE5F0] bg-white p-5 shadow-sm sm:p-7">
-              <h2 className="text-[24px] font-black text-[#0B1628]">
+            <div className="rounded-[16px] border border-[#DDE5F0] bg-white p-5 shadow-sm sm:p-7">
+              <h2 className="text-[23px] font-black text-[#0B1628]">
                 Before you start
               </h2>
               <div className="mt-5 grid gap-3">
@@ -417,8 +417,8 @@ export function DetailPage({
                 ))}
               </div>
             </div>
-            <div className="rounded-[24px] border border-[#DDE5F0] bg-[#FBFCFF] p-5 shadow-sm sm:p-7">
-              <h2 className="text-[24px] font-black text-[#0B1628]">
+            <div className="rounded-[16px] border border-[#DDE5F0] bg-[#FBFCFF] p-5 shadow-sm sm:p-7">
+              <h2 className="text-[23px] font-black text-[#0B1628]">
                 Common questions
               </h2>
               <div className="mt-5 divide-y divide-[#DDE5F0]">
@@ -465,7 +465,7 @@ export function LocationDetailPage({
   return (
     <SeoPageShell>
       <main>
-        <section className="px-4 pb-10 pt-3 sm:px-6 sm:pb-16 lg:px-8">
+        <section className="px-4 pb-10 pt-3 sm:px-6 sm:pb-11 lg:px-8">
           <div className="mx-auto max-w-[1180px]">
             <Breadcrumbs
               items={[
@@ -477,26 +477,26 @@ export function LocationDetailPage({
               <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
                 {area.county}
               </div>
-              <h1 className="mt-4 text-[38px] font-black leading-[0.96] tracking-[-0.04em] text-[#0B1628] sm:text-[68px] sm:leading-[0.92] sm:tracking-[-0.05em]">
+              <h1 className="mt-4 text-[32px] font-black leading-[0.96] tracking-[-0.04em] text-[#0B1628] sm:text-[46px] sm:leading-[0.92] sm:tracking-[-0.05em]">
                 {area.h1}
               </h1>
               <p className="mt-5 max-w-[720px] text-[15px] font-medium leading-7 text-[#475569] sm:text-[18px] sm:leading-8">
                 {area.intro}
               </p>
-              <p className="mt-4 max-w-[680px] rounded-[18px] border border-[#D9E4FF] bg-white px-4 py-3 text-[14px] font-bold leading-6 text-[#334155] shadow-sm">
+              <p className="mt-4 max-w-[680px] rounded-[13px] border border-[#D9E4FF] bg-white px-4 py-3 text-[14px] font-bold leading-6 text-[#334155] shadow-sm">
                 {area.localNote}
               </p>
             </div>
           </div>
         </section>
 
-        <section className="px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <section className="px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
           <div className="mx-auto grid max-w-[1180px] gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
             <div>
               <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
                 Local path
               </div>
-              <h2 className="mt-3 text-[30px] font-black leading-tight tracking-[-0.035em] text-[#0B1628] sm:text-[46px]">
+              <h2 className="mt-3 text-[26px] font-black leading-tight tracking-[-0.035em] text-[#0B1628] sm:text-[36px]">
                 What Profixter offers in {area.name}.
               </h2>
               <p className="mt-4 text-[15px] leading-7 text-[#64748B] sm:text-[16px]">
@@ -507,7 +507,7 @@ export function LocationDetailPage({
               {area.homeownerPaths.map((item) => (
                 <div
                   key={item}
-                  className="flex gap-3 rounded-[20px] border border-[#DDE5F0] bg-white p-5 text-[14px] font-semibold leading-6 text-[#334155] shadow-[0_16px_46px_rgba(15,23,42,0.045)]"
+                  className="flex gap-3 rounded-[14px] border border-[#DDE5F0] bg-white p-5 text-[14px] font-semibold leading-6 text-[#334155] shadow-[0_16px_46px_rgba(15,23,42,0.045)]"
                 >
                   <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#E8F8EE] text-[#16834B]">
                     <CheckIcon />

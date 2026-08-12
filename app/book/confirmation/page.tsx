@@ -42,7 +42,7 @@ export default async function BookConfirmationPage({
       <OneTimeBookingConfirmation bookingId={params.booking_id} />
       <Header />
 
-      <section className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
+      <section className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 sm:py-9 lg:px-8 lg:py-12">
         <div className="mb-5 inline-flex items-center gap-2.5 rounded-[8px] border border-emerald-200 bg-white px-3 py-2">
           <span
             className="h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500"
@@ -58,7 +58,7 @@ export default async function BookConfirmationPage({
             <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-[12px] font-black uppercase tracking-[0.12em] text-emerald-700">
               Paid
             </div>
-            <h1 className="text-[30px] font-black leading-[1.04] text-[#0B1628] sm:text-[42px]">
+            <h1 className="text-[26px] font-black leading-[1.04] text-[#0B1628] sm:text-[34px]">
               Payment received. Your request is pending approval.
             </h1>
             <p className="mt-4 max-w-[640px] text-[15px] leading-7 text-[#475569] sm:text-[16px]">
@@ -72,14 +72,14 @@ export default async function BookConfirmationPage({
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/account?tab=bookings"
-                className="inline-flex h-[52px] items-center justify-center rounded-[16px] bg-[#306EEC] px-5 text-[15px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99]"
+                className="inline-flex h-[46px] items-center justify-center rounded-[16px] bg-[#306EEC] px-5 text-[15px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99]"
                 style={{ boxShadow: "0 16px 48px rgba(48,110,236,0.30)" }}
               >
                 View my bookings
               </Link>
               <Link
                 href="/home-support"
-                className="inline-flex h-[52px] items-center justify-center rounded-[16px] border border-[#C5CBD8] bg-white px-5 text-[15px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] active:scale-[0.99]"
+                className="inline-flex h-[46px] items-center justify-center rounded-[16px] border border-[#C5CBD8] bg-white px-5 text-[15px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] active:scale-[0.99]"
               >
                 Ask Profixter AI
               </Link>
@@ -87,7 +87,7 @@ export default async function BookConfirmationPage({
           </div>
 
           <aside className="rounded-[12px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-6 lg:col-span-5">
-            <h2 className="text-[20px] font-extrabold text-[#0B1628]">
+            <h2 className="text-[19px] font-extrabold text-[#0B1628]">
               Calm next steps
             </h2>
             <div className="mt-4 space-y-3">

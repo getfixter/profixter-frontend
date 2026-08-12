@@ -18,7 +18,7 @@ const BENEFITS = [
 
 export default function AuthLeftPanel() {
   return (
-    <div className="hidden lg:flex flex-col justify-between h-full px-12 xl:px-16 py-12 border-r border-white/[0.07]">
+    <div className="hidden lg:flex flex-col justify-between h-full px-12 xl:px-16 py-8 border-r border-white/[0.07]">
       {/* Logo */}
       <Link href="/" className="inline-block">
         <Image src="/images/logo.svg" alt="Profixter" width={90} height={34} />
@@ -38,7 +38,7 @@ export default function AuthLeftPanel() {
         </div>
 
         {/* Headline */}
-        <h2 className="text-[40px] xl:text-[50px] font-black leading-[0.92] tracking-[-0.04em] text-white mb-4">
+        <h2 className="text-[34px] xl:text-[40px] font-black leading-[0.92] tracking-[-0.04em] text-white mb-4">
           Your home, handled.
           <br />
           <span
@@ -73,7 +73,7 @@ export default function AuthLeftPanel() {
         </div>
 
         {/* Benefits */}
-        <div className="space-y-2.5 mb-10">
+        <div className="space-y-2.5 mb-7">
           {BENEFITS.map((b) => (
             <div key={b} className="flex items-center gap-3">
               <svg

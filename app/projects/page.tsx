@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useCallback, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
@@ -172,7 +172,7 @@ const SERVICES: Array<{
 ];
 
 const fieldClass =
-  "h-[52px] w-full rounded-[12px] border border-[#CBD5E1] bg-white px-4 text-[15px] text-[#0B1628] outline-none transition placeholder:text-[#94A3B8] focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/10";
+  "h-[46px] w-full rounded-[12px] border border-[#CBD5E1] bg-white px-4 text-[15px] text-[#0B1628] outline-none transition placeholder:text-[#94A3B8] focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/10";
 
 function projectTypeFromQuery(value: string | null): ProjectType {
   const normalized = String(value || "").toLowerCase();
@@ -208,9 +208,9 @@ function ArrowIcon() {
   );
 }
 
-function EstimateForm() {
+function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
   const searchParams = useSearchParams();
-  const initialType = projectTypeFromQuery(searchParams.get("type"));
+  const initialType = requestedType || projectTypeFromQuery(searchParams.get("type"));
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -226,6 +226,25 @@ function EstimateForm() {
     "idle" | "submitting" | "success" | "error"
   >("idle");
   const [message, setMessage] = useState("");
+
+  /*
+   * A service CTA further down the page selects its own project type here.
+   * Syncing the one field rather than remounting the form is the point:
+   * remounting discarded anything already typed, which is a bad trade for
+   * preselecting a radio button.
+   *
+   * Adjusted during render rather than in an effect. This is React's own
+   * pattern for reacting to a changed prop: it re-renders before anything is
+   * painted, where an effect would paint the old value first and then correct
+   * it, which is both a wasted pass and a visible flicker.
+   */
+  const [lastRequestedType, setLastRequestedType] = useState(requestedType);
+  if (requestedType && requestedType !== lastRequestedType) {
+    setLastRequestedType(requestedType);
+    if (form.service !== requestedType) {
+      setForm((current) => ({ ...current, service: requestedType }));
+    }
+  }
 
   const update = (field: keyof typeof form, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -307,14 +326,14 @@ function EstimateForm() {
 
   if (status === "success") {
     return (
-      <div className="rounded-[26px] border border-[#B9E2C5] bg-[#F1FBF4] p-7 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-10">
+      <div className="rounded-[16px] border border-[#B9E2C5] bg-[#F1FBF4] p-7 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-10">
         <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#DCFCE7] text-[#15803D]">
           <CheckIcon />
         </span>
         <div className="mt-5 text-[11px] font-black uppercase tracking-[0.18em] text-[#15803D]">
           Successfully submitted
         </div>
-        <h2 className="mt-2 text-[28px] font-black text-[#0B1628]">
+        <h2 className="mt-2 text-[26px] font-black text-[#0B1628]">
           Request received
         </h2>
         <p className="mt-3 max-w-[560px] text-[15px] leading-relaxed text-[#475569]">
@@ -341,13 +360,13 @@ function EstimateForm() {
   return (
     <form
       onSubmit={submit}
-      className="rounded-[26px] border border-[#D7DEE9] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.12)] sm:p-8"
+      className="rounded-[16px] border border-[#D7DEE9] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.12)] sm:p-8"
     >
       <div className="mb-6">
         <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
           Renovation estimate
         </div>
-        <h2 className="mt-2 text-[27px] font-black leading-tight text-[#0B1628] sm:text-[32px]">
+        <h2 className="mt-2 text-[23px] font-black leading-tight text-[#0B1628] sm:text-[30px]">
           Tell us what you want built.
         </h2>
         <p className="mt-2 text-[14px] leading-relaxed text-[#64748B]">
@@ -497,7 +516,7 @@ function EstimateForm() {
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="mt-6 inline-flex h-[50px] w-full items-center justify-center rounded-[14px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white shadow-[0_14px_36px_rgba(48,110,236,0.25)] transition hover:bg-[#2558C9] disabled:opacity-60 sm:h-[54px] sm:px-6 sm:text-[15px]"
+        className="mt-6 inline-flex h-[44px] w-full items-center justify-center rounded-[14px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white shadow-[0_14px_36px_rgba(48,110,236,0.25)] transition hover:bg-[#2558C9] disabled:opacity-60 sm:h-[54px] sm:px-6 sm:text-[15px]"
       >
         {status === "submitting" ? "Sending request..." : "Request Renovation Estimate"}
       </button>
@@ -508,23 +527,31 @@ function EstimateForm() {
   );
 }
 
-function ServiceSection({ service, index }: { service: (typeof SERVICES)[number]; index: number }) {
+function ServiceSection({
+  service,
+  index,
+  onRequestEstimate,
+}: {
+  service: (typeof SERVICES)[number];
+  index: number;
+  onRequestEstimate: (type: ProjectType) => void;
+}) {
   const dark = service.dark;
   const estimateType = service.estimateType || (service.type as ProjectType);
 
   return (
     <section
       id={service.id}
-      className={`scroll-mt-[96px] py-12 sm:py-20 lg:py-24 ${
+      className={`scroll-mt-[96px] py-8 sm:py-13 lg:py-12 ${
         dark ? "bg-[#0B1628] text-white" : "bg-[#F6F8FC] text-[#0B1628]"
       }`}
     >
       <div
-        className={`mx-auto grid max-w-[1220px] items-center gap-9 px-5 sm:px-8 lg:grid-cols-2 lg:gap-16 ${
+        className={`mx-auto grid max-w-[1220px] items-center gap-9 px-5 sm:px-6 lg:grid-cols-2 lg:gap-10 ${
           index % 2 ? "lg:[&>*:first-child]:order-2" : ""
         }`}
       >
-        <div className="relative min-h-[260px] overflow-hidden rounded-[24px] shadow-[0_24px_64px_rgba(15,23,42,0.16)] sm:min-h-[440px] sm:rounded-[28px] sm:shadow-[0_30px_80px_rgba(15,23,42,0.18)]">
+        <div className="relative min-h-[180px] overflow-hidden rounded-[14px] shadow-[0_18px_44px_rgba(15,23,42,0.14)] sm:min-h-[340px] sm:rounded-[16px]">
           <Image
             src={service.image}
             alt={`${service.title} project by Profixter`}
@@ -547,7 +574,12 @@ function ServiceSection({ service, index }: { service: (typeof SERVICES)[number]
           >
             {service.eyebrow}
           </div>
-          <h2 className="mt-3 text-[36px] font-black leading-[0.98] tracking-[-0.036em] sm:mt-4 sm:text-[58px] sm:leading-[0.94] sm:tracking-[-0.045em] lg:text-[64px]">
+          {/*
+           * A service block heading, not the page title. It used to outrank the
+           * hero H1, which read as six competing titles down the page instead
+           * of one page with six sections.
+           */}
+          <h2 className="mt-3 text-[23px] font-black leading-[1.05] tracking-[-0.03em] sm:mt-4 sm:text-[30px] sm:leading-[1.02] sm:tracking-[-0.035em] lg:text-[32px]">
             {service.title}
           </h2>
           <p
@@ -557,7 +589,7 @@ function ServiceSection({ service, index }: { service: (typeof SERVICES)[number]
           >
             {service.description}
           </p>
-          <div className="mt-6 grid gap-2.5 sm:mt-7 sm:gap-3">
+          <div className="mt-4 grid gap-2 sm:mt-5 sm:gap-2.5">
             {service.details.map((detail) => (
               <div key={detail} className="flex items-start gap-3">
                 <span
@@ -573,11 +605,27 @@ function ServiceSection({ service, index }: { service: (typeof SERVICES)[number]
               </div>
             ))}
           </div>
-          <p className={`mt-6 text-[13px] ${dark ? "text-white/50" : "text-[#64748B]"}`}>
+          <p className={`mt-4 text-[13px] leading-5 ${dark ? "text-white/50" : "text-[#64748B]"}`}>
             Members may receive project discounts. Eligible larger projects may include up to 12 months of Profixter Membership.
           </p>
+          {/*
+            Still an anchor with a real href, so it keeps everything a link
+            gives you for free: Enter activates it, middle-click and
+            "open in new tab" work, and the href is a genuine deep link that
+            seeds the form on a cold load.
+
+            The click is intercepted only for the in-page case, because the
+            router navigation it used to rely on did not scroll at all on
+            desktop. See onRequestEstimate.
+           */}
           <Link
             href={`/projects?type=${estimateType}#estimate`}
+            onClick={(event) => {
+              // Let the browser handle new tab, new window and downloads.
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+              event.preventDefault();
+              onRequestEstimate(estimateType);
+            }}
             className={`mt-6 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[14px] px-5 text-[14px] font-extrabold transition sm:mt-7 sm:min-h-[52px] sm:px-6 ${
               dark
                 ? "bg-white text-[#0B1628] hover:bg-[#EAF1FF]"
@@ -599,6 +647,28 @@ function ProjectsContent() {
   const { user } = useAuth();
   const isMember = hasActiveMembership(user);
 
+  /*
+   * The type the hero form should show. Seeded from the query so
+   * /projects?type=kitchen still deep links, then owned here so a service CTA
+   * can change it without a navigation.
+   */
+  const [requestedType, setRequestedType] = useState<ProjectType>(selectedType);
+  const estimateRef = useRef<HTMLDivElement | null>(null);
+
+  const goToEstimate = useCallback((type: ProjectType) => {
+    setRequestedType(type);
+    /*
+     * scrollIntoView honours the wrapper's scroll-margin-top, which is what
+     * keeps the form clear of the sticky header. The wrapper is deliberately
+     * the non-sticky outer div: scrolling to a position:sticky element is what
+     * silently did nothing on desktop before.
+     */
+    const target = estimateRef.current;
+    if (!target) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  }, []);
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#F6F8FC]">
       <div className="sticky top-0 z-50">
@@ -618,12 +688,12 @@ function ProjectsContent() {
             />
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,16,31,0.96)_0%,rgba(7,16,31,0.84)_48%,rgba(7,16,31,0.48)_100%)]" />
           </div>
-          <div className="relative mx-auto grid max-w-[1220px] gap-8 px-4 py-10 sm:px-8 sm:py-16 lg:grid-cols-[1fr_460px] lg:items-start lg:gap-12 lg:py-20">
+          <div className="relative mx-auto grid max-w-[1220px] gap-8 px-4 py-10 sm:px-6 sm:py-11 lg:grid-cols-[1fr_460px] lg:items-start lg:gap-8 lg:py-14">
             <div className="max-w-[820px]">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.08] px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/80">
                 General Contractor Long Island
               </div>
-              <h1 className="mt-4 text-[30px] font-black leading-[1.02] tracking-[-0.035em] sm:mt-5 sm:text-[46px] sm:leading-[0.98] sm:tracking-[-0.04em] lg:text-[52px]">
+              <h1 className="mt-4 text-[30px] font-black leading-[1.02] tracking-[-0.035em] sm:mt-5 sm:text-[40px] sm:leading-[0.98] sm:tracking-[-0.04em] lg:text-[44px]">
                 Renovation and home projects, handled by one team.
               </h1>
               <p className="mt-3.5 max-w-[640px] text-[14.5px] leading-relaxed text-white/75 sm:mt-4 sm:text-[16px]">
@@ -641,7 +711,11 @@ function ProjectsContent() {
                   <Link
                     key={href}
                     href={href}
-                    className="rounded-full border border-white/15 bg-white/[0.07] px-4 py-2 text-[12px] font-bold text-white/80 transition hover:bg-white/[0.14] hover:text-white"
+                    /* Padding-sized, so the compactness sweep's min-height
+                       guardrail never applied here and these landed at 36px.
+                       The height is explicit now; the chip still looks compact
+                       because the extra height is breathing room, not scale. */
+                    className="inline-flex min-h-[44px] items-center rounded-full border border-white/15 bg-white/[0.07] px-4 py-2 text-[12px] font-bold text-white/80 transition hover:bg-white/[0.14] hover:text-white"
                   >
                     {label}
                   </Link>
@@ -652,14 +726,19 @@ function ProjectsContent() {
                     would scroll past it. There it is hidden. */}
                 <Link
                   href="#estimate"
-                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[13px] bg-[#306EEC] px-6 text-[14px] font-extrabold text-white shadow-[0_16px_40px_rgba(48,110,236,0.32)] transition hover:bg-[#2558C9] sm:min-h-[52px] sm:px-7 sm:text-[15px] lg:hidden"
+                  onClick={(event) => {
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                    event.preventDefault();
+                    goToEstimate(requestedType);
+                  }}
+                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[13px] bg-[#306EEC] px-6 text-[14px] font-extrabold text-white shadow-[0_16px_40px_rgba(48,110,236,0.32)] transition hover:bg-[#2558C9] sm:min-h-[52px] sm:px-5 sm:text-[15px] lg:hidden"
                 >
                   Request Renovation Estimate
                   <ArrowIcon />
                 </Link>
                 <a
                   href="tel:+16315991363"
-                  className="inline-flex min-h-[48px] items-center justify-center rounded-[13px] border border-white/20 bg-white/[0.07] px-6 text-[14px] font-bold text-white sm:min-h-[52px] sm:px-7 sm:text-[15px]"
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-[13px] border border-white/20 bg-white/[0.07] px-6 text-[14px] font-bold text-white sm:min-h-[52px] sm:px-5 sm:text-[15px]"
                 >
                   Call 631-599-1363
                 </a>
@@ -707,16 +786,18 @@ function ProjectsContent() {
             On desktop it is the second column; on a phone it follows the
             proposition immediately, so the page still explains itself first.
            */}
-          <div id="estimate" className="scroll-mt-[84px] lg:sticky lg:top-24">
-            <Suspense fallback={<div className="min-h-[560px] animate-pulse rounded-[18px] bg-white/10" />}>
-              <EstimateForm key={selectedType} />
-            </Suspense>
+          <div id="estimate" ref={estimateRef} className="scroll-mt-[84px] sm:scroll-mt-[96px]">
+            <div className="lg:sticky lg:top-24">
+              <Suspense fallback={<div className="min-h-[560px] animate-pulse rounded-[13px] bg-white/10" />}>
+                <EstimateForm requestedType={requestedType} />
+              </Suspense>
+            </div>
           </div>
           </div>
         </section>
 
         <section className="border-b border-[#DDE4EE] bg-white py-8">
-          <div className="mx-auto grid max-w-[1220px] gap-4 px-5 sm:grid-cols-3 sm:px-8">
+          <div className="mx-auto grid max-w-[1220px] gap-4 px-5 sm:grid-cols-3 sm:px-6">
             {[
               ["General Contractor", "A single team to plan, coordinate, and manage larger work."],
               ["Clear estimate path", "A practical scope conversation before you commit to a project."],
@@ -731,7 +812,12 @@ function ProjectsContent() {
         </section>
 
         {SERVICES.map((service, index) => (
-          <ServiceSection key={service.id} service={service} index={index} />
+          <ServiceSection
+            key={service.id}
+            service={service}
+            index={index}
+            onRequestEstimate={goToEstimate}
+          />
         ))}
 
       </main>

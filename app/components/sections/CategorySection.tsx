@@ -21,7 +21,7 @@ const PROFIXTER_WAY = [
 export default function CategorySection() {
   return (
     <section
-      className="relative w-full overflow-hidden py-16 sm:py-20 lg:py-28"
+      className="relative w-full overflow-hidden py-10 sm:py-13 lg:py-12"
       style={{ background: "linear-gradient(180deg, #080F1E 0%, #060C18 100%)" }}
     >
       <div
@@ -38,13 +38,13 @@ export default function CategorySection() {
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
-        <div className="text-center mb-12 sm:mb-16">
+        <div className="text-center mb-8 sm:mb-16">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 mb-5">
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/45">
               A New Model
             </span>
           </div>
-          <h2 className="text-[30px] sm:text-[46px] font-extrabold text-white leading-[1.08] tracking-[-0.03em] mb-4">
+          <h2 className="text-[26px] sm:text-[36px] font-extrabold text-white leading-[1.08] tracking-[-0.03em] mb-4">
             A better way to take care of your home
           </h2>
           <p className="text-[15px] sm:text-[17px] text-white/48 max-w-[600px] mx-auto leading-relaxed">
@@ -77,14 +77,14 @@ export default function CategorySection() {
           </div>
 
           {/* Rows */}
-          <div className="rounded-[24px] overflow-hidden border border-white/[0.07]">
+          <div className="rounded-[16px] overflow-hidden border border-white/[0.07]">
             {OLD_WAY.map((old, i) => (
               <div
                 key={i}
                 className={`grid grid-cols-2 gap-0 ${i < OLD_WAY.length - 1 ? "border-b border-white/[0.06]" : ""}`}
               >
                 {/* Old way cell */}
-                <div className="flex items-start gap-3 px-5 py-4 sm:px-7 sm:py-5" style={{ background: "rgba(255,255,255,0.02)" }}>
+                <div className="flex items-start gap-3 px-5 py-4 sm:px-5 sm:py-5" style={{ background: "rgba(255,255,255,0.02)" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="flex-shrink-0 mt-0.5">
                     <path d="M18 6L6 18M6 6l12 12" stroke="rgba(239,68,68,0.55)" strokeWidth="2.2" strokeLinecap="round" />
                   </svg>
@@ -93,7 +93,7 @@ export default function CategorySection() {
 
                 {/* Profixter cell */}
                 <div
-                  className="flex items-start gap-3 px-5 py-4 sm:px-7 sm:py-5 border-l border-white/[0.06]"
+                  className="flex items-start gap-3 px-5 py-4 sm:px-5 sm:py-5 border-l border-white/[0.06]"
                   style={{ background: "rgba(48,110,236,0.04)" }}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="flex-shrink-0 mt-0.5">

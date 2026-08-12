@@ -79,11 +79,11 @@ export default function MembershipClaritySection() {
     <>
       {/* ── Is This Right For You? ── */}
       <section
-        className="relative w-full overflow-hidden py-16 sm:py-20 lg:py-28 bg-white"
+        className="relative w-full overflow-hidden py-10 sm:py-13 lg:py-12 bg-white"
       >
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
-          <div className="text-center mb-12 sm:mb-16">
+          <div className="text-center mb-8 sm:mb-16">
             <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-[#EEF2FF] px-4 py-1.5 mb-5">
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
                 Fit Check
@@ -92,7 +92,7 @@ export default function MembershipClaritySection() {
             <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[#94A3B8] mb-3">
               Profixter isn&rsquo;t for everyone - and that&rsquo;s intentional.
             </p>
-            <h2 className="text-[30px] sm:text-[44px] font-extrabold text-[#0B1628] leading-[1.08] tracking-[-0.03em]">
+            <h2 className="text-[26px] sm:text-[36px] font-extrabold text-[#0B1628] leading-[1.08] tracking-[-0.03em]">
               Is This Right for You?
             </h2>
             <p className="text-[15px] sm:text-[17px] text-[#475569] mt-3 max-w-[500px] mx-auto leading-relaxed">
@@ -103,7 +103,7 @@ export default function MembershipClaritySection() {
           <div className="grid md:grid-cols-2 gap-6 max-w-[900px] mx-auto">
 
             {/* Good fit */}
-            <div className="rounded-[24px] border border-[#BBF7D0] bg-[#F0FDF4] p-8">
+            <div className="rounded-[16px] border border-[#BBF7D0] bg-[#F0FDF4] p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-9 h-9 rounded-full bg-[#22C55E]/15 flex items-center justify-center flex-shrink-0">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -125,7 +125,7 @@ export default function MembershipClaritySection() {
             </div>
 
             {/* Not ideal */}
-            <div className="rounded-[24px] border border-[#FED7AA] bg-[#FFF7ED] p-8">
+            <div className="rounded-[16px] border border-[#FED7AA] bg-[#FFF7ED] p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-9 h-9 rounded-full bg-[#F97316]/15 flex items-center justify-center flex-shrink-0">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -151,13 +151,13 @@ export default function MembershipClaritySection() {
 
       {/* ── Without a system like this… ── */}
       <section
-        className="relative w-full overflow-hidden py-12 sm:py-16 bg-[#0B1628]"
+        className="relative w-full overflow-hidden py-8 sm:py-11 bg-[#0B1628]"
       >
         <div className="mx-auto max-w-[900px] px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-[1fr_1fr] gap-8 items-center">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/30 mb-3">Pain Awareness</p>
-              <h3 className="text-[24px] sm:text-[30px] font-extrabold text-white leading-[1.12] tracking-[-0.025em] mb-4">
+              <h3 className="text-[23px] sm:text-[26px] font-extrabold text-white leading-[1.12] tracking-[-0.025em] mb-4">
                 Without a system like this&hellip;
               </h3>
               <p className="text-[14px] sm:text-[15px] text-white/45 leading-relaxed">
@@ -186,7 +186,7 @@ export default function MembershipClaritySection() {
 
       {/* ── Why Homeowners Are Switching ── */}
       <section
-        className="relative w-full overflow-hidden py-16 sm:py-20 lg:py-28"
+        className="relative w-full overflow-hidden py-10 sm:py-13 lg:py-12"
         style={{ background: "linear-gradient(180deg, #080F1E 0%, #060C18 100%)" }}
       >
         <div
@@ -197,13 +197,13 @@ export default function MembershipClaritySection() {
 
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
-          <div className="text-center mb-12 sm:mb-16">
+          <div className="text-center mb-8 sm:mb-16">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 mb-5">
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/45">
                 The Smarter System
               </span>
             </div>
-            <h2 className="text-[30px] sm:text-[44px] font-extrabold text-white leading-[1.08] tracking-[-0.03em]">
+            <h2 className="text-[26px] sm:text-[36px] font-extrabold text-white leading-[1.08] tracking-[-0.03em]">
               Why homeowners are
               <br className="hidden sm:block" />
               <span className="text-[#86EFAC]"> switching to membership</span>
@@ -217,7 +217,7 @@ export default function MembershipClaritySection() {
             {WHY_BETTER.map(({ icon, headline, body }) => (
               <div
                 key={headline}
-                className="rounded-[20px] border border-white/[0.08] p-7"
+                className="rounded-[14px] border border-white/[0.08] p-7"
                 style={{ background: "rgba(255,255,255,0.03)" }}
               >
                 <div
@@ -236,12 +236,12 @@ export default function MembershipClaritySection() {
 
       {/* ── Why We Built Profixter ── */}
       <section
-        className="relative w-full overflow-hidden py-12 sm:py-16"
+        className="relative w-full overflow-hidden py-8 sm:py-11"
         style={{ background: "linear-gradient(180deg, #060C18 0%, #080F1E 100%)" }}
       >
         <div className="mx-auto max-w-[760px] px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/28 mb-5">The Origin</p>
-          <h3 className="text-[24px] sm:text-[32px] font-extrabold text-white leading-[1.12] tracking-[-0.025em] mb-6">
+          <h3 className="text-[23px] sm:text-[30px] font-extrabold text-white leading-[1.12] tracking-[-0.025em] mb-6">
             Why we built Profixter
           </h3>
           <blockquote className="text-[16px] sm:text-[18px] text-white/60 leading-[1.72] max-w-[620px] mx-auto">
@@ -259,12 +259,12 @@ export default function MembershipClaritySection() {
 
       {/* ── Important to Know ── */}
       <section
-        className="relative w-full overflow-hidden py-12 sm:py-16"
+        className="relative w-full overflow-hidden py-8 sm:py-11"
         style={{ background: "linear-gradient(180deg, #060C18 0%, #080F1E 100%)" }}
       >
         <div className="mx-auto max-w-[860px] px-4 sm:px-6 lg:px-8">
           <div
-            className="rounded-[24px] border border-[#306EEC]/20 p-7 sm:p-9"
+            className="rounded-[16px] border border-[#306EEC]/20 p-7 sm:p-9"
             style={{ background: "rgba(48,110,236,0.05)" }}
           >
             <div className="flex items-center gap-3 mb-6">
@@ -277,7 +277,7 @@ export default function MembershipClaritySection() {
                   <path d="M12 8v4M12 16h.01" stroke="#7BAEFF" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </div>
-              <h3 className="text-[18px] sm:text-[20px] font-extrabold text-white">Important to Know</h3>
+              <h3 className="text-[18px] sm:text-[19px] font-extrabold text-white">Important to Know</h3>
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               {EXPECTATIONS.map(({ icon, text }) => (

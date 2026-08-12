@@ -21,7 +21,7 @@ export default function HandymenSection() {
 
   return (
     <section
-      className="relative w-full overflow-hidden py-16 sm:py-20 lg:py-28"
+      className="relative w-full overflow-hidden py-10 sm:py-13 lg:py-12"
       style={{ background: "linear-gradient(160deg, #EAEDFA 0%, #E4E9F8 100%)" }}
     >
       {/* Top ambient glow */}
@@ -43,7 +43,7 @@ export default function HandymenSection() {
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
         {/* ── Header ── */}
-        <div className="mx-auto max-w-[720px] text-center mb-14 sm:mb-16 lg:mb-20">
+        <div className="mx-auto max-w-[720px] text-center mb-9 sm:mb-16 lg:mb-20">
           <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
               <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -53,7 +53,7 @@ export default function HandymenSection() {
             </span>
           </div>
 
-          <h2 className="text-[32px] sm:text-[50px] lg:text-[64px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-5">
+          <h2 className="text-[30px] sm:text-[40px] lg:text-[46px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-5">
             The same pros.
             <br />
             <span className="text-[#306EEC]">Every single visit.</span>
@@ -73,7 +73,7 @@ export default function HandymenSection() {
             return (
               <div
                 key={member.id}
-                className="group relative overflow-hidden rounded-[28px] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] transition-all duration-500 hover:shadow-[0_40px_120px_rgba(15,23,42,0.15)] hover:-translate-y-1.5"
+                className="group relative overflow-hidden rounded-[16px] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] transition-all duration-500 hover:shadow-[0_40px_120px_rgba(15,23,42,0.15)] hover:-translate-y-1.5"
                 style={{ border: "1px solid rgba(197,203,216,0.6)" }}
               >
                 {/* Photo with premium cinematic treatment */}
@@ -112,8 +112,8 @@ export default function HandymenSection() {
                 </div>
 
                 {/* Content */}
-                <div className="px-7 pb-8 pt-5">
-                  <h3 className="text-[22px] font-extrabold text-[#0B1628] mb-1 leading-tight">
+                <div className="px-5 pb-8 pt-5">
+                  <h3 className="text-[21px] font-extrabold text-[#0B1628] mb-1 leading-tight">
                     {name}
                   </h3>
                   {role && (
@@ -143,9 +143,9 @@ export default function HandymenSection() {
         </div>
 
         {/* ── Trust strip ── */}
-        <div className="mt-14 sm:mt-16 mx-auto max-w-[960px]">
+        <div className="mt-6 sm:mt-10 mx-auto max-w-[960px]">
           <div
-            className="rounded-[20px] border border-[#C5CBD8] bg-white px-6 py-5 sm:px-8 sm:py-6 shadow-[0_8px_40px_rgba(15,23,42,0.05)]"
+            className="rounded-[14px] border border-[#C5CBD8] bg-white px-6 py-5 sm:px-6 sm:py-6 shadow-[0_8px_40px_rgba(15,23,42,0.05)]"
           >
             <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 sm:gap-x-10">
               {TRUST_ITEMS.map((item) => (

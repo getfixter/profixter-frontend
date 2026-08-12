@@ -97,7 +97,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div
-      className={`rounded-[18px] border transition-colors duration-200 ${
+      className={`rounded-[13px] border transition-colors duration-200 ${
         open ? "border-[#D4A574]/35 bg-[#FDF8F2]" : "border-[#D9E4FF] bg-white"
       }`}
     >
@@ -158,26 +158,26 @@ export default function ExteriorLandingPage({ project }: Props) {
             className="pointer-events-none absolute -left-48 -top-48 h-[900px] w-[900px] rounded-full bg-[#D4A574]/[0.06] blur-[220px]"
           />
 
-          <div className="relative mx-auto w-full max-w-[1280px] px-4 pb-20 pt-14 sm:px-6 sm:pb-24 sm:pt-20 lg:px-8 lg:pb-28 lg:pt-24">
-            <div className="grid gap-10 lg:grid-cols-[1fr_460px] lg:items-center lg:gap-14">
+          <div className="relative mx-auto w-full max-w-[1280px] px-4 pb-20 pt-9 sm:px-6 sm:pb-24 sm:pt-20 lg:px-8 lg:pb-28 lg:pt-24">
+            <div className="grid gap-7 lg:grid-cols-[1fr_460px] lg:items-center lg:gap-9">
               {/* Left: Copy */}
               <div>
                 <div className="inline-flex rounded-full border border-[#D4A574]/28 bg-[#D4A574]/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[#E8C49A]">
                   {config.eyebrow}
                 </div>
 
-                <h1 className="mt-6 text-[52px] font-black leading-[0.88] tracking-[-0.045em] text-white sm:text-[70px] lg:text-[86px]">
+                <h1 className="mt-6 text-[40px] font-black leading-[0.88] tracking-[-0.045em] text-white sm:text-[46px] lg:text-[50px]">
                   {config.headline}
                 </h1>
 
-                <p className="mt-5 max-w-[600px] text-[18px] font-semibold leading-[1.48] text-white/75 sm:text-[20px]">
+                <p className="mt-5 max-w-[600px] text-[18px] font-semibold leading-[1.48] text-white/75 sm:text-[19px]">
                   {config.subhead}
                 </p>
 
                 <div className="mt-8 flex flex-wrap gap-3">
                   <a
                     href="#estimate-form"
-                    className="inline-flex min-h-[62px] items-center justify-center gap-2.5 rounded-[18px] bg-[#D4A574] px-8 text-[16px] font-extrabold text-[#111827] shadow-[0_16px_48px_rgba(212,165,116,0.30)] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
+                    className="inline-flex min-h-[62px] items-center justify-center gap-2.5 rounded-[13px] bg-[#D4A574] px-6 text-[16px] font-extrabold text-[#111827] shadow-[0_16px_48px_rgba(212,165,116,0.30)] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
                   >
                     {config.cta}
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -186,7 +186,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                   </a>
                   <a
                     href="tel:+16315991363"
-                    className="inline-flex min-h-[62px] items-center justify-center gap-2.5 rounded-[18px] border border-white/18 bg-white/[0.07] px-8 text-[16px] font-bold text-white transition hover:bg-white/[0.12]"
+                    className="inline-flex min-h-[62px] items-center justify-center gap-2.5 rounded-[13px] border border-white/18 bg-white/[0.07] px-6 text-[16px] font-bold text-white transition hover:bg-white/[0.12]"
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.12 1.18 2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.374 1.9.74 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.32-1.32a2 2 0 012.11-.45c.9.36 1.84.61 2.81.74A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -245,13 +245,13 @@ export default function ExteriorLandingPage({ project }: Props) {
         </section>
 
         {/* ── BENEFITS ────────────────────────────────────── */}
-        <section className="bg-[#EEF2FF] py-16 sm:py-20">
+        <section className="bg-[#EEF2FF] py-10 sm:py-13">
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="mb-10 text-center">
+            <div className="mb-7 text-center">
               <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#C49060]">
                 {project === "roofing" ? "Why it matters" : "What you get"}
               </div>
-              <h2 className="mt-3 text-[32px] font-black tracking-[-0.03em] text-[#0B1628] sm:text-[40px]">
+              <h2 className="mt-3 text-[30px] font-black tracking-[-0.03em] text-[#0B1628] sm:text-[34px]">
                 {project === "roofing"
                   ? "A roof that protects the entire home"
                   : "Siding that works as hard as it looks"}
@@ -266,7 +266,7 @@ export default function ExteriorLandingPage({ project }: Props) {
               {config.benefits.map(({ title, body }) => (
                 <div
                   key={title}
-                  className="rounded-[22px] border border-[#D9E4FF] bg-white p-6 transition hover:border-[#D4A574]/40 hover:shadow-[0_8px_32px_rgba(212,165,116,0.08)]"
+                  className="rounded-[14px] border border-[#D9E4FF] bg-white p-6 transition hover:border-[#D4A574]/40 hover:shadow-[0_8px_32px_rgba(212,165,116,0.08)]"
                 >
                   <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#FDF8F2]">
                     <CheckMark />
@@ -280,12 +280,12 @@ export default function ExteriorLandingPage({ project }: Props) {
         </section>
 
         {/* ── SIGNS TO ACT ────────────────────────────────── */}
-        <section className="bg-[#08101E] py-16 sm:py-20">
+        <section className="bg-[#08101E] py-10 sm:py-13">
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:items-start">
+            <div className="grid gap-7 lg:grid-cols-[1fr_1.4fr] lg:items-start">
               <div>
                 <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#E8C49A]">Signs to act</div>
-                <h2 className="mt-3 text-[34px] font-black leading-tight tracking-[-0.035em] text-white sm:text-[40px]">
+                <h2 className="mt-3 text-[30px] font-black leading-tight tracking-[-0.035em] text-white sm:text-[34px]">
                   When temporary repairs stop making sense
                 </h2>
                 <p className="mt-4 text-[15px] leading-relaxed text-white/48">
@@ -295,14 +295,14 @@ export default function ExteriorLandingPage({ project }: Props) {
                 </p>
                 <a
                   href="#estimate-form"
-                  className="mt-7 inline-flex min-h-[54px] items-center justify-center rounded-[16px] bg-[#D4A574] px-7 text-[15px] font-extrabold text-[#111827] shadow-[0_12px_32px_rgba(212,165,116,0.25)] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
+                  className="mt-7 inline-flex min-h-[46px] items-center justify-center rounded-[16px] bg-[#D4A574] px-5 text-[15px] font-extrabold text-[#111827] shadow-[0_12px_32px_rgba(212,165,116,0.25)] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
                 >
                   Request a Free Estimate
                 </a>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {config.signs.map(({ title, body }) => (
-                  <div key={title} className="rounded-[20px] border border-white/10 bg-white/[0.05] p-5">
+                  <div key={title} className="rounded-[14px] border border-white/10 bg-white/[0.05] p-5">
                     <div className="mb-3 h-1.5 w-10 rounded-full bg-[#D4A574]" />
                     <div className="text-[15px] font-extrabold text-white">{title}</div>
                     <p className="mt-2 text-[13px] leading-relaxed text-white/45">{body}</p>
@@ -314,14 +314,14 @@ export default function ExteriorLandingPage({ project }: Props) {
         </section>
 
         {/* ── WARRANTY + FINANCING ─────────────────────────── */}
-        <section className="bg-[#EEF2FF] py-16 sm:py-20">
+        <section className="bg-[#EEF2FF] py-10 sm:py-13">
           <div className="mx-auto grid max-w-[1280px] gap-5 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
             {/* Warranty */}
-            <div className="rounded-[26px] border border-[#D9E4FF] bg-white p-7 sm:p-9">
+            <div className="rounded-[16px] border border-[#D9E4FF] bg-white p-7 sm:p-9">
               <div className="mb-4 inline-flex rounded-[10px] bg-[#FDF8F2] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#C49060]">
                 Warranty
               </div>
-              <h2 className="text-[26px] font-black tracking-[-0.03em] text-[#0B1628] sm:text-[30px]">
+              <h2 className="text-[23px] font-black tracking-[-0.03em] text-[#0B1628] sm:text-[26px]">
                 {config.warrantyTitle}
               </h2>
               <p className="mt-4 text-[14px] leading-relaxed text-[#475569]">{config.warrantyBody}</p>
@@ -331,11 +331,11 @@ export default function ExteriorLandingPage({ project }: Props) {
               </div>
             </div>
             {/* Financing */}
-            <div className="rounded-[26px] border border-[#D9E4FF] bg-white p-7 sm:p-9">
+            <div className="rounded-[16px] border border-[#D9E4FF] bg-white p-7 sm:p-9">
               <div className="mb-4 inline-flex rounded-[10px] bg-[#EFF6FF] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
                 Financing
               </div>
-              <h2 className="text-[26px] font-black tracking-[-0.03em] text-[#0B1628] sm:text-[30px]">
+              <h2 className="text-[23px] font-black tracking-[-0.03em] text-[#0B1628] sm:text-[26px]">
                 Protect the home now
               </h2>
               <p className="mt-4 text-[14px] leading-relaxed text-[#475569]">
@@ -351,10 +351,10 @@ export default function ExteriorLandingPage({ project }: Props) {
         </section>
 
         {/* ── SUBSCRIBER OFFER ─────────────────────────────── */}
-        <section className="bg-[#08101E] py-16 sm:py-20">
+        <section className="bg-[#08101E] py-10 sm:py-13">
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
             <div
-              className="rounded-[32px] border border-[#D4A574]/18 p-8 sm:p-12"
+              className="rounded-[13px] border border-[#D4A574]/18 p-8 sm:p-12"
               style={{
                 background: "linear-gradient(135deg, #0D1F42 0%, #0F1D3A 60%, #0A1628 100%)",
                 boxShadow: "0 0 0 1px rgba(212,165,116,0.08)",
@@ -365,7 +365,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                   <div className="inline-flex rounded-full border border-[#D4A574]/28 bg-[#D4A574]/10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#E8C49A]">
                     Profixter Members
                   </div>
-                  <h2 className="mt-4 text-[30px] font-black leading-tight tracking-[-0.03em] text-white sm:text-[36px]">
+                  <h2 className="mt-4 text-[26px] font-black leading-tight tracking-[-0.03em] text-white sm:text-[32px]">
                     Exclusive exterior project offers for active members.
                   </h2>
                   <p className="mt-4 max-w-[540px] text-[15px] leading-relaxed text-white/58">
@@ -389,13 +389,13 @@ export default function ExteriorLandingPage({ project }: Props) {
                 <div className="flex flex-col gap-3 sm:flex-row lg:min-w-[200px] lg:flex-col">
                   <a
                     href="#estimate-form"
-                    className="inline-flex min-h-[56px] items-center justify-center rounded-[16px] bg-[#D4A574] px-8 text-[15px] font-extrabold text-[#111827] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
+                    className="inline-flex min-h-[48px] items-center justify-center rounded-[16px] bg-[#D4A574] px-6 text-[15px] font-extrabold text-[#111827] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
                   >
                     Request Estimate
                   </a>
                   <a
                     href="tel:+16315991363"
-                    className="inline-flex min-h-[56px] items-center justify-center rounded-[16px] border border-white/15 bg-white/[0.05] px-8 text-[15px] font-bold text-white/82 transition hover:bg-white/[0.10]"
+                    className="inline-flex min-h-[48px] items-center justify-center rounded-[16px] border border-white/15 bg-white/[0.05] px-6 text-[15px] font-bold text-white/82 transition hover:bg-white/[0.10]"
                   >
                     Call 631-599-1363
                   </a>
@@ -406,13 +406,13 @@ export default function ExteriorLandingPage({ project }: Props) {
         </section>
 
         {/* ── WHY CHOOSE US + FAQ ───────────────────────────── */}
-        <section className="bg-[#EEF2FF] py-16 sm:py-20">
+        <section className="bg-[#EEF2FF] py-10 sm:py-13">
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
+            <div className="grid gap-7 lg:grid-cols-2 lg:items-start">
               {/* Why us */}
               <div>
                 <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">Why Profixter</div>
-                <h2 className="mt-3 text-[32px] font-black tracking-[-0.035em] text-[#0B1628] sm:text-[38px]">
+                <h2 className="mt-3 text-[30px] font-black tracking-[-0.035em] text-[#0B1628] sm:text-[32px]">
                   High-ticket work with a homeowner-first process
                 </h2>
                 <p className="mt-4 text-[15px] leading-relaxed text-[#475569]">
@@ -458,12 +458,12 @@ export default function ExteriorLandingPage({ project }: Props) {
         </section>
 
         {/* ── SECOND FORM SECTION ───────────────────────────── */}
-        <section className="bg-[#08101E] py-16 sm:py-20">
+        <section className="bg-[#08101E] py-10 sm:py-13">
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-10 lg:grid-cols-[1fr_460px] lg:items-start">
+            <div className="grid gap-7 lg:grid-cols-[1fr_460px] lg:items-start">
               <div>
                 <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#E8C49A]">Request a callback</div>
-                <h2 className="mt-3 text-[34px] font-black leading-tight tracking-[-0.035em] text-white sm:text-[42px]">
+                <h2 className="mt-3 text-[30px] font-black leading-tight tracking-[-0.035em] text-white sm:text-[34px]">
                   Know what your project will cost.
                 </h2>
                 <p className="mt-4 text-[15px] leading-relaxed text-white/50">
@@ -490,7 +490,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                   </div>
                   <a
                     href="tel:+16315991363"
-                    className="mt-2 block text-[26px] font-black tracking-[-0.02em] text-white transition hover:text-[#E8C49A]"
+                    className="mt-2 block text-[23px] font-black tracking-[-0.02em] text-white transition hover:text-[#E8C49A]"
                   >
                     631-599-1363
                   </a>
@@ -504,9 +504,9 @@ export default function ExteriorLandingPage({ project }: Props) {
         </section>
 
         {/* ── FINAL CTA ─────────────────────────────────────── */}
-        <section className="bg-[#0A1422] py-14 sm:py-16">
+        <section className="bg-[#0A1422] py-9 sm:py-11">
           <div className="mx-auto max-w-[760px] px-4 text-center sm:px-6">
-            <h2 className="text-[28px] font-black leading-tight tracking-[-0.03em] text-white sm:text-[34px]">
+            <h2 className="text-[26px] font-black leading-tight tracking-[-0.03em] text-white sm:text-[30px]">
               {project === "roofing"
                 ? "Your roof should not be something you keep worrying about."
                 : "Your home's exterior should protect and impress - not stress you out."}
@@ -517,13 +517,13 @@ export default function ExteriorLandingPage({ project }: Props) {
             <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <a
                 href="#estimate-form"
-                className="inline-flex min-h-[58px] w-full items-center justify-center rounded-[18px] bg-[#D4A574] px-9 text-[16px] font-extrabold text-[#111827] shadow-[0_16px_40px_rgba(212,165,116,0.26)] transition hover:-translate-y-0.5 hover:bg-[#E0B886] sm:w-auto"
+                className="inline-flex min-h-[48px] w-full items-center justify-center rounded-[13px] bg-[#D4A574] px-9 text-[16px] font-extrabold text-[#111827] shadow-[0_16px_40px_rgba(212,165,116,0.26)] transition hover:-translate-y-0.5 hover:bg-[#E0B886] sm:w-auto"
               >
                 {config.cta}
               </a>
               <a
                 href="tel:+16315991363"
-                className="inline-flex min-h-[58px] w-full items-center justify-center rounded-[18px] border border-white/18 bg-white/[0.07] px-9 text-[16px] font-bold text-white transition hover:bg-white/[0.12] sm:w-auto"
+                className="inline-flex min-h-[48px] w-full items-center justify-center rounded-[13px] border border-white/18 bg-white/[0.07] px-9 text-[16px] font-bold text-white transition hover:bg-white/[0.12] sm:w-auto"
               >
                 Call 631-599-1363
               </a>

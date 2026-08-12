@@ -237,7 +237,7 @@ function CancelModal({
       onClick={onClose}
     >
       <div
-        className="w-full sm:max-w-[460px] bg-white rounded-t-[24px] sm:rounded-[20px] border border-[#E0E6F5] p-5 sm:p-6"
+        className="w-full sm:max-w-[460px] bg-white rounded-t-[24px] sm:rounded-[14px] border border-[#E0E6F5] p-5 sm:p-6"
         onClick={(e) => e.stopPropagation()}
         style={{ boxShadow: "0 -8px 60px rgba(0,0,0,0.18)" }}
       >
@@ -342,7 +342,7 @@ function AddDetailsModal({
       onClick={() => !saving && onClose()}
     >
       <div
-        className="w-full sm:max-w-[500px] bg-white rounded-t-[24px] sm:rounded-[20px] border border-[#E0E6F5] p-5 sm:p-6"
+        className="w-full sm:max-w-[500px] bg-white rounded-t-[24px] sm:rounded-[14px] border border-[#E0E6F5] p-5 sm:p-6"
         onClick={(e) => e.stopPropagation()}
         style={{ boxShadow: "0 -8px 60px rgba(0,0,0,0.18)" }}
       >
@@ -608,6 +608,9 @@ function BookingCard({
   );
 }
 
+/** Completed visits shown before the member asks for the rest. */
+const HISTORY_PREVIEW = 3;
+
 const FILTER_TABS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
   { key: "active", label: "Active" },
@@ -620,7 +623,23 @@ export default function BookingsSection() {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [error, setError] = useState("");
-  const [filter, setFilter] = useState<FilterKey>("all");
+  /*
+   * Active, not All. This list sits directly under the booking form on Book,
+   * and a member who opens Book is nearly always there for a visit that has
+   * not happened yet. Defaulting to All meant a long-standing member landed on
+   * every visit they had ever had, which on a phone is several thousand pixels
+   * of history before anything current.
+   */
+  const [filter, setFilter] = useState<FilterKey>("active");
+  const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [lastFilter, setLastFilter] = useState<FilterKey>("active");
+
+  // Collapse again when the member switches tabs, so Completed does not open
+  // pre-expanded because they expanded All a moment ago.
+  if (filter !== lastFilter) {
+    setLastFilter(filter);
+    setHistoryExpanded(false);
+  }
 
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
@@ -685,6 +704,25 @@ export default function BookingsSection() {
     return bookings;
   }, [bookings, filter]);
 
+  /*
+   * How much of the list renders before the member asks for more.
+   *
+   * Nothing current is ever hidden: Active shows in full, and All shows every
+   * active visit and then only the head of the history behind it. The cap is a
+   * display limit and not a filter, so every visit stays one tap away and the
+   * counts on the tabs still report the true totals.
+   */
+  const previewCount = useMemo(() => {
+    if (filter === "active") return filtered.length;
+    if (filter === "all") {
+      return filtered.filter((b) => isActiveStatus(b.status)).length + HISTORY_PREVIEW;
+    }
+    return HISTORY_PREVIEW;
+  }, [filtered, filter]);
+
+  const visible = historyExpanded ? filtered : filtered.slice(0, previewCount);
+  const hiddenCount = filtered.length - visible.length;
+
   const counts = useMemo(() => ({
     all: bookings.length,
     active: bookings.filter((b) => isActiveStatus(b.status)).length,
@@ -740,7 +778,7 @@ export default function BookingsSection() {
     <div className="w-full">
       {/* Header */}
       <div className="mb-5">
-        <h2 className="text-[22px] font-bold text-[#313234]">My Visits</h2>
+        <h2 className="text-[21px] font-bold text-[#313234]">My Visits</h2>
         <p className="text-[13px] text-[#6A6D71] mt-0.5">Upcoming and past home visits</p>
       </div>
 
@@ -785,7 +823,7 @@ export default function BookingsSection() {
 
       {/* States */}
       {loading && (
-        <div className="flex items-center gap-3 py-12 justify-center text-[#6A6D71]">
+        <div className="flex items-center gap-3 py-8 justify-center text-[#6A6D71]">
           <div className="w-5 h-5 border-2 border-[#306EEC] border-t-transparent rounded-full animate-spin" />
           <span className="text-[14px]">Loading your visits...</span>
         </div>
@@ -799,18 +837,24 @@ export default function BookingsSection() {
 
       {!loading && !error && filtered.length === 0 && (
         <div className="bg-white border border-[#E0E6F5] rounded-[16px] p-8 text-center">
-          <div className="mb-3 text-[28px] text-[#306EEC]">Visit</div>
+          <div className="mb-3 text-[26px] text-[#306EEC]">Visit</div>
+          {/*
+           * Keyed off the real total rather than the tab, because the default
+           * tab is Active now: a member with no visits at all would otherwise
+           * be told there are no active visits and sent to a full history that
+           * is also empty.
+           */}
           <div className="text-[15px] font-semibold text-[#313234] mb-1">
-            {filter === "all" ? "No visits yet" : `No ${filter} visits`}
+            {bookings.length === 0 ? "No visits yet" : `No ${filter} visits`}
           </div>
           <div className="text-[13px] text-[#6A6D71]">
-            {filter === "all"
+            {bookings.length === 0
               ? "Your visit history will appear here once you book."
               : `Switch to \"All\" to see your full history.`}
           </div>
-          {filter === "all" && (
+          {bookings.length === 0 && (
             <a
-              href="/membership#pick-day"
+              href="/book?visit=membership"
               className="inline-flex items-center justify-center mt-4 px-5 py-2.5 rounded-[12px] bg-[#306EEC] text-white font-semibold text-[13px] hover:bg-[#2557C7] transition"
             >
               Book a visit
@@ -821,7 +865,7 @@ export default function BookingsSection() {
 
       {!loading && !error && filtered.length > 0 && (
         <div className="space-y-3">
-          {filtered.map((b) => (
+          {visible.map((b) => (
             <BookingCard
               key={b._id}
               booking={b}
@@ -831,6 +875,26 @@ export default function BookingsSection() {
               cancelLoading={cancelLoading && cancelTarget?._id === b._id}
             />
           ))}
+
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setHistoryExpanded(true)}
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[12px] border border-[#E0E6F5] bg-white px-4 text-[14px] font-semibold text-[#306EEC] transition hover:border-[#C7D9FF] hover:bg-[#F8FAFF]"
+            >
+              Show all {filtered.length}
+            </button>
+          )}
+
+          {historyExpanded && filtered.length > previewCount && (
+            <button
+              type="button"
+              onClick={() => setHistoryExpanded(false)}
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[12px] border border-[#E0E6F5] bg-white px-4 text-[14px] font-semibold text-[#6A6D71] transition hover:border-[#C7D9FF] hover:text-[#313234]"
+            >
+              Show less
+            </button>
+          )}
         </div>
       )}
 
@@ -838,7 +902,7 @@ export default function BookingsSection() {
       {!loading && !error && bookings.length > 0 && (
         <div className="mt-5 text-[13px] text-[#6A6D71] text-center">
           Need a new visit?{" "}
-          <a className="text-[#306EEC] font-semibold hover:underline" href="/membership#pick-day">
+          <a className="text-[#306EEC] font-semibold hover:underline" href="/book?visit=membership">
             Book another visit
           </a>
         </div>

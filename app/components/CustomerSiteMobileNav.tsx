@@ -136,7 +136,7 @@ export default function CustomerSiteMobileNav() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={[
-                  "flex min-h-[54px] flex-col items-center justify-center gap-0.5 rounded-[13px] px-1 text-[11px] font-bold transition active:scale-[0.98] sm:min-h-[58px] sm:gap-1 sm:rounded-[14px] sm:text-[11px]",
+                  "flex min-h-[46px] flex-col items-center justify-center gap-0.5 rounded-[13px] px-1 text-[11px] font-bold transition active:scale-[0.98] sm:min-h-[58px] sm:gap-1 sm:rounded-[14px] sm:text-[11px]",
                   active
                     ? "bg-[#EEF5FF] text-[#306EEC]"
                     : "text-[#64748B] hover:bg-[#F8FAFF] hover:text-[#0B1628]",

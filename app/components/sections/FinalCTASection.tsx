@@ -37,7 +37,7 @@ export default function FinalCTASection() {
 
   return (
     <section
-      className="relative w-full overflow-hidden py-20 sm:py-28 lg:py-36"
+      className="relative w-full overflow-hidden py-8 sm:py-11 lg:py-36"
       style={{
         background:
           "linear-gradient(160deg, #050D1A 0%, #071224 55%, #060E1C 100%)",
@@ -76,7 +76,7 @@ export default function FinalCTASection() {
         <div className="mx-auto max-w-[920px] text-center">
 
           {/* ── Eyebrow ── */}
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.06] px-4 py-2 backdrop-blur-sm mb-8 sm:mb-10">
+          <div className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.06] px-4 py-2 backdrop-blur-sm mb-8 sm:mb-7">
             <span
               className="h-2 w-2 flex-shrink-0 rounded-full bg-[#86EFAC]"
               style={{ boxShadow: "0 0 10px rgba(134,239,172,0.9)" }}
@@ -87,7 +87,7 @@ export default function FinalCTASection() {
           </div>
 
           {/* ── Headline ── */}
-          <h2 className="text-[38px] sm:text-[72px] lg:text-[96px] font-black leading-[0.9] sm:leading-[0.87] tracking-[-0.04em] sm:tracking-[-0.048em] text-white mb-6">
+          <h2 className="text-[32px] sm:text-[46px] lg:text-[50px] font-black leading-[0.9] sm:leading-[0.87] tracking-[-0.04em] sm:tracking-[-0.048em] text-white mb-6">
             Your home deserves
             <br />
             <span
@@ -102,12 +102,12 @@ export default function FinalCTASection() {
           </h2>
 
           {/* ── Subhead ── */}
-          <p className="text-[17px] sm:text-[20px] font-semibold text-white/48 leading-[1.45] max-w-[600px] mx-auto mb-5 sm:mb-6">
+          <p className="text-[17px] sm:text-[19px] font-semibold text-white/48 leading-[1.45] max-w-[600px] mx-auto mb-5 sm:mb-6">
             Request help when your home needs it. Same trusted team. No searching, no estimates, no surprises - just your home getting the steady care it deserves.
           </p>
 
           {/* Risk reversal */}
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-white/12 bg-white/[0.05] px-5 py-2 mb-10 sm:mb-12">
+          <div className="inline-flex items-center gap-2.5 rounded-full border border-white/12 bg-white/[0.05] px-5 py-2 mb-7 sm:mb-12">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M5 12.5l4 4 10-10" stroke="#86EFAC" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -115,21 +115,21 @@ export default function FinalCTASection() {
           </div>
 
           {/* ── CTAs ── */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-stretch sm:items-center mb-12 sm:mb-14">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-stretch sm:items-center mb-8 sm:mb-9">
             <button
               type="button"
               onClick={() => {
                 trackEvent("start_signup", { placement: "final_cta" });
                 handlePlansClick();
               }}
-              className="inline-flex min-h-[66px] items-center justify-center rounded-[18px] bg-[#306EEC] px-10 text-[17px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99]"
+              className="inline-flex min-h-[66px] items-center justify-center rounded-[13px] bg-[#306EEC] px-10 text-[17px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99]"
               style={{ boxShadow: "0 20px 60px rgba(48,110,236,0.45)" }}
             >
               {isAuthenticated ? "View Membership Plans" : "Create Account"}
             </button>
             <a
               href="tel:+16315991363"
-              className="inline-flex min-h-[66px] items-center justify-center gap-3 rounded-[18px] border border-white/20 bg-white/[0.07] px-10 text-[17px] font-bold text-white/85 backdrop-blur-sm transition-all duration-300 hover:border-white/35 hover:bg-white/[0.13] hover:text-white active:scale-[0.99]"
+              className="inline-flex min-h-[66px] items-center justify-center gap-3 rounded-[13px] border border-white/20 bg-white/[0.07] px-10 text-[17px] font-bold text-white/85 backdrop-blur-sm transition-all duration-300 hover:border-white/35 hover:bg-white/[0.13] hover:text-white active:scale-[0.99]"
             >
               <svg
                 width="18"

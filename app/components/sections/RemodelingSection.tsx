@@ -88,7 +88,7 @@ function ServiceCard({
 
   return (
     <div
-      className="flex flex-col overflow-hidden rounded-[28px] shadow-[0_32px_80px_rgba(15,23,42,0.10)] border border-[#E5E9F2] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_44px_100px_rgba(15,23,42,0.14)]"
+      className="flex flex-col overflow-hidden rounded-[16px] shadow-[0_32px_80px_rgba(15,23,42,0.10)] border border-[#E5E9F2] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_44px_100px_rgba(15,23,42,0.14)]"
       style={{ background: service.bgGradient }}
     >
       {/* Image */}
@@ -133,7 +133,7 @@ function ServiceCard({
       {/* Content */}
       <div className="flex flex-col flex-1 p-7 sm:p-8">
         {/* Headline */}
-        <h3 className="text-[22px] sm:text-[26px] font-extrabold leading-[1.15] tracking-[-0.025em] text-[#0F172A] mb-3">
+        <h3 className="text-[21px] sm:text-[23px] font-extrabold leading-[1.15] tracking-[-0.025em] text-[#0F172A] mb-3">
           {service.headline}
         </h3>
 
@@ -175,7 +175,7 @@ function ServiceCard({
           <button
             type="button"
             onClick={callNow}
-            className="w-full min-h-[56px] rounded-[16px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
+            className="w-full min-h-[48px] rounded-[16px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
             style={{
               background:
                 service.accent === "#306EEC"
@@ -220,12 +220,12 @@ export default function RemodelingSection() {
   return (
     <section
       id="remodeling"
-      className="w-full bg-[#EAEDFA] py-16 sm:py-20 lg:py-28 scroll-mt-[110px]"
+      className="w-full bg-[#EAEDFA] py-10 sm:py-13 lg:py-12 scroll-mt-[110px]"
     >
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
         {/* ── Header ─────────────────────────────────────────── */}
-        <div className="mx-auto max-w-[760px] text-center mb-12 sm:mb-16">
+        <div className="mx-auto max-w-[760px] text-center mb-8 sm:mb-16">
           <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
               <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -235,7 +235,7 @@ export default function RemodelingSection() {
             </span>
           </div>
 
-          <h2 className="text-[32px] sm:text-[48px] lg:text-[60px] font-extrabold leading-[1.04] tracking-[-0.04em] text-[#0F172A] mb-5">
+          <h2 className="text-[30px] sm:text-[36px] lg:text-[43px] font-extrabold leading-[1.04] tracking-[-0.04em] text-[#0F172A] mb-5">
             Complete Home
             <br />
             <span className="text-[#306EEC]">Transformations.</span>
@@ -256,8 +256,8 @@ export default function RemodelingSection() {
         </div>
 
         {/* ── Bottom authority strip ─────────────────────────── */}
-        <div className="mt-10 sm:mt-12 overflow-hidden rounded-[22px] border border-[#E5E9F2] bg-white shadow-[0_8px_40px_rgba(15,23,42,0.06)]">
-          <div className="px-6 py-7 sm:px-10 sm:py-8 flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-10">
+        <div className="mt-7 sm:mt-8 overflow-hidden rounded-[14px] border border-[#E5E9F2] bg-white shadow-[0_8px_40px_rgba(15,23,42,0.06)]">
+          <div className="px-6 py-7 sm:px-10 sm:py-8 flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-7">
             {/* Left: Quote */}
             <div className="flex-1">
               <p className="text-[15px] sm:text-[16px] leading-relaxed text-[#0F172A]">

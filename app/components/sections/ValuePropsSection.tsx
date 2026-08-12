@@ -9,12 +9,12 @@
  */
 export default function ValuePropsSection() {
   return (
-    <section className="py-12 sm:py-16 bg-white px-4 sm:px-6 md:px-8 animate-fadeIn" id="value-props">
+    <section className="py-8 sm:py-11 bg-white px-4 sm:px-6 md:px-8 animate-fadeIn" id="value-props">
       <div className="max-w-5xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-extrabold text-center text-gray-800 mb-8">
           Why Choose Profixter?
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
           <div className="flex flex-col items-center text-center">
             <div className="w-12 h-12 rounded-full bg-[#E6F8EC] text-[#34A853] flex items-center justify-center mb-3">
               <span className="text-2xl">✓</span>

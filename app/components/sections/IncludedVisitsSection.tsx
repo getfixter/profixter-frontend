@@ -107,11 +107,11 @@ export default function IncludedVisitsSection() {
   return (
     <section
       id="included-visits"
-      className="w-full bg-[#F5F5F7] px-4 py-12 sm:px-5 sm:py-20 lg:py-24"
+      className="w-full bg-[#F5F5F7] px-4 py-8 sm:px-5 sm:py-13 lg:py-12"
     >
       <div className="mx-auto max-w-[1280px]">
         <div className="mx-auto max-w-[760px] text-center">
-          <h2 className="text-[30px] font-semibold leading-[1.08] tracking-normal text-[#111111] sm:text-[48px] sm:leading-[1.05]">
+          <h2 className="text-[26px] font-semibold leading-[1.08] tracking-normal text-[#111111] sm:text-[36px] sm:leading-[1.05]">
             The home list, handled over time.
           </h2>
           <p className="mx-auto mt-3 max-w-[640px] text-[15px] leading-6 text-[#6E6E73] sm:mt-4 sm:text-lg sm:leading-7">
@@ -119,16 +119,16 @@ export default function IncludedVisitsSection() {
           </p>
         </div>
 
-        <div className="mt-8 grid gap-3 sm:mt-12 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+        <div className="mt-8 grid gap-3 sm:mt-8 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           {VISIT_CATEGORIES.map((category) => (
             <article
               key={category.title}
-              className="rounded-[24px] border border-[#E5E7EB] bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
+              className="rounded-[16px] border border-[#E5E7EB] bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.06)] sm:rounded-[16px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
             >
               <div className="grid h-12 w-12 place-items-center rounded-[16px] bg-[#EEF5FF] text-[#306EEC]" aria-hidden="true">
                 <CategoryIcon kind={category.kind} />
               </div>
-              <h3 className="mt-4 min-h-[52px] text-[21px] font-semibold leading-tight tracking-normal text-[#111111] sm:mt-5 sm:min-h-[64px] sm:text-[24px]">
+              <h3 className="mt-4 min-h-[46px] text-[19px] font-semibold leading-tight tracking-normal text-[#111111] sm:mt-5 sm:min-h-[64px] sm:text-[23px]">
                 {category.title}
               </h3>
               <ul className="mt-4 space-y-2.5 sm:mt-5 sm:space-y-3">
@@ -143,7 +143,7 @@ export default function IncludedVisitsSection() {
           ))}
         </div>
 
-        <div className="mx-auto mt-7 max-w-[980px] rounded-[24px] border border-[#DDE3EE] bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.06)] sm:mt-10 sm:rounded-[28px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.06)] lg:p-8">
+        <div className="mx-auto mt-7 max-w-[980px] rounded-[16px] border border-[#DDE3EE] bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.06)] sm:mt-10 sm:rounded-[16px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.06)] lg:p-8">
           <div className="grid gap-6 md:grid-cols-2">
             <div>
               <div className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#306EEC]">

@@ -32,9 +32,9 @@ export const metadata: Metadata = {
 
 export default function CareersPage() {
   return (
-    <div className="min-h-screen px-4 py-24 sm:py-32 bg-[#020617] text-white">
+    <div className="min-h-screen px-4 py-9 sm:py-32 bg-[#020617] text-white">
       <div
-        className="max-w-5xl mx-auto rounded-[24px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
+        className="max-w-5xl mx-auto rounded-[16px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
         style={{
           background:
             "linear-gradient(180deg, rgba(49,50,52,0.62) 0%, rgba(49,50,52,0.52) 55%, rgba(49,50,52,0.5) 100%), rgba(15,23,42,0.92)",
@@ -45,7 +45,7 @@ export default function CareersPage() {
           Careers at Profixter
         </h1>
 
-        <p className="text-sm sm:text-base text-white/65 text-center mb-10 leading-relaxed">
+        <p className="text-sm sm:text-base text-white/65 text-center mb-7 leading-relaxed">
           Join <span className="font-semibold">Profixter</span> - a fast-growing home service company
           changing how homeowners handle repairs, maintenance, and peace of mind.
         </p>

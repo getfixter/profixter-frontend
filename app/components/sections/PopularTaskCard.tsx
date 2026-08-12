@@ -22,7 +22,7 @@ export default function PopularTaskCard({
   const content = (
     <div
       className={[
-        "rounded-[18px] border border-[#E6E8EF] bg-white p-4 sm:p-5 h-full",
+        "rounded-[13px] border border-[#E6E8EF] bg-white p-4 sm:p-5 h-full",
         "shadow-sm transition-all duration-200",
         isInteractive ? "hover:-translate-y-[2px] hover:shadow-md" : "",
       ].join(" ")}

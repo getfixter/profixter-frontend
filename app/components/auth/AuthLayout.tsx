@@ -28,10 +28,10 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
       </div>
 
       {/* Center Card */}
-      <div className="relative min-h-screen flex items-center justify-center px-4 py-24 sm:py-32">
+      <div className="relative min-h-screen flex items-center justify-center px-4 py-9 sm:py-32">
         <div className="w-full max-w-[880px] mx-auto">
           <div
-            className="rounded-[24px] px-6 sm:px-10 py-10 sm:py-14 backdrop-blur-xl border border-white/15"
+            className="rounded-[16px] px-6 sm:px-10 py-10 sm:py-10 backdrop-blur-xl border border-white/15"
             style={{
               background:
                 'linear-gradient(145deg, rgba(49,50,52,0.55) 0%, rgba(49,50,52,0.35) 50%, rgba(49,50,52,0.55) 100%)',
@@ -39,7 +39,7 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
             }}
           >
             {(title || subtitle) && (
-              <div className="mb-10 text-center">
+              <div className="mb-7 text-center">
                 {title && (
                   <h1 className="text-white text-3xl sm:text-4xl font-semibold tracking-tight mb-4">
                     {title}
@@ -53,7 +53,7 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
               </div>
             )}
             {children}
-            {footer && <div className="mt-10">{footer}</div>}
+            {footer && <div className="mt-7">{footer}</div>}
           </div>
         </div>
       </div>

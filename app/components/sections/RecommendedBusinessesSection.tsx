@@ -21,7 +21,7 @@ function CallButton({ tel }: { tel: string }) {
 
 function BusinessCard({ b }: { b: RecommendedBusiness }) {
   return (
-    <div className="rounded-[18px] border border-[#E6E8EF] bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+    <div className="rounded-[13px] border border-[#E6E8EF] bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden">
       {/* Image */}
       <div className="relative w-full h-[190px] bg-[#F6F7FB]">
         <Image
@@ -233,14 +233,14 @@ export default function RecommendedBusinessesSection() {
   id="recommended-pros"
   className="bg-white scroll-mt-[140px] lg:scroll-mt-[180px]"
 >
-      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-[20px] py-12 sm:py-16">
+      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-[20px] py-8 sm:py-11">
         <div className="flex items-end justify-between gap-4 flex-wrap">
           <div>
             <div className="text-[12px] uppercase tracking-wider text-[#6A6D71] font-semibold">
               Profixter Trusted Pro Network
             </div>
 
-            <h2 className="mt-2 text-[26px] sm:text-[34px] font-extrabold text-[#313234] leading-[110%]">
+            <h2 className="mt-2 text-[23px] sm:text-[30px] font-extrabold text-[#313234] leading-[110%]">
               Licensed specialists we trust
             </h2>
 
@@ -334,7 +334,7 @@ export default function RecommendedBusinessesSection() {
           </div>
         </div>
 
-        <div className="mt-8 rounded-[18px] border border-[#E6E8EF] bg-[#F6F7FB] p-6">
+        <div className="mt-8 rounded-[13px] border border-[#E6E8EF] bg-[#F6F7FB] p-6">
           <div className="text-[14px] text-[#313234] font-semibold">
             Independent Professionals
           </div>

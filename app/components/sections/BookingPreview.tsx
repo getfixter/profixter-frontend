@@ -27,10 +27,10 @@ const TIMES = ["8:00 AM", "10:00 AM", "12:00 PM"];
 export default function BookingPreview({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`w-full max-w-[300px] rounded-[26px] border border-black/[0.06] bg-white p-3 shadow-[0_28px_70px_-20px_rgba(11,22,40,0.35)] sm:max-w-[330px] sm:p-3.5 ${className}`}
+      className={`w-full max-w-[300px] rounded-[16px] border border-black/[0.06] bg-white p-3 shadow-[0_28px_70px_-20px_rgba(11,22,40,0.35)] sm:max-w-[330px] sm:p-3.5 ${className}`}
       aria-hidden="true"
     >
-      <div className="rounded-[18px] bg-[#F7F8FA] p-3.5 sm:p-4">
+      <div className="rounded-[13px] bg-[#F7F8FA] p-3.5 sm:p-4">
         <p className="text-[13px] font-semibold tracking-[-0.01em] text-[#111111]">
           Book your visit
         </p>

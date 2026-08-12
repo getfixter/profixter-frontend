@@ -6,7 +6,7 @@ type CardProps = React.HTMLAttributes<HTMLDivElement> & {
   shadow?: 'none' | 'sm' | 'lg';
 };
 
-const roundedMap = { md: 'rounded-[10px]', lg: 'rounded-[14px]', xl: 'rounded-[20px]' } as const;
+const roundedMap = { md: 'rounded-[10px]', lg: 'rounded-[14px]', xl: 'rounded-[14px]' } as const;
 const shadowMap = {
   none: 'shadow-none',
   sm: 'shadow-sm',

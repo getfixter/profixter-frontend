@@ -30,7 +30,7 @@ export default function TestimonialsSection() {
     },
   ];
   return (
-    <section className="py-12 sm:py-16 bg-white px-4 sm:px-6 md:px-8 animate-fadeIn" id="testimonials">
+    <section className="py-8 sm:py-11 bg-white px-4 sm:px-6 md:px-8 animate-fadeIn" id="testimonials">
       <div className="max-w-5xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-extrabold text-center text-gray-800 mb-8">Our Customers Love Us</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

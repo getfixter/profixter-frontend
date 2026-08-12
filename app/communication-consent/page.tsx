@@ -32,9 +32,9 @@ export const metadata: Metadata = {
 
 export default function CommunicationConsentPage() {
   return (
-    <div className="min-h-screen px-4 py-24 sm:py-32 bg-[#020617] text-white">
+    <div className="min-h-screen px-4 py-9 sm:py-32 bg-[#020617] text-white">
       <div
-        className="max-w-5xl mx-auto rounded-[24px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
+        className="max-w-5xl mx-auto rounded-[16px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
         style={{
           background:
             "linear-gradient(180deg, rgba(49,50,52,0.62) 0%, rgba(49,50,52,0.52) 55%, rgba(49,50,52,0.5) 100%), rgba(15,23,42,0.92)",
@@ -285,7 +285,7 @@ export default function CommunicationConsentPage() {
             </p>
           </section>
 
-          <p className="text-xs sm:text-sm text-white/55 mt-10 text-center">
+          <p className="text-xs sm:text-sm text-white/55 mt-7 text-center">
             Last Updated: January 9, 2026
           </p>
 

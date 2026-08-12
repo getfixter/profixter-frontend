@@ -19,7 +19,6 @@ import FAQSection from "@/app/components/sections/FAQSection";
 import YourFixter from "@/app/components/fixter/YourFixter";
 import Footer from "@/app/components/sections/Footer";
 import StickyMobileCTA from "@/app/components/StickyMobileCTA";
-import BookingsSection from "@/app/components/account/BookingsSection";
 import { PlanSection } from "@/app/components/account/PlanSection";
 
 function CustomerPortalSection({
@@ -34,12 +33,12 @@ function CustomerPortalSection({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="bg-[#F6F8FC] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+    <section id={id} className="bg-[#F6F8FC] px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
       <div className="mx-auto max-w-[1180px]">
         {(title || subtitle) && (
           <div className="mb-5 sm:mb-6">
             {title && (
-              <h2 className="text-[22px] font-black leading-tight text-[#0B1628] sm:text-[28px]">
+              <h2 className="text-[21px] font-black leading-tight text-[#0B1628] sm:text-[26px]">
                 {title}
               </h2>
             )}
@@ -107,7 +106,7 @@ function SubscribedCustomerFlow() {
       <section className="bg-white px-4 pb-6 pt-8 sm:px-6 sm:pt-12 lg:px-8">
         <div className="mx-auto flex max-w-[1180px] flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-[560px]">
-            <h1 className="text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-[#111111] sm:text-[38px]">
+            <h1 className="text-[26px] font-semibold leading-[1.08] tracking-[-0.035em] text-[#111111] sm:text-[32px]">
               Your membership
             </h1>
             <p className="mt-3 text-[15px] leading-6 text-[#6E6E73] sm:text-[17px]">
@@ -116,7 +115,7 @@ function SubscribedCustomerFlow() {
           </div>
           <Link
             href="/book?visit=membership"
-            className="inline-flex min-h-[52px] w-full items-center justify-center rounded-[14px] bg-[#0B1628] px-7 text-[15px] font-semibold text-white transition hover:bg-[#172033] lg:w-auto"
+            className="inline-flex min-h-[46px] w-full items-center justify-center rounded-[14px] bg-[#0B1628] px-5 text-[15px] font-semibold text-white transition hover:bg-[#172033] lg:w-auto"
           >
             Book your next visit
           </Link>
@@ -148,9 +147,11 @@ function SubscribedCustomerFlow() {
         </div>
       </section>
 
-      <CustomerPortalSection id="my-visits">
-        <BookingsSection />
-      </CustomerPortalSection>
+      {/*
+        Visits moved to Book, which is where a member goes to think about them.
+        Two full visit centres meant two places to check and two places to keep
+        working. Membership keeps the plan; Book keeps the visits.
+       */}
 
       <CustomerPortalSection
         id="my-plan"
@@ -184,12 +185,12 @@ function SubscribedCustomerFlow() {
 function FreeVisitFlow() {
   return (
     <>
-      <section className="bg-white px-4 pb-8 pt-10 sm:px-6 sm:pb-10 sm:pt-14">
+      <section className="bg-white px-4 pb-8 pt-10 sm:px-6 sm:pb-10 sm:pt-10">
         <div className="mx-auto max-w-[820px] text-center">
           <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">
             Profixter
           </p>
-          <h1 className="mx-auto mt-3 max-w-[720px] text-[34px] font-semibold leading-[1.06] tracking-[-0.04em] text-[#111111] sm:text-[48px] lg:text-[56px]">
+          <h1 className="mx-auto mt-3 max-w-[720px] text-[30px] font-semibold leading-[1.06] tracking-[-0.04em] text-[#111111] sm:text-[36px] lg:text-[43px]">
             Your first visit is free.
           </h1>
           <p className="mx-auto mt-4 max-w-[560px] text-[15px] leading-6 text-[#6E6E73] sm:text-[17px] sm:leading-7">
@@ -204,9 +205,9 @@ function FreeVisitFlow() {
 
       <BookingSection />
 
-      <section className="bg-[#F5F5F7] px-4 py-10 sm:px-6 sm:py-14">
+      <section className="bg-[#F5F5F7] px-4 py-10 sm:px-6 sm:py-10">
         <div className="mx-auto max-w-[680px] text-center">
-          <h2 className="text-[22px] font-semibold tracking-[-0.025em] text-[#111111] sm:text-[28px]">
+          <h2 className="text-[21px] font-semibold tracking-[-0.025em] text-[#111111] sm:text-[26px]">
             After your visit
           </h2>
           <p className="mt-3 text-[14px] leading-6 text-[#6E6E73] sm:text-[15px]">
@@ -234,12 +235,12 @@ function FreeVisitFlow() {
  */
 function PostFreeVisitFlow() {
   return (
-    <section className="bg-white px-4 pb-10 pt-10 sm:px-6 sm:pb-12 sm:pt-14">
+    <section className="bg-white px-4 pb-10 pt-10 sm:px-6 sm:pb-12 sm:pt-10">
       <div className="mx-auto max-w-[720px] text-center">
         <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">
           Profixter
         </p>
-        <h1 className="mx-auto mt-3 max-w-[620px] text-[30px] font-semibold leading-[1.08] tracking-[-0.035em] text-[#111111] sm:text-[42px]">
+        <h1 className="mx-auto mt-3 max-w-[620px] text-[26px] font-semibold leading-[1.08] tracking-[-0.035em] text-[#111111] sm:text-[34px]">
           Your first visit is complete.
         </h1>
         <p className="mx-auto mt-4 max-w-[540px] text-[15px] leading-6 text-[#6E6E73] sm:text-[17px] sm:leading-7">
@@ -253,13 +254,13 @@ function PostFreeVisitFlow() {
                 placement: "post_free_visit_state",
               })
             }
-            className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#306EEC] px-7 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]"
+            className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]"
           >
             See Membership Plans
           </a>
           <Link
             href="/book?visit=additional"
-            className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#D2D2D7] bg-white px-7 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]"
+            className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#D2D2D7] bg-white px-5 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]"
           >
             Book a One-Time Visit
           </Link>
@@ -301,10 +302,10 @@ function ProspectMembershipFlow({
     <>
       {postFreeVisit && <PostFreeVisitFlow />}
 
-      <section className={`bg-white px-4 sm:px-6 ${postFreeVisit ? "pb-12 pt-2 sm:pb-16 sm:pt-4" : "pb-12 pt-12 sm:pb-16 sm:pt-16 lg:pb-20 lg:pt-20"}`}>
+      <section className={`bg-white px-4 sm:px-6 ${postFreeVisit ? "pb-8 pt-2 sm:pb-11 sm:pt-4" : "pb-8 pt-8 sm:pb-11 sm:pt-11 lg:pb-20 lg:pt-20"}`}>
         <div className="mx-auto max-w-[860px] text-center">
           <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">Profixter Membership</p>
-          <h1 className="mx-auto mt-4 max-w-[820px] text-[38px] font-semibold leading-[1.05] tracking-[-0.04em] text-[#111111] sm:text-[54px] lg:text-[64px]">
+          <h1 className="mx-auto mt-4 max-w-[820px] text-[32px] font-semibold leading-[1.05] tracking-[-0.04em] text-[#111111] sm:text-[40px] lg:text-[46px]">
             One trusted team for the home list that never ends.
           </h1>
           <p className="mx-auto mt-5 max-w-[660px] text-[16px] leading-6 text-[#6E6E73] sm:text-[18px] sm:leading-7">
@@ -313,8 +314,8 @@ function ProspectMembershipFlow({
           <p className="mt-3 text-[13px] font-medium text-[#86868B]">Ongoing handyman care for Long Island homes.</p>
 
           {showFreeVisitOffer ? (
-            <div className="mx-auto mt-7 max-w-[520px] rounded-[18px] border border-[#E5E5EA] bg-[#F5F5F7] px-5 py-5">
-              <p className="text-[19px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[21px]">
+            <div className="mx-auto mt-7 max-w-[520px] rounded-[13px] border border-[#E5E5EA] bg-[#F5F5F7] px-5 py-5">
+              <p className="text-[19px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[19px]">
                 Your first visit is free.
               </p>
               <p className="mt-1.5 text-[13px] leading-5 text-[#6E6E73] sm:text-[14px]">
@@ -323,7 +324,7 @@ function ProspectMembershipFlow({
               <Link
                 href="/signup?redirect=%2Fmembership"
                 onClick={() => trackEvent("free_visit_cta_clicked", { placement: "membership_hero" })}
-                className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#306EEC] px-7 text-[15px] font-semibold text-white transition hover:bg-[#2558C9] sm:w-auto"
+                className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9] sm:w-auto"
               >
                 Book Your First Visit Free
               </Link>
@@ -331,24 +332,24 @@ function ProspectMembershipFlow({
           ) : null}
 
           <div className="mt-6 flex flex-col justify-center gap-3 min-[380px]:flex-row">
-            <a href="#plans" className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#D2D2D7] bg-white px-7 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]">
+            <a href="#plans" className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#D2D2D7] bg-white px-5 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]">
               See memberships
             </a>
-            <a href="#how-it-works" className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#D2D2D7] bg-white px-7 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]">
+            <a href="#how-it-works" className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#D2D2D7] bg-white px-5 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]">
               How it works
             </a>
           </div>
         </div>
       </section>
 
-      <section id="how-it-works" className="scroll-mt-[100px] bg-[#F5F5F7] px-4 py-12 sm:px-6 sm:py-16">
+      <section id="how-it-works" className="scroll-mt-[100px] bg-[#F5F5F7] px-4 py-8 sm:px-6 sm:py-11">
         <div className="mx-auto max-w-[1040px]">
           <div className="text-center">
-            <h2 className="text-[28px] font-semibold tracking-[-0.025em] text-[#111111] sm:text-[38px]">How membership works</h2>
+            <h2 className="text-[26px] font-semibold tracking-[-0.025em] text-[#111111] sm:text-[32px]">How membership works</h2>
           </div>
           <div className="mt-7 grid gap-3 md:grid-cols-3">
             {steps.map(([title, body], index) => (
-              <article key={title} className="rounded-[20px] border border-[#E5E5EA] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
+              <article key={title} className="rounded-[14px] border border-[#E5E5EA] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEF4FF] text-[13px] font-bold text-[#306EEC]">{index + 1}</span>
                 <h3 className="mt-4 text-[18px] font-semibold text-[#111111]">{title}</h3>
                 <p className="mt-1.5 text-[14px] leading-5 text-[#6E6E73]">{body}</p>
@@ -358,10 +359,10 @@ function ProspectMembershipFlow({
         </div>
       </section>
 
-      <section className="bg-white px-4 py-12 sm:px-6 sm:py-16">
+      <section className="bg-white px-4 py-8 sm:px-6 sm:py-11">
         <div className="mx-auto max-w-[920px]">
           <div className="text-center">
-            <h2 className="text-[28px] font-semibold tracking-[-0.025em] text-[#111111] sm:text-[38px]">Built for everyday home tasks</h2>
+            <h2 className="text-[26px] font-semibold tracking-[-0.025em] text-[#111111] sm:text-[32px]">Built for everyday home tasks</h2>
           </div>
           <ul className="mt-7 grid grid-cols-1 gap-x-8 gap-y-3 min-[360px]:grid-cols-2 lg:grid-cols-4">
             {tasks.map((task) => (
@@ -379,14 +380,14 @@ function ProspectMembershipFlow({
 
       <PlansSection hideCancellationUi compact />
 
-      <section className="bg-white px-4 py-12 sm:px-6 sm:py-16">
+      <section className="bg-white px-4 py-8 sm:px-6 sm:py-11">
         <div className="mx-auto max-w-[760px]">
-          <h2 className="text-center text-[28px] font-semibold tracking-[-0.025em] text-[#111111] sm:text-[38px]">Membership questions</h2>
+          <h2 className="text-center text-[26px] font-semibold tracking-[-0.025em] text-[#111111] sm:text-[32px]">Membership questions</h2>
           <div className="mt-7 divide-y divide-[#E5E5EA] border-y border-[#E5E5EA]">
             {faqs.map(([question, answer]) => (
               <details key={question} className="group py-4">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-semibold text-[#111111] marker:content-none">
-                  {question}<span className="text-[20px] font-normal text-[#86868B] transition group-open:rotate-45" aria-hidden="true">+</span>
+                  {question}<span className="text-[19px] font-normal text-[#86868B] transition group-open:rotate-45" aria-hidden="true">+</span>
                 </summary>
                 <p className="max-w-[680px] pr-8 pt-2 text-[14px] leading-5 text-[#6E6E73]">{answer}</p>
               </details>
@@ -395,11 +396,11 @@ function ProspectMembershipFlow({
         </div>
       </section>
 
-      <section className="bg-[#F5F5F7] px-4 py-14 text-center sm:px-6 sm:py-20">
+      <section className="bg-[#F5F5F7] px-4 py-9 text-center sm:px-6 sm:py-13">
         <div className="mx-auto max-w-[680px]">
-          <h2 className="text-[30px] font-semibold tracking-[-0.03em] text-[#111111] sm:text-[42px]">Ready to make home care easier?</h2>
+          <h2 className="text-[26px] font-semibold tracking-[-0.03em] text-[#111111] sm:text-[34px]">Ready to make home care easier?</h2>
           <p className="mt-3 text-[15px] leading-6 text-[#6E6E73]">Choose your membership and book your first visit when you&rsquo;re ready.</p>
-          <a href="#plans" className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-[#306EEC] px-7 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]">Choose a Plan</a>
+          <a href="#plans" className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]">Choose a Plan</a>
           <div className="mt-4">
             <Link href="/book?visit=additional" className="text-[14px] font-semibold text-[#306EEC] hover:underline">Need only one visit? Book an Extra Visit</Link>
           </div>

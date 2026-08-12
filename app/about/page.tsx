@@ -189,7 +189,7 @@ function ProductCard({ product }: { product: (typeof productCards)[number] }) {
     <Link
       href={product.href}
       className={[
-        "group rounded-[22px] border p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:border-[#C7D9FF] hover:shadow-[0_28px_80px_rgba(48,110,236,0.12)]",
+        "group rounded-[14px] border p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:border-[#C7D9FF] hover:shadow-[0_28px_80px_rgba(48,110,236,0.12)]",
         isFeatured
           ? "bg-[#0B1628] text-white sm:p-7"
           : "border-[#DDE5F0] bg-white",
@@ -199,7 +199,7 @@ function ProductCard({ product }: { product: (typeof productCards)[number] }) {
       <span className={`text-[11px] font-black uppercase tracking-[0.18em] ${isFeatured ? "text-[#7BAEFF]" : "text-[#306EEC]"}`}>
         {product.eyebrow}
       </span>
-      <h3 className={`mt-2 text-[24px] font-black leading-tight ${isFeatured ? "text-white sm:text-[34px]" : "text-[#0B1628]"}`}>
+      <h3 className={`mt-2 text-[23px] font-black leading-tight ${isFeatured ? "text-white sm:text-[30px]" : "text-[#0B1628]"}`}>
         {product.title}
       </h3>
       <p className={`mt-2 text-[12px] font-black uppercase tracking-[0.14em] ${isFeatured ? "text-white/42" : "text-[#94A3B8]"}`}>
@@ -223,7 +223,7 @@ export default function AboutPage() {
       />
       <Header />
 
-      <section className="relative overflow-hidden px-4 pb-10 pt-2 sm:px-6 sm:pb-16 sm:pt-4 lg:px-8">
+      <section className="relative overflow-hidden px-4 pb-10 pt-2 sm:px-6 sm:pb-11 sm:pt-4 lg:px-8">
         <div className="absolute inset-0 -z-10">
           <Image
             src="/images/hero-bg.webp"
@@ -244,7 +244,7 @@ export default function AboutPage() {
                 Modern home care - Long Island
               </span>
             </div>
-            <h1 className="mt-4 max-w-[760px] text-[36px] font-black leading-[1] tracking-[-0.036em] text-[#0B1628] sm:mt-5 sm:text-[64px] sm:leading-[0.96] sm:tracking-[-0.045em] lg:text-[76px]">
+            <h1 className="mt-4 max-w-[760px] text-[32px] font-black leading-[1] tracking-[-0.036em] text-[#0B1628] sm:mt-5 sm:text-[46px] sm:leading-[0.96] sm:tracking-[-0.045em] lg:text-[50px]">
               One company to take care of your home.
             </h1>
             <p className="mt-4 max-w-[680px] text-[15px] font-medium leading-7 text-[#34435C] sm:mt-5 sm:text-[18px] sm:leading-8">
@@ -256,21 +256,21 @@ export default function AboutPage() {
 
             <div className="mt-6 grid gap-2.5 sm:mt-7 sm:grid-cols-2 sm:gap-3">
               <MembershipCtaLink
-                className="inline-flex h-[50px] items-center justify-center rounded-[15px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white shadow-[0_16px_48px_rgba(48,110,236,0.30)] transition hover:-translate-y-0.5 hover:bg-[#2558c9] sm:h-[54px] sm:rounded-[16px] sm:text-[15px]"
+                className="inline-flex h-[44px] items-center justify-center rounded-[15px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white shadow-[0_16px_48px_rgba(48,110,236,0.30)] transition hover:-translate-y-0.5 hover:bg-[#2558c9] sm:h-[54px] sm:rounded-[16px] sm:text-[15px]"
               >
                 Become a Member
               </MembershipCtaLink>
               <Link
                 href="#ways-to-work"
-                className="inline-flex h-[50px] items-center justify-center rounded-[15px] border border-[#C5CBD8] bg-white/92 px-5 text-[14px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] sm:h-[54px] sm:rounded-[16px] sm:text-[15px]"
+                className="inline-flex h-[44px] items-center justify-center rounded-[15px] border border-[#C5CBD8] bg-white/92 px-5 text-[14px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] sm:h-[54px] sm:rounded-[16px] sm:text-[15px]"
               >
                 See How It Works
               </Link>
             </div>
           </div>
 
-          <div className="rounded-[24px] border border-white/70 bg-white/86 p-3.5 shadow-[0_20px_64px_rgba(15,23,42,0.10)] backdrop-blur-xl sm:rounded-[30px] sm:p-5 sm:shadow-[0_28px_90px_rgba(15,23,42,0.12)] lg:p-6">
-            <div className="overflow-hidden rounded-[24px] bg-[#0B1628]">
+          <div className="rounded-[16px] border border-white/70 bg-white/86 p-3.5 shadow-[0_20px_64px_rgba(15,23,42,0.10)] backdrop-blur-xl sm:rounded-[18px] sm:p-5 sm:shadow-[0_28px_90px_rgba(15,23,42,0.12)] lg:p-6">
+            <div className="overflow-hidden rounded-[16px] bg-[#0B1628]">
               <div className="relative aspect-[4/3]">
                 <Image
                   src="/images/Taras.png"
@@ -283,7 +283,7 @@ export default function AboutPage() {
                   <div className="text-[12px] font-black uppercase tracking-[0.18em] text-white/55">
                     Founder
                   </div>
-                  <div className="mt-1 text-[28px] font-black leading-none">
+                  <div className="mt-1 text-[26px] font-black leading-none">
                     Taras Bandura
                   </div>
                 </div>
@@ -300,18 +300,18 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+      <section className="px-4 py-10 sm:px-6 sm:py-9 lg:px-8">
         <div className="mx-auto grid max-w-[1240px] gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
           <div className="lg:sticky lg:top-8">
             <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
               Founder story
             </div>
-            <h2 className="mt-3 text-[29px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[52px] sm:leading-[1.02] sm:tracking-[-0.04em]">
+            <h2 className="mt-3 text-[26px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[40px] sm:leading-[1.02] sm:tracking-[-0.04em]">
               Built because homeowners deserved one place to turn.
             </h2>
           </div>
 
-          <div className="rounded-[24px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_56px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:p-8 sm:shadow-[0_22px_70px_rgba(15,23,42,0.06)]">
+          <div className="rounded-[16px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_56px_rgba(15,23,42,0.06)] sm:rounded-[16px] sm:p-8 sm:shadow-[0_22px_70px_rgba(15,23,42,0.06)]">
             <div className="space-y-4 text-[15px] leading-7 text-[#475569] sm:space-y-5 sm:text-[16px] sm:leading-8">
               <p>
                 Profixter was built by Taras Bandura after years in construction and home services, seeing the same problem repeat: every small home issue forced people to start over.
@@ -333,8 +333,8 @@ export default function AboutPage() {
                 ["Local", "Based near Babylon and accountable to Long Island homeowners."],
                 ["Organized", "The right path for small visits, larger projects, and questions."],
               ].map(([word, body]) => (
-                <div key={word} className="rounded-[18px] border border-[#E5E9F2] bg-[#F8FAFF] p-4">
-                  <div className="text-[20px] font-black text-[#0B1628]">{word}</div>
+                <div key={word} className="rounded-[13px] border border-[#E5E9F2] bg-[#F8FAFF] p-4">
+                  <div className="text-[19px] font-black text-[#0B1628]">{word}</div>
                   <div className="mt-1 text-[13px] leading-5 text-[#64748B]">
                     {body}
                   </div>
@@ -345,14 +345,14 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-        <div className="mx-auto max-w-[1240px] overflow-hidden rounded-[26px] border border-[#DDE5F0] bg-[#0B1628] shadow-[0_22px_70px_rgba(15,23,42,0.16)] sm:rounded-[32px] sm:shadow-[0_28px_90px_rgba(15,23,42,0.18)]">
+      <section className="px-4 py-10 sm:px-6 sm:py-9 lg:px-8">
+        <div className="mx-auto max-w-[1240px] overflow-hidden rounded-[16px] border border-[#DDE5F0] bg-[#0B1628] shadow-[0_22px_70px_rgba(15,23,42,0.16)] sm:rounded-[18px] sm:shadow-[0_28px_90px_rgba(15,23,42,0.18)]">
           <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="p-5 text-white sm:p-8 lg:p-10">
               <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#7BAEFF]">
                 Founder video
               </div>
-              <h2 className="mt-3 text-[28px] font-black leading-tight tracking-[-0.03em] sm:text-[48px] sm:tracking-[-0.035em]">
+              <h2 className="mt-3 text-[26px] font-black leading-tight tracking-[-0.03em] sm:text-[36px] sm:tracking-[-0.035em]">
                 Hear why Profixter was built.
               </h2>
               <p className="mt-4 text-[15px] leading-7 text-white/68 sm:mt-5 sm:text-[16px] sm:leading-8">
@@ -361,7 +361,7 @@ export default function AboutPage() {
             </div>
 
             <div className="bg-[linear-gradient(145deg,#172033_0%,#0B1628_60%,#306EEC_160%)] p-5 sm:p-7 lg:p-8">
-              <div className="aspect-video overflow-hidden rounded-[26px] border border-white/14 bg-black shadow-[0_18px_56px_rgba(48,110,236,0.22)]">
+              <div className="aspect-video overflow-hidden rounded-[16px] border border-white/14 bg-black shadow-[0_18px_56px_rgba(48,110,236,0.22)]">
                 <iframe
                   src="https://www.youtube.com/embed/HQoAkLNGI9c?rel=0"
                   title="Taras Bandura explains Profixter"
@@ -377,13 +377,13 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section id="ways-to-work" className="scroll-mt-[120px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+      <section id="ways-to-work" className="scroll-mt-[120px] px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
         <div className="mx-auto max-w-[1240px]">
           <div className="max-w-[760px]">
             <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
               One company, four paths
             </div>
-            <h2 className="mt-3 text-[29px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[52px] sm:leading-[1.02] sm:tracking-[-0.04em]">
+            <h2 className="mt-3 text-[26px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[40px] sm:leading-[1.02] sm:tracking-[-0.04em]">
               Membership first. Support for everything else.
             </h2>
             <p className="mt-4 max-w-[680px] text-[15px] leading-7 text-[#64748B] sm:text-[16px] sm:leading-8">
@@ -402,13 +402,13 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+      <section className="px-4 py-10 sm:px-6 sm:py-9 lg:px-8">
         <div className="mx-auto grid max-w-[1240px] gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <div>
             <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
               Why homeowners trust Profixter
             </div>
-            <h2 className="mt-3 text-[29px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[52px] sm:leading-[1.02] sm:tracking-[-0.04em]">
+            <h2 className="mt-3 text-[26px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[40px] sm:leading-[1.02] sm:tracking-[-0.04em]">
               Trust is built into the relationship.
             </h2>
             <p className="mt-4 text-[15px] leading-7 text-[#64748B] sm:mt-5 sm:text-[16px] sm:leading-8">
@@ -418,7 +418,7 @@ export default function AboutPage() {
 
           <div className="grid gap-3 sm:grid-cols-2">
             {trustItems.map((item) => (
-              <div key={item.title} className="rounded-[20px] border border-[#DDE5F0] bg-white p-5 shadow-sm">
+              <div key={item.title} className="rounded-[14px] border border-[#DDE5F0] bg-white p-5 shadow-sm">
                 <div className="flex gap-3">
                   <CheckIcon />
                   <div>
@@ -432,14 +432,14 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-        <div className="mx-auto max-w-[1240px] rounded-[26px] border border-[#D9E4FF] bg-[#F0F7FF] p-5 sm:rounded-[32px] sm:p-8 lg:p-10">
+      <section className="px-4 py-10 sm:px-6 sm:py-9 lg:px-8">
+        <div className="mx-auto max-w-[1240px] rounded-[16px] border border-[#D9E4FF] bg-[#F0F7FF] p-5 sm:rounded-[18px] sm:p-8 lg:p-10">
           <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
             <div>
               <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
                 Service area
               </div>
-              <h2 className="mt-3 text-[29px] font-black leading-tight tracking-[-0.034em] text-[#0B1628] sm:text-[48px] sm:tracking-[-0.04em]">
+              <h2 className="mt-3 text-[26px] font-black leading-tight tracking-[-0.034em] text-[#0B1628] sm:text-[36px] sm:tracking-[-0.04em]">
                 Local to Long Island. Built for real homes here.
               </h2>
               <p className="mt-4 text-[15px] leading-7 text-[#475569] sm:mt-5 sm:text-[16px] sm:leading-8">
@@ -449,7 +449,7 @@ export default function AboutPage() {
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {serviceAreas.map((area) => (
-                <div key={area} className="rounded-[18px] border border-white bg-white/86 px-4 py-4 text-[14px] font-black text-[#0B1628] shadow-sm">
+                <div key={area} className="rounded-[13px] border border-white bg-white/86 px-4 py-4 text-[14px] font-black text-[#0B1628] shadow-sm">
                   {area}
                 </div>
               ))}
@@ -458,20 +458,20 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+      <section className="px-4 py-10 sm:px-6 sm:py-9 lg:px-8">
         <div className="mx-auto max-w-[980px]">
           <div className="text-center">
             <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
               FAQ
             </div>
-            <h2 className="mt-3 text-[29px] font-black leading-tight tracking-[-0.034em] text-[#0B1628] sm:text-[52px] sm:tracking-[-0.04em]">
+            <h2 className="mt-3 text-[26px] font-black leading-tight tracking-[-0.034em] text-[#0B1628] sm:text-[40px] sm:tracking-[-0.04em]">
               Clear answers before you choose a path.
             </h2>
           </div>
 
           <div className="mt-8 grid gap-3">
             {faqs.map((faq) => (
-              <div key={faq.q} className="rounded-[20px] border border-[#DDE5F0] bg-white p-5 shadow-sm sm:p-6">
+              <div key={faq.q} className="rounded-[14px] border border-[#DDE5F0] bg-white p-5 shadow-sm sm:p-6">
                 <h3 className="text-[18px] font-black text-[#0B1628]">{faq.q}</h3>
                 <p className="mt-3 text-[14px] leading-7 text-[#64748B]">{faq.a}</p>
               </div>
@@ -480,14 +480,14 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-        <div className="mx-auto max-w-[1240px] rounded-[26px] bg-[#0B1628] p-5 text-white shadow-[0_22px_70px_rgba(15,23,42,0.16)] sm:rounded-[32px] sm:p-8 sm:shadow-[0_28px_90px_rgba(15,23,42,0.18)] lg:p-10">
+      <section className="px-4 py-10 sm:px-6 sm:py-9 lg:px-8">
+        <div className="mx-auto max-w-[1240px] rounded-[16px] bg-[#0B1628] p-5 text-white shadow-[0_22px_70px_rgba(15,23,42,0.16)] sm:rounded-[18px] sm:p-8 sm:shadow-[0_28px_90px_rgba(15,23,42,0.18)] lg:p-10">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
             <div>
               <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#7BAEFF]">
                 Start with the right path
               </div>
-              <h2 className="mt-3 text-[29px] font-black leading-tight tracking-[-0.034em] sm:text-[52px] sm:tracking-[-0.04em]">
+              <h2 className="mt-3 text-[26px] font-black leading-tight tracking-[-0.034em] sm:text-[40px] sm:tracking-[-0.04em]">
                 Start with Membership. Stay with Profixter as your home changes.
               </h2>
               <p className="mt-4 text-[15px] leading-7 text-white/68 sm:mt-5 sm:text-[16px] sm:leading-8">
@@ -496,7 +496,7 @@ export default function AboutPage() {
             </div>
 
             <div className="grid gap-3">
-              <MembershipCtaLink className="inline-flex min-h-[58px] items-center justify-center rounded-[18px] bg-white px-5 text-[15px] font-black text-[#0B1628] transition hover:bg-[#EEF5FF]">
+              <MembershipCtaLink className="inline-flex min-h-[48px] items-center justify-center rounded-[13px] bg-white px-5 text-[15px] font-black text-[#0B1628] transition hover:bg-[#EEF5FF]">
                 Become a Member
               </MembershipCtaLink>
               <div className="grid gap-3 sm:grid-cols-3">
@@ -504,7 +504,7 @@ export default function AboutPage() {
                   <Link
                     key={product.cta}
                     href={product.href}
-                    className="rounded-[18px] border border-white/12 bg-white/[0.07] px-4 py-4 text-center text-[13px] font-black text-white transition hover:bg-white hover:text-[#0B1628]"
+                    className="rounded-[13px] border border-white/12 bg-white/[0.07] px-4 py-4 text-center text-[13px] font-black text-white transition hover:bg-white hover:text-[#0B1628]"
                   >
                     {product.cta}
                   </Link>

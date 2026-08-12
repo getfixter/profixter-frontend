@@ -32,7 +32,7 @@ export default function PriorityVisitPanel({
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">
           Priority Visit
         </p>
-        <h1 className="mt-3 text-[28px] font-semibold leading-[1.1] tracking-[-0.035em] text-[#0B1628] sm:text-[38px]">
+        <h1 className="mt-3 text-[26px] font-semibold leading-[1.1] tracking-[-0.035em] text-[#0B1628] sm:text-[32px]">
           Need help sooner?
         </h1>
         <p className="mt-3 text-[15px] leading-6 text-[#4A5462] sm:text-[17px] sm:leading-7">
@@ -63,7 +63,7 @@ export default function PriorityVisitPanel({
           <a
             href={CUSTOMER_CARE.callHref}
             aria-label={`Call ProFixter at ${CUSTOMER_CARE.phoneDisplay}`}
-            className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[14px] bg-[#0B1628] px-6 text-[15px] font-semibold text-white transition hover:bg-[#172033] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] sm:min-w-[210px]"
+            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-[14px] bg-[#0B1628] px-6 text-[15px] font-semibold text-white transition hover:bg-[#172033] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] sm:min-w-[210px]"
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
@@ -78,7 +78,7 @@ export default function PriorityVisitPanel({
           <a
             href={`sms:${CUSTOMER_CARE.phoneE164}`}
             aria-label={`Text ProFixter at ${CUSTOMER_CARE.phoneDisplay}`}
-            className="inline-flex min-h-[52px] items-center justify-center rounded-[14px] border border-[#D7DEE9] bg-white px-6 text-[15px] font-semibold text-[#0B1628] transition hover:bg-[#F8FAFF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]"
+            className="inline-flex min-h-[46px] items-center justify-center rounded-[14px] border border-[#D7DEE9] bg-white px-6 text-[15px] font-semibold text-[#0B1628] transition hover:bg-[#F8FAFF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]"
           >
             Text ProFixter
           </a>

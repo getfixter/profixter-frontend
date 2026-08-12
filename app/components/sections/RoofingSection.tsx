@@ -65,7 +65,7 @@ export default function RoofingSection() {
   return (
     <section
       id="roofing"
-      className="w-full relative overflow-hidden py-16 sm:py-20 lg:py-28 scroll-mt-[110px]"
+      className="w-full relative overflow-hidden py-10 sm:py-13 lg:py-12 scroll-mt-[110px]"
       style={{ background: "linear-gradient(160deg, #08101E 0%, #0B1628 60%, #091220 100%)" }}
     >
       {/* Background depth */}
@@ -90,7 +90,7 @@ export default function RoofingSection() {
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
         {/* ── Header ─────────────────────────────────────────── */}
-        <div className="mb-12 sm:mb-16 lg:mb-20">
+        <div className="mb-8 sm:mb-16 lg:mb-20">
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
 
             <div className="max-w-[680px]">
@@ -106,7 +106,7 @@ export default function RoofingSection() {
               </div>
 
               {/* Headline */}
-              <h2 className="text-[44px] sm:text-[60px] lg:text-[76px] font-black leading-[0.88] tracking-[-0.045em] text-white mb-6">
+              <h2 className="text-[36px] sm:text-[43px] lg:text-[50px] font-black leading-[0.88] tracking-[-0.045em] text-white mb-6">
                 1-Day Roof
                 <br />
                 <span
@@ -120,7 +120,7 @@ export default function RoofingSection() {
                 </span>
               </h2>
 
-              <p className="text-[17px] sm:text-[20px] font-semibold text-white/80 leading-[1.4] max-w-[520px]">
+              <p className="text-[17px] sm:text-[19px] font-semibold text-white/80 leading-[1.4] max-w-[520px]">
                 Most roofs on Long Island are started and completed in a single
                 day. No multi-week projects. No contractor disappearing acts.
               </p>
@@ -131,7 +131,7 @@ export default function RoofingSection() {
               <button
                 type="button"
                 onClick={callNow}
-                className="inline-flex items-center gap-3 rounded-[18px] px-8 py-5 text-[16px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
+                className="inline-flex items-center gap-3 rounded-[13px] px-6 py-5 text-[16px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                 style={{
                   background: "linear-gradient(135deg, #D4A574 0%, #C49060 100%)",
                   boxShadow: "0 20px 60px rgba(212,165,116,0.30)",
@@ -150,14 +150,14 @@ export default function RoofingSection() {
         </div>
 
         {/* ── Main content ───────────────────────────────────── */}
-        <div className="grid lg:grid-cols-[1fr_420px] gap-8 lg:gap-12">
+        <div className="grid lg:grid-cols-[1fr_420px] gap-8 lg:gap-8">
 
           {/* LEFT: Proof stats grid */}
           <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
             {PROOF_STATS.map(({ value, label, icon }) => (
               <div
                 key={value}
-                className="relative rounded-[22px] border border-white/[0.09] p-6 sm:p-7 overflow-hidden group hover:border-white/[0.16] transition-all duration-300"
+                className="relative rounded-[14px] border border-white/[0.09] p-6 sm:p-7 overflow-hidden group hover:border-white/[0.16] transition-all duration-300"
                 style={{
                   background:
                     "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
@@ -166,7 +166,7 @@ export default function RoofingSection() {
                 {/* Hover glow */}
                 <div
                   aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  className="pointer-events-none absolute inset-0 rounded-[14px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                   style={{
                     background:
                       "radial-gradient(circle at 30% 30%, rgba(48,110,236,0.08), transparent 70%)",
@@ -175,7 +175,7 @@ export default function RoofingSection() {
                 {/* Icon */}
                 <div className="text-[#D4A574] mb-4 opacity-80">{icon}</div>
                 {/* Value */}
-                <div className="text-[32px] sm:text-[38px] font-black text-white tracking-[-0.03em] leading-none mb-3">
+                <div className="text-[30px] sm:text-[32px] font-black text-white tracking-[-0.03em] leading-none mb-3">
                   {value}
                 </div>
                 {/* Label */}
@@ -188,7 +188,7 @@ export default function RoofingSection() {
 
           {/* RIGHT: What's included card */}
           <div
-            className="rounded-[24px] border border-white/[0.10] p-7 sm:p-8 flex flex-col"
+            className="rounded-[16px] border border-white/[0.10] p-7 sm:p-8 flex flex-col"
             style={{
               background:
                 "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
@@ -242,7 +242,7 @@ export default function RoofingSection() {
               <button
                 type="button"
                 onClick={callNow}
-                className="w-full min-h-[58px] rounded-[16px] text-[16px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99] flex items-center justify-center gap-3"
+                className="w-full min-h-[48px] rounded-[16px] text-[16px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99] flex items-center justify-center gap-3"
                 style={{
                   background: "linear-gradient(135deg, #D4A574 0%, #C49060 100%)",
                   boxShadow: "0 16px 50px rgba(212,165,116,0.25)",
@@ -279,7 +279,7 @@ export default function RoofingSection() {
         </div>
 
         {/* ── Bottom trust bar ───────────────────────────────── */}
-        <div className="mt-10 sm:mt-12 rounded-[18px] border border-white/[0.07] bg-white/[0.03] px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="mt-7 sm:mt-8 rounded-[13px] border border-white/[0.07] bg-white/[0.03] px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
             {[
               "NY State Licensed · HI-71484",

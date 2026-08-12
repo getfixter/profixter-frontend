@@ -46,7 +46,7 @@ function CheckItem({ children, light = false }: { children: React.ReactNode; lig
 
 function CredentialsCard() {
   return (
-    <div className="relative h-full overflow-hidden rounded-[20px] bg-[#0B1628] text-white shadow-[0_24px_60px_rgba(11,22,40,0.18)]">
+    <div className="relative h-full overflow-hidden rounded-[14px] bg-[#0B1628] text-white shadow-[0_24px_60px_rgba(11,22,40,0.18)]">
       <div className="absolute left-0 right-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#D4A574] to-transparent" />
       <div
         aria-hidden="true"
@@ -61,7 +61,7 @@ function CredentialsCard() {
         </svg>
       </div>
 
-      <div className="relative flex h-full flex-col px-6 py-7 sm:px-7 sm:py-8 lg:px-8 lg:py-10">
+      <div className="relative flex h-full flex-col px-6 py-7 sm:px-5 sm:py-8 lg:px-8 lg:py-10">
         <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#94a3b8]">
           State of New York
         </div>
@@ -73,7 +73,7 @@ function CredentialsCard() {
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#94a3b8]">
             License No.
           </div>
-          <div className="mt-2 font-mono text-[34px] font-bold leading-none tracking-[-0.01em] text-white sm:text-[38px]">
+          <div className="mt-2 font-mono text-[30px] font-bold leading-none tracking-[-0.01em] text-white sm:text-[32px]">
             HI-71484
           </div>
           <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#86EFAC]/30 bg-[#86EFAC]/10 px-2.5 py-1">
@@ -108,17 +108,17 @@ function CredentialsCard() {
 
 function GoogleReviewsCard() {
   return (
-    <div className="relative h-full overflow-hidden rounded-[20px] border border-[#E5E9F2] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.06)]">
-      <div className="flex h-full flex-col px-6 py-7 sm:px-7 sm:py-8 lg:px-8 lg:py-10">
+    <div className="relative h-full overflow-hidden rounded-[14px] border border-[#E5E9F2] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.06)]">
+      <div className="flex h-full flex-col px-6 py-7 sm:px-5 sm:py-8 lg:px-8 lg:py-10">
         <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#64748B]">
           Google Reviews
         </div>
 
-        <div className="mt-6 text-[26px] leading-none text-[#F59E0B]" aria-label="Five star rating">
+        <div className="mt-6 text-[23px] leading-none text-[#F59E0B]" aria-label="Five star rating">
           ★★★★★
         </div>
 
-        <h3 className="mt-5 text-[24px] font-extrabold leading-tight tracking-[-0.02em] text-[#0F172A]">
+        <h3 className="mt-5 text-[23px] font-extrabold leading-tight tracking-[-0.02em] text-[#0F172A]">
           4.9 Google Rating
         </h3>
 
@@ -141,13 +141,13 @@ function GoogleReviewsCard() {
 
 function TrustReasonsCard() {
   return (
-    <div className="relative h-full overflow-hidden rounded-[20px] border border-[#E5E9F2] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.06)]">
-      <div className="flex h-full flex-col px-6 py-7 sm:px-7 sm:py-8 lg:px-8 lg:py-10">
+    <div className="relative h-full overflow-hidden rounded-[14px] border border-[#E5E9F2] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.06)]">
+      <div className="flex h-full flex-col px-6 py-7 sm:px-5 sm:py-8 lg:px-8 lg:py-10">
         <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#306EEC]">
           In-Home Trust
         </div>
 
-        <h3 className="mt-5 text-[24px] font-extrabold leading-tight tracking-[-0.02em] text-[#0F172A]">
+        <h3 className="mt-5 text-[23px] font-extrabold leading-tight tracking-[-0.02em] text-[#0F172A]">
           Built for repeat trust
         </h3>
 
@@ -168,13 +168,13 @@ function TrustReasonsCard() {
 
 function ServiceAreaStrip() {
   return (
-    <div className="mt-6 overflow-hidden rounded-[20px] border border-[#E5E9F2] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.04)] lg:mt-8">
-      <div className="grid gap-7 px-6 py-7 sm:gap-8 sm:px-7 sm:py-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start lg:gap-10 lg:px-10 lg:py-9">
+    <div className="mt-6 overflow-hidden rounded-[14px] border border-[#E5E9F2] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.04)] lg:mt-8">
+      <div className="grid gap-7 px-6 py-7 sm:gap-8 sm:px-5 sm:py-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start lg:gap-10 lg:px-10 lg:py-9">
         <div>
           <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#306EEC]">
             Service Area
           </div>
-          <h3 className="mt-2 text-[22px] font-extrabold leading-[1.15] tracking-[-0.02em] text-[#0F172A] sm:text-[26px] lg:text-[28px]">
+          <h3 className="mt-2 text-[21px] font-extrabold leading-[1.15] tracking-[-0.02em] text-[#0F172A] sm:text-[23px] lg:text-[26px]">
             Serving Nassau &amp; Suffolk Counties
           </h3>
           <p className="mt-3 text-[14px] leading-relaxed text-[#475569] sm:text-[15px]">
@@ -215,14 +215,14 @@ function ServiceAreaStrip() {
 
 export default function TrustSection() {
   return (
-    <section id="trust" className="w-full bg-[#EAEDFA] py-10 sm:py-14 lg:py-20">
+    <section id="trust" className="w-full bg-[#EAEDFA] py-10 sm:py-10 lg:py-14">
       <div className="mx-auto max-w-[1240px] px-4 sm:px-5 lg:px-5">
         <div className="mx-auto mb-7 max-w-[760px] text-center sm:mb-12 lg:mb-14">
           <span className="inline-flex items-center rounded-full border border-[#D9E4FF] bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
             Verified &amp; Accountable
           </span>
 
-          <h2 className="mt-4 text-[26px] font-extrabold leading-[1.08] tracking-[-0.03em] text-[#0F172A] sm:mt-5 sm:text-[40px] sm:leading-[1.06] sm:tracking-[-0.035em] lg:text-[48px]">
+          <h2 className="mt-4 text-[23px] font-extrabold leading-[1.08] tracking-[-0.03em] text-[#0F172A] sm:mt-5 sm:text-[34px] sm:leading-[1.06] sm:tracking-[-0.035em] lg:text-[36px]">
             A local company you can keep coming back to.
           </h2>
 

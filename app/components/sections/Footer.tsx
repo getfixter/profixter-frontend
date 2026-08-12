@@ -40,8 +40,8 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
         style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.20), transparent)" }}
       />
 
-      <div className={`relative mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-5 ${compact ? "py-8 sm:py-10" : "py-10 sm:py-16"}`}>
-        <div className={`grid items-start ${compact ? "grid-cols-2 gap-7 sm:gap-8 lg:grid-cols-[1.3fr_0.7fr_0.7fr_0.9fr] lg:gap-10" : "grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-[1.35fr_0.62fr_0.72fr_0.68fr_0.78fr] lg:gap-8"}`}>
+      <div className={`relative mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-5 ${compact ? "py-8 sm:py-10" : "py-10 sm:py-11"}`}>
+        <div className={`grid items-start ${compact ? "grid-cols-2 gap-7 sm:gap-8 lg:grid-cols-[1.3fr_0.7fr_0.7fr_0.9fr] lg:gap-10" : "grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-7 lg:grid-cols-[1.35fr_0.62fr_0.72fr_0.68fr_0.78fr] lg:gap-8"}`}>
           <div className={compact ? "col-span-2 lg:col-span-1" : ""}>
             <Image
               src="/images/logo-footer.svg"
@@ -162,7 +162,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
           </div>
         </div>
 
-        <div className={`flex flex-col items-center justify-between gap-3 border-t border-white/[0.09] pt-5 sm:flex-row ${compact ? "mt-7" : "mt-9 sm:mt-12 sm:pt-6"}`}>
+        <div className={`flex flex-col items-center justify-between gap-3 border-t border-white/[0.09] pt-5 sm:flex-row ${compact ? "mt-7" : "mt-6 sm:mt-8 sm:pt-6"}`}>
           <p className="text-[13px] text-[#4A5568]">
             &copy; 2026 Profixter. All rights reserved. &middot; NY State Licensed HI-71484
           </p>

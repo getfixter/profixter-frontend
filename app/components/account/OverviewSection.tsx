@@ -113,7 +113,7 @@ function StatTile({
       </div>
       <div>
         <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#94A3B8] mb-0.5">{label}</div>
-        <div className="text-[18px] sm:text-[20px] font-extrabold text-[#0B1628] leading-none">{value}</div>
+        <div className="text-[18px] sm:text-[19px] font-extrabold text-[#0B1628] leading-none">{value}</div>
         {sub && <div className="text-[11px] text-[#94A3B8] mt-1">{sub}</div>}
       </div>
     </div>
@@ -122,10 +122,11 @@ function StatTile({
 
 export default function OverviewSection({
   formData,
-  onSwitchTab,
 }: {
   formData: AccountFormData;
-  onSwitchTab: (tab: "plan" | "bookings" | "personal" | "password") => void;
+  /** Still accepted so the Account shell can keep passing it, but the quick
+      actions link straight to Book rather than switching tabs. */
+  onSwitchTab?: (tab: "plan" | "bookings" | "personal" | "password") => void;
 }) {
   const [subs, setSubs] = useState<ManagedSubscription[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -221,10 +222,10 @@ export default function OverviewSection({
 
       {/* ── Welcome card ── */}
       <div
-        className="rounded-[20px] overflow-hidden"
+        className="rounded-[14px] overflow-hidden"
         style={{ background: "linear-gradient(135deg, #0B1628 0%, #0F2050 60%, #0B1A3A 100%)" }}
       >
-        <div className="relative px-6 py-7 sm:px-8 sm:py-8">
+        <div className="relative px-6 py-7 sm:px-6 sm:py-8">
           {/* Background dot texture */}
           <div
             aria-hidden="true"
@@ -245,7 +246,7 @@ export default function OverviewSection({
                   {planName ? `${planName} Plan - Active Member` : "Profixter Member"}
                 </span>
               </div>
-              <h2 className="text-[24px] sm:text-[28px] font-black text-white leading-tight tracking-[-0.02em]">
+              <h2 className="text-[23px] sm:text-[26px] font-black text-white leading-tight tracking-[-0.02em]">
                 Welcome back, {firstName}!
               </h2>
               <p className="text-[13px] text-white/45 mt-1.5 max-w-[380px]">
@@ -253,8 +254,10 @@ export default function OverviewSection({
               </p>
             </div>
             <div className="flex gap-3 flex-shrink-0">
+              {/* Book owns booking now, so this goes straight there rather
+                  than by way of the membership page. */}
               <a
-                href="/membership#pick-day"
+                href="/book?visit=membership"
                 className="inline-flex items-center justify-center h-[44px] px-5 rounded-[12px] bg-[#306EEC] text-white text-[13px] font-extrabold hover:bg-[#2558c9] transition"
                 style={{ boxShadow: "0 8px 24px rgba(48,110,236,0.35)" }}
               >
@@ -324,7 +327,7 @@ export default function OverviewSection({
       </div>
 
       {/* ── Quick actions ── */}
-      <div className="rounded-[18px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
+      <div className="rounded-[13px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
         <h3 className="text-[15px] font-bold text-[#0B1628] mb-4">Quick Actions</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
@@ -335,21 +338,26 @@ export default function OverviewSection({
                   <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><line x1="12" y1="14" x2="12" y2="18" /><line x1="10" y1="16" x2="14" y2="16" />
                 </svg>
               ),
-              href: "/membership#pick-day",
+              href: "/book?visit=membership",
               color: "#306EEC",
               bg: "#EEF5FF",
               external: false,
             },
             {
-              label: "View Bookings",
+              /* Straight to the visit list on Book. It used to open the
+                 Account bookings tab, which since the move only holds a
+                 signpost pointing at Book, so the member paid an extra tap to
+                 be told where their visits are. */
+              label: "View Visits",
               icon: (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><line x1="9" y1="12" x2="15" y2="12" /><line x1="9" y1="16" x2="13" y2="16" />
                 </svg>
               ),
-              onClick: () => onSwitchTab("bookings"),
+              href: "/book?visit=membership#your-visits",
               color: "#16A34A",
               bg: "#F0FDF4",
+              external: false,
             },
             {
               label: "Leave a Tip ❤️",
@@ -375,7 +383,7 @@ export default function OverviewSection({
               bg: "#F5F3FF",
               external: true,
             },
-          ].map(({ label, icon, href, onClick, color, bg, external }) => {
+          ].map(({ label, icon, href, color, bg, external }) => {
             const content = (
               <div
                 className="rounded-[14px] p-4 flex flex-col items-start gap-3 border border-transparent hover:border-current/10 transition cursor-pointer"
@@ -392,13 +400,6 @@ export default function OverviewSection({
                 </span>
               </div>
             );
-            if (onClick) {
-              return (
-                <button key={label} type="button" onClick={onClick} className="text-left w-full">
-                  {content}
-                </button>
-              );
-            }
             return (
               <a
                 key={label}
@@ -417,7 +418,7 @@ export default function OverviewSection({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* ── Pre-visit tips ── */}
-        <div className="rounded-[18px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
+        <div className="rounded-[13px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
           <button
             type="button"
             className="w-full flex items-center justify-between gap-4 mb-1"
@@ -467,7 +468,7 @@ export default function OverviewSection({
         </div>
 
         {/* ── Exterior offers ── */}
-        <div className="rounded-[18px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
+        <div className="rounded-[13px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-9 h-9 rounded-[10px] bg-[#FFF7ED] flex items-center justify-center flex-shrink-0">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4A574" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -508,7 +509,7 @@ export default function OverviewSection({
       </div>
 
       {/* ── FAQ ── */}
-      <div className="rounded-[18px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
+      <div className="rounded-[13px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-9 h-9 rounded-[10px] bg-[#EEF5FF] flex items-center justify-center flex-shrink-0">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#306EEC" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

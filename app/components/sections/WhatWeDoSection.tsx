@@ -11,14 +11,14 @@ const TASKS = [
 
 export default function WhatWeDoSection() {
   return (
-    <section className="w-full bg-[#eaedfa] py-10 sm:py-12 lg:py-14">
+    <section className="w-full bg-[#eaedfa] py-10 sm:py-9 lg:py-14">
       <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
-        <div className="rounded-[22px] border border-[#C5CBD8] bg-[#EEF2FF] p-5 sm:p-7 lg:p-8 shadow-[0_0_200px_rgba(0,0,0,0.08)]">
+        <div className="rounded-[14px] border border-[#C5CBD8] bg-[#EEF2FF] p-5 sm:p-7 lg:p-8 shadow-[0_0_200px_rgba(0,0,0,0.08)]">
           <div className="max-w-[700px]">
             <div className="text-[12px] uppercase tracking-wider text-[#6A6D71] font-bold">
               What We Do
             </div>
-            <h2 className="mt-2 text-[28px] sm:text-[36px] lg:text-[42px] font-extrabold leading-tight tracking-[-0.03em] text-[#313234]">
+            <h2 className="mt-2 text-[26px] sm:text-[32px] lg:text-[34px] font-extrabold leading-tight tracking-[-0.03em] text-[#313234]">
               Common handyman jobs homeowners book all the time
             </h2>
             <p className="mt-3 text-[#6A6D71] text-[15px] sm:text-[17px] leading-relaxed">
@@ -30,7 +30,7 @@ export default function WhatWeDoSection() {
             {TASKS.map((task) => (
               <div
                 key={task}
-                className="rounded-[18px] border border-[#E6E8EF] bg-white px-4 py-4 sm:px-5 sm:py-5 shadow-sm"
+                className="rounded-[13px] border border-[#E6E8EF] bg-white px-4 py-4 sm:px-5 sm:py-5 shadow-sm"
               >
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 w-8 h-8 rounded-full bg-[#306EEC]/10 text-[#306EEC] flex items-center justify-center text-sm font-extrabold shrink-0">

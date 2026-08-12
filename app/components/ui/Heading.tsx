@@ -7,7 +7,7 @@ type HeadingProps = React.HTMLAttributes<HTMLHeadingElement> & {
 };
 
 const sizeByLevel: Record<NonNullable<HeadingProps['level']>, string> = {
-  1: 'text-[64px]',
+  1: 'text-[46px]',
   2: 'text-5xl',
   3: 'text-3xl',
   4: 'text-2xl'

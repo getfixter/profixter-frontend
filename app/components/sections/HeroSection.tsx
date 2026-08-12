@@ -140,14 +140,14 @@ export default function HeroSection() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#07101F]/18 via-transparent to-[#07101F]/66" />
       </div>
 
-      <div className="relative mx-auto flex min-h-[calc(100svh-92px)] max-w-[1180px] items-center px-4 py-12 sm:min-h-[calc(100svh-104px)] sm:px-6 sm:py-20 lg:min-h-[calc(100svh-116px)] lg:px-8">
+      <div className="relative mx-auto flex min-h-[calc(100svh-92px)] max-w-[1180px] items-center px-4 py-8 sm:min-h-[calc(100svh-104px)] sm:px-6 sm:py-13 lg:min-h-[calc(100svh-116px)] lg:px-8">
         <div className="w-full max-w-[680px] text-left">
-          <h1 className="max-w-[350px] text-[34px] font-black leading-[1] tracking-[-0.02em] text-white sm:max-w-[680px] sm:text-[60px] sm:leading-[0.98] sm:tracking-[-0.028em] lg:text-[66px]">
+          <h1 className="max-w-[350px] text-[30px] font-black leading-[1] tracking-[-0.02em] text-white sm:max-w-[680px] sm:text-[43px] sm:leading-[0.98] sm:tracking-[-0.028em] lg:text-[46px]">
             <span className="block">We take care</span>
             <span className="block">of your home.</span>
           </h1>
 
-          <p className="mt-5 max-w-[350px] text-[15px] font-semibold leading-[1.5] text-white/76 sm:mt-6 sm:max-w-[590px] sm:text-[20px] sm:leading-[1.55]">
+          <p className="mt-5 max-w-[350px] text-[15px] font-semibold leading-[1.5] text-white/76 sm:mt-6 sm:max-w-[590px] sm:text-[19px] sm:leading-[1.55]">
             Profixter Membership gives Long Island homeowners one reliable team for small repairs, maintenance, and the home list that never really ends.
           </p>
 
@@ -179,7 +179,7 @@ export default function HeroSection() {
             <button
               type="button"
               onClick={ctaConfig.primaryAction}
-              className="inline-flex min-h-[52px] items-center justify-center rounded-[15px] bg-[#306EEC] px-6 text-[15px] font-extrabold text-white shadow-[0_16px_42px_rgba(48,110,236,0.32)] transition hover:bg-[#2558c9] active:scale-[0.99] sm:min-h-[58px] sm:min-w-[190px] sm:rounded-[16px] sm:px-8 sm:text-[16px]"
+              className="inline-flex min-h-[46px] items-center justify-center rounded-[15px] bg-[#306EEC] px-6 text-[15px] font-extrabold text-white shadow-[0_16px_42px_rgba(48,110,236,0.32)] transition hover:bg-[#2558c9] active:scale-[0.99] sm:min-h-[58px] sm:min-w-[190px] sm:rounded-[16px] sm:px-6 sm:text-[16px]"
             >
               {ctaConfig.primaryLabel}
             </button>
@@ -187,7 +187,7 @@ export default function HeroSection() {
             <button
               type="button"
               onClick={ctaConfig.secondaryAction}
-              className="inline-flex min-h-[52px] items-center justify-center rounded-[15px] border border-white/20 bg-white/10 px-6 text-[15px] font-extrabold text-white shadow-[0_14px_36px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:bg-white/16 active:scale-[0.99] sm:min-h-[58px] sm:min-w-[190px] sm:rounded-[16px] sm:px-8 sm:text-[16px]"
+              className="inline-flex min-h-[46px] items-center justify-center rounded-[15px] border border-white/20 bg-white/10 px-6 text-[15px] font-extrabold text-white shadow-[0_14px_36px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:bg-white/16 active:scale-[0.99] sm:min-h-[58px] sm:min-w-[190px] sm:rounded-[16px] sm:px-6 sm:text-[16px]"
             >
               {ctaConfig.secondaryLabel}
             </button>

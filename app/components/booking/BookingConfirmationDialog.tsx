@@ -102,10 +102,10 @@ export default function BookingConfirmationDialog({
         aria-modal="true"
         aria-labelledby="booking-success-title"
         aria-describedby="booking-success-status"
-        className="flex w-full max-w-[420px] flex-col overflow-hidden rounded-[22px] border border-black/[0.08] bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.24)] backdrop-blur-xl sm:rounded-[24px]"
+        className="flex w-full max-w-[420px] flex-col overflow-hidden rounded-[14px] border border-black/[0.08] bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.24)] backdrop-blur-xl sm:rounded-[16px]"
         style={{ maxHeight: "calc(100dvh - 48px)" }}
       >
-        <div className="min-h-0 overflow-y-auto px-5 pb-4 pt-5 sm:px-7 sm:pb-5 sm:pt-6">
+        <div className="min-h-0 overflow-y-auto px-5 pb-4 pt-5 sm:px-5 sm:pb-5 sm:pt-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-[#EAF8EF] ring-1 ring-[#CDEBD8]">
               <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -117,13 +117,13 @@ export default function BookingConfirmationDialog({
               type="button"
               onClick={onClose}
               aria-label="Close booking confirmation"
-              className="grid h-10 w-10 flex-none place-items-center rounded-full text-[22px] leading-none text-[#64748B] transition hover:bg-[#F1F5F9] hover:text-[#0B1628]"
+              className="grid h-10 w-10 flex-none place-items-center rounded-full text-[21px] leading-none text-[#64748B] transition hover:bg-[#F1F5F9] hover:text-[#0B1628]"
             >
               &times;
             </button>
           </div>
 
-          <h2 id="booking-success-title" className="mt-3 text-[22px] font-extrabold tracking-[-0.025em] text-[#0B1628] sm:text-[24px]">
+          <h2 id="booking-success-title" className="mt-3 text-[21px] font-extrabold tracking-[-0.025em] text-[#0B1628] sm:text-[23px]">
             Visit booked
           </h2>
           {confirmation.isFreeVisit ? (
@@ -170,7 +170,7 @@ export default function BookingConfirmationDialog({
           </div>
         </div>
 
-        <div className="flex flex-shrink-0 flex-col gap-2 border-t border-black/[0.06] px-5 pb-5 pt-4 sm:px-7 sm:pb-6">
+        <div className="flex flex-shrink-0 flex-col gap-2 border-t border-black/[0.06] px-5 pb-5 pt-4 sm:px-5 sm:pb-6">
           <button
             type="button"
             onClick={onViewVisit}

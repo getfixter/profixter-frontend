@@ -52,6 +52,29 @@ img {
   height: auto;
 }
 
+/*
+ * The navbar brand mark.
+ *
+ * Sized here rather than with utility classes because the rule above is an
+ * element selector setting height:auto, and the mark's own artwork is 357x76.
+ * Anything that resolved to auto let it render at full intrinsic size, which is
+ * how the header logo ended up 80% of the width of a phone.
+ *
+ * Explicit height, width follows the aspect ratio. Quiet on a phone, barely
+ * larger on a desktop: the brand should be legible beside the navigation, not
+ * compete with it.
+ */
+.nav-brand-logo {
+  height: 24px;
+  width: auto;
+}
+
+@media (min-width: 640px) {
+  .nav-brand-logo {
+    height: 26px;
+  }
+}
+
 /* =========================
    Anchor offsets (header)
    ========================= */

@@ -75,14 +75,14 @@ export default function FAQSection({ hideCancellationUi = false }: FAQSectionPro
         style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.18), transparent)" }}
       />
 
-      <div className="mx-auto max-w-[860px] px-4 py-14 sm:px-8 sm:py-28">
-        <div className="mb-10 text-center sm:mb-14">
+      <div className="mx-auto max-w-[860px] px-4 py-9 sm:px-6 sm:py-11">
+        <div className="mb-7 text-center sm:mb-9">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 sm:mb-5 sm:px-4">
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/45">
               Frequently Asked Questions
             </span>
           </div>
-          <h2 className="text-[27px] font-extrabold leading-[1.12] tracking-[-0.025em] text-white sm:text-[42px] sm:tracking-[-0.03em]">
+          <h2 className="text-[23px] font-extrabold leading-[1.12] tracking-[-0.025em] text-white sm:text-[34px] sm:tracking-[-0.03em]">
             Questions before you become a Member
           </h2>
           <p className="mx-auto mt-4 max-w-[520px] text-[15px] leading-relaxed text-white/42 sm:text-[16px]">
@@ -97,7 +97,7 @@ export default function FAQSection({ hideCancellationUi = false }: FAQSectionPro
             return (
               <div
                 key={q}
-                className="overflow-hidden rounded-[18px] border border-white/[0.08] transition-all duration-200"
+                className="overflow-hidden rounded-[13px] border border-white/[0.08] transition-all duration-200"
                 style={{
                   background: isOpen
                     ? "linear-gradient(145deg, rgba(48,110,236,0.06) 0%, rgba(255,255,255,0.025) 100%)"
