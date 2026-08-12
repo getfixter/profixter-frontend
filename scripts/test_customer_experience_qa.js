@@ -34,6 +34,25 @@ const MEMBER = {
 
 const NON_MEMBER = { ...MEMBER, _id: "qa-cust-2", addresses: [{ _id: "a2", hasActiveSubscription: false }] };
 
+/** A member on a specific plan, for the upgrade-suggestion rules. */
+const memberOnPlan = (plan) => ({
+  ...MEMBER,
+  _id: `qa-${plan}`,
+  addresses: [{ _id: "a1", hasActiveSubscription: true, plan }],
+});
+
+/**
+ * Normal upgrades walk one step up. Priority jumps to the first plan that
+ * actually includes Priority Visits, which is why Basic and Plus both point at
+ * Premium rather than at the next plan along.
+ */
+const UPGRADE_RULES = [
+  { plan: "basic", normal: "Plus", priority: "Premium" },
+  { plan: "plus", normal: "Premium", priority: "Premium" },
+  { plan: "premium", normal: "Elite", priority: "Elite" },
+  { plan: "elite", normal: null, priority: null },
+];
+
 const results = [];
 function record(scope, ok, detail) {
   results.push({ scope, ok, detail });
@@ -138,14 +157,31 @@ async function run() {
         record(`${vp.name}/member/nav-items`, clean.length === 4, `nav is ${JSON.stringify(clean)}`);
         record(`${vp.name}/member/no-membership-tab`, !clean.includes("Membership"), `Membership tab still present: ${JSON.stringify(clean)}`);
         const homeHref = await nav.locator("a").first().getAttribute("href");
-        record(`${vp.name}/member/home-href`, homeHref === "/membership", `Home points at ${homeHref}`);
-        const homeActive = await nav.locator('a[aria-current="page"]').first().innerText().catch(() => "");
-        record(`${vp.name}/member/home-active`, homeActive.trim() === "Home", `active tab is "${homeActive.trim()}"`);
+        record(`${vp.name}/member/home-href`, homeHref === "/", `Home points at ${homeHref}`);
+        // On the membership dashboard, Account is the correct active tab: Home
+        // is the public homepage now, and a member should never see the nav
+        // with nothing highlighted.
+        // /membership is its own destination. No tab owns it, and Account must
+        // not pretend to.
+        const activeCount = await nav.locator('a[aria-current="page"]').count();
+        record(`${vp.name}/member/dashboard-no-false-active`, activeCount === 0, `${activeCount} tab(s) claimed /membership`);
       } else {
         const logoHref = await page.locator('a[aria-label="Profixter home"]').first().getAttribute("href");
-        record(`${vp.name}/member/logo-home-href`, logoHref === "/membership", `logo points at ${logoHref}`);
+        record(`${vp.name}/member/logo-home-href`, logoHref === "/", `logo points at ${logoHref}`);
+        // Desktop parity: Book must be reachable without hunting through Account.
         const navText = await page.locator('nav[aria-label="Main navigation"]').innerText().catch(() => "");
-        record(`${vp.name}/member/desktop-no-membership-link`, !navText.includes("Membership"), `desktop nav still lists Membership: ${navText.replace(/\s+/g, " ")}`);
+        record(
+          `${vp.name}/member/desktop-no-membership-item`,
+          !navText.includes("Membership"),
+          `Membership must not compete as a primary destination: ${navText.replace(/\s+/g, " ")}`
+        );
+        const accountHref = await page.locator('nav[aria-label="Main navigation"] a', { hasText: "Account" }).first().getAttribute("href").catch(() => null);
+        record(`${vp.name}/member/desktop-account-href`, accountHref === "/account", `desktop Account points at ${accountHref}`);
+        for (const item of ["Home", "Book", "Projects", "Account"]) {
+          record(`${vp.name}/member/desktop-has-${item}`, navText.includes(item), `desktop nav is missing ${item}: ${navText.replace(/\s+/g, " ")}`);
+        }
+        const bookHref = await page.locator('nav[aria-label="Main navigation"] a', { hasText: "Book" }).first().getAttribute("href").catch(() => null);
+        record(`${vp.name}/member/desktop-book-href`, String(bookHref || "").startsWith("/book"), `desktop Book points at ${bookHref}`);
       }
 
       // Your Fixter on the dashboard.
@@ -189,6 +225,7 @@ async function run() {
         }
         if (visit === "additional") {
           record(`${vp.name}/book/additional/price`, text.includes("$99") || text.includes("99"), "the $99 price is not visible");
+          record(`${vp.name}/book/additional/no-priority-content`, !/emergency|need help sooner|priority scheduling|\$300/i.test(text), "Priority or Emergency material is still on Extra Visit");
         }
         if (visit === "membership") {
           record(`${vp.name}/book/membership/heading`, text.includes("Membership Visit"), "Membership Visit heading missing");
@@ -223,6 +260,72 @@ async function run() {
     }
 
     console.log(`  viewport ${vp.name} inspected`);
+  }
+
+  /* ---------------- upgrade suggestions, per plan ---------------- */
+  for (const rule of UPGRADE_RULES) {
+    const ctx = await makeContext(browser, VIEWPORTS[1], memberOnPlan(rule.plan));
+    const page = await ctx.newPage();
+
+    await page.goto(`${BASE}/book?visit=additional`, { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(2200);
+    const extra = await page.evaluate(() => document.body.innerText);
+    if (rule.normal) {
+      record(`upgrade/${rule.plan}/extra-suggests-${rule.normal}`, extra.includes(rule.normal), `Extra Visit did not suggest ${rule.normal}`);
+      const wrong = UPGRADE_RULES.map((r) => r.normal).filter((n) => n && n !== rule.normal);
+      record(
+        `upgrade/${rule.plan}/extra-shows-one-plan`,
+        !wrong.some((name) => new RegExp(`${name}\s*\$`).test(extra)),
+        "more than one plan was offered, which makes it a pricing table"
+      );
+    } else {
+      record(
+        `upgrade/${rule.plan}/extra-no-suggestion`,
+        !/Get more from your membership/i.test(extra),
+        "Elite has nowhere to upgrade to and must not be prompted"
+      );
+    }
+
+    await page.goto(`${BASE}/book?visit=priority`, { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(2000);
+    const priority = await page.evaluate(() => document.body.innerText);
+    if (rule.priority) {
+      record(`upgrade/${rule.plan}/priority-suggests-${rule.priority}`, priority.includes(rule.priority), `Priority did not suggest ${rule.priority}`);
+      if (rule.plan === "basic" || rule.plan === "plus") {
+        record(
+          `upgrade/${rule.plan}/priority-mentions-fee`,
+          /may have an additional service fee/i.test(priority),
+          "a plan without Priority included should be told a fee may apply"
+        );
+        record(
+          `upgrade/${rule.plan}/priority-no-false-inclusion`,
+          !/Included with your/i.test(priority),
+          "a plan without Priority must not be told it is included"
+        );
+      }
+      if (rule.plan === "premium") {
+        record(`upgrade/premium/priority-included`, /Included with your Premium plan/i.test(priority), "Premium was not told Priority is included");
+        record(`upgrade/premium/priority-count`, /1 Priority Visit per month/i.test(priority), "Premium was not told it includes 1 per month");
+        record(`upgrade/premium/priority-no-fee-hedge`, !/may have an additional service fee/i.test(priority), "we know their plan, so the fee hedge must not show");
+      }
+      record(
+        `upgrade/${rule.plan}/priority-explains-benefit`,
+        /Priority Visit(s)? a month/i.test(priority),
+        "the prompt did not say how many Priority Visits the plan includes"
+      );
+    } else {
+      record(
+        `upgrade/${rule.plan}/priority-no-suggestion`,
+        !/Priority is included on some plans/i.test(priority),
+        "Elite must not be prompted on Priority either"
+      );
+      record(`upgrade/elite/priority-included`, /Included with your Elite plan/i.test(priority), "Elite was not told Priority is included");
+      record(`upgrade/elite/priority-count`, /2 Priority Visits per month/i.test(priority), "Elite was not told it includes 2 per month");
+      record(`upgrade/elite/priority-no-fee-hedge`, !/may have an additional service fee/i.test(priority), "Elite must not see the fee hedge");
+      record(`upgrade/elite/priority-no-remaining-count`, !/remaining|left this month/i.test(priority), "we do not track entitlement, so no remaining count may be shown");
+    }
+    await ctx.close();
+    console.log(`  plan ${rule.plan} inspected`);
   }
 
   await browser.close();

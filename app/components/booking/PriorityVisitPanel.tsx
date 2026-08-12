@@ -1,4 +1,9 @@
 import { CUSTOMER_CARE } from "@/lib/fixter";
+import MembershipUpgradePrompt, {
+  PRIORITY_VISITS_PER_MONTH,
+  planLabel,
+  type PlanKey,
+} from "@/app/components/membership/MembershipUpgradePrompt";
 
 /**
  * Priority Visit.
@@ -14,30 +19,51 @@ import { CUSTOMER_CARE } from "@/lib/fixter";
  * response service. Calling is the primary action because this is a
  * conversation, not a transaction.
  */
-export default function PriorityVisitPanel() {
+export default function PriorityVisitPanel({
+  currentPlan = null,
+}: {
+  currentPlan?: PlanKey | null;
+}) {
+  const includedVisits = currentPlan ? PRIORITY_VISITS_PER_MONTH[currentPlan] : undefined;
+
   return (
     <section className="mx-auto w-full max-w-[1280px] px-4 pb-16 pt-6 sm:px-6 sm:pb-20 sm:pt-8 lg:px-8">
-      <div className="max-w-[560px]">
+      <div className="max-w-[600px]">
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">
           Priority Visit
         </p>
         <h1 className="mt-3 text-[28px] font-semibold leading-[1.1] tracking-[-0.035em] text-[#0B1628] sm:text-[38px]">
-          Need us sooner?
+          Need help sooner?
         </h1>
-        <p className="mt-4 text-[15px] leading-6 text-[#4A5462] sm:text-[16px] sm:leading-7">
-          Priority Visits are for problems that cannot wait for your next regular
-          appointment. Same-day or next-day service may be available depending on
-          the situation and Fixter availability.
-        </p>
-        <p className="mt-3 text-[14px] leading-6 text-[#6E6E73]">
-          Give us a call and we will tell you what is possible today.
+        <p className="mt-3 text-[15px] leading-6 text-[#4A5462] sm:text-[17px] sm:leading-7">
+          For urgent handyman needs, same-day or next-day service may be available.
         </p>
 
-        <div className="mt-7 flex flex-col gap-2 sm:flex-row">
+        {/*
+          Two plain rows rather than cards. The customer needs to grasp "how
+          soon, and is it certain" in a glance, and the honest answer to the
+          second half is "subject to availability" in both cases.
+        */}
+        <div className="mt-6 overflow-hidden rounded-[14px] border border-[#E4E9F2]">
+          {[
+            { when: "Same day", note: "Subject to availability" },
+            { when: "Next day", note: "Subject to availability" },
+          ].map((row) => (
+            <div
+              key={row.when}
+              className="flex items-baseline justify-between gap-3 border-b border-[#EDF1F7] px-4 py-3.5 last:border-b-0"
+            >
+              <span className="text-[15px] font-semibold text-[#0B1628]">{row.when}</span>
+              <span className="text-[13px] text-[#6E6E73]">{row.note}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
           <a
             href={CUSTOMER_CARE.callHref}
             aria-label={`Call ProFixter at ${CUSTOMER_CARE.phoneDisplay}`}
-            className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[14px] bg-[#0B1628] px-6 text-[15px] font-semibold text-white transition hover:bg-[#172033] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] sm:min-w-[220px]"
+            className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[14px] bg-[#0B1628] px-6 text-[15px] font-semibold text-white transition hover:bg-[#172033] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] sm:min-w-[210px]"
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
@@ -58,14 +84,37 @@ export default function PriorityVisitPanel() {
           </a>
         </div>
 
-        <p className="mt-4 text-[15px] font-semibold tracking-[-0.01em] text-[#0B1628]">
+        <p className="mt-3 text-[16px] font-semibold tracking-[-0.01em] text-[#0B1628]">
           {CUSTOMER_CARE.phoneDisplay}
         </p>
 
-        <p className="mt-8 border-t border-[#E6ECF5] pt-5 text-[13px] leading-5 text-[#8A94A6]">
-          For anything that is not urgent, book your Membership Visit or an
-          Additional Visit above.
+        {currentPlan && includedVisits ? (
+          /*
+            We know their plan, so telling them a fee "may" apply would be
+            evasive. This states the benefit only. It deliberately does not say
+            how many are left this month: that would need entitlement tracking
+            that does not exist yet, and a number we cannot stand behind is
+            worse than no number.
+          */
+          <div className="mt-5 rounded-[14px] border border-[#D9E7D2] bg-[#F4F9F1] px-4 py-3.5">
+            <p className="text-[14px] font-semibold text-[#1E4620]">
+              Included with your {planLabel(currentPlan)} plan
+            </p>
+            <p className="mt-1 text-[13px] leading-5 text-[#41603F]">
+              Your membership includes {includedVisits} Priority Visit
+              {includedVisits === 1 ? "" : "s"} per month.
+            </p>
+          </div>
+        ) : null}
+
+        <p className="mt-5 text-[13px] leading-5 text-[#6E6E73]">
+          Priority Visits are arranged directly with our team and cannot be booked
+          online.
+          {includedVisits ? "" : " Priority Visits may have an additional service fee."}
         </p>
+
+        {/* Priority is a plan benefit, so the suggestion here is Premium or Elite. */}
+        <MembershipUpgradePrompt currentPlan={currentPlan} variant="priority" className="mt-7" />
       </div>
     </section>
   );

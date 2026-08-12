@@ -98,9 +98,32 @@ function AccountShortcuts() {
 function SubscribedCustomerFlow() {
   return (
     <>
-      <BookingSection />
+      {/*
+        Booking lives under Book now. This dashboard keeps the things a member
+        comes here for - their visits, their plan, their Fixter - and points at
+        the one place booking happens rather than embedding a second entrance
+        to it.
+      */}
+      <section className="bg-white px-4 pb-6 pt-8 sm:px-6 sm:pt-12 lg:px-8">
+        <div className="mx-auto flex max-w-[1180px] flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-[560px]">
+            <h1 className="text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-[#111111] sm:text-[38px]">
+              Your membership
+            </h1>
+            <p className="mt-3 text-[15px] leading-6 text-[#6E6E73] sm:text-[17px]">
+              Your visits, your plan, and your Fixter. Ready when you need something done.
+            </p>
+          </div>
+          <Link
+            href="/book?visit=membership"
+            className="inline-flex min-h-[52px] w-full items-center justify-center rounded-[14px] bg-[#0B1628] px-7 text-[15px] font-semibold text-white transition hover:bg-[#172033] lg:w-auto"
+          >
+            Book your next visit
+          </Link>
+        </div>
+      </section>
 
-      <section className="bg-[#F6F8FC] px-4 pb-4 sm:px-6 lg:px-8">
+      <section className="bg-[#F6F8FC] px-4 pb-4 pt-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-[1180px]">
           <Link
             href="/membership-info"

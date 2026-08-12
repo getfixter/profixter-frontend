@@ -20,6 +20,7 @@ import { useSearchParams } from "next/navigation";
 import BookingSection from "@/app/components/sections/BookingSection";
 import VisitTypeNav, { parseVisitType } from "@/app/components/booking/VisitTypeNav";
 import PriorityVisitPanel from "@/app/components/booking/PriorityVisitPanel";
+import MembershipUpgradePrompt, { normalizePlanKey } from "@/app/components/membership/MembershipUpgradePrompt";
 import { hasActiveMembership as hasActiveMembershipFor } from "@/lib/auth-routing";
 
 const ONE_TIME_SERVICE_OPTIONS = [
@@ -208,36 +209,6 @@ function StepHeader({
   );
 }
 
-function RushServiceCallout({ rushIncluded }: { rushIncluded: boolean }) {
-  return (
-    <div className="mb-3 grid gap-2 sm:mb-5 sm:gap-3">
-      <div className="rounded-[14px] border border-[#F2C46D] bg-[#FFFBF2] p-3 shadow-[0_10px_30px_rgba(146,86,18,0.07)] sm:p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-[15px] font-black text-[#0B1628] sm:text-[18px]">Need help sooner?</h2>
-            <p className="mt-1 text-[11px] leading-4 text-[#64748B] sm:text-[13px] sm:leading-5">
-              Emergency Service is designed for situations where you need help before the next available appointment. We&rsquo;ll do our best to dispatch a technician as quickly as availability allows.
-            </p>
-          </div>
-          <a href="tel:6315991363" onClick={() => trackEvent("rush_service_call_clicked", { placement: "book_rush_service_callout" })} className="inline-flex h-10 flex-shrink-0 items-center rounded-[10px] bg-[#F59E0B] px-3 text-[11px] font-black text-[#0B1628] sm:h-11 sm:text-[13px]">Call Now</a>
-        </div>
-        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-semibold text-[#8A5A10] sm:text-[12px]">
-          <span>Priority scheduling</span><span>Subject to technician availability</span><span>$300 fee</span>
-        </div>
-        <a href="tel:6315991363" className="mt-1 inline-flex text-[11px] font-bold text-[#B45309] sm:text-[12px]">(631) 599-1363</a>
-      </div>
-      <div className="flex items-center justify-between gap-3 rounded-[12px] border border-[#E5E9F2] bg-white px-3 py-2.5">
-        <div>
-          <h3 className="text-[12px] font-extrabold text-[#0B1628] sm:text-[14px]">Included with Premium &amp; Elite</h3>
-          <p className="mt-0.5 text-[10px] leading-4 text-[#64748B] sm:text-[12px]">
-            {rushIncluded ? "Emergency Visits are included with your membership without the $300 fee." : "Emergency Visits are included with Premium and Elite memberships without the $300 fee."}
-          </p>
-        </div>
-        <Link href="/membership#plans" onClick={() => trackEvent("membership_cta_clicked", { placement: "book_rush_service_callout" })} className="flex-shrink-0 text-[10px] font-bold text-[#306EEC] sm:text-[12px]">View Plans</Link>
-      </div>
-    </div>
-  );
-}
 
 /**
  * The existing $99 one-time / extra visit flow, unchanged.
@@ -502,10 +473,11 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
     () => addresses.some((address) => Boolean(address.hasActiveSubscription)),
     [addresses]
   );
-  const hasRushIncluded = useMemo(
-    () => addresses.some((address) => Boolean(address.hasActiveSubscription) && (address.plan === "premium" || address.plan === "elite")),
-    [addresses]
-  );
+  /** The member's current plan, for the contextual upgrade suggestion. */
+  const currentPlanKey = useMemo(() => {
+    const subscribed = addresses.find((address) => Boolean(address.hasActiveSubscription));
+    return normalizePlanKey(subscribed?.plan);
+  }, [addresses]);
   const priceLabel = formatPrice(config.priceCents, config.currency);
   const pageCopy = useMemo(
     () =>
@@ -737,7 +709,9 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
             </div>
           )}
 
-          <RushServiceCallout rushIncluded={hasRushIncluded} />
+          {hasActiveMembership && (
+            <MembershipUpgradePrompt currentPlan={currentPlanKey} className="mb-3 sm:mb-5" />
+          )}
 
           <h2 className="mb-2 text-[16px] font-black text-[#0B1628] sm:mb-3 sm:text-[22px]">Book your extra visit</h2>
 
@@ -1349,6 +1323,10 @@ function BookExperience() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const isMember = hasActiveMembershipFor(user);
+  // Same plan source the Extra Visit flow uses: the subscribed address.
+  const currentPlanKey = normalizePlanKey(
+    (user?.addresses || []).find((address) => Boolean(address.hasActiveSubscription))?.plan
+  );
 
   if (!isMember) return <AdditionalVisitBooking />;
 
@@ -1362,7 +1340,7 @@ function BookExperience() {
       <Header />
       {nav}
       {visit === "priority" ? (
-        <PriorityVisitPanel />
+        <PriorityVisitPanel currentPlan={currentPlanKey} />
       ) : (
         <>
           <section className="mx-auto w-full max-w-[1280px] px-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
@@ -1378,6 +1356,11 @@ function BookExperience() {
           </section>
           {/* The existing member booking experience, unchanged. */}
           <BookingSection />
+
+          {/* After booking, not before it: the task comes first. */}
+          <section className="mx-auto w-full max-w-[1280px] px-4 pb-14 sm:px-6 lg:px-8">
+            <MembershipUpgradePrompt currentPlan={currentPlanKey} className="max-w-[420px]" />
+          </section>
         </>
       )}
       <Footer />
