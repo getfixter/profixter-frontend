@@ -71,6 +71,8 @@ type InvoiceFormState = {
   taxRate: string;
   dueTerm: InvoiceDueTerm;
   invoiceDate: string;
+  /** True once the admin edits the date, which stops the backend rolling it. */
+  invoiceDateIsManual: boolean;
   dueDate: string;
   serviceDate: string;
   publicNote: string;
@@ -214,6 +216,7 @@ function defaultForm(project: Project): InvoiceFormState {
     taxRate: "",
     dueTerm: "due_on_receipt",
     invoiceDate,
+    invoiceDateIsManual: false,
     dueDate: invoiceDate,
     serviceDate: "",
     publicNote: "Thank you for your business.",
@@ -255,6 +258,7 @@ function formFromInvoice(invoice: ProjectInvoice): InvoiceFormState {
     taxRate: percentInputFromBasisPoints(invoice.taxRateBasisPoints),
     dueTerm: invoice.dueTerm || "due_on_receipt",
     invoiceDate: dateOnly(invoice.dates.invoiceDate),
+    invoiceDateIsManual: invoice.dates.invoiceDateIsManual === true,
     dueDate: dateOnly(invoice.dates.dueDate),
     serviceDate: dateOnly(invoice.dates.serviceDate),
     publicNote: invoice.publicNote || "",
@@ -313,6 +317,7 @@ function buildPayload(project: Project, form: InvoiceFormState): ProjectInvoiceI
     dueTerm: form.dueTerm,
     dates: {
       invoiceDate: form.invoiceDate,
+      invoiceDateIsManual: form.invoiceDateIsManual,
       dueDate: dueDateForTerm(form.invoiceDate, form.dueTerm, form.dueDate),
       serviceDate: form.serviceDate || null,
     },
@@ -667,8 +672,23 @@ function InvoiceEditor({
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Dates and Tax</p>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <label className="text-sm font-semibold text-slate-700">
-              Invoice date *
-              <input required type="date" value={form.invoiceDate} onChange={(event) => updateField("invoiceDate", event.target.value)} className={inputClass} />
+              Invoice date
+              <input
+                type="date"
+                value={form.invoiceDate}
+                onChange={(event) => {
+                  updateField("invoiceDate", event.target.value);
+                  // Touching the field makes it a deliberate choice, which the
+                  // backend then never rolls forward at issue.
+                  updateField("invoiceDateIsManual", true);
+                }}
+                className={inputClass}
+              />
+              <span className="mt-1 block text-xs font-normal text-slate-400">
+                {form.invoiceDateIsManual
+                  ? "Set by you. This date stays as entered."
+                  : "Set automatically to the day the invoice PDF is generated."}
+              </span>
             </label>
             <label className="text-sm font-semibold text-slate-700">
               Due term
