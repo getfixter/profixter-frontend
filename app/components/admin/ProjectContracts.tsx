@@ -74,6 +74,8 @@ type ContractFormState = {
   fullDepositConfirmed: boolean;
   zeroAdjustedPriceConfirmed: boolean;
   contractDate: string;
+  /** True once the admin edits the date, which stops the backend rolling it. */
+  contractDateIsManual: boolean;
   estimatedStartDate: string;
   estimatedCompletionDate: string;
   materialsAllowances: string;
@@ -265,6 +267,7 @@ function defaultForm(project: Project): ContractFormState {
     fullDepositConfirmed: false,
     zeroAdjustedPriceConfirmed: false,
     contractDate: todayDate(),
+    contractDateIsManual: false,
     estimatedStartDate: "",
     estimatedCompletionDate: "",
     materialsAllowances: "",
@@ -309,6 +312,7 @@ function formFromContract(contract: ProjectContract): ContractFormState {
       dueCondition: row.dueCondition,
     })),
     contractDate: dateOnly(contract.dates.contractDate),
+    contractDateIsManual: contract.dates.contractDateIsManual === true,
     estimatedStartDate: dateOnly(contract.dates.estimatedStartDate),
     estimatedCompletionDate: dateOnly(contract.dates.estimatedCompletionDate),
     materialsAllowances: contract.optionalDetails.materialsAllowances || "",
@@ -363,6 +367,7 @@ function buildPayload(project: Project, form: ContractFormState): ProjectContrac
     })),
     dates: {
       contractDate: form.contractDate,
+      contractDateIsManual: form.contractDateIsManual,
       estimatedStartDate: form.estimatedStartDate || null,
       estimatedCompletionDate: form.estimatedCompletionDate || null,
     },
@@ -1479,8 +1484,23 @@ export default function ProjectContracts({ project }: { project: Project }) {
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Dates</p>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className="text-sm font-semibold text-slate-700">
-                Contract date *
-                <input required type="date" value={form.contractDate} onChange={(event) => updateField("contractDate", event.target.value)} className={inputClass} />
+                Agreement date
+                <input
+                  type="date"
+                  value={form.contractDate}
+                  onChange={(event) => {
+                    updateField("contractDate", event.target.value);
+                    // Touching the field makes it a deliberate choice, which the
+                    // backend then never rolls forward when the PDF is generated.
+                    updateField("contractDateIsManual", true);
+                  }}
+                  className={inputClass}
+                />
+                <span className="mt-1 block text-xs font-normal text-slate-400">
+                  {form.contractDateIsManual
+                    ? "Set by you. This date stays as entered."
+                    : "Set automatically to the day the Agreement is generated."}
+                </span>
               </label>
               <label className="text-sm font-semibold text-slate-700">
                 Estimated start

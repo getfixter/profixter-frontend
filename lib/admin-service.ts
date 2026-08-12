@@ -970,6 +970,8 @@ export interface ProjectContractInput {
   paymentSchedule: ContractPaymentScheduleRow[];
   dates: {
     contractDate: string;
+    /** True when the admin deliberately set the date instead of accepting today. */
+    contractDateIsManual?: boolean;
     estimatedStartDate: string | null;
     estimatedCompletionDate: string | null;
   };
@@ -1528,6 +1530,8 @@ export interface ProjectInvoiceInput {
   dueTerm: InvoiceDueTerm;
   dates: {
     invoiceDate: string;
+    /** True when the admin deliberately set the date instead of accepting today. */
+    invoiceDateIsManual?: boolean;
     dueDate: string;
     serviceDate?: string | null;
   };
@@ -1587,6 +1591,7 @@ export interface ProjectInvoice {
   dueTerm: InvoiceDueTerm;
   dates: {
     invoiceDate: string;
+    invoiceDateIsManual?: boolean;
     dueDate: string;
     serviceDate?: string | null;
     paidInFullAt?: string | null;
