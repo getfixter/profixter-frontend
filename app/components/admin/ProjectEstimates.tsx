@@ -12,6 +12,7 @@ import {
   type EstimateStatus,
   type Project,
 } from "@/lib/admin-service";
+import AdminActionBar, { type AdminAction } from "@/app/components/admin/AdminActionBar";
 
 type EstimateView = "list" | "create" | "details" | "edit";
 
@@ -413,6 +414,33 @@ export default function ProjectEstimates({ project }: { project: Project }) {
   }
 
   if (view === "details" && selected) {
+    const removeEstimate = async () => {
+      if (!window.confirm(`Delete ${selected.estimateNumber}? This cannot be undone.`)) return;
+      try {
+        await deleteEstimate(selected._id);
+        setEstimates((current) => current.filter((item) => item._id !== selected._id));
+        setSelected(null);
+        setView("list");
+      } catch (deleteError) {
+        setError(errorMessage(deleteError));
+      }
+    };
+
+    /* Estimates are short documents: edit it, write another, or bin it. */
+    const barActions: AdminAction[] = [
+      { key: "edit", label: "Edit", longLabel: "Edit Estimate", tone: "primary", onClick: () => setView("edit") },
+      {
+        key: "new",
+        label: "New",
+        longLabel: "New Estimate",
+        onClick: () => {
+          setSelected(null);
+          setView("create");
+        },
+      },
+      { key: "delete", label: "Delete", longLabel: "Delete Estimate", tone: "danger", onClick: () => void removeEstimate() },
+    ];
+
     return (
       <div className="space-y-5">
         <section className="rounded-2xl bg-slate-950 p-5 text-white shadow-sm">
@@ -426,21 +454,12 @@ export default function ProjectEstimates({ project }: { project: Project }) {
               <p className="mt-2 text-slate-300">{selected.title}</p>
               <p className="mt-4 text-sm text-slate-400">{project.customerName} · {project.projectNumber} · {displayDate(selected.expirationDate)}</p>
             </div>
-            <div className="flex gap-2">
+            {/* Duplicated by the mobile action bar; kept for desktop only. */}
+            <div className="hidden gap-2 xl:flex">
               <button type="button" onClick={() => setView("edit")} className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold">Edit</button>
               <button
                 type="button"
-                onClick={async () => {
-                  if (!window.confirm(`Delete ${selected.estimateNumber}? This cannot be undone.`)) return;
-                  try {
-                    await deleteEstimate(selected._id);
-                    setEstimates((current) => current.filter((item) => item._id !== selected._id));
-                    setSelected(null);
-                    setView("list");
-                  } catch (deleteError) {
-                    setError(errorMessage(deleteError));
-                  }
-                }}
+                onClick={() => void removeEstimate()}
                 className="rounded-xl border border-rose-400/40 bg-rose-500/10 px-4 py-2.5 text-sm font-bold text-rose-200"
               >
                 Delete
@@ -488,6 +507,8 @@ export default function ProjectEstimates({ project }: { project: Project }) {
             </div>
           </section>
         </div>
+
+        <AdminActionBar actions={barActions} label="Estimate actions" />
       </div>
     );
   }

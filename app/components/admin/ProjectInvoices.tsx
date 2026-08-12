@@ -34,6 +34,7 @@ import {
   type ProjectInvoiceInput,
 } from "@/lib/admin-service";
 import { ProjectFinancialSummaryView } from "@/app/components/admin/ProjectFinancialSummary";
+import AdminActionBar, { type AdminAction } from "@/app/components/admin/AdminActionBar";
 
 type InvoiceView = "list" | "create" | "details" | "edit";
 
@@ -1100,6 +1101,63 @@ export default function ProjectInvoices({ project }: { project: Project }) {
 
   if (view === "details" && selected) {
     const paid = selected.status === "Paid in Full";
+    const voided = selected.status === "Voided";
+    const hasPdf = Boolean(selected.currentPdf?.available);
+    const busy = !!workingAction;
+
+    /*
+     * Invoice work is operational: produce the PDF, send it, take the money.
+     * Those three lead; editing and voiding sit behind More because they are
+     * rarer and more consequential.
+     */
+    const barActions: AdminAction[] = [
+      {
+        key: "payment",
+        label: "Payment",
+        longLabel: "Add Payment",
+        tone: "success",
+        disabled: voided || busy,
+        onClick: () => openPayment(),
+      },
+      {
+        key: "email",
+        label: "Email",
+        longLabel: paid ? "Email Paid Receipt" : "Email Invoice",
+        tone: "primary",
+        disabled: !hasPdf || selected.requiresRegeneration || busy,
+        onClick: () => openEmail(selected),
+      },
+      {
+        key: "generate",
+        label: selected.requiresRegeneration ? "Regenerate" : "Generate",
+        longLabel: selected.requiresRegeneration ? "Regenerate PDF" : "Generate PDF",
+        disabled: busy,
+        onClick: () => void generateSelected(),
+      },
+      {
+        key: "download",
+        label: "PDF",
+        longLabel: paid ? "Download Paid Invoice" : "Download PDF",
+        disabled: !hasPdf || busy,
+        onClick: () => void downloadSelected(),
+      },
+      {
+        key: "edit",
+        label: "Edit",
+        longLabel: "Edit Invoice",
+        disabled: voided || busy,
+        onClick: () => setView("edit"),
+      },
+      {
+        key: "void",
+        label: "Void",
+        longLabel: "Void Invoice",
+        tone: "danger",
+        disabled: voided || busy,
+        onClick: () => void voidSelected(),
+      },
+    ];
+
     return (
       <div className="space-y-5">
         <section className="rounded-2xl bg-slate-950 p-5 text-white shadow-sm">
@@ -1116,7 +1174,8 @@ export default function ProjectInvoices({ project }: { project: Project }) {
                 <p className="mt-2 text-sm font-semibold text-emerald-200">Paid in Full on {displayDate(selected.dates.paidInFullAt)}</p>
               )}
             </div>
-            <div className="flex flex-wrap gap-2">
+            {/* Duplicated by the mobile action bar; kept for desktop only. */}
+            <div className="hidden flex-wrap gap-2 xl:flex">
               <button type="button" onClick={() => setView("edit")} disabled={selected.status === "Voided" || !!workingAction} className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold disabled:opacity-50">Edit</button>
               <button type="button" onClick={generateSelected} disabled={!!workingAction} className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-bold hover:bg-white/10 disabled:opacity-50">{workingAction || "Generate PDF"}</button>
             </div>
@@ -1168,7 +1227,8 @@ export default function ProjectInvoices({ project }: { project: Project }) {
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Actions</p>
               <h4 className="mt-1 font-bold text-slate-950">PDF and Delivery</h4>
             </div>
-            <div className="flex flex-wrap gap-2">
+            {/* Duplicated by the mobile action bar; kept for desktop only. */}
+            <div className="hidden flex-wrap gap-2 xl:flex">
               <button type="button" disabled={!selected.currentPdf?.available || !!workingAction} onClick={() => void downloadSelected()} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
                 {paid ? "Download Paid Invoice" : "Download PDF"}
               </button>
@@ -1304,6 +1364,12 @@ export default function ProjectInvoices({ project }: { project: Project }) {
             </form>
           </div>
         )}
+
+        <AdminActionBar
+          actions={barActions}
+          hidden={showEmail || showPayment}
+          label="Invoice actions"
+        />
       </div>
     );
   }
