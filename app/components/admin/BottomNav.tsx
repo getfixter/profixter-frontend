@@ -66,6 +66,12 @@ const TAB_ICONS: Record<string, React.ReactNode> = {
       <circle cx="12" cy="7" r="4" /><path d="M5 21v-2a7 7 0 0114 0v2" />
     </svg>
   ),
+  tips: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+    </svg>
+  ),
 };
 
 export default function BottomNav({ active, onChange, tabs = ADMIN_TABS }: BottomNavProps) {

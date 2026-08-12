@@ -16,6 +16,7 @@ import EmailComposer from "@/app/components/admin/EmailComposer";
 import RequestsTable from "@/app/components/admin/RequestsTable";
 import ProjectsModule from "@/app/components/admin/ProjectsModule";
 import FixtersModule from "@/app/components/admin/FixtersModule";
+import TipsModule from "@/app/components/admin/TipsModule";
 import PromotionPopupEditor from "@/app/components/admin/PromotionPopupEditor";
 import AdminActivityLog from "@/app/components/admin/AdminActivityLog";
 import { tabsForUser } from "@/app/components/admin/admin-tabs-config";
@@ -929,6 +930,8 @@ function AdminPageContent() {
 
             {active === "calendar" && <AdminCalendarSettings isAdmin={isAdmin} />}
             {active === "fixters" && isAdmin && <FixtersModule />}
+            {/* Employees see this too. The API returns only their own tips. */}
+            {active === "tips" && <TipsModule />}
           </>
         )}
       </div>

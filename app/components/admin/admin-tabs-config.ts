@@ -8,6 +8,7 @@ export type AdminTabId =
   | "blacklist"
   | "calendar"
   | "fixters"
+  | "tips"
   | "jarvis"
   | "promotion"
   | "activity";
@@ -21,6 +22,7 @@ export type AdminTabItem = {
 
 export const ADMIN_TABS: AdminTabItem[] = [
   { id: "bookings",   label: "Jobs",       shortLabel: "Jobs",    description: "Daily bookings" },
+  { id: "tips",       label: "Tips",       shortLabel: "Tips",    description: "What customers left" },
   { id: "subscribed", label: "Members",    shortLabel: "Members", description: "Active plans" },
   { id: "users",      label: "All Users",  shortLabel: "Users",   description: "Customer CRM" },
   { id: "projects",   label: "Projects",   shortLabel: "Projects", description: "Sales pipeline" },
@@ -34,15 +36,20 @@ export const ADMIN_TABS: AdminTabItem[] = [
   { id: "fixters",    label: "Fixters",    shortLabel: "Fixters", description: "Employee accounts" },
 ];
 
+/**
+ * Tips are visible to every employee on purpose: a Fixter seeing what they
+ * earned is the point of the feature. The tab is the same one the admin sees;
+ * the API decides whose tips come back, so a Fixter can only ever see their own.
+ */
 export function tabsForUser(role?: string, position?: string) {
   if (role === "admin") return ADMIN_TABS;
   if (role === "employee" && position === "General Fixter") {
     return ADMIN_TABS.filter((tab) =>
-      ["bookings", "subscribed", "calendar"].includes(tab.id)
+      ["bookings", "tips", "subscribed", "calendar"].includes(tab.id)
     );
   }
   if (role === "employee") {
-    return ADMIN_TABS.filter((tab) => tab.id === "bookings");
+    return ADMIN_TABS.filter((tab) => ["bookings", "tips"].includes(tab.id));
   }
   return [];
 }
