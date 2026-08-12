@@ -70,7 +70,7 @@ function FaqRow({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div
-      className={`rounded-[18px] border transition-all duration-200 overflow-hidden ${
+      className={`rounded-[13px] border transition-all duration-200 overflow-hidden ${
         open
           ? "border-[#306EEC]/30 bg-[#306EEC]/[0.04]"
           : "border-white/[0.09] bg-white/[0.03] hover:bg-white/[0.05] hover:border-white/[0.14]"
@@ -150,8 +150,8 @@ export default function RemodelingPage() {
           <div aria-hidden="true" className="pointer-events-none absolute top-0 left-0 right-0 h-px"
             style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.50), transparent)" }} />
 
-          <div className="relative w-full mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-24 sm:py-28 lg:py-32">
-            <div className="grid lg:grid-cols-[1fr_500px] gap-12 lg:gap-16 items-center">
+          <div className="relative w-full mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-9 sm:py-11 lg:py-32">
+            <div className="grid lg:grid-cols-[1fr_500px] gap-8 lg:gap-10 items-center">
 
               {/* Left: Copy */}
               <div>
@@ -170,7 +170,7 @@ export default function RemodelingPage() {
                   </span>
                 </div>
 
-                <h1 className="text-[56px] sm:text-[76px] lg:text-[92px] font-black leading-[0.86] tracking-[-0.048em] text-white mb-7">
+                <h1 className="text-[43px] sm:text-[50px] lg:text-[50px] font-black leading-[0.86] tracking-[-0.048em] text-white mb-7">
                   Your bathroom.
                   <br />
                   <span
@@ -181,11 +181,11 @@ export default function RemodelingPage() {
                   </span>
                 </h1>
 
-                <p className="text-[20px] sm:text-[22px] font-bold leading-[1.3] text-white/85 mb-4 max-w-[520px]">
+                <p className="text-[19px] sm:text-[21px] font-bold leading-[1.3] text-white/85 mb-4 max-w-[520px]">
                   Beautiful. Functional. Built to last.
                   From design to final finish.
                 </p>
-                <p className="text-[16px] sm:text-[17px] leading-[1.75] text-white/45 max-w-[480px] mb-10">
+                <p className="text-[16px] sm:text-[17px] leading-[1.75] text-white/45 max-w-[480px] mb-7">
                   A bathroom remodel is the highest-return renovation you can
                   make. We do it properly - licensed, permitted, waterproofed,
                   and finished to a standard your home deserves.
@@ -195,7 +195,7 @@ export default function RemodelingPage() {
                   <button
                     type="button"
                     onClick={callNow}
-                    className="inline-flex min-h-[64px] items-center justify-center gap-3 rounded-[18px] px-10 text-[17px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-3 rounded-[13px] px-10 text-[17px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                     style={{ background: "linear-gradient(135deg, #306EEC 0%, #1E4ED8 100%)", boxShadow: "0 20px 60px rgba(48,110,236,0.40)" }}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -205,7 +205,7 @@ export default function RemodelingPage() {
                   </button>
                   <a
                     href={`tel:${PHONE_TEL}`}
-                    className="inline-flex min-h-[64px] items-center justify-center gap-2.5 rounded-[18px] border border-white/18 bg-white/[0.06] px-10 text-[17px] font-bold text-white/85 backdrop-blur-sm transition-all hover:bg-white/[0.12] hover:border-white/30"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-[13px] border border-white/18 bg-white/[0.06] px-10 text-[17px] font-bold text-white/85 backdrop-blur-sm transition-all hover:bg-white/[0.12] hover:border-white/30"
                   >
                     Call {PHONE_DISPLAY}
                   </a>
@@ -238,7 +238,7 @@ export default function RemodelingPage() {
               {/* Right: Authority card */}
               <div className="hidden lg:block">
                 <div
-                  className="relative rounded-[28px] overflow-hidden"
+                  className="relative rounded-[16px] overflow-hidden"
                   style={{
                     background: "linear-gradient(145deg, #0D1E38 0%, #0F2452 50%, #0A1835 100%)",
                     boxShadow: "0 48px 120px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08)",
@@ -294,7 +294,7 @@ export default function RemodelingPage() {
                       <button
                         type="button"
                         onClick={callNow}
-                        className="w-full min-h-[54px] rounded-[14px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 active:scale-[0.99]"
+                        className="w-full min-h-[46px] rounded-[14px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 active:scale-[0.99]"
                         style={{ background: "linear-gradient(135deg, #306EEC 0%, #1E4ED8 100%)", boxShadow: "0 12px 40px rgba(48,110,236,0.32)" }}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -385,21 +385,21 @@ export default function RemodelingPage() {
             WHAT'S INCLUDED
         ═══════════════════════════════════════════════════════ */}
         <section
-          className="relative w-full py-16 sm:py-20 lg:py-28 overflow-hidden"
+          className="relative w-full py-10 sm:py-13 lg:py-12 overflow-hidden"
           style={{ background: "linear-gradient(160deg, #EAEDFA 0%, #E4E9F8 100%)" }}
         >
           <div aria-hidden="true" className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 h-[500px] w-[900px] rounded-full blur-[160px] opacity-35"
             style={{ background: "radial-gradient(circle, rgba(48,110,236,0.10), transparent 70%)" }} />
 
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="max-w-[680px] mb-14 sm:mb-16">
+            <div className="max-w-[680px] mb-9 sm:mb-16">
               <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.10)]">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
                   <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">Complete Scope</span>
               </div>
-              <h2 className="text-[32px] sm:text-[50px] lg:text-[60px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-5">
+              <h2 className="text-[30px] sm:text-[40px] lg:text-[43px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-5">
                 Everything handled.
                 <br />
                 <span style={{ color: "#306EEC" }}>Start to finish.</span>
@@ -505,7 +505,7 @@ export default function RemodelingPage() {
               ].map(({ title, body, icon }) => (
                 <div
                   key={title}
-                  className="group rounded-[22px] border border-[#C5CBD8] bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.06)] transition-all duration-300 hover:shadow-[0_16px_56px_rgba(15,23,42,0.11)] hover:-translate-y-0.5"
+                  className="group rounded-[14px] border border-[#C5CBD8] bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.06)] transition-all duration-300 hover:shadow-[0_16px_56px_rgba(15,23,42,0.11)] hover:-translate-y-0.5"
                 >
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-[14px] bg-[#EEF3FF] text-[#306EEC] transition-all group-hover:bg-[#306EEC] group-hover:text-white">
                     {icon}
@@ -516,11 +516,11 @@ export default function RemodelingPage() {
               ))}
             </div>
 
-            <div className="mt-10 flex justify-center lg:hidden">
+            <div className="mt-7 flex justify-center lg:hidden">
               <button
                 type="button"
                 onClick={callNow}
-                className="inline-flex h-[58px] items-center gap-3 rounded-[16px] px-9 text-[16px] font-extrabold text-white"
+                className="inline-flex h-[48px] items-center gap-3 rounded-[16px] px-9 text-[16px] font-extrabold text-white"
                 style={{ background: "linear-gradient(135deg, #306EEC 0%, #1E4ED8 100%)", boxShadow: "0 16px 48px rgba(48,110,236,0.35)" }}
               >
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -531,9 +531,9 @@ export default function RemodelingPage() {
             </div>
 
             {/* ── Warranty + Financing callout ── */}
-            <div className="mt-10 sm:mt-12 grid sm:grid-cols-2 gap-5">
+            <div className="mt-7 sm:mt-8 grid sm:grid-cols-2 gap-5">
               {/* Warranty */}
-              <div className="rounded-[22px] border border-[#D9E4FF] bg-white p-6 sm:p-7 shadow-[0_4px_24px_rgba(15,23,42,0.05)] flex items-start gap-5">
+              <div className="rounded-[14px] border border-[#D9E4FF] bg-white p-6 sm:p-7 shadow-[0_4px_24px_rgba(15,23,42,0.05)] flex items-start gap-5">
                 <div className="flex-shrink-0 h-12 w-12 rounded-[14px] bg-[#EEF3FF] flex items-center justify-center text-[#306EEC]">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -549,7 +549,7 @@ export default function RemodelingPage() {
                 </div>
               </div>
               {/* Financing */}
-              <div className="rounded-[22px] border border-[#D9E4FF] bg-white p-6 sm:p-7 shadow-[0_4px_24px_rgba(15,23,42,0.05)] flex items-start gap-5">
+              <div className="rounded-[14px] border border-[#D9E4FF] bg-white p-6 sm:p-7 shadow-[0_4px_24px_rgba(15,23,42,0.05)] flex items-start gap-5">
                 <div className="flex-shrink-0 h-12 w-12 rounded-[14px] bg-[#EEF3FF] flex items-center justify-center text-[#306EEC]">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -571,14 +571,14 @@ export default function RemodelingPage() {
             PROJECT GALLERY
         ═══════════════════════════════════════════════════════ */}
         <section
-          className="relative w-full py-16 sm:py-20 lg:py-28 overflow-hidden"
+          className="relative w-full py-10 sm:py-13 lg:py-12 overflow-hidden"
           style={{ background: "linear-gradient(160deg, #0B1525 0%, #0D1A30 60%, #0A1220 100%)" }}
         >
           <div aria-hidden="true" className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 h-[500px] w-[900px] rounded-full blur-[160px] opacity-40"
             style={{ background: "radial-gradient(circle, rgba(48,110,236,0.12), transparent 70%)" }} />
 
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-12 lg:mb-14">
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-8 lg:mb-14">
               <div className="max-w-[560px]">
                 <div className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.05] px-4 py-2 mb-7 backdrop-blur-sm">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-[#7BAEFF]" aria-hidden="true">
@@ -591,7 +591,7 @@ export default function RemodelingPage() {
                     Real Long Island Projects
                   </span>
                 </div>
-                <h2 className="text-[36px] sm:text-[52px] lg:text-[60px] font-black leading-[0.88] tracking-[-0.045em] text-white mb-5">
+                <h2 className="text-[32px] sm:text-[40px] lg:text-[43px] font-black leading-[0.88] tracking-[-0.045em] text-white mb-5">
                   Work we&rsquo;re
                   <br />
                   <span
@@ -629,7 +629,7 @@ export default function RemodelingPage() {
               <div className="flex flex-col gap-4">
 
                 {/* Featured image */}
-                <div className="relative w-full overflow-hidden rounded-[22px] group" style={{ aspectRatio: "16/10" }}>
+                <div className="relative w-full overflow-hidden rounded-[14px] group" style={{ aspectRatio: "16/10" }}>
                   <Image
                     src={activePhoto.src}
                     alt={activePhoto.label}
@@ -638,7 +638,7 @@ export default function RemodelingPage() {
                     sizes="(max-width: 1024px) 92vw, 760px"
                     priority
                   />
-                  <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.40)] rounded-[22px]" />
+                  <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.40)] rounded-[14px]" />
                   <div
                     className="absolute inset-x-0 bottom-0 h-[55%]"
                     style={{ background: "linear-gradient(to top, rgba(8,15,30,0.85) 0%, rgba(8,15,30,0.40) 55%, transparent 100%)" }}
@@ -658,7 +658,7 @@ export default function RemodelingPage() {
                   {/* Bottom label + nav */}
                   <div className="absolute bottom-0 left-0 right-0 px-6 pb-6 flex items-end justify-between">
                     <div>
-                      <div className="text-[26px] sm:text-[32px] font-black text-white leading-none tracking-[-0.025em] mb-1">
+                      <div className="text-[23px] sm:text-[30px] font-black text-white leading-none tracking-[-0.025em] mb-1">
                         {activePhoto.label}
                       </div>
                       <div className="text-[11px] font-semibold text-white/45 uppercase tracking-[0.18em]">
@@ -698,7 +698,7 @@ export default function RemodelingPage() {
                       type="button"
                       onClick={() => setGalleryIdx(i)}
                       aria-label={`View ${g.label}`}
-                      className={`relative flex-shrink-0 w-[72px] h-[54px] rounded-[10px] overflow-hidden border-2 transition-all focus:outline-none ${
+                      className={`relative flex-shrink-0 w-[72px] h-[46px] rounded-[10px] overflow-hidden border-2 transition-all focus:outline-none ${
                         i === galleryIdx
                           ? "border-[#306EEC] shadow-[0_0_14px_rgba(48,110,236,0.35)]"
                           : "border-white/[0.08] opacity-55 hover:opacity-85 hover:border-white/20"
@@ -713,7 +713,7 @@ export default function RemodelingPage() {
               {/* Info sidebar */}
               <div className="flex flex-col gap-4">
                 <div
-                  className="rounded-[22px] border border-white/[0.09] p-6 flex flex-col gap-5"
+                  className="rounded-[14px] border border-white/[0.09] p-6 flex flex-col gap-5"
                   style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)" }}
                 >
                   <div>
@@ -739,7 +739,7 @@ export default function RemodelingPage() {
                 </div>
 
                 <div
-                  className="rounded-[22px] border border-[#306EEC]/20 p-6 flex flex-col gap-4"
+                  className="rounded-[14px] border border-[#306EEC]/20 p-6 flex flex-col gap-4"
                   style={{ background: "linear-gradient(145deg, rgba(48,110,236,0.10) 0%, rgba(48,110,236,0.04) 100%)" }}
                 >
                   <div>
@@ -749,7 +749,7 @@ export default function RemodelingPage() {
                   <button
                     type="button"
                     onClick={callNow}
-                    className="w-full min-h-[52px] rounded-[14px] text-[14px] font-extrabold text-white transition-all hover:-translate-y-0.5"
+                    className="w-full min-h-[46px] rounded-[14px] text-[14px] font-extrabold text-white transition-all hover:-translate-y-0.5"
                     style={{ background: "linear-gradient(135deg, #306EEC 0%, #1E4ED8 100%)", boxShadow: "0 10px 30px rgba(48,110,236,0.28)" }}
                   >
                     Request Free Consultation
@@ -764,14 +764,14 @@ export default function RemodelingPage() {
             PROJECT TIMELINE
         ═══════════════════════════════════════════════════════ */}
         <section
-          className="relative w-full py-16 sm:py-20 lg:py-28 overflow-hidden"
+          className="relative w-full py-10 sm:py-13 lg:py-12 overflow-hidden"
           style={{ background: "linear-gradient(160deg, #EAEDFA 0%, #E4E9F8 100%)" }}
         >
           <div aria-hidden="true" className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 h-[400px] w-[800px] rounded-full blur-[140px] opacity-30"
             style={{ background: "radial-gradient(circle, rgba(48,110,236,0.08), transparent 70%)" }} />
 
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-[720px] text-center mb-14 sm:mb-16">
+            <div className="mx-auto max-w-[720px] text-center mb-9 sm:mb-16">
               <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
@@ -779,7 +779,7 @@ export default function RemodelingPage() {
                 </svg>
                 <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">How It Works</span>
               </div>
-              <h2 className="text-[32px] sm:text-[50px] lg:text-[60px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-5">
+              <h2 className="text-[30px] sm:text-[40px] lg:text-[43px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-5">
                 From first call
                 <br />
                 <span style={{ color: "#306EEC" }}>to finished bathroom.</span>
@@ -836,7 +836,7 @@ export default function RemodelingPage() {
             </div>
 
             <div
-              className="mt-12 sm:mt-14 rounded-[20px] border border-[#306EEC]/15 px-6 py-5 text-center bg-white shadow-[0_4px_20px_rgba(15,23,42,0.05)]"
+              className="mt-8 sm:mt-9 rounded-[14px] border border-[#306EEC]/15 px-6 py-5 text-center bg-white shadow-[0_4px_20px_rgba(15,23,42,0.05)]"
             >
               <p className="text-[14px] text-[#64748B] leading-relaxed max-w-[680px] mx-auto">
                 <span className="text-[#0B1628] font-semibold">Timeline note:</span> Complex projects with layout changes, custom tile work, or structural modifications may run 4–6 weeks. We give you a precise schedule - not an estimate - before any work begins.
@@ -849,7 +849,7 @@ export default function RemodelingPage() {
             WHY HOMEOWNERS CHOOSE US
         ═══════════════════════════════════════════════════════ */}
         <section
-          className="relative w-full py-16 sm:py-20 lg:py-28 overflow-hidden"
+          className="relative w-full py-10 sm:py-13 lg:py-12 overflow-hidden"
           style={{ background: "linear-gradient(160deg, #080F1E 0%, #0A1421 60%, #091220 100%)" }}
         >
           <div aria-hidden="true" className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 h-[600px] w-[1000px] rounded-full blur-[180px] opacity-35"
@@ -858,14 +858,14 @@ export default function RemodelingPage() {
             style={{ backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
 
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="max-w-[680px] mb-14">
+            <div className="max-w-[680px] mb-9">
               <div className="inline-flex items-center gap-2.5 rounded-full border border-[#306EEC]/20 bg-[#306EEC]/[0.06] px-4 py-2 mb-6 backdrop-blur-sm">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#7BAEFF]" aria-hidden="true">
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#7BAEFF]/80">Why Profixter</span>
               </div>
-              <h2 className="text-[32px] sm:text-[50px] lg:text-[60px] font-black leading-[0.92] tracking-[-0.04em] text-white mb-5">
+              <h2 className="text-[30px] sm:text-[40px] lg:text-[43px] font-black leading-[0.92] tracking-[-0.04em] text-white mb-5">
                 The difference is in
                 <br />
                 <span
@@ -913,7 +913,7 @@ export default function RemodelingPage() {
                   accent: "#16A34A",
                 },
               ].map(({ headline, body, accent }) => (
-                <div key={headline} className="rounded-[22px] border border-white/[0.09] bg-white/[0.03] p-7">
+                <div key={headline} className="rounded-[14px] border border-white/[0.09] bg-white/[0.03] p-7">
                   <div className="mb-5 h-1.5 w-10 rounded-full" style={{ background: accent }} />
                   <h3 className="text-[16px] font-bold text-white/88 mb-2.5 leading-snug">{headline}</h3>
                   <p className="text-[13px] leading-relaxed text-white/45">{body}</p>
@@ -927,15 +927,15 @@ export default function RemodelingPage() {
             INVESTMENT CONFIDENCE
         ═══════════════════════════════════════════════════════ */}
         <section
-          className="relative w-full py-16 sm:py-20 lg:py-24 overflow-hidden"
+          className="relative w-full py-10 sm:py-13 lg:py-12 overflow-hidden"
           style={{ background: "linear-gradient(160deg, #EAEDFA 0%, #E4E9F8 100%)" }}
         >
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="overflow-hidden rounded-[28px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+            <div className="overflow-hidden rounded-[16px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
               <div className="grid lg:grid-cols-[1fr_1fr] divide-y lg:divide-y-0 lg:divide-x divide-[#E6E8EF]">
 
                 {/* Left: Value framing */}
-                <div className="px-8 py-10 sm:px-10 sm:py-12 lg:px-12 flex flex-col gap-7">
+                <div className="px-6 py-10 sm:px-10 sm:py-9 lg:px-12 flex flex-col gap-7">
                   <div>
                     <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-[#EEF3FF] px-3 py-1.5 mb-5">
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
@@ -943,7 +943,7 @@ export default function RemodelingPage() {
                       </svg>
                       <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">Investment Confidence</span>
                     </div>
-                    <h3 className="text-[24px] sm:text-[30px] font-black leading-tight text-[#0B1628] mb-4">
+                    <h3 className="text-[23px] sm:text-[26px] font-black leading-tight text-[#0B1628] mb-4">
                       A bathroom remodel is the
                       highest-return renovation
                       you can make.
@@ -960,7 +960,7 @@ export default function RemodelingPage() {
                       { stat: "9+ yrs", label: "Our Long Island track record" },
                     ].map(({ stat, label }) => (
                       <div key={stat} className="rounded-[16px] border border-[#E6E8EF] bg-[#F8F9FC] p-4 text-center">
-                        <div className="text-[20px] font-black text-[#306EEC] mb-1">{stat}</div>
+                        <div className="text-[19px] font-black text-[#306EEC] mb-1">{stat}</div>
                         <div className="text-[10px] font-semibold text-[#64748B] leading-tight">{label}</div>
                       </div>
                     ))}
@@ -968,9 +968,9 @@ export default function RemodelingPage() {
                 </div>
 
                 {/* Right: Transparent pricing approach */}
-                <div className="px-8 py-10 sm:px-10 sm:py-12 lg:px-12 bg-[#F0F4FF] flex flex-col gap-6">
+                <div className="px-6 py-10 sm:px-10 sm:py-9 lg:px-12 bg-[#F0F4FF] flex flex-col gap-6">
                   <div>
-                    <h3 className="text-[20px] sm:text-[24px] font-extrabold leading-tight text-[#0B1628] mb-3">
+                    <h3 className="text-[19px] sm:text-[23px] font-extrabold leading-tight text-[#0B1628] mb-3">
                       Transparent pricing.
                       No surprise invoices.
                     </h3>
@@ -999,7 +999,7 @@ export default function RemodelingPage() {
                   <button
                     type="button"
                     onClick={callNow}
-                    className="inline-flex h-[54px] items-center justify-center gap-2.5 rounded-[14px] text-[15px] font-extrabold text-white transition-all hover:-translate-y-0.5"
+                    className="inline-flex h-[46px] items-center justify-center gap-2.5 rounded-[14px] text-[15px] font-extrabold text-white transition-all hover:-translate-y-0.5"
                     style={{ background: "linear-gradient(135deg, #306EEC 0%, #1E4ED8 100%)", boxShadow: "0 12px 36px rgba(48,110,236,0.28)" }}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1018,7 +1018,7 @@ export default function RemodelingPage() {
             FAQ
         ═══════════════════════════════════════════════════════ */}
         <section
-          className="relative w-full py-16 sm:py-20 lg:py-28 overflow-hidden"
+          className="relative w-full py-10 sm:py-13 lg:py-12 overflow-hidden"
           style={{ background: "linear-gradient(160deg, #080F1E 0%, #0A1421 60%, #091220 100%)" }}
         >
           <div aria-hidden="true" className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[700px] w-[1100px] rounded-full blur-[200px] opacity-40"
@@ -1027,13 +1027,13 @@ export default function RemodelingPage() {
             style={{ backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
 
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="grid lg:grid-cols-[1fr_380px] gap-10 lg:gap-14 items-start">
+            <div className="grid lg:grid-cols-[1fr_380px] gap-7 lg:gap-9 items-start">
 
               <div>
                 <div className="inline-flex items-center gap-2.5 rounded-full border border-[#306EEC]/20 bg-[#306EEC]/[0.06] px-4 py-2 mb-7 backdrop-blur-sm">
                   <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#7BAEFF]/70">Real Answers</span>
                 </div>
-                <h2 className="text-[32px] sm:text-[50px] lg:text-[60px] font-black leading-[0.92] tracking-[-0.04em] text-white mb-5">
+                <h2 className="text-[30px] sm:text-[40px] lg:text-[43px] font-black leading-[0.92] tracking-[-0.04em] text-white mb-5">
                   Common questions.
                   <br />
                   <span
@@ -1043,7 +1043,7 @@ export default function RemodelingPage() {
                     Straight answers.
                   </span>
                 </h2>
-                <p className="text-[15px] sm:text-[17px] text-white/42 leading-relaxed mb-10">
+                <p className="text-[15px] sm:text-[17px] text-white/42 leading-relaxed mb-7">
                   No canned responses. These are the actual questions Long Island homeowners ask before signing.
                 </p>
                 <div className="space-y-3">
@@ -1056,7 +1056,7 @@ export default function RemodelingPage() {
               {/* Sticky contact */}
               <div className="lg:sticky lg:top-[100px] flex flex-col gap-4">
                 <div
-                  className="rounded-[22px] border border-white/[0.10] p-7 flex flex-col gap-5"
+                  className="rounded-[14px] border border-white/[0.10] p-7 flex flex-col gap-5"
                   style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)" }}
                 >
                   <div>
@@ -1082,7 +1082,7 @@ export default function RemodelingPage() {
                 </div>
 
                 <div
-                  className="rounded-[22px] border border-[#306EEC]/20 p-7 flex flex-col gap-4"
+                  className="rounded-[14px] border border-[#306EEC]/20 p-7 flex flex-col gap-4"
                   style={{ background: "linear-gradient(145deg, rgba(48,110,236,0.08) 0%, rgba(48,110,236,0.03) 100%)" }}
                 >
                   <div>
@@ -1107,14 +1107,14 @@ export default function RemodelingPage() {
             FOUNDER TRUST
         ═══════════════════════════════════════════════════════ */}
         <section
-          className="relative w-full py-16 sm:py-20 lg:py-24 overflow-hidden"
+          className="relative w-full py-10 sm:py-13 lg:py-12 overflow-hidden"
           style={{ background: "linear-gradient(160deg, #EAEDFA 0%, #E4E9F8 100%)" }}
         >
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="overflow-hidden rounded-[28px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+            <div className="overflow-hidden rounded-[16px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
               <div className="grid lg:grid-cols-[1fr_1fr] divide-y lg:divide-y-0 lg:divide-x divide-[#E6E8EF]">
 
-                <div className="px-8 py-10 sm:px-10 sm:py-12 lg:px-12 flex flex-col justify-between gap-7">
+                <div className="px-6 py-10 sm:px-10 sm:py-9 lg:px-12 flex flex-col justify-between gap-7">
                   <div className="flex items-center gap-4">
                     <div className="relative h-[72px] w-[72px] flex-shrink-0 overflow-hidden rounded-full border-2 border-white shadow-[0_8px_24px_rgba(15,23,42,0.14)]">
                       <Image src="/images/Taras.png" alt="Taras Bandura" fill className="object-cover object-top" sizes="72px" />
@@ -1141,9 +1141,9 @@ export default function RemodelingPage() {
                   </div>
                 </div>
 
-                <div className="px-8 py-10 sm:px-10 sm:py-12 lg:px-12 bg-[#F0F4FF] flex flex-col justify-between gap-6">
+                <div className="px-6 py-10 sm:px-10 sm:py-9 lg:px-12 bg-[#F0F4FF] flex flex-col justify-between gap-6">
                   <div>
-                    <div className="text-[22px] sm:text-[26px] font-extrabold leading-tight text-[#0B1628] mb-3">
+                    <div className="text-[21px] sm:text-[23px] font-extrabold leading-tight text-[#0B1628] mb-3">
                       Your bathroom deserves to be done once - and done right.
                     </div>
                     <p className="text-[14px] sm:text-[15px] text-[#475569] leading-relaxed">
@@ -1155,7 +1155,7 @@ export default function RemodelingPage() {
                     <button
                       type="button"
                       onClick={callNow}
-                      className="inline-flex h-[56px] items-center justify-center gap-2.5 rounded-[14px] text-[16px] font-extrabold text-white transition-all hover:-translate-y-0.5"
+                      className="inline-flex h-[48px] items-center justify-center gap-2.5 rounded-[14px] text-[16px] font-extrabold text-white transition-all hover:-translate-y-0.5"
                       style={{ background: "linear-gradient(135deg, #306EEC 0%, #1E4ED8 100%)", boxShadow: "0 12px 36px rgba(48,110,236,0.28)" }}
                     >
                       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1165,7 +1165,7 @@ export default function RemodelingPage() {
                     </button>
                     <a
                       href={`tel:${PHONE_TEL}`}
-                      className="inline-flex h-[52px] items-center justify-center gap-2.5 rounded-[14px] border border-[#C5CBD8] bg-white text-[15px] font-semibold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC]"
+                      className="inline-flex h-[46px] items-center justify-center gap-2.5 rounded-[14px] border border-[#C5CBD8] bg-white text-[15px] font-semibold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC]"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.37 1.9.72 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -1183,7 +1183,7 @@ export default function RemodelingPage() {
             FINAL CTA
         ═══════════════════════════════════════════════════════ */}
         <section
-          className="relative w-full overflow-hidden py-24 sm:py-32 lg:py-40"
+          className="relative w-full overflow-hidden py-9 sm:py-32 lg:py-40"
           style={{ background: "linear-gradient(160deg, #050D1A 0%, #071224 55%, #060E1C 100%)" }}
         >
           <div aria-hidden="true" className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 h-[700px] w-[1100px] rounded-full blur-[200px]"
@@ -1201,7 +1201,7 @@ export default function RemodelingPage() {
                 </span>
               </div>
 
-              <h2 className="text-[52px] sm:text-[72px] lg:text-[96px] font-black leading-[0.87] tracking-[-0.048em] text-white mb-6">
+              <h2 className="text-[40px] sm:text-[46px] lg:text-[50px] font-black leading-[0.87] tracking-[-0.048em] text-white mb-6">
                 The bathroom
                 <br />
                 <span
@@ -1212,7 +1212,7 @@ export default function RemodelingPage() {
                 </span>
               </h2>
 
-              <p className="text-[18px] sm:text-[22px] font-semibold text-white/50 leading-[1.4] max-w-[580px] mx-auto mb-10 sm:mb-12">
+              <p className="text-[18px] sm:text-[21px] font-semibold text-white/50 leading-[1.4] max-w-[580px] mx-auto mb-7 sm:mb-12">
                 A free consultation costs you nothing. Seeing exactly what your
                 bathroom could become - that changes everything.
               </p>
@@ -1221,7 +1221,7 @@ export default function RemodelingPage() {
                 <button
                   type="button"
                   onClick={callNow}
-                  className="inline-flex min-h-[68px] items-center justify-center gap-3 rounded-[18px] px-12 text-[18px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
+                  className="inline-flex min-h-[68px] items-center justify-center gap-3 rounded-[13px] px-12 text-[18px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                   style={{ background: "linear-gradient(135deg, #306EEC 0%, #1E4ED8 100%)", boxShadow: "0 24px 70px rgba(48,110,236,0.45)" }}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1231,7 +1231,7 @@ export default function RemodelingPage() {
                 </button>
                 <a
                   href={`tel:${PHONE_TEL}`}
-                  className="inline-flex min-h-[68px] items-center justify-center gap-3 rounded-[18px] border border-white/18 bg-white/[0.07] px-12 text-[18px] font-bold text-white/85 backdrop-blur-sm transition-all hover:border-white/30 hover:bg-white/[0.12]"
+                  className="inline-flex min-h-[68px] items-center justify-center gap-3 rounded-[13px] border border-white/18 bg-white/[0.07] px-12 text-[18px] font-bold text-white/85 backdrop-blur-sm transition-all hover:border-white/30 hover:bg-white/[0.12]"
                 >
                   Call {PHONE_DISPLAY}
                 </a>

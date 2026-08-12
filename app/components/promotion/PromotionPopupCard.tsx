@@ -28,7 +28,7 @@ export default function PromotionPopupCard({
     : { href: popup.ctaUrl, onClick: onAction };
 
   return (
-    <div className="relative w-full max-w-[460px] overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.24)]">
+    <div className="relative w-full max-w-[460px] overflow-hidden rounded-[16px] border border-slate-200 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.24)]">
       <div className="h-1.5 bg-gradient-to-r from-[#306EEC] via-[#5B8EF3] to-[#D4A574]" />
       <div className="p-5 sm:p-6">
         {onClose ? (
@@ -49,7 +49,7 @@ export default function PromotionPopupCard({
             {popup.eyebrow}
           </div>
         ) : null}
-        <h2 id="promotion-popup-title" className="mt-2 pr-8 text-[25px] font-black leading-[1.12] tracking-[-0.025em] text-[#0B1628] sm:text-[28px]">
+        <h2 id="promotion-popup-title" className="mt-2 pr-8 text-[23px] font-black leading-[1.12] tracking-[-0.025em] text-[#0B1628] sm:text-[26px]">
           {popup.title || "Your promotion title"}
         </h2>
         <p className="mt-3 whitespace-pre-line text-[14px] leading-relaxed text-slate-600 sm:text-[15px]">

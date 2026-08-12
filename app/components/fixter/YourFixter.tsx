@@ -133,7 +133,7 @@ export default function YourFixter({
   return (
     <section
       aria-labelledby="your-fixter-heading"
-      className={`rounded-[20px] border border-[#E6ECF5] bg-white p-5 sm:p-6 ${className}`}
+      className={`rounded-[14px] border border-[#E6ECF5] bg-white p-5 sm:p-6 ${className}`}
     >
       <p
         id="your-fixter-heading"
@@ -147,7 +147,7 @@ export default function YourFixter({
         <div className="min-w-0">
           <p
             className={`font-semibold tracking-[-0.02em] text-[#111111] ${
-              welcome ? "text-[24px] sm:text-[28px]" : "text-[20px] sm:text-[22px]"
+              welcome ? "text-[23px] sm:text-[26px]" : "text-[19px] sm:text-[21px]"
             }`}
           >
             {fixter.firstName}

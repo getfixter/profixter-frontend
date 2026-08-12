@@ -15,16 +15,16 @@ export default function PathSplitSection() {
         style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.25), transparent)" }}
       />
 
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-28">
+      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-10 sm:py-13 lg:py-12">
 
         {/* ── Header ── */}
-        <div className="text-center mb-12 sm:mb-16">
+        <div className="text-center mb-8 sm:mb-16">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-4 py-1.5 mb-5">
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/55">
               Long Island · Licensed HI-71484 · 9+ Years
             </span>
           </div>
-          <h2 className="text-[30px] sm:text-[44px] lg:text-[54px] font-extrabold text-white leading-[1.08] tracking-[-0.035em] mb-4">
+          <h2 className="text-[26px] sm:text-[36px] lg:text-[40px] font-extrabold text-white leading-[1.08] tracking-[-0.035em] mb-4">
             One team. Every visit.
           </h2>
           <p className="text-[15px] sm:text-[17px] text-white/45 max-w-[540px] mx-auto leading-relaxed">
@@ -35,7 +35,7 @@ export default function PathSplitSection() {
         {/* ── Membership card ── */}
         <div className="max-w-[680px] mx-auto">
           <div
-            className="relative flex flex-col overflow-hidden rounded-[22px] border-l-2 border-[#306EEC]/35"
+            className="relative flex flex-col overflow-hidden rounded-[14px] border-l-2 border-[#306EEC]/35"
             style={{ background: "linear-gradient(145deg, #0C1A3A 0%, #0F2050 60%, #0A1630 100%)" }}
           >
             {/* Accent top line */}
@@ -70,7 +70,7 @@ export default function PathSplitSection() {
               </div>
 
               {/* Headline */}
-              <h3 className="text-[26px] sm:text-[32px] font-extrabold text-white leading-[1.12] tracking-[-0.025em] mb-3">
+              <h3 className="text-[23px] sm:text-[30px] font-extrabold text-white leading-[1.12] tracking-[-0.025em] mb-3">
                 Everything handled,<br />every month.
               </h3>
               <p className="text-[15px] text-white/50 leading-relaxed mb-7 max-w-[480px]">
@@ -103,14 +103,14 @@ export default function PathSplitSection() {
               {/* Price hint */}
               <div className="flex items-baseline gap-2 mb-7">
                 <span className="text-[13px] text-white/35">Plans from</span>
-                <span className="text-[24px] font-extrabold text-white tracking-[-0.02em]">$149</span>
+                <span className="text-[23px] font-extrabold text-white tracking-[-0.02em]">$149</span>
                 <span className="text-[13px] text-white/35">/mo · Month-to-month</span>
               </div>
 
               {/* CTA */}
               <div className="mt-auto space-y-3">
                 <MembershipCtaLink
-                  className="w-full min-h-[54px] rounded-[16px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
+                  className="w-full min-h-[46px] rounded-[16px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                   style={{ background: "linear-gradient(135deg, #306EEC 0%, #1D4ED8 100%)", boxShadow: "0 12px 40px rgba(48,110,236,0.32)" }}
                 >
                   Start Membership
@@ -132,7 +132,7 @@ export default function PathSplitSection() {
         </div>
 
         {/* ── Trust bar ── */}
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
           {[
             "NY State Licensed · HI-71484",
             "Fully Insured",
@@ -148,9 +148,9 @@ export default function PathSplitSection() {
         </div>
 
         {/* ── Need a Bigger Project? ── */}
-        <div className="mt-16 max-w-[580px] mx-auto">
+        <div className="mt-7 max-w-[580px] mx-auto">
           <div
-            className="rounded-[20px] border border-white/8 px-7 py-6 text-center"
+            className="rounded-[14px] border border-white/8 px-5 py-6 text-center"
             style={{ background: "rgba(255,255,255,0.03)" }}
           >
             <h3 className="text-[16px] font-bold text-white/70 mb-2">

@@ -175,7 +175,7 @@ export default function PopularTasksSection() {
   return (
     <section
       id="larger-projects"
-      className="relative w-full overflow-hidden py-12 sm:py-20 lg:py-28"
+      className="relative w-full overflow-hidden py-8 sm:py-13 lg:py-12"
       style={{
         background:
           "linear-gradient(160deg, #F7F4EE 0%, #EEF3F8 48%, #E6ECF6 100%)",
@@ -191,7 +191,7 @@ export default function PopularTasksSection() {
       />
 
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-14">
+        <div className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-9">
           <div className="max-w-[620px]">
             <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-[#D4A574]/25 bg-white/70 px-3.5 py-1.5 shadow-[0_8px_28px_rgba(15,23,42,0.05)] backdrop-blur-sm sm:mb-6 sm:px-4 sm:py-2">
               <span className="h-2 w-2 rounded-full bg-[#D4A574]" />
@@ -200,7 +200,7 @@ export default function PopularTasksSection() {
               </span>
             </div>
 
-            <h2 className="text-[32px] font-black leading-[1] tracking-[-0.032em] text-[#0B1628] sm:text-[54px] sm:leading-[0.95] sm:tracking-[-0.04em] lg:text-[64px]">
+            <h2 className="text-[30px] font-black leading-[1] tracking-[-0.032em] text-[#0B1628] sm:text-[40px] sm:leading-[0.95] sm:tracking-[-0.04em] lg:text-[46px]">
               When your home needs something bigger.
             </h2>
 
@@ -211,7 +211,7 @@ export default function PopularTasksSection() {
               You do not need a different company. The same trusted Profixter team can help your home grow.
             </p>
 
-            <div className="mt-6 rounded-[22px] border border-white/70 bg-white/70 p-4 shadow-[0_16px_50px_rgba(15,23,42,0.07)] backdrop-blur-sm sm:mt-8 sm:rounded-[24px] sm:p-6 sm:shadow-[0_18px_60px_rgba(15,23,42,0.07)]">
+            <div className="mt-6 rounded-[14px] border border-white/70 bg-white/70 p-4 shadow-[0_16px_50px_rgba(15,23,42,0.07)] backdrop-blur-sm sm:mt-8 sm:rounded-[16px] sm:p-6 sm:shadow-[0_18px_60px_rgba(15,23,42,0.07)]">
               <p className="text-[15px] font-bold leading-relaxed text-[#0B1628] sm:text-[16px]">
                 We take care of the larger work, then keep helping maintain your home after the project is done.
               </p>
@@ -233,13 +233,13 @@ export default function PopularTasksSection() {
             <div className="mt-6 flex flex-col gap-2.5 sm:mt-8 sm:flex-row sm:gap-3">
               <Link
                 href="/projects#estimate"
-                className="inline-flex h-[50px] items-center justify-center rounded-[15px] bg-[#0B1628] px-6 text-[14px] font-extrabold text-white shadow-[0_18px_44px_rgba(15,23,42,0.24)] transition-all hover:-translate-y-0.5 hover:bg-[#14233A] sm:h-[54px] sm:rounded-[16px] sm:px-7 sm:text-[15px]"
+                className="inline-flex h-[44px] items-center justify-center rounded-[15px] bg-[#0B1628] px-6 text-[14px] font-extrabold text-white shadow-[0_18px_44px_rgba(15,23,42,0.24)] transition-all hover:-translate-y-0.5 hover:bg-[#14233A] sm:h-[54px] sm:rounded-[16px] sm:px-5 sm:text-[15px]"
               >
                 Get Project Estimate
               </Link>
               <Link
                 href="/projects"
-                className="inline-flex h-[50px] items-center justify-center rounded-[15px] border border-[#CBD5E1] bg-white/65 px-6 text-[14px] font-extrabold text-[#0B1628] transition-all hover:-translate-y-0.5 hover:border-[#94A3B8] hover:bg-white sm:h-[54px] sm:rounded-[16px] sm:px-7 sm:text-[15px]"
+                className="inline-flex h-[44px] items-center justify-center rounded-[15px] border border-[#CBD5E1] bg-white/65 px-6 text-[14px] font-extrabold text-[#0B1628] transition-all hover:-translate-y-0.5 hover:border-[#94A3B8] hover:bg-white sm:h-[54px] sm:rounded-[16px] sm:px-5 sm:text-[15px]"
               >
                 Explore Larger Projects
               </Link>
@@ -247,8 +247,8 @@ export default function PopularTasksSection() {
           </div>
 
           <div className="relative">
-            <div className="rounded-[30px] border border-white/70 bg-white/72 p-4 shadow-[0_28px_90px_rgba(15,23,42,0.10)] backdrop-blur-md sm:p-5 lg:p-6">
-              <div className="overflow-hidden rounded-[24px] border border-[#DDE4F0] bg-[#F8FAFC]">
+            <div className="rounded-[13px] border border-white/70 bg-white/72 p-4 shadow-[0_28px_90px_rgba(15,23,42,0.10)] backdrop-blur-md sm:p-5 lg:p-6">
+              <div className="overflow-hidden rounded-[16px] border border-[#DDE4F0] bg-[#F8FAFC]">
                 <div className="relative min-h-[210px] overflow-hidden bg-[#162235] sm:min-h-[240px]">
                   <div
                     aria-hidden="true"
@@ -260,7 +260,7 @@ export default function PopularTasksSection() {
                       backgroundPosition: "center",
                     }}
                   />
-                  <div className="relative flex min-h-[210px] flex-col justify-between gap-12 p-5 sm:min-h-[240px] sm:p-6">
+                  <div className="relative flex min-h-[210px] flex-col justify-between gap-8 p-5 sm:min-h-[240px] sm:p-6">
                     <div className="inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-white/25 bg-white/16 px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md sm:text-[11px] sm:tracking-[0.16em]">
                       Same home care system
                     </div>
@@ -268,7 +268,7 @@ export default function PopularTasksSection() {
                       <div className="text-[13px] font-bold uppercase tracking-[0.16em] text-white/62">
                         Larger work
                       </div>
-                      <div className="mt-1 max-w-[360px] text-[28px] font-black leading-[1] tracking-[-0.035em] text-white sm:text-[34px]">
+                      <div className="mt-1 max-w-[360px] text-[26px] font-black leading-[1] tracking-[-0.035em] text-white sm:text-[30px]">
                         Project help now. Home care after.
                       </div>
                     </div>
@@ -302,7 +302,7 @@ export default function PopularTasksSection() {
                   { title: "Ongoing care", body: "Regular handyman support after" },
                 ].map((step, index) => (
                   <div key={step.title} className="contents">
-                    <div className="rounded-[18px] border border-[#E2E8F0] bg-white/74 p-4 text-center">
+                    <div className="rounded-[13px] border border-[#E2E8F0] bg-white/74 p-4 text-center">
                       <div className="text-[13px] font-extrabold text-[#0B1628]">
                         {step.title}
                       </div>

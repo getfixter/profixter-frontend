@@ -95,7 +95,7 @@ export default function Header() {
 
   return (
     <header className="relative z-50 w-full py-[8px] sm:py-[12px]">
-      <div className="mx-2.5 rounded-[18px] border border-white/50 bg-white/92 shadow-[0_14px_48px_rgba(9,22,43,0.14)] backdrop-blur-xl sm:mx-5 sm:rounded-[20px]">
+      <div className="mx-2.5 rounded-[13px] border border-white/50 bg-white/92 shadow-[0_14px_48px_rgba(9,22,43,0.14)] backdrop-blur-xl sm:mx-5 sm:rounded-[14px]">
         <div className="mx-auto flex max-w-[1240px] items-center justify-between px-[12px] py-[8px] sm:px-[18px] sm:py-[10px]">
           {/*
             The same brand mark as the footer: PRO in ProFixter blue, FIXTER in
@@ -111,15 +111,15 @@ export default function Header() {
           <Link
             href={homeHref}
             aria-label="Profixter home"
-            className="relative z-50 flex items-center rounded-[11px] bg-[#0B1628] px-2.5 py-1.5 transition hover:bg-[#172033] sm:px-3 sm:py-2"
+            className="relative z-50 flex items-center rounded-[9px] bg-[#0B1628] px-2 py-1.5 transition hover:bg-[#172033] sm:rounded-[10px] sm:px-2.5"
           >
             <Image
               src="/images/logo-footer.svg"
               alt="Profixter Long Island"
-              width={112}
+              width={113}
               height={24}
               priority
-              className="h-[22px] w-auto sm:h-[26px]"
+              className="nav-brand-logo"
             />
           </Link>
 
@@ -240,23 +240,23 @@ export default function Header() {
               </p>
             </div>
 
-            <div className="flex w-full max-w-sm flex-col gap-2.5 rounded-[22px] border border-[#E6E8EF] bg-white p-2.5 shadow-[0_16px_50px_rgba(17,24,39,0.08)] sm:gap-3 sm:rounded-[24px] sm:p-3">
+            <div className="flex w-full max-w-sm flex-col gap-2.5 rounded-[14px] border border-[#E6E8EF] bg-white p-2.5 shadow-[0_16px_50px_rgba(17,24,39,0.08)] sm:gap-3 sm:rounded-[16px] sm:p-3">
               {navLinks.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsMenuOpen(false)}
-                  className="rounded-[16px] border border-[#EEF2F7] bg-[#F8FAFF] px-4 py-3.5 text-left text-[18px] font-black leading-none text-[#111827] transition hover:bg-[#EEF4FF] hover:text-[#306EEC] sm:rounded-[18px] sm:py-4 sm:text-[22px]"
+                  className="rounded-[16px] border border-[#EEF2F7] bg-[#F8FAFF] px-4 py-3.5 text-left text-[18px] font-black leading-none text-[#111827] transition hover:bg-[#EEF4FF] hover:text-[#306EEC] sm:rounded-[18px] sm:py-4 sm:text-[21px]"
                 >
                   {item.label}
                 </Link>
               ))}
             </div>
 
-            <div className="flex w-full max-w-sm flex-col gap-3 rounded-[22px] border border-[#E6E8EF] bg-white p-3 shadow-[0_16px_50px_rgba(17,24,39,0.08)] sm:gap-4 sm:rounded-[24px] sm:p-4">
+            <div className="flex w-full max-w-sm flex-col gap-3 rounded-[14px] border border-[#E6E8EF] bg-white p-3 shadow-[0_16px_50px_rgba(17,24,39,0.08)] sm:gap-4 sm:rounded-[16px] sm:p-4">
               {isAuthenticated ? (
                 <>
-                  <div className="mb-1 flex items-center justify-between gap-3 rounded-[18px] border border-[#E6E8EF] bg-[#F8FAFF] p-3 sm:mb-2 sm:rounded-[20px] sm:p-4">
+                  <div className="mb-1 flex items-center justify-between gap-3 rounded-[13px] border border-[#E6E8EF] bg-[#F8FAFF] p-3 sm:mb-2 sm:rounded-[14px] sm:p-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#C5CBD8] sm:h-14 sm:w-14">
                         <svg width="30" height="26" viewBox="0 0 31 28" fill="none" aria-hidden="true">

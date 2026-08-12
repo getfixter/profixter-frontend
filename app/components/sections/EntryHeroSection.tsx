@@ -32,7 +32,7 @@ export default function EntryHeroSection() {
       <div aria-hidden="true" className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[600px] rounded-full bg-[#D97706]/5 blur-[180px]" />
 
       {/* Content */}
-      <div className="relative z-10 mx-auto max-w-[760px] px-5 text-center py-20">
+      <div className="relative z-10 mx-auto max-w-[760px] px-5 text-center py-8">
 
         {/* Eyebrow */}
         <div className="inline-flex items-center gap-2.5 rounded-full border border-white/18 bg-white/[0.06] px-5 py-2 backdrop-blur-sm mb-8">
@@ -43,7 +43,7 @@ export default function EntryHeroSection() {
         </div>
 
         {/* Headline */}
-        <h1 className="text-[58px] sm:text-[78px] lg:text-[96px] font-black leading-[0.88] tracking-[-0.05em] text-white mb-6">
+        <h1 className="text-[43px] sm:text-[50px] lg:text-[50px] font-black leading-[0.88] tracking-[-0.05em] text-white mb-6">
           Your home,
           <br />
           <span
@@ -55,7 +55,7 @@ export default function EntryHeroSection() {
         </h1>
 
         {/* Sub */}
-        <p className="text-[17px] sm:text-[20px] font-medium leading-[1.6] text-white/55 max-w-[560px] mx-auto mb-10">
+        <p className="text-[17px] sm:text-[19px] font-medium leading-[1.6] text-white/55 max-w-[560px] mx-auto mb-7">
           One licensed, insured team for everything your home needs:
           ongoing help, covered tasks, and everything handled through a simple Membership.
         </p>
@@ -74,13 +74,13 @@ export default function EntryHeroSection() {
 
         <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
           <MembershipCtaLink
-            className="inline-flex min-h-[58px] items-center justify-center rounded-[18px] bg-[#306EEC] px-8 text-[16px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9]"
+            className="inline-flex min-h-[48px] items-center justify-center rounded-[13px] bg-[#306EEC] px-6 text-[16px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9]"
           >
             Start Membership
           </MembershipCtaLink>
           <a
             href="tel:+16315991363"
-            className="inline-flex min-h-[58px] items-center justify-center rounded-[18px] border border-white/12 bg-white/[0.05] px-6 text-[15px] font-bold text-white/80 transition hover:border-white/20 hover:bg-white/[0.09]"
+            className="inline-flex min-h-[48px] items-center justify-center rounded-[13px] border border-white/12 bg-white/[0.05] px-6 text-[15px] font-bold text-white/80 transition hover:border-white/20 hover:bg-white/[0.09]"
           >
             Call 631-599-1363
           </a>

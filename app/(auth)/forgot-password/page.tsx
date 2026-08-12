@@ -156,9 +156,9 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="relative z-10 min-h-screen flex items-center justify-center px-4 pt-20 pb-12">
+    <div className="relative z-10 min-h-screen flex items-center justify-center px-4 pt-20 pb-8">
       <div
-        className="w-full max-w-[440px] rounded-[20px] p-12 backdrop-blur-[10px]"
+        className="w-full max-w-[440px] rounded-[14px] p-12 backdrop-blur-[10px]"
         style={{
           background:
             'linear-gradient(180deg, rgba(49, 50, 52, 0.4) 0%, rgba(49, 50, 52, 0.2) 50%, rgba(49, 50, 52, 0.3) 100%), rgba(238, 242, 255, 0.1)',
@@ -175,7 +175,7 @@ export default function ForgotPasswordPage() {
                   <circle cx="40" cy="52" r="4" fill="#313234" />
                 </svg>
               </div>
-              <p className="text-[#C5CBD8] text-base mb-12">We'll send you the updated<br />instructions shortly.</p>
+              <p className="text-[#C5CBD8] text-base mb-8">We'll send you the updated<br />instructions shortly.</p>
               <form onSubmit={handleEmailSubmit} className="space-y-8">
                 <div>
                   <input
@@ -259,7 +259,7 @@ export default function ForgotPasswordPage() {
           {step === 'newPassword' && (
             <div className="text-center">
               <h1 className="text-white text-3xl font-semibold mb-8">New credentials</h1>
-              <div className="flex justify-center mb-12">
+              <div className="flex justify-center mb-8">
                 <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
                   <rect x="20" y="35" width="40" height="35" rx="5" fill="white" />
                   <path d="M30 35V25C30 19.4772 34.4772 15 40 15C45.5228 15 50 19.4772 50 25V35" stroke="white" strokeWidth="4" strokeLinecap="round" />
@@ -288,7 +288,7 @@ export default function ForgotPasswordPage() {
                     {error}
                   </div>
                 )}
-                <button type="submit" disabled={loading} className="w-full py-4 bg-[#306EEC] text-white rounded-[14px] text-base font-medium hover:bg-[#2557C7] transition-colors mt-12 disabled:opacity-50 disabled:cursor-not-allowed">
+                <button type="submit" disabled={loading} className="w-full py-4 bg-[#306EEC] text-white rounded-[14px] text-base font-medium hover:bg-[#2557C7] transition-colors mt-8 disabled:opacity-50 disabled:cursor-not-allowed">
                   {loading ? 'Updating...' : 'Submit'}
                 </button>
                 <button type="button" onClick={handleCancel} className="block w-full text-white text-base hover:underline">
@@ -305,7 +305,7 @@ export default function ForgotPasswordPage() {
                   <path d="M20 45L35 60L65 25" stroke="#4CAF50" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
-              <p className="text-[#C5CBD8] text-base mb-12">Your password has been updated</p>
+              <p className="text-[#C5CBD8] text-base mb-8">Your password has been updated</p>
               <Link href="/signin" className="block w-full py-4 bg-[#306EEC] text-white rounded-[14px] text-base font-medium hover:bg-[#2557C7] transition-colors">
                 Log In
               </Link>

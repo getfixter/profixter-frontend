@@ -27,7 +27,7 @@ const MONTHS = [
 export default function RealLifeSection() {
   return (
     <section
-      className="relative w-full overflow-hidden py-16 sm:py-20 lg:py-28"
+      className="relative w-full overflow-hidden py-10 sm:py-13 lg:py-12"
       style={{ background: "linear-gradient(160deg, #EAEDFA 0%, #E4E9F8 100%)" }}
     >
       <div
@@ -39,7 +39,7 @@ export default function RealLifeSection() {
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
-        <div className="text-center mb-12 sm:mb-16">
+        <div className="text-center mb-8 sm:mb-16">
           <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
               <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
@@ -49,7 +49,7 @@ export default function RealLifeSection() {
               Real Member Experience
             </span>
           </div>
-          <h2 className="text-[30px] sm:text-[46px] font-extrabold text-[#0B1628] leading-[1.08] tracking-[-0.03em] mb-4">
+          <h2 className="text-[26px] sm:text-[36px] font-extrabold text-[#0B1628] leading-[1.08] tracking-[-0.03em] mb-4">
             This is how most homeowners
             <br className="hidden sm:block" />
             <span className="text-[#306EEC]"> use Profixter</span>
@@ -60,11 +60,11 @@ export default function RealLifeSection() {
         </div>
 
         {/* Month cards */}
-        <div className="grid sm:grid-cols-3 gap-5 sm:gap-6 max-w-[960px] mx-auto mb-10">
+        <div className="grid sm:grid-cols-3 gap-5 sm:gap-6 max-w-[960px] mx-auto mb-7">
           {MONTHS.map(({ label, color, bgColor, borderColor, tasks }) => (
             <div
               key={label}
-              className="rounded-[22px] p-7 flex flex-col gap-5"
+              className="rounded-[14px] p-7 flex flex-col gap-5"
               style={{ background: bgColor, border: `1px solid ${borderColor}` }}
             >
               <div className="flex items-center gap-3">
@@ -92,7 +92,7 @@ export default function RealLifeSection() {
 
         {/* Bottom line */}
         <div className="max-w-[680px] mx-auto text-center">
-          <div className="rounded-[20px] border border-[#C5CBD8] bg-white px-8 py-6 shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
+          <div className="rounded-[14px] border border-[#C5CBD8] bg-white px-6 py-6 shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
             <p className="text-[17px] sm:text-[19px] font-extrabold text-[#0B1628] leading-snug mb-2">
               &ldquo;Instead of waiting until everything breaks, you stay ahead of your home.&rdquo;
             </p>

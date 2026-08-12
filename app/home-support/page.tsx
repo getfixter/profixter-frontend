@@ -373,7 +373,7 @@ export default function HomeSupportPage() {
         <div className={`flex flex-1 flex-col ${hasUserMessages ? "justify-start" : "justify-center"}`}>
           {!hasUserMessages && (
             <div className="mx-auto w-full max-w-[900px] pb-6 pt-5 text-center sm:pb-10 sm:pt-8">
-              <h1 className="mx-auto max-w-[860px] text-[40px] font-black leading-[0.94] tracking-[-0.055em] text-[#071325] sm:text-[82px] sm:leading-[0.88] sm:tracking-[-0.07em] lg:text-[96px]">
+              <h1 className="mx-auto max-w-[860px] text-[34px] font-black leading-[0.94] tracking-[-0.055em] text-[#071325] sm:text-[50px] sm:leading-[0.88] sm:tracking-[-0.07em] lg:text-[50px]">
                 Your personal AI for your home.
               </h1>
               <p className="mx-auto mt-4 max-w-[610px] text-[15px] font-semibold leading-6 text-[#4B5870] sm:mt-6 sm:text-xl sm:leading-7">
@@ -389,7 +389,7 @@ export default function HomeSupportPage() {
                   <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#6B7280] sm:text-[13px]">
                     Profixter AI
                   </div>
-                  <h1 className="mt-1 text-[28px] font-black tracking-[-0.045em] text-[#071325] sm:text-[44px] sm:tracking-[-0.05em]">
+                  <h1 className="mt-1 text-[26px] font-black tracking-[-0.045em] text-[#071325] sm:text-[36px] sm:tracking-[-0.05em]">
                     Home answers.
                   </h1>
                 </div>
@@ -413,7 +413,7 @@ export default function HomeSupportPage() {
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[94%] rounded-[20px] px-3.5 py-3 text-[13px] leading-5 shadow-sm sm:max-w-[78%] sm:rounded-[24px] sm:px-4 sm:text-sm sm:leading-6 lg:max-w-[70%] ${
+                    className={`max-w-[94%] rounded-[14px] px-3.5 py-3 text-[13px] leading-5 shadow-sm sm:max-w-[78%] sm:rounded-[16px] sm:px-4 sm:text-sm sm:leading-6 lg:max-w-[70%] ${
                       message.role === "user"
                         ? "bg-[#0B1628] text-white shadow-[0_12px_30px_rgba(9,22,43,0.18)]"
                         : message.error
@@ -485,7 +485,7 @@ export default function HomeSupportPage() {
             </div>
 
             {fileNotice && (
-              <div className="mb-3 rounded-[18px] bg-[#FFF8EC] px-4 py-3 text-xs font-bold leading-5 text-[#965C09]">
+              <div className="mb-3 rounded-[13px] bg-[#FFF8EC] px-4 py-3 text-xs font-bold leading-5 text-[#965C09]">
                 {fileNotice}
               </div>
             )}
@@ -495,7 +495,7 @@ export default function HomeSupportPage() {
                 {files.map((item, index) => (
                   <div
                     key={`${item.name}-${index}`}
-                    className="group relative min-w-0 overflow-hidden rounded-[20px] bg-white p-2 text-left text-xs font-bold text-[#34435C] shadow-[0_14px_34px_rgba(15,23,42,0.08)]"
+                    className="group relative min-w-0 overflow-hidden rounded-[14px] bg-white p-2 text-left text-xs font-bold text-[#34435C] shadow-[0_14px_34px_rgba(15,23,42,0.08)]"
                   >
                     {item.url ? (
                       <span
@@ -525,13 +525,13 @@ export default function HomeSupportPage() {
               </div>
             )}
 
-            <div className="rounded-[28px] bg-white p-1.5 shadow-[0_24px_70px_rgba(15,23,42,0.14)] sm:rounded-[34px] sm:p-2 sm:shadow-[0_34px_100px_rgba(15,23,42,0.16)]">
+            <div className="rounded-[16px] bg-white p-1.5 shadow-[0_24px_70px_rgba(15,23,42,0.14)] sm:rounded-[34px] sm:p-2 sm:shadow-[0_34px_100px_rgba(15,23,42,0.16)]">
               <textarea
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 rows={3}
                 placeholder="Ask anything about your house..."
-                className="min-h-[78px] w-full resize-none bg-transparent px-4 py-4 text-[16px] font-medium leading-6 text-[#0B1628] outline-none placeholder:text-[#8A94A6] sm:min-h-[92px] sm:px-5 sm:py-5 sm:text-[21px] sm:leading-7"
+                className="min-h-[78px] w-full resize-none bg-transparent px-4 py-4 text-[16px] font-medium leading-6 text-[#0B1628] outline-none placeholder:text-[#8A94A6] sm:min-h-[92px] sm:px-5 sm:py-5 sm:text-[19px] sm:leading-7"
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();

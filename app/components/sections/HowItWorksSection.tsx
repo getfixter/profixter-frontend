@@ -33,7 +33,7 @@ export default function HowItWorksSection() {
   return (
     <section
       id="how-it-works"
-      className="relative w-full overflow-hidden py-12 sm:py-20 lg:py-28"
+      className="relative w-full overflow-hidden py-8 sm:py-13 lg:py-12"
       style={{ background: "linear-gradient(160deg, #EAEDFA 0%, #E4E9F8 100%)" }}
     >
       <div
@@ -43,7 +43,7 @@ export default function HowItWorksSection() {
       />
 
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto mb-10 max-w-[720px] text-center sm:mb-16 lg:mb-20">
+        <div className="mx-auto mb-7 max-w-[720px] text-center sm:mb-16 lg:mb-20">
           <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-3.5 py-1.5 shadow-[0_2px_12px_rgba(48,110,236,0.08)] sm:mb-6 sm:px-4 sm:py-2">
             <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#306EEC]" />
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
@@ -51,7 +51,7 @@ export default function HowItWorksSection() {
             </span>
           </div>
 
-          <h2 className="mb-4 text-[28px] font-black leading-[1.02] tracking-[-0.03em] text-[#0B1628] sm:mb-5 sm:text-[50px] sm:leading-[0.92] sm:tracking-[-0.04em] lg:text-[60px]">
+          <h2 className="mb-4 text-[26px] font-black leading-[1.02] tracking-[-0.03em] text-[#0B1628] sm:mb-5 sm:text-[40px] sm:leading-[0.92] sm:tracking-[-0.04em] lg:text-[43px]">
             One team. One home.
             <br />
             <span className="text-[#306EEC]">Ongoing care.</span>
@@ -99,8 +99,8 @@ export default function HowItWorksSection() {
           </div>
         </div>
 
-        <div id="founder-story" className="mt-12 scroll-mt-[130px] sm:mt-20 lg:mt-28">
-          <div className="mx-auto max-w-[860px] rounded-[24px] border border-[#DDE4F0] bg-white/82 px-5 py-9 text-center shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-sm sm:rounded-[28px] sm:px-10 sm:py-16 sm:shadow-[0_24px_80px_rgba(15,23,42,0.06)] lg:px-16 lg:py-20">
+        <div id="founder-story" className="mt-8 scroll-mt-[130px] sm:mt-20 lg:mt-28">
+          <div className="mx-auto max-w-[860px] rounded-[16px] border border-[#DDE4F0] bg-white/82 px-5 py-9 text-center shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-sm sm:rounded-[16px] sm:px-10 sm:py-11 sm:shadow-[0_24px_80px_rgba(15,23,42,0.06)] lg:px-16 lg:py-14">
             <div className="mx-auto mb-6 h-px w-16 bg-[#D4A574]" />
 
             <div className="relative mx-auto h-[132px] w-[132px] overflow-hidden rounded-full border-[5px] border-white shadow-[0_18px_48px_rgba(15,23,42,0.16)] sm:h-[156px] sm:w-[156px]">
@@ -114,7 +114,7 @@ export default function HowItWorksSection() {
             </div>
 
             <div className="mt-5">
-              <div className="text-[18px] font-extrabold text-[#0B1628] sm:text-[20px]">
+              <div className="text-[18px] font-extrabold text-[#0B1628] sm:text-[19px]">
                 Taras Bandura
               </div>
               <div className="mt-1 text-[13px] font-bold uppercase tracking-[0.18em] text-[#92724E]">
@@ -122,7 +122,7 @@ export default function HowItWorksSection() {
               </div>
             </div>
 
-            <h3 className="mt-8 text-[29px] font-black leading-[1.06] tracking-[-0.03em] text-[#0B1628] sm:mt-10 sm:text-[48px] sm:leading-[1.02] sm:tracking-[-0.035em]">
+            <h3 className="mt-8 text-[26px] font-black leading-[1.06] tracking-[-0.03em] text-[#0B1628] sm:mt-10 sm:text-[36px] sm:leading-[1.02] sm:tracking-[-0.035em]">
               Why Profixter exists
             </h3>
 
@@ -136,7 +136,7 @@ export default function HowItWorksSection() {
               <p>
                 Every small issue forced people to start over. Search again. Call again. Explain the house again. Hope someone shows up.
               </p>
-              <p className="text-[19px] font-extrabold leading-[1.55] text-[#0B1628] sm:text-[21px]">
+              <p className="text-[19px] font-extrabold leading-[1.55] text-[#0B1628] sm:text-[19px]">
                 Your home needs regular attention, not a new contractor search every month.
               </p>
               <p>

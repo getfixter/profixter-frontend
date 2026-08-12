@@ -37,11 +37,11 @@ const FIRST_VISIT_IDEAS = [
 export default function OnboardingSection() {
   return (
     <section
-      className="relative w-full overflow-hidden py-16 sm:py-20 lg:py-28 bg-white"
+      className="relative w-full overflow-hidden py-10 sm:py-13 lg:py-12 bg-white"
     >
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
-        <div className="grid lg:grid-cols-[1fr_1fr] gap-12 lg:gap-16 items-start">
+        <div className="grid lg:grid-cols-[1fr_1fr] gap-8 lg:gap-10 items-start">
 
           {/* LEFT - What happens after you start */}
           <div>
@@ -50,7 +50,7 @@ export default function OnboardingSection() {
                 After You Start
               </span>
             </div>
-            <h2 className="text-[26px] sm:text-[34px] font-extrabold text-[#0B1628] leading-[1.1] tracking-[-0.025em] mb-2">
+            <h2 className="text-[23px] sm:text-[30px] font-extrabold text-[#0B1628] leading-[1.1] tracking-[-0.025em] mb-2">
               What happens after you start?
             </h2>
             <p className="text-[15px] text-[#475569] mb-8 leading-relaxed">
@@ -88,7 +88,7 @@ export default function OnboardingSection() {
 
             <Link
               href="/signup"
-              className="mt-6 inline-flex min-h-[54px] items-center justify-center rounded-[14px] bg-[#306EEC] px-8 text-[15px] font-extrabold text-white shadow-[0_12px_32px_rgba(48,110,236,0.28)] transition hover:-translate-y-0.5 hover:bg-[#2558c9]"
+              className="mt-6 inline-flex min-h-[46px] items-center justify-center rounded-[14px] bg-[#306EEC] px-6 text-[15px] font-extrabold text-white shadow-[0_12px_32px_rgba(48,110,236,0.28)] transition hover:-translate-y-0.5 hover:bg-[#2558c9]"
             >
               Create Account
             </Link>
@@ -101,7 +101,7 @@ export default function OnboardingSection() {
                 First Visit Ideas
               </span>
             </div>
-            <h2 className="text-[26px] sm:text-[34px] font-extrabold text-[#0B1628] leading-[1.1] tracking-[-0.025em] mb-2">
+            <h2 className="text-[23px] sm:text-[30px] font-extrabold text-[#0B1628] leading-[1.1] tracking-[-0.025em] mb-2">
               What most homeowners book first
             </h2>
             <p className="text-[15px] text-[#475569] mb-8 leading-relaxed">

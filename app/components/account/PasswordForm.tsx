@@ -122,7 +122,7 @@ function DeleteAccountModal({
           <div className="w-10 h-1 rounded-full bg-[#E2E8F0]" />
         </div>
 
-        <div className="px-6 pt-5 pb-6 sm:px-7 sm:pt-7">
+        <div className="px-6 pt-5 pb-6 sm:px-5 sm:pt-7">
           {/* Icon */}
           <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -133,7 +133,7 @@ function DeleteAccountModal({
             </svg>
           </div>
 
-          <h3 className="text-[20px] font-black text-[#313234] mb-1">Delete your account?</h3>
+          <h3 className="text-[19px] font-black text-[#313234] mb-1">Delete your account?</h3>
           <p className="text-[13px] text-[#6A6D71] leading-relaxed mb-5">
             This is permanent and cannot be undone. Your profile, booking history, and all account
             data will be removed immediately.
@@ -295,11 +295,11 @@ export function PasswordForm() {
       <div>
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-[22px] font-bold text-[#313234]">Security</h2>
+          <h2 className="text-[21px] font-bold text-[#313234]">Security</h2>
           <p className="text-[13px] text-[#6A6D71] mt-0.5">Update your account password</p>
         </div>
 
-        <div className="bg-white border border-[#E0E6F5] rounded-[18px] p-5 sm:p-6 max-w-[480px]">
+        <div className="bg-white border border-[#E0E6F5] rounded-[13px] p-5 sm:p-6 max-w-[480px]">
           <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
             <PasswordField
               id="current-password"
@@ -410,7 +410,7 @@ export function PasswordForm() {
           <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-red-400 mb-3">
             Danger Zone
           </div>
-          <div className="bg-white border border-red-200 rounded-[18px] p-5">
+          <div className="bg-white border border-red-200 rounded-[13px] p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-[14px] font-bold text-[#313234]">Delete Account</div>

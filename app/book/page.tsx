@@ -20,6 +20,7 @@ import { useSearchParams } from "next/navigation";
 import BookingSection from "@/app/components/sections/BookingSection";
 import VisitTypeNav, { parseVisitType } from "@/app/components/booking/VisitTypeNav";
 import { YourFixterRow } from "@/app/components/fixter/YourFixter";
+import BookingsSection from "@/app/components/account/BookingsSection";
 import PriorityVisitPanel from "@/app/components/booking/PriorityVisitPanel";
 import MembershipUpgradePrompt, { normalizePlanKey } from "@/app/components/membership/MembershipUpgradePrompt";
 import { hasActiveMembership as hasActiveMembershipFor } from "@/lib/auth-routing";
@@ -200,7 +201,7 @@ function StepHeader({
       <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
         {step}
       </div>
-      <h2 className="text-[20px] font-extrabold leading-tight text-[#0B1628]">
+      <h2 className="text-[19px] font-extrabold leading-tight text-[#0B1628]">
         {title}
       </h2>
       {subtitle && (
@@ -652,7 +653,9 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
             <div className="mb-1 text-[9px] font-bold uppercase tracking-[0.18em] text-[#306EEC] sm:text-[11px]">
               {hasActiveMembership ? "Extra Visit" : "One-Time Visit"}
             </div>
-            <h1 className="text-[24px] font-black leading-tight tracking-[-0.035em] text-[#071325] sm:text-[44px] lg:text-[52px]">
+            {/* A shade under the marketing pages: this headline runs long and
+                the calendar below it is what the customer came for. */}
+            <h1 className="text-[26px] font-black leading-tight tracking-[-0.035em] text-[#071325] sm:text-[36px] lg:text-[40px]">
               {hasActiveMembership ? "Book an Extra Visit" : "Book a one-time handyman visit"}
             </h1>
             <p className="mt-1 max-w-[640px] text-[11px] font-semibold leading-4 text-[#475569] sm:text-[14px] sm:leading-5">
@@ -660,7 +663,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                 ? "Book an additional visit anytime before your membership renews."
                 : "One 90-minute visit, no membership needed. We bring the tools."}
             </p>
-            {hasActiveMembership && <Link href="/membership#pick-day" className="mt-1 inline-flex text-[10px] font-bold text-[#306EEC] sm:text-[12px]">Need your included visit? Book here</Link>}
+            {hasActiveMembership && <Link href="/book?visit=membership" className="mt-1 inline-flex text-[10px] font-bold text-[#306EEC] sm:text-[12px]">Need your included visit? Book here</Link>}
             {configError && (
               <div className="mt-4 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] font-semibold text-amber-800">
                 {configError}
@@ -669,10 +672,10 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
           </div>
 
           {false && !hasActiveMembership && (
-            <div className="mb-5 overflow-hidden rounded-[24px] border border-[#E5E9F2] bg-white/92 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:mb-7 sm:rounded-[30px] sm:p-6 lg:p-7">
+            <div className="mb-5 overflow-hidden rounded-[16px] border border-[#E5E9F2] bg-white/92 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:mb-7 sm:rounded-[18px] sm:p-6 lg:p-7">
               <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
                 <div>
-                  <h2 className="text-[24px] font-black leading-[1.02] tracking-[-0.035em] text-[#0B1628] sm:text-[34px] sm:tracking-[-0.045em]">
+                  <h2 className="text-[23px] font-black leading-[1.02] tracking-[-0.035em] text-[#0B1628] sm:text-[30px] sm:tracking-[-0.045em]">
                     Own your home?
                   </h2>
                   <p className="mt-3 max-w-[760px] text-[14px] font-semibold leading-6 text-[#475569] sm:text-[16px] sm:leading-7">
@@ -714,7 +717,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
             <MembershipUpgradePrompt currentPlan={currentPlanKey} className="mb-3 sm:mb-5" />
           )}
 
-          <h2 className="mb-2 text-[16px] font-black text-[#0B1628] sm:mb-3 sm:text-[22px]">Book your extra visit</h2>
+          <h2 className="mb-2 text-[16px] font-black text-[#0B1628] sm:mb-3 sm:text-[21px]">Book your extra visit</h2>
 
           <div id="booking-form" className="grid grid-cols-1 gap-3 scroll-mt-6 sm:gap-4 lg:grid-cols-12 lg:gap-6">
             <div className="order-2 lg:order-1 lg:col-span-5">
@@ -806,7 +809,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
             <div className="contents lg:order-2 lg:col-span-7 lg:flex lg:flex-col lg:gap-5">
               <div className="order-1 rounded-[10px] border border-[#E5E9F2] bg-white/95 p-2 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[16px] sm:p-4 lg:order-none">
                 {isLoading ? (
-                  <div className="py-12 text-center text-[14px] font-semibold text-[#64748B]">
+                  <div className="py-8 text-center text-[14px] font-semibold text-[#64748B]">
                     Loading your account...
                   </div>
                 ) : !isAuthenticated ? (
@@ -903,7 +906,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                             aria-modal="true"
                             aria-labelledby="service-picker-title"
                             style={{ "--customer-nav-height": `${CUSTOMER_MOBILE_NAV_HEIGHT_PX}px` } as CSSProperties}
-                            className="fixed inset-x-3 bottom-[calc(var(--customer-nav-height)_+_env(safe-area-inset-bottom,0px)_+_8px)] z-[90] flex max-h-[calc(100dvh_-_var(--customer-nav-height)_-_env(safe-area-inset-bottom,0px)_-_24px)] flex-col overflow-hidden rounded-[20px] bg-white shadow-[0_30px_90px_rgba(7,19,37,0.28)] sm:absolute sm:inset-x-0 sm:bottom-auto sm:top-[calc(100%+10px)] sm:z-30 sm:max-h-[420px] sm:rounded-[22px]"
+                            className="fixed inset-x-3 bottom-[calc(var(--customer-nav-height)_+_env(safe-area-inset-bottom,0px)_+_8px)] z-[90] flex max-h-[calc(100dvh_-_var(--customer-nav-height)_-_env(safe-area-inset-bottom,0px)_-_24px)] flex-col overflow-hidden rounded-[14px] bg-white shadow-[0_30px_90px_rgba(7,19,37,0.28)] sm:absolute sm:inset-x-0 sm:bottom-auto sm:top-[calc(100%+10px)] sm:z-30 sm:max-h-[420px] sm:rounded-[22px]"
                           >
                             <div className="flex flex-shrink-0 items-center justify-between border-b border-[#E5E9F2] px-3 py-2.5">
                               <div>
@@ -938,7 +941,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                                       setServicePickerOpen(false);
                                     }}
                                     className={[
-                                      "min-h-[52px] whitespace-normal break-words rounded-[12px] px-3 py-2 text-left text-[12px] font-black leading-4 transition duration-150 active:scale-[0.98] sm:min-h-[58px] sm:rounded-[14px] sm:text-[13px]",
+                                      "min-h-[46px] whitespace-normal break-words rounded-[12px] px-3 py-2 text-left text-[12px] font-black leading-4 transition duration-150 active:scale-[0.98] sm:min-h-[58px] sm:rounded-[14px] sm:text-[13px]",
                                       active
                                         ? "bg-[#0B1628] text-white shadow-[0_16px_34px_rgba(11,22,40,0.22)]"
                                         : "bg-[#F5F7FA] text-[#0B1628] hover:bg-[#EEF4FF]",
@@ -975,14 +978,14 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                           <div className="text-[11px] font-black uppercase tracking-[0.18em] text-white/55">
                             Extra visit
                           </div>
-                          <h3 className="mt-2 text-[19px] font-black leading-[1.05] tracking-[-0.03em] sm:text-[22px] sm:leading-[1.02] sm:tracking-[-0.035em]">
+                          <h3 className="mt-2 text-[19px] font-black leading-[1.05] tracking-[-0.03em] sm:text-[21px] sm:leading-[1.02] sm:tracking-[-0.035em]">
                             Use this when you need another visit before your membership renews.
                           </h3>
                           <p className="mt-3 text-[13px] font-semibold leading-5 text-white/72">
                             Your included membership visits stay available through the normal membership booking flow.
                           </p>
                           <Link
-                            href="/membership#pick-day"
+                            href="/book?visit=membership"
                             className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-[13px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF]"
                           >
                             Book included visit
@@ -995,7 +998,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                               <div className="text-[11px] font-black uppercase tracking-[0.18em] text-white/55">
                                 Need regular help?
                               </div>
-                              <h3 className="mt-2 text-[19px] font-black leading-[1.05] tracking-[-0.03em] sm:text-[22px] sm:leading-[1.02] sm:tracking-[-0.035em]">
+                              <h3 className="mt-2 text-[19px] font-black leading-[1.05] tracking-[-0.03em] sm:text-[21px] sm:leading-[1.02] sm:tracking-[-0.035em]">
                                 A membership may be better if you expect ongoing visits.
                               </h3>
                             </div>
@@ -1345,22 +1348,38 @@ function BookExperience() {
       ) : (
         <>
           {/*
-           * No heading above the form. The member tapped Book, then tapped Book
-           * Fixter, and the form below says what it is; a hero here only
-           * restated that and pushed the calendar off the first screen.
+           * Book is where a member comes to deal with visits, so the order is
+           * the order of the job: book one, then who is coming, then the ones
+           * you already have.
            *
-           * The Fixter row takes its place: smaller than what it replaced, and
-           * about the person rather than the product.
+           * The form leads. The Fixter row used to sit above it and delayed
+           * the calendar to say something the member already knew.
            */}
-          <section className="mx-auto w-full max-w-[1280px] px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
+          <BookingSection />
+
+          <section className="mx-auto w-full max-w-[1280px] px-4 pt-1 sm:px-6 lg:px-8">
             <YourFixterRow />
           </section>
 
-          {/* The existing member booking experience, unchanged. */}
-          <BookingSection />
+          {/*
+           * Visits live here now, not on Membership. A member looking for
+           * "when is my visit" was being sent to the page about their plan.
+           * Same component, one implementation, moved to where it is looked for.
+           */}
+          <section
+            id="your-visits"
+            className="mx-auto w-full max-w-[1280px] scroll-mt-[84px] px-4 pt-6 sm:scroll-mt-[96px] sm:px-6 sm:pt-8 lg:px-8"
+          >
+            {/*
+              No heading of my own here: BookingsSection already opens with
+              "My Visits" and its own subtitle, and stacking a second heading
+              on top of it just said the same thing twice.
+             */}
+            <BookingsSection />
+          </section>
 
           {/* After booking, not before it: the task comes first. */}
-          <section className="mx-auto w-full max-w-[1280px] px-4 pb-14 sm:px-6 lg:px-8">
+          <section className="mx-auto w-full max-w-[1280px] px-4 pb-10 pt-6 sm:px-6 lg:px-8">
             <MembershipUpgradePrompt currentPlan={currentPlanKey} className="max-w-[420px]" />
           </section>
         </>

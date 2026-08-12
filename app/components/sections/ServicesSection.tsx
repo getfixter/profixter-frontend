@@ -37,7 +37,7 @@ type Faq = (typeof homepageFaqs)[number];
 function FaqRow({ faq, isOpen, onToggle }: { faq: Faq; isOpen: boolean; onToggle: () => void }) {
   return (
     <div
-      className={`rounded-[18px] border transition-all duration-200 overflow-hidden ${
+      className={`rounded-[13px] border transition-all duration-200 overflow-hidden ${
         isOpen
           ? "border-[#306EEC]/30 bg-[#EEF5FF]"
           : "border-white/[0.09] bg-white/[0.04] hover:bg-white/[0.07] hover:border-white/[0.14]"
@@ -98,7 +98,7 @@ export default function ServicesSection() {
   return (
     <section
       id="services"
-      className="relative w-full overflow-hidden py-16 sm:py-20 lg:py-28"
+      className="relative w-full overflow-hidden py-10 sm:py-13 lg:py-12"
       style={{
         background:
           "linear-gradient(160deg, #0B1525 0%, #0D1A30 60%, #0A1220 100%)",
@@ -127,7 +127,7 @@ export default function ServicesSection() {
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
         {/* ── Header ── */}
-        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-12 sm:mb-14 lg:mb-16">
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-8 sm:mb-9 lg:mb-16">
           <div className="max-w-[600px]">
             <div className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.05] px-4 py-2 backdrop-blur-sm mb-7">
               <svg
@@ -151,7 +151,7 @@ export default function ServicesSection() {
               </span>
             </div>
 
-            <h2 className="text-[40px] sm:text-[56px] lg:text-[68px] font-black leading-[0.88] tracking-[-0.045em] text-white mb-5">
+            <h2 className="text-[34px] sm:text-[43px] lg:text-[46px] font-black leading-[0.88] tracking-[-0.045em] text-white mb-5">
               FAQ &amp;
               <br />
               <span
@@ -178,7 +178,7 @@ export default function ServicesSection() {
                 key={label}
                 className="rounded-[16px] border border-white/[0.09] bg-white/[0.04] px-4 py-4 text-center"
               >
-                <div className="text-[20px] font-extrabold text-white leading-none mb-1">
+                <div className="text-[19px] font-extrabold text-white leading-none mb-1">
                   {value}
                 </div>
                 <div className="text-[11px] font-semibold text-white/35 leading-snug">
@@ -208,7 +208,7 @@ export default function ServicesSection() {
           <div className="flex flex-col gap-4">
             {/* Still have questions */}
             <div
-              className="rounded-[22px] border border-white/[0.10] p-7 flex flex-col gap-5"
+              className="rounded-[14px] border border-white/[0.10] p-7 flex flex-col gap-5"
               style={{
                 background:
                   "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
@@ -263,7 +263,7 @@ export default function ServicesSection() {
 
             {/* CTA card */}
             <div
-              className="rounded-[22px] border border-[#306EEC]/20 p-7 flex flex-col gap-5"
+              className="rounded-[14px] border border-[#306EEC]/20 p-7 flex flex-col gap-5"
               style={{
                 background:
                   "linear-gradient(145deg, rgba(48,110,236,0.12) 0%, rgba(48,110,236,0.06) 100%)",

@@ -9,7 +9,7 @@ const base = 'inline-flex items-center justify-center rounded-[14px] font-semibo
 const sizes: Record<NonNullable<ButtonProps['size']>, string> = {
   sm: 'h-10 px-4 text-sm',
   md: 'h-12 px-6 text-base',
-  lg: 'h-[60px] px-8 text-[20px]'
+  lg: 'h-[48px] px-6 text-[19px]'
 };
 const variants: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary: 'bg-[#306EEC] text-[#EEF2FF] border border-[#306EEC] hover:bg-[#2558c9]',

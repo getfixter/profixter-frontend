@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -11,7 +13,6 @@ import { AccountSidebar } from "../components/account/AccountSidebar";
 import { PersonalInfoForm } from "../components/account/PersonalInfoForm";
 import { PlanSection } from "../components/account/PlanSection";
 import { PasswordForm } from "../components/account/PasswordForm";
-import BookingsSection from "../components/account/BookingsSection";
 import OverviewSection from "../components/account/OverviewSection";
 
 import { useAuth } from "@/lib/useAuth";
@@ -153,8 +154,25 @@ export default function AccountPage() {
             {activeTab === "personal" && <PersonalInfoForm formData={formData} />}
             {activeTab === "plan" && <PlanSection />}
             {activeTab === "bookings" && (
-              <div id="my-bookings">
-                <BookingsSection />
+              /*
+               * A shortcut, not a second visit centre. Account is for the
+               * account; visits are booked and managed under Book, and keeping
+               * a full copy here meant two implementations to keep in step.
+               */
+              <div id="my-bookings" className="rounded-[14px] border border-[#D7DEE9] bg-white p-5">
+                <h2 className="text-[16px] font-semibold tracking-[-0.02em] text-[#0B1628]">
+                  Your visits live under Book
+                </h2>
+                <p className="mt-1 text-[13.5px] leading-5 text-[#6E6E73]">
+                  Booking a visit, checking what is coming up and looking back over
+                  past visits all happen in one place.
+                </p>
+                <Link
+                  href="/book?visit=membership#your-visits"
+                  className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-[11px] bg-[#0B1628] px-4 text-[14px] font-semibold text-white transition hover:bg-[#172033]"
+                >
+                  View visits
+                </Link>
               </div>
             )}
             {activeTab === "password" && <PasswordForm />}

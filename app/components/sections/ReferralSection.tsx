@@ -40,7 +40,7 @@ export default function ReferralSection() {
   const waHref = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
   return (
-    <section className="relative w-full overflow-hidden py-16 sm:py-20 lg:py-28 bg-white">
+    <section className="relative w-full overflow-hidden py-10 sm:py-13 lg:py-12 bg-white">
       {/* Subtle tinted glow */}
       <div
         aria-hidden="true"
@@ -51,7 +51,7 @@ export default function ReferralSection() {
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
-        <div className="text-center mb-10 sm:mb-12">
+        <div className="text-center mb-7 sm:mb-12">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-[#EEF2FF] px-4 py-1.5 mb-5">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="#306EEC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -63,7 +63,7 @@ export default function ReferralSection() {
             </span>
           </div>
 
-          <h2 className="text-[28px] sm:text-[40px] font-extrabold text-[#0B1628] leading-[1.08] tracking-[-0.03em] mb-3">
+          <h2 className="text-[26px] sm:text-[34px] font-extrabold text-[#0B1628] leading-[1.08] tracking-[-0.03em] mb-3">
             Invite a Neighbor. Get Rewarded.
           </h2>
           <p className="text-[15px] sm:text-[17px] text-[#475569] max-w-[540px] mx-auto leading-relaxed">
@@ -73,16 +73,16 @@ export default function ReferralSection() {
 
         {/* Reward cards */}
         <div className="grid sm:grid-cols-2 gap-4 max-w-[640px] mx-auto mb-8">
-          <div className="rounded-[18px] border border-[#D9E4FF] bg-[#EEF2FF] px-6 py-5 text-center">
+          <div className="rounded-[13px] border border-[#D9E4FF] bg-[#EEF2FF] px-6 py-5 text-center">
             <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#306EEC] mb-2">You get</div>
-            <div className="text-[40px] sm:text-[48px] font-extrabold text-[#0B1628] leading-none mb-1">
+            <div className="text-[34px] sm:text-[36px] font-extrabold text-[#0B1628] leading-none mb-1">
               {REFERRER_REWARD}
             </div>
             <div className="text-[13px] text-[#475569]">off your next month</div>
           </div>
-          <div className="rounded-[18px] border border-[#BBF7D0] bg-[#F0FDF4] px-6 py-5 text-center">
+          <div className="rounded-[13px] border border-[#BBF7D0] bg-[#F0FDF4] px-6 py-5 text-center">
             <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#166534] mb-2">They get</div>
-            <div className="text-[40px] sm:text-[48px] font-extrabold text-[#0B1628] leading-none mb-1">
+            <div className="text-[34px] sm:text-[36px] font-extrabold text-[#0B1628] leading-none mb-1">
               {REFERRED_REWARD}
             </div>
             <div className="text-[13px] text-[#475569]">off their first month</div>
@@ -128,7 +128,7 @@ export default function ReferralSection() {
         </div>
 
         {/* Share buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 max-w-[640px] mx-auto mb-10 sm:mb-12">
+        <div className="flex flex-col sm:flex-row gap-3 max-w-[640px] mx-auto mb-7 sm:mb-12">
           <a
             href={smsHref}
             className="flex-1 inline-flex h-[48px] items-center justify-center gap-2.5 rounded-[12px] border border-[#E2E8F0] bg-white text-[14px] font-semibold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC]"

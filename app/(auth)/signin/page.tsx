@@ -135,7 +135,7 @@ export default function SignInPage() {
         </div>
 
         {/* Card */}
-        <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.03] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7">
+        <div className="rounded-[13px] border border-white/[0.08] bg-white/[0.03] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7">
           <Link
             href="/"
             className="mb-4 inline-flex min-h-[40px] items-center rounded-[10px] border border-white/[0.10] bg-white/[0.04] px-3 text-[12px] font-semibold text-white/60 transition hover:border-white/[0.18] hover:bg-white/[0.07] hover:text-white sm:mb-5"
@@ -145,7 +145,7 @@ export default function SignInPage() {
           
           {/* Heading */}
           <div className="mb-5 text-center sm:mb-6">
-            <h1 className="mb-1.5 text-[28px] font-black tracking-[-0.02em] text-white sm:text-[32px]">
+            <h1 className="mb-1.5 text-[26px] font-black tracking-[-0.02em] text-white sm:text-[30px]">
               Welcome Back
             </h1>
             <p className="text-[13px] text-white/50 sm:text-[14px]">

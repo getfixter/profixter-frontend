@@ -169,7 +169,7 @@ export function AddressesPanel({
 
       {/* Inline Add Form */}
       {showAdd && (
-        <div className="bg-white border border-[#C5CBD8] rounded-[20px] p-4 sm:p-5 mb-4">
+        <div className="bg-white border border-[#C5CBD8] rounded-[14px] p-4 sm:p-5 mb-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[#6A6D71] text-sm mb-2">Label</label>
@@ -265,7 +265,7 @@ export function AddressesPanel({
           return (
             <div
               key={a._id}
-              className="bg-[#EEF2FF] border border-[#C5CBD8] rounded-[20px] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+              className="bg-[#EEF2FF] border border-[#C5CBD8] rounded-[14px] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
             >
               <div>
                 <div className="flex items-center gap-2">

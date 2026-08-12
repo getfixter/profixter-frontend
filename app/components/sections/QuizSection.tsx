@@ -182,7 +182,7 @@ export default function QuizSection() {
   return (
     <section
       id="quiz"
-      className="relative w-full overflow-hidden py-16 sm:py-20 lg:py-28"
+      className="relative w-full overflow-hidden py-10 sm:py-13 lg:py-12"
       style={{ background: "linear-gradient(160deg, #EAEDFA 0%, #E4E9F8 100%)" }}
     >
       {/* Ambient glow */}
@@ -195,7 +195,7 @@ export default function QuizSection() {
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
         {/* ── Header ── */}
-        <div className="mx-auto max-w-[680px] text-center mb-12 sm:mb-14">
+        <div className="mx-auto max-w-[680px] text-center mb-8 sm:mb-9">
           <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
               <path d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -205,7 +205,7 @@ export default function QuizSection() {
             </span>
           </div>
 
-          <h2 className="text-[32px] sm:text-[50px] lg:text-[60px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-5">
+          <h2 className="text-[30px] sm:text-[40px] lg:text-[43px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-5">
             Find the right plan
             <br />
             <span className="text-[#306EEC]">for your home.</span>
@@ -218,7 +218,7 @@ export default function QuizSection() {
         </div>
 
         {/* ── Card ── */}
-        <div className="mx-auto max-w-[780px] rounded-[28px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] overflow-hidden">
+        <div className="mx-auto max-w-[780px] rounded-[16px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] overflow-hidden">
 
           {/* Progress bar */}
           {!isDone && (
@@ -256,7 +256,7 @@ export default function QuizSection() {
 
                 {/* Question */}
                 <div className="mb-8">
-                  <h3 className="text-[22px] sm:text-[28px] font-extrabold text-[#0B1628] leading-snug mb-2">
+                  <h3 className="text-[21px] sm:text-[26px] font-extrabold text-[#0B1628] leading-snug mb-2">
                     {QUESTIONS[step].question}
                   </h3>
                   <p className="text-[14px] text-[#94A3B8] font-medium">
@@ -271,7 +271,7 @@ export default function QuizSection() {
                       key={choice.value}
                       type="button"
                       onClick={() => handleAnswer(QUESTIONS[step].key, choice.value)}
-                      className="group flex flex-col items-center gap-3 rounded-[20px] border border-[#E2E8F0] bg-[#F8FAFF] p-5 text-center transition-all duration-200 hover:border-[#306EEC]/40 hover:bg-[#EEF5FF] hover:shadow-[0_8px_32px_rgba(48,110,236,0.12)] focus:outline-none focus:border-[#306EEC]/50 active:scale-[0.98]"
+                      className="group flex flex-col items-center gap-3 rounded-[14px] border border-[#E2E8F0] bg-[#F8FAFF] p-5 text-center transition-all duration-200 hover:border-[#306EEC]/40 hover:bg-[#EEF5FF] hover:shadow-[0_8px_32px_rgba(48,110,236,0.12)] focus:outline-none focus:border-[#306EEC]/50 active:scale-[0.98]"
                     >
                       <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-white text-[#64748B] shadow-sm transition-all group-hover:bg-[#EEF2FF] group-hover:text-[#306EEC]">
                         {choice.icon}
@@ -321,7 +321,7 @@ export default function QuizSection() {
                   </svg>
                 </div>
 
-                <h3 className="text-[28px] sm:text-[38px] font-black text-[#0B1628] tracking-[-0.03em] leading-tight mb-3">
+                <h3 className="text-[26px] sm:text-[32px] font-black text-[#0B1628] tracking-[-0.03em] leading-tight mb-3">
                   {recommendation.title}
                 </h3>
 
@@ -338,7 +338,7 @@ export default function QuizSection() {
                         recommendation: recommendation.title,
                       })
                     }
-                    className="inline-flex h-[54px] items-center justify-center rounded-[16px] bg-[#306EEC] px-8 text-[16px] font-extrabold text-white transition-all hover:bg-[#2558c9] hover:-translate-y-0.5"
+                    className="inline-flex h-[46px] items-center justify-center rounded-[16px] bg-[#306EEC] px-6 text-[16px] font-extrabold text-white transition-all hover:bg-[#2558c9] hover:-translate-y-0.5"
                     style={{ boxShadow: "0 12px 36px rgba(48,110,236,0.30)" }}
                   >
                     {recommendation.cta}
@@ -346,7 +346,7 @@ export default function QuizSection() {
                   <button
                     type="button"
                     onClick={() => { setStep(0); setAnswers({}); }}
-                    className="inline-flex h-[54px] items-center justify-center rounded-[16px] border border-[#C5CBD8] bg-white px-8 text-[16px] font-semibold text-[#475569] transition-colors hover:bg-[#F6F7FB]"
+                    className="inline-flex h-[46px] items-center justify-center rounded-[16px] border border-[#C5CBD8] bg-white px-6 text-[16px] font-semibold text-[#475569] transition-colors hover:bg-[#F6F7FB]"
                   >
                     Start over
                   </button>

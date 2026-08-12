@@ -253,7 +253,7 @@ export default function GoogleReviewsLiveMini() {
       }}
       aria-label="Google reviews slider"
     >
-      <div className="relative rounded-[18px] border border-white/20 bg-white/10 backdrop-blur-md shadow-[0_20px_80px_rgba(0,0,0,0.35)] overflow-hidden">
+      <div className="relative rounded-[13px] border border-white/20 bg-white/10 backdrop-blur-md shadow-[0_20px_80px_rgba(0,0,0,0.35)] overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10" />
 
         <div className="relative p-5 sm:p-6">

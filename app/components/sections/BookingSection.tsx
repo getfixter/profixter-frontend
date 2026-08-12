@@ -33,7 +33,7 @@ import {
   normalizeDayAvailability,
   resolveInitialCalendarSelection,
 } from "@/lib/booking-calendar-availability";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { POPULAR_TASKS } from "./PopularTasksSection";
 import BookingConfirmationDialog, {
   type BookingConfirmation,
@@ -245,6 +245,12 @@ export default function BookingSection() {
   const defaultAddressId = bookingUser?.defaultAddressId;
   const roleLandingPath = getRoleLandingPath(user);
   const manageBookingsPath = roleLandingPath === "/account" ? "/account?tab=bookings" : roleLandingPath;
+  /*
+   * Book renders the visit list directly under this form, so "Manage visits"
+   * scrolls there rather than navigating. Everywhere else it still routes.
+   */
+  const pathname = usePathname();
+  const onBookPage = pathname === "/book";
 
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
@@ -1424,13 +1430,31 @@ if (next?.date) {
 
         {/* ── Header ── */}
         <div className="mb-0.5 flex items-center justify-between gap-1 sm:mb-5 sm:gap-3">
-          <h2 className="text-[16px] font-black leading-tight tracking-[-0.025em] text-[#0B1628] sm:text-[32px] lg:text-[38px]">
+          {/* For a member this is the heading above the form they came for,
+              and at 16px it was the same size as the body copy under it. */}
+          <h2 className="text-[22px] font-black leading-tight tracking-[-0.025em] text-[#0B1628] sm:text-[30px] lg:text-[32px]">
             Book Your Visit
           </h2>
           {isAuthenticated && hasSubscription && (
-            <button type="button" onClick={() => router.push(manageBookingsPath)} className="min-h-8 flex-shrink-0 text-[9px] font-semibold text-[#64748B] underline decoration-[#CBD5E1] underline-offset-2 transition hover:text-[#306EEC] sm:min-h-11 sm:text-[13px] sm:underline-offset-4">
+            /*
+             * On Book, the visit list is now directly below this form, so
+             * routing away would send the member to content they can already
+             * see. It scrolls instead. Anywhere else it still navigates.
+             */
+            <a
+              href={onBookPage ? "#your-visits" : manageBookingsPath}
+              onClick={(event) => {
+                if (!onBookPage) return;
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                document
+                  .getElementById("your-visits")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className="inline-flex min-h-8 flex-shrink-0 items-center text-[9px] font-semibold text-[#64748B] underline decoration-[#CBD5E1] underline-offset-2 transition hover:text-[#306EEC] sm:min-h-11 sm:text-[13px] sm:underline-offset-4"
+            >
               Manage visits
-            </button>
+            </a>
           )}
         </div>
 
@@ -2040,7 +2064,7 @@ if (next?.date) {
             onClick={() => { if (!quickBookingLoading) setQuickBookOpen(false); }}
           >
             <div
-              className="max-h-[90vh] w-full max-w-[700px] overflow-y-auto rounded-[24px] bg-white p-5 shadow-[0_32px_100px_rgba(0,0,0,0.28)] sm:rounded-[28px] sm:p-7"
+              className="max-h-[90vh] w-full max-w-[700px] overflow-y-auto rounded-[16px] bg-white p-5 shadow-[0_32px_100px_rgba(0,0,0,0.28)] sm:rounded-[16px] sm:p-7"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-start justify-between gap-4 mb-6">
@@ -2048,7 +2072,7 @@ if (next?.date) {
                   <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC] mb-1">
                     Quick Booking
                   </div>
-                  <h3 className="text-[20px] font-extrabold leading-tight text-[#0B1628] sm:text-[26px]">
+                  <h3 className="text-[19px] font-extrabold leading-tight text-[#0B1628] sm:text-[23px]">
                     What can we help with?
                   </h3>
                   <p className="text-[13px] text-[#64748B] mt-1.5">

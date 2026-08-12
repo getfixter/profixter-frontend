@@ -547,7 +547,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
 
   const AddressPicker = () => (
     <div className="mx-auto mb-8 max-w-[720px]">
-      <div className="rounded-[18px] border border-[#E5E7EB] bg-white px-4 py-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:px-5">
+      <div className="rounded-[13px] border border-[#E5E7EB] bg-white px-4 py-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:px-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="flex-1">
             <label className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.12em] text-[#6B7280]">
@@ -593,7 +593,9 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                 aria-pressed={active}
                 onClick={() => setBilling(cycle)}
                 className={[
-                  "h-9 min-w-[104px] rounded-[10px] px-5 text-sm font-semibold capitalize transition duration-200 lg:h-11 lg:min-w-[124px] lg:px-7 lg:text-[15px]",
+                  // h-9 was 36px on phones and tablets, where the toggle is
+                  // most likely to be tapped rather than clicked.
+                  "h-11 min-w-[104px] rounded-[10px] px-5 text-sm font-semibold capitalize transition duration-200 lg:min-w-[124px] lg:px-7 lg:text-[15px]",
                   active
                     ? "bg-white text-[#111111] shadow-[0_6px_18px_rgba(15,23,42,0.10)]"
                     : "text-[#6E6E73] hover:text-[#111111]",
@@ -633,7 +635,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     return (
       <div className="mx-auto max-w-[640px] lg:max-w-[1120px]">
         {/* Shared basics, said once. */}
-        <div className="rounded-[18px] border border-[#E5E5EA] bg-white p-5 sm:p-6">
+        <div className="rounded-[13px] border border-[#E5E5EA] bg-white p-5 sm:p-6">
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#306EEC]">
             Every membership
           </p>
@@ -666,7 +668,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
               <article
                 key={plan.name}
                 className={[
-                  "relative flex flex-col rounded-[18px] border bg-white p-5 sm:p-6",
+                  "relative flex flex-col rounded-[13px] border bg-white p-5 sm:p-6",
                   isPopular ? "border-[#306EEC] ring-1 ring-[#306EEC]" : "border-[#E5E5EA]",
                 ].join(" ")}
               >
@@ -682,7 +684,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                 <p className="mt-1 text-[14px] leading-[1.45] text-[#6E6E73]">{plan.tagline}</p>
 
                 <div className="mt-4 flex items-baseline gap-1.5">
-                  <span className="text-[32px] font-semibold tracking-[-0.03em] text-[#111111]">
+                  <span className="text-[30px] font-semibold tracking-[-0.03em] text-[#111111]">
                     ${billing === "annual" ? formatMoney(annual.monthlyEquivalent) : formatMoney(plan.price)}
                   </span>
                   <span className="text-[15px] font-medium text-[#86868B]">/mo</span>
@@ -716,7 +718,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                   data-track="plans-cta"
                   disabled={disabled}
                   className={[
-                    "mt-5 h-[52px] w-full rounded-[13px] text-[15px] font-semibold transition active:scale-[0.99]",
+                    "mt-5 h-[46px] w-full rounded-[13px] text-[15px] font-semibold transition active:scale-[0.99]",
                     disabled
                       ? "cursor-not-allowed bg-[#D1D5DB] text-white"
                       : isPopular
@@ -746,10 +748,16 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
   };
 
   return (
-    <section id="plans" className={`w-full scroll-mt-[140px] bg-[#F5F5F7] px-4 sm:px-5 ${compact ? "py-12 sm:py-16" : "py-12 sm:py-20 lg:py-24"}`}>
+    <section id="plans" className={`w-full scroll-mt-[140px] bg-[#F5F5F7] px-4 sm:px-5 ${compact ? "py-8 sm:py-11" : "py-8 sm:py-13 lg:py-12"}`}>
       <div className="mx-auto max-w-[1280px]">
-        <div className={`mx-auto max-w-[720px] text-center ${compact ? "mb-7 sm:mb-9" : "mb-8 sm:mb-14"}`}>
-          <h2 className="text-[32px] font-semibold tracking-normal text-[#111111] sm:text-5xl">
+        <div className={`mx-auto max-w-[720px] text-center ${compact ? "mb-7 sm:mb-9" : "mb-8 sm:mb-9"}`}>
+          {/*
+           * sm:text-5xl was a Tailwind preset, so the compactness sweep never
+           * saw it and this section heading ended up larger than the H1 of
+           * every page it appears on. It is a section heading and now sizes
+           * like one.
+           */}
+          <h2 className="text-[23px] font-semibold tracking-normal text-[#111111] sm:text-[30px]">
             Choose the membership for your home
           </h2>
           <p className="mt-3 text-[15px] leading-6 text-[#6E6E73] sm:mt-4 sm:text-lg sm:leading-7">
@@ -774,7 +782,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         {isAuthenticated && user && addresses.length > 0 && <AddressPicker />}
 
         {isAuthenticated && user && addresses.length === 0 && (
-          <div className="mx-auto mb-8 max-w-[520px] rounded-[18px] border border-[#E5E7EB] bg-white p-5 text-center shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
+          <div className="mx-auto mb-8 max-w-[520px] rounded-[13px] border border-[#E5E7EB] bg-white p-5 text-center shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
             <p className="font-semibold text-[#111827]">Add an address to start a plan.</p>
             <button
               onClick={() => (window.location.href = roleLandingPath)}
@@ -801,7 +809,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         )}
 
         {!compact && <div className="mx-auto mb-6 max-w-[720px] text-center sm:mb-8">
-          <h3 className="text-[18px] font-semibold tracking-normal text-[#111111] sm:text-2xl">
+          <h3 className="text-[18px] font-semibold tracking-normal text-[#111111] sm:text-[20px]">
             Membership is the home base
           </h3>
           <p className="mt-2 text-[13px] leading-5 text-[#6E6E73] sm:text-base sm:leading-6">
@@ -809,24 +817,24 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           </p>
         </div>}
 
-        {!compact && <div className="mx-auto mb-7 max-w-[780px] rounded-[24px] border border-[#E5E7EB] bg-white p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:mb-10 sm:p-5">
+        {!compact && <div className="mx-auto mb-7 max-w-[780px] rounded-[16px] border border-[#E5E7EB] bg-white p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:mb-7 sm:p-5">
           <div className="grid items-stretch gap-3 text-left sm:grid-cols-[1.15fr_0.85fr]">
-            <div className="rounded-[18px] bg-[#0B1628] px-4 py-4 text-white">
+            <div className="rounded-[13px] bg-[#0B1628] px-4 py-4 text-white">
               <div className="text-[11px] font-black uppercase tracking-[0.16em] text-white/55">
                 Recommended for homeowners
               </div>
-              <div className="mt-2 text-[22px] font-semibold tracking-[-0.03em] sm:text-[26px]">
+              <div className="mt-2 text-[21px] font-semibold tracking-[-0.03em] sm:text-[23px]">
                 One trusted team, month after month
               </div>
               <div className="mt-2 text-sm font-semibold leading-6 text-white/65">
                 Better for homeowners who expect the home list to keep growing.
               </div>
             </div>
-            <div className="rounded-[18px] bg-[#F8FAFC] px-4 py-4">
+            <div className="rounded-[13px] bg-[#F8FAFC] px-4 py-4">
               <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#64748B]">
                 If you only need one visit
               </div>
-              <div className="mt-2 text-[20px] font-semibold tracking-[-0.025em] text-[#111111]">
+              <div className="mt-2 text-[19px] font-semibold tracking-[-0.025em] text-[#111111]">
                 One-time booking is still available
               </div>
               <div className="mt-2 text-sm font-semibold leading-6 text-[#6E6E73]">
@@ -848,7 +856,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                 <article
                   key={plan.name}
                   className={[
-                    "relative flex w-full max-w-full min-w-0 flex-col overflow-hidden rounded-[24px] border bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.07)] transition duration-300 sm:rounded-[28px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.07)]",
+                    "relative flex w-full max-w-full min-w-0 flex-col overflow-hidden rounded-[16px] border bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.07)] transition duration-300 sm:rounded-[16px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.07)]",
                     isPopular
                       ? "border-[#111111] ring-2 ring-[#111111]"
                       : "border-[#E5E7EB]",
@@ -861,14 +869,14 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                   ) : null}
 
                   <div className="min-w-0 pr-24">
-                    <h3 className="text-[22px] font-semibold tracking-normal text-[#111111] sm:text-2xl">
+                    <h3 className="text-[21px] font-semibold tracking-normal text-[#111111] sm:text-2xl">
                       {plan.name}
                     </h3>
                   </div>
 
                   <div className="mt-6 sm:mt-8">
                     <div className="flex items-end gap-1">
-                      <span className="text-[42px] font-semibold leading-none tracking-normal text-[#111111] sm:text-5xl">
+                      <span className="text-[34px] font-semibold leading-none tracking-normal text-[#111111] sm:text-5xl">
                         ${formatMoney(displayPrice)}
                       </span>
                       <span className="pb-1 text-sm font-medium text-[#6E6E73]">
@@ -921,7 +929,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
               <article
                 key={plan.name}
                 className={[
-                    "relative flex min-h-[500px] flex-col rounded-[28px] border bg-white p-6 shadow-[0_20px_70px_rgba(15,23,42,0.07)] transition duration-300 sm:p-7",
+                    "relative flex min-h-[500px] flex-col rounded-[16px] border bg-white p-6 shadow-[0_20px_70px_rgba(15,23,42,0.07)] transition duration-300 sm:p-7",
                     isPopular
                     ? "border-[#111111] ring-2 ring-[#111111]"
                     : "border-[#E5E7EB]",
@@ -948,7 +956,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                       /{billing === "annual" ? "year" : "mo"}
                     </span>
                   </div>
-                  <p className="mt-5 min-h-[52px] break-words text-[15px] leading-6 text-[#6E6E73]">
+                  <p className="mt-5 min-h-[46px] break-words text-[15px] leading-6 text-[#6E6E73]">
                     {content.description}
                   </p>
                 </div>

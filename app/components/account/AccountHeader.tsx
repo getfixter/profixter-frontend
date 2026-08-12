@@ -54,7 +54,7 @@ export function AccountHeader({ userName, activeTab, onSelectTab, onLogout }: Ac
 
   return (
     <header className="relative z-50 w-full border-b border-[#E0E6F5] bg-white">
-      <div className="max-w-[1240px] mx-auto px-4 sm:px-5 h-[60px] flex items-center justify-between gap-4">
+      <div className="max-w-[1240px] mx-auto px-4 sm:px-5 h-[48px] flex items-center justify-between gap-4">
 
         {/* Logo */}
         <Link href="/" className="flex-shrink-0">
@@ -109,7 +109,7 @@ export function AccountHeader({ userName, activeTab, onSelectTab, onLogout }: Ac
           {isAccountOpen ? (
             <div
               role="menu"
-              className="absolute right-0 top-full mt-2 w-[min(290px,calc(100vw-2rem))] overflow-hidden rounded-[18px] border border-[#E0E6F5] bg-white shadow-[0_18px_55px_rgba(15,23,42,0.16)]"
+              className="absolute right-0 top-full mt-2 w-[min(290px,calc(100vw-2rem))] overflow-hidden rounded-[13px] border border-[#E0E6F5] bg-white shadow-[0_18px_55px_rgba(15,23,42,0.16)]"
             >
               <div className="border-b border-[#EEF2F7] bg-[#F8FAFF] px-4 py-3">
                 <div className="text-[11px] font-black uppercase tracking-[0.14em] text-[#64748B]">My Account</div>

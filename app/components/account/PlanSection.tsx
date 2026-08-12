@@ -484,7 +484,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
     className?: string;
   }) => (
     <div
-      className={`w-full rounded-[18px] border border-[#C5CBD8] bg-[#EEF2FF] p-5 sm:p-6 ${className}`}
+      className={`w-full rounded-[13px] border border-[#C5CBD8] bg-[#EEF2FF] p-5 sm:p-6 ${className}`}
       style={{ boxShadow: "0px 0px 200px 0px rgba(0,0,0,0.10)" }}
     >
       {children}
@@ -783,7 +783,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                     <span className="text-[#306EEC]">Open</span>
                   </Link>
                   <Link
-                    href="/membership#pick-day"
+                    href="/book?visit=membership"
                     className="flex items-center justify-between rounded-[14px] border border-[#D7E0F5] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
                   >
                     <span>Book your next visit</span>
@@ -840,7 +840,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
           }}
         >
           <div
-            className="w-full max-w-md rounded-[22px] bg-white p-6 shadow-[0_20px_100px_rgba(0,0,0,0.35)] sm:p-7"
+            className="w-full max-w-md rounded-[14px] bg-white p-6 shadow-[0_20px_100px_rgba(0,0,0,0.35)] sm:p-7"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="text-center">
@@ -890,7 +890,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                       type="button"
                       disabled={acceptingRetention || canceling}
                       onClick={handleAcceptRetentionOffer}
-                      className="min-h-[54px] rounded-[16px] bg-[#306EEC] px-4 py-3 text-base font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
+                      className="min-h-[46px] rounded-[16px] bg-[#306EEC] px-4 py-3 text-base font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
                     >
                       {acceptingRetention
                         ? "Applying offer..."
@@ -900,7 +900,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                       type="button"
                       disabled={acceptingRetention || canceling}
                       onClick={() => handleCancel(true)}
-                      className="min-h-[52px] rounded-[16px] border border-[#D1D5DB] bg-white px-4 py-3 text-base font-extrabold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
+                      className="min-h-[46px] rounded-[16px] border border-[#D1D5DB] bg-white px-4 py-3 text-base font-extrabold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
                     >
                       {canceling ? "Scheduling cancellation..." : "Continue Cancellation"}
                     </button>
@@ -928,7 +928,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                       setRetentionDebug(null);
                       setNotice("Retention offer accepted. Your membership remains active.");
                     }}
-                    className="mt-6 h-[52px] w-full rounded-[16px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9]"
+                    className="mt-6 h-[46px] w-full rounded-[16px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9]"
                   >
                     Done
                   </button>
@@ -970,7 +970,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                     setRetentionError("");
                     setRetentionDebug(null);
                   }}
-                  className="h-[52px] rounded-[16px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
+                  className="h-[46px] rounded-[16px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
                 >
                   Keep my membership
                 </button>
@@ -978,7 +978,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                   type="button"
                   disabled={canceling}
                   onClick={() => handleCancel(false)}
-                  className="h-[52px] rounded-[16px] border border-[#D1D5DB] bg-white font-extrabold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
+                  className="h-[46px] rounded-[16px] border border-[#D1D5DB] bg-white font-extrabold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
                 >
                   {canceling ? "Canceling..." : "Cancel anyway"}
                 </button>
@@ -999,7 +999,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
           }}
         >
           <div
-            className="w-full max-w-lg rounded-[22px] bg-white p-6 shadow-[0_20px_100px_rgba(0,0,0,0.35)] sm:p-7"
+            className="w-full max-w-lg rounded-[14px] bg-white p-6 shadow-[0_20px_100px_rgba(0,0,0,0.35)] sm:p-7"
             onClick={(event) => event.stopPropagation()}
           >
             <h3 className="mb-1 text-xl font-extrabold text-[#313234]">Change plan</h3>
@@ -1112,7 +1112,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
           }}
         >
           <div
-            className="w-full max-w-lg rounded-[22px] bg-white p-6 shadow-[0_20px_100px_rgba(0,0,0,0.35)] sm:p-7"
+            className="w-full max-w-lg rounded-[14px] bg-white p-6 shadow-[0_20px_100px_rgba(0,0,0,0.35)] sm:p-7"
             onClick={(event) => event.stopPropagation()}
           >
             <h3 className="text-2xl font-extrabold text-[#313234]">
@@ -1164,7 +1164,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                 type="button"
                 disabled={planChanging}
                 onClick={() => setPlanChangeConfirmOpen(false)}
-                className="h-[52px] rounded-[16px] border border-[#D1D5DB] bg-white font-extrabold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
+                className="h-[46px] rounded-[16px] border border-[#D1D5DB] bg-white font-extrabold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
               >
                 Go Back
               </button>
@@ -1172,7 +1172,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                 type="button"
                 disabled={planChanging}
                 onClick={handlePlanChange}
-                className="h-[52px] rounded-[16px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
+                className="h-[46px] rounded-[16px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
               >
                 {planChanging
                   ? "Updating..."

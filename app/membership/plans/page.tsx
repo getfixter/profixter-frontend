@@ -42,7 +42,7 @@ export default function MembershipPlansPage() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#306EEC]">
               Membership
             </p>
-            <h1 className="mt-3 max-w-[20ch] text-balance text-[26px] font-semibold leading-[1.1] tracking-[-0.03em] text-[#111111] sm:text-[34px] lg:text-[38px]">
+            <h1 className="mt-3 max-w-[20ch] text-balance text-[30px] font-semibold leading-[1.1] tracking-[-0.03em] text-[#111111] sm:text-[38px] lg:text-[40px]">
               {isMember ? "Compare your plan options." : "Choose the level of help your home needs."}
             </h1>
             <p className="mt-3 max-w-[52ch] text-[16px] leading-[1.55] text-[#6E6E73] sm:text-[17px]">

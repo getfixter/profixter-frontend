@@ -372,7 +372,7 @@ export default function SignUpPage() {
               <span className="h-1.5 w-1.5 rounded-full bg-[#86EFAC]" />
               Long Island home care
             </div>
-            <h1 className="mt-6 text-[58px] font-black leading-[0.92] tracking-[-0.048em] text-white">
+            <h1 className="mt-6 text-[43px] font-black leading-[0.92] tracking-[-0.048em] text-white">
               Book your first visit free.
             </h1>
             <p className="mt-5 text-[17px] font-medium leading-8 text-white/62">
@@ -394,7 +394,7 @@ export default function SignUpPage() {
           </section>
 
           <section className="mx-auto w-full max-w-[570px]">
-            <div className="rounded-[22px] border border-white/[0.10] bg-white/[0.075] p-3 shadow-[0_20px_60px_rgba(0,0,0,0.20)] backdrop-blur-2xl sm:p-5 lg:p-6">
+            <div className="rounded-[14px] border border-white/[0.10] bg-white/[0.075] p-3 shadow-[0_20px_60px_rgba(0,0,0,0.20)] backdrop-blur-2xl sm:p-5 lg:p-6">
               <div className="rounded-[17px] border border-white/[0.09] bg-[#071225]/72 p-3.5 sm:p-5">
                 {step > 1 ? (
                   <button
@@ -423,7 +423,7 @@ export default function SignUpPage() {
                 </div>
 
                 <div className="mb-4 sm:mb-5">
-                  <h2 className="text-[27px] font-black leading-none tracking-[-0.03em] text-white sm:text-[34px]">
+                  <h2 className="text-[23px] font-black leading-none tracking-[-0.03em] text-white sm:text-[30px]">
                     {stepCopy[step].title}
                   </h2>
                   <p className="mt-2 max-w-[430px] text-[13px] font-medium leading-5 text-white/58 sm:text-[14px]">

@@ -163,7 +163,7 @@ export default function ServiceInfoSection() {
       aria-label="Service info"
     >
       <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
-        <div className="rounded-[22px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] overflow-hidden">
+        <div className="rounded-[14px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] overflow-hidden">
           <div className="p-5 sm:p-6 lg:p-8">
             <div className="max-w-[860px]">
               <div className="inline-flex flex-wrap items-center gap-2 mb-4">
@@ -175,7 +175,7 @@ export default function ServiceInfoSection() {
                 </span>
               </div>
 
-              <h1 className="text-[32px] sm:text-[42px] lg:text-[56px] font-extrabold leading-[1.02] tracking-[-0.04em] text-[#313234] max-w-[820px]">
+              <h1 className="text-[30px] sm:text-[34px] lg:text-[43px] font-extrabold leading-[1.02] tracking-[-0.04em] text-[#313234] max-w-[820px]">
                 {hero.title}
               </h1>
 
@@ -203,7 +203,7 @@ export default function ServiceInfoSection() {
                   }}
                   data-track="hero-cta"
                   size="md"
-                  className="h-[52px] rounded-[16px] flex-1"
+                  className="h-[46px] rounded-[16px] flex-1"
                 >
                   View Plans
                 </Button>
@@ -217,7 +217,7 @@ export default function ServiceInfoSection() {
                   data-track="hero-cta"
                   variant="secondary"
                   size="md"
-                  className="h-[52px] rounded-[16px] flex-1"
+                  className="h-[46px] rounded-[16px] flex-1"
                 >
                   Book Visit
                 </Button>

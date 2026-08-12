@@ -222,7 +222,7 @@ export default function InstallAppPrompt() {
     <>
       <aside
         aria-label="Install Profixter app"
-        className={`fixed left-3 right-3 z-[60] mx-auto max-w-[400px] rounded-[20px] border border-white/70 bg-white/95 p-3 text-slate-950 shadow-[0_18px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl ${
+        className={`fixed left-3 right-3 z-[60] mx-auto max-w-[400px] rounded-[14px] border border-white/70 bg-white/95 p-3 text-slate-950 shadow-[0_18px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl ${
           isAccountArea
             ? "bottom-[calc(96px+env(safe-area-inset-bottom,0px))]"
             : isMembershipArea
@@ -285,7 +285,7 @@ export default function InstallAppPrompt() {
           aria-modal="true"
           aria-labelledby="install-steps-title"
         >
-          <div className="mx-auto w-full max-w-[420px] rounded-[28px] bg-white p-5 text-slate-950 shadow-[0_22px_80px_rgba(15,23,42,0.26)]">
+          <div className="mx-auto w-full max-w-[420px] rounded-[16px] bg-white p-5 text-slate-950 shadow-[0_22px_80px_rgba(15,23,42,0.26)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p

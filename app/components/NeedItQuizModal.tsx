@@ -240,15 +240,15 @@ export default function NeedItQuizModal({
       <div className="absolute inset-0 bg-black/55" onClick={handleClose} />
 
       {/* Modal */}
-      <div className="relative w-[92vw] max-w-[760px] max-h-[85vh] overflow-auto rounded-[20px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.20)]">
+      <div className="relative w-[92vw] max-w-[760px] max-h-[85vh] overflow-auto rounded-[14px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.20)]">
         {/* Header */}
-        <div className="px-5 sm:px-7 pt-5 sm:pt-7 pb-4 border-b border-[#c5cbd8]">
+        <div className="px-5 sm:px-5 pt-5 sm:pt-7 pb-4 border-b border-[#c5cbd8]">
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="text-[12px] font-bold text-[#306EEC] uppercase tracking-wider">
                 Quick Check
               </div>
-              <div className="text-[22px] sm:text-[28px] font-bold text-[#313234] leading-tight mt-1">
+              <div className="text-[21px] sm:text-[26px] font-bold text-[#313234] leading-tight mt-1">
                 Quick questions - see if Profixter fits your home
               </div>
               <div className="text-[13px] sm:text-[14px] text-[#6A6D71] mt-2">
@@ -277,8 +277,8 @@ export default function NeedItQuizModal({
         </div>
 
         {/* Body */}
-        <div className="px-5 sm:px-7 py-6">
-          <div className="text-[18px] sm:text-[22px] font-semibold text-[#313234] leading-snug">
+        <div className="px-5 sm:px-5 py-6">
+          <div className="text-[18px] sm:text-[21px] font-semibold text-[#313234] leading-snug">
             {q.title}
           </div>
 
@@ -315,7 +315,7 @@ export default function NeedItQuizModal({
               <button
                 key={opt.id}
                 onClick={() => pick(opt)}
-                className="h-[56px] rounded-[14px] border border-[#313234] bg-white/50 text-[#313234] text-[15px] sm:text-[16px] font-semibold hover:bg-white transition-colors"
+                className="h-[48px] rounded-[14px] border border-[#313234] bg-white/50 text-[#313234] text-[15px] sm:text-[16px] font-semibold hover:bg-white transition-colors"
               >
                 {opt.label}
               </button>
@@ -354,7 +354,7 @@ export default function NeedItQuizModal({
         </div>
 
         {/* Footer strip */}
-        <div className="px-5 sm:px-7 py-4 border-t border-[#c5cbd8] bg-white/30">
+        <div className="px-5 sm:px-5 py-4 border-t border-[#c5cbd8] bg-white/30">
           <div className="text-[12px] text-[#6A6D71]">
             Simple • predictable • no stress
           </div>

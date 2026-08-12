@@ -72,7 +72,7 @@ function Eyebrow({ children, tone = "dark" }: { children: React.ReactNode; tone?
 function H2({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <h2
-      className={`text-balance text-[26px] font-semibold leading-[1.1] tracking-[-0.03em] text-[#111111] sm:text-[34px] lg:text-[38px] ${className}`}
+      className={`text-balance text-[23px] font-semibold leading-[1.1] tracking-[-0.03em] text-[#111111] sm:text-[30px] lg:text-[32px] ${className}`}
     >
       {children}
     </h2>
@@ -107,7 +107,7 @@ function BookFree({
       href={href}
       onClick={() => trackEvent("free_visit_cta_clicked", { placement })}
       className={[
-        "inline-flex min-h-[50px] w-full items-center justify-center rounded-[13px] px-7 text-[15px] font-semibold transition-transform duration-200 active:scale-[0.985] sm:w-auto",
+        "inline-flex min-h-[44px] w-full items-center justify-center rounded-[13px] px-5 text-[15px] font-semibold transition-transform duration-200 active:scale-[0.985] sm:w-auto",
         tone === "accent"
           ? "bg-[#306EEC] text-white shadow-[0_12px_28px_-8px_rgba(48,110,236,0.55)] hover:bg-[#2558C9]"
           : "bg-white text-[#0B1628] shadow-[0_12px_28px_-10px_rgba(0,0,0,0.45)] hover:bg-[#F5F5F7]",
@@ -134,7 +134,7 @@ function QuietLink({
     <Link
       href={href}
       onClick={() => trackEvent("membership_explainer_clicked", { placement })}
-      className={`inline-flex min-h-[50px] w-full items-center justify-center rounded-[13px] border px-7 text-[15px] font-semibold transition sm:w-auto ${
+      className={`inline-flex min-h-[44px] w-full items-center justify-center rounded-[13px] border px-5 text-[15px] font-semibold transition sm:w-auto ${
         tone === "light"
           ? "border-white/25 text-white hover:bg-white/10"
           : "border-[#D2D2D7] text-[#1D1D1F] hover:bg-[#F5F5F7]"
@@ -185,14 +185,21 @@ export default function HomeMarketing() {
           className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_0%,rgba(48,110,236,0.20)_0%,transparent_60%),linear-gradient(180deg,rgba(8,14,24,0.55)_0%,rgba(8,14,24,0.86)_70%,#080E18_100%)]"
         />
 
-        <div className="relative mx-auto grid max-w-[1120px] gap-12 px-5 pb-14 pt-10 sm:px-8 sm:pb-24 sm:pt-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-10 lg:pb-28 lg:pt-24">
+        {/*
+         * Top aligned, not centred. The right column carries two stacked cards
+         * (the booking preview and the callback form) and is far taller than
+         * the proposition beside it, so centring pushed the H1 past the middle
+         * of a desktop viewport and left the top half of the hero empty. Each
+         * column now starts at the top and the right one simply runs longer.
+         */}
+        <div className="relative mx-auto grid max-w-[1120px] gap-8 px-5 pb-9 pt-10 sm:px-6 sm:pb-24 sm:pt-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10 lg:pb-28 lg:pt-24">
           <div>
             <Reveal>
               <Eyebrow tone="light">Handyman membership · Long Island</Eyebrow>
             </Reveal>
 
             <Reveal delay={70}>
-              <h1 className="mt-3.5 text-balance text-[32px] font-semibold leading-[1.06] tracking-[-0.035em] text-white sm:text-[46px] lg:text-[52px]">
+              <h1 className="mt-3.5 text-balance text-[30px] font-semibold leading-[1.06] tracking-[-0.035em] text-white sm:text-[36px] lg:text-[40px]">
                 A handyman you don&rsquo;t have to find.
               </h1>
             </Reveal>
@@ -214,7 +221,7 @@ export default function HomeMarketing() {
                 <Link
                   href="#how-it-works"
                   onClick={() => trackEvent("membership_explainer_clicked", { placement: "hero" })}
-                  className="hidden min-h-[50px] items-center justify-center rounded-[13px] border border-white/25 px-7 text-[15px] font-semibold text-white transition hover:bg-white/10 sm:inline-flex"
+                  className="hidden min-h-[44px] items-center justify-center rounded-[13px] border border-white/25 px-5 text-[15px] font-semibold text-white transition hover:bg-white/10 sm:inline-flex"
                 >
                   How it works
                 </Link>
@@ -265,17 +272,17 @@ export default function HomeMarketing() {
       </section>
 
       {/* ========================= RECOGNITION ========================= */}
-      <section className="px-5 py-14 sm:px-8 sm:py-20">
+      <section className="px-5 py-9 sm:px-6 sm:py-13">
         <div className="mx-auto max-w-[1120px]">
           <Reveal>
             <Eyebrow>The list</Eyebrow>
             <H2 className="mt-4 max-w-[16ch]">There&rsquo;s always something.</H2>
           </Reveal>
 
-          <ul className="mt-10 grid grid-cols-1 gap-x-14 sm:mt-12 sm:grid-cols-2">
+          <ul className="mt-7 grid grid-cols-1 gap-x-14 sm:mt-8 sm:grid-cols-2">
             {THE_LIST.map((item, i) => (
               <Reveal as="li" key={item} delay={Math.min(i, 5) * 45}>
-                <span className="flex items-center gap-3.5 border-b border-[#EDEDF0] py-4 text-[17px] leading-[1.35] text-[#1D1D1F] sm:text-[18px]">
+                <span className="flex items-center gap-3 border-b border-[#EDEDF0] py-2.5 text-[17px] leading-[1.35] text-[#1D1D1F] sm:py-3 sm:text-[18px]">
                   <span
                     aria-hidden="true"
                     className="h-[19px] w-[19px] flex-none rounded-[6px] border-[1.5px] border-[#D8D8DD]"
@@ -287,7 +294,7 @@ export default function HomeMarketing() {
           </ul>
 
           <Reveal delay={80}>
-            <Lede className="mt-10 max-w-[46ch]">
+            <Lede className="mt-7 max-w-[46ch]">
               None of it is worth hunting down a contractor for. So it waits.
             </Lede>
           </Reveal>
@@ -295,14 +302,14 @@ export default function HomeMarketing() {
       </section>
 
       {/* ========================== HOW IT WORKS ======================= */}
-      <section id="how-it-works" className="scroll-mt-2 bg-[#F5F5F7] px-5 py-14 sm:px-8 sm:py-20">
+      <section id="how-it-works" className="scroll-mt-2 bg-[#F5F5F7] px-5 py-9 sm:px-6 sm:py-13">
         <div className="mx-auto max-w-[1120px]">
           <Reveal>
             <Eyebrow>How it works</Eyebrow>
             <H2 className="mt-4 max-w-[18ch]">Book it. We come. It&rsquo;s done.</H2>
           </Reveal>
 
-          <div className="mt-10 grid gap-10 sm:mt-14 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-16">
+          <div className="mt-7 grid gap-7 sm:mt-9 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-10">
             <Reveal className="flex justify-center lg:order-2 lg:hidden">
               <BookingPreview />
             </Reveal>
@@ -315,7 +322,7 @@ export default function HomeMarketing() {
                       {s.n}
                     </span>
                     <span className="block">
-                      <span className="block text-[20px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[22px]">
+                      <span className="block text-[19px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[21px]">
                         {s.title}
                       </span>
                       <span className="mt-1.5 block max-w-[34ch] text-[16px] leading-[1.5] text-[#6E6E73]">
@@ -331,11 +338,11 @@ export default function HomeMarketing() {
       </section>
 
       {/* =========================== MEMBERSHIP ======================== */}
-      <section className="bg-[#0B1628] px-5 py-16 text-white sm:px-8 sm:py-20">
+      <section className="bg-[#0B1628] px-5 py-10 text-white sm:px-6 sm:py-13">
         <div className="mx-auto max-w-[1120px]">
           <Reveal>
             <Eyebrow tone="light">Membership</Eyebrow>
-            <h2 className="mt-4 max-w-[17ch] text-balance text-[30px] font-semibold leading-[1.08] tracking-[-0.035em] sm:text-[42px] lg:text-[48px]">
+            <h2 className="mt-4 max-w-[17ch] text-balance text-[26px] font-semibold leading-[1.08] tracking-[-0.035em] sm:text-[34px] lg:text-[36px]">
               One membership. Help around your home.
             </h2>
             <p className="mt-5 max-w-[46ch] text-pretty text-[17px] leading-[1.5] text-white/60 sm:text-[19px]">
@@ -345,12 +352,12 @@ export default function HomeMarketing() {
             </p>
           </Reveal>
 
-          <div className="mt-11 grid gap-3 sm:mt-14 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-7 grid gap-3 sm:mt-9 sm:grid-cols-2 lg:grid-cols-4">
             {plans.map((plan, i) => (
               <Reveal key={plan.name} delay={i * 60}>
                 {/* Compact row on phones so four plans stay scannable; a card
                     from sm up, where the grid has room to breathe. */}
-                <div className="flex h-full items-center justify-between gap-4 rounded-[16px] border border-white/[0.10] bg-white/[0.04] px-5 py-4 sm:flex-col sm:items-start sm:justify-start sm:rounded-[20px] sm:p-6">
+                <div className="flex h-full items-center justify-between gap-4 rounded-[16px] border border-white/[0.10] bg-white/[0.04] px-5 py-4 sm:flex-col sm:items-start sm:justify-start sm:rounded-[14px] sm:p-6">
                   <div className="min-w-0">
                     <p className="text-[16px] font-semibold tracking-[-0.015em] sm:text-[17px]">
                       {plan.displayName}
@@ -359,7 +366,7 @@ export default function HomeMarketing() {
                       {plan.tagline}
                     </p>
                   </div>
-                  <p className="flex-none text-[22px] font-semibold tracking-[-0.03em] tabular-nums sm:mt-5 sm:text-[30px]">
+                  <p className="flex-none text-[21px] font-semibold tracking-[-0.03em] tabular-nums sm:mt-5 sm:text-[26px]">
                     ${plan.price}
                     <span className="text-[13px] font-medium text-white/45 sm:text-[15px]">/mo</span>
                   </p>
@@ -369,7 +376,7 @@ export default function HomeMarketing() {
           </div>
 
           <Reveal delay={80}>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
               <QuietLink href="/membership/plans" placement="membership_band" tone="light">
                 {isMember ? "Compare plans" : "See membership"}
               </QuietLink>
@@ -383,7 +390,7 @@ export default function HomeMarketing() {
           Acquisition only. A member already pays us, so an offer for their
           "first" visit is both untrue and slightly insulting. */}
       {!isMember && (
-      <section className="px-5 py-14 sm:px-8 sm:py-20">
+      <section className="px-5 py-9 sm:px-6 sm:py-13">
         <div className="mx-auto max-w-[820px]">
           <Reveal>
             <Eyebrow>Try it first</Eyebrow>
@@ -395,7 +402,7 @@ export default function HomeMarketing() {
           </Reveal>
 
           <Reveal delay={80}>
-            <dl className="mt-10 divide-y divide-[#EDEDF0] border-y border-[#EDEDF0]">
+            <dl className="mt-7 divide-y divide-[#EDEDF0] border-y border-[#EDEDF0]">
               {[
                 ["Cost", "$0. No card needed to book."],
                 ["Length", "One 90-minute visit of standard handyman work."],
@@ -411,7 +418,7 @@ export default function HomeMarketing() {
           </Reveal>
 
           <Reveal delay={120}>
-            <div className="mt-9">
+            <div className="mt-6">
               <BookFree href={bookHref} placement="offer_section" />
             </div>
           </Reveal>
@@ -420,7 +427,7 @@ export default function HomeMarketing() {
       )}
 
       {/* ========================== BIGGER PROJECTS ==================== */}
-      <section className="bg-[#F5F5F7] px-5 py-14 sm:px-8 sm:py-18">
+      <section className="bg-[#F5F5F7] px-5 py-9 sm:px-6 sm:py-9">
         <div className="mx-auto max-w-[1120px]">
           <Reveal>
             <Eyebrow>Bigger projects</Eyebrow>
@@ -431,11 +438,11 @@ export default function HomeMarketing() {
             </Lede>
           </Reveal>
 
-          <div className="mt-10 grid gap-3 sm:mt-12 sm:grid-cols-3">
+          <div className="mt-7 grid grid-cols-2 gap-2.5 sm:mt-8 sm:grid-cols-3 sm:gap-3">
             {PROJECTS.map((p, i) => (
               <Reveal key={p.label} delay={i * 70}>
-                <figure className="group relative overflow-hidden rounded-[20px] bg-[#E5E5EA]">
-                  <div className="relative aspect-[4/3]">
+                <figure className="group relative overflow-hidden rounded-[14px] bg-[#E5E5EA]">
+                  <div className="relative aspect-square sm:aspect-[4/3]">
                     <Image
                       src={p.src}
                       alt={`${p.label} project completed by Profixter on Long Island`}
@@ -463,9 +470,9 @@ export default function HomeMarketing() {
       </section>
 
       {/* ========================= TRUST + CLOSE ======================= */}
-      <section className="px-5 py-14 sm:px-8 sm:py-20">
+      <section className="px-5 py-9 sm:px-6 sm:py-13">
         <div className="mx-auto max-w-[1120px]">
-          <div className="grid gap-12 lg:grid-cols-[1fr_380px] lg:gap-16">
+          <div className="grid gap-8 lg:grid-cols-[1fr_380px] lg:gap-10">
             <Reveal>
               <Eyebrow>Who comes to your home</Eyebrow>
               <H2 className="mt-4 max-w-[16ch]">A local company, not a marketplace.</H2>
@@ -474,7 +481,7 @@ export default function HomeMarketing() {
                 the same company each time, so nobody has to learn your house twice.
               </Lede>
 
-              <dl className="mt-9 grid grid-cols-1 gap-px overflow-hidden rounded-[16px] border border-[#E5E5EA] bg-[#E5E5EA] sm:grid-cols-3">
+              <dl className="mt-6 grid grid-cols-1 gap-px overflow-hidden rounded-[16px] border border-[#E5E5EA] bg-[#E5E5EA] sm:grid-cols-3">
                 {[
                   ["Licensed", "NY HIC HI-71484"],
                   ["Insured", "For in-home work"],
@@ -491,8 +498,8 @@ export default function HomeMarketing() {
             </Reveal>
 
             <Reveal delay={90}>
-              <figure className="overflow-hidden rounded-[22px] bg-[#F5F5F7]">
-                <div className="relative aspect-[4/3]">
+              <figure className="overflow-hidden rounded-[14px] bg-[#F5F5F7]">
+                <div className="relative aspect-[16/10] sm:aspect-[4/3]">
                   <Image
                     src="/images/Taras.png"
                     alt="Taras Bandura, founder of Profixter"
@@ -515,7 +522,7 @@ export default function HomeMarketing() {
 
           {/* Close */}
           <Reveal delay={60}>
-            <div className="mt-20 border-t border-[#EDEDF0] pt-14 text-center sm:mt-24 sm:pt-16">
+            <div className="mt-8 border-t border-[#EDEDF0] pt-9 text-center sm:mt-9 sm:pt-11">
               <H2 className="mx-auto max-w-[17ch]">Start with whatever&rsquo;s been waiting longest.</H2>
               <p className="mx-auto mt-3.5 max-w-[38ch] text-[16px] leading-[1.5] text-[#6E6E73]">
                 {isMember
