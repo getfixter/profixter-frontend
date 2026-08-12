@@ -11,6 +11,11 @@ import {
 
 export const SITE_URL = "https://www.profixter.com";
 export const SITE_NAME = "Profixter";
+/**
+ * ProFixter Customer Care. Membership, billing, scheduling problems, Priority
+ * Visits and escalations. This is NOT the number for questions about the work
+ * itself - that is the customer's Fixter, see lib/fixter.ts.
+ */
 export const BUSINESS_PHONE_DISPLAY = "631-599-1363";
 export const BUSINESS_PHONE_E164 = "+1-631-599-1363";
 export const DEFAULT_OG_IMAGE = {

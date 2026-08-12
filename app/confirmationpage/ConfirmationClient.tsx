@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import { trackPurchase } from "@/lib/analytics";
+import YourFixter from "@/app/components/fixter/YourFixter";
 import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
 
 export default function ConfirmationClient() {
@@ -83,6 +84,13 @@ export default function ConfirmationClient() {
         >
           Book Your Member Visit
         </button>
+
+        {/*
+          Introduced right after the first booking action: the member has just
+          paid, and this is the moment the membership stops being a plan and
+          becomes a person looking after their home.
+        */}
+        <YourFixter variant="welcome" className="mt-4 text-left" />
 
         <div className="mt-4 rounded-[18px] border border-[#E5E7EB] bg-white p-4 text-left">
           <p className="text-sm font-black text-[#0B1628]">
