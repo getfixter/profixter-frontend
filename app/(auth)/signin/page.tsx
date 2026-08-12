@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { login } from "@/lib/auth-service";
+import { login, type AccountChoice } from "@/lib/auth-service";
 import { useAuth } from "@/lib/useAuth";
 import { getAutomaticEntryPath } from "@/lib/auth-routing";
 import { trackEvent } from "@/lib/analytics";
@@ -64,6 +64,11 @@ export default function SignInPage() {
   });
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  /*
+   * Only ever set when the server says one email has two accounts and the same
+   * password opens both. The server refuses to guess, so this asks.
+   */
+  const [accountChoices, setAccountChoices] = useState<AccountChoice[]>([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { login: authLogin } = useAuth();
@@ -72,14 +77,14 @@ export default function SignInPage() {
     trackEvent("view_login", { page: "/signin" });
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const signIn = async (accountRole?: "customer" | "employee") => {
     setError("");
     setLoading(true);
     try {
       const { token } = await login({
         email: email.toLowerCase().trim(),
         password,
+        ...(accountRole ? { accountRole } : {}),
       });
       const verifiedUser = await authLogin(token);
       if (!verifiedUser) {
@@ -88,11 +93,26 @@ export default function SignInPage() {
       localStorage.setItem("rememberedEmail", email);
       router.replace(getAutomaticEntryPath(verifiedUser));
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } }; message?: string };
+      const error = err as {
+        response?: { status?: number; data?: { message?: string; code?: string; accounts?: AccountChoice[] } };
+        message?: string;
+      };
+      // One email, two accounts, one password. Ask rather than pick.
+      if (error.response?.data?.code === "ACCOUNT_CHOICE_REQUIRED") {
+        setAccountChoices(error.response.data.accounts || []);
+        setLoading(false);
+        return;
+      }
       const message = error.response?.data?.message || error.message || "Invalid email or password";
       setError(message);
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAccountChoices([]);
+    await signIn();
   };
 
   return (
@@ -165,6 +185,30 @@ export default function SignInPage() {
             </div>
 
             {/* Error */}
+            {accountChoices.length > 0 && (
+              <div className="rounded-xl border border-white/20 bg-white/5 p-3">
+                <div className="text-sm font-bold text-white">
+                  This email has more than one account
+                </div>
+                <div className="mt-1 text-xs text-white/60">
+                  Choose which one to open.
+                </div>
+                <div className="mt-3 space-y-2">
+                  {accountChoices.map((choice) => (
+                    <button
+                      key={choice.accountRole}
+                      type="button"
+                      disabled={loading}
+                      onClick={() => void signIn(choice.accountRole)}
+                      className="w-full rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-[#0a0e27] disabled:opacity-50"
+                    >
+                      {choice.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {error && (
               <div className="rounded-[10px] border border-red-500/20 bg-red-500/[0.08] px-4 py-3 text-[13px] text-red-400 text-center">
                 {error}

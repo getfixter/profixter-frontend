@@ -1692,29 +1692,41 @@ export interface TipTransaction {
   source: "completion_email" | "direct";
 }
 
+/** Friday to Thursday in New York, paid on the Friday after it closes. */
+export interface PayPeriod {
+  start: string;
+  end: string;
+  payday: string;
+}
+
 export interface TipFixterRow {
   fixterId: string;
   name: string;
   position: string;
   isActive: boolean;
   allTimeCents: number;
-  thisWeekCents: number;
+  /** The period accumulating now. */
+  currentPeriodCents: number;
+  /** The period that closed last Thursday, which is the next cheque. */
+  closingPeriodCents: number;
   count: number;
-  /** Keyed by the Monday that starts the week, as YYYY-MM-DD in New York. */
-  weekly: Record<string, number>;
+  /** Keyed by the Friday that opens the period, as YYYY-MM-DD in New York. */
+  byPeriod: Record<string, number>;
 }
 
 export interface TipTotals {
   allTimeCents: number;
-  thisWeekCents: number;
+  currentPeriodCents: number;
+  closingPeriodCents: number;
   count: number;
 }
 
 export interface TipsResponse {
   /** "admin" sees everyone; "fixter" sees only their own, enforced server side. */
   scope: "admin" | "fixter";
-  weekStarts: string[];
-  currentWeek: string;
+  payPeriods: PayPeriod[];
+  currentPeriod: PayPeriod | null;
+  closingPeriod: PayPeriod | null;
   totals: TipTotals;
   unassignedTotals: TipTotals;
   fixters: TipFixterRow[];
@@ -1730,8 +1742,8 @@ export interface TipsResponse {
   truncated: boolean;
 }
 
-export const getTips = async (weeks = 8): Promise<TipsResponse> => {
-  const response = await API.get("/api/admin/tips", { params: { weeks } });
+export const getTips = async (periods = 8): Promise<TipsResponse> => {
+  const response = await API.get("/api/admin/tips", { params: { periods } });
   return response.data;
 };
 

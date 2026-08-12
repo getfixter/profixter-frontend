@@ -72,6 +72,18 @@ export interface RegisterData {
 export interface LoginData {
   email: string;
   password: string;
+  /**
+   * Which account to open when one email has both a customer and a Fixter
+   * record and the same password opens both. Sent only after the server has
+   * asked; it never widens access, it only disambiguates.
+   */
+  accountRole?: "customer" | "employee";
+}
+
+/** Returned with a 409 when the password alone cannot say which account. */
+export interface AccountChoice {
+  accountRole: "customer" | "employee";
+  label: string;
 }
 
 // =================== REGISTER ===================
@@ -92,6 +104,7 @@ export const login = async (data: LoginData): Promise<AuthResponse> => {
   const response = await API.post<AuthResponse>("/api/auth/login", {
     email: data.email.toLowerCase().trim(),
     password: data.password,
+    ...(data.accountRole ? { accountRole: data.accountRole } : {}),
   });
 
   return response.data;
