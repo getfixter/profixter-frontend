@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import SigningCeremony from "@/app/components/signing/SigningCeremony";
-import { fetchSigningPayload, type SigningPayload } from "@/lib/signing-service";
+import {
+  fetchSigningPayload,
+  signedDocumentUrl,
+  type SigningPayload,
+} from "@/lib/signing-service";
 
 /**
  * Loads the signing payload and hands off to the ceremony, or shows a terminal
@@ -69,6 +73,10 @@ export default function SigningClient({ token }: { token: string }) {
 
   if (!payload || payload.state !== "ready") {
     const copy = TERMINAL_COPY[payload?.state || "error"] || TERMINAL_COPY.error;
+    // Someone reopening their own link after signing should be able to read
+    // what they signed, not just be told it is done.
+    const signedDocumentReady = payload?.executedDocumentAvailable === true;
+    const documentWord = payload?.documentType === "CHANGE_ORDER" ? "Change Order" : "Agreement";
     return (
       <div className="flex min-h-dvh items-center justify-center bg-slate-50 px-4 py-10">
         <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 text-center sm:p-8">
@@ -76,7 +84,30 @@ export default function SigningClient({ token }: { token: string }) {
             {payload?.company?.legalName || "Premium Island Homes Inc."}
           </p>
           <h1 className="mt-4 text-xl font-black text-slate-900">{copy.title}</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-600">{copy.body}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            {signedDocumentReady
+              ? "This document has already been signed. Thank you. You can open your signed copy below."
+              : copy.body}
+          </p>
+          {signedDocumentReady && (
+            <div className="mt-6 flex flex-col items-center gap-3">
+              <a
+                href={signedDocumentUrl(token)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full rounded-xl bg-slate-900 px-5 py-3.5 text-sm font-bold text-white"
+              >
+                View Signed {documentWord}
+              </a>
+              <a
+                href={signedDocumentUrl(token, { download: true })}
+                download
+                className="text-sm font-bold text-slate-600 underline underline-offset-4"
+              >
+                Download PDF
+              </a>
+            </div>
+          )}
           {payload?.company?.phone && (
             <p className="mt-6 text-sm font-bold text-slate-700">{payload.company.phone}</p>
           )}

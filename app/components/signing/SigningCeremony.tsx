@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import SignaturePad, { type SignaturePadHandle } from "./SignaturePad";
 import {
   declineSignature,
+  signedDocumentUrl,
   signingDocumentUrl,
   submitSignature,
   type SigningPayload,
@@ -113,6 +114,9 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
   /* ---------------- done ---------------- */
   if (step === "done") {
     const declined = result?.state === "declined";
+    // Only offered when the server confirms an executed document was stored,
+    // so the button never points at something that is not there.
+    const signedDocumentReady = result?.executedDocumentAvailable === true;
     return (
       <div className="min-h-dvh bg-slate-50">
         {header}
@@ -137,15 +141,27 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
                 : `Thank you. A copy has been emailed to you, and you can open it any time below.`}
             </p>
 
-            {!declined && (
-              <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+            {!declined && signedDocumentReady && (
+              <div className="mt-6 flex flex-col items-center gap-3">
                 <a
-                  href={signingDocumentUrl(token)}
+                  href={signedDocumentUrl(token)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-xl bg-slate-900 px-5 py-3.5 text-sm font-bold text-white"
+                  className="w-full rounded-xl bg-slate-900 px-5 py-3.5 text-sm font-bold text-white sm:w-auto"
                 >
                   View Signed {documentWord}
+                </a>
+                {/*
+                  A plain link with `download`: on a phone this hands the file to
+                  the OS rather than the in-app viewer, which is the difference
+                  between "I can see it" and "I have a copy".
+                */}
+                <a
+                  href={signedDocumentUrl(token, { download: true })}
+                  download
+                  className="text-sm font-bold text-slate-600 underline underline-offset-4"
+                >
+                  Download PDF
                 </a>
               </div>
             )}
