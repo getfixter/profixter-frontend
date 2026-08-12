@@ -365,6 +365,46 @@ check("no storage URL is ever constructed client-side", () => {
   }
 });
 
+/* ---------------- signed document access ---------------- */
+
+console.log("\nSigned document access");
+
+check("the executed document has its own route, separate from the frozen one", () => {
+  has(signingClient, "/executed", "a route for the signed document must exist");
+  has(signingClient, "export function signedDocumentUrl", "and a helper to build it");
+  // The frozen-document route reports the terminal state once signing is done,
+  // so it can never be the completion screen's link.
+  has(signingClient, "/document", "the frozen-document route still exists for review");
+});
+
+check("the completion screen links to the executed PDF, not the signing endpoint", () => {
+  const done = ceremony.slice(ceremony.indexOf('step === "done"'), ceremony.indexOf("ceremony ----"));
+  has(done, "signedDocumentUrl(token)", "View must open the executed document");
+  assert(
+    !/href=\{signingDocumentUrl\(token\)\}/.test(done),
+    "the completion screen must not link to the frozen/signing document route"
+  );
+  has(done, "View Signed", "the primary action keeps its wording");
+  has(done, "Download PDF", "a download action is offered");
+  has(done, "download: true", "download must request the attachment variant");
+});
+
+check("the signed document is only offered when the server says it exists", () => {
+  has(ceremony, "executedDocumentAvailable", "never link to a document that is not there");
+  has(signClient, "executedDocumentAvailable", "the same rule when returning to a used link");
+});
+
+check("a customer returning to a completed link can still read what they signed", () => {
+  has(signClient, "signedDocumentUrl(token)", "the terminal screen offers the signed copy");
+  has(signClient, "Download PDF");
+});
+
+check("the download link is a plain anchor so mobile hands off to the OS", () => {
+  const done = ceremony.slice(ceremony.indexOf('step === "done"'), ceremony.indexOf("ceremony ----"));
+  has(done, "download\n", "an anchor download attribute, not a fetch-and-blob");
+  lacks(done, "createObjectURL", "no blob juggling: it breaks in in-app browsers");
+});
+
 /* ---------------- in-person isolation ---------------- */
 
 console.log("\nIn-person isolation");

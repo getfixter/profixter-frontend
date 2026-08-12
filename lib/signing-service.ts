@@ -53,6 +53,9 @@ export interface SigningPayload {
   };
   signingMode?: "REMOTE" | "IN_PERSON";
   expiresAt?: string | null;
+  /** True once signing is finished and the executed PDF can be retrieved. */
+  executedDocumentAvailable?: boolean;
+  completedAt?: string | null;
 }
 
 /** Terminal responses arrive as 200 or 404; both are meaningful, neither throws. */
@@ -79,6 +82,20 @@ export async function fetchSigningPayload(token: string): Promise<SigningPayload
 export function signingDocumentUrl(token: string) {
   const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
   return `${base}/api/sign/${encodeURIComponent(token)}/document`;
+}
+
+/**
+ * The executed document the customer just signed.
+ *
+ * A separate route from the frozen document above: once signing is complete the
+ * frozen route reports the terminal state instead of returning a PDF, which is
+ * correct for signing and wrong for reading back what was signed. Both stream
+ * through the API - the browser never sees a storage URL.
+ */
+export function signedDocumentUrl(token: string, options: { download?: boolean } = {}) {
+  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+  const query = options.download ? "?download=1" : "";
+  return `${base}/api/sign/${encodeURIComponent(token)}/executed${query}`;
 }
 
 export async function submitSignature(

@@ -200,7 +200,7 @@ async function main() {
           });
         }
         if (route.request().method() === "POST") {
-          return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ state: "completed", message: "Thank you." }) });
+          return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ state: "completed", message: "Thank you.", executedDocumentAvailable: true }) });
         }
         return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify(payload("ready")) });
       });
