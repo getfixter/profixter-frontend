@@ -838,6 +838,63 @@ function AgreementPosition({ invoice }: { invoice: ProjectInvoice }) {
   );
 }
 
+
+/**
+ * Online payment, in business language.
+ *
+ * The admin needs three answers: can the customer pay online, has anything
+ * arrived, and is anything wrong. Stripe identifiers are not shown - they are
+ * on the payment records for audit, and putting them here would turn a money
+ * panel into a debugging panel.
+ */
+function OnlinePaymentState({ invoice }: { invoice: ProjectInvoice }) {
+  const link = invoice.onlinePayment;
+  const payable = !!link?.hostedInvoiceUrl && link.stripeStatus === "open";
+  const unapplied = Number(link?.unappliedCents || 0);
+  const [copied, setCopied] = useState(false);
+
+  if (!link?.provider && !unapplied) return null;
+
+  return (
+    <div className="mt-4 border-t border-white/10 pt-4">
+      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">Online payment</p>
+      <p className="mt-2 text-sm text-slate-200">
+        {payable
+          ? `Customer can pay ${moneyFromCents(Number(link?.amountDueCents || 0))} online.`
+          : link?.stripeStatus === "paid"
+            ? "Paid online."
+            : "Not available. Send the invoice to enable online payment."}
+      </p>
+
+      {link?.lastError && !payable && (
+        <p className="mt-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-200">
+          {link.lastError}
+        </p>
+      )}
+
+      {unapplied > 0 && (
+        <p className="mt-2 rounded-lg border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-xs font-bold text-rose-200">
+          {moneyFromCents(unapplied)} was collected online but could not be applied to this invoice. Review before refunding or crediting.
+        </p>
+      )}
+
+      {payable && (
+        <button
+          type="button"
+          onClick={async () => {
+            await navigator.clipboard.writeText(link.hostedInvoiceUrl || "");
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 2000);
+          }}
+          className="mt-3 inline-flex min-h-[40px] items-center rounded-xl border border-white/15 px-4 text-xs font-bold text-white transition hover:bg-white/10"
+        >
+          {copied ? "Link copied" : "Copy payment link"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function ProjectInvoices({ project }: { project: Project }) {
   const [invoices, setInvoices] = useState<ProjectInvoice[]>([]);
   const [selected, setSelected] = useState<ProjectInvoice | null>(null);
@@ -1218,6 +1275,7 @@ export default function ProjectInvoices({ project }: { project: Project }) {
               <div className="flex justify-between"><span className="text-slate-400">Payments</span><strong>-{moneyFromCents(selected.totalPaidCents).replace("-", "")}</strong></div>
               <div className="flex justify-between border-t border-white/10 pt-4 text-lg"><span>Remaining</span><strong>{moneyFromCents(selected.remainingBalanceCents)}</strong></div>
             </div>
+            <OnlinePaymentState invoice={selected} />
           </section>
         </div>
 

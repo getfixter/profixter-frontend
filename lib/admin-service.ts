@@ -1555,6 +1555,19 @@ export interface ProjectInvoice {
   projectSnapshot: ProjectInvoiceInput["projectSnapshot"];
   contractSnapshot?: ProjectInvoiceInput["contractSnapshot"];
   /**
+   * Online payment destination. Stripe collects; ProFixter stays the source of
+   * truth. Absent on invoices sent before online payment existed.
+   */
+  onlinePayment?: {
+    provider?: "stripe" | "";
+    hostedInvoiceUrl?: string;
+    stripeStatus?: string;
+    amountDueCents?: number;
+    finalizedAt?: string | null;
+    lastError?: string;
+    unappliedCents?: number;
+  };
+  /**
    * The project's approved position frozen at issue. Absent on invoices
    * created before this existed, which keep rendering from their own figures.
    */
