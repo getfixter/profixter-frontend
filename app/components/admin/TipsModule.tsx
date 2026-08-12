@@ -18,11 +18,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   assignTip,
   getTips,
+  type PayPeriod,
   type TipTransaction,
   type TipsResponse,
 } from "@/lib/admin-service";
 
-const WEEK_OPTIONS = [4, 8, 12, 26];
+const PERIOD_OPTIONS = [4, 8, 12, 26];
 
 function money(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -31,9 +32,22 @@ function money(cents: number) {
   }).format((Number(cents) || 0) / 100);
 }
 
-function weekLabel(weekStart: string) {
-  const date = new Date(`${weekStart}T12:00:00Z`);
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+/** Dates are plain YYYY-MM-DD business days, so they are read at midday UTC to
+ *  keep the calendar day intact rather than shifting a period by one. */
+function dayLabel(day: string) {
+  return new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function periodRange(period: PayPeriod | null) {
+  if (!period) return "";
+  return `${dayLabel(period.start)} - ${dayLabel(period.end)}`;
+}
+
+function todayNY() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 }
 
 function receivedLabel(value: string) {
@@ -48,14 +62,36 @@ function receivedLabel(value: string) {
   });
 }
 
-function StatCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function StatCard({
+  label,
+  value,
+  hint,
+  emphasis = false,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  emphasis?: boolean;
+}) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+    <div
+      className={`rounded-2xl border p-4 ${
+        emphasis ? "border-[#0B1628] bg-[#0B1628] text-white" : "border-slate-200 bg-white"
+      }`}
+    >
+      <div
+        className={`text-[11px] font-bold uppercase tracking-[0.16em] ${
+          emphasis ? "text-white/60" : "text-slate-400"
+        }`}
+      >
         {label}
       </div>
-      <div className="mt-1 text-2xl font-black text-[#0B1628]">{value}</div>
-      {hint ? <div className="mt-1 text-xs text-slate-500">{hint}</div> : null}
+      <div className={`mt-1 text-2xl font-black ${emphasis ? "text-white" : "text-[#0B1628]"}`}>
+        {value}
+      </div>
+      {hint ? (
+        <div className={`mt-1 text-xs ${emphasis ? "text-white/70" : "text-slate-500"}`}>{hint}</div>
+      ) : null}
     </div>
   );
 }
@@ -112,7 +148,7 @@ function TransactionRow({ tip, showFixter }: { tip: TipTransaction; showFixter: 
 
 export default function TipsModule() {
   const [data, setData] = useState<TipsResponse | null>(null);
-  const [weeks, setWeeks] = useState(8);
+  const [periods, setPeriods] = useState(8);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [assigning, setAssigning] = useState("");
@@ -122,19 +158,21 @@ export default function TipsModule() {
     setLoading(true);
     setError("");
     try {
-      setData(await getTips(weeks));
+      setData(await getTips(periods));
     } catch {
       setError("Failed to load tips");
     } finally {
       setLoading(false);
     }
-  }, [weeks]);
+  }, [periods]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
   const isAdmin = data?.scope === "admin";
+  // True on the Friday the closing period is actually paid.
+  const payingToday = !!data?.closingPeriod && data.closingPeriod.payday === todayNY();
 
   const handleAssign = async (tipId: string) => {
     const fixterId = choice[tipId] || "";
@@ -194,13 +232,13 @@ export default function TipsModule() {
         </h2>
         <div className="flex items-center gap-2">
           <select
-            value={weeks}
-            onChange={(event) => setWeeks(Number(event.target.value))}
+            value={periods}
+            onChange={(event) => setPeriods(Number(event.target.value))}
             className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
           >
-            {WEEK_OPTIONS.map((option) => (
+            {PERIOD_OPTIONS.map((option) => (
               <option key={option} value={option}>
-                Last {option} weeks
+                Last {option} pay periods
               </option>
             ))}
           </select>
@@ -214,8 +252,27 @@ export default function TipsModule() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="This week" value={money(data.totals.thisWeekCents)} />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {/* On Friday morning this is the cheque in your hand, so it leads. */}
+        <StatCard
+          label={payingToday ? "Paying today" : "Next cheque"}
+          value={money(data.totals.closingPeriodCents)}
+          hint={
+            data.closingPeriod
+              ? `${periodRange(data.closingPeriod)} · pays ${dayLabel(data.closingPeriod.payday)}`
+              : undefined
+          }
+          emphasis
+        />
+        <StatCard
+          label="Current pay period"
+          value={money(data.totals.currentPeriodCents)}
+          hint={
+            data.currentPeriod
+              ? `${periodRange(data.currentPeriod)} · pays ${dayLabel(data.currentPeriod.payday)}`
+              : undefined
+          }
+        />
         <StatCard
           label="All time"
           value={money(data.totals.allTimeCents)}
@@ -236,16 +293,22 @@ export default function TipsModule() {
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <div className="border-b border-slate-100 px-4 py-3 text-sm font-black text-[#0B1628]">
-          {isAdmin ? "By Fixter" : "Your weekly totals"}
+          {isAdmin ? "By Fixter" : "Your pay periods"}
+          <span className="ml-2 font-semibold text-slate-400">
+            Friday to Thursday, paid the following Friday
+          </span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-max text-sm">
             <thead>
               <tr className="text-left text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
                 <th className="px-4 py-2">Fixter</th>
-                {data.weekStarts.map((week) => (
-                  <th key={week} className="px-4 py-2 text-right">
-                    {weekLabel(week)}
+                {data.payPeriods.map((period) => (
+                  <th key={period.start} className="px-4 py-2 text-right">
+                    <div>{periodRange(period)}</div>
+                    <div className="font-semibold normal-case tracking-normal text-slate-300">
+                      pays {dayLabel(period.payday)}
+                    </div>
                   </th>
                 ))}
                 <th className="px-4 py-2 text-right">All time</th>
@@ -261,14 +324,14 @@ export default function TipsModule() {
                       {row.isActive ? "" : " · inactive"}
                     </div>
                   </td>
-                  {data.weekStarts.map((week) => (
+                  {data.payPeriods.map((period) => (
                     <td
-                      key={week}
+                      key={period.start}
                       className={`px-4 py-3 text-right ${
-                        row.weekly[week] ? "text-slate-700" : "text-slate-300"
+                        row.byPeriod[period.start] ? "text-slate-700" : "text-slate-300"
                       }`}
                     >
-                      {money(row.weekly[week] || 0)}
+                      {money(row.byPeriod[period.start] || 0)}
                     </td>
                   ))}
                   <td className="px-4 py-3 text-right font-black text-[#0B1628]">
@@ -279,7 +342,7 @@ export default function TipsModule() {
               {!ranked.length ? (
                 <tr>
                   <td
-                    colSpan={data.weekStarts.length + 2}
+                    colSpan={data.payPeriods.length + 2}
                     className="px-4 py-8 text-center text-slate-400"
                   >
                     No tips yet.
