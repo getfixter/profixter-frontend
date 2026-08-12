@@ -566,7 +566,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
               </div>
 
               <Link
-                href="/membership#plans"
+                href="/membership/plans"
                 className="mt-6 block w-full rounded-[14px] bg-[#306EEC] py-3 text-center text-base font-semibold text-[#EEF2FF] transition-colors hover:bg-[#2557C7] sm:py-4 sm:text-lg"
               >
                 Start Membership
@@ -590,7 +590,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
 
               <div className="mt-6 flex flex-col gap-3">
                 <Link
-                  href="/membership#plans"
+                  href="/membership/plans"
                   className="inline-flex items-center justify-center rounded-[14px] border border-[#C5CBD8] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
                 >
                   View Plans
@@ -776,7 +776,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
 
                 <div className="mt-5 space-y-3">
                   <Link
-                    href="/membership#plans"
+                    href="/membership/plans"
                     className="flex items-center justify-between rounded-[14px] border border-[#D7E0F5] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
                   >
                     <span>How often can I book?</span>
@@ -1004,7 +1004,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
           >
             <h3 className="mb-1 text-xl font-extrabold text-[#313234]">Change plan</h3>
             <p className="mb-5 text-sm text-[#6A6D71]">
-              Current: {formatPlanName(planChangeTarget.subscriptionType)} &mdash;{" "}
+              Current: {formatPlanName(planChangeTarget.subscriptionType)},{" "}
               {planChangeTarget.billingCycle}
             </p>
 

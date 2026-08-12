@@ -452,9 +452,19 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
       };
     }
 
+    /*
+     * The direction was already known here and thrown away at the label: every
+     * plan above and below the member's own read "Change Plan", so the one
+     * question a member opens this page to answer, which way is up, was the
+     * one thing the buttons would not say.
+     *
+     * Presentation only. The kind, and therefore the billing path taken, is
+     * exactly what it was.
+     */
+    const isUpgrade = targetRank > currentRank;
     return {
-      kind: targetRank > currentRank ? ("upgrade" as ChangeActionKind) : ("downgrade" as ChangeActionKind),
-      label: "Change Plan",
+      kind: isUpgrade ? ("upgrade" as ChangeActionKind) : ("downgrade" as ChangeActionKind),
+      label: isUpgrade ? "Upgrade" : "Change Plan",
       disabled: false,
     };
   };
@@ -571,7 +581,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
 
   const BillingToggle = () => (
     <div className={compact ? "mt-3 flex flex-col items-center lg:mt-5" : "mt-7 flex flex-col items-center"}>
-      <div className="inline-grid rounded-full bg-[#E8E8ED] p-1 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)] lg:p-1.5">
+      <div className="inline-grid rounded-[13px] bg-[#E8E8ED] p-1 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)] lg:p-1.5">
         <div className="grid grid-cols-2 gap-1">
           {(["monthly", "annual"] as const).map((cycle) => {
             const active = billing === cycle;
@@ -583,7 +593,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                 aria-pressed={active}
                 onClick={() => setBilling(cycle)}
                 className={[
-                  "h-9 min-w-[104px] rounded-full px-5 text-sm font-semibold capitalize transition duration-200 lg:h-11 lg:min-w-[124px] lg:px-7 lg:text-[15px]",
+                  "h-9 min-w-[104px] rounded-[10px] px-5 text-sm font-semibold capitalize transition duration-200 lg:h-11 lg:min-w-[124px] lg:px-7 lg:text-[15px]",
                   active
                     ? "bg-white text-[#111111] shadow-[0_6px_18px_rgba(15,23,42,0.10)]"
                     : "text-[#6E6E73] hover:text-[#111111]",
@@ -661,7 +671,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                 ].join(" ")}
               >
                 {isPopular ? (
-                  <span className="absolute right-5 top-5 rounded-full bg-[#EEF4FF] px-2.5 py-1 text-[11px] font-semibold text-[#1F5ED8]">
+                  <span className="absolute right-5 top-5 rounded-[12px] bg-[#EEF4FF] px-2.5 py-1 text-[11px] font-semibold text-[#1F5ED8]">
                     Most chosen
                   </span>
                 ) : null}
@@ -679,7 +689,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                 </div>
                 {billing === "annual" ? (
                   <p className="mt-1 text-[13px] text-[#6E6E73]">
-                    ${formatMoney(annual.discounted)} billed yearly &mdash; 12 months for the price of 10
+                    ${formatMoney(annual.discounted)} billed yearly, 12 months for the price of 10
                   </p>
                 ) : null}
 
@@ -706,7 +716,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                   data-track="plans-cta"
                   disabled={disabled}
                   className={[
-                    "mt-5 h-[52px] w-full rounded-full text-[15px] font-semibold transition active:scale-[0.99]",
+                    "mt-5 h-[52px] w-full rounded-[13px] text-[15px] font-semibold transition active:scale-[0.99]",
                     disabled
                       ? "cursor-not-allowed bg-[#D1D5DB] text-white"
                       : isPopular
@@ -746,7 +756,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
             Start with the level of support that fits today. You can change plans as your home needs change.
           </p>
           {promoCode ? (
-            <div className="mt-5 inline-flex rounded-full border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm font-semibold text-[#166534]">
+            <div className="mt-5 inline-flex rounded-[12px] border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm font-semibold text-[#166534]">
               Promo code {promoCode} will be applied at checkout
             </div>
           ) : null}
@@ -768,7 +778,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
             <p className="font-semibold text-[#111827]">Add an address to start a plan.</p>
             <button
               onClick={() => (window.location.href = roleLandingPath)}
-              className="mt-4 h-11 rounded-full bg-[#111111] px-6 text-sm font-semibold text-white transition hover:bg-black"
+              className="mt-4 h-11 rounded-[12px] bg-[#111111] px-6 text-sm font-semibold text-white transition hover:bg-black"
             >
               Add Address
             </button>
@@ -845,7 +855,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                   ].join(" ")}
                 >
                   {isPopular ? (
-                    <div className="absolute right-5 top-5 rounded-full bg-[#111111] px-3 py-1 text-[12px] font-semibold text-white">
+                    <div className="absolute right-5 top-5 rounded-[12px] bg-[#111111] px-3 py-1 text-[12px] font-semibold text-white">
                       Most Popular
                     </div>
                   ) : null}
@@ -884,7 +894,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                     data-track="plans-cta"
                     disabled={disabled}
                     className={[
-                      "mt-auto h-12 w-full max-w-full rounded-full border text-sm font-semibold transition duration-200",
+                      "mt-auto h-12 w-full max-w-full rounded-[13px] border text-sm font-semibold transition duration-200",
                       disabled
                         ? "cursor-not-allowed border-[#D1D5DB] bg-[#D1D5DB] text-white"
                         : isPopular
@@ -918,7 +928,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                 ].join(" ")}
               >
                 {isPopular ? (
-                  <div className="absolute right-5 top-5 rounded-full bg-[#111111] px-3 py-1 text-[12px] font-semibold text-white">
+                  <div className="absolute right-5 top-5 rounded-[12px] bg-[#111111] px-3 py-1 text-[12px] font-semibold text-white">
                     Most Popular
                   </div>
                 ) : null}
@@ -957,7 +967,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                   data-track="plans-cta"
                   disabled={disabled}
                   className={[
-                      "mt-auto h-12 w-full max-w-full rounded-full border text-sm font-semibold transition duration-200",
+                      "mt-auto h-12 w-full max-w-full rounded-[13px] border text-sm font-semibold transition duration-200",
                     disabled
                       ? "cursor-not-allowed border-[#D1D5DB] bg-[#D1D5DB] text-white"
                       : isPopular

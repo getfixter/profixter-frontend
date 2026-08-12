@@ -86,7 +86,7 @@ export default function HeroSection() {
   const goToPlans = () => {
     const el = document.getElementById("plans");
     if (el) scrollToHash("#plans");
-    else router.push("/membership#plans");
+    else router.push("/membership/plans");
   };
 
   const goToSignupForMembership = () => {

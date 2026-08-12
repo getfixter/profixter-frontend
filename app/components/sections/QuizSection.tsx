@@ -119,7 +119,7 @@ function getRecommendation(answers: { usage?: string; emergency?: string; projec
   if (usage === "occasionally") {
     return {
       type: "plan",
-      slug: "/membership#plans",
+      slug: "/membership/plans",
       title: "Basic Membership",
       subtitle: "Best if you want regular help without paying full hourly rates.",
       cta: "View Plans",
@@ -133,7 +133,7 @@ function getRecommendation(answers: { usage?: string; emergency?: string; projec
     if (emergency === "yes") {
       return {
         type: "plan",
-        slug: "/membership#plans",
+        slug: "/membership/plans",
         title: "Premium Membership",
         subtitle: "Best if you want Emergency Visits and the strongest coverage.",
         cta: "View Plans",
@@ -144,7 +144,7 @@ function getRecommendation(answers: { usage?: string; emergency?: string; projec
     }
     return {
       type: "plan",
-      slug: "/membership#plans",
+      slug: "/membership/plans",
       title: "Plus Membership",
       subtitle: "Best for most homeowners who want ongoing handyman support.",
       cta: "View Plans",
@@ -156,7 +156,7 @@ function getRecommendation(answers: { usage?: string; emergency?: string; projec
 
   return {
     type: "plan",
-    slug: "/membership#plans",
+    slug: "/membership/plans",
     title: "Membership",
     subtitle: "Best way to save money and always have help when you need it.",
     cta: "View Plans",

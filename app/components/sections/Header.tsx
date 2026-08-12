@@ -97,16 +97,38 @@ export default function Header() {
     <header className="relative z-50 w-full py-[8px] sm:py-[12px]">
       <div className="mx-2.5 rounded-[18px] border border-white/50 bg-white/92 shadow-[0_14px_48px_rgba(9,22,43,0.14)] backdrop-blur-xl sm:mx-5 sm:rounded-[20px]">
         <div className="mx-auto flex max-w-[1240px] items-center justify-between px-[12px] py-[8px] sm:px-[18px] sm:py-[10px]">
-          <Link href={homeHref} aria-label="Profixter home" className="relative z-50 flex items-center">
-            <Image src="/images/logo.svg" alt="Profixter Long Island" width={80} height={32} priority className="brightness-0" />
+          {/*
+            The same brand mark as the footer: PRO in ProFixter blue, FIXTER in
+            near-white. The header was taking the light-on-dark wordmark and
+            CSS-inverting it to black, which is how the site ended up with two
+            different identities on one page.
+
+            The mark is designed for a dark surface, so it gets one: a compact
+            dark chip inside the light header bar. That keeps the identity
+            intact and the contrast strong, rather than painting white letters
+            onto a white background.
+           */}
+          <Link
+            href={homeHref}
+            aria-label="Profixter home"
+            className="relative z-50 flex items-center rounded-[11px] bg-[#0B1628] px-2.5 py-1.5 transition hover:bg-[#172033] sm:px-3 sm:py-2"
+          >
+            <Image
+              src="/images/logo-footer.svg"
+              alt="Profixter Long Island"
+              width={112}
+              height={24}
+              priority
+              className="h-[22px] w-auto sm:h-[26px]"
+            />
           </Link>
 
-          <nav className="hidden items-center gap-1 rounded-full border border-[#E6ECF7] bg-white/72 p-1 lg:flex" aria-label="Main navigation">
+          <nav className="hidden items-center gap-1 rounded-[13px] border border-[#E6ECF7] bg-white/72 p-1 lg:flex" aria-label="Main navigation">
             {navLinks.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-full px-3.5 py-2.5 text-sm font-black text-[#172033] transition-colors hover:bg-[#EEF4FF] hover:text-[#306EEC]"
+                className="rounded-[10px] px-3.5 py-2.5 text-sm font-black text-[#172033] transition-colors hover:bg-[#EEF4FF] hover:text-[#306EEC]"
               >
                 {item.label}
               </Link>
@@ -118,7 +140,7 @@ export default function Header() {
               <div className="relative" ref={profileMenuRef}>
                 <button
                   onClick={() => setIsProfileMenuOpen((v) => !v)}
-                  className="flex items-center gap-2 rounded-full border border-[#D8E2F2] bg-white/88 py-1.5 pl-4 pr-1.5 shadow-sm transition hover:bg-white"
+                  className="flex items-center gap-2 rounded-[12px] border border-[#D8E2F2] bg-white/88 py-1.5 pl-4 pr-1.5 shadow-sm transition hover:bg-white"
                   aria-label="Open profile menu"
                 >
                   <span className="text-sm font-black text-[#111827]">{accountLabel}</span>
@@ -153,13 +175,13 @@ export default function Header() {
               <>
                 <Link
                   href="/signup?redirect=%2Fmembership"
-                  className="rounded-full bg-[#306EEC] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#2558C9]"
+                  className="rounded-[12px] bg-[#306EEC] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#2558C9]"
                 >
                   Book free visit
                 </Link>
                 <Link
                   href="/signin"
-                  className="rounded-full border border-[#C5CBD8] bg-white/90 px-5 py-3 text-sm font-black text-[#111827] shadow-sm transition hover:bg-white"
+                  className="rounded-[12px] border border-[#C5CBD8] bg-white/90 px-5 py-3 text-sm font-black text-[#111827] shadow-sm transition hover:bg-white"
                 >
                   Log In
                 </Link>

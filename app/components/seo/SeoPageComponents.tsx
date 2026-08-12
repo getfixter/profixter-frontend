@@ -215,7 +215,7 @@ export function ConversionBand({
   description?: string;
 }) {
   const links: CtaLink[] = [
-    { label: "Become a Member", href: "/membership#plans" },
+    { label: "Become a Member", href: "/membership/plans" },
     { label: "Book One-Time Visit", href: "/book" },
     { label: "Request Renovation Estimate", href: "/projects#estimate" },
   ];

@@ -6,7 +6,8 @@ import { FormEvent, Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
-import MembershipCtaLink from "@/app/components/membership/MembershipCtaLink";
+import { useAuth } from "@/lib/useAuth";
+import { hasActiveMembership } from "@/lib/auth-routing";
 
 type ProjectType =
   | "roofing"
@@ -595,6 +596,8 @@ function ServiceSection({ service, index }: { service: (typeof SERVICES)[number]
 function ProjectsContent() {
   const searchParams = useSearchParams();
   const selectedType = projectTypeFromQuery(searchParams.get("type"));
+  const { user } = useAuth();
+  const isMember = hasActiveMembership(user);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#F6F8FC]">
@@ -615,15 +618,15 @@ function ProjectsContent() {
             />
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,16,31,0.96)_0%,rgba(7,16,31,0.84)_48%,rgba(7,16,31,0.48)_100%)]" />
           </div>
-          <div className="relative mx-auto max-w-[1220px] px-4 py-12 sm:px-8 sm:py-24 lg:py-28">
+          <div className="relative mx-auto grid max-w-[1220px] gap-8 px-4 py-10 sm:px-8 sm:py-16 lg:grid-cols-[1fr_460px] lg:items-start lg:gap-12 lg:py-20">
             <div className="max-w-[820px]">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.08] px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/80">
                 General Contractor Long Island
               </div>
-              <h1 className="mt-5 text-[38px] font-black leading-[0.96] tracking-[-0.04em] sm:mt-7 sm:text-[70px] sm:leading-[0.92] sm:tracking-[-0.05em] lg:text-[84px]">
+              <h1 className="mt-4 text-[30px] font-black leading-[1.02] tracking-[-0.035em] sm:mt-5 sm:text-[46px] sm:leading-[0.98] sm:tracking-[-0.04em] lg:text-[52px]">
                 Renovation and home projects, handled by one team.
               </h1>
-              <p className="mt-4 max-w-[700px] text-[15px] leading-relaxed text-white/75 sm:mt-6 sm:text-[19px]">
+              <p className="mt-3.5 max-w-[640px] text-[14.5px] leading-relaxed text-white/75 sm:mt-4 sm:text-[16px]">
                 Profixter is a General Contractor for larger Long Island home projects: roofing, siding, kitchens, bathrooms, full-house renovations, and new house builds. Renovation estimates are separate from One-Time Handyman Visits.
               </p>
               <div className="mt-6 flex flex-wrap gap-2 sm:mt-8 sm:gap-2.5">
@@ -644,62 +647,71 @@ function ProjectsContent() {
                   </Link>
                 ))}
               </div>
-              <div className="mt-7 flex flex-col gap-2.5 sm:mt-9 sm:flex-row sm:gap-3">
+              <div className="mt-6 flex flex-col gap-2.5 sm:mt-7 sm:flex-row sm:gap-3">
+                {/* On desktop the form is already beside this, so the button
+                    would scroll past it. There it is hidden. */}
                 <Link
                   href="#estimate"
-                  className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-[14px] bg-[#306EEC] px-6 text-[14px] font-extrabold text-white shadow-[0_16px_40px_rgba(48,110,236,0.32)] transition hover:bg-[#2558C9] sm:min-h-[56px] sm:rounded-[15px] sm:px-7 sm:text-[15px]"
+                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[13px] bg-[#306EEC] px-6 text-[14px] font-extrabold text-white shadow-[0_16px_40px_rgba(48,110,236,0.32)] transition hover:bg-[#2558C9] sm:min-h-[52px] sm:px-7 sm:text-[15px] lg:hidden"
                 >
                   Request Renovation Estimate
                   <ArrowIcon />
                 </Link>
                 <a
                   href="tel:+16315991363"
-                  className="inline-flex min-h-[50px] items-center justify-center rounded-[14px] border border-white/20 bg-white/[0.07] px-6 text-[14px] font-bold text-white sm:min-h-[56px] sm:rounded-[15px] sm:px-7 sm:text-[15px]"
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-[13px] border border-white/20 bg-white/[0.07] px-6 text-[14px] font-bold text-white sm:min-h-[52px] sm:px-7 sm:text-[15px]"
                 >
                   Call 631-599-1363
                 </a>
               </div>
-            </div>
 
-            <div className="mt-9 grid max-w-[940px] gap-2.5 sm:mt-12 sm:grid-cols-3 sm:gap-3">
+            {/*
+              Three facts, said once. They were three tall cards with a link
+              each, which is a lot of hero for information nobody came here to
+              read. As a row of lines they keep their meaning and give the
+              space back to the form.
+
+              The membership line changes for a member: offering to sell a
+              membership to somebody who has one is the site not knowing who is
+              reading it.
+             */}
+            <dl className="mt-7 max-w-[860px] divide-y divide-white/10 border-y border-white/10 sm:mt-9">
               {[
                 [
                   "Member discounts",
-                  "Members get better long-term value and may receive discounts on larger work.",
-                  "/membership",
-                  "Learn about Membership",
+                  isMember
+                    ? "Your membership may earn you a discount on larger work."
+                    : "Members get better long-term value and may receive discounts on larger work.",
                 ],
                 [
                   "Membership included",
-                  "Some larger projects may include up to 12 months of Profixter Membership.",
-                  "/membership#plans",
-                  "Become a Member",
+                  "Some larger projects include up to 12 months of Profixter Membership.",
                 ],
                 [
                   "Not handyman visits",
-                  "Project estimates are for larger work, not $99 One-Time Handyman Visits.",
-                  "/book",
-                  "Book a small visit",
+                  "Estimates are for larger work, not $99 One-Time Handyman Visits.",
                 ],
-              ].map(([title, body, href, cta]) => (
-                <div key={title} className="rounded-[20px] border border-white/15 bg-white/[0.08] p-4 backdrop-blur">
-                  <div className="text-[13px] font-extrabold text-white">{title}</div>
-                  <p className="mt-1.5 text-[13px] leading-relaxed text-white/65">{body}</p>
-                  {cta === "Become a Member" ? (
-                    <MembershipCtaLink className="mt-3 inline-flex text-[12px] font-black text-white underline decoration-white/30 underline-offset-4 transition hover:text-white/80">
-                      {cta}
-                    </MembershipCtaLink>
-                  ) : (
-                    <Link
-                      href={href}
-                      className="mt-3 inline-flex text-[12px] font-black text-white underline decoration-white/30 underline-offset-4 transition hover:text-white/80"
-                    >
-                      {cta}
-                    </Link>
-                  )}
+              ].map(([title, body]) => (
+                <div key={title} className="grid gap-0.5 py-3 sm:grid-cols-[190px_1fr] sm:gap-6 sm:py-3.5">
+                  <dt className="text-[13px] font-extrabold text-white">{title}</dt>
+                  <dd className="text-[13px] leading-relaxed text-white/65">{body}</dd>
                 </div>
               ))}
-            </div>
+            </dl>
+          </div>
+
+          {/*
+            The form, in the hero. Somebody who opened Projects is already at
+            the top of their intent, and making them scroll past marketing to
+            reach it was the conversion path apologising for itself.
+            On desktop it is the second column; on a phone it follows the
+            proposition immediately, so the page still explains itself first.
+           */}
+          <div id="estimate" className="scroll-mt-[84px] lg:sticky lg:top-24">
+            <Suspense fallback={<div className="min-h-[560px] animate-pulse rounded-[18px] bg-white/10" />}>
+              <EstimateForm key={selectedType} />
+            </Suspense>
+          </div>
           </div>
         </section>
 
@@ -722,40 +734,6 @@ function ProjectsContent() {
           <ServiceSection key={service.id} service={service} index={index} />
         ))}
 
-        <section id="estimate" className="scroll-mt-[90px] bg-[#EAF0F8] py-12 sm:py-20 lg:py-24">
-          <div className="mx-auto grid max-w-[1220px] gap-8 px-4 sm:px-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-start lg:gap-14">
-            <div className="lg:sticky lg:top-28">
-              <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
-                Start the conversation
-              </div>
-              <h2 className="mt-3 text-[32px] font-black leading-[1.02] tracking-[-0.035em] text-[#0B1628] sm:mt-4 sm:text-[50px] sm:leading-[0.98] sm:tracking-[-0.04em]">
-                Get a real project estimate.
-              </h2>
-              <p className="mt-4 text-[15px] leading-relaxed text-[#475569] sm:mt-5 sm:text-[16px]">
-                We review larger projects personally. Tell us the project type, address, and what you want done, then we will follow up with the right next step.
-              </p>
-              <div className="mt-7 space-y-3">
-                {[
-                  "General Contractor for larger home projects",
-                  "Roofing, siding, kitchens, bathrooms, new builds",
-                  "Members may receive project discounts",
-                  "Separate from One-Time Handyman Visits",
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-3 text-[14px] font-semibold text-[#334155]">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-[#16834B]">
-                      <CheckIcon />
-                    </span>
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <Suspense fallback={<div className="min-h-[660px] animate-pulse rounded-[26px] bg-white/70" />}>
-              <EstimateForm key={selectedType} />
-            </Suspense>
-          </div>
-        </section>
       </main>
 
       <Footer />
