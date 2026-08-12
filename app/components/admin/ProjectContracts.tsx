@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import ESignStatusBadge from "@/app/components/admin/ESignStatusBadge";
 import InPersonSigning from "@/app/components/signing/InPersonSigning";
 import SignatureDetails from "@/app/components/admin/SignaturePanel";
+import AdminActionBar, { type AdminAction } from "@/app/components/admin/AdminActionBar";
 import {
   CONTRACT_WORK_TYPES,
   cancelProjectContract,
@@ -22,7 +23,6 @@ import {
   revokeNativeSignature,
   downloadNativeDocument,
   uploadManuallySignedDocument,
-  uploadSignedProjectContract,
   type ContractEstimateOption,
   type ContractMeta,
   type ContractDiscountType,
@@ -555,11 +555,11 @@ function EstimateSource({
               type="button"
               onClick={() => (active ? onClear() : onPick(estimate))}
               aria-pressed={active}
-              className={`flex flex-wrap items-baseline justify-between gap-2 rounded-xl border p-3 text-left transition ${
+              className={`flex w-full min-w-0 flex-wrap items-baseline justify-between gap-2 rounded-xl border p-3 text-left transition ${
                 active ? "border-blue-500 bg-blue-50 ring-1 ring-blue-200" : "border-slate-200 hover:border-slate-300"
               }`}
             >
-              <span className="min-w-0">
+              <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-bold text-slate-900">
                   {estimate.estimateNumber}
                   {estimate.title ? ` - ${estimate.title}` : ""}
@@ -1063,24 +1063,6 @@ export default function ProjectContracts({ project }: { project: Project }) {
     }
   };
 
-  const handleSignedUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file || !selectedContract) return;
-    setWorkingAction("Uploading signed contract...");
-    setError("");
-    try {
-      const signed = await uploadSignedProjectContract(project._id, selectedContract._id, file);
-      setContracts((current) => current.map((contract) => (contract._id === signed._id ? signed : contract)));
-      setSelectedContractId(signed._id);
-      setForm(formFromContract(signed));
-      setSuccess("Signed contract uploaded.");
-    } catch (uploadError) {
-      setError(errorMessage(uploadError));
-    } finally {
-      setWorkingAction("");
-    }
-  };
 
   const handleCancel = async () => {
     if (!selectedContract) return;
@@ -1184,6 +1166,161 @@ export default function ProjectContracts({ project }: { project: Project }) {
   const inputClass =
     "mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
 
+  /*
+   * The three or four actions that actually apply to this Agreement right now.
+   * Ordered most-likely-first, because on a phone the first slot is the one
+   * under the thumb. Everything else stays reachable through More rather than
+   * being squeezed into an unreadable button.
+   */
+  const barActions: AdminAction[] = (() => {
+    const hasPdf = Boolean(selectedContract?.generatedPdf?.available);
+    const busy = saving || !!workingAction;
+    const signatureLive =
+      !!signature && !["Completed", "Declined", "Cancelled", "Expired"].includes(signature.status);
+    const isSigned = selectedContract?.status === "Signed" || signature?.status === "Completed";
+    const blockedDraft =
+      busy || missingFullDepositConfirmation || missingZeroAdjustedPriceConfirmation;
+
+    const save: AdminAction = {
+      key: "save",
+      label: saving ? "Saving" : "Save",
+      longLabel: "Save Draft",
+      tone: "default",
+      disabled: blockedDraft,
+      onClick: () => void saveDraft(),
+    };
+    const generate: AdminAction = {
+      key: "generate",
+      label: hasPdf ? "Regenerate" : "Generate",
+      longLabel: hasPdf ? "Regenerate Agreement" : "Generate Agreement",
+      tone: "primary",
+      disabled: !canSaveOrGenerateDraft || blockedDraft,
+      onClick: () => void handleGenerate(),
+    };
+    const email: AdminAction = {
+      key: "email",
+      label: "Email",
+      longLabel: "Email Agreement",
+      disabled: !hasPdf || busy,
+      onClick: openEmail,
+    };
+    const download: AdminAction = {
+      key: "download",
+      label: "PDF",
+      longLabel: "Download Agreement",
+      disabled: !hasPdf || busy,
+      onClick: () => void handleDownload("generated"),
+    };
+    const newDraft: AdminAction = {
+      key: "new-draft",
+      label: "New",
+      longLabel: "New Draft",
+      onClick: createNewDraft,
+    };
+    const uploadSigned: AdminAction = {
+      key: "upload-signed",
+      label: "Upload",
+      longLabel: "Upload Signed Agreement",
+      disabled: !selectedContract || busy,
+      file: { accept: "application/pdf,.pdf", onChange: handleManualUpload },
+    };
+    const cancel: AdminAction = {
+      key: "cancel",
+      label: "Cancel",
+      longLabel: "Cancel Agreement",
+      tone: "danger",
+      disabled: !selectedContract || busy,
+      onClick: () => void handleCancel(),
+    };
+
+    if (isSigned) {
+      return [
+        {
+          key: "view-signed",
+          label: "View Signed",
+          longLabel: "Download Signed Agreement",
+          tone: "success",
+          disabled: busy,
+          onClick: () =>
+            signature?.status === "Completed"
+              ? void handleNativeDownload("executed")
+              : void handleDownload("signed"),
+        },
+        {
+          key: "certificate",
+          label: "Certificate",
+          longLabel: "Signature Certificate",
+          disabled: busy || signature?.status !== "Completed",
+          onClick: () => void handleNativeDownload("certificate"),
+        },
+        {
+          key: "original",
+          label: "Original",
+          longLabel: "View Original Agreement",
+          disabled: busy || signature?.status !== "Completed",
+          onClick: () => void handleNativeDownload("frozen"),
+        },
+        email,
+        download,
+        newDraft,
+      ];
+    }
+
+    if (signatureLive) {
+      return [
+        download,
+        {
+          key: "resend",
+          label: "Resend",
+          longLabel: "Resend Signing Link",
+          tone: "primary",
+          disabled: busy,
+          onClick: () => void handleResend(),
+        },
+        {
+          key: "revoke",
+          label: "Revoke",
+          longLabel: "Revoke Signature Request",
+          tone: "danger",
+          disabled: busy,
+          onClick: () => void handleRevoke(),
+        },
+        { ...uploadSigned, key: "upload-signed-live" },
+        email,
+        cancel,
+      ];
+    }
+
+    if (hasPdf) {
+      return [
+        {
+          key: "send-signature",
+          label: "Send",
+          longLabel: "Send for Signature",
+          tone: "primary",
+          disabled: busy,
+          onClick: () => void handleNativeSend(),
+        },
+        {
+          key: "in-person",
+          label: "In Person",
+          longLabel: "Sign In Person",
+          tone: "success",
+          disabled: busy,
+          onClick: () => void handleSignInPerson(),
+        },
+        email,
+        download,
+        generate,
+        uploadSigned,
+        newDraft,
+        cancel,
+      ];
+    }
+
+    return [save, generate, newDraft];
+  })();
+
   if (loading) {
     return <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm font-semibold text-slate-500">Loading Agreement workspace...</div>;
   }
@@ -1220,7 +1357,8 @@ export default function ProjectContracts({ project }: { project: Project }) {
               </span>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          {/* Duplicated by the mobile action bar; kept for desktop only. */}
+          <div className="hidden flex-wrap gap-2 xl:flex">
             <button type="button" onClick={createNewDraft} className="rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-white hover:bg-white/10">
               New Draft
             </button>
@@ -1294,7 +1432,7 @@ export default function ProjectContracts({ project }: { project: Project }) {
       )}
 
       <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-        <form className="space-y-5" onSubmit={(event) => { event.preventDefault(); void saveDraft(); }}>
+        <form className="min-w-0 space-y-5" onSubmit={(event) => { event.preventDefault(); void saveDraft(); }}>
           <EstimateSource
             estimates={estimateOptions}
             form={form}
@@ -1532,25 +1670,26 @@ export default function ProjectContracts({ project }: { project: Project }) {
           </details>
         </form>
 
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           <PdfPreview form={form} meta={meta} contract={selectedContract} />
 
+          {/*
+            The signing status badge stays on every screen; the button list below
+            it is the desktop home for actions that the mobile bar already keeps
+            within thumb reach, so it is hidden there rather than repeated.
+          */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Actions</p>
             <div className="mt-3">
               <ESignStatusBadge meta={signatureMeta} />
             </div>
-            <div className="mt-4 grid gap-2">
+            <div className="mt-4 hidden gap-2 xl:grid">
               <button type="button" disabled={!selectedContract?.generatedPdf?.available || !!workingAction} onClick={() => void handleDownload("generated")} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
                 Download Agreement
               </button>
               <button type="button" disabled={!selectedContract?.generatedPdf?.available || !!workingAction} onClick={openEmail} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
                 Email Agreement
               </button>
-              <label className={`rounded-xl border border-slate-200 px-4 py-3 text-center text-sm font-bold text-slate-800 ${selectedContract ? "cursor-pointer hover:bg-slate-50" : "opacity-50"}`}>
-                Upload Signed Agreement
-                <input disabled={!selectedContract || !!workingAction} type="file" accept="application/pdf,.pdf" onChange={handleSignedUpload} className="hidden" />
-              </label>
               <button type="button" disabled={!selectedContract?.signedPdf?.available || !!workingAction} onClick={() => void handleDownload("signed")} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50">
                 Download Signed Agreement
               </button>
@@ -1794,6 +1933,12 @@ export default function ProjectContracts({ project }: { project: Project }) {
           </form>
         </div>
       )}
+
+      <AdminActionBar
+        actions={barActions}
+        hidden={showEmail || showSendForSignature}
+        label="Agreement actions"
+      />
     </div>
   );
 }

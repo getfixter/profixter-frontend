@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import ESignStatusBadge from "@/app/components/admin/ESignStatusBadge";
 import InPersonSigning from "@/app/components/signing/InPersonSigning";
+import AdminActionBar, { type AdminAction } from "@/app/components/admin/AdminActionBar";
 import SignatureDetails from "@/app/components/admin/SignaturePanel";
 import {
   createChangeOrder,
@@ -20,7 +21,6 @@ import {
   downloadNativeDocument,
   uploadManuallySignedDocument,
   updateChangeOrder,
-  uploadExecutedChangeOrder,
   voidChangeOrder,
   type ChangeLineDirection,
   type ChangeOrderMeta,
@@ -201,7 +201,6 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
   /** In-person signing credential. Memory only - never persisted or logged. */
   const [inPersonToken, setInPersonToken] = useState<string | null>(null);
 
-  const executedInputRef = useRef<HTMLInputElement | null>(null);
 
   const selected = useMemo(
     () => changeOrders.find((item) => item._id === selectedId) || null,
@@ -552,22 +551,6 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
     }
   };
 
-  const handleExecutedUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file || !selected) return;
-    setWorking("Uploading executed change order...");
-    setError("");
-    try {
-      await uploadExecutedChangeOrder(selected._id, file);
-      setSuccess("Executed change order stored.");
-      await load();
-    } catch (uploadError) {
-      setError(errorMessage(uploadError));
-    } finally {
-      setWorking("");
-    }
-  };
 
   const handleVoid = async () => {
     if (!selected) return;
@@ -642,6 +625,141 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
       </div>
     );
   }
+
+  /*
+   * The actions that apply to this Change Order in its current state. Same
+   * principle as the Agreement bar: what you are most likely to tap next comes
+   * first, and nothing gets squeezed - the remainder go to More.
+   */
+  const barActions: AdminAction[] = (() => {
+    const busy = !!working;
+
+    if (composing) {
+      return [
+        { key: "save", label: "Save", longLabel: "Save Change Order", disabled: busy, onClick: () => void handleSave() },
+        {
+          key: "generate",
+          label: "Generate",
+          longLabel: "Generate PDF",
+          tone: "primary",
+          disabled: busy,
+          onClick: () => void handleGenerate(),
+        },
+        { key: "cancel-new", label: "Cancel", longLabel: "Cancel", tone: "danger", onClick: cancelNew },
+      ];
+    }
+
+    if (!selected) {
+      return [
+        {
+          key: "new",
+          label: "New Change Order",
+          tone: "primary",
+          disabled: !amendable.length,
+          onClick: startNew,
+        },
+      ];
+    }
+
+    const status = selected.status;
+    const signatureLive =
+      !!selected.signature &&
+      !["Completed", "Declined", "Cancelled", "Expired"].includes(selected.signature.status);
+    const executed = status === "Executed" || selected.signature?.status === "Completed";
+    const hasPdf = Boolean(selected.generatedPdf?.available);
+
+    const download: AdminAction = {
+      key: "download",
+      label: "PDF",
+      longLabel: "Download Change Order",
+      disabled: busy || !hasPdf,
+      onClick: () => void handlePdf("download", "generated"),
+    };
+    const email: AdminAction = {
+      key: "email",
+      label: "Email",
+      longLabel: "Email Change Order",
+      disabled: busy || status === "Executed" || !hasPdf,
+      onClick: openEmail,
+    };
+    const uploadSigned: AdminAction = {
+      key: "upload-signed",
+      label: "Upload",
+      longLabel: "Upload Signed Change Order",
+      disabled: busy || status === "Executed",
+      file: { accept: "application/pdf,.pdf", onChange: handleManualUpload },
+    };
+
+    if (executed) {
+      return [
+        {
+          key: "view-signed",
+          label: "View Signed",
+          longLabel: "Download Signed Change Order",
+          tone: "success",
+          disabled: busy || selected.signature?.status !== "Completed",
+          onClick: () => void handleNativeDownload("executed"),
+        },
+        {
+          key: "certificate",
+          label: "Certificate",
+          longLabel: "Signature Certificate",
+          disabled: busy || selected.signature?.status !== "Completed",
+          onClick: () => void handleNativeDownload("certificate"),
+        },
+        {
+          key: "original",
+          label: "Original",
+          longLabel: "View Original Change Order",
+          disabled: busy || selected.signature?.status !== "Completed",
+          onClick: () => void handleNativeDownload("frozen"),
+        },
+        ...(selected.executedPdf?.available
+          ? [
+              {
+                key: "download-executed",
+                label: "Executed",
+                longLabel: "Download Executed Copy",
+                disabled: busy,
+                onClick: () => void handlePdf("download", "executed"),
+              } as AdminAction,
+            ]
+          : []),
+        download,
+      ];
+    }
+
+    if (signatureLive) {
+      return [
+        download,
+        { key: "resend", label: "Resend", longLabel: "Resend Signing Link", tone: "primary", disabled: busy, onClick: () => void handleResend() },
+        { key: "revoke", label: "Revoke", longLabel: "Revoke Signature Request", tone: "danger", disabled: busy, onClick: () => void handleRevoke() },
+        uploadSigned,
+        email,
+      ];
+    }
+
+    if (hasPdf) {
+      return [
+        { key: "send-signature", label: "Send", longLabel: "Send for Signature", tone: "primary", disabled: busy, onClick: () => setShowSend(true) },
+        { key: "in-person", label: "In Person", longLabel: "Sign In Person", tone: "success", disabled: busy, onClick: () => void handleSignInPerson() },
+        email,
+        download,
+        uploadSigned,
+        ...(status !== "Voided"
+          ? [{ key: "void", label: "Void", longLabel: "Void Change Order", tone: "danger", disabled: busy, onClick: () => void handleVoid() } as AdminAction]
+          : []),
+      ];
+    }
+
+    return [
+      { key: "generate", label: "Generate", longLabel: "Generate PDF", tone: "primary", disabled: busy, onClick: () => void handleGenerate() },
+      ...(status === "Draft"
+        ? [{ key: "delete", label: "Delete", longLabel: "Delete Draft", tone: "danger", disabled: busy, onClick: () => void handleDelete() } as AdminAction]
+        : []),
+      { key: "new", label: "New", longLabel: "New Change Order", disabled: !amendable.length, onClick: startNew },
+    ];
+  })();
 
   if (inPersonToken) {
     return (
@@ -1073,9 +1191,13 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
             />
           </label>
 
-          {/* Document actions */}
+          {/*
+            Document actions. The mobile action bar carries these within thumb
+            reach, so this row is the desktop home for them rather than a second
+            copy on a phone.
+          */}
           {selected && !composing && (
-            <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-200 pt-4">
+            <div className="mt-5 hidden flex-wrap gap-2 border-t border-slate-200 pt-4 xl:flex">
               {selected.generatedPdf?.available && (
                 <>
                   <button
@@ -1184,13 +1306,6 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
                   Delete Draft
                 </button>
               )}
-              <input
-                ref={executedInputRef}
-                type="file"
-                accept="application/pdf"
-                onChange={handleExecutedUpload}
-                className="hidden"
-              />
             </div>
           )}
         </section>
@@ -1356,6 +1471,12 @@ export default function ProjectChangeOrders({ project }: { project: Project }) {
           </form>
         </div>
       )}
+
+      <AdminActionBar
+        actions={barActions}
+        hidden={showEmail || showSend}
+        label="Change Order actions"
+      />
     </div>
   );
 }
