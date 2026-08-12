@@ -1669,6 +1669,81 @@ export const getFixters = async (): Promise<FixterAccount[]> => {
   return response.data.fixters;
 };
 
+/* ── Tips ────────────────────────────────────────────────────────────── */
+
+export interface TipTransaction {
+  id: string;
+  receivedAt: string;
+  amountCents: number;
+  refundedCents: number;
+  netCents: number;
+  currency: string;
+  status: "pending" | "succeeded" | "refunded" | "partially_refunded";
+  refundStatus: "" | "partial" | "full";
+  fixterId: string;
+  fixterName: string;
+  fixterPosition: string;
+  assignmentStatus: "attributed" | "unassigned" | "manually_assigned";
+  unassignedReason: string;
+  tipperName: string;
+  tipperEmail: string;
+  tipperKind: "customer" | "visitor" | "unknown";
+  bookingNumber: string;
+  source: "completion_email" | "direct";
+}
+
+export interface TipFixterRow {
+  fixterId: string;
+  name: string;
+  position: string;
+  isActive: boolean;
+  allTimeCents: number;
+  thisWeekCents: number;
+  count: number;
+  /** Keyed by the Monday that starts the week, as YYYY-MM-DD in New York. */
+  weekly: Record<string, number>;
+}
+
+export interface TipTotals {
+  allTimeCents: number;
+  thisWeekCents: number;
+  count: number;
+}
+
+export interface TipsResponse {
+  /** "admin" sees everyone; "fixter" sees only their own, enforced server side. */
+  scope: "admin" | "fixter";
+  weekStarts: string[];
+  currentWeek: string;
+  totals: TipTotals;
+  unassignedTotals: TipTotals;
+  fixters: TipFixterRow[];
+  transactions: TipTransaction[];
+  unassigned: TipTransaction[];
+  assignableFixters: Array<{
+    id: string;
+    name: string;
+    position: string;
+    isActive: boolean;
+  }>;
+  /** True when the scan limit was reached, so the totals omit older tips. */
+  truncated: boolean;
+}
+
+export const getTips = async (weeks = 8): Promise<TipsResponse> => {
+  const response = await API.get("/api/admin/tips", { params: { weeks } });
+  return response.data;
+};
+
+/** Pass an empty fixterId to return a tip to the unassigned list. */
+export const assignTip = async (
+  tipId: string,
+  fixterId: string
+): Promise<TipTransaction> => {
+  const response = await API.post(`/api/admin/tips/${tipId}/assign`, { fixterId });
+  return response.data.tip;
+};
+
 export const createFixter = async (data: {
   firstName: string;
   lastName: string;
