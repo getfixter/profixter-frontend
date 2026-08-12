@@ -31,10 +31,9 @@ const hiddenPathPrefixes = [
 /**
  * Nav for the current visitor.
  *
- * An active member's home is the membership dashboard, so Home points there and
- * highlights there. That also makes the separate Membership item redundant for
- * them, and a nav that sends two tabs to the same page is worse than a shorter
- * one - so members get Home, Book, Projects, Account.
+ * Members get Home, Book, Projects, Account. Home is the public homepage and
+ * Book owns booking, so the separate Membership tab is redundant for them: the
+ * membership dashboard is reachable from Account and from Home.
  *
  * Everyone else keeps exactly the nav they have today.
  */
@@ -43,7 +42,7 @@ function buildItems({ homeHref, isMember }: { homeHref: string; isMember: boolea
   {
     label: "Home",
     href: homeHref,
-    match: (pathname) => pathname === "/" || (isMember && pathname === "/membership"),
+    match: (pathname) => pathname === "/",
     icon: (
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10.5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
@@ -76,6 +75,9 @@ function buildItems({ homeHref, isMember }: { homeHref: string; isMember: boolea
   {
     label: "Account",
     href: "/account",
+    // Account means the Account route. /membership is a real destination of its
+    // own, and highlighting Account there would be a tab claiming a page it does
+    // not own. No highlight is the truthful state.
     match: (pathname) => pathname === "/account" || pathname === "/signin" || pathname === "/signup",
     icon: (
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -100,7 +102,13 @@ function buildItems({ homeHref, isMember }: { homeHref: string; isMember: boolea
   },
   ];
 
-  return isMember ? items.filter((item) => item.label !== "Membership") : items;
+  if (!isMember) return items;
+  // Home, Book, Projects, Account. Account sits last because it is the least
+  // frequent destination of the four.
+  const order = ["Home", "Book", "Projects", "Account"];
+  return items
+    .filter((item) => order.includes(item.label))
+    .sort((a, b) => order.indexOf(a.label) - order.indexOf(b.label));
 }
 
 export default function CustomerSiteMobileNav() {

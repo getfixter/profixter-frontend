@@ -27,10 +27,22 @@ export default function Header() {
    */
   const isMember = hasActiveMembership(user);
   const homeHref = useMemo(() => getCustomerHomePath(user), [user]);
-  // Members already land on the membership dashboard from Home; a second nav
-  // link to the same place is noise.
+  /*
+   * Desktop parity. The same four primary destinations as the phone, so the
+   * customer's mental model does not change with screen size. Account is a
+   * first-class item here rather than only a profile-menu entry, which was too
+   * easy to miss.
+   */
   const navLinks = useMemo(
-    () => (isMember ? MAIN_NAV_LINKS.filter((item) => item.href !== "/membership") : MAIN_NAV_LINKS),
+    () =>
+      isMember
+        ? ([
+            { label: "Home", href: "/" },
+            { label: "Book", href: "/book?visit=membership" },
+            { label: "Projects", href: "/projects" },
+            { label: "Account", href: "/account" },
+          ] as const)
+        : MAIN_NAV_LINKS,
     [isMember]
   );
 

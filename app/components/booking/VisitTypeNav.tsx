@@ -24,9 +24,9 @@ export function parseVisitType(value: string | null | undefined): VisitType {
 
 const TABS: { type: VisitType; short: string; full: string }[] = [
   { type: "membership", short: "Membership", full: "Membership Visit" },
-  // The price belongs on the tab: it is the one thing that distinguishes this
-  // option, and a member should never have to open it to find out it costs money.
-  { type: "additional", short: "Additional $99", full: "Additional Visit $99" },
+  // No price on the tab. It is a label, not an offer, and the price is
+  // unmissable inside the section itself.
+  { type: "additional", short: "Extra", full: "Extra Visit" },
   { type: "priority", short: "Priority", full: "Priority Visit" },
 ];
 

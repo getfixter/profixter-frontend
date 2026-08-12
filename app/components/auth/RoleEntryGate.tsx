@@ -2,7 +2,7 @@
 
 import { useEffect, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { getAutomaticEntryPath } from "@/lib/auth-routing";
+import { getAutomaticEntryPath, getRoleLandingKind } from "@/lib/auth-routing";
 import { useAuth } from "@/lib/useAuth";
 
 function EntryLoading({ label }: { label: string }) {
@@ -28,7 +28,17 @@ export default function RoleEntryGate({
   const router = useRouter();
   const pathname = usePathname();
   const { user, isAuthenticated, isLoading } = useAuth();
-  const automaticTarget = isAuthenticated && user ? getAutomaticEntryPath(user) : null;
+  /*
+   * Staff are routed to their workspace, because for them the marketing site is
+   * never the destination. Customers and members are not: pressing Home is a
+   * deliberate act, and bouncing them to the membership dashboard made Home
+   * look broken. Automatic post-login entry still uses getAutomaticEntryPath;
+   * this gate only governs someone who has actually arrived at the homepage.
+   */
+  const kind = getRoleLandingKind(user);
+  const routesAwayFromHome = kind === "admin" || kind === "fixter" || kind === "general_fixter";
+  const automaticTarget =
+    isAuthenticated && user && routesAwayFromHome ? getAutomaticEntryPath(user) : null;
   const targetPathname = automaticTarget?.split("?")[0] || null;
   const target = targetPathname && targetPathname !== pathname ? automaticTarget : null;
 

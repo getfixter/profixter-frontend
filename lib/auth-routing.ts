@@ -39,15 +39,16 @@ export function hasActiveMembership(user: User | null | undefined) {
 /**
  * Where the Home affordance should take this user.
  *
- * An active member's home is their membership dashboard, not the public
- * marketing page. `/` redirects them straight back to it (see RoleEntryGate),
- * so pointing Home at `/` made the control look broken: the customer tapped it
- * and nothing appeared to happen.
- *
- * Everyone else keeps the public homepage, which is genuinely their home.
+ * Always the public homepage. Booking lives under Book, so Home no longer needs
+ * to double as a member dashboard, and a member is still entitled to browse the
+ * company site like anyone else.
  */
 export function getCustomerHomePath(user: User | null | undefined) {
-  return hasActiveMembership(user) ? "/membership" : "/";
+  // Home is Home. A member is still allowed to browse the company site, and a
+  // Home control that quietly meant "membership dashboard" was the reason it
+  // felt broken. Booking lives under Book; this points at the actual homepage.
+  void user;
+  return "/";
 }
 
 /** Destination used only for automatic app entry and successful sign-in. */
