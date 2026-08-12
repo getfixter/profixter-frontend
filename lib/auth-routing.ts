@@ -36,6 +36,20 @@ export function hasActiveMembership(user: User | null | undefined) {
   return Boolean(user.addresses?.some((address) => address.hasActiveSubscription === true));
 }
 
+/**
+ * Where the Home affordance should take this user.
+ *
+ * An active member's home is their membership dashboard, not the public
+ * marketing page. `/` redirects them straight back to it (see RoleEntryGate),
+ * so pointing Home at `/` made the control look broken: the customer tapped it
+ * and nothing appeared to happen.
+ *
+ * Everyone else keeps the public homepage, which is genuinely their home.
+ */
+export function getCustomerHomePath(user: User | null | undefined) {
+  return hasActiveMembership(user) ? "/membership" : "/";
+}
+
 /** Destination used only for automatic app entry and successful sign-in. */
 export function getAutomaticEntryPath(user: User | null | undefined) {
   const kind = getRoleLandingKind(user);

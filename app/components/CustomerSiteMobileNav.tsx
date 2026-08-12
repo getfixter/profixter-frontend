@@ -3,6 +3,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/lib/useAuth";
+import { getCustomerHomePath, hasActiveMembership } from "@/lib/auth-routing";
 
 type NavItem = {
   label: string;
@@ -26,11 +28,22 @@ const hiddenPathPrefixes = [
   "/tip",
 ];
 
-const items: NavItem[] = [
+/**
+ * Nav for the current visitor.
+ *
+ * An active member's home is the membership dashboard, so Home points there and
+ * highlights there. That also makes the separate Membership item redundant for
+ * them, and a nav that sends two tabs to the same page is worse than a shorter
+ * one - so members get Home, Book, Projects, Account.
+ *
+ * Everyone else keeps exactly the nav they have today.
+ */
+function buildItems({ homeHref, isMember }: { homeHref: string; isMember: boolean }): NavItem[] {
+  const items: NavItem[] = [
   {
     label: "Home",
-    href: "/",
-    match: (pathname) => pathname === "/",
+    href: homeHref,
+    match: (pathname) => pathname === "/" || (isMember && pathname === "/membership"),
     icon: (
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10.5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
@@ -50,7 +63,8 @@ const items: NavItem[] = [
   },
   {
     label: "Book",
-    href: "/book",
+    // Members land on the visit their membership already covers.
+    href: isMember ? "/book?visit=membership" : "/book",
     match: (pathname) => pathname === "/book" || pathname.startsWith("/book/"),
     icon: (
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -84,10 +98,16 @@ const items: NavItem[] = [
       </svg>
     ),
   },
-];
+  ];
+
+  return isMember ? items.filter((item) => item.label !== "Membership") : items;
+}
 
 export default function CustomerSiteMobileNav() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const isMember = hasActiveMembership(user);
+  const items = buildItems({ homeHref: getCustomerHomePath(user), isMember });
   const hidden = hiddenPathPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
   if (hidden) return null;
@@ -99,7 +119,7 @@ export default function CustomerSiteMobileNav() {
         className="fixed inset-x-0 bottom-0 z-[70] border-t border-[#D7E0F5] bg-white/95 px-2 pt-1.5 shadow-[0_-10px_34px_rgba(15,23,42,0.12)] backdrop-blur-md lg:hidden sm:pt-2"
         style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom, 0px))" }}
       >
-        <div className="mx-auto grid max-w-[520px] grid-cols-5 gap-1">
+        <div className={`mx-auto grid max-w-[520px] gap-1 ${items.length === 4 ? "grid-cols-4" : "grid-cols-5"}`}>
           {items.map((item) => {
             const active = item.match(pathname);
             return (

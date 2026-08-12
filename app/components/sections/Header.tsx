@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
 import { MAIN_NAV_LINKS } from "@/lib/site-architecture";
-import { getRoleLandingPath } from "@/lib/auth-routing";
+import { getCustomerHomePath, getRoleLandingPath, hasActiveMembership } from "@/lib/auth-routing";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -21,6 +21,18 @@ export default function Header() {
     return first || "Account";
   }, [user?.name]);
   const accountHref = useMemo(() => getRoleLandingPath(user), [user]);
+  /*
+   * The logo is the Home affordance on desktop. For an active member `/` only
+   * bounces back to the membership dashboard, so it points straight there.
+   */
+  const isMember = hasActiveMembership(user);
+  const homeHref = useMemo(() => getCustomerHomePath(user), [user]);
+  // Members already land on the membership dashboard from Home; a second nav
+  // link to the same place is noise.
+  const navLinks = useMemo(
+    () => (isMember ? MAIN_NAV_LINKS.filter((item) => item.href !== "/membership") : MAIN_NAV_LINKS),
+    [isMember]
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -73,12 +85,12 @@ export default function Header() {
     <header className="relative z-50 w-full py-[8px] sm:py-[12px]">
       <div className="mx-2.5 rounded-[18px] border border-white/50 bg-white/92 shadow-[0_14px_48px_rgba(9,22,43,0.14)] backdrop-blur-xl sm:mx-5 sm:rounded-[20px]">
         <div className="mx-auto flex max-w-[1240px] items-center justify-between px-[12px] py-[8px] sm:px-[18px] sm:py-[10px]">
-          <Link href="/" className="relative z-50 flex items-center">
+          <Link href={homeHref} aria-label="Profixter home" className="relative z-50 flex items-center">
             <Image src="/images/logo.svg" alt="Profixter Long Island" width={80} height={32} priority className="brightness-0" />
           </Link>
 
           <nav className="hidden items-center gap-1 rounded-full border border-[#E6ECF7] bg-white/72 p-1 lg:flex" aria-label="Main navigation">
-            {MAIN_NAV_LINKS.map((item) => (
+            {navLinks.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -195,7 +207,7 @@ export default function Header() {
             </div>
 
             <div className="flex w-full max-w-sm flex-col gap-2.5 rounded-[22px] border border-[#E6E8EF] bg-white p-2.5 shadow-[0_16px_50px_rgba(17,24,39,0.08)] sm:gap-3 sm:rounded-[24px] sm:p-3">
-              {MAIN_NAV_LINKS.map((item) => (
+              {navLinks.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}

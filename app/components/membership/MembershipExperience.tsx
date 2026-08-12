@@ -16,6 +16,7 @@ import Header from "@/app/components/sections/Header";
 import BookingSection from "@/app/components/sections/BookingSection";
 import PlansSection from "@/app/components/sections/PlansSection";
 import FAQSection from "@/app/components/sections/FAQSection";
+import YourFixter from "@/app/components/fixter/YourFixter";
 import Footer from "@/app/components/sections/Footer";
 import StickyMobileCTA from "@/app/components/StickyMobileCTA";
 import BookingsSection from "@/app/components/account/BookingsSection";
@@ -110,6 +111,17 @@ function SubscribedCustomerFlow() {
               <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </Link>
+        </div>
+      </section>
+
+      {/*
+        The Fixter sits directly under booking: the member has just seen how to
+        get a visit, and this answers "and who is actually coming to my home".
+        Constrained rather than full-bleed - it is a person, not a dashboard panel.
+      */}
+      <section className="bg-[#F6F8FC] px-4 pb-6 pt-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1180px]">
+          <YourFixter className="max-w-[560px]" />
         </div>
       </section>
 
@@ -223,7 +235,7 @@ function PostFreeVisitFlow() {
             See Membership Plans
           </a>
           <Link
-            href="/book"
+            href="/book?visit=additional"
             className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#D2D2D7] bg-white px-7 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]"
           >
             Book a One-Time Visit
@@ -366,7 +378,7 @@ function ProspectMembershipFlow({
           <p className="mt-3 text-[15px] leading-6 text-[#6E6E73]">Choose your membership and book your first visit when you&rsquo;re ready.</p>
           <a href="#plans" className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-[#306EEC] px-7 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]">Choose a Plan</a>
           <div className="mt-4">
-            <Link href="/book" className="text-[14px] font-semibold text-[#306EEC] hover:underline">Need only one visit? Book an Extra Visit</Link>
+            <Link href="/book?visit=additional" className="text-[14px] font-semibold text-[#306EEC] hover:underline">Need only one visit? Book an Extra Visit</Link>
           </div>
         </div>
       </section>

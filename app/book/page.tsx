@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
@@ -16,6 +16,11 @@ import type { Address } from "@/lib/auth-service";
 import type { OneTimeVisitConfig } from "@/lib/booking-service";
 import { getBookableSlots, normalizeDayAvailability } from "@/lib/booking-calendar-availability";
 import { trackEvent, trackInitiateCheckout } from "@/lib/analytics";
+import { useSearchParams } from "next/navigation";
+import BookingSection from "@/app/components/sections/BookingSection";
+import VisitTypeNav, { parseVisitType } from "@/app/components/booking/VisitTypeNav";
+import PriorityVisitPanel from "@/app/components/booking/PriorityVisitPanel";
+import { hasActiveMembership as hasActiveMembershipFor } from "@/lib/auth-routing";
 
 const ONE_TIME_SERVICE_OPTIONS = [
   "Replace Light Fixture",
@@ -234,7 +239,14 @@ function RushServiceCallout({ rushIncluded }: { rushIncluded: boolean }) {
   );
 }
 
-export default function BookPage() {
+/**
+ * The existing $99 one-time / extra visit flow, unchanged.
+ *
+ * Renamed from BookPage and given a slot for the visit-type navigation. Nothing
+ * else in this component was modified: the Stripe checkout, availability calls,
+ * slot handling, photo requirement and validation are exactly as they were.
+ */
+function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const addresses = useMemo(() => user?.addresses ?? [], [user?.addresses]);
   const [config, setConfig] = useState<OneTimeVisitConfig>(
@@ -659,6 +671,7 @@ export default function BookPage() {
   return (
     <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
       <Header />
+      {navSlot}
 
       <section className="relative w-full overflow-hidden pb-5 pt-3 sm:pb-12 sm:pt-10 lg:pt-12">
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
@@ -1317,5 +1330,66 @@ export default function BookPage() {
 
       <Footer />
     </main>
+  );
+}
+
+
+/**
+ * The booking entrance.
+ *
+ * Members get three ways in: the visit included with their membership, a paid
+ * additional visit, and Priority, which is a phone call rather than a booking.
+ *
+ * Everyone else sees exactly what they saw before - a single one-time visit
+ * page with no tabs. /book is a public marketing destination ("Book a One-Time
+ * Visit"), and adding a Membership tab for someone without a membership would
+ * be an invitation to a door they cannot open.
+ */
+function BookExperience() {
+  const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const isMember = hasActiveMembershipFor(user);
+
+  if (!isMember) return <AdditionalVisitBooking />;
+
+  const visit = parseVisitType(searchParams.get("visit"));
+  const nav = <VisitTypeNav active={visit} />;
+
+  if (visit === "additional") return <AdditionalVisitBooking navSlot={nav} />;
+
+  return (
+    <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
+      <Header />
+      {nav}
+      {visit === "priority" ? (
+        <PriorityVisitPanel />
+      ) : (
+        <>
+          <section className="mx-auto w-full max-w-[1280px] px-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
+            <div className="max-w-[640px]">
+              <h1 className="text-[26px] font-semibold leading-[1.1] tracking-[-0.035em] text-[#0B1628] sm:text-[36px]">
+                Membership Visit
+              </h1>
+              <p className="mt-2 text-[15px] leading-6 text-[#6E6E73]">
+                Included with your membership. Pick a day and tell your Fixter what
+                needs doing.
+              </p>
+            </div>
+          </section>
+          {/* The existing member booking experience, unchanged. */}
+          <BookingSection />
+        </>
+      )}
+      <Footer />
+    </main>
+  );
+}
+
+export default function BookPage() {
+  // useSearchParams needs a boundary so the route can still be prerendered.
+  return (
+    <Suspense fallback={<AdditionalVisitBooking />}>
+      <BookExperience />
+    </Suspense>
   );
 }
