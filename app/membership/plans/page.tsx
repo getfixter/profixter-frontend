@@ -60,7 +60,7 @@ export default function MembershipPlansPage() {
                   Book Fixter
                 </Link>
                 <Link
-                  href="/membership#my-plan"
+                  href="/account?tab=plan"
                   className="inline-flex min-h-[44px] items-center justify-center rounded-[12px] border border-[#D7DEE9] bg-white px-5 text-[14px] font-semibold text-[#0B1628] transition hover:bg-[#F8FAFF]"
                 >
                   Manage plan
@@ -71,7 +71,7 @@ export default function MembershipPlansPage() {
         </section>
 
         {/* The one plan comparison in the product. No duplicate plan data. */}
-        <PlansSection hideCancellationUi />
+        <PlansSection hideCancellationUi hideIntro />
 
         <FAQSection hideCancellationUi />
       </main>

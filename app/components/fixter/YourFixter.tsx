@@ -1,18 +1,19 @@
 import Image from "next/image";
-import {
-  CUSTOMER_CARE,
-  fixterCallHref,
-  fixterTextHref,
-  getPrimaryFixter,
-  type Fixter,
-} from "@/lib/fixter";
+import { CUSTOMER_CARE, getPrimaryFixter, type Fixter } from "@/lib/fixter";
 
 /**
  * The member's Fixter.
  *
  * The point of this block is a relationship, not a contact card. A member
  * should look at it once and know there is a specific person looking after
- * their home, and that reaching him is one tap.
+ * their home.
+ *
+ * His number is shown but is deliberately not an action. There used to be Call
+ * and Text buttons here, which made getting him on the phone the easiest thing
+ * on the page and invited a call for every small question. A member who really
+ * needs him can read the number and dial it; the small extra effort is the
+ * point. It is also why the number is plain text rather than a tel: or sms:
+ * link, and why there is no phone icon, which would read as a button.
  *
  * The copy draws a line that matters operationally: Roman answers questions
  * about the work and the home; anything to do with the booking itself stays
@@ -22,33 +23,10 @@ import {
  * It also never promises Roman will do the work. He can be away, ill or already
  * booked. "Your primary Fixter" is a true statement; "Roman will be there" is
  * not one we can keep.
+ *
+ * Every value comes from getPrimaryFixter, so his number lives in exactly one
+ * place and none of these components knows what it is.
  */
-
-function CallIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M6.6 3.5h2.2l1.4 3.6-1.8 1.3a12.4 12.4 0 0 0 5.2 5.2l1.3-1.8 3.6 1.4v2.2a2 2 0 0 1-2.2 2A15.8 15.8 0 0 1 4.6 5.7a2 2 0 0 1 2-2.2Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function TextIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M4 5.5h16v10.2H9.4L5 19.2v-3.5H4V5.5Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 function FixterPortrait({ fixter, size }: { fixter: Fixter; size: "sm" | "md" | "lg" }) {
   const dimension =
@@ -71,26 +49,20 @@ function FixterPortrait({ fixter, size }: { fixter: Fixter; size: "sm" | "md" | 
   );
 }
 
-function ContactActions({ fixter }: { fixter: Fixter }) {
+/**
+ * His number, present but passive.
+ *
+ * Not a link. Selectable, so it can be copied, and labelled so a screen reader
+ * announces whose number it is rather than reading seven digits into the void.
+ */
+function FixterPhone({ fixter, className = "" }: { fixter: Fixter; className?: string }) {
   return (
-    <div className="mt-4 flex gap-2">
-      <a
-        href={fixterCallHref(fixter)}
-        aria-label={`Call ${fixter.firstName} at ${fixter.phoneDisplay}`}
-        className="inline-flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-[13px] bg-[#0B1628] px-4 text-[14px] font-semibold text-white transition hover:bg-[#172033] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]"
-      >
-        <CallIcon />
-        Call {fixter.firstName}
-      </a>
-      <a
-        href={fixterTextHref(fixter)}
-        aria-label={`Text ${fixter.firstName} at ${fixter.phoneDisplay}`}
-        className="inline-flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-[13px] border border-[#D7DEE9] bg-white px-4 text-[14px] font-semibold text-[#0B1628] transition hover:bg-[#F8FAFF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]"
-      >
-        <TextIcon />
-        Text {fixter.firstName}
-      </a>
-    </div>
+    <p className={`text-[13px] leading-5 text-[#6E6E73] ${className}`}>
+      <span className="sr-only">{fixter.firstName}&rsquo;s number: </span>
+      <span className="select-all font-semibold tracking-[0.01em] text-[#3C4453]">
+        {fixter.phoneDisplay}
+      </span>
+    </p>
   );
 }
 
@@ -99,7 +71,8 @@ function ContactActions({ fixter }: { fixter: Fixter }) {
  *
  * It has to be findable without competing with the Fixter, or members keep
  * routing work questions to the office - which is the problem this whole block
- * exists to solve.
+ * exists to solve. This one stays a real link: the office is who you are
+ * supposed to call about billing and scheduling.
  */
 function CustomerCareNote() {
   return (
@@ -147,12 +120,13 @@ export default function YourFixter({
         <div className="min-w-0">
           <p
             className={`font-semibold tracking-[-0.02em] text-[#111111] ${
-              welcome ? "text-[23px] sm:text-[26px]" : "text-[19px] sm:text-[21px]"
+              welcome ? "text-[19px] sm:text-[21px]" : "text-[17px] sm:text-[18px]"
             }`}
           >
             {fixter.firstName}
           </p>
           <p className="mt-0.5 text-[13px] text-[#6E6E73]">Your primary Fixter</p>
+          <FixterPhone fixter={fixter} className="mt-1" />
         </div>
       </div>
 
@@ -162,7 +136,6 @@ export default function YourFixter({
           : `Questions about the work, your home, or an upcoming visit? ${fixter.firstName} is your go-to.`}
       </p>
 
-      <ContactActions fixter={fixter} />
       <CustomerCareNote />
     </section>
   );
@@ -173,19 +146,14 @@ export default function YourFixter({
  *
  * Written for the top of the booking page, where the customer has already
  * tapped through to book and the calendar is the thing they came for. So this
- * is deliberately a row and not a card: it says who is looking after the home
- * and makes reaching him one tap, then gets out of the way. Anything taller
- * would push the calendar down the screen to say something the member already
- * knows.
+ * is deliberately a row and not a card: it says who is looking after the home,
+ * then gets out of the way. Anything taller would push the calendar down the
+ * screen to say something the member already knows.
  *
  * The layout changes shape rather than scale. On a phone it stacks into a
- * profile row with the actions beneath; from small screens up it becomes a
- * single bar with the identity at one end and the actions at the other, so a
- * wide screen is filled by composition instead of by a stretched phone card.
- *
- * Same rule as everywhere else: Roman answers questions about the work and the
- * home, and the booking itself stays inside ProFixter. On this page in
- * particular, the booking form is directly below, so the copy points there.
+ * profile row; from small screens up it becomes a single bar with the identity
+ * at one end and the explanation at the other, so a wide screen is filled by
+ * composition instead of by a stretched phone card.
  */
 export function YourFixterRow({ className = "" }: { className?: string }) {
   const fixter = getPrimaryFixter();
@@ -209,48 +177,28 @@ export function YourFixterRow({ className = "" }: { className?: string }) {
               {fixter.firstName}
             </p>
             <p className="mt-0.5 text-[12px] leading-4 text-[#6E6E73]">Your primary Fixter</p>
+            <FixterPhone fixter={fixter} className="mt-0.5 text-[12.5px]" />
           </div>
         </div>
 
         {/*
-         * One paragraph, three behaviours. Stacked on a phone it sits between
-         * the name and the actions, which is the order the member reads in.
-         * Between sm and lg the row is too tight to carry it, so it steps out
-         * of the way. From lg it becomes the middle column and fills the space
-         * a wide screen would otherwise leave empty.
+         * One paragraph, two behaviours. Stacked on a phone it sits under the
+         * name; from sm it becomes the second column and fills the space a wide
+         * screen would otherwise leave empty.
          */}
-        <p className="min-w-0 flex-1 text-[12.5px] leading-5 text-[#6E6E73] sm:hidden lg:block lg:text-[13px]">
+        <p className="min-w-0 flex-1 text-[12.5px] leading-5 text-[#6E6E73] lg:text-[13px]">
           Questions about the work or your home? {fixter.firstName} is your go-to.
           Booking stays on this page.
         </p>
-
-        <div className="flex gap-2 sm:ml-auto sm:shrink-0">
-          <a
-            href={fixterCallHref(fixter)}
-            aria-label={`Call ${fixter.firstName} at ${fixter.phoneDisplay}`}
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-[#0B1628] px-4 text-[13.5px] font-semibold text-white transition hover:bg-[#172033] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] sm:flex-none"
-          >
-            <CallIcon />
-            Call {fixter.firstName}
-          </a>
-          <a
-            href={fixterTextHref(fixter)}
-            aria-label={`Text ${fixter.firstName} at ${fixter.phoneDisplay}`}
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[12px] border border-[#D7DEE9] bg-white px-4 text-[13.5px] font-semibold text-[#0B1628] transition hover:bg-[#F8FAFF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] sm:flex-none"
-          >
-            <TextIcon />
-            Text {fixter.firstName}
-          </a>
-        </div>
       </div>
     </section>
   );
 }
 
 /**
- * A single quiet line for places that already have their own job, such as a
- * booking confirmation. It offers the Fixter for questions about the work
- * without implying the appointment can be changed by texting him.
+ * A single quiet line for places that already have their own job, such as
+ * Account or a booking confirmation. It offers the Fixter for questions about
+ * the work without implying the appointment can be changed by ringing him.
  */
 export function AskYourFixterLine({ className = "" }: { className?: string }) {
   const fixter = getPrimaryFixter();
@@ -264,15 +212,8 @@ export function AskYourFixterLine({ className = "" }: { className?: string }) {
           Question about the work? Ask {fixter.firstName}.
         </p>
         <p className="mt-0.5 text-[12px] text-[#6E6E73]">Your primary Fixter</p>
+        <FixterPhone fixter={fixter} className="mt-0.5 text-[12.5px]" />
       </div>
-      <a
-        href={fixterTextHref(fixter)}
-        aria-label={`Text ${fixter.firstName} at ${fixter.phoneDisplay}`}
-        className="inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-[12px] border border-[#D7DEE9] bg-white px-3.5 text-[13px] font-semibold text-[#0B1628] transition hover:bg-[#F8FAFF]"
-      >
-        <TextIcon />
-        Text
-      </a>
     </div>
   );
 }

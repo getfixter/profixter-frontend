@@ -171,15 +171,33 @@ export default function Header() {
                   </div>
                 </button>
 
+                {/*
+                 * Whatever the nav beside it does not already carry, plus the
+                 * way out. A member has Account in the nav and no route to the
+                 * plan comparison; somebody who signed up but has not joined
+                 * has the opposite. Listing both for everybody meant one of the
+                 * two was always a second door to a page already on screen.
+                 */}
                 {isProfileMenuOpen && (
                   <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-[14px] border border-[#E6E8EF] bg-white py-2 shadow-lg">
-                    <Link
-                      href={accountHref}
-                      className="block px-4 py-3 text-base text-[#111827] transition-colors hover:bg-[#EEF2FF]"
-                      onClick={() => setIsProfileMenuOpen(false)}
-                    >
-                      My Account
-                    </Link>
+                    {!navLinks.some((link) => link.href === accountHref) && (
+                      <Link
+                        href={accountHref}
+                        className="block px-4 py-3 text-base text-[#111827] transition-colors hover:bg-[#EEF2FF]"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                      >
+                        My Account
+                      </Link>
+                    )}
+                    {!navLinks.some((link) => link.href === "/membership/plans") && (
+                      <Link
+                        href="/membership/plans"
+                        className="block px-4 py-3 text-base text-[#111827] transition-colors hover:bg-[#EEF2FF]"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                      >
+                        See plans
+                      </Link>
+                    )}
                     <div className="my-2 border-t border-[#E6E8EF]" />
                     <button
                       className="block w-full px-4 py-3 text-left text-base text-red-600 transition-colors hover:bg-[#EEF2FF]"

@@ -26,7 +26,11 @@ export type Fixter = {
   photoPosition: string;
   /** Display form, for reading aloud on screen. */
   phoneDisplay: string;
-  /** Dial form, for tel: and sms: links. */
+  /**
+   * Dial form. Kept because it is real data about the Fixter, but nothing in
+   * the customer frontend builds a link from it: his number is displayed, not
+   * actioned. See the note below the type.
+   */
   phoneE164: string;
 };
 
@@ -50,13 +54,14 @@ export function getPrimaryFixter(): Fixter {
   return ROMAN;
 }
 
-export function fixterCallHref(fixter: Fixter) {
-  return `tel:${fixter.phoneE164}`;
-}
-
-export function fixterTextHref(fixter: Fixter) {
-  return `sms:${fixter.phoneE164}`;
-}
+/*
+ * There are deliberately no fixterCallHref / fixterTextHref helpers.
+ *
+ * The Fixter's number is shown to members as plain text, never as a tel: or
+ * sms: action, so that reaching him is possible but not the easiest thing on
+ * the page. Keeping link builders around would make a Call button a one-import
+ * mistake. Customer Care below is the number that is meant to be tapped.
+ */
 
 /** ProFixter Customer Care, kept deliberately separate from the Fixter. */
 export const CUSTOMER_CARE = {

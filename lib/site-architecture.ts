@@ -19,7 +19,7 @@ export const CORE_PRODUCTS = [
     shortTitle: "Book a visit",
     summary:
       "$99 One-Time Visit for one predefined small handyman task, up to 90 minutes.",
-    cta: "Book a Handyman",
+    cta: "Book a visit",
   },
   {
     id: "renovation",
@@ -84,12 +84,18 @@ export const PROJECT_SERVICE_LINKS = [
   { label: "New Home Construction", href: "/renovations/new-home-construction" },
 ] as const;
 
+/*
+ * The three hubs, not a sample of their children.
+ *
+ * This column used to mix hub pages with an arbitrary handful of individual
+ * landing pages (TV Mounting, Drywall Repair, Bathroom Remodeling, Roofing),
+ * which read as product navigation but was really search plumbing, and which
+ * put Roofing two rows below Projects as though they were different things.
+ * Every one of those pages still exists, is still in the sitemap, and is still
+ * linked from the hub above it, so nothing has been dropped from the site.
+ */
 export const FOOTER_SEO_LINKS = [
   { label: "Services", href: "/services" },
-  { label: "TV Mounting", href: "/services/tv-mounting" },
-  { label: "Drywall Repair", href: "/services/drywall-repair" },
   { label: "Renovations", href: "/renovations" },
-  { label: "Bathroom Remodeling", href: "/renovations/bathroom-remodeling" },
-  { label: "Roofing", href: "/renovations/roofing" },
   { label: "Locations", href: "/locations" },
 ] as const;

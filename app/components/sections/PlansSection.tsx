@@ -132,11 +132,22 @@ function getAnnualPromotion(plan: Plan) {
 }
 
 type PlansSectionProps = {
+  /**
+   * Suppress this section's own introduction.
+   *
+   * On /membership this section is one part of a longer sales page and needs
+   * its own heading. On /membership/plans the whole page is the comparison and
+   * already opens with an H1 saying the same thing, so the section's heading,
+   * its subheading and the "home base" explainer stacked three introductions
+   * on top of each other before the first price appeared. Set it there and the
+   * page reads: context, H1, one sentence, billing toggle, plans.
+   */
+  hideIntro?: boolean;
   hideCancellationUi?: boolean;
   compact?: boolean;
 };
 
-export default function PlansSection({ hideCancellationUi = false, compact = false }: PlansSectionProps = {}) {
+export default function PlansSection({ hideCancellationUi = false, compact = false, hideIntro = false }: PlansSectionProps = {}) {
   const [billing, setBilling] = useState<BillingCycle>("monthly");
   const [promoCode, setPromoCode] = useState("");
   const [actionMessage, setActionMessage] = useState("");
@@ -781,12 +792,16 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
            * every page it appears on. It is a section heading and now sizes
            * like one.
            */}
-          <h2 className="text-[23px] font-semibold tracking-normal text-[#111111] sm:text-[30px]">
-            Choose the membership for your home
-          </h2>
-          <p className="mt-3 text-[15px] leading-6 text-[#6E6E73] sm:mt-4 sm:text-lg sm:leading-7">
-            Start with the level of support that fits today. You can change plans as your home needs change.
-          </p>
+          {!hideIntro && (
+            <>
+              <h2 className="text-[23px] font-semibold tracking-normal text-[#111111] sm:text-[30px]">
+                Choose the membership for your home
+              </h2>
+              <p className="mt-3 text-[15px] leading-6 text-[#6E6E73] sm:mt-4 sm:text-lg sm:leading-7">
+                Start with the level of support that fits today. You can change plans as your home needs change.
+              </p>
+            </>
+          )}
           {promoCode ? (
             <div className="mt-5 inline-flex rounded-[12px] border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm font-semibold text-[#166534]">
               Promo code {promoCode} will be applied at checkout
@@ -832,7 +847,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           </div>
         )}
 
-        {!compact && <div className="mx-auto mb-6 max-w-[720px] text-center sm:mb-8">
+        {!compact && !hideIntro && <div className="mx-auto mb-6 max-w-[720px] text-center sm:mb-8">
           <h3 className="text-[18px] font-semibold tracking-normal text-[#111111] sm:text-[20px]">
             Membership is the home base
           </h3>
@@ -841,7 +856,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           </p>
         </div>}
 
-        {!compact && <div className="mx-auto mb-7 max-w-[780px] rounded-[16px] border border-[#E5E7EB] bg-white p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:mb-7 sm:p-5">
+        {!compact && !hideIntro && <div className="mx-auto mb-7 max-w-[780px] rounded-[16px] border border-[#E5E7EB] bg-white p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:mb-7 sm:p-5">
           <div className="grid items-stretch gap-3 text-left sm:grid-cols-[1.15fr_0.85fr]">
             <div className="rounded-[13px] bg-[#0B1628] px-4 py-4 text-white">
               <div className="text-[11px] font-black uppercase tracking-[0.16em] text-white/55">

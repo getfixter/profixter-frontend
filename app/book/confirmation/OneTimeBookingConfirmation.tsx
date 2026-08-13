@@ -62,7 +62,7 @@ export default function OneTimeBookingConfirmation({ bookingId }: { bookingId?: 
       onClose={close}
       onViewVisit={() => {
         setConfirmation(null);
-        router.push("/account?tab=bookings");
+        router.push("/book#your-visits");
       }}
     />
   );

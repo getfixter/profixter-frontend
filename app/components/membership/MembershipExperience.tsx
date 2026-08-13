@@ -470,6 +470,33 @@ export default function MembershipExperience() {
     }
   }, [isLoading, user, router]);
 
+  /*
+   * An active member has nothing left to do on this page.
+   *
+   * It used to be their dashboard, but every part of it has since moved to a
+   * better home: visits and the booking form to Book, the Fixter to Book and
+   * Account, plan management to Account, plan comparison to /membership/plans.
+   * What remained was a 5,000px page whose sections linked out to the pages
+   * that had replaced them, and which greeted a paying customer with a FAQ
+   * headed "Questions before you become a Member".
+   *
+   * Only the member branch is retired. For a visitor this is still the
+   * membership sales page, and for a registered non-member it is still the
+   * Free First Visit booking flow, so neither is touched.
+   *
+   * The plan parameters are the exception. A signup that started from a plan
+   * card comes back here as /membership?plan=...&billingCycle=... to resume
+   * checkout, and someone can be subscribed by the time that resolves. Sending
+   * them away mid-flow would strand the purchase, so a URL carrying plan intent
+   * is always allowed through.
+   */
+  useEffect(() => {
+    if (isLoading || !isSubscribed) return;
+    const resumingCheckout = new URLSearchParams(window.location.search).has("plan");
+    if (resumingCheckout) return;
+    router.replace("/account");
+  }, [isLoading, isSubscribed, router]);
+
   useEffect(() => {
     const justLoggedIn = sessionStorage.getItem("justLoggedIn");
     if (justLoggedIn) {

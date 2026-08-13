@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "About Profixter | Long Island's Modern Home Platform",
     description:
-      "Meet the local team behind Profixter AI, Book Handyman, Membership, and Renovation.",
+      "Meet the local team behind Profixter: membership, handyman visits, home projects, and Profixter AI on Long Island.",
     images: [DEFAULT_OG_IMAGE.url],
   },
 };
@@ -87,16 +87,8 @@ const trustItems = [
     body: "Profixter operates with NY State Home Improvement Contractor license HI-71484 and insurance for peace of mind.",
   },
   {
-    title: "Membership-first",
-    body: "The clearest experience is ongoing care, with one-time visits and project estimates available when they make more sense.",
-  },
-  {
     title: "No contractor chasing",
     body: "The goal is fewer callbacks, less guessing, and one organized place to turn when the home list grows.",
-  },
-  {
-    title: "Organized intake",
-    body: "Photos, notes, scheduling, admin review, and project routing help the work start with context.",
   },
   {
     title: "The right scope",
@@ -115,16 +107,8 @@ const serviceAreas = [
 
 const faqs = [
   {
-    q: "Are you a handyman company?",
-    a: "Profixter handles handyman work, but the company is built to be more than a one-time repair option. Membership is the preferred experience, with one-time visits, renovations, and Profixter AI available when they fit the situation better.",
-  },
-  {
-    q: "What is Membership?",
-    a: "Membership is Profixter's ongoing home care relationship. Members can request handyman help, keep the home list moving, and work with a team that learns the home over time.",
-  },
-  {
     q: "Can I book one visit?",
-    a: "Yes. Book Handyman is available when you only need one small job handled. It is useful when Membership is not the right fit today.",
+    a: "Yes. Book a visit when you only need one small job handled. It is useful when Membership is not the right fit today.",
   },
   {
     q: "Do you do renovations?",
@@ -144,7 +128,7 @@ const faqs = [
   },
   {
     q: "How do I get started?",
-    a: "Start with Membership if you want a long-term home care company. Choose Book Handyman for one small job, Renovation for larger work, or Profixter AI if you are unsure what path fits.",
+    a: "Start with Membership if you want a long-term home care company. Book a visit for one small job, use Projects for larger work, or ask Profixter AI if you are unsure what fits.",
   },
 ];
 
@@ -495,21 +479,22 @@ export default function AboutPage() {
               </p>
             </div>
 
+            {/*
+             * One action, not a second product menu. Every product already has
+             * its own card and its own CTA in the section above, so repeating
+             * all four here made the page end by asking the reader to choose
+             * again rather than by closing.
+             */}
             <div className="grid gap-3">
               <MembershipCtaLink className="inline-flex min-h-[48px] items-center justify-center rounded-[13px] bg-white px-5 text-[15px] font-black text-[#0B1628] transition hover:bg-[#EEF5FF]">
                 Become a Member
               </MembershipCtaLink>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {productCards.slice(1).map((product) => (
-                  <Link
-                    key={product.cta}
-                    href={product.href}
-                    className="rounded-[13px] border border-white/12 bg-white/[0.07] px-4 py-4 text-center text-[13px] font-black text-white transition hover:bg-white hover:text-[#0B1628]"
-                  >
-                    {product.cta}
-                  </Link>
-                ))}
-              </div>
+              <Link
+                href="#ways-to-work"
+                className="inline-flex min-h-[44px] items-center justify-center text-[14px] font-bold text-white/70 transition hover:text-white"
+              >
+                Not sure yet? See the other ways to work with us
+              </Link>
             </div>
           </div>
         </div>

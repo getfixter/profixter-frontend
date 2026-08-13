@@ -270,7 +270,7 @@ export default function OverviewSection({
               {/* Book owns booking now, so this goes straight there rather
                   than by way of the membership page. */}
               <a
-                href="/book?visit=membership"
+                href={activeSub || planName ? "/book?visit=membership" : "/book"}
                 className="inline-flex items-center justify-center h-[44px] px-5 rounded-[12px] bg-[#306EEC] text-white text-[13px] font-extrabold hover:bg-[#2558c9] transition"
                 style={{ boxShadow: "0 8px 24px rgba(48,110,236,0.35)" }}
               >
@@ -364,6 +364,18 @@ export default function OverviewSection({
               href: "/book?visit=membership#your-visits",
               color: "#16A34A",
               bg: "#F0FDF4",
+              external: false,
+            },
+            {
+              label: "See plans",
+              icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 10h18M9 14h6" />
+                </svg>
+              ),
+              href: "/membership/plans",
+              color: "#7C3AED",
+              bg: "#F5F3FF",
               external: false,
             },
             {
