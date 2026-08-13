@@ -59,7 +59,7 @@ export default function AccountPage() {
    */
   useEffect(() => {
     if (activeTab === "bookings") {
-      router.replace("/book?visit=membership#your-visits");
+      router.replace("/book#your-visits");
     }
   }, [activeTab, router]);
 
