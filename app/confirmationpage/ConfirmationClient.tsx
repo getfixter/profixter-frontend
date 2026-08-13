@@ -84,7 +84,7 @@ export default function ConfirmationClient() {
           onClick={handleBookClick}
           className="h-[48px] w-full rounded-[16px] bg-[#0B1628] text-base font-black text-white shadow-[0_18px_44px_rgba(11,22,40,0.24)] transition-all hover:bg-[#17263D]"
         >
-          Book Your Member Visit
+          Book a visit
         </button>
 
         {/*

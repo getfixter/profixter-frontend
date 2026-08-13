@@ -9,6 +9,11 @@ import {
   type ManagedSubscription,
 } from "@/lib/subscription-service";
 import type { AccountAddress, AccountFormData } from "./types";
+import {
+  PRIORITY_VISITS_PER_MONTH,
+  type PlanKey,
+} from "@/app/components/membership/MembershipUpgradePrompt";
+import { AskYourFixterLine } from "@/app/components/fixter/YourFixter";
 
 type Booking = {
   _id: string;
@@ -21,7 +26,7 @@ type Booking = {
 const FAQS = [
   {
     q: "How often can I book a visit?",
-    a: "Members can request visits as needed. Your plan determines active appointment capacity, materials, Emergency Visit benefits, and project benefits. You book online from Your Home.",
+    a: "Members can request visits as needed. Your plan determines active appointment capacity, materials, Priority Visit benefits, and project benefits. You book online from Your Home.",
   },
   {
     q: "Can I request the same technician every time?",
@@ -181,18 +186,26 @@ export default function OverviewSection({
           : null;
       })();
 
+  /*
+   * Reuses the entitlement table Priority already reads from rather than
+   * restating the numbers here, so the two can never drift apart.
+   */
+  const planBenefitLine = (() => {
+    if (loadingData || !planName) return undefined;
+    const key = planName.toLowerCase() as PlanKey;
+    const priority = PRIORITY_VISITS_PER_MONTH[key];
+    if (priority) {
+      return `Includes ${priority} Priority Visit${priority === 1 ? "" : "s"} a month`;
+    }
+    return activeSub?.planPrice ? `$${activeSub.planPrice}/mo` : undefined;
+  })();
+
   const nextVisit = bookings
     .filter((b) => {
       const s = b.status.toLowerCase();
       return (s === "pending" || s === "confirmed") && new Date(b.date) >= new Date();
     })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
-
-  const completedCount = bookings.filter(
-    (b) => b.status.toLowerCase() === "completed"
-  ).length;
-
-  const totalBookings = bookings.length;
 
   const nextVisitFormatted = nextVisit
     ? new Date(nextVisit.date).toLocaleDateString("en-US", {
@@ -261,7 +274,7 @@ export default function OverviewSection({
                 className="inline-flex items-center justify-center h-[44px] px-5 rounded-[12px] bg-[#306EEC] text-white text-[13px] font-extrabold hover:bg-[#2558c9] transition"
                 style={{ boxShadow: "0 8px 24px rgba(48,110,236,0.35)" }}
               >
-                Book Next Visit
+                Book a visit
               </a>
               {activeSub && (
                 <button
@@ -278,8 +291,17 @@ export default function OverviewSection({
         </div>
       </div>
 
-      {/* ── Stats row ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/*
+       * Two tiles, not four.
+       *
+       * The dashboard used to open with a greeting, a button and four numbers,
+       * two of which said nothing a member needs: "Visits Completed: 0" is a
+       * record of not having used the thing they pay for, and "Addresses: 1
+       * service location(s)" is a row count with a developer's plural. What is
+       * left answers the two questions somebody actually opens this page with:
+       * when is someone coming, and what am I paying for.
+       */}
+      <div className="grid grid-cols-2 gap-3">
         <StatTile
           icon={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -288,19 +310,8 @@ export default function OverviewSection({
           }
           label="Next Visit"
           value={loadingData ? "-" : nextVisitFormatted || "None booked"}
-          sub={nextVisit?.service || undefined}
+          sub={nextVisit?.service || (loadingData ? undefined : "Book one whenever something comes up")}
           accent="#306EEC"
-        />
-        <StatTile
-          icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-            </svg>
-          }
-          label="Visits Completed"
-          value={loadingData ? "-" : String(completedCount)}
-          sub={totalBookings > 0 ? `${totalBookings} total bookings` : undefined}
-          accent="#16A34A"
         />
         <StatTile
           icon={
@@ -308,41 +319,37 @@ export default function OverviewSection({
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
           }
-          label="Active Plan"
+          label="Your Plan"
           value={loadingData ? "-" : planName || "No plan"}
-          sub={activeSub ? `$${activeSub.planPrice || "-"}/mo` : undefined}
+          /*
+           * Priority Visits are the reason Premium and Elite cost what they do,
+           * and Account never mentioned them, so the benefit was invisible on
+           * the page members open most. Simple benefit text, no counter: we do
+           * not have reliable remaining-usage data to show.
+           */
+          sub={planBenefitLine}
           accent="#D4A574"
         />
-        <StatTile
-          icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-          }
-          label="Addresses"
-          value={String(formData.addresses?.length || 1)}
-          sub="service location(s)"
-          accent="#7C3AED"
-        />
       </div>
+
+      {/*
+       * Roman, on the page a member opens most.
+       *
+       * "You have a Fixter for your home" is the whole proposition, and Account
+       * was the one member surface that never showed a person. Reuses the
+       * existing compact row and the centralised Fixter data rather than
+       * introducing another card.
+       */}
+      <AskYourFixterLine />
 
       {/* ── Quick actions ── */}
       <div className="rounded-[13px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
         <h3 className="text-[15px] font-bold text-[#0B1628] mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Booking is the dark button at the top of this page. A second tile
+            for the same destination on the same screen was two labels for one
+            action. */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
-            {
-              label: "Book a Visit",
-              icon: (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><line x1="12" y1="14" x2="12" y2="18" /><line x1="10" y1="16" x2="14" y2="16" />
-                </svg>
-              ),
-              href: "/book?visit=membership",
-              color: "#306EEC",
-              bg: "#EEF5FF",
-              external: false,
-            },
             {
               /* Straight to the visit list on Book. It used to open the
                  Account bookings tab, which since the move only holds a
@@ -366,10 +373,16 @@ export default function OverviewSection({
                   <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
                 </svg>
               ),
-              href: "https://buy.stripe.com/eVq8wO3W98O03NL3ASawo00",
+              /*
+               * The tip page, not the raw Stripe link it used to point at.
+               * That link skipped the Fixter chooser, so every tip left from
+               * Account arrived with nobody attached to it and had to be
+               * assigned by hand in Admin afterwards.
+               */
+              href: "/tip",
               color: "#D4A574",
               bg: "#FFFBEB",
-              external: true,
+              external: false,
             },
             {
               label: "Google Review ⭐",

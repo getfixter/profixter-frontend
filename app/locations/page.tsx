@@ -60,8 +60,8 @@ export default function LocationsPage() {
           eyebrow="Locations"
           title="Long Island home help, organized by town."
           description="Explore Profixter service area pages for nearby Long Island communities. Each page points homeowners to Membership, One-Time Handyman Visits, and Renovation Estimates."
-          primaryCta={{ label: "Become a Member", href: "/membership/plans" }}
-          secondaryCta={{ label: "Book One-Time Visit", href: "/book" }}
+          primaryCta={{ label: "Book One-Time Visit", href: "/book" }}
+          secondaryCta={{ label: "Become a Member", href: "/membership/plans" }}
           breadcrumb={{ label: "Locations", href: "/locations" }}
         />
 

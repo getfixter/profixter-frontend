@@ -37,7 +37,7 @@ export default function StickyMobileCTA() {
             href="/membership/plans"
             className="flex w-full h-[46px] items-center justify-center rounded-[13px] bg-[#306EEC] text-[15px] font-bold text-white shadow-[0_8px_22px_rgba(48,110,236,0.30)] active:bg-[#2558c9]"
           >
-            See membership, from $149/mo
+            See plans, from $149/mo
           </Link>
         ) : (
           /* Cold traffic gets the offer, not an account chore. */

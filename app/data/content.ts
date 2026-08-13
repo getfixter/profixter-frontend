@@ -57,9 +57,9 @@ export const services: Service[] = [
   },
   {
     id: "06",
-    title: "Emergency scheduling support",
+    title: "Priority scheduling support",
     description:
-      "Emergency Visits help when you need service before the next standard appointment slot, subject to technician availability.",
+      "Priority Visits help when you need service before the next standard appointment slot, subject to technician availability.",
     color: "dark",
     size: "small",
     offset: -100,
@@ -68,7 +68,7 @@ export const services: Service[] = [
     id: "07",
     title: "Second pro when needed",
     description:
-      "Emergency Visits help eligible members request service before the next standard appointment slot, subject to technician availability.",
+      "Priority Visits help eligible members request service before the next standard appointment slot, subject to technician availability.",
     color: "dark",
     size: "normal",
     offset: 10,
@@ -134,7 +134,7 @@ export const faqs: Faq[] = [
     id: "03",
     question: "How does Membership work?",
     answer:
-      "Members can request help whenever they need it. Plans differ by active appointment capacity, basic materials, Emergency Visit benefits, project time, and premium support. Appointment availability still depends on the schedule.",
+      "Members can request help whenever they need it. Plans differ by active appointment capacity, basic materials, Priority Visit benefits, project time, and premium support. Appointment availability still depends on the schedule.",
     color: "dark",
     size: "normal",
     offset: 0,
@@ -266,7 +266,7 @@ export const homepageFaqs: Faq[] = [
     id: "05",
     question: "What if I need more flexibility?",
     answer:
-      "Higher Memberships add more flexibility: more active appointment capacity, Emergency Visit benefits, basic materials, project time, and premium support.",
+      "Higher Memberships add more flexibility: more active appointment capacity, Priority Visit benefits, basic materials, project time, and premium support.",
     color: "blue",
     size: "normal",
     offset: -50,
@@ -278,7 +278,16 @@ export type Plan = {
   // DO NOT change without also updating subscription-service + stripe-links.
   name: "Basic" | "Plus" | "Premium" | "Elite";
 
-  // Display name shown to homeowners - retention-first membership framing.
+  // Display name shown to homeowners.
+  //
+  // This deliberately matches `name`. The site used to carry two vocabularies
+  // for the same four products: the tier names in Stripe, on the comparison
+  // page and in the plan-rank logic, against a separate set of marketing names
+  // here and in Account. Same four products, same four prices, two sets of
+  // words, so a customer comparing plans on one page and reading their
+  // dashboard on another could not tell they were the same thing. The field
+  // stays so the display string has one place to change, but it is no longer a
+  // second name.
   displayName: string;
 
   // One-line outcome promise (replaces old "positioning label").
@@ -306,7 +315,7 @@ export type Plan = {
 export const plans: Plan[] = [
   {
     name: "Basic",
-    displayName: "Home Care Membership",
+    displayName: "Basic",
     tagline: "Your home, handled.",
     cadence: "Request help as needed",
     description:
@@ -325,13 +334,13 @@ export const plans: Plan[] = [
   },
   {
     name: "Plus",
-    displayName: "Home Care Plus",
+    displayName: "Plus",
     tagline: "Stay ahead of your home, not behind it.",
     cadence: "More active appointment capacity",
     description:
       "More flexibility for active homes with an ongoing list.",
     price: 249,
-    subtitle: "Everything in Home Care",
+    subtitle: "Everything in Basic",
     features: [
       "2 active appointments at a time",
       "Same trusted team - they remember every detail",
@@ -346,17 +355,17 @@ export const plans: Plan[] = [
   },
   {
     name: "Premium",
-    displayName: "Home Protection",
+    displayName: "Premium",
     tagline: "Cared for. And protected.",
-    cadence: "More flexibility + one Emergency Visit",
+    cadence: "More flexibility + one Priority Visit",
     description:
       "Ongoing care, plus faster scheduling when something can't wait.",
     price: 349,
-    subtitle: "Everything in Home Care Plus",
+    subtitle: "Everything in Plus",
     features: [
       "2 active appointments at a time",
-      "One Emergency Visit per month",
-      "Emergency Visits help when you need service before the next standard appointment slot, subject to technician availability",
+      "One Priority Visit per month",
+      "Priority Visits help when you need service before the next standard appointment slot, subject to technician availability",
       "Same trusted team - on call for the moments that matter",
       "Direct line to Taras, the founder",
     ],
@@ -368,18 +377,18 @@ export const plans: Plan[] = [
   },
   {
     name: "Elite",
-    displayName: "Whole-Home Care",
-    tagline: "Everything about your home — handled.",
+    displayName: "Elite",
+    tagline: "Everything about your home, handled.",
     cadence: "Maximum flexibility + project time",
     description:
-      "Ongoing care, two Emergency Visits, and a dedicated project day every month.",
+      "Ongoing care, two Priority Visits, and a dedicated project day every month.",
     price: 499,
-    subtitle: "Everything in Home Protection",
+    subtitle: "Everything in Premium",
     features: [
       "2 active appointments at a time",
-      "Two Emergency Visits per month",
+      "Two Priority Visits per month",
       "One full project day per month (up to 8 hours)",
-      "Emergency Visits help when you need service before the next standard appointment slot, subject to technician availability",
+      "Priority Visits help when you need service before the next standard appointment slot, subject to technician availability",
       "10% off home improvement projects (roofing, remodeling, kitchen)",
     ],
     buttonText: "Become a Member",

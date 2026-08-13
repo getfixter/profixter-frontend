@@ -286,7 +286,7 @@ export default function ProjectsSection() {
                 className="w-full min-h-[46px] rounded-[14px] bg-[#306EEC] text-white text-[15px] font-extrabold transition-all hover:bg-[#2558c9] active:scale-[0.99]"
                 style={{ boxShadow: "0 12px 36px rgba(48,110,236,0.30)" }}
               >
-                See Membership Plans
+                See plans
               </button>
             </div>
 

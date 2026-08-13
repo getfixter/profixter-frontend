@@ -125,10 +125,10 @@ function SubscribedCustomerFlow() {
       <section className="bg-[#F6F8FC] px-4 pb-4 pt-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-[1180px]">
           <Link
-            href="/membership-info"
+            href="/membership/plans"
             className="inline-flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[#D7DEE9] bg-white px-4 text-[13px] font-bold text-[#306EEC] transition hover:border-[#306EEC] hover:bg-[#F8FAFF]"
           >
-            View membership details
+            See plans
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -212,14 +212,14 @@ function FreeVisitFlow() {
           </h2>
           <p className="mt-3 text-[14px] leading-6 text-[#6E6E73] sm:text-[15px]">
             Most homes have more than one thing on the list. If you&rsquo;d like the same
-            team to keep handling it, membership is there when you&rsquo;re ready &mdash;
-            no obligation either way.
+            team to keep handling it, membership is there when you&rsquo;re ready.
+            No obligation either way.
           </p>
           <Link
-            href="/membership-info"
+            href="/membership/plans"
             className="mt-5 inline-flex text-[14px] font-semibold text-[#306EEC] hover:underline"
           >
-            See how membership works
+            See plans
           </Link>
         </div>
       </section>
@@ -256,7 +256,7 @@ function PostFreeVisitFlow() {
             }
             className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]"
           >
-            See Membership Plans
+            See plans
           </a>
           <Link
             href="/book?visit=additional"
@@ -292,7 +292,7 @@ function ProspectMembershipFlow({
   const faqs = [
     ["What kinds of jobs are included?", "Membership covers everyday handyman repairs, maintenance, and installations. Larger or multi-day work is quoted separately as a Project Estimate."],
     ["How long is each visit?", "Standard membership visits are up to 90 minutes. Elite also includes one full project day each month."],
-    ["How often can I book?", "There is no fixed monthly visit count for standard member bookings. Home Care keeps one visit on the calendar at a time; the other plans allow two. Book the next as soon as one is done."],
+    ["How often can I book?", "There is no fixed monthly visit count for standard member bookings. Basic keeps one visit on the calendar at a time; the other plans allow two. Book the next as soon as one is done."],
     ["Are materials included?", "Plus and Premium include basic materials. For other materials, tell us what the task needs when you book so the team can prepare."],
     ["Can I change my plan?", "Yes. You can adjust your plan as your home's needs change."],
     ["What if I need a larger project?", "Use Project Estimates for renovations, multi-day work, or tasks that need a larger scope."],
@@ -309,7 +309,7 @@ function ProspectMembershipFlow({
             One trusted team for the home list that never ends.
           </h1>
           <p className="mx-auto mt-5 max-w-[660px] text-[16px] leading-6 text-[#6E6E73] sm:text-[18px] sm:leading-7">
-            Book small repairs, maintenance, and installations when you need them&mdash;without searching for a new contractor every time.
+            Book small repairs, maintenance, and installations when you need them, without searching for a new contractor every time.
           </p>
           <p className="mt-3 text-[13px] font-medium text-[#86868B]">Ongoing handyman care for Long Island homes.</p>
 
@@ -333,7 +333,7 @@ function ProspectMembershipFlow({
 
           <div className="mt-6 flex flex-col justify-center gap-3 min-[380px]:flex-row">
             <a href="#plans" className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#D2D2D7] bg-white px-5 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]">
-              See memberships
+              See plans
             </a>
             <a href="#how-it-works" className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#D2D2D7] bg-white px-5 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]">
               How it works
@@ -400,7 +400,7 @@ function ProspectMembershipFlow({
         <div className="mx-auto max-w-[680px]">
           <h2 className="text-[26px] font-semibold tracking-[-0.03em] text-[#111111] sm:text-[34px]">Ready to make home care easier?</h2>
           <p className="mt-3 text-[15px] leading-6 text-[#6E6E73]">Choose your membership and book your first visit when you&rsquo;re ready.</p>
-          <a href="#plans" className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]">Choose a Plan</a>
+          <a href="#plans" className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]">See plans</a>
           <div className="mt-4">
             <Link href="/book?visit=additional" className="text-[14px] font-semibold text-[#306EEC] hover:underline">Need only one visit? Book an Extra Visit</Link>
           </div>

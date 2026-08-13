@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/lib/useAuth";
 import {
   cancelSubscription,
   changeSubscriptionPlan,
@@ -26,34 +27,39 @@ const PLAN_PRICES: Record<PlanKey, number> = {
 
 const PLAN_INCLUDES: Record<PlanKey, string[]> = {
   basic: [
-    "Home Care Membership - your home, handled",
+    "Your home, handled",
     "1 active appointment at a time",
     "Each visit covers up to 90 minutes of work",
   ],
   plus: [
-    "Home Care Plus - stay ahead of your home",
+    "Everything in Basic, with more capacity",
     "2 active appointments at a time",
     "Same trusted team, every visit",
   ],
   premium: [
-    "Home Protection - cared for and protected",
+    "Everything in Plus, plus faster scheduling",
     "2 active appointments at a time",
-    "One Emergency Visit per month",
-    "Emergency Visits help when you need service before the next standard appointment slot, subject to technician availability",
+    "One Priority Visit per month",
+    "Priority Visits help when you need service before the next standard appointment slot, subject to technician availability",
   ],
   elite: [
-    "Whole-Home Care - everything about your home, handled",
+    "Everything in Premium, plus project time",
     "2 active appointments at a time",
-    "Two Emergency Visits per month",
+    "Two Priority Visits per month",
     "One full project day per month (up to 8 hours)",
   ],
 };
 
+/*
+ * Account used to be the one place that showed only the marketing names, so a
+ * member's dashboard and the comparison page called the same plan two
+ * different things. These now match the tier names used everywhere else.
+ */
 const PLAN_DISPLAY_NAMES: Record<PlanKey, string> = {
-  basic: "Home Care Membership",
-  plus: "Home Care Plus",
-  premium: "Home Protection",
-  elite: "Whole-Home Care",
+  basic: "Basic",
+  plus: "Plus",
+  premium: "Premium",
+  elite: "Elite",
 };
 
 const PLAN_RANK: Record<PlanKey, number> = {
@@ -233,6 +239,20 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
     () => subscriptions.filter((subscription) => isManageableStatus(subscription.status)),
     [subscriptions]
   );
+
+  /*
+   * The account record and the subscription record are two different calls, and
+   * only the second one carries the plan detail this section renders. If it
+   * fails or comes back empty we used to fall through to the acquisition card,
+   * which told a paying member "No active membership" and offered them a
+   * signup. The address flag is enough to know that is wrong, so we say we
+   * could not load the plan instead of contradicting what they pay for.
+   */
+  const { user } = useAuth();
+  const addressesSayMember = Boolean(
+    user?.addresses?.some((address) => address.hasActiveSubscription === true)
+  );
+  const planUnavailable = !activeSubscriptions.length && addressesSayMember;
 
   const historicalSubscriptions = useMemo(
     () => subscriptions.filter((subscription) => !isManageableStatus(subscription.status)),
@@ -533,6 +553,26 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
           <Card className="max-w-[620px]">
             <div className="text-sm text-[#6A6D71] sm:text-base">Loading your plan details...</div>
           </Card>
+        ) : planUnavailable ? (
+          <Card className="max-w-[620px]">
+            <h3 className="text-lg font-semibold text-[#313234] sm:text-xl">
+              We could not load your plan
+            </h3>
+            <p className="mt-2 text-sm text-[#6A6D71] sm:text-base">
+              Your membership is active. The plan details just did not load this time. Refresh the
+              page, or call us on{" "}
+              <a className="font-semibold text-[#306EEC]" href="tel:+16315991363">
+                631-599-1363
+              </a>{" "}
+              and we will sort it out.
+            </p>
+            <Link
+              href="/book?visit=membership"
+              className="mt-5 inline-flex min-h-[46px] items-center justify-center rounded-[14px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2557C7]"
+            >
+              Book a visit
+            </Link>
+          </Card>
         ) : !activeSubscriptions.length ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card className="max-w-[620px]">
@@ -593,7 +633,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                   href="/membership/plans"
                   className="inline-flex items-center justify-center rounded-[14px] border border-[#C5CBD8] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
                 >
-                  View Plans
+                  See plans
                 </Link>
               </div>
             </Card>
@@ -956,7 +996,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                 <div className="text-sm font-semibold text-[#313234]">Before you cancel</div>
                 <div className="mt-2 space-y-1.5 text-sm text-[#6A6D71]">
                   <div>Keep predictable monthly billing and the same trusted team.</div>
-                  <div>Higher Memberships add more active appointment capacity, Emergency Visits, project time, and premium support.</div>
+                  <div>Higher Memberships add more active appointment capacity, Priority Visits, project time, and premium support.</div>
                   <div>You can keep your current membership and continue scheduling visits online.</div>
                 </div>
               </div>

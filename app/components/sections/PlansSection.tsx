@@ -64,8 +64,8 @@ const planDisplayContent: Record<
       "Request membership visits as needed",
       "2 active appointments at a time",
       "Basic materials included",
-      "1 Emergency Visit per month",
-      "Emergency Visits help when you need service before the next standard appointment slot, subject to technician availability.",
+      "1 Priority Visit per month",
+      "Priority Visits help when you need service before the next standard appointment slot, subject to technician availability.",
     ],
   },
   Elite: {
@@ -74,8 +74,8 @@ const planDisplayContent: Record<
       "Request membership visits as needed",
       "2 active appointments at a time",
       "1 full project day per month (up to 8 hours)",
-      "2 Emergency Visits per month",
-      "Emergency Visits help when you need service before the next standard appointment slot, subject to technician availability.",
+      "2 Priority Visits per month",
+      "Priority Visits help when you need service before the next standard appointment slot, subject to technician availability.",
     ],
   },
 };
@@ -400,6 +400,30 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     );
 
     if (!planType || !selectedAddressActive) {
+      /*
+       * The subscription record is the only thing that can tell us whether
+       * this is an upgrade, a downgrade or a fresh signup, so we cannot label
+       * the button properly until it loads. What we must not do meanwhile is
+       * offer a subscription to somebody who already has one: the address
+       * itself carries hasActiveSubscription, and if that says member, then a
+       * missing or slow subscription lookup should read as "still loading",
+       * not as "you are a stranger".
+       */
+      const addressSaysMember = Boolean(selectedAddress?.hasActiveSubscription);
+      const stillResolving =
+        selectedAddressId !== null && addressSubscriptionMap[selectedAddressId] === undefined;
+
+      if (addressSaysMember) {
+        // active-unknown is a no-op on click, so this stays disabled rather
+        // than offering an action it cannot carry out. Plan management for
+        // this case lives in Account.
+        return {
+          kind: "active-unknown" as ChangeActionKind,
+          label: stillResolving ? "Checking your plan..." : "Manage Plan",
+          disabled: true,
+        };
+      }
+
       return {
         kind: "subscribe" as ChangeActionKind,
         label: "Start Membership",
@@ -628,8 +652,8 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     const planCopy: Record<Plan["name"], { adds: string[] }> = {
       Basic: { adds: [] },
       Plus: { adds: ["Everyday materials included", "A second visit can be on the calendar at once"] },
-      Premium: { adds: ["Everything in Home Care Plus", "One Emergency Visit each month", "Direct line to Taras, the founder"] },
-      Elite: { adds: ["Everything in Home Protection", "Two Emergency Visits each month", "One full project day each month", "10% off larger home projects"] },
+      Premium: { adds: ["Everything in Plus", "One Priority Visit each month", "Direct line to Taras, the founder"] },
+      Elite: { adds: ["Everything in Premium", "Two Priority Visits each month", "One full project day each month", "10% off larger home projects"] },
     };
 
     return (
@@ -740,7 +764,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         </div>
 
         <p className="mt-5 text-[13px] leading-5 text-[#86868B]">
-          Standard member visits have no fixed monthly count. Home Care keeps one visit on the
+          Standard member visits have no fixed monthly count. Basic keeps one visit on the
           calendar at a time; the other plans allow two. Larger renovations are quoted separately.
         </p>
       </div>

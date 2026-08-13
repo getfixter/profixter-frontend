@@ -1301,7 +1301,10 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
             <p><strong className="text-[#0B1628]">What&rsquo;s included:</strong> {pageCopy.includeText}</p>
             <p><strong className="text-[#0B1628]">Materials and exclusions:</strong> Materials are separate. Appliance repair and larger projects are excluded.</p>
             <p><strong className="text-[#0B1628]">After payment:</strong> Admin reviews the request. If it cannot be approved, you receive a full refund.</p>
-            {isAuthenticated && <Link href="/account?tab=bookings" className="font-bold text-[#306EEC]">Manage bookings</Link>}
+            {/* Straight to the visit list. This used to leave Book for an
+                Account tab whose only remaining content was a link back to
+                Book. */}
+            {isAuthenticated && <Link href="/book?visit=membership#your-visits" className="font-bold text-[#306EEC]">View Visits</Link>}
           </div>
         </details>
       </section>
