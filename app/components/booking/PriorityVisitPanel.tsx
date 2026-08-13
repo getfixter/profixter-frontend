@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CUSTOMER_CARE } from "@/lib/fixter";
 import MembershipUpgradePrompt, {
   PRIORITY_VISITS_PER_MONTH,
@@ -21,8 +22,11 @@ import MembershipUpgradePrompt, {
  */
 export default function PriorityVisitPanel({
   currentPlan = null,
+  isMember = false,
 }: {
   currentPlan?: PlanKey | null;
+  /** Drives the membership note only. Entitlements still come from the plan. */
+  isMember?: boolean;
 }) {
   const includedVisits = currentPlan ? PRIORITY_VISITS_PER_MONTH[currentPlan] : undefined;
 
@@ -115,6 +119,26 @@ export default function PriorityVisitPanel({
 
         {/* Priority is a plan benefit, so the suggestion here is Premium or Elite. */}
         <MembershipUpgradePrompt currentPlan={currentPlan} variant="priority" className="mt-7" />
+
+        {/*
+         * For somebody without a membership, the upgrade prompt above renders
+         * nothing, because there is no current plan to step up from. They are
+         * still entitled to know that Priority comes included on the higher
+         * plans, so this says it once, quietly, and does not repeat the pitch
+         * the Book Fixter tab already makes.
+         */}
+        {!isMember && (
+          <p className="mt-7 text-[13.5px] leading-6 text-[#4A5462]">
+            Priority Visits are included every month on the Premium and Elite plans.{" "}
+            <Link
+              href="/membership/plans"
+              className="font-semibold text-[#306EEC] underline underline-offset-2 hover:text-[#2558C9]"
+            >
+              See plans
+            </Link>
+            .
+          </p>
+        )}
       </div>
     </section>
   );

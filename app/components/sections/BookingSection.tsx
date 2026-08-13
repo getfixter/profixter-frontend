@@ -246,7 +246,7 @@ export default function BookingSection() {
   const roleLandingPath = getRoleLandingPath(user);
   // The visit list, not the Account tab that only forwards to it.
   const manageBookingsPath =
-    roleLandingPath === "/account" ? "/book?visit=membership#your-visits" : roleLandingPath;
+    roleLandingPath === "/account" ? "/book#your-visits" : roleLandingPath;
   /*
    * Book renders the visit list directly under this form, so "Manage visits"
    * scrolls there rather than navigating. Everywhere else it still routes.

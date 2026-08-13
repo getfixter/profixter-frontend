@@ -1,16 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { getRoleLandingPath } from "@/lib/auth-routing";
-import { getNextBooking } from "@/lib/booking-service";
+import { useFreeVisitEligibility } from "@/lib/free-visit";
 import { trackEvent } from "@/lib/analytics";
-
-/** Which non-member flow to render on /membership. */
-type IntroState = "loading" | "eligible" | "consumed" | "ineligible";
 
 import Header from "@/app/components/sections/Header";
 import BookingSection from "@/app/components/sections/BookingSection";
@@ -418,47 +415,13 @@ export default function MembershipExperience() {
     !!isAuthenticated &&
     !!user?.addresses?.some((addr: { hasActiveSubscription?: boolean }) => addr.hasActiveSubscription);
 
-  // Acquisition state for the default property. Drives which non-member flow
-  // renders. Members never trigger this fetch.
-  const [introState, setIntroState] = useState<IntroState>("loading");
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const run = async () => {
-      if (isLoading) return;
-      if (!isAuthenticated || isSubscribed) {
-        if (!cancelled) setIntroState("ineligible");
-        return;
-      }
-
-      const addressId =
-        (user as { defaultAddressId?: string | null })?.defaultAddressId ||
-        user?.addresses?.[0]?._id;
-
-      if (!addressId) {
-        if (!cancelled) setIntroState("ineligible");
-        return;
-      }
-
-      try {
-        const data = await getNextBooking(String(addressId));
-        if (cancelled) return;
-        if (data?.freeFirstVisitAvailable) setIntroState("eligible");
-        else if (data?.introVisitStatus === "consumed") setIntroState("consumed");
-        else setIntroState("ineligible");
-      } catch {
-        // Fail closed: show the normal membership page rather than promising
-        // an offer we could not confirm.
-        if (!cancelled) setIntroState("ineligible");
-      }
-    };
-
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoading, isAuthenticated, isSubscribed, user]);
+  /*
+   * Acquisition state for the default property. Drives which non-member flow
+   * renders. The check moved to a shared hook so Book can ask the same
+   * question: the rule now has one implementation rather than two that can
+   * drift apart and disagree about whether a visit is free.
+   */
+  const introState = useFreeVisitEligibility();
 
   useEffect(() => {
     if (isLoading) return;

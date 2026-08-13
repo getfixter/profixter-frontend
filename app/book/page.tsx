@@ -18,10 +18,11 @@ import { getBookableSlots, normalizeDayAvailability } from "@/lib/booking-calend
 import { trackEvent, trackInitiateCheckout } from "@/lib/analytics";
 import { useSearchParams } from "next/navigation";
 import BookingSection from "@/app/components/sections/BookingSection";
-import VisitTypeNav, { parseVisitType } from "@/app/components/booking/VisitTypeNav";
+import VisitTypeNav, { resolveVisitType } from "@/app/components/booking/VisitTypeNav";
 import { YourFixterRow } from "@/app/components/fixter/YourFixter";
 import BookingsSection from "@/app/components/account/BookingsSection";
 import PriorityVisitPanel from "@/app/components/booking/PriorityVisitPanel";
+import MembershipGatewayPanel from "@/app/components/booking/MembershipGatewayPanel";
 import MembershipUpgradePrompt, { normalizePlanKey } from "@/app/components/membership/MembershipUpgradePrompt";
 import { hasActiveMembership as hasActiveMembershipFor } from "@/lib/auth-routing";
 
@@ -496,6 +497,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
             changeText: "Changes to this extra visit are handled by phone and require admin approval. Call",
             bookingsText:
               "You can review extra visits and included membership visits together from your account.",
+            formHeading: "Book your extra visit",
           }
         : {
             navLabel: "Book a Handyman",
@@ -508,6 +510,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
             includeText: `One focused handyman visit up to ${config.durationMinutes} minutes. The visit price covers the visit itself, and Profixter brings the tools.`,
             changeText: "Visit changes are handled by phone and require admin approval. Call",
             bookingsText: "You can review your handyman visits from your account.",
+            formHeading: "Book your visit",
           },
     [config.durationMinutes, hasActiveMembership]
   );
@@ -649,27 +652,59 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
 
       <section className="relative w-full overflow-hidden pb-5 pt-3 sm:pb-12 sm:pt-10 lg:pt-12">
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-          <div className="mb-3 max-w-[820px] sm:mb-6">
-            <div className="mb-1 text-[9px] font-bold uppercase tracking-[0.18em] text-[#306EEC] sm:text-[11px]">
-              {hasActiveMembership ? "Extra Visit" : "One-Time Visit"}
+          {/*
+           * Title left, membership alternative right on a wide screen.
+           *
+           * Somebody booking a one-time visit may well be deciding between one
+           * visit and ongoing help, and this page used to make that decision
+           * for them by only offering the one. It sits beside the headline
+           * rather than above the form, so on desktop it fills width that was
+           * empty and on a phone it is one quiet line after the subtitle
+           * instead of a panel between the customer and the calendar.
+           */}
+          <div className="mb-3 flex flex-col gap-3 sm:mb-6 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+            <div className="max-w-[820px]">
+              <div className="mb-1 text-[9px] font-bold uppercase tracking-[0.18em] text-[#306EEC] sm:text-[11px]">
+                {hasActiveMembership ? "Extra Visit" : "One-Time Visit"}
+              </div>
+              {/* A shade under the marketing pages: this headline runs long and
+                  the calendar below it is what the customer came for. */}
+              <h1 className="text-[26px] font-black leading-tight tracking-[-0.035em] text-[#071325] sm:text-[36px] lg:text-[40px]">
+                {hasActiveMembership ? "Book an Extra Visit" : "Book a one-time handyman visit"}
+              </h1>
+              <p className="mt-1 max-w-[640px] text-[11px] font-semibold leading-4 text-[#475569] sm:text-[14px] sm:leading-5">
+                {hasActiveMembership
+                  ? "Book an additional visit anytime before your membership renews."
+                  : "One 90-minute visit, no membership needed. We bring the tools."}
+              </p>
+              {hasActiveMembership && <Link href="/book?visit=membership" className="mt-1 inline-flex text-[10px] font-bold text-[#306EEC] sm:text-[12px]">Need your included visit? Book here</Link>}
             </div>
-            {/* A shade under the marketing pages: this headline runs long and
-                the calendar below it is what the customer came for. */}
-            <h1 className="text-[26px] font-black leading-tight tracking-[-0.035em] text-[#071325] sm:text-[36px] lg:text-[40px]">
-              {hasActiveMembership ? "Book an Extra Visit" : "Book a one-time handyman visit"}
-            </h1>
-            <p className="mt-1 max-w-[640px] text-[11px] font-semibold leading-4 text-[#475569] sm:text-[14px] sm:leading-5">
-              {hasActiveMembership
-                ? "Book an additional visit anytime before your membership renews."
-                : "One 90-minute visit, no membership needed. We bring the tools."}
-            </p>
-            {hasActiveMembership && <Link href="/book?visit=membership" className="mt-1 inline-flex text-[10px] font-bold text-[#306EEC] sm:text-[12px]">Need your included visit? Book here</Link>}
-            {configError && (
-              <div className="mt-4 rounded-[8px] border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] font-semibold text-amber-800">
-                {configError}
+
+            {!hasActiveMembership && (
+              <div className="shrink-0 rounded-[8px] border border-[#D9E4FF] bg-[#F4F8FF] px-4 py-3 lg:max-w-[300px]">
+                <p className="text-[13.5px] font-semibold leading-5 text-[#0B1628]">
+                  Prefer ongoing home help?
+                </p>
+                <p className="mt-0.5 text-[12.5px] leading-[18px] text-[#4A5462]">
+                  Membership books visits whenever you need them, from $149/mo.
+                </p>
+                <Link
+                  href="/membership/plans"
+                  onClick={() => trackEvent("see_plans_clicked", { placement: "book_one_time" })}
+                  className="mt-2 inline-flex min-h-[36px] items-center text-[13.5px] font-bold text-[#306EEC] transition hover:text-[#2558C9]"
+                >
+                  See plans
+                  <span aria-hidden="true" className="ml-1.5">&rarr;</span>
+                </Link>
               </div>
             )}
           </div>
+
+          {configError && (
+            <div className="mb-4 rounded-[8px] border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] font-semibold text-amber-800">
+              {configError}
+            </div>
+          )}
 
           {false && !hasActiveMembership && (
             <div className="mb-5 overflow-hidden rounded-[8px] border border-[#E5E9F2] bg-white/92 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:mb-7 sm:rounded-[10px] sm:p-6 lg:p-7">
@@ -717,7 +752,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
             <MembershipUpgradePrompt currentPlan={currentPlanKey} className="mb-3 sm:mb-5" />
           )}
 
-          <h2 className="mb-2 text-[16px] font-black text-[#0B1628] sm:mb-3 sm:text-[21px]">Book your extra visit</h2>
+          <h2 className="mb-2 text-[16px] font-black text-[#0B1628] sm:mb-3 sm:text-[21px]">{pageCopy.formHeading}</h2>
 
           <div id="booking-form" className="grid grid-cols-1 gap-3 scroll-mt-6 sm:gap-4 lg:grid-cols-12 lg:gap-6">
             <div className="order-2 lg:order-1 lg:col-span-5">
@@ -1336,13 +1371,21 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
 /**
  * The booking entrance.
  *
- * Members get three ways in: the visit included with their membership, a paid
- * additional visit, and Priority, which is a phone call rather than a booking.
+ * Three ways to get a Fixter to the house, and everybody sees all three now.
  *
- * Everyone else sees exactly what they saw before - a single one-time visit
- * page with no tabs. /book is a public marketing destination ("Book a One-Time
- * Visit"), and adding a Membership tab for someone without a membership would
- * be an invitation to a door they cannot open.
+ * The tabs used to be members-only, on the reasoning that offering a
+ * membership visit to someone without a membership was a door they could not
+ * open. That was backwards: it meant the page named after the product never
+ * explained the product, and a visitor who decided partway through booking a
+ * one-time visit that they actually wanted ongoing help had nowhere obvious to
+ * go. The door is worth showing precisely because it is the one we want them
+ * to walk through.
+ *
+ * So the selector is shared and the panels are state aware. Book Fixter is the
+ * booking form for a member and the way in for everyone else; the middle tab is
+ * the same one-time flow under whichever name is true for the reader; Priority
+ * is a phone call for both, with entitlements shown only to people who have
+ * them.
  */
 function BookExperience() {
   const { user } = useAuth();
@@ -1353,19 +1396,33 @@ function BookExperience() {
     (user?.addresses || []).find((address) => Boolean(address.hasActiveSubscription))?.plan
   );
 
-  if (!isMember) return <AdditionalVisitBooking />;
-
-  const visit = parseVisitType(searchParams.get("visit"));
-  const nav = <VisitTypeNav active={visit} />;
+  const visit = resolveVisitType(searchParams.get("visit"), isMember);
+  const nav = <VisitTypeNav active={visit} isMember={isMember} />;
 
   if (visit === "additional") return <AdditionalVisitBooking navSlot={nav} />;
+
+  /*
+   * A non-member landing on ?visit=membership gets the gateway rather than a
+   * redirect, so the tab they just pressed is the tab they are looking at and
+   * the URL still describes the page.
+   */
+  if (!isMember && visit === "membership") {
+    return (
+      <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
+        <Header />
+        {nav}
+        <MembershipGatewayPanel />
+        <Footer />
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
       <Header />
       {nav}
       {visit === "priority" ? (
-        <PriorityVisitPanel currentPlan={currentPlanKey} />
+        <PriorityVisitPanel currentPlan={currentPlanKey} isMember={isMember} />
       ) : (
         <>
           {/*

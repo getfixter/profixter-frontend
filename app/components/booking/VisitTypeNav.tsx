@@ -28,25 +28,56 @@ export function parseVisitType(value: string | null | undefined): VisitType {
   return VISIT_TYPES.includes(value as VisitType) ? (value as VisitType) : DEFAULT_VISIT_TYPE;
 }
 
+/**
+ * Which tab a bare /book should open on.
+ *
+ * A member came for the visit their membership includes. Everybody else came
+ * to book the visit they can actually buy today, and /book is a public
+ * marketing destination that has always meant exactly that, so opening them on
+ * the membership pitch would answer a question they did not ask and, less
+ * obviously, would hide the visit history that lives under the one-time flow.
+ *
+ * An explicit ?visit= always wins. This only decides the default.
+ */
+export function resolveVisitType(
+  value: string | null | undefined,
+  isMember: boolean
+): VisitType {
+  if (VISIT_TYPES.includes(value as VisitType)) return value as VisitType;
+  return isMember ? "membership" : "additional";
+}
+
 /*
  * "Book Fixter" rather than "Membership". The tab is a destination, and what
  * the member is doing there is getting their Fixter to the house; naming it
  * after the product they already bought described the entitlement rather than
  * the action. The membership product keeps its name everywhere else.
  *
- * One label at every width now. "Membership Visit" needed a shorter phone
- * variant; this one already fits, and two names for one tab is a difference
- * without a reason.
+ * The middle tab is the one label that cannot be shared. "Extra" only means
+ * anything if you already have something for it to be extra to: to a member it
+ * is precisely right, and to a stranger it is a word about a product they do
+ * not own. Both point at the same flow and the same ?visit=additional key, so
+ * this is one tab wearing the name that is true for whoever is reading it.
  */
-const TABS: { type: VisitType; label: string }[] = [
-  { type: "membership", label: "Book Fixter" },
-  // No price on the tab. It is a label, not an offer, and the price is
-  // unmissable inside the section itself.
-  { type: "additional", label: "Extra" },
-  { type: "priority", label: "Priority" },
-];
+function tabsFor(isMember: boolean): { type: VisitType; label: string }[] {
+  return [
+    { type: "membership", label: "Book Fixter" },
+    // No price on the tab. It is a label, not an offer, and the price is
+    // unmissable inside the section itself.
+    { type: "additional", label: isMember ? "Extra" : "One-Time" },
+    { type: "priority", label: "Priority" },
+  ];
+}
 
-export default function VisitTypeNav({ active }: { active: VisitType }) {
+export default function VisitTypeNav({
+  active,
+  isMember = false,
+}: {
+  active: VisitType;
+  isMember?: boolean;
+}) {
+  const TABS = tabsFor(isMember);
+
   return (
     <nav
       aria-label="Visit type"
