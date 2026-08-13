@@ -132,14 +132,14 @@ export function HubHero({
           <div className="mt-7 flex flex-col gap-2.5 sm:flex-row">
             <SmartCtaLink
               cta={primaryCta}
-              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-[14px] bg-[#306EEC] px-6 text-[14px] font-black text-white shadow-[0_16px_42px_rgba(48,110,236,0.26)] transition hover:bg-[#2558C9] sm:min-h-[54px] sm:text-[15px]"
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-[8px] bg-[#306EEC] px-6 text-[14px] font-black text-white shadow-[0_16px_42px_rgba(48,110,236,0.26)] transition hover:bg-[#2558C9] sm:min-h-[54px] sm:text-[15px]"
             >
               {primaryCta.label}
               <ArrowIcon />
             </SmartCtaLink>
             <SmartCtaLink
               cta={secondaryCta}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-[14px] border border-[#D7DEE9] bg-white px-6 text-[14px] font-black text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] sm:min-h-[54px] sm:text-[15px]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-[8px] border border-[#D7DEE9] bg-white px-6 text-[14px] font-black text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] sm:min-h-[54px] sm:text-[15px]"
             >
               {secondaryCta.label}
             </SmartCtaLink>
@@ -182,7 +182,7 @@ export function CardGrid({
             <Link
               key={item.href}
               href={item.href}
-              className="group rounded-[14px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:border-[#BFD2FF] hover:shadow-[0_22px_70px_rgba(48,110,236,0.10)]"
+              className="group rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:border-[#BFD2FF] hover:shadow-[0_22px_70px_rgba(48,110,236,0.10)]"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -222,7 +222,7 @@ export function ConversionBand({
 
   return (
     <section className="px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
-      <div className="mx-auto max-w-[1180px] rounded-[16px] bg-[#0B1628] p-5 text-white shadow-[0_22px_70px_rgba(15,23,42,0.18)] sm:p-8 lg:p-10">
+      <div className="mx-auto max-w-[1180px] rounded-[8px] bg-[#0B1628] p-5 text-white shadow-[0_22px_70px_rgba(15,23,42,0.18)] sm:p-8 lg:p-10">
         <div className="grid gap-7 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
           <div>
             <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#93C5FD]">
@@ -240,7 +240,7 @@ export function ConversionBand({
               <SmartCtaLink
                 key={link.href}
                 cta={link}
-                className="inline-flex min-h-[44px] items-center justify-between gap-3 rounded-[16px] border border-white/12 bg-white/[0.07] px-5 text-[14px] font-black text-white transition hover:bg-white hover:text-[#0B1628]"
+                className="inline-flex min-h-[44px] items-center justify-between gap-3 rounded-[8px] border border-white/12 bg-white/[0.07] px-5 text-[14px] font-black text-white transition hover:bg-white hover:text-[#0B1628]"
               >
                 {link.label}
                 <ArrowIcon />
@@ -318,7 +318,7 @@ export function DetailPage({
                   {content.intro}
                 </p>
               </div>
-              <aside className="rounded-[16px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:p-6">
+              <aside className="rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:p-6">
                 <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
                   Homeowner intent
                 </div>
@@ -330,7 +330,7 @@ export function DetailPage({
                     <SmartCtaLink
                       key={cta.href}
                       cta={cta}
-                      className="inline-flex min-h-[48px] items-center justify-between gap-3 rounded-[14px] border border-[#D9E4FF] bg-[#F8FAFF] px-4 text-[13px] font-black text-[#0B1628] transition hover:border-[#306EEC] hover:bg-[#EEF4FF]"
+                      className="inline-flex min-h-[48px] items-center justify-between gap-3 rounded-[8px] border border-[#D9E4FF] bg-[#F8FAFF] px-4 text-[13px] font-black text-[#0B1628] transition hover:border-[#306EEC] hover:bg-[#EEF4FF]"
                     >
                       {cta.label}
                       <ArrowIcon />
@@ -344,7 +344,7 @@ export function DetailPage({
 
         <section className="px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
           <div className="mx-auto grid max-w-[1180px] gap-5 lg:grid-cols-2">
-            <div className="rounded-[16px] border border-[#DDE5F0] bg-white p-5 shadow-sm sm:p-7">
+            <div className="rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-sm sm:p-7">
               <h2 className="text-[23px] font-black text-[#0B1628]">Good fit for</h2>
               <div className="mt-5 grid gap-3">
                 {content.goodFit.map((item) => (
@@ -357,7 +357,7 @@ export function DetailPage({
                 ))}
               </div>
             </div>
-            <div className="rounded-[16px] border border-[#DDE5F0] bg-[#FBFCFF] p-5 shadow-sm sm:p-7">
+            <div className="rounded-[8px] border border-[#DDE5F0] bg-[#FBFCFF] p-5 shadow-sm sm:p-7">
               <h2 className="text-[23px] font-black text-[#0B1628]">Not the right path for</h2>
               <div className="mt-5 grid gap-3">
                 {(content.notAFit || []).map((item) => (
@@ -389,7 +389,7 @@ export function DetailPage({
                 {pathCards.map((card) => (
                   <div
                     key={card.title}
-                    className="rounded-[14px] border border-[#DDE5F0] bg-white p-5 shadow-[0_16px_46px_rgba(15,23,42,0.045)]"
+                    className="rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-[0_16px_46px_rgba(15,23,42,0.045)]"
                   >
                     <h3 className="text-[17px] font-black text-[#0B1628]">{card.title}</h3>
                     <p className="mt-2 text-[14px] leading-6 text-[#64748B]">{card.body}</p>
@@ -402,7 +402,7 @@ export function DetailPage({
 
         <section className="px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
           <div className="mx-auto grid max-w-[1180px] gap-5 lg:grid-cols-[1fr_0.9fr]">
-            <div className="rounded-[16px] border border-[#DDE5F0] bg-white p-5 shadow-sm sm:p-7">
+            <div className="rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-sm sm:p-7">
               <h2 className="text-[23px] font-black text-[#0B1628]">
                 Before you start
               </h2>
@@ -417,7 +417,7 @@ export function DetailPage({
                 ))}
               </div>
             </div>
-            <div className="rounded-[16px] border border-[#DDE5F0] bg-[#FBFCFF] p-5 shadow-sm sm:p-7">
+            <div className="rounded-[8px] border border-[#DDE5F0] bg-[#FBFCFF] p-5 shadow-sm sm:p-7">
               <h2 className="text-[23px] font-black text-[#0B1628]">
                 Common questions
               </h2>
@@ -483,7 +483,7 @@ export function LocationDetailPage({
               <p className="mt-5 max-w-[720px] text-[15px] font-medium leading-7 text-[#475569] sm:text-[18px] sm:leading-8">
                 {area.intro}
               </p>
-              <p className="mt-4 max-w-[680px] rounded-[13px] border border-[#D9E4FF] bg-white px-4 py-3 text-[14px] font-bold leading-6 text-[#334155] shadow-sm">
+              <p className="mt-4 max-w-[680px] rounded-[8px] border border-[#D9E4FF] bg-white px-4 py-3 text-[14px] font-bold leading-6 text-[#334155] shadow-sm">
                 {area.localNote}
               </p>
             </div>
@@ -507,7 +507,7 @@ export function LocationDetailPage({
               {area.homeownerPaths.map((item) => (
                 <div
                   key={item}
-                  className="flex gap-3 rounded-[14px] border border-[#DDE5F0] bg-white p-5 text-[14px] font-semibold leading-6 text-[#334155] shadow-[0_16px_46px_rgba(15,23,42,0.045)]"
+                  className="flex gap-3 rounded-[8px] border border-[#DDE5F0] bg-white p-5 text-[14px] font-semibold leading-6 text-[#334155] shadow-[0_16px_46px_rgba(15,23,42,0.045)]"
                 >
                   <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#E8F8EE] text-[#16834B]">
                     <CheckIcon />

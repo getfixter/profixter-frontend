@@ -15,7 +15,7 @@ function AccountDetail({
   return (
     <div>
       <label className="mb-2 block text-sm text-[#6A6D71]">{label}</label>
-      <div className="w-full rounded-[14px] border border-[#C5CBD8] bg-[#EEF2FF] px-4 py-2.5 text-sm font-medium text-[#313234] opacity-90 sm:px-5 sm:py-3 sm:text-base">
+      <div className="w-full rounded-[8px] border border-[#C5CBD8] bg-[#EEF2FF] px-4 py-2.5 text-sm font-medium text-[#313234] opacity-90 sm:px-5 sm:py-3 sm:text-base">
         {value || "-"}
       </div>
     </div>
@@ -41,7 +41,7 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
         defaultAddressId={formData?.defaultAddressId ? String(formData.defaultAddressId) : null}
       />
 
-      <details className="mt-5 rounded-[13px] border border-[#E0E6F5] bg-white">
+      <details className="mt-5 rounded-[8px] border border-[#E0E6F5] bg-white">
         <summary className="flex min-h-[46px] cursor-pointer list-none items-center justify-between px-4 py-3 text-[15px] font-bold text-[#313234]">
           Account details
           <span className="text-[12px] font-semibold text-[#6A6D71]">Show</span>

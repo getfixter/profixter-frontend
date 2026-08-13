@@ -78,7 +78,7 @@ export function AccountSidebar({
     <aside className="hidden lg:flex lg:flex-col w-[260px] xl:w-[280px] flex-shrink-0">
 
       {/* Member card */}
-      <div className="bg-white border border-[#E0E6F5] rounded-[16px] p-5 mb-4">
+      <div className="bg-white border border-[#E0E6F5] rounded-[8px] p-5 mb-4">
         <div className="flex items-center gap-3 mb-4 pb-4 border-b border-[#F0F4FF]">
           <div className="w-11 h-11 rounded-full bg-[#306EEC] flex items-center justify-center flex-shrink-0">
             <span className="text-white text-[17px] font-bold leading-none">{initial}</span>
@@ -91,7 +91,7 @@ export function AccountSidebar({
           </div>
         </div>
 
-        <div className="inline-flex items-center gap-1.5 rounded-full bg-[#EEF2FF] border border-[#D7E0F5] px-3 py-1.5">
+        <div className="inline-flex items-center gap-1.5 rounded-[6px] bg-[#EEF2FF] border border-[#D7E0F5] px-3 py-1.5">
           <div className="w-1.5 h-1.5 rounded-full bg-[#306EEC]" />
           <span className="text-[11px] font-bold text-[#306EEC] uppercase tracking-[0.12em]">
             Profixter Member
@@ -100,7 +100,7 @@ export function AccountSidebar({
       </div>
 
       {/* Navigation */}
-      <nav className="bg-white border border-[#E0E6F5] rounded-[16px] overflow-hidden flex-1">
+      <nav className="bg-white border border-[#E0E6F5] rounded-[8px] overflow-hidden flex-1">
         {menuItems.map((item, i) => {
           const isActive = activeTab === item.key;
           return (
@@ -147,7 +147,7 @@ export function AccountSidebar({
       </nav>
 
       {/* Help footer */}
-      <div className="mt-4 bg-white border border-[#E0E6F5] rounded-[14px] p-4">
+      <div className="mt-4 bg-white border border-[#E0E6F5] rounded-[8px] p-4">
         <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] mb-2">Need help?</div>
         <a
           href="tel:631-599-1363"

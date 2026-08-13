@@ -114,7 +114,7 @@ export default function Header() {
 
   return (
     <header className="relative z-50 w-full py-[8px] sm:py-[12px]">
-      <div className="mx-2.5 rounded-[13px] border border-white/50 bg-white/92 shadow-[0_14px_48px_rgba(9,22,43,0.14)] backdrop-blur-xl sm:mx-5 sm:rounded-[14px]">
+      <div className="mx-2.5 rounded-[8px] border border-white/50 bg-white/92 shadow-[0_14px_48px_rgba(9,22,43,0.14)] backdrop-blur-xl sm:mx-5">
         <div className="mx-auto flex max-w-[1240px] items-center justify-between px-[12px] py-[8px] sm:px-[18px] sm:py-[10px]">
           {/*
             The same brand mark as the footer: PRO in ProFixter blue, FIXTER in
@@ -130,7 +130,7 @@ export default function Header() {
           <Link
             href={homeHref}
             aria-label="Profixter home"
-            className="relative z-50 flex items-center rounded-[9px] bg-[#0B1628] px-2 py-1.5 transition hover:bg-[#172033] sm:rounded-[10px] sm:px-2.5"
+            className="relative z-50 flex items-center rounded-[6px] bg-[#0B1628] px-2 py-1.5 transition hover:bg-[#172033] sm:px-2.5"
           >
             <Image
               src="/images/logo-footer.svg"
@@ -142,12 +142,12 @@ export default function Header() {
             />
           </Link>
 
-          <nav className="hidden items-center gap-1 rounded-[13px] border border-[#E6ECF7] bg-white/72 p-1 lg:flex" aria-label="Main navigation">
+          <nav className="hidden items-center gap-1 rounded-[8px] border border-[#E6ECF7] bg-white/72 p-1 lg:flex" aria-label="Main navigation">
             {navLinks.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-[10px] px-3.5 py-2.5 text-sm font-black text-[#172033] transition-colors hover:bg-[#EEF4FF] hover:text-[#306EEC]"
+                className="rounded-[6px] px-3.5 py-2.5 text-sm font-black text-[#172033] transition-colors hover:bg-[#EEF4FF] hover:text-[#306EEC]"
               >
                 {item.label}
               </Link>
@@ -159,7 +159,7 @@ export default function Header() {
               <div className="relative" ref={profileMenuRef}>
                 <button
                   onClick={() => setIsProfileMenuOpen((v) => !v)}
-                  className="flex items-center gap-2 rounded-[12px] border border-[#D8E2F2] bg-white/88 py-1.5 pl-4 pr-1.5 shadow-sm transition hover:bg-white"
+                  className="flex items-center gap-2 rounded-[8px] border border-[#D8E2F2] bg-white/88 py-1.5 pl-4 pr-1.5 shadow-sm transition hover:bg-white"
                   aria-label="Open profile menu"
                 >
                   <span className="text-sm font-black text-[#111827]">{accountLabel}</span>
@@ -179,7 +179,7 @@ export default function Header() {
                  * two was always a second door to a page already on screen.
                  */}
                 {isProfileMenuOpen && (
-                  <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-[14px] border border-[#E6E8EF] bg-white py-2 shadow-lg">
+                  <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-[8px] border border-[#E6E8EF] bg-white py-2 shadow-lg">
                     {!navLinks.some((link) => link.href === accountHref) && (
                       <Link
                         href={accountHref}
@@ -212,13 +212,13 @@ export default function Header() {
               <>
                 <Link
                   href="/signup?redirect=%2Fmembership"
-                  className="rounded-[12px] bg-[#306EEC] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#2558C9]"
+                  className="rounded-[8px] bg-[#306EEC] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#2558C9]"
                 >
                   Book free visit
                 </Link>
                 <Link
                   href="/signin"
-                  className="rounded-[12px] border border-[#C5CBD8] bg-white/90 px-5 py-3 text-sm font-black text-[#111827] shadow-sm transition hover:bg-white"
+                  className="rounded-[8px] border border-[#C5CBD8] bg-white/90 px-5 py-3 text-sm font-black text-[#111827] shadow-sm transition hover:bg-white"
                 >
                   Log In
                 </Link>
@@ -277,23 +277,23 @@ export default function Header() {
               </p>
             </div>
 
-            <div className="flex w-full max-w-sm flex-col gap-2.5 rounded-[14px] border border-[#E6E8EF] bg-white p-2.5 shadow-[0_16px_50px_rgba(17,24,39,0.08)] sm:gap-3 sm:rounded-[16px] sm:p-3">
+            <div className="flex w-full max-w-sm flex-col gap-2.5 rounded-[8px] border border-[#E6E8EF] bg-white p-2.5 shadow-[0_16px_50px_rgba(17,24,39,0.08)] sm:gap-3 sm:p-3">
               {navLinks.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsMenuOpen(false)}
-                  className="rounded-[16px] border border-[#EEF2F7] bg-[#F8FAFF] px-4 py-3.5 text-left text-[18px] font-black leading-none text-[#111827] transition hover:bg-[#EEF4FF] hover:text-[#306EEC] sm:rounded-[18px] sm:py-4 sm:text-[21px]"
+                  className="rounded-[8px] border border-[#EEF2F7] bg-[#F8FAFF] px-4 py-3.5 text-left text-[18px] font-black leading-none text-[#111827] transition hover:bg-[#EEF4FF] hover:text-[#306EEC] sm:rounded-[10px] sm:py-4 sm:text-[21px]"
                 >
                   {item.label}
                 </Link>
               ))}
             </div>
 
-            <div className="flex w-full max-w-sm flex-col gap-3 rounded-[14px] border border-[#E6E8EF] bg-white p-3 shadow-[0_16px_50px_rgba(17,24,39,0.08)] sm:gap-4 sm:rounded-[16px] sm:p-4">
+            <div className="flex w-full max-w-sm flex-col gap-3 rounded-[8px] border border-[#E6E8EF] bg-white p-3 shadow-[0_16px_50px_rgba(17,24,39,0.08)] sm:gap-4 sm:p-4">
               {isAuthenticated ? (
                 <>
-                  <div className="mb-1 flex items-center justify-between gap-3 rounded-[13px] border border-[#E6E8EF] bg-[#F8FAFF] p-3 sm:mb-2 sm:rounded-[14px] sm:p-4">
+                  <div className="mb-1 flex items-center justify-between gap-3 rounded-[8px] border border-[#E6E8EF] bg-[#F8FAFF] p-3 sm:mb-2 sm:p-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#C5CBD8] sm:h-14 sm:w-14">
                         <svg width="30" height="26" viewBox="0 0 31 28" fill="none" aria-hidden="true">
@@ -314,14 +314,14 @@ export default function Header() {
                     <Link
                       href={accountHref}
                       onClick={() => setIsMenuOpen(false)}
-                      className="rounded-[16px] bg-[#0B1628] px-5 py-3.5 text-center text-[15px] font-black text-white transition hover:bg-[#172033] sm:px-6 sm:py-4 sm:text-base"
+                      className="rounded-[8px] bg-[#0B1628] px-5 py-3.5 text-center text-[15px] font-black text-white transition hover:bg-[#172033] sm:px-6 sm:py-4 sm:text-base"
                     >
                       My Account
                     </Link>
                   )}
                   <button
                     onClick={handleLogout}
-                    className="rounded-[16px] border border-red-100 bg-red-50 px-5 py-3.5 text-[15px] font-black text-red-700 transition hover:bg-red-100 sm:px-6 sm:py-4 sm:text-base"
+                    className="rounded-[8px] border border-red-100 bg-red-50 px-5 py-3.5 text-[15px] font-black text-red-700 transition hover:bg-red-100 sm:px-6 sm:py-4 sm:text-base"
                   >
                     Log out
                   </button>
@@ -331,14 +331,14 @@ export default function Header() {
                   <Link
                     href="/signup?redirect=%2Fmembership"
                     onClick={() => setIsMenuOpen(false)}
-                    className="w-full rounded-[16px] bg-[#306EEC] px-5 py-3.5 text-center text-[15px] font-bold text-white transition hover:bg-[#2558C9] sm:px-6 sm:py-4 sm:text-base"
+                    className="w-full rounded-[8px] bg-[#306EEC] px-5 py-3.5 text-center text-[15px] font-bold text-white transition hover:bg-[#2558C9] sm:px-6 sm:py-4 sm:text-base"
                   >
                     Book your free visit
                   </Link>
                   <Link
                     href="/signin"
                     onClick={() => setIsMenuOpen(false)}
-                    className="w-full rounded-[16px] border border-[#D7DEE9] bg-white px-5 py-3.5 text-center text-[15px] font-black text-[#0B1628] transition hover:bg-[#F8FAFF] sm:px-6 sm:py-4 sm:text-base"
+                    className="w-full rounded-[8px] border border-[#D7DEE9] bg-white px-5 py-3.5 text-center text-[15px] font-black text-[#0B1628] transition hover:bg-[#F8FAFF] sm:px-6 sm:py-4 sm:text-base"
                   >
                     Log In
                   </Link>

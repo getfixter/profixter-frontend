@@ -196,7 +196,7 @@ export default function QuizSection() {
 
         {/* ── Header ── */}
         <div className="mx-auto max-w-[680px] text-center mb-8 sm:mb-9">
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
+          <div className="inline-flex items-center gap-2.5 rounded-[6px] border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
               <path d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -218,7 +218,7 @@ export default function QuizSection() {
         </div>
 
         {/* ── Card ── */}
-        <div className="mx-auto max-w-[780px] rounded-[16px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] overflow-hidden">
+        <div className="mx-auto max-w-[780px] rounded-[8px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] overflow-hidden">
 
           {/* Progress bar */}
           {!isDone && (
@@ -271,9 +271,9 @@ export default function QuizSection() {
                       key={choice.value}
                       type="button"
                       onClick={() => handleAnswer(QUESTIONS[step].key, choice.value)}
-                      className="group flex flex-col items-center gap-3 rounded-[14px] border border-[#E2E8F0] bg-[#F8FAFF] p-5 text-center transition-all duration-200 hover:border-[#306EEC]/40 hover:bg-[#EEF5FF] hover:shadow-[0_8px_32px_rgba(48,110,236,0.12)] focus:outline-none focus:border-[#306EEC]/50 active:scale-[0.98]"
+                      className="group flex flex-col items-center gap-3 rounded-[8px] border border-[#E2E8F0] bg-[#F8FAFF] p-5 text-center transition-all duration-200 hover:border-[#306EEC]/40 hover:bg-[#EEF5FF] hover:shadow-[0_8px_32px_rgba(48,110,236,0.12)] focus:outline-none focus:border-[#306EEC]/50 active:scale-[0.98]"
                     >
-                      <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-white text-[#64748B] shadow-sm transition-all group-hover:bg-[#EEF2FF] group-hover:text-[#306EEC]">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-[8px] bg-white text-[#64748B] shadow-sm transition-all group-hover:bg-[#EEF2FF] group-hover:text-[#306EEC]">
                         {choice.icon}
                       </div>
                       <div>
@@ -292,7 +292,7 @@ export default function QuizSection() {
               /* ── Result ── */
               <div className="text-center">
                 <div
-                  className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[12px] font-bold uppercase tracking-[0.18em] mb-6"
+                  className="inline-flex items-center gap-2 rounded-[6px] px-4 py-1.5 text-[12px] font-bold uppercase tracking-[0.18em] mb-6"
                   style={{
                     background: recommendation.colorBg,
                     border: `1px solid ${recommendation.colorBorder}`,
@@ -338,7 +338,7 @@ export default function QuizSection() {
                         recommendation: recommendation.title,
                       })
                     }
-                    className="inline-flex h-[46px] items-center justify-center rounded-[16px] bg-[#306EEC] px-6 text-[16px] font-extrabold text-white transition-all hover:bg-[#2558c9] hover:-translate-y-0.5"
+                    className="inline-flex h-[46px] items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[16px] font-extrabold text-white transition-all hover:bg-[#2558c9] hover:-translate-y-0.5"
                     style={{ boxShadow: "0 12px 36px rgba(48,110,236,0.30)" }}
                   >
                     {recommendation.cta}
@@ -346,7 +346,7 @@ export default function QuizSection() {
                   <button
                     type="button"
                     onClick={() => { setStep(0); setAnswers({}); }}
-                    className="inline-flex h-[46px] items-center justify-center rounded-[16px] border border-[#C5CBD8] bg-white px-6 text-[16px] font-semibold text-[#475569] transition-colors hover:bg-[#F6F7FB]"
+                    className="inline-flex h-[46px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-6 text-[16px] font-semibold text-[#475569] transition-colors hover:bg-[#F6F7FB]"
                   >
                     Start over
                   </button>

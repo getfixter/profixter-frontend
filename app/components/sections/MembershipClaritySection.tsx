@@ -84,7 +84,7 @@ export default function MembershipClaritySection() {
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
           <div className="text-center mb-8 sm:mb-16">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-[#EEF2FF] px-4 py-1.5 mb-5">
+            <div className="inline-flex items-center gap-2 rounded-[6px] border border-[#D9E4FF] bg-[#EEF2FF] px-4 py-1.5 mb-5">
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
                 Fit Check
               </span>
@@ -103,7 +103,7 @@ export default function MembershipClaritySection() {
           <div className="grid md:grid-cols-2 gap-6 max-w-[900px] mx-auto">
 
             {/* Good fit */}
-            <div className="rounded-[16px] border border-[#BBF7D0] bg-[#F0FDF4] p-8">
+            <div className="rounded-[8px] border border-[#BBF7D0] bg-[#F0FDF4] p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-9 h-9 rounded-full bg-[#22C55E]/15 flex items-center justify-center flex-shrink-0">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -125,7 +125,7 @@ export default function MembershipClaritySection() {
             </div>
 
             {/* Not ideal */}
-            <div className="rounded-[16px] border border-[#FED7AA] bg-[#FFF7ED] p-8">
+            <div className="rounded-[8px] border border-[#FED7AA] bg-[#FFF7ED] p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-9 h-9 rounded-full bg-[#F97316]/15 flex items-center justify-center flex-shrink-0">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -198,7 +198,7 @@ export default function MembershipClaritySection() {
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
           <div className="text-center mb-8 sm:mb-16">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 mb-5">
+            <div className="inline-flex items-center gap-2 rounded-[6px] border border-white/10 bg-white/[0.04] px-4 py-1.5 mb-5">
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/45">
                 The Smarter System
               </span>
@@ -217,11 +217,11 @@ export default function MembershipClaritySection() {
             {WHY_BETTER.map(({ icon, headline, body }) => (
               <div
                 key={headline}
-                className="rounded-[14px] border border-white/[0.08] p-7"
+                className="rounded-[8px] border border-white/[0.08] p-7"
                 style={{ background: "rgba(255,255,255,0.03)" }}
               >
                 <div
-                  className="w-10 h-10 rounded-[12px] flex items-center justify-center mb-5 text-[#7BAEFF]"
+                  className="w-10 h-10 rounded-[8px] flex items-center justify-center mb-5 text-[#7BAEFF]"
                   style={{ background: "rgba(48,110,236,0.12)", border: "1px solid rgba(48,110,236,0.22)" }}
                 >
                   {icon}
@@ -264,7 +264,7 @@ export default function MembershipClaritySection() {
       >
         <div className="mx-auto max-w-[860px] px-4 sm:px-6 lg:px-8">
           <div
-            className="rounded-[16px] border border-[#306EEC]/20 p-7 sm:p-9"
+            className="rounded-[8px] border border-[#306EEC]/20 p-7 sm:p-9"
             style={{ background: "rgba(48,110,236,0.05)" }}
           >
             <div className="flex items-center gap-3 mb-6">

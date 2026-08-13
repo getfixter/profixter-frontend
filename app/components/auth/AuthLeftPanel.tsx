@@ -62,7 +62,7 @@ export default function AuthLeftPanel() {
           {TRUST_STATS.map(({ value, label }) => (
             <div
               key={label}
-              className="rounded-[14px] border border-white/[0.08] bg-white/[0.04] px-4 py-3.5"
+              className="rounded-[8px] border border-white/[0.08] bg-white/[0.04] px-4 py-3.5"
             >
               <div className="text-[17px] font-extrabold text-white leading-none mb-1">
                 {value}
@@ -105,7 +105,7 @@ export default function AuthLeftPanel() {
           <div className="grid grid-cols-2 gap-3">
             <Link
               href="/roofing"
-              className="group rounded-[14px] border border-[#D4A574]/22 bg-[#D4A574]/[0.06] p-4 transition-all hover:border-[#D4A574]/45 hover:bg-[#D4A574]/[0.11]"
+              className="group rounded-[8px] border border-[#D4A574]/22 bg-[#D4A574]/[0.06] p-4 transition-all hover:border-[#D4A574]/45 hover:bg-[#D4A574]/[0.11]"
             >
               <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A574]/60 mb-1.5">
                 Roofing
@@ -117,7 +117,7 @@ export default function AuthLeftPanel() {
             </Link>
             <Link
               href="/siding"
-              className="group rounded-[14px] border border-white/10 bg-white/[0.04] p-4 transition-all hover:border-white/22 hover:bg-white/[0.08]"
+              className="group rounded-[8px] border border-white/10 bg-white/[0.04] p-4 transition-all hover:border-white/22 hover:bg-white/[0.08]"
             >
               <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30 mb-1.5">
                 Siding

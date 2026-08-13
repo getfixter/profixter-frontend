@@ -55,13 +55,13 @@ export default function MembershipPlansPage() {
               <div className="mt-5 flex flex-wrap gap-2">
                 <Link
                   href="/book?visit=membership"
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-[12px] bg-[#0B1628] px-5 text-[14px] font-semibold text-white transition hover:bg-[#172033]"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-[8px] bg-[#0B1628] px-5 text-[14px] font-semibold text-white transition hover:bg-[#172033]"
                 >
                   Book Fixter
                 </Link>
                 <Link
                   href="/account?tab=plan"
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-[12px] border border-[#D7DEE9] bg-white px-5 text-[14px] font-semibold text-[#0B1628] transition hover:bg-[#F8FAFF]"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-[8px] border border-[#D7DEE9] bg-white px-5 text-[14px] font-semibold text-[#0B1628] transition hover:bg-[#F8FAFF]"
                 >
                   Manage plan
                 </Link>

@@ -180,11 +180,11 @@ const SignaturePad = forwardRef<SignaturePadHandle, Props>(function SignaturePad
       {label && (
         <p className="mb-2 text-sm font-semibold text-slate-700">{label}</p>
       )}
-      <div className="relative rounded-2xl border-2 border-dashed border-slate-300 bg-white">
+      <div className="relative rounded-[8px] border-2 border-dashed border-slate-300 bg-white">
         <canvas
           ref={canvasRef}
           style={{ height, touchAction: "none" }}
-          className="block w-full rounded-2xl"
+          className="block w-full rounded-[8px]"
           onPointerDown={handleDown}
           onPointerMove={handleMove}
           onPointerUp={handleUp}
@@ -212,7 +212,7 @@ const SignaturePad = forwardRef<SignaturePadHandle, Props>(function SignaturePad
             type="button"
             onClick={undo}
             disabled={!hasSignature || disabled}
-            className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-40"
+            className="rounded-[8px] border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-40"
           >
             Undo
           </button>
@@ -220,7 +220,7 @@ const SignaturePad = forwardRef<SignaturePadHandle, Props>(function SignaturePad
             type="button"
             onClick={clear}
             disabled={!hasSignature || disabled}
-            className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-40"
+            className="rounded-[8px] border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-40"
           >
             Clear
           </button>

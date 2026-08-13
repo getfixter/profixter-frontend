@@ -222,7 +222,7 @@ export default function InstallAppPrompt() {
     <>
       <aside
         aria-label="Install Profixter app"
-        className={`fixed left-3 right-3 z-[60] mx-auto max-w-[400px] rounded-[14px] border border-white/70 bg-white/95 p-3 text-slate-950 shadow-[0_18px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl ${
+        className={`fixed left-3 right-3 z-[60] mx-auto max-w-[400px] rounded-[8px] border border-white/70 bg-white/95 p-3 text-slate-950 shadow-[0_18px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl ${
           isAccountArea
             ? "bottom-[calc(96px+env(safe-area-inset-bottom,0px))]"
             : isMembershipArea
@@ -231,7 +231,7 @@ export default function InstallAppPrompt() {
         }`}
       >
         <div className="flex gap-3">
-          <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#0B1628] text-[14px] font-black text-white shadow-inner">
+          <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[8px] bg-[#0B1628] text-[14px] font-black text-white shadow-inner">
             P
           </div>
 
@@ -262,14 +262,14 @@ export default function InstallAppPrompt() {
                 onClick={
                   promptMode === "ios" ? () => setShowSteps(true) : handleInstall
                 }
-                className="rounded-full bg-[#0B1628] px-4 py-2 text-[12px] font-semibold text-white shadow-sm transition active:scale-[0.98]"
+                className="rounded-[6px] bg-[#0B1628] px-4 py-2 text-[12px] font-semibold text-white shadow-sm transition active:scale-[0.98]"
               >
                 {promptMode === "ios" ? "Show Steps" : "Install App"}
               </button>
               <button
                 type="button"
                 onClick={dismissForSession}
-                className="rounded-full px-3 py-2 text-[12px] font-semibold text-slate-500 transition hover:text-slate-800"
+                className="rounded-[6px] px-3 py-2 text-[12px] font-semibold text-slate-500 transition hover:text-slate-800"
               >
                 Not now
               </button>
@@ -285,7 +285,7 @@ export default function InstallAppPrompt() {
           aria-modal="true"
           aria-labelledby="install-steps-title"
         >
-          <div className="mx-auto w-full max-w-[420px] rounded-[16px] bg-white p-5 text-slate-950 shadow-[0_22px_80px_rgba(15,23,42,0.26)]">
+          <div className="mx-auto w-full max-w-[420px] rounded-[8px] bg-white p-5 text-slate-950 shadow-[0_22px_80px_rgba(15,23,42,0.26)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p
@@ -316,7 +316,7 @@ export default function InstallAppPrompt() {
               ].map((step, index) => (
                 <li
                   key={step}
-                  className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3"
+                  className="flex items-center gap-3 rounded-[8px] bg-slate-50 p-3"
                 >
                   <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#0B1628] text-[12px] font-bold text-white">
                     {index + 1}
@@ -331,7 +331,7 @@ export default function InstallAppPrompt() {
             <button
               type="button"
               onClick={() => setShowSteps(false)}
-              className="mt-5 w-full rounded-full bg-[#0B1628] px-4 py-3 text-[14px] font-semibold text-white"
+              className="mt-5 w-full rounded-[8px] bg-[#0B1628] px-4 py-3 text-[14px] font-semibold text-white"
             >
               Got it
             </button>

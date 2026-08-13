@@ -74,13 +74,13 @@ export default function EntryHeroSection() {
 
         <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
           <MembershipCtaLink
-            className="inline-flex min-h-[48px] items-center justify-center rounded-[13px] bg-[#306EEC] px-6 text-[16px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9]"
+            className="inline-flex min-h-[48px] items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[16px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9]"
           >
             Start Membership
           </MembershipCtaLink>
           <a
             href="tel:+16315991363"
-            className="inline-flex min-h-[48px] items-center justify-center rounded-[13px] border border-white/12 bg-white/[0.05] px-6 text-[15px] font-bold text-white/80 transition hover:border-white/20 hover:bg-white/[0.09]"
+            className="inline-flex min-h-[48px] items-center justify-center rounded-[8px] border border-white/12 bg-white/[0.05] px-6 text-[15px] font-bold text-white/80 transition hover:border-white/20 hover:bg-white/[0.09]"
           >
             Call 631-599-1363
           </a>

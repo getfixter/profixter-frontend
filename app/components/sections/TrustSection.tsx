@@ -46,7 +46,7 @@ function CheckItem({ children, light = false }: { children: React.ReactNode; lig
 
 function CredentialsCard() {
   return (
-    <div className="relative h-full overflow-hidden rounded-[14px] bg-[#0B1628] text-white shadow-[0_24px_60px_rgba(11,22,40,0.18)]">
+    <div className="relative h-full overflow-hidden rounded-[8px] bg-[#0B1628] text-white shadow-[0_24px_60px_rgba(11,22,40,0.18)]">
       <div className="absolute left-0 right-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#D4A574] to-transparent" />
       <div
         aria-hidden="true"
@@ -76,7 +76,7 @@ function CredentialsCard() {
           <div className="mt-2 font-mono text-[30px] font-bold leading-none tracking-[-0.01em] text-white sm:text-[32px]">
             HI-71484
           </div>
-          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#86EFAC]/30 bg-[#86EFAC]/10 px-2.5 py-1">
+          <div className="mt-3 inline-flex items-center gap-2 rounded-[6px] border border-[#86EFAC]/30 bg-[#86EFAC]/10 px-2.5 py-1">
             <span className="h-1.5 w-1.5 rounded-full bg-[#86EFAC]" style={{ boxShadow: "0 0 6px rgba(134,239,172,0.8)" }} />
             <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#86EFAC]">
               Active &amp; Verifiable
@@ -108,7 +108,7 @@ function CredentialsCard() {
 
 function GoogleReviewsCard() {
   return (
-    <div className="relative h-full overflow-hidden rounded-[14px] border border-[#E5E9F2] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.06)]">
+    <div className="relative h-full overflow-hidden rounded-[8px] border border-[#E5E9F2] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.06)]">
       <div className="flex h-full flex-col px-6 py-7 sm:px-5 sm:py-8 lg:px-8 lg:py-10">
         <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#64748B]">
           Google Reviews
@@ -130,7 +130,7 @@ function GoogleReviewsCard() {
           href={GOOGLE_REVIEWS_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-auto inline-flex h-12 items-center justify-center rounded-[14px] bg-[#0F172A] px-5 text-[14px] font-bold text-white transition-colors hover:bg-[#111827]"
+          className="mt-auto inline-flex h-12 items-center justify-center rounded-[8px] bg-[#0F172A] px-5 text-[14px] font-bold text-white transition-colors hover:bg-[#111827]"
         >
           View Reviews
         </a>
@@ -141,7 +141,7 @@ function GoogleReviewsCard() {
 
 function TrustReasonsCard() {
   return (
-    <div className="relative h-full overflow-hidden rounded-[14px] border border-[#E5E9F2] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.06)]">
+    <div className="relative h-full overflow-hidden rounded-[8px] border border-[#E5E9F2] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.06)]">
       <div className="flex h-full flex-col px-6 py-7 sm:px-5 sm:py-8 lg:px-8 lg:py-10">
         <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#306EEC]">
           In-Home Trust
@@ -168,7 +168,7 @@ function TrustReasonsCard() {
 
 function ServiceAreaStrip() {
   return (
-    <div className="mt-6 overflow-hidden rounded-[14px] border border-[#E5E9F2] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.04)] lg:mt-8">
+    <div className="mt-6 overflow-hidden rounded-[8px] border border-[#E5E9F2] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.04)] lg:mt-8">
       <div className="grid gap-7 px-6 py-7 sm:gap-8 sm:px-5 sm:py-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start lg:gap-10 lg:px-10 lg:py-9">
         <div>
           <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#306EEC]">
@@ -218,7 +218,7 @@ export default function TrustSection() {
     <section id="trust" className="w-full bg-[#EAEDFA] py-10 sm:py-10 lg:py-14">
       <div className="mx-auto max-w-[1240px] px-4 sm:px-5 lg:px-5">
         <div className="mx-auto mb-7 max-w-[760px] text-center sm:mb-12 lg:mb-14">
-          <span className="inline-flex items-center rounded-full border border-[#D9E4FF] bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
+          <span className="inline-flex items-center rounded-[6px] border border-[#D9E4FF] bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
             Verified &amp; Accountable
           </span>
 

@@ -52,7 +52,7 @@ export default function VisitTypeNav({ active }: { active: VisitType }) {
       aria-label="Visit type"
       className="mx-auto w-full max-w-[1280px] px-4 pt-3 sm:px-6 sm:pt-5 lg:px-8"
     >
-      <div className="flex w-full gap-1 rounded-[14px] border border-[#E4E9F2] bg-[#F1F4F9] p-1 sm:max-w-[620px]">
+      <div className="flex w-full gap-1 rounded-[8px] border border-[#E4E9F2] bg-[#F1F4F9] p-1 sm:max-w-[620px]">
         {TABS.map((tab) => {
           const selected = tab.type === active;
           return (
@@ -62,7 +62,7 @@ export default function VisitTypeNav({ active }: { active: VisitType }) {
               scroll={false}
               aria-current={selected ? "page" : undefined}
               className={[
-                "flex min-h-[42px] flex-1 items-center justify-center rounded-[11px] px-2 text-center text-[12.5px] font-semibold leading-tight tracking-[-0.01em] transition sm:min-h-[44px] sm:text-[14px]",
+                "flex min-h-[42px] flex-1 items-center justify-center rounded-[6px] px-2 text-center text-[12.5px] font-semibold leading-tight tracking-[-0.01em] transition sm:min-h-[44px] sm:text-[14px]",
                 "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]",
                 selected
                   ? "bg-white text-[#0B1628] shadow-[0_1px_3px_rgba(11,22,40,0.12)]"

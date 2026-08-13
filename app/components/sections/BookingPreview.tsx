@@ -27,16 +27,16 @@ const TIMES = ["8:00 AM", "10:00 AM", "12:00 PM"];
 export default function BookingPreview({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`w-full max-w-[300px] rounded-[16px] border border-black/[0.06] bg-white p-3 shadow-[0_28px_70px_-20px_rgba(11,22,40,0.35)] sm:max-w-[330px] sm:p-3.5 ${className}`}
+      className={`w-full max-w-[300px] rounded-[8px] border border-black/[0.06] bg-white p-3 shadow-[0_28px_70px_-20px_rgba(11,22,40,0.35)] sm:max-w-[330px] sm:p-3.5 ${className}`}
       aria-hidden="true"
     >
-      <div className="rounded-[13px] bg-[#F7F8FA] p-3.5 sm:p-4">
+      <div className="rounded-[8px] bg-[#F7F8FA] p-3.5 sm:p-4">
         <p className="text-[13px] font-semibold tracking-[-0.01em] text-[#111111]">
           Book your visit
         </p>
 
         {/* Month */}
-        <div className="mt-3 rounded-[13px] bg-white p-2.5 shadow-[0_1px_2px_rgba(11,22,40,0.05)]">
+        <div className="mt-3 rounded-[8px] bg-white p-2.5 shadow-[0_1px_2px_rgba(11,22,40,0.05)]">
           <div className="flex items-center justify-between px-0.5">
             <span className="text-[11px] font-semibold text-[#111111]">August</span>
             <span className="flex gap-1" aria-hidden="true">
@@ -62,7 +62,7 @@ export default function BookingPreview({ className = "" }: { className?: string 
                 <span
                   key={n}
                   className={[
-                    "mx-auto mt-0.5 flex h-[22px] w-[22px] items-center justify-center rounded-[7px] text-[10px] font-semibold",
+                    "mx-auto mt-0.5 flex h-[22px] w-[22px] items-center justify-center rounded-[6px] text-[10px] font-semibold",
                     chosen
                       ? "bg-[#306EEC] text-white shadow-[0_2px_6px_rgba(48,110,236,0.4)]"
                       : off
@@ -83,7 +83,7 @@ export default function BookingPreview({ className = "" }: { className?: string 
             <span
               key={t}
               className={[
-                "flex-1 rounded-[9px] py-1.5 text-center text-[9.5px] font-semibold",
+                "flex-1 rounded-[6px] py-1.5 text-center text-[9.5px] font-semibold",
                 i === 0
                   ? "bg-[#0B1628] text-white"
                   : "border border-[#E5E5EA] bg-white text-[#6E6E73]",
@@ -95,7 +95,7 @@ export default function BookingPreview({ className = "" }: { className?: string 
         </div>
 
         {/* Task + photo */}
-        <div className="mt-2.5 rounded-[13px] bg-white p-2.5 shadow-[0_1px_2px_rgba(11,22,40,0.05)]">
+        <div className="mt-2.5 rounded-[8px] bg-white p-2.5 shadow-[0_1px_2px_rgba(11,22,40,0.05)]">
           <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#A1A1A6]">
             What needs doing
           </p>
@@ -103,7 +103,7 @@ export default function BookingPreview({ className = "" }: { className?: string 
             Bedroom door doesn&rsquo;t close right
           </p>
           <div className="mt-2 flex items-center gap-1.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#EEF4FF]">
+            <span className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#EEF4FF]">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.7l1.2-1.8h6.2L15.8 6h2.7A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-8Z"
@@ -113,13 +113,13 @@ export default function BookingPreview({ className = "" }: { className?: string 
                 <circle cx="12" cy="12.5" r="3.2" stroke="#306EEC" strokeWidth="1.7" />
               </svg>
             </span>
-            <span className="h-8 w-8 rounded-[8px] bg-gradient-to-br from-[#C7D2E4] to-[#9FB0C9]" />
+            <span className="h-8 w-8 rounded-[6px] bg-gradient-to-br from-[#C7D2E4] to-[#9FB0C9]" />
             <span className="text-[9.5px] text-[#A1A1A6]">Photo added</span>
           </div>
         </div>
 
         {/* Confirm */}
-        <div className="mt-2.5 flex items-center justify-between rounded-[11px] bg-[#306EEC] px-3 py-2.5">
+        <div className="mt-2.5 flex items-center justify-between rounded-[6px] bg-[#306EEC] px-3 py-2.5">
           <span className="text-[11.5px] font-semibold text-white">Book visit</span>
           <span className="text-[11.5px] font-semibold text-white/80">$0</span>
         </div>

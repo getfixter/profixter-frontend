@@ -109,9 +109,9 @@ function StatTile({
   accent?: string;
 }) {
   return (
-    <div className="rounded-[16px] border border-[#E6E8EF] bg-white p-4 sm:p-5 flex flex-col gap-2">
+    <div className="rounded-[8px] border border-[#E6E8EF] bg-white p-4 sm:p-5 flex flex-col gap-2">
       <div
-        className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0"
+        className="w-9 h-9 rounded-[6px] flex items-center justify-center flex-shrink-0"
         style={{ background: accent + "18" }}
       >
         <span style={{ color: accent }}>{icon}</span>
@@ -235,7 +235,7 @@ export default function OverviewSection({
 
       {/* ── Welcome card ── */}
       <div
-        className="rounded-[14px] overflow-hidden"
+        className="rounded-[8px] overflow-hidden"
         style={{ background: "linear-gradient(135deg, #0B1628 0%, #0F2050 60%, #0B1A3A 100%)" }}
       >
         <div className="relative px-6 py-7 sm:px-6 sm:py-8">
@@ -271,7 +271,7 @@ export default function OverviewSection({
                   than by way of the membership page. */}
               <a
                 href={activeSub || planName ? "/book?visit=membership" : "/book"}
-                className="inline-flex items-center justify-center h-[44px] px-5 rounded-[12px] bg-[#306EEC] text-white text-[13px] font-extrabold hover:bg-[#2558c9] transition"
+                className="inline-flex items-center justify-center h-[44px] px-5 rounded-[8px] bg-[#306EEC] text-white text-[13px] font-extrabold hover:bg-[#2558c9] transition"
                 style={{ boxShadow: "0 8px 24px rgba(48,110,236,0.35)" }}
               >
                 Book a visit
@@ -281,7 +281,7 @@ export default function OverviewSection({
                   type="button"
                   onClick={handleOpenBillingPortal}
                   disabled={billingLoading}
-                  className="inline-flex items-center justify-center h-[44px] px-5 rounded-[12px] border border-white/20 bg-white/[0.07] text-white text-[13px] font-semibold hover:bg-white/[0.14] transition disabled:opacity-50"
+                  className="inline-flex items-center justify-center h-[44px] px-5 rounded-[8px] border border-white/20 bg-white/[0.07] text-white text-[13px] font-semibold hover:bg-white/[0.14] transition disabled:opacity-50"
                 >
                   {billingLoading ? "Opening…" : "Manage Plan"}
                 </button>
@@ -343,7 +343,7 @@ export default function OverviewSection({
       <AskYourFixterLine />
 
       {/* ── Quick actions ── */}
-      <div className="rounded-[13px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
+      <div className="rounded-[8px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
         <h3 className="text-[15px] font-bold text-[#0B1628] mb-4">Quick Actions</h3>
         {/* Booking is the dark button at the top of this page. A second tile
             for the same destination on the same screen was two labels for one
@@ -411,11 +411,11 @@ export default function OverviewSection({
           ].map(({ label, icon, href, color, bg, external }) => {
             const content = (
               <div
-                className="rounded-[14px] p-4 flex flex-col items-start gap-3 border border-transparent hover:border-current/10 transition cursor-pointer"
+                className="rounded-[8px] p-4 flex flex-col items-start gap-3 border border-transparent hover:border-current/10 transition cursor-pointer"
                 style={{ background: bg }}
               >
                 <div
-                  className="w-9 h-9 rounded-[10px] flex items-center justify-center"
+                  className="w-9 h-9 rounded-[6px] flex items-center justify-center"
                   style={{ background: color + "22", color }}
                 >
                   {icon}
@@ -443,14 +443,14 @@ export default function OverviewSection({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* ── Pre-visit tips ── */}
-        <div className="rounded-[13px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
+        <div className="rounded-[8px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
           <button
             type="button"
             className="w-full flex items-center justify-between gap-4 mb-1"
             onClick={() => setTipsOpen((v) => !v)}
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-[10px] bg-[#FFF7ED] flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-[6px] bg-[#FFF7ED] flex items-center justify-center flex-shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4A574" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
@@ -493,9 +493,9 @@ export default function OverviewSection({
         </div>
 
         {/* ── Exterior offers ── */}
-        <div className="rounded-[13px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
+        <div className="rounded-[8px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-9 h-9 rounded-[10px] bg-[#FFF7ED] flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-[6px] bg-[#FFF7ED] flex items-center justify-center flex-shrink-0">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4A574" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
               </svg>
@@ -508,7 +508,7 @@ export default function OverviewSection({
           <div className="grid grid-cols-2 gap-3">
             <a
               href="/roofing"
-              className="group rounded-[12px] border border-[#D4A574]/22 bg-[#FFFBEB] p-4 block transition hover:border-[#D4A574]/50"
+              className="group rounded-[8px] border border-[#D4A574]/22 bg-[#FFFBEB] p-4 block transition hover:border-[#D4A574]/50"
             >
               <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A574]/70 mb-1.5">Roofing</div>
               <div className="text-[13px] font-bold text-[#0B1628] leading-snug mb-1">Full Roof Replacements</div>
@@ -517,7 +517,7 @@ export default function OverviewSection({
             </a>
             <a
               href="/siding"
-              className="group rounded-[12px] border border-[#E2E8F0] bg-[#F8FAFF] p-4 block transition hover:border-[#306EEC]/30"
+              className="group rounded-[8px] border border-[#E2E8F0] bg-[#F8FAFF] p-4 block transition hover:border-[#306EEC]/30"
             >
               <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#94A3B8] mb-1.5">Siding</div>
               <div className="text-[13px] font-bold text-[#0B1628] leading-snug mb-1">Siding Installation</div>
@@ -525,7 +525,7 @@ export default function OverviewSection({
               <div className="text-[11px] font-semibold text-[#306EEC] mt-2 group-hover:underline">Get estimate →</div>
             </a>
           </div>
-          <div className="mt-4 rounded-[10px] bg-[#F8FAFF] border border-[#E6E8EF] px-4 py-3">
+          <div className="mt-4 rounded-[6px] bg-[#F8FAFF] border border-[#E6E8EF] px-4 py-3">
             <p className="text-[12px] text-[#64748B] leading-relaxed">
               <span className="font-semibold text-[#0B1628]">Member perk:</span> As a Profixter Member, mention your Membership when requesting an exterior estimate. We take care of our regulars.
             </p>
@@ -534,9 +534,9 @@ export default function OverviewSection({
       </div>
 
       {/* ── FAQ ── */}
-      <div className="rounded-[13px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
+      <div className="rounded-[8px] border border-[#E6E8EF] bg-white p-5 sm:p-6">
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 rounded-[10px] bg-[#EEF5FF] flex items-center justify-center flex-shrink-0">
+          <div className="w-9 h-9 rounded-[6px] bg-[#EEF5FF] flex items-center justify-center flex-shrink-0">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#306EEC" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
@@ -551,14 +551,14 @@ export default function OverviewSection({
             <FaqItem key={q} q={q} a={a} />
           ))}
         </div>
-        <div className="mt-5 rounded-[12px] bg-[#0B1628] px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="mt-5 rounded-[8px] bg-[#0B1628] px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <div className="text-[13px] font-bold text-white">Still have a question?</div>
             <div className="text-[12px] text-white/45 mt-0.5">Call Taras directly - straight answer in 2 minutes.</div>
           </div>
           <a
             href="tel:+16315991363"
-            className="inline-flex items-center gap-2 h-[40px] px-5 rounded-[10px] bg-[#306EEC] text-white text-[13px] font-extrabold hover:bg-[#2558c9] transition flex-shrink-0"
+            className="inline-flex items-center gap-2 h-[40px] px-5 rounded-[6px] bg-[#306EEC] text-white text-[13px] font-extrabold hover:bg-[#2558c9] transition flex-shrink-0"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.37 1.9.72 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0122 16.92z" />

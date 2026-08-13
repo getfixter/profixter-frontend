@@ -35,7 +35,7 @@ export default function TestimonialsSection() {
         <h2 className="text-2xl sm:text-3xl font-extrabold text-center text-gray-800 mb-8">Our Customers Love Us</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {testimonials.map((t) => (
-            <div key={t.name} className="p-6 rounded-2xl bg-[#F3F4F6] shadow hover:shadow-md transition">
+            <div key={t.name} className="p-6 rounded-[8px] bg-[#F3F4F6] shadow hover:shadow-md transition">
               <p className="text-gray-700 italic mb-4">“{t.quote}”</p>
               <div className="flex items-center">
                 <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[#86EFAC] text-[#0B1220] flex items-center justify-center font-bold mr-3">

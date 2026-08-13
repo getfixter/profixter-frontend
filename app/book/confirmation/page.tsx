@@ -43,7 +43,7 @@ export default async function BookConfirmationPage({
       <Header />
 
       <section className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 sm:py-9 lg:px-8 lg:py-12">
-        <div className="mb-5 inline-flex items-center gap-2.5 rounded-[8px] border border-emerald-200 bg-white px-3 py-2">
+        <div className="mb-5 inline-flex items-center gap-2.5 rounded-[6px] border border-emerald-200 bg-white px-3 py-2">
           <span
             className="h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500"
             style={{ boxShadow: "0 0 8px rgba(16,185,129,0.7)" }}
@@ -54,7 +54,7 @@ export default async function BookConfirmationPage({
         </div>
 
         <div className="grid gap-4 lg:grid-cols-12 lg:gap-6">
-          <div className="rounded-[12px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-7 lg:col-span-7">
+          <div className="rounded-[8px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-7 lg:col-span-7">
             <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-[12px] font-black uppercase tracking-[0.12em] text-emerald-700">
               Paid
             </div>
@@ -65,28 +65,28 @@ export default async function BookConfirmationPage({
               Thank you. Your paid One-Time Handyman Visit request is now with Profixter for approval. If approved, Profixter will come at the scheduled visit time and you will receive confirmation shortly.
             </p>
 
-            <div className="mt-6 rounded-[16px] border border-[#D9E4FF] bg-[#F0F7FF] px-4 py-4 text-[14px] leading-6 text-[#475569]">
+            <div className="mt-6 rounded-[8px] border border-[#D9E4FF] bg-[#F0F7FF] px-4 py-4 text-[14px] leading-6 text-[#475569]">
               If we cannot approve the job, cannot complete it within the One-Time Visit scope, or need to cancel before service, you will receive a full refund.
             </div>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/book#your-visits"
-                className="inline-flex h-[46px] items-center justify-center rounded-[16px] bg-[#306EEC] px-5 text-[15px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99]"
+                className="inline-flex h-[46px] items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99]"
                 style={{ boxShadow: "0 16px 48px rgba(48,110,236,0.30)" }}
               >
                 View my bookings
               </Link>
               <Link
                 href="/home-support"
-                className="inline-flex h-[46px] items-center justify-center rounded-[16px] border border-[#C5CBD8] bg-white px-5 text-[15px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] active:scale-[0.99]"
+                className="inline-flex h-[46px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-5 text-[15px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] active:scale-[0.99]"
               >
                 Ask Profixter AI
               </Link>
             </div>
           </div>
 
-          <aside className="rounded-[12px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-6 lg:col-span-5">
+          <aside className="rounded-[8px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)] sm:p-6 lg:col-span-5">
             <h2 className="text-[19px] font-extrabold text-[#0B1628]">
               Calm next steps
             </h2>
@@ -94,7 +94,7 @@ export default async function BookConfirmationPage({
               {nextSteps.map((step, index) => (
                 <div
                   key={step.label}
-                  className="rounded-[14px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-3"
+                  className="rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-3"
                 >
                   <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#306EEC]">
                     Step {index + 1}
@@ -110,7 +110,7 @@ export default async function BookConfirmationPage({
             </div>
 
             {params.booking_id && (
-              <div className="mt-4 rounded-[14px] border border-[#E5E9F2] bg-white px-4 py-3 text-[13px] font-semibold text-[#64748B]">
+              <div className="mt-4 rounded-[8px] border border-[#E5E9F2] bg-white px-4 py-3 text-[13px] font-semibold text-[#64748B]">
                 Booking reference
                 <div className="mt-1 break-all text-[14px] font-extrabold text-[#0B1628]">
                   {params.booking_id}
@@ -121,13 +121,13 @@ export default async function BookConfirmationPage({
         </div>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-3">
-          <div className="rounded-[12px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)] lg:col-span-2">
+          <div className="rounded-[8px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)] lg:col-span-2">
             <h2 className="text-[18px] font-extrabold text-[#0B1628]">
               Before the visit
             </h2>
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {prepNotes.map((note) => (
-                <div key={note} className="flex gap-2 rounded-[14px] bg-[#F8FAFF] px-4 py-3">
+                <div key={note} className="flex gap-2 rounded-[8px] bg-[#F8FAFF] px-4 py-3">
                   <svg
                     width="14"
                     height="14"
@@ -152,7 +152,7 @@ export default async function BookConfirmationPage({
             </div>
           </div>
 
-          <div className="rounded-[12px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)]">
+          <div className="rounded-[8px] border border-[#D7DEE9] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)]">
             <h2 className="text-[18px] font-extrabold text-[#0B1628]">
               Need to change something?
             </h2>
@@ -168,7 +168,7 @@ export default async function BookConfirmationPage({
             </p>
             <Link
               href="/projects"
-              className="mt-4 inline-flex h-[44px] items-center rounded-[14px] border border-[#C5CBD8] px-4 text-[14px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC]"
+              className="mt-4 inline-flex h-[44px] items-center rounded-[8px] border border-[#C5CBD8] px-4 text-[14px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC]"
             >
               Request a Project Estimate
             </Link>

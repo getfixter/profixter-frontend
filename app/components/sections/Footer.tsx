@@ -57,7 +57,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
 
             {!compact ? <a
               href="tel:+16315991363"
-              className="group inline-flex items-center gap-3 rounded-[15px] border border-white/[0.14] bg-white/[0.06] px-4 py-3 transition-all hover:border-white/[0.22] hover:bg-white/[0.12] sm:gap-3.5 sm:rounded-[16px] sm:px-5 sm:py-3.5"
+              className="group inline-flex items-center gap-3 rounded-[8px] border border-white/[0.14] bg-white/[0.06] px-4 py-3 transition-all hover:border-white/[0.22] hover:bg-white/[0.12] sm:gap-3.5 sm:px-5 sm:py-3.5"
             >
               <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#306EEC]">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">

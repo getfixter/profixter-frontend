@@ -40,7 +40,7 @@ export default function CopyCouponButton() {
       type="button"
       onClick={copyCoupon}
       aria-label={copied ? "Coupon code JULY4 copied" : "Copy coupon code JULY4"}
-      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#2F6FED] px-4 text-[12px] font-extrabold text-white shadow-[0_7px_18px_rgba(47,111,237,0.24)] transition hover:bg-[#2459C4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6FED] active:scale-[0.98]"
+      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[8px] bg-[#2F6FED] px-4 text-[12px] font-extrabold text-white shadow-[0_7px_18px_rgba(47,111,237,0.24)] transition hover:bg-[#2459C4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6FED] active:scale-[0.98]"
     >
       {copied ? (
         <>

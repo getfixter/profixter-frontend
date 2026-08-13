@@ -25,7 +25,7 @@ export default function NewHeroSection() {
           {/* ✅ MAIN BUTTON */}
           <Link
             href="/membership/plans"
-            className="inline-block px-6 py-3 rounded-xl bg-[#86EFAC] text-[#0B1220] font-bold text-base sm:text-lg hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#86EFAC]"
+            className="inline-block px-6 py-3 rounded-[8px] bg-[#86EFAC] text-[#0B1220] font-bold text-base sm:text-lg hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#86EFAC]"
           >
             See Membership
           </Link>
@@ -37,7 +37,7 @@ export default function NewHeroSection() {
                 ? "/services/general-contractor"
                 : "/signup"
             }
-            className="inline-block px-6 py-3 rounded-xl bg-white/10 text-white/90 border border-white/20 font-bold text-base sm:text-lg hover:bg-white/20 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white"
+            className="inline-block px-6 py-3 rounded-[8px] bg-white/10 text-white/90 border border-white/20 font-bold text-base sm:text-lg hover:bg-white/20 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white"
           >
             {isAuthenticated ? "General Contractor" : "Create Account"}
           </Link>

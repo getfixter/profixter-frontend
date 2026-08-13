@@ -85,7 +85,7 @@ export default function MembershipUpgradePrompt({
 
   return (
     <aside
-      className={`rounded-[16px] border border-[#E4E9F2] bg-white p-4 sm:p-5 ${className}`}
+      className={`rounded-[8px] border border-[#E4E9F2] bg-white p-4 sm:p-5 ${className}`}
       aria-label="Membership upgrade suggestion"
     >
       <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8A94A6]">{label}</p>

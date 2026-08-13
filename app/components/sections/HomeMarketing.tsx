@@ -107,7 +107,7 @@ function BookFree({
       href={href}
       onClick={() => trackEvent("free_visit_cta_clicked", { placement })}
       className={[
-        "inline-flex min-h-[44px] w-full items-center justify-center rounded-[13px] px-5 text-[15px] font-semibold transition-transform duration-200 active:scale-[0.985] sm:w-auto",
+        "inline-flex min-h-[44px] w-full items-center justify-center rounded-[8px] px-5 text-[15px] font-semibold transition-transform duration-200 active:scale-[0.985] sm:w-auto",
         tone === "accent"
           ? "bg-[#306EEC] text-white shadow-[0_12px_28px_-8px_rgba(48,110,236,0.55)] hover:bg-[#2558C9]"
           : "bg-white text-[#0B1628] shadow-[0_12px_28px_-10px_rgba(0,0,0,0.45)] hover:bg-[#F5F5F7]",
@@ -134,7 +134,7 @@ function QuietLink({
     <Link
       href={href}
       onClick={() => trackEvent("membership_explainer_clicked", { placement })}
-      className={`inline-flex min-h-[44px] w-full items-center justify-center rounded-[13px] border px-5 text-[15px] font-semibold transition sm:w-auto ${
+      className={`inline-flex min-h-[44px] w-full items-center justify-center rounded-[8px] border px-5 text-[15px] font-semibold transition sm:w-auto ${
         tone === "light"
           ? "border-white/25 text-white hover:bg-white/10"
           : "border-[#D2D2D7] text-[#1D1D1F] hover:bg-[#F5F5F7]"
@@ -221,7 +221,7 @@ export default function HomeMarketing() {
                 <Link
                   href="#how-it-works"
                   onClick={() => trackEvent("membership_explainer_clicked", { placement: "hero" })}
-                  className="hidden min-h-[44px] items-center justify-center rounded-[13px] border border-white/25 px-5 text-[15px] font-semibold text-white transition hover:bg-white/10 sm:inline-flex"
+                  className="hidden min-h-[44px] items-center justify-center rounded-[8px] border border-white/25 px-5 text-[15px] font-semibold text-white transition hover:bg-white/10 sm:inline-flex"
                 >
                   How it works
                 </Link>
@@ -357,7 +357,7 @@ export default function HomeMarketing() {
               <Reveal key={plan.name} delay={i * 60}>
                 {/* Compact row on phones so four plans stay scannable; a card
                     from sm up, where the grid has room to breathe. */}
-                <div className="flex h-full items-center justify-between gap-4 rounded-[16px] border border-white/[0.10] bg-white/[0.04] px-5 py-4 sm:flex-col sm:items-start sm:justify-start sm:rounded-[14px] sm:p-6">
+                <div className="flex h-full items-center justify-between gap-4 rounded-[8px] border border-white/[0.10] bg-white/[0.04] px-5 py-4 sm:flex-col sm:items-start sm:justify-start sm:p-6">
                   <div className="min-w-0">
                     <p className="text-[16px] font-semibold tracking-[-0.015em] sm:text-[17px]">
                       {plan.displayName}
@@ -441,7 +441,7 @@ export default function HomeMarketing() {
           <div className="mt-7 grid grid-cols-2 gap-2.5 sm:mt-8 sm:grid-cols-3 sm:gap-3">
             {PROJECTS.map((p, i) => (
               <Reveal key={p.label} delay={i * 70}>
-                <figure className="group relative overflow-hidden rounded-[14px] bg-[#E5E5EA]">
+                <figure className="group relative overflow-hidden rounded-[8px] bg-[#E5E5EA]">
                   <div className="relative aspect-square sm:aspect-[4/3]">
                     <Image
                       src={p.src}
@@ -481,7 +481,7 @@ export default function HomeMarketing() {
                 the same company each time, so nobody has to learn your house twice.
               </Lede>
 
-              <dl className="mt-6 grid grid-cols-1 gap-px overflow-hidden rounded-[16px] border border-[#E5E5EA] bg-[#E5E5EA] sm:grid-cols-3">
+              <dl className="mt-6 grid grid-cols-1 gap-px overflow-hidden rounded-[8px] border border-[#E5E5EA] bg-[#E5E5EA] sm:grid-cols-3">
                 {[
                   ["Licensed", "NY HIC HI-71484"],
                   ["Insured", "For in-home work"],
@@ -498,7 +498,7 @@ export default function HomeMarketing() {
             </Reveal>
 
             <Reveal delay={90}>
-              <figure className="overflow-hidden rounded-[14px] bg-[#F5F5F7]">
+              <figure className="overflow-hidden rounded-[8px] bg-[#F5F5F7]">
                 <div className="relative aspect-[16/10] sm:aspect-[4/3]">
                   <Image
                     src="/images/Taras.png"

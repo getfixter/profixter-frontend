@@ -77,7 +77,7 @@ export default function MembershipCallbackForm({
   if (phase === "done") {
     return (
       <div
-        className={`rounded-[14px] border p-4 sm:p-5 ${
+        className={`rounded-[8px] border p-4 sm:p-5 ${
           dark ? "border-white/15 bg-white/[0.07]" : "border-[#DCE3EE] bg-white"
         } ${className}`}
       >
@@ -92,7 +92,7 @@ export default function MembershipCallbackForm({
   }
 
   const fieldClass = [
-    "h-[46px] w-full rounded-[11px] border px-3.5 text-[15px] outline-none transition",
+    "h-[46px] w-full rounded-[6px] border px-3.5 text-[15px] outline-none transition",
     dark
       ? "border-white/15 bg-white/[0.07] text-white placeholder:text-white/40 focus:border-white/35"
       : "border-[#D7DEE9] bg-white text-[#0B1628] placeholder:text-[#9AA3B2] focus:border-[#306EEC]",
@@ -102,7 +102,7 @@ export default function MembershipCallbackForm({
     <form
       onSubmit={submit}
       noValidate
-      className={`rounded-[14px] border p-4 sm:p-5 ${
+      className={`rounded-[8px] border p-4 sm:p-5 ${
         dark ? "border-white/15 bg-white/[0.06]" : "border-[#DCE3EE] bg-white"
       } ${className}`}
     >
@@ -155,7 +155,7 @@ export default function MembershipCallbackForm({
       <button
         type="submit"
         disabled={phase === "sending"}
-        className={`mt-3 inline-flex h-[46px] w-full items-center justify-center rounded-[11px] text-[15px] font-semibold transition disabled:opacity-60 ${
+        className={`mt-3 inline-flex h-[46px] w-full items-center justify-center rounded-[6px] text-[15px] font-semibold transition disabled:opacity-60 ${
           dark
             ? "bg-white text-[#0B1628] hover:bg-[#F1F4F9]"
             : "bg-[#306EEC] text-white hover:bg-[#2558C9]"

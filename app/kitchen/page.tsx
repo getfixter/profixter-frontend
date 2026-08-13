@@ -70,7 +70,7 @@ function FaqRow({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div
-      className={`rounded-[13px] border transition-all duration-200 overflow-hidden ${
+      className={`rounded-[8px] border transition-all duration-200 overflow-hidden ${
         open
           ? "border-[#D97706]/30 bg-[#D97706]/[0.04]"
           : "border-white/[0.09] bg-white/[0.03] hover:bg-white/[0.05] hover:border-white/[0.14]"
@@ -199,7 +199,7 @@ export default function KitchenPage() {
                   <button
                     type="button"
                     onClick={callNow}
-                    className="inline-flex min-h-[44px] items-center justify-center gap-3 rounded-[13px] px-10 text-[17px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-3 rounded-[8px] px-10 text-[17px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                     style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 20px 60px rgba(217,119,6,0.40)" }}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -209,7 +209,7 @@ export default function KitchenPage() {
                   </button>
                   <a
                     href={`tel:${PHONE_TEL}`}
-                    className="inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-[13px] border border-white/18 bg-white/[0.06] px-10 text-[17px] font-bold text-white/85 backdrop-blur-sm transition-all hover:bg-white/[0.12] hover:border-white/30"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-[8px] border border-white/18 bg-white/[0.06] px-10 text-[17px] font-bold text-white/85 backdrop-blur-sm transition-all hover:bg-white/[0.12] hover:border-white/30"
                   >
                     Call {PHONE_DISPLAY}
                   </a>
@@ -242,7 +242,7 @@ export default function KitchenPage() {
               {/* Right: Authority card */}
               <div className="hidden lg:block">
                 <div
-                  className="relative rounded-[16px] overflow-hidden"
+                  className="relative rounded-[8px] overflow-hidden"
                   style={{
                     background: "linear-gradient(145deg, #1A1100 0%, #221800 50%, #150E00 100%)",
                     boxShadow: "0 48px 120px rgba(0,0,0,0.65), 0 0 0 1px rgba(217,119,6,0.15)",
@@ -298,7 +298,7 @@ export default function KitchenPage() {
                       <button
                         type="button"
                         onClick={callNow}
-                        className="w-full min-h-[46px] rounded-[14px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 active:scale-[0.99]"
+                        className="w-full min-h-[46px] rounded-[8px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 active:scale-[0.99]"
                         style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 12px 40px rgba(217,119,6,0.35)" }}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -406,7 +406,7 @@ export default function KitchenPage() {
 
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
             <div className="max-w-[680px] mb-9 sm:mb-16">
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-[#FDE68A] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(217,119,6,0.10)]">
+              <div className="inline-flex items-center gap-2.5 rounded-[6px] border border-[#FDE68A] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(217,119,6,0.10)]">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#D97706]" aria-hidden="true">
                   <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -519,9 +519,9 @@ export default function KitchenPage() {
               ].map(({ title, body, icon }) => (
                 <div
                   key={title}
-                  className="group rounded-[14px] border border-[#E8DCC8] bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.06)] transition-all duration-300 hover:shadow-[0_16px_56px_rgba(15,23,42,0.11)] hover:-translate-y-0.5"
+                  className="group rounded-[8px] border border-[#E8DCC8] bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.06)] transition-all duration-300 hover:shadow-[0_16px_56px_rgba(15,23,42,0.11)] hover:-translate-y-0.5"
                 >
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-[14px] bg-[#FEF3C7] text-[#D97706] transition-all group-hover:bg-[#D97706] group-hover:text-white">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-[8px] bg-[#FEF3C7] text-[#D97706] transition-all group-hover:bg-[#D97706] group-hover:text-white">
                     {icon}
                   </div>
                   <h3 className="text-[16px] font-bold text-[#0B1628] mb-2 leading-snug">{title}</h3>
@@ -534,7 +534,7 @@ export default function KitchenPage() {
               <button
                 type="button"
                 onClick={callNow}
-                className="inline-flex h-[48px] items-center gap-3 rounded-[16px] px-9 text-[16px] font-extrabold text-white"
+                className="inline-flex h-[48px] items-center gap-3 rounded-[8px] px-9 text-[16px] font-extrabold text-white"
                 style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 16px 48px rgba(217,119,6,0.35)" }}
               >
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -546,8 +546,8 @@ export default function KitchenPage() {
 
             {/* â”€â”€ Warranty + Financing callout â”€â”€ */}
             <div className="mt-7 sm:mt-8 grid sm:grid-cols-2 gap-5">
-              <div className="rounded-[14px] border border-[#FDE68A] bg-white p-6 sm:p-7 shadow-[0_4px_24px_rgba(15,23,42,0.05)] flex items-start gap-5">
-                <div className="flex-shrink-0 h-12 w-12 rounded-[14px] bg-[#FEF3C7] flex items-center justify-center text-[#D97706]">
+              <div className="rounded-[8px] border border-[#FDE68A] bg-white p-6 sm:p-7 shadow-[0_4px_24px_rgba(15,23,42,0.05)] flex items-start gap-5">
+                <div className="flex-shrink-0 h-12 w-12 rounded-[8px] bg-[#FEF3C7] flex items-center justify-center text-[#D97706]">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
                     <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -561,8 +561,8 @@ export default function KitchenPage() {
                   </p>
                 </div>
               </div>
-              <div className="rounded-[14px] border border-[#FDE68A] bg-white p-6 sm:p-7 shadow-[0_4px_24px_rgba(15,23,42,0.05)] flex items-start gap-5">
-                <div className="flex-shrink-0 h-12 w-12 rounded-[14px] bg-[#FEF3C7] flex items-center justify-center text-[#D97706]">
+              <div className="rounded-[8px] border border-[#FDE68A] bg-white p-6 sm:p-7 shadow-[0_4px_24px_rgba(15,23,42,0.05)] flex items-start gap-5">
+                <div className="flex-shrink-0 h-12 w-12 rounded-[8px] bg-[#FEF3C7] flex items-center justify-center text-[#D97706]">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -625,7 +625,7 @@ export default function KitchenPage() {
                   { v: "9+ yrs", l: "On Long Island" },
                   { v: "5.0 â˜…", l: "Google Rating" },
                 ].map(({ v, l }) => (
-                  <div key={l} className="rounded-[16px] border border-white/[0.09] bg-white/[0.04] px-4 py-4 text-center min-w-[88px]">
+                  <div key={l} className="rounded-[8px] border border-white/[0.09] bg-white/[0.04] px-4 py-4 text-center min-w-[88px]">
                     <div className="text-[18px] font-extrabold text-white leading-none mb-1.5">{v}</div>
                     <div className="text-[10px] font-semibold text-white/35">{l}</div>
                   </div>
@@ -638,7 +638,7 @@ export default function KitchenPage() {
               <div className="flex flex-col gap-4">
 
                 {/* Featured image */}
-                <div className="relative w-full overflow-hidden rounded-[14px] group" style={{ aspectRatio: "16/10" }}>
+                <div className="relative w-full overflow-hidden rounded-[8px] group" style={{ aspectRatio: "16/10" }}>
                   <Image
                     src={activePhoto.src}
                     alt={activePhoto.label}
@@ -647,7 +647,7 @@ export default function KitchenPage() {
                     sizes="(max-width: 1024px) 92vw, 760px"
                     priority
                   />
-                  <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.40)] rounded-[14px]" />
+                  <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.40)] rounded-[8px]" />
                   <div
                     className="absolute inset-x-0 bottom-0 h-[55%]"
                     style={{ background: "linear-gradient(to top, rgba(8,15,30,0.85) 0%, rgba(8,15,30,0.40) 55%, transparent 100%)" }}
@@ -707,7 +707,7 @@ export default function KitchenPage() {
                       type="button"
                       onClick={() => setGalleryIdx(i)}
                       aria-label={`View ${g.label}`}
-                      className={`relative flex-shrink-0 w-[72px] h-[46px] rounded-[10px] overflow-hidden border-2 transition-all focus:outline-none ${
+                      className={`relative flex-shrink-0 w-[72px] h-[46px] rounded-[6px] overflow-hidden border-2 transition-all focus:outline-none ${
                         i === galleryIdx
                           ? "border-[#D97706] shadow-[0_0_14px_rgba(217,119,6,0.40)]"
                           : "border-white/[0.08] opacity-55 hover:opacity-85 hover:border-white/20"
@@ -722,7 +722,7 @@ export default function KitchenPage() {
               {/* Info sidebar */}
               <div className="flex flex-col gap-4">
                 <div
-                  className="rounded-[14px] border border-white/[0.09] p-6 flex flex-col gap-5"
+                  className="rounded-[8px] border border-white/[0.09] p-6 flex flex-col gap-5"
                   style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)" }}
                 >
                   <div>
@@ -748,7 +748,7 @@ export default function KitchenPage() {
                 </div>
 
                 <div
-                  className="rounded-[14px] border border-[#D97706]/20 p-6 flex flex-col gap-4"
+                  className="rounded-[8px] border border-[#D97706]/20 p-6 flex flex-col gap-4"
                   style={{ background: "linear-gradient(145deg, rgba(217,119,6,0.10) 0%, rgba(217,119,6,0.04) 100%)" }}
                 >
                   <div>
@@ -758,7 +758,7 @@ export default function KitchenPage() {
                   <button
                     type="button"
                     onClick={callNow}
-                    className="w-full min-h-[46px] rounded-[14px] text-[14px] font-extrabold text-white transition-all hover:-translate-y-0.5"
+                    className="w-full min-h-[46px] rounded-[8px] text-[14px] font-extrabold text-white transition-all hover:-translate-y-0.5"
                     style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 10px 30px rgba(217,119,6,0.30)" }}
                   >
                     Request Free Consultation
@@ -781,7 +781,7 @@ export default function KitchenPage() {
 
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-[720px] text-center mb-9 sm:mb-16">
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-[#FDE68A] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(217,119,6,0.08)]">
+              <div className="inline-flex items-center gap-2.5 rounded-[6px] border border-[#FDE68A] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(217,119,6,0.08)]">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#D97706]" aria-hidden="true">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
                   <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -844,7 +844,7 @@ export default function KitchenPage() {
               ))}
             </div>
 
-            <div className="mt-8 sm:mt-9 rounded-[14px] border border-[#FDE68A] px-6 py-5 text-center bg-white shadow-[0_4px_20px_rgba(15,23,42,0.05)]">
+            <div className="mt-8 sm:mt-9 rounded-[8px] border border-[#FDE68A] px-6 py-5 text-center bg-white shadow-[0_4px_20px_rgba(15,23,42,0.05)]">
               <p className="text-[14px] text-[#64748B] leading-relaxed max-w-[680px] mx-auto">
                 <span className="text-[#0B1628] font-semibold">Timeline note:</span> Projects involving layout changes, structural work, or custom cabinet lead times may run 6â€“8 weeks. We give you a precise project schedule â€” not a vague estimate â€” before any work begins.
               </p>
@@ -920,7 +920,7 @@ export default function KitchenPage() {
                   accent: "#16A34A",
                 },
               ].map(({ headline, body, accent }) => (
-                <div key={headline} className="rounded-[14px] border border-white/[0.09] bg-white/[0.03] p-7">
+                <div key={headline} className="rounded-[8px] border border-white/[0.09] bg-white/[0.03] p-7">
                   <div className="mb-5 h-1.5 w-10 rounded-full" style={{ background: accent }} />
                   <h3 className="text-[16px] font-bold text-white/88 mb-2.5 leading-snug">{headline}</h3>
                   <p className="text-[13px] leading-relaxed text-white/45">{body}</p>
@@ -938,13 +938,13 @@ export default function KitchenPage() {
           style={{ background: "linear-gradient(160deg, #FFFBF0 0%, #FEF8E7 100%)" }}
         >
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="overflow-hidden rounded-[16px] border border-[#E8DCC8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+            <div className="overflow-hidden rounded-[8px] border border-[#E8DCC8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
               <div className="grid lg:grid-cols-[1fr_1fr] divide-y lg:divide-y-0 lg:divide-x divide-[#F0E8D8]">
 
                 {/* Left: Value framing */}
                 <div className="px-6 py-10 sm:px-10 sm:py-9 lg:px-12 flex flex-col gap-7">
                   <div>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-[#FDE68A] bg-[#FEF3C7] px-3 py-1.5 mb-5">
+                    <div className="inline-flex items-center gap-2 rounded-[6px] border border-[#FDE68A] bg-[#FEF3C7] px-3 py-1.5 mb-5">
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#D97706]" aria-hidden="true">
                         <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
@@ -965,7 +965,7 @@ export default function KitchenPage() {
                       { stat: "#1", label: "Feature buyers prioritize" },
                       { stat: "9+ yrs", label: "Our Long Island track record" },
                     ].map(({ stat, label }) => (
-                      <div key={stat} className="rounded-[16px] border border-[#F0E8D8] bg-[#FFFBF0] p-4 text-center">
+                      <div key={stat} className="rounded-[8px] border border-[#F0E8D8] bg-[#FFFBF0] p-4 text-center">
                         <div className="text-[19px] font-black text-[#D97706] mb-1">{stat}</div>
                         <div className="text-[10px] font-semibold text-[#64748B] leading-tight">{label}</div>
                       </div>
@@ -1005,7 +1005,7 @@ export default function KitchenPage() {
                   <button
                     type="button"
                     onClick={callNow}
-                    className="inline-flex h-[46px] items-center justify-center gap-2.5 rounded-[14px] text-[15px] font-extrabold text-white transition-all hover:-translate-y-0.5"
+                    className="inline-flex h-[46px] items-center justify-center gap-2.5 rounded-[8px] text-[15px] font-extrabold text-white transition-all hover:-translate-y-0.5"
                     style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 12px 36px rgba(217,119,6,0.30)" }}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1062,7 +1062,7 @@ export default function KitchenPage() {
               {/* Sticky contact */}
               <div className="lg:sticky lg:top-[100px] flex flex-col gap-4">
                 <div
-                  className="rounded-[14px] border border-white/[0.10] p-7 flex flex-col gap-5"
+                  className="rounded-[8px] border border-white/[0.10] p-7 flex flex-col gap-5"
                   style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)" }}
                 >
                   <div>
@@ -1073,7 +1073,7 @@ export default function KitchenPage() {
                   </div>
                   <a
                     href={`tel:${PHONE_TEL}`}
-                    className="flex items-center gap-3.5 rounded-[14px] border border-white/[0.12] bg-white/[0.06] px-4 py-4 hover:border-white/[0.22] hover:bg-white/[0.10] transition-all group"
+                    className="flex items-center gap-3.5 rounded-[8px] border border-white/[0.12] bg-white/[0.06] px-4 py-4 hover:border-white/[0.22] hover:bg-white/[0.10] transition-all group"
                   >
                     <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#D97706] group-hover:bg-[#B45309] transition-colors">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1088,7 +1088,7 @@ export default function KitchenPage() {
                 </div>
 
                 <div
-                  className="rounded-[14px] border border-[#D97706]/20 p-7 flex flex-col gap-4"
+                  className="rounded-[8px] border border-[#D97706]/20 p-7 flex flex-col gap-4"
                   style={{ background: "linear-gradient(145deg, rgba(217,119,6,0.08) 0%, rgba(217,119,6,0.03) 100%)" }}
                 >
                   <div>
@@ -1098,7 +1098,7 @@ export default function KitchenPage() {
                   <button
                     type="button"
                     onClick={callNow}
-                    className="w-full rounded-[14px] py-3.5 text-[15px] font-extrabold text-white transition-all hover:-translate-y-0.5"
+                    className="w-full rounded-[8px] py-3.5 text-[15px] font-extrabold text-white transition-all hover:-translate-y-0.5"
                     style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 12px 36px rgba(217,119,6,0.25)" }}
                   >
                     Request Consultation
@@ -1117,7 +1117,7 @@ export default function KitchenPage() {
           style={{ background: "linear-gradient(160deg, #FFFBF0 0%, #FEF8E7 100%)" }}
         >
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="overflow-hidden rounded-[16px] border border-[#E8DCC8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+            <div className="overflow-hidden rounded-[8px] border border-[#E8DCC8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
               <div className="grid lg:grid-cols-[1fr_1fr] divide-y lg:divide-y-0 lg:divide-x divide-[#F0E8D8]">
 
                 <div className="px-6 py-10 sm:px-10 sm:py-9 lg:px-12 flex flex-col justify-between gap-7">
@@ -1161,7 +1161,7 @@ export default function KitchenPage() {
                     <button
                       type="button"
                       onClick={callNow}
-                      className="inline-flex h-[48px] items-center justify-center gap-2.5 rounded-[14px] text-[16px] font-extrabold text-white transition-all hover:-translate-y-0.5"
+                      className="inline-flex h-[48px] items-center justify-center gap-2.5 rounded-[8px] text-[16px] font-extrabold text-white transition-all hover:-translate-y-0.5"
                       style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 12px 36px rgba(217,119,6,0.30)" }}
                     >
                       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1171,7 +1171,7 @@ export default function KitchenPage() {
                     </button>
                     <a
                       href={`tel:${PHONE_TEL}`}
-                      className="inline-flex h-[46px] items-center justify-center gap-2.5 rounded-[14px] border border-[#E8DCC8] bg-white text-[15px] font-semibold text-[#0B1628] transition hover:border-[#D97706] hover:text-[#D97706]"
+                      className="inline-flex h-[46px] items-center justify-center gap-2.5 rounded-[8px] border border-[#E8DCC8] bg-white text-[15px] font-semibold text-[#0B1628] transition hover:border-[#D97706] hover:text-[#D97706]"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.37 1.9.72 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -1227,7 +1227,7 @@ export default function KitchenPage() {
                 <button
                   type="button"
                   onClick={callNow}
-                  className="inline-flex min-h-[68px] items-center justify-center gap-3 rounded-[13px] px-12 text-[18px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
+                  className="inline-flex min-h-[68px] items-center justify-center gap-3 rounded-[8px] px-12 text-[18px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                   style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 24px 70px rgba(217,119,6,0.50)" }}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1237,7 +1237,7 @@ export default function KitchenPage() {
                 </button>
                 <a
                   href={`tel:${PHONE_TEL}`}
-                  className="inline-flex min-h-[68px] items-center justify-center gap-3 rounded-[13px] border border-white/18 bg-white/[0.07] px-12 text-[18px] font-bold text-white/85 backdrop-blur-sm transition-all hover:border-white/30 hover:bg-white/[0.12]"
+                  className="inline-flex min-h-[68px] items-center justify-center gap-3 rounded-[8px] border border-white/18 bg-white/[0.07] px-12 text-[18px] font-bold text-white/85 backdrop-blur-sm transition-all hover:border-white/30 hover:bg-white/[0.12]"
                 >
                   Call {PHONE_DISPLAY}
                 </a>

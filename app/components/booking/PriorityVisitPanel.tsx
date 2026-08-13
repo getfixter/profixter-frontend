@@ -44,7 +44,7 @@ export default function PriorityVisitPanel({
           soon, and is it certain" in a glance, and the honest answer to the
           second half is "subject to availability" in both cases.
         */}
-        <div className="mt-6 overflow-hidden rounded-[14px] border border-[#E4E9F2]">
+        <div className="mt-6 overflow-hidden rounded-[8px] border border-[#E4E9F2]">
           {[
             { when: "Same day", note: "Subject to availability" },
             { when: "Next day", note: "Subject to availability" },
@@ -63,7 +63,7 @@ export default function PriorityVisitPanel({
           <a
             href={CUSTOMER_CARE.callHref}
             aria-label={`Call ProFixter at ${CUSTOMER_CARE.phoneDisplay}`}
-            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-[14px] bg-[#0B1628] px-6 text-[15px] font-semibold text-white transition hover:bg-[#172033] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] sm:min-w-[210px]"
+            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-[8px] bg-[#0B1628] px-6 text-[15px] font-semibold text-white transition hover:bg-[#172033] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] sm:min-w-[210px]"
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
@@ -78,7 +78,7 @@ export default function PriorityVisitPanel({
           <a
             href={`sms:${CUSTOMER_CARE.phoneE164}`}
             aria-label={`Text ProFixter at ${CUSTOMER_CARE.phoneDisplay}`}
-            className="inline-flex min-h-[46px] items-center justify-center rounded-[14px] border border-[#D7DEE9] bg-white px-6 text-[15px] font-semibold text-[#0B1628] transition hover:bg-[#F8FAFF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]"
+            className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] border border-[#D7DEE9] bg-white px-6 text-[15px] font-semibold text-[#0B1628] transition hover:bg-[#F8FAFF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]"
           >
             Text ProFixter
           </a>
@@ -96,7 +96,7 @@ export default function PriorityVisitPanel({
             that does not exist yet, and a number we cannot stand behind is
             worse than no number.
           */
-          <div className="mt-5 rounded-[14px] border border-[#D9E7D2] bg-[#F4F9F1] px-4 py-3.5">
+          <div className="mt-5 rounded-[8px] border border-[#D9E7D2] bg-[#F4F9F1] px-4 py-3.5">
             <p className="text-[14px] font-semibold text-[#1E4620]">
               Included with your {planLabel(currentPlan)} plan
             </p>

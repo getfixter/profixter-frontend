@@ -39,7 +39,7 @@ export default function CategorySection() {
 
         {/* Header */}
         <div className="text-center mb-8 sm:mb-16">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 mb-5">
+          <div className="inline-flex items-center gap-2 rounded-[6px] border border-white/10 bg-white/[0.04] px-4 py-1.5 mb-5">
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/45">
               A New Model
             </span>
@@ -77,7 +77,7 @@ export default function CategorySection() {
           </div>
 
           {/* Rows */}
-          <div className="rounded-[16px] overflow-hidden border border-white/[0.07]">
+          <div className="rounded-[8px] overflow-hidden border border-white/[0.07]">
             {OLD_WAY.map((old, i) => (
               <div
                 key={i}

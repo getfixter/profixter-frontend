@@ -253,13 +253,13 @@ export default function GoogleReviewsLiveMini() {
       }}
       aria-label="Google reviews slider"
     >
-      <div className="relative rounded-[13px] border border-white/20 bg-white/10 backdrop-blur-md shadow-[0_20px_80px_rgba(0,0,0,0.35)] overflow-hidden">
+      <div className="relative rounded-[8px] border border-white/20 bg-white/10 backdrop-blur-md shadow-[0_20px_80px_rgba(0,0,0,0.35)] overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10" />
 
         <div className="relative p-5 sm:p-6">
           {/* Top row */}
           <div className="flex items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/20 px-3 py-2">
+            <div className="inline-flex items-center gap-2 rounded-[6px] border border-white/20 bg-black/20 px-3 py-2">
               <Image
                 src="/images/icons/icon-google.svg"
                 alt="Google"

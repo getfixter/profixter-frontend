@@ -70,7 +70,7 @@ export default function ExteriorPromoSection() {
 
         <div className="grid gap-5 sm:grid-cols-2 sm:gap-6 lg:gap-8">
           <div
-            className="group relative flex flex-col overflow-hidden rounded-[16px]"
+            className="group relative flex flex-col overflow-hidden rounded-[8px]"
             style={{
               background: "linear-gradient(145deg, #0D1F3C 0%, #091629 100%)",
               boxShadow: "0 0 0 1px rgba(212,165,116,0.18), 0 40px 100px rgba(0,0,0,0.45)",
@@ -79,12 +79,12 @@ export default function ExteriorPromoSection() {
             <div className="absolute left-[15%] right-[15%] top-0 h-[2px] bg-gradient-to-r from-transparent via-[#D4A574]/80 to-transparent" />
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 rounded-[16px] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+              className="pointer-events-none absolute inset-0 rounded-[8px] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
               style={{ background: "radial-gradient(80% 50% at 50% 0%, rgba(212,165,116,0.07), transparent)" }}
             />
 
             <div className="relative flex flex-1 flex-col p-7 sm:p-8 lg:p-10">
-              <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-[14px] border border-[#D4A574]/28 bg-[#D4A574]/10">
+              <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-[8px] border border-[#D4A574]/28 bg-[#D4A574]/10">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" stroke="#D4A574" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                   <path d="M9 22V12h6v10" stroke="#D4A574" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -113,7 +113,7 @@ export default function ExteriorPromoSection() {
               <div className="mt-auto flex flex-col gap-3">
                 <Link
                   href="/roofing"
-                  className="inline-flex h-[46px] items-center justify-center rounded-[14px] bg-[#D4A574] px-6 text-[15px] font-extrabold text-[#0A1220] transition-all hover:-translate-y-0.5 hover:bg-[#E0B886]"
+                  className="inline-flex h-[46px] items-center justify-center rounded-[8px] bg-[#D4A574] px-6 text-[15px] font-extrabold text-[#0A1220] transition-all hover:-translate-y-0.5 hover:bg-[#E0B886]"
                   style={{ boxShadow: "0 14px 38px rgba(212,165,116,0.28)" }}
                 >
                   Get Roofing Estimate
@@ -123,7 +123,7 @@ export default function ExteriorPromoSection() {
           </div>
 
           <div
-            className="group relative flex flex-col overflow-hidden rounded-[16px]"
+            className="group relative flex flex-col overflow-hidden rounded-[8px]"
             style={{
               background: "linear-gradient(145deg, #0E1E30 0%, #0A1626 100%)",
               boxShadow: "0 0 0 1px rgba(255,255,255,0.07), 0 40px 100px rgba(0,0,0,0.45)",
@@ -132,12 +132,12 @@ export default function ExteriorPromoSection() {
             <div className="absolute left-[15%] right-[15%] top-0 h-[2px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 rounded-[16px] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+              className="pointer-events-none absolute inset-0 rounded-[8px] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
               style={{ background: "radial-gradient(80% 50% at 50% 0%, rgba(134,239,172,0.05), transparent)" }}
             />
 
             <div className="relative flex flex-1 flex-col p-7 sm:p-8 lg:p-10">
-              <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-[14px] border border-white/10 bg-white/[0.06]">
+              <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-[8px] border border-white/10 bg-white/[0.06]">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <rect x="2" y="3" width="20" height="18" rx="2" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8" />
                   <path d="M2 9h20M2 15h20" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" />
@@ -167,7 +167,7 @@ export default function ExteriorPromoSection() {
               <div className="mt-auto flex flex-col gap-3">
                 <Link
                   href="/siding"
-                  className="inline-flex h-[46px] items-center justify-center rounded-[14px] bg-white px-6 text-[15px] font-extrabold text-[#0A1220] transition-all hover:-translate-y-0.5 hover:bg-[#EEF2FF]"
+                  className="inline-flex h-[46px] items-center justify-center rounded-[8px] bg-white px-6 text-[15px] font-extrabold text-[#0A1220] transition-all hover:-translate-y-0.5 hover:bg-[#EEF2FF]"
                   style={{ boxShadow: "0 14px 38px rgba(0,0,0,0.22)" }}
                 >
                   Get Siding Estimate
@@ -177,7 +177,7 @@ export default function ExteriorPromoSection() {
           </div>
         </div>
 
-        <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2.5 rounded-[14px] border border-white/[0.07] bg-white/[0.025] px-4 py-4 sm:mt-8 sm:gap-x-7 sm:gap-y-3 sm:px-5">
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2.5 rounded-[8px] border border-white/[0.07] bg-white/[0.025] px-4 py-4 sm:mt-8 sm:gap-x-7 sm:gap-y-3 sm:px-5">
           {["Licensed & Insured", "Long Island Local", "Financing Available", "Free Estimates"].map((item) => (
             <div key={item} className="flex items-center gap-1.5 sm:gap-2">
               <span className="h-1 w-1 flex-shrink-0 rounded-full bg-[#D4A574]/70" />

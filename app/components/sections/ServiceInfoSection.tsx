@@ -163,14 +163,14 @@ export default function ServiceInfoSection() {
       aria-label="Service info"
     >
       <div className="mx-auto max-w-[1240px] px-5 lg:px-5">
-        <div className="rounded-[14px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] overflow-hidden">
+        <div className="rounded-[8px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.08)] overflow-hidden">
           <div className="p-5 sm:p-6 lg:p-8">
             <div className="max-w-[860px]">
               <div className="inline-flex flex-wrap items-center gap-2 mb-4">
-                <span className="px-3 py-1 rounded-full bg-[#313234] text-white text-[12px] font-bold uppercase tracking-wider">
+                <span className="px-3 py-1 rounded-[6px] bg-[#313234] text-white text-[12px] font-bold uppercase tracking-wider">
                   {hero.eyebrow}
                 </span>
-                <span className="px-3 py-1 rounded-full bg-white border border-[#C5CBD8] text-[12px] font-semibold text-[#313234]">
+                <span className="px-3 py-1 rounded-[6px] bg-white border border-[#C5CBD8] text-[12px] font-semibold text-[#313234]">
                   {hero.badge}
                 </span>
               </div>
@@ -187,7 +187,7 @@ export default function ServiceInfoSection() {
                 {["$149", "$249", "$349", "$499"].map((price) => (
                   <div
                     key={price}
-                    className="px-4 py-2 rounded-[14px] bg-white border border-[#C5CBD8] text-[#313234] text-sm sm:text-base font-extrabold"
+                    className="px-4 py-2 rounded-[8px] bg-white border border-[#C5CBD8] text-[#313234] text-sm sm:text-base font-extrabold"
                   >
                     {price}
                   </div>
@@ -203,7 +203,7 @@ export default function ServiceInfoSection() {
                   }}
                   data-track="hero-cta"
                   size="md"
-                  className="h-[46px] rounded-[16px] flex-1"
+                  className="h-[46px] rounded-[8px] flex-1"
                 >
                   View Plans
                 </Button>
@@ -217,7 +217,7 @@ export default function ServiceInfoSection() {
                   data-track="hero-cta"
                   variant="secondary"
                   size="md"
-                  className="h-[46px] rounded-[16px] flex-1"
+                  className="h-[46px] rounded-[8px] flex-1"
                 >
                   Book Visit
                 </Button>

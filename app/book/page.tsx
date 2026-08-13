@@ -665,14 +665,14 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
             </p>
             {hasActiveMembership && <Link href="/book?visit=membership" className="mt-1 inline-flex text-[10px] font-bold text-[#306EEC] sm:text-[12px]">Need your included visit? Book here</Link>}
             {configError && (
-              <div className="mt-4 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] font-semibold text-amber-800">
+              <div className="mt-4 rounded-[8px] border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] font-semibold text-amber-800">
                 {configError}
               </div>
             )}
           </div>
 
           {false && !hasActiveMembership && (
-            <div className="mb-5 overflow-hidden rounded-[16px] border border-[#E5E9F2] bg-white/92 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:mb-7 sm:rounded-[18px] sm:p-6 lg:p-7">
+            <div className="mb-5 overflow-hidden rounded-[8px] border border-[#E5E9F2] bg-white/92 p-4 shadow-[0_18px_54px_rgba(15,23,42,0.06)] sm:mb-7 sm:rounded-[10px] sm:p-6 lg:p-7">
               <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
                 <div>
                   <h2 className="text-[23px] font-black leading-[1.02] tracking-[-0.035em] text-[#0B1628] sm:text-[30px] sm:tracking-[-0.045em]">
@@ -693,7 +693,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                         placement: "book_non_member_recommendation",
                       })
                     }
-                    className="inline-flex h-12 items-center justify-center rounded-full bg-[#0B1628] px-6 text-[14px] font-black text-white shadow-[0_14px_34px_rgba(11,22,40,0.18)] transition hover:-translate-y-0.5 hover:bg-[#1B2A44] active:translate-y-0"
+                    className="inline-flex h-12 items-center justify-center rounded-[8px] bg-[#0B1628] px-6 text-[14px] font-black text-white shadow-[0_14px_34px_rgba(11,22,40,0.18)] transition hover:-translate-y-0.5 hover:bg-[#1B2A44] active:translate-y-0"
                   >
                     Become a Member
                   </Link>
@@ -704,7 +704,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                         placement: "book_non_member_recommendation",
                       })
                     }
-                    className="inline-flex h-12 items-center justify-center rounded-full border border-[#D7DEEA] bg-white px-6 text-[14px] font-black text-[#0B1628] transition hover:border-[#C6D7FF] hover:bg-[#F8FAFF]"
+                    className="inline-flex h-12 items-center justify-center rounded-[8px] border border-[#D7DEEA] bg-white px-6 text-[14px] font-black text-[#0B1628] transition hover:border-[#C6D7FF] hover:bg-[#F8FAFF]"
                   >
                     Continue with One-Time Visit
                   </a>
@@ -721,7 +721,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
 
           <div id="booking-form" className="grid grid-cols-1 gap-3 scroll-mt-6 sm:gap-4 lg:grid-cols-12 lg:gap-6">
             <div className="order-2 lg:order-1 lg:col-span-5">
-              <div className="rounded-[10px] border border-[#E5E9F2] bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[16px] sm:p-4">
+              <div className="rounded-[6px] border border-[#E5E9F2] bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[8px] sm:p-4">
                 <div className="mb-1 flex items-center justify-between sm:mb-3">
                   <button
                     type="button"
@@ -735,7 +735,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                         )
                       )
                     }
-                    className="grid h-[34px] w-[34px] place-items-center rounded-[7px] border border-[#E5E9F2] bg-[#F8FAFF] text-[12px] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 sm:h-10 sm:w-10 sm:rounded-[10px]"
+                    className="grid h-[34px] w-[34px] place-items-center rounded-[6px] border border-[#E5E9F2] bg-[#F8FAFF] text-[12px] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 sm:h-10 sm:w-10"
                   >
                     &lt;
                   </button>
@@ -754,7 +754,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                         )
                       )
                     }
-                    className="grid h-[34px] w-[34px] place-items-center rounded-[7px] border border-[#E5E9F2] bg-[#F8FAFF] text-[12px] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 sm:h-10 sm:w-10 sm:rounded-[10px]"
+                    className="grid h-[34px] w-[34px] place-items-center rounded-[6px] border border-[#E5E9F2] bg-[#F8FAFF] text-[12px] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 sm:h-10 sm:w-10"
                   >
                     &gt;
                   </button>
@@ -787,7 +787,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                         disabled={disabled}
                         onClick={() => chooseDate(day.ymd)}
                         className={[
-                          "mx-auto grid h-7 w-7 place-items-center rounded-[7px] text-[10px] font-semibold transition-all duration-150 sm:h-10 sm:w-10 sm:rounded-[10px] sm:text-[14px]",
+                          "mx-auto grid h-7 w-7 place-items-center rounded-[6px] text-[10px] font-semibold transition-all duration-150 sm:h-10 sm:w-10 sm:text-[14px]",
                           day.muted ? "text-[#C5CBD8]" : "",
                           disabled ? "cursor-not-allowed text-[#C5CBD8]" : "",
                           !disabled && !selected
@@ -807,7 +807,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
             </div>
 
             <div className="contents lg:order-2 lg:col-span-7 lg:flex lg:flex-col lg:gap-5">
-              <div className="order-1 rounded-[10px] border border-[#E5E9F2] bg-white/95 p-2 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[16px] sm:p-4 lg:order-none">
+              <div className="order-1 rounded-[6px] border border-[#E5E9F2] bg-white/95 p-2 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[8px] sm:p-4 lg:order-none">
                 {isLoading ? (
                   <div className="py-8 text-center text-[14px] font-semibold text-[#64748B]">
                     Loading your account...
@@ -822,13 +822,13 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                     <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
                       <Link
                         href="/signin"
-                        className="rounded-[14px] bg-[#306EEC] px-5 py-3 text-[14px] font-extrabold text-white"
+                        className="rounded-[8px] bg-[#306EEC] px-5 py-3 text-[14px] font-extrabold text-white"
                       >
                         Log In
                       </Link>
                       <Link
                         href="/signup"
-                        className="rounded-[14px] border border-[#C5CBD8] px-5 py-3 text-[14px] font-extrabold text-[#0B1628]"
+                        className="rounded-[8px] border border-[#C5CBD8] px-5 py-3 text-[14px] font-extrabold text-[#0B1628]"
                       >
                         Create Account
                       </Link>
@@ -849,7 +849,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                         value={addressId}
                         onChange={(event) => setAddressId(event.target.value)}
                         aria-label="Booking address"
-                        className="mt-1 min-h-9 w-full rounded-[8px] border border-[#C5CBD8] bg-[#F8FAFF] px-2 text-[10px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:min-h-11 sm:text-[13px]"
+                        className="mt-1 min-h-9 w-full rounded-[6px] border border-[#C5CBD8] bg-[#F8FAFF] px-2 text-[10px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:min-h-11 sm:text-[13px]"
                       ><option value="">Choose address</option>{addresses.map((address) => <option key={address._id} value={address._id}>{addressLabel(address)}</option>)}</select>}
                       {!addresses.length && (
                         <Link
@@ -871,7 +871,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                         onClick={() => setServicePickerOpen((open) => !open)}
                         aria-expanded={servicePickerOpen}
                         className={[
-                          "group flex min-h-10 w-full items-center justify-between gap-2 rounded-[8px] bg-[#F7F8FB] px-2 py-1 text-left transition duration-200 hover:bg-white focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 sm:min-h-12 sm:rounded-[12px] sm:px-3",
+                          "group flex min-h-10 w-full items-center justify-between gap-2 rounded-[6px] bg-[#F7F8FB] px-2 py-1 text-left transition duration-200 hover:bg-white focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 sm:min-h-12 sm:rounded-[8px] sm:px-3",
                           selectedTask ? "ring-1 ring-[#D7E4FF]" : "ring-1 ring-[#E5E9F2]",
                         ].join(" ")}
                       >
@@ -906,7 +906,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                             aria-modal="true"
                             aria-labelledby="service-picker-title"
                             style={{ "--customer-nav-height": `${CUSTOMER_MOBILE_NAV_HEIGHT_PX}px` } as CSSProperties}
-                            className="fixed inset-x-3 bottom-[calc(var(--customer-nav-height)_+_env(safe-area-inset-bottom,0px)_+_8px)] z-[90] flex max-h-[calc(100dvh_-_var(--customer-nav-height)_-_env(safe-area-inset-bottom,0px)_-_24px)] flex-col overflow-hidden rounded-[14px] bg-white shadow-[0_30px_90px_rgba(7,19,37,0.28)] sm:absolute sm:inset-x-0 sm:bottom-auto sm:top-[calc(100%+10px)] sm:z-30 sm:max-h-[420px] sm:rounded-[22px]"
+                            className="fixed inset-x-3 bottom-[calc(var(--customer-nav-height)_+_env(safe-area-inset-bottom,0px)_+_8px)] z-[90] flex max-h-[calc(100dvh_-_var(--customer-nav-height)_-_env(safe-area-inset-bottom,0px)_-_24px)] flex-col overflow-hidden rounded-[8px] bg-white shadow-[0_30px_90px_rgba(7,19,37,0.28)] sm:absolute sm:inset-x-0 sm:bottom-auto sm:top-[calc(100%+10px)] sm:z-30 sm:max-h-[420px] sm:rounded-[10px]"
                           >
                             <div className="flex flex-shrink-0 items-center justify-between border-b border-[#E5E9F2] px-3 py-2.5">
                               <div>
@@ -941,7 +941,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                                       setServicePickerOpen(false);
                                     }}
                                     className={[
-                                      "min-h-[46px] whitespace-normal break-words rounded-[12px] px-3 py-2 text-left text-[12px] font-black leading-4 transition duration-150 active:scale-[0.98] sm:min-h-[58px] sm:rounded-[14px] sm:text-[13px]",
+                                      "min-h-[46px] whitespace-normal break-words rounded-[8px] px-3 py-2 text-left text-[12px] font-black leading-4 transition duration-150 active:scale-[0.98] sm:min-h-[58px] sm:text-[13px]",
                                       active
                                         ? "bg-[#0B1628] text-white shadow-[0_16px_34px_rgba(11,22,40,0.22)]"
                                         : "bg-[#F5F7FA] text-[#0B1628] hover:bg-[#EEF4FF]",
@@ -986,7 +986,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                           </p>
                           <Link
                             href="/book?visit=membership"
-                            className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-[13px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF]"
+                            className="mt-4 inline-flex h-11 items-center justify-center rounded-[8px] bg-white px-5 text-[13px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF]"
                           >
                             Book included visit
                           </Link>
@@ -1009,7 +1009,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                                   placement: "book_service_selector_card",
                                 })
                               }
-                              className="hidden flex-shrink-0 rounded-full bg-white px-4 py-2 text-[12px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF] sm:inline-flex"
+                              className="hidden flex-shrink-0 rounded-[6px] bg-white px-4 py-2 text-[12px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF] sm:inline-flex"
                             >
                               Compare
                             </Link>
@@ -1043,7 +1043,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                                 placement: "book_service_selector_card_mobile",
                               })
                             }
-                            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-full bg-white text-[13px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF] sm:hidden"
+                            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-[8px] bg-white text-[13px] font-black text-[#0B1628] transition hover:bg-[#EEF4FF] sm:hidden"
                           >
                             Compare Membership
                           </Link>
@@ -1056,21 +1056,21 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
 
               {isAuthenticated && (
                 <>
-                  <div className="order-3 rounded-[10px] border border-[#E5E9F2] bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[16px] sm:p-4 lg:order-none">
+                  <div className="order-3 rounded-[6px] border border-[#E5E9F2] bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[8px] sm:p-4 lg:order-none">
                     <h2 className="mb-1 text-[11px] font-extrabold text-[#0B1628] sm:text-[15px]">Time</h2>
 
                     {autoSelectingDate ? (
-                      <div className="rounded-[16px] border border-[#D9E4FF] bg-[#F0F7FF] px-4 py-5 text-center text-[14px] font-semibold text-[#475569]">
+                      <div className="rounded-[8px] border border-[#D9E4FF] bg-[#F0F7FF] px-4 py-5 text-center text-[14px] font-semibold text-[#475569]">
                         Finding the soonest available appointment...
                       </div>
                     ) : noAvailabilityMessage ? (
-                      <div className="rounded-[16px] border border-amber-200 bg-amber-50 px-4 py-5 text-center text-[14px] font-semibold text-amber-800">
+                      <div className="rounded-[8px] border border-amber-200 bg-amber-50 px-4 py-5 text-center text-[14px] font-semibold text-amber-800">
                         {noAvailabilityMessage}
                       </div>
                     ) : loadingSlots ? (
                       <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 sm:gap-2">
                         {[1, 2, 3, 4, 5, 6].map((item) => (
-                          <div key={item} className="h-9 animate-pulse rounded-[7px] bg-[#F1F5F9] sm:h-11 sm:rounded-[10px]" />
+                          <div key={item} className="h-9 animate-pulse rounded-[6px] bg-[#F1F5F9] sm:h-11" />
                         ))}
                       </div>
                     ) : slots.length ? (
@@ -1081,7 +1081,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                             type="button"
                             onClick={() => setSelectedTime(slot)}
                             className={[
-                              "min-h-9 rounded-[7px] border px-1 text-[10px] font-extrabold transition active:scale-[0.99] sm:min-h-11 sm:rounded-[10px] sm:text-[13px]",
+                              "min-h-9 rounded-[6px] border px-1 text-[10px] font-extrabold transition active:scale-[0.99] sm:min-h-11 sm:text-[13px]",
                               selectedTime === slot
                                 ? "border-[#306EEC] bg-[#306EEC] text-white shadow-[0_10px_28px_rgba(48,110,236,0.28)]"
                                 : "border-[#E5E9F2] bg-[#F8FAFF] text-[#1D4ED8] hover:border-[#D9E4FF] hover:bg-[#EEF5FF]",
@@ -1092,13 +1092,13 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                         ))}
                       </div>
                     ) : (
-                      <div className="rounded-[16px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-5 text-center text-[14px] text-[#64748B]">
+                      <div className="rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-5 text-center text-[14px] text-[#64748B]">
                         Choose an available date to see times.
                       </div>
                     )}
                   </div>
 
-                  <div className="order-4 rounded-[10px] border border-[#E5E9F2] bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[16px] sm:p-4 lg:order-none">
+                  <div className="order-4 rounded-[6px] border border-[#E5E9F2] bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[8px] sm:p-4 lg:order-none">
                     <h2 className="mb-1 text-[11px] font-extrabold text-[#0B1628] sm:text-[15px]">Task details</h2>
 
                     <textarea
@@ -1106,7 +1106,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                       onChange={(event) => setNote(event.target.value)}
                       rows={3}
                       placeholder="Describe your task. If we need to bring any materials or special tools, please let us know."
-                      className="min-h-12 w-full resize-y rounded-[7px] border border-[#C5CBD8] bg-[#F8FAFF] p-1 text-[10px] text-[#0B1628] outline-none transition placeholder:text-[#94A3B8] focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:min-h-[82px] sm:rounded-[10px] sm:p-2.5 sm:text-[14px]"
+                      className="min-h-12 w-full resize-y rounded-[6px] border border-[#C5CBD8] bg-[#F8FAFF] p-1 text-[10px] text-[#0B1628] outline-none transition placeholder:text-[#94A3B8] focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:min-h-[82px] sm:p-2.5 sm:text-[14px]"
                     />
 
                     <div className="mt-1">
@@ -1117,7 +1117,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                         <button
                           type="button"
                           onClick={() => cameraInputRef.current?.click()}
-                          className="flex h-9 flex-1 items-center justify-center gap-1 rounded-[7px] border border-[#C5CBD8] bg-[#F8FAFF] text-[9px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-11 sm:text-[13px]"
+                          className="flex h-9 flex-1 items-center justify-center gap-1 rounded-[6px] border border-[#C5CBD8] bg-[#F8FAFF] text-[9px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-11 sm:text-[13px]"
                         >
                           <svg
                             width="12"
@@ -1146,7 +1146,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                         <button
                           type="button"
                           onClick={() => galleryInputRef.current?.click()}
-                          className="flex h-9 flex-1 items-center justify-center gap-1 rounded-[7px] border border-[#C5CBD8] bg-[#F8FAFF] text-[9px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-11 sm:text-[13px]"
+                          className="flex h-9 flex-1 items-center justify-center gap-1 rounded-[6px] border border-[#C5CBD8] bg-[#F8FAFF] text-[9px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] sm:h-11 sm:text-[13px]"
                         >
                           <svg
                             width="12"
@@ -1209,7 +1209,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                           {photos.map((_photo, index) => (
                             <div
                               key={`${_photo.name}-${index}`}
-                              className="relative overflow-hidden rounded-[12px] border border-[#E5E9F2] bg-[#F8FAFF]"
+                              className="relative overflow-hidden rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF]"
                               style={{ aspectRatio: "1" }}
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1233,23 +1233,23 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                     </div>
                   </div>
 
-                  <div className="order-5 rounded-[10px] border border-[#E5E9F2] bg-white/95 p-2 pb-[calc(76px+env(safe-area-inset-bottom,0px))] shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[16px] sm:p-4 lg:order-none">
+                  <div className="order-5 rounded-[6px] border border-[#E5E9F2] bg-white/95 p-2 pb-[calc(76px+env(safe-area-inset-bottom,0px))] shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:rounded-[8px] sm:p-4 lg:order-none">
                     <h2 className="mb-1 text-[11px] font-extrabold text-[#0B1628] sm:text-[15px]">Payment summary</h2>
 
                     <div className="mb-1 grid gap-1 text-[9px] text-[#475569] sm:text-[12px]">
-                      <div className="flex justify-between gap-2 rounded-[7px] bg-[#F8FAFF] px-2 py-1.5">
+                      <div className="flex justify-between gap-2 rounded-[6px] bg-[#F8FAFF] px-2 py-1.5">
                         <span>Extra Visit</span>
                         <strong className="text-right text-[#0B1628]">
                           {priceLabel} / {config.durationMinutes} minutes
                         </strong>
                       </div>
-                      <div className="flex justify-between gap-2 rounded-[7px] bg-[#F8FAFF] px-2 py-1.5">
+                      <div className="flex justify-between gap-2 rounded-[6px] bg-[#F8FAFF] px-2 py-1.5">
                         <span>Task</span>
                         <strong className="text-right text-[#0B1628]">
                           {selectedTask || "Not selected"}
                         </strong>
                       </div>
-                      <div className="flex justify-between gap-2 rounded-[7px] bg-[#F8FAFF] px-2 py-1.5">
+                      <div className="flex justify-between gap-2 rounded-[6px] bg-[#F8FAFF] px-2 py-1.5">
                         <span>Date &amp; time</span>
                         <strong className="text-right text-[#0B1628]">
                           {selectedDate ? dayLabel(selectedDate) : "Not selected"}
@@ -1257,7 +1257,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                         </strong>
                       </div>
                       {selectedAddress && (
-                        <div className="truncate rounded-[7px] bg-[#F8FAFF] px-2 py-1.5 font-semibold text-[#64748B]">
+                        <div className="truncate rounded-[6px] bg-[#F8FAFF] px-2 py-1.5 font-semibold text-[#64748B]">
                           {addressLabel(selectedAddress)}
                         </div>
                       )}
@@ -1268,7 +1268,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                     </div>
 
                     {error && (
-                      <div className="mb-1 rounded-[7px] border border-red-200 bg-red-50 px-2 py-1.5 text-[10px] font-semibold text-red-700 sm:text-[13px]">
+                      <div className="mb-1 rounded-[6px] border border-red-200 bg-red-50 px-2 py-1.5 text-[10px] font-semibold text-red-700 sm:text-[13px]">
                         {error}
                       </div>
                     )}
@@ -1277,7 +1277,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                       type="button"
                       onClick={submit}
                       disabled={loading || !config.enabled}
-                      className="h-11 w-full rounded-[9px] bg-[#306EEC] text-[12px] font-extrabold text-white transition hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99] sm:h-[54px] sm:rounded-[14px] sm:text-[15px]"
+                      className="h-11 w-full rounded-[6px] bg-[#306EEC] text-[12px] font-extrabold text-white transition hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99] sm:h-[54px] sm:rounded-[8px] sm:text-[15px]"
                       style={{ boxShadow: !loading && config.enabled ? "0 16px 48px rgba(48,110,236,0.30)" : undefined }}
                     >
                       {loading
@@ -1295,7 +1295,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
       </section>
 
       <section className="mx-auto max-w-[1280px] px-4 pb-8 sm:px-6 lg:px-8">
-        <details className="rounded-[12px] border border-[#E5E9F2] bg-white px-3 py-2 text-[#0B1628]">
+        <details className="rounded-[8px] border border-[#E5E9F2] bg-white px-3 py-2 text-[#0B1628]">
           <summary className="cursor-pointer text-[11px] font-extrabold sm:text-[13px]">Important information</summary>
           <div className="mt-2 grid gap-2 border-t border-[#E5E9F2] pt-2 text-[10px] leading-4 text-[#64748B] sm:grid-cols-3 sm:text-[12px]">
             <p><strong className="text-[#0B1628]">What&rsquo;s included:</strong> {pageCopy.includeText}</p>

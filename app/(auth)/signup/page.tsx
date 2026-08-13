@@ -77,7 +77,7 @@ function PasswordToggle({
         onChange={onChange}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className="h-12 w-full rounded-[11px] border border-white/[0.14] bg-white/[0.07] px-3.5 pr-11 text-[14px] text-white placeholder-white/32 outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
+        className="h-12 w-full rounded-[6px] border border-white/[0.14] bg-white/[0.07] px-3.5 pr-11 text-[14px] text-white placeholder-white/32 outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
       />
       <button
         type="button"
@@ -144,7 +144,7 @@ function FieldInput({
       placeholder={placeholder}
       autoComplete={autoComplete}
       maxLength={maxLength}
-      className="h-12 w-full rounded-[11px] border border-white/[0.14] bg-white/[0.07] px-3.5 text-[14px] text-white placeholder-white/32 outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
+      className="h-12 w-full rounded-[6px] border border-white/[0.14] bg-white/[0.07] px-3.5 text-[14px] text-white placeholder-white/32 outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
     />
   );
 }
@@ -360,7 +360,7 @@ export default function SignUpPage() {
           </Link>
           <Link
             href="/"
-            className="inline-flex min-h-[40px] items-center rounded-full border border-white/[0.13] bg-white/[0.08] px-4 text-[13px] font-bold text-white/72 transition hover:bg-white/[0.12] hover:text-white"
+            className="inline-flex min-h-[40px] items-center rounded-[8px] border border-white/[0.13] bg-white/[0.08] px-4 text-[13px] font-bold text-white/72 transition hover:bg-white/[0.12] hover:text-white"
           >
             Back to Home
           </Link>
@@ -368,7 +368,7 @@ export default function SignUpPage() {
 
         <main className="grid flex-1 items-center gap-6 py-5 lg:grid-cols-[0.82fr_1fr] lg:gap-10 lg:py-7">
           <section className="hidden max-w-[440px] lg:block">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.08] px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white/58">
+            <div className="inline-flex items-center gap-2 rounded-[6px] border border-white/12 bg-white/[0.08] px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white/58">
               <span className="h-1.5 w-1.5 rounded-full bg-[#86EFAC]" />
               Long Island home care
             </div>
@@ -394,13 +394,13 @@ export default function SignUpPage() {
           </section>
 
           <section className="mx-auto w-full max-w-[570px]">
-            <div className="rounded-[14px] border border-white/[0.10] bg-white/[0.075] p-3 shadow-[0_20px_60px_rgba(0,0,0,0.20)] backdrop-blur-2xl sm:p-5 lg:p-6">
-              <div className="rounded-[17px] border border-white/[0.09] bg-[#071225]/72 p-3.5 sm:p-5">
+            <div className="rounded-[8px] border border-white/[0.10] bg-white/[0.075] p-3 shadow-[0_20px_60px_rgba(0,0,0,0.20)] backdrop-blur-2xl sm:p-5 lg:p-6">
+              <div className="rounded-[8px] border border-white/[0.09] bg-[#071225]/72 p-3.5 sm:p-5">
                 {step > 1 ? (
                   <button
                     type="button"
                     onClick={handleBackStep}
-                    className="mb-3.5 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/[0.10] bg-white/[0.05] px-3 py-1.5 text-[12px] font-bold text-white/58 transition hover:bg-white/[0.09] hover:text-white"
+                    className="mb-3.5 inline-flex min-h-9 items-center gap-1.5 rounded-[8px] border border-white/[0.10] bg-white/[0.05] px-3 py-1.5 text-[12px] font-bold text-white/58 transition hover:bg-white/[0.09] hover:text-white"
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                       <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
@@ -411,7 +411,7 @@ export default function SignUpPage() {
 
                 {/* Keeps the reason for the form visible at every step, and on
                     mobile where the left value panel is hidden. */}
-                <div className="mb-4 flex items-center gap-2.5 rounded-[12px] border border-[#86EFAC]/25 bg-[#86EFAC]/[0.07] px-3 py-2.5">
+                <div className="mb-4 flex items-center gap-2.5 rounded-[8px] border border-[#86EFAC]/25 bg-[#86EFAC]/[0.07] px-3 py-2.5">
                   <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#86EFAC]/18 text-[#86EFAC]">
                     <svg width="11" height="9" viewBox="0 0 11 9" fill="none" aria-hidden="true">
                       <path d="M1 4.5L4 7.5L10 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -477,7 +477,7 @@ export default function SignUpPage() {
                             value={formData.county}
                             onChange={(e) => handleChange("county", e.target.value)}
                             autoComplete="address-level3"
-                            className="auth-dark-select h-12 w-full rounded-[11px] border border-white/[0.14] bg-white/[0.07] px-3.5 text-[14px] text-white outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
+                            className="auth-dark-select h-12 w-full rounded-[6px] border border-white/[0.14] bg-white/[0.07] px-3.5 text-[14px] text-white outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
                           >
                             <option value="">Select County</option>
                             <option value="Nassau">Nassau</option>
@@ -574,7 +574,7 @@ export default function SignUpPage() {
                         ) : null}
                       </div>
 
-                      <label className="flex cursor-pointer items-start gap-2.5 rounded-[12px] border border-white/[0.09] bg-white/[0.04] p-3">
+                      <label className="flex cursor-pointer items-start gap-2.5 rounded-[8px] border border-white/[0.09] bg-white/[0.04] p-3">
                         <span className="relative mt-0.5 flex flex-shrink-0">
                           <input
                             type="checkbox"
@@ -608,7 +608,7 @@ export default function SignUpPage() {
                   ) : null}
 
                   {error ? (
-                    <div className="rounded-[11px] border border-red-400/25 bg-red-500/[0.10] px-3.5 py-2.5 text-center text-[12px] font-semibold text-red-200">
+                    <div className="rounded-[6px] border border-red-400/25 bg-red-500/[0.10] px-3.5 py-2.5 text-center text-[12px] font-semibold text-red-200">
                       {error}
                     </div>
                   ) : null}
@@ -616,7 +616,7 @@ export default function SignUpPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="mt-0.5 flex h-12 w-full items-center justify-center rounded-[12px] bg-[#306EEC] text-[14px] font-black text-white shadow-[0_10px_28px_rgba(48,110,236,0.28)] transition hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-55"
+                    className="mt-0.5 flex h-12 w-full items-center justify-center rounded-[8px] bg-[#306EEC] text-[14px] font-black text-white shadow-[0_10px_28px_rgba(48,110,236,0.28)] transition hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-55"
                   >
                     {step === 4 ? (loading ? "Finishing..." : "Finish") : "Continue"}
                   </button>

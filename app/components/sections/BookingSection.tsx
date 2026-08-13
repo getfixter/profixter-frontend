@@ -186,7 +186,7 @@ function TimeSlotGrid({
               onSelect(slot.time);
             }}
             className={[
-              "group relative min-h-9 overflow-hidden rounded-[7px] border px-0.5 py-0 text-center transition-all duration-150 ease-out active:scale-[0.99] sm:min-h-11 sm:rounded-[9px] sm:px-2.5 sm:py-1.5",
+              "group relative min-h-9 overflow-hidden rounded-[6px] border px-0.5 py-0 text-center transition-all duration-150 ease-out active:scale-[0.99] sm:min-h-11 sm:px-2.5 sm:py-1.5",
               isSelected
                 ? "border-[#306EEC] bg-[#EEF5FF] text-[#0B1628] shadow-[0_8px_24px_rgba(48,110,236,0.12)] ring-2 ring-[#306EEC]/20"
                 : slot.available
@@ -1478,7 +1478,7 @@ if (next?.date) {
               tabIndex={-1}
               aria-labelledby="booking-date-label"
               aria-describedby={fieldErrors.date ? "booking-date-error" : undefined}
-              className={`rounded-[8px] border bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] outline-none sm:rounded-[12px] sm:p-4 ${fieldErrors.date ? "border-red-300" : "border-[#D7DEE9]"}`}
+              className={`rounded-[6px] border bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] outline-none sm:rounded-[8px] sm:p-4 ${fieldErrors.date ? "border-red-300" : "border-[#D7DEE9]"}`}
             >
               {/* Month navigation */}
               <div className="mb-1 flex items-center justify-between sm:mb-4">
@@ -1486,7 +1486,7 @@ if (next?.date) {
                   aria-label="Prev month"
                   disabled={calendarMode === "initializing"}
                   onClick={() => navigateCalendarMonth(-1)}
-                  className="grid h-[34px] w-[34px] place-items-center rounded-[7px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 [&_svg]:h-4 [&_svg]:w-4 sm:h-11 sm:w-11 sm:rounded-[10px] sm:[&_svg]:h-5 sm:[&_svg]:w-5"
+                  className="grid h-[34px] w-[34px] place-items-center rounded-[6px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 [&_svg]:h-4 [&_svg]:w-4 sm:h-11 sm:w-11 sm:[&_svg]:h-5 sm:[&_svg]:w-5"
                 >
                   <ChevronLeft />
                 </button>
@@ -1504,7 +1504,7 @@ if (next?.date) {
                   aria-label="Next month"
                   disabled={calendarMode === "initializing"}
                   onClick={() => navigateCalendarMonth(1)}
-                  className="grid h-[34px] w-[34px] place-items-center rounded-[7px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 [&_svg]:h-4 [&_svg]:w-4 sm:h-11 sm:w-11 sm:rounded-[10px] sm:[&_svg]:h-5 sm:[&_svg]:w-5"
+                  className="grid h-[34px] w-[34px] place-items-center rounded-[6px] border border-[#E5E9F2] bg-[#F8FAFF] text-[#475569] transition hover:border-[#D9E4FF] hover:bg-[#EEF5FF] active:scale-95 [&_svg]:h-4 [&_svg]:w-4 sm:h-11 sm:w-11 sm:[&_svg]:h-5 sm:[&_svg]:w-5"
                 >
                   <ChevronRight />
                 </button>
@@ -1516,13 +1516,13 @@ if (next?.date) {
               ) : null}
 
               {loadingMonthKey === visibleMonthKey && (
-                <div className="mb-4 rounded-[12px] border border-[#D9E4FF] bg-[#F0F7FF] px-3 py-2 text-[12px] font-semibold text-[#475569]">
+                <div className="mb-4 rounded-[8px] border border-[#D9E4FF] bg-[#F0F7FF] px-3 py-2 text-[12px] font-semibold text-[#475569]">
                   Checking availability...
                 </div>
               )}
 
               {showAvailabilityLoadError && (
-                <div className="mb-4 rounded-[12px] border border-red-200 bg-red-50 px-3 py-3 text-center">
+                <div className="mb-4 rounded-[8px] border border-red-200 bg-red-50 px-3 py-3 text-center">
                   <div className="text-[13px] font-semibold text-red-700">
                     Unable to load appointment availability.
                   </div>
@@ -1532,7 +1532,7 @@ if (next?.date) {
                       setAvailabilityError("");
                       setAvailabilityRetryToken((value) => value + 1);
                     }}
-                    className="mt-2 rounded-[10px] border border-red-300 px-3 py-2 text-[12px] font-bold text-red-700 transition hover:bg-red-100"
+                    className="mt-2 rounded-[6px] border border-red-300 px-3 py-2 text-[12px] font-bold text-red-700 transition hover:bg-red-100"
                   >
                     Retry
                   </button>
@@ -1576,7 +1576,7 @@ if (next?.date) {
                       onClick={() => handleDayClick(day.date, day.muted)}
                       disabled={disabled}
                       className={[
-                        "mx-auto grid h-7 w-7 place-items-center rounded-[7px] text-[10px] font-semibold transition-all duration-150 sm:h-10 sm:w-10 sm:rounded-[9px] sm:text-[15px]",
+                        "mx-auto grid h-7 w-7 place-items-center rounded-[6px] text-[10px] font-semibold transition-all duration-150 sm:h-10 sm:w-10 sm:text-[15px]",
                         day.muted ? "text-[#C5CBD8] cursor-not-allowed" : "",
                         disabled && !day.muted ? "text-[#C5CBD8] cursor-not-allowed" : "",
                         !disabled && !isSelected ? "bg-[#EEF5FF] text-[#1D4ED8] hover:bg-[#DBEAFE] hover:scale-105" : "",
@@ -1590,14 +1590,14 @@ if (next?.date) {
                 })}
               </div>
               {showNoAvailabilityThisMonth && (
-                <div className="mt-4 rounded-[12px] border border-[#E5E9F2] bg-[#F8FAFF] px-3 py-3 text-center">
+                <div className="mt-4 rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF] px-3 py-3 text-center">
                   <div className="text-[13px] font-semibold text-[#64748B]">
                     No available appointments in this month.
                   </div>
                   <button
                     type="button"
                     onClick={moveToNextAvailableMonth}
-                    className="mt-2 rounded-[10px] border border-[#306EEC] px-3 py-2 text-[12px] font-bold text-[#306EEC] transition hover:bg-[#EEF5FF]"
+                    className="mt-2 rounded-[6px] border border-[#306EEC] px-3 py-2 text-[12px] font-bold text-[#306EEC] transition hover:bg-[#EEF5FF]"
                   >
                     Next available month
                   </button>
@@ -1626,7 +1626,7 @@ if (next?.date) {
               role="group"
               tabIndex={-1}
               aria-describedby={fieldErrors.address ? "booking-address-error" : undefined}
-              className={`order-1 rounded-[8px] border bg-white px-1 py-0.5 shadow-[0_10px_30px_rgba(15,23,42,0.035)] outline-none sm:rounded-[12px] sm:p-3.5 lg:order-none ${fieldErrors.address ? "border-red-300" : "border-[#D7DEE9]"}`}
+              className={`order-1 rounded-[6px] border bg-white px-1 py-0.5 shadow-[0_10px_30px_rgba(15,23,42,0.035)] outline-none sm:rounded-[8px] sm:p-3.5 lg:order-none ${fieldErrors.address ? "border-red-300" : "border-[#D7DEE9]"}`}
             >
               {selectedAddressLabel ? (
                 <>
@@ -1655,7 +1655,7 @@ if (next?.date) {
                         clearFieldError("address");
                       }}
                       aria-required="true"
-                      className="mt-px min-h-[34px] w-full rounded-[7px] border border-[#C5CBD8] bg-[#F8FAFF] px-1.5 text-[10px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:mt-2 sm:min-h-11 sm:rounded-[10px] sm:px-2.5 sm:text-[13px]"
+                      className="mt-px min-h-[34px] w-full rounded-[6px] border border-[#C5CBD8] bg-[#F8FAFF] px-1.5 text-[10px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:mt-2 sm:min-h-11 sm:px-2.5 sm:text-[13px]"
                     >
                       {addresses.map((address) => (
                         <option key={address._id} value={address._id}>
@@ -1666,7 +1666,7 @@ if (next?.date) {
                   )}
                 </>
               ) : (
-                <div className="rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] font-semibold text-amber-800">
+                <div className="rounded-[6px] border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] font-semibold text-amber-800">
                   Add a service address in your account before booking.
                 </div>
               )}
@@ -1684,7 +1684,7 @@ if (next?.date) {
               tabIndex={-1}
               aria-labelledby="booking-time-label"
               aria-describedby={fieldErrors.time ? "booking-time-error" : undefined}
-              className={`order-3 rounded-[8px] border bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] outline-none sm:rounded-[12px] sm:p-4 lg:order-none ${fieldErrors.time ? "border-red-300" : "border-[#D7DEE9]"}`}
+              className={`order-3 rounded-[6px] border bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] outline-none sm:rounded-[8px] sm:p-4 lg:order-none ${fieldErrors.time ? "border-red-300" : "border-[#D7DEE9]"}`}
             >
               <div className="flex items-center justify-between gap-0.5 sm:mb-2 sm:gap-1">
                 <h3 id="booking-time-label" className="text-[11px] font-extrabold text-[#0B1628] sm:text-[15px]">Time<RequiredAsterisk /></h3>
@@ -1692,7 +1692,7 @@ if (next?.date) {
                   type="button"
                   onClick={() => setQuickBookOpen(true)}
                   disabled={checkingAccess || loadingMonthKey === visibleMonthKey}
-                  className="inline-flex h-[34px] flex-shrink-0 items-center gap-px rounded-[7px] border border-[#306EEC] px-0.5 text-[9px] font-bold text-[#306EEC] transition hover:bg-[#EEF5FF] disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:gap-1 sm:rounded-[9px] sm:px-2.5 sm:text-[12px]"
+                  className="inline-flex h-[34px] flex-shrink-0 items-center gap-px rounded-[6px] border border-[#306EEC] px-0.5 text-[9px] font-bold text-[#306EEC] transition hover:bg-[#EEF5FF] disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:gap-1 sm:px-2.5 sm:text-[12px]"
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sm:h-[13px] sm:w-[13px]">
                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -1705,7 +1705,7 @@ if (next?.date) {
                 loadingSelectedDate && displayedTimes.length === 0 ? (
                   <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 sm:gap-1.5">
                     {[1, 2, 3, 4, 5, 6].map((n) => (
-                      <div key={n} className="h-9 animate-pulse rounded-[7px] bg-[#F1F5F9] sm:h-11 sm:rounded-[11px]" />
+                      <div key={n} className="h-9 animate-pulse rounded-[6px] bg-[#F1F5F9] sm:h-11" />
                     ))}
                   </div>
                 ) : slotOptions.length > 0 ? (
@@ -1718,12 +1718,12 @@ if (next?.date) {
                     }}
                   />
                 ) : (
-                  <div className="rounded-[9px] border border-[#E5E9F2] bg-[#F8FAFF] px-2 py-2 text-center text-[11px] text-[#64748B] sm:rounded-[12px] sm:px-3 sm:py-3 sm:text-[13px]">
+                  <div className="rounded-[6px] border border-[#E5E9F2] bg-[#F8FAFF] px-2 py-2 text-center text-[11px] text-[#64748B] sm:rounded-[8px] sm:px-3 sm:py-3 sm:text-[13px]">
                     No times available for this date. Try a different day.
                   </div>
                 )
               ) : (
-                <div className="rounded-[9px] border border-[#E5E9F2] bg-[#F8FAFF] px-2 py-2 text-center text-[11px] text-[#64748B] sm:rounded-[12px] sm:px-3 sm:py-3 sm:text-[13px]">
+                <div className="rounded-[6px] border border-[#E5E9F2] bg-[#F8FAFF] px-2 py-2 text-center text-[11px] text-[#64748B] sm:rounded-[8px] sm:px-3 sm:py-3 sm:text-[13px]">
                   Select a date on the calendar to see available times.
                 </div>
               )}
@@ -1740,7 +1740,7 @@ if (next?.date) {
             </div>
 
             {/* Task details card */}
-            <div className="order-4 rounded-[8px] border border-[#D7DEE9] bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:rounded-[12px] sm:p-4 lg:order-none">
+            <div className="order-4 rounded-[6px] border border-[#D7DEE9] bg-white p-1 shadow-[0_10px_30px_rgba(15,23,42,0.035)] sm:rounded-[8px] sm:p-4 lg:order-none">
               <h3 className="mb-0.5 text-[11px] font-extrabold text-[#0B1628] sm:mb-2 sm:text-[15px]">Task details<RequiredAsterisk /></h3>
 
               <textarea
@@ -1755,7 +1755,7 @@ if (next?.date) {
                 aria-describedby={fieldErrors.note ? "booking-note-error" : undefined}
                 placeholder="Describe your task. If we need to bring any materials or special tools, please let us know."
                 rows={3}
-                className={`w-full min-h-12 max-h-[140px] rounded-[7px] border bg-[#F8FAFF] p-1 text-[10px] text-[#0B1628] placeholder-[#94A3B8] resize-y transition focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] sm:min-h-[82px] sm:rounded-[10px] sm:p-2.5 sm:text-[14px] ${
+                className={`w-full min-h-12 max-h-[140px] rounded-[6px] border bg-[#F8FAFF] p-1 text-[10px] text-[#0B1628] placeholder-[#94A3B8] resize-y transition focus:outline-none focus:ring-4 focus:ring-[#306EEC]/15 focus:border-[#306EEC] sm:min-h-[82px] sm:p-2.5 sm:text-[14px] ${
                   fieldErrors.note
                     ? "border-red-300"
                     : "border-[#C5CBD8]"
@@ -1789,7 +1789,7 @@ if (next?.date) {
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
-                    className="flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-[#C5CBD8] bg-[#F8FAFF] px-2 text-[12px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] active:scale-[0.99] sm:h-12 sm:gap-1.5 sm:rounded-[10px] sm:text-[13px]"
+                    className="flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[6px] border border-[#C5CBD8] bg-[#F8FAFF] px-2 text-[12px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] active:scale-[0.99] sm:h-12 sm:gap-1.5 sm:text-[13px]"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="flex-none">
                       <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -1800,7 +1800,7 @@ if (next?.date) {
                   <button
                     type="button"
                     onClick={() => galleryInputRef.current?.click()}
-                    className="flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-[#C5CBD8] bg-[#F8FAFF] px-2 text-[12px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] active:scale-[0.99] sm:h-12 sm:gap-1.5 sm:rounded-[10px] sm:text-[13px]"
+                    className="flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[6px] border border-[#C5CBD8] bg-[#F8FAFF] px-2 text-[12px] font-semibold text-[#475569] transition hover:border-[#306EEC] hover:bg-white hover:text-[#306EEC] active:scale-[0.99] sm:h-12 sm:gap-1.5 sm:text-[13px]"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="flex-none">
                       <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
@@ -1840,7 +1840,7 @@ if (next?.date) {
                       return (
                         <div
                           key={idx}
-                          className="relative overflow-hidden rounded-[10px] border border-[#E5E9F2] bg-[#F8FAFF] sm:rounded-[12px]"
+                          className="relative overflow-hidden rounded-[6px] border border-[#E5E9F2] bg-[#F8FAFF] sm:rounded-[8px]"
                           style={{ aspectRatio: "1" }}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1867,7 +1867,7 @@ if (next?.date) {
 
             {/* First Visit Free, eligible non-members only. Members never see this. */}
             {isAuthenticated && !checkingAccess && !hasSubscription && freeFirstVisitAvailable && (
-              <div className="order-5 rounded-[8px] border border-[#D7E0F5] bg-white p-3 sm:rounded-[12px] sm:p-5 lg:order-none">
+              <div className="order-5 rounded-[6px] border border-[#D7E0F5] bg-white p-3 sm:rounded-[8px] sm:p-5 lg:order-none">
                 <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#306EEC] sm:text-[11px]">
                   First Visit Free
                 </div>
@@ -1885,7 +1885,7 @@ if (next?.date) {
 
             {/* Property outside the service area: friendly, not an error. */}
             {isAuthenticated && !checkingAccess && !hasSubscription && outOfServiceArea && (
-              <div className="order-5 rounded-[8px] border border-[#D7E0F5] bg-white p-3 sm:rounded-[12px] sm:p-5 lg:order-none">
+              <div className="order-5 rounded-[6px] border border-[#D7E0F5] bg-white p-3 sm:rounded-[8px] sm:p-5 lg:order-none">
                 <div className="text-[13px] font-black leading-tight text-[#0B1628] sm:text-[16px]">
                   We don&rsquo;t reach this address yet
                 </div>
@@ -1899,7 +1899,7 @@ if (next?.date) {
 
             {/* Free visit completed: natural next step into the existing membership funnel. */}
             {isAuthenticated && !checkingAccess && !hasSubscription && introVisitConsumed && (
-              <div className="order-5 rounded-[8px] border border-[#D7E0F5] bg-white p-3 sm:rounded-[12px] sm:p-5 lg:order-none">
+              <div className="order-5 rounded-[6px] border border-[#D7E0F5] bg-white p-3 sm:rounded-[8px] sm:p-5 lg:order-none">
                 <div className="text-[13px] font-black leading-tight text-[#0B1628] sm:text-[18px]">
                   Your first visit is complete.
                 </div>
@@ -1912,7 +1912,7 @@ if (next?.date) {
                 <Link
                   href="/membership/plans"
                   onClick={() => trackEvent("membership_plans_viewed_after_free_visit", { placement: "booking_section" })}
-                  className="mt-3 inline-flex h-[40px] items-center rounded-[12px] bg-[#306EEC] px-5 text-[14px] font-bold text-white transition hover:bg-[#2558c9]"
+                  className="mt-3 inline-flex h-[40px] items-center rounded-[8px] bg-[#306EEC] px-5 text-[14px] font-bold text-white transition hover:bg-[#2558c9]"
                 >
                   View Membership Plans
                 </Link>
@@ -1924,12 +1924,12 @@ if (next?.date) {
 
             {/* Subscription warning */}
             {isAuthenticated && !checkingAccess && !hasSubscription && !freeFirstVisitAvailable && !introVisitConsumed && subscriptionError && (
-              <div className="order-5 rounded-[8px] border border-red-200 bg-red-50 p-2 sm:rounded-[12px] sm:p-5 lg:order-none">
+              <div className="order-5 rounded-[6px] border border-red-200 bg-red-50 p-2 sm:rounded-[8px] sm:p-5 lg:order-none">
                 <div className="mb-0.5 text-[12px] font-extrabold text-red-700 sm:mb-1 sm:text-[15px]">Booking unavailable for this address</div>
                 <div className="mb-2 text-[10px] text-red-600 sm:mb-4 sm:text-[13px]">{subscriptionError}</div>
                 <a
                   href="/account"
-                  className="inline-flex h-[40px] items-center px-5 rounded-[12px] bg-[#306EEC] text-white text-[14px] font-bold hover:bg-[#2558c9] transition"
+                  className="inline-flex h-[40px] items-center px-5 rounded-[8px] bg-[#306EEC] text-white text-[14px] font-bold hover:bg-[#2558c9] transition"
                 >
                   Open account
                 </a>
@@ -1938,7 +1938,7 @@ if (next?.date) {
 
             {/* Booking limit warning */}
             {isAuthenticated && hasSubscription && hasActiveBooking && (
-              <div className="order-5 rounded-[8px] border border-amber-200 bg-amber-50 p-2 sm:rounded-[12px] sm:p-5 lg:order-none">
+              <div className="order-5 rounded-[6px] border border-amber-200 bg-amber-50 p-2 sm:rounded-[8px] sm:p-5 lg:order-none">
                 <div className="mb-0.5 text-[12px] font-extrabold text-amber-800 sm:mb-1 sm:text-[15px]">Visit limit reached</div>
                 <div className="mb-1 text-[10px] text-amber-700 sm:mb-2 sm:text-[13px]">
                   You have{" "}
@@ -1964,7 +1964,7 @@ if (next?.date) {
                 <button
                   type="button"
                   onClick={() => rebook(activeBookings[0] || null)}
-                  className="inline-flex h-[40px] items-center px-5 rounded-[12px] bg-[#306EEC] text-white text-[14px] font-bold hover:bg-[#2558c9] transition"
+                  className="inline-flex h-[40px] items-center px-5 rounded-[8px] bg-[#306EEC] text-white text-[14px] font-bold hover:bg-[#2558c9] transition"
                 >
                   Reschedule visit
                 </button>
@@ -1973,12 +1973,12 @@ if (next?.date) {
 
             {/* Notice / Error banners */}
             {notice && (
-              <div className="order-6 rounded-[8px] border border-green-200 bg-green-50 px-2 py-1.5 text-[10px] font-semibold text-green-700 sm:rounded-[12px] sm:px-5 sm:py-4 sm:text-[14px] lg:order-none">
+              <div className="order-6 rounded-[6px] border border-green-200 bg-green-50 px-2 py-1.5 text-[10px] font-semibold text-green-700 sm:rounded-[8px] sm:px-5 sm:py-4 sm:text-[14px] lg:order-none">
                 {notice}
               </div>
             )}
             {error && (
-              <div className="order-6 rounded-[8px] border border-red-200 bg-red-50 px-2 py-1.5 text-[10px] text-red-700 sm:rounded-[12px] sm:px-5 sm:py-4 sm:text-[14px] lg:order-none">
+              <div className="order-6 rounded-[6px] border border-red-200 bg-red-50 px-2 py-1.5 text-[10px] text-red-700 sm:rounded-[8px] sm:px-5 sm:py-4 sm:text-[14px] lg:order-none">
                 {error}
               </div>
             )}
@@ -1989,7 +1989,7 @@ if (next?.date) {
                 onClick={handleBookNow}
                 data-track="booking-cta"
                 disabled={bookingActionDisabled}
-                className="h-11 w-full rounded-[8px] bg-[#306EEC] text-[12px] font-extrabold text-white transition-all hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99] sm:h-14 sm:rounded-[15px] sm:text-[16px]"
+                className="h-11 w-full rounded-[6px] bg-[#306EEC] text-[12px] font-extrabold text-white transition-all hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99] sm:h-14 sm:rounded-[8px] sm:text-[16px]"
                 style={{ boxShadow: !bookingActionDisabled ? "0 10px 30px rgba(48,110,236,0.25)" : undefined }}
               >
                 {checkingAccess
@@ -2023,7 +2023,7 @@ if (next?.date) {
                 ["Add photos", "Photos help us prepare the right tools and materials."],
                 ["Submit your visit", "We’ll review it and notify you when it is confirmed."],
               ].map(([title, description], index) => (
-                <li key={title} className="flex gap-2 rounded-[9px] border border-[#D7DEE9] bg-white px-2 py-2 sm:rounded-[12px] sm:px-3 sm:py-3">
+                <li key={title} className="flex gap-2 rounded-[6px] border border-[#D7DEE9] bg-white px-2 py-2 sm:rounded-[8px] sm:px-3 sm:py-3">
                   <span className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-[#EEF5FF] text-[9px] font-extrabold text-[#306EEC] sm:h-6 sm:w-6 sm:text-[11px]">
                     {index + 1}
                   </span>
@@ -2036,7 +2036,7 @@ if (next?.date) {
             </ol>
           </section>
 
-          <section aria-labelledby="good-to-know-title" className="mt-3 rounded-[10px] border border-[#D7DEE9] bg-white px-3 py-3 sm:mt-4 sm:rounded-[14px] sm:px-4 sm:py-4">
+          <section aria-labelledby="good-to-know-title" className="mt-3 rounded-[6px] border border-[#D7DEE9] bg-white px-3 py-3 sm:mt-4 sm:rounded-[8px] sm:px-4 sm:py-4">
             <h3 id="good-to-know-title" className="text-[13px] font-extrabold text-[#0B1628] sm:text-[17px]">Good to know</h3>
             <div className="mt-2 grid gap-2 text-[10px] leading-4 text-[#64748B] sm:grid-cols-3 sm:gap-4 sm:text-[12px] sm:leading-5">
               <div>
@@ -2066,7 +2066,7 @@ if (next?.date) {
             onClick={() => { if (!quickBookingLoading) setQuickBookOpen(false); }}
           >
             <div
-              className="max-h-[90vh] w-full max-w-[700px] overflow-y-auto rounded-[16px] bg-white p-5 shadow-[0_32px_100px_rgba(0,0,0,0.28)] sm:rounded-[16px] sm:p-7"
+              className="max-h-[90vh] w-full max-w-[700px] overflow-y-auto rounded-[8px] bg-white p-5 shadow-[0_32px_100px_rgba(0,0,0,0.28)] sm:p-7"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-start justify-between gap-4 mb-6">
@@ -2101,9 +2101,9 @@ if (next?.date) {
                     type="button"
                     disabled={quickBookingLoading}
                     onClick={() => handleQuickBookingSelect(task.title)}
-                    className="group flex items-start gap-3 rounded-[16px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-4 text-left transition hover:border-[#306EEC] hover:bg-white disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="group flex items-start gap-3 rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-4 text-left transition hover:border-[#306EEC] hover:bg-white disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <div className="flex-shrink-0 w-9 h-9 rounded-[10px] border border-[#E5E9F2] bg-white flex items-center justify-center text-[#64748B] group-hover:text-[#306EEC] group-hover:border-[#D9E4FF] transition">
+                    <div className="flex-shrink-0 w-9 h-9 rounded-[6px] border border-[#E5E9F2] bg-white flex items-center justify-center text-[#64748B] group-hover:text-[#306EEC] group-hover:border-[#D9E4FF] transition">
                       {task.icon}
                     </div>
                     <div className="min-w-0">

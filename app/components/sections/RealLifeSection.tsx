@@ -40,7 +40,7 @@ export default function RealLifeSection() {
 
         {/* Header */}
         <div className="text-center mb-8 sm:mb-16">
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
+          <div className="inline-flex items-center gap-2.5 rounded-[6px] border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
               <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
               <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -64,7 +64,7 @@ export default function RealLifeSection() {
           {MONTHS.map(({ label, color, bgColor, borderColor, tasks }) => (
             <div
               key={label}
-              className="rounded-[14px] p-7 flex flex-col gap-5"
+              className="rounded-[8px] p-7 flex flex-col gap-5"
               style={{ background: bgColor, border: `1px solid ${borderColor}` }}
             >
               <div className="flex items-center gap-3">
@@ -92,7 +92,7 @@ export default function RealLifeSection() {
 
         {/* Bottom line */}
         <div className="max-w-[680px] mx-auto text-center">
-          <div className="rounded-[14px] border border-[#C5CBD8] bg-white px-6 py-6 shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
+          <div className="rounded-[8px] border border-[#C5CBD8] bg-white px-6 py-6 shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
             <p className="text-[17px] sm:text-[19px] font-extrabold text-[#0B1628] leading-snug mb-2">
               &ldquo;Instead of waiting until everything breaks, you stay ahead of your home.&rdquo;
             </p>

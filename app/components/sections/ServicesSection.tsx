@@ -37,7 +37,7 @@ type Faq = (typeof homepageFaqs)[number];
 function FaqRow({ faq, isOpen, onToggle }: { faq: Faq; isOpen: boolean; onToggle: () => void }) {
   return (
     <div
-      className={`rounded-[13px] border transition-all duration-200 overflow-hidden ${
+      className={`rounded-[8px] border transition-all duration-200 overflow-hidden ${
         isOpen
           ? "border-[#306EEC]/30 bg-[#EEF5FF]"
           : "border-white/[0.09] bg-white/[0.04] hover:bg-white/[0.07] hover:border-white/[0.14]"
@@ -176,7 +176,7 @@ export default function ServicesSection() {
             {STATS.map(({ value, label }) => (
               <div
                 key={label}
-                className="rounded-[16px] border border-white/[0.09] bg-white/[0.04] px-4 py-4 text-center"
+                className="rounded-[8px] border border-white/[0.09] bg-white/[0.04] px-4 py-4 text-center"
               >
                 <div className="text-[19px] font-extrabold text-white leading-none mb-1">
                   {value}
@@ -208,7 +208,7 @@ export default function ServicesSection() {
           <div className="flex flex-col gap-4">
             {/* Still have questions */}
             <div
-              className="rounded-[14px] border border-white/[0.10] p-7 flex flex-col gap-5"
+              className="rounded-[8px] border border-white/[0.10] p-7 flex flex-col gap-5"
               style={{
                 background:
                   "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
@@ -226,7 +226,7 @@ export default function ServicesSection() {
 
               <a
                 href="tel:+16315991363"
-                className="flex items-center gap-3.5 rounded-[14px] border border-white/[0.12] bg-white/[0.06] px-4 py-4 hover:border-white/[0.22] hover:bg-white/[0.10] transition-all duration-200 group"
+                className="flex items-center gap-3.5 rounded-[8px] border border-white/[0.12] bg-white/[0.06] px-4 py-4 hover:border-white/[0.22] hover:bg-white/[0.10] transition-all duration-200 group"
               >
                 <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#306EEC] group-hover:bg-[#2558c9] transition-colors">
                   <svg
@@ -263,7 +263,7 @@ export default function ServicesSection() {
 
             {/* CTA card */}
             <div
-              className="rounded-[14px] border border-[#306EEC]/20 p-7 flex flex-col gap-5"
+              className="rounded-[8px] border border-[#306EEC]/20 p-7 flex flex-col gap-5"
               style={{
                 background:
                   "linear-gradient(145deg, rgba(48,110,236,0.12) 0%, rgba(48,110,236,0.06) 100%)",
@@ -281,7 +281,7 @@ export default function ServicesSection() {
               <button
                 type="button"
                 onClick={scrollToPlans}
-                className="w-full rounded-[14px] bg-[#306EEC] py-3.5 text-[15px] font-extrabold text-white transition-all hover:-translate-y-0.5 hover:bg-[#2558c9]"
+                className="w-full rounded-[8px] bg-[#306EEC] py-3.5 text-[15px] font-extrabold text-white transition-all hover:-translate-y-0.5 hover:bg-[#2558c9]"
                 style={{ boxShadow: "0 12px 36px rgba(48,110,236,0.28)" }}
               >
                 View Membership Plans

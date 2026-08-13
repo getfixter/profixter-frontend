@@ -123,9 +123,9 @@ export default function IncludedVisitsSection() {
           {VISIT_CATEGORIES.map((category) => (
             <article
               key={category.title}
-              className="rounded-[16px] border border-[#E5E7EB] bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.06)] sm:rounded-[16px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
+              className="rounded-[8px] border border-[#E5E7EB] bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.06)] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.06)]"
             >
-              <div className="grid h-12 w-12 place-items-center rounded-[16px] bg-[#EEF5FF] text-[#306EEC]" aria-hidden="true">
+              <div className="grid h-12 w-12 place-items-center rounded-[8px] bg-[#EEF5FF] text-[#306EEC]" aria-hidden="true">
                 <CategoryIcon kind={category.kind} />
               </div>
               <h3 className="mt-4 min-h-[46px] text-[19px] font-semibold leading-tight tracking-normal text-[#111111] sm:mt-5 sm:min-h-[64px] sm:text-[23px]">
@@ -143,7 +143,7 @@ export default function IncludedVisitsSection() {
           ))}
         </div>
 
-        <div className="mx-auto mt-7 max-w-[980px] rounded-[16px] border border-[#DDE3EE] bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.06)] sm:mt-10 sm:rounded-[16px] sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.06)] lg:p-8">
+        <div className="mx-auto mt-7 max-w-[980px] rounded-[8px] border border-[#DDE3EE] bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.06)] sm:mt-10 sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.06)] lg:p-8">
           <div className="grid gap-6 md:grid-cols-2">
             <div>
               <div className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#306EEC]">

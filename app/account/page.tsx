@@ -168,7 +168,7 @@ export default function AccountPage() {
             {/* The redirect above is already running; this is what shows for
                 the instant before it lands. */}
             {activeTab === "bookings" && (
-              <div id="my-bookings" className="rounded-[14px] border border-[#D7DEE9] bg-white p-5">
+              <div id="my-bookings" className="rounded-[8px] border border-[#D7DEE9] bg-white p-5">
                 <p className="text-[13.5px] leading-5 text-[#6E6E73]">Opening your visits...</p>
               </div>
             )}

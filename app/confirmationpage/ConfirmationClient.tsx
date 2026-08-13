@@ -52,7 +52,7 @@ export default function ConfirmationClient() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F5F7FB] px-5 py-10 sm:px-6 sm:py-13">
-      <div className="relative w-full max-w-xl overflow-hidden rounded-[13px] border border-[#DCE3F8] bg-white p-7 text-center shadow-[0_28px_80px_rgba(15,23,42,0.12)] animate-fadeIn sm:p-10">
+      <div className="relative w-full max-w-xl overflow-hidden rounded-[8px] border border-[#DCE3F8] bg-white p-7 text-center shadow-[0_28px_80px_rgba(15,23,42,0.12)] animate-fadeIn sm:p-10">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#306EEC] via-[#86EFAC] to-[#D4A574]" />
 
         <div className="mb-6 flex justify-center">
@@ -69,7 +69,7 @@ export default function ConfirmationClient() {
           Your Membership is active. Book your first Member visit and we&apos;ll start learning your home, your priorities, and your running list.
         </p>
 
-        <div className="mb-6 rounded-[14px] border border-[#D7E0F5] bg-[#F8FAFF] p-5 text-left shadow-sm">
+        <div className="mb-6 rounded-[8px] border border-[#D7E0F5] bg-[#F8FAFF] p-5 text-left shadow-sm">
           <h3 className="mb-3 text-base font-black text-[#0B1628]">
             What&apos;s next
           </h3>
@@ -82,7 +82,7 @@ export default function ConfirmationClient() {
 
         <button
           onClick={handleBookClick}
-          className="h-[48px] w-full rounded-[16px] bg-[#0B1628] text-base font-black text-white shadow-[0_18px_44px_rgba(11,22,40,0.24)] transition-all hover:bg-[#17263D]"
+          className="h-[48px] w-full rounded-[8px] bg-[#0B1628] text-base font-black text-white shadow-[0_18px_44px_rgba(11,22,40,0.24)] transition-all hover:bg-[#17263D]"
         >
           Book a visit
         </button>
@@ -94,7 +94,7 @@ export default function ConfirmationClient() {
         */}
         <YourFixter variant="welcome" className="mt-4 text-left" />
 
-        <div className="mt-4 rounded-[13px] border border-[#E5E7EB] bg-white p-4 text-left">
+        <div className="mt-4 rounded-[8px] border border-[#E5E7EB] bg-white p-4 text-left">
           <p className="text-sm font-black text-[#0B1628]">
             How booking works as a Member
           </p>

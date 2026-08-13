@@ -35,7 +35,7 @@ export default function StickyMobileCTA() {
         {isAuthenticated ? (
           <Link
             href="/membership/plans"
-            className="flex w-full h-[46px] items-center justify-center rounded-[13px] bg-[#306EEC] text-[15px] font-bold text-white shadow-[0_8px_22px_rgba(48,110,236,0.30)] active:bg-[#2558c9]"
+            className="flex w-full h-[46px] items-center justify-center rounded-[8px] bg-[#306EEC] text-[15px] font-bold text-white shadow-[0_8px_22px_rgba(48,110,236,0.30)] active:bg-[#2558c9]"
           >
             See plans, from $149/mo
           </Link>
@@ -43,7 +43,7 @@ export default function StickyMobileCTA() {
           /* Cold traffic gets the offer, not an account chore. */
           <Link
             href="/signup?redirect=%2Fmembership"
-            className="flex w-full h-[46px] flex-col items-center justify-center rounded-[13px] bg-[#306EEC] text-white shadow-[0_8px_22px_rgba(48,110,236,0.28)] active:bg-[#2558c9]"
+            className="flex w-full h-[46px] flex-col items-center justify-center rounded-[8px] bg-[#306EEC] text-white shadow-[0_8px_22px_rgba(48,110,236,0.28)] active:bg-[#2558c9]"
           >
             <span className="text-[15px] font-bold leading-tight">Book your free visit</span>
             <span className="text-[11px] font-medium leading-tight text-white/75">
