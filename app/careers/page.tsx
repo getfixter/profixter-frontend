@@ -34,7 +34,7 @@ export default function CareersPage() {
   return (
     <div className="min-h-screen px-4 py-9 sm:py-32 bg-[#020617] text-white">
       <div
-        className="max-w-5xl mx-auto rounded-[16px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
+        className="max-w-5xl mx-auto rounded-[8px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
         style={{
           background:
             "linear-gradient(180deg, rgba(49,50,52,0.62) 0%, rgba(49,50,52,0.52) 55%, rgba(49,50,52,0.5) 100%), rgba(15,23,42,0.92)",
@@ -58,28 +58,28 @@ export default function CareersPage() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <p className="font-semibold">We’re building something real</p>
                 <p className="text-white/75 mt-1">
                   This isn’t a boring corporate job - we’re building a modern service brand with ambition, speed, and impact.
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <p className="font-semibold">Room to grow fast</p>
                 <p className="text-white/75 mt-1">
                   If you’re motivated, you can grow into leadership, management, and high-earning roles.
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <p className="font-semibold">We reward performance</p>
                 <p className="text-white/75 mt-1">
                   Strong performance is noticed - bonuses, raises, commissions, and real career progress.
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <p className="font-semibold">Modern, creative, and flexible</p>
                 <p className="text-white/75 mt-1">
                   We value initiative, creativity, independence, and problem-solving - not bureaucracy.
@@ -94,7 +94,7 @@ export default function CareersPage() {
               Office & Business Roles
             </h2>
 
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+            <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
               <p className="text-white/85">
                 We are hiring and partnering with talented people in areas like:
               </p>
@@ -120,7 +120,7 @@ export default function CareersPage() {
               Our Culture
             </h2>
 
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+            <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
               <ul className="list-disc list-inside space-y-2 text-white/75">
                 <li>Fast-moving & ambitious</li>
                 <li>Respectful, honest, and direct</li>
@@ -137,7 +137,7 @@ export default function CareersPage() {
               How to Apply
             </h2>
 
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+            <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
               <p className="text-white/85">
                 Send us an email with your{" "}
                 <span className="font-semibold">resume</span>, a short introduction,
@@ -164,7 +164,7 @@ export default function CareersPage() {
           <div className="mt-8 text-center">
             <Link
               href="/"
-              className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
+              className="inline-flex items-center justify-center rounded-[8px] border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
             >
               Back to Home
             </Link>

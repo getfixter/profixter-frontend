@@ -173,7 +173,7 @@ function ProductCard({ product }: { product: (typeof productCards)[number] }) {
     <Link
       href={product.href}
       className={[
-        "group rounded-[14px] border p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:border-[#C7D9FF] hover:shadow-[0_28px_80px_rgba(48,110,236,0.12)]",
+        "group rounded-[8px] border p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:border-[#C7D9FF] hover:shadow-[0_28px_80px_rgba(48,110,236,0.12)]",
         isFeatured
           ? "bg-[#0B1628] text-white sm:p-7"
           : "border-[#DDE5F0] bg-white",
@@ -222,7 +222,7 @@ export default function AboutPage() {
 
         <div className="mx-auto grid max-w-[1240px] gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div className="pt-3 sm:pt-8 lg:pt-14">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-white/88 px-3.5 py-1.5 shadow-sm backdrop-blur sm:px-4 sm:py-2">
+            <div className="inline-flex items-center gap-2 rounded-[6px] border border-[#D9E4FF] bg-white/88 px-3.5 py-1.5 shadow-sm backdrop-blur sm:px-4 sm:py-2">
               <span className="h-2 w-2 rounded-full bg-[#86EFAC]" />
               <span className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
                 Modern home care - Long Island
@@ -240,21 +240,21 @@ export default function AboutPage() {
 
             <div className="mt-6 grid gap-2.5 sm:mt-7 sm:grid-cols-2 sm:gap-3">
               <MembershipCtaLink
-                className="inline-flex h-[44px] items-center justify-center rounded-[15px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white shadow-[0_16px_48px_rgba(48,110,236,0.30)] transition hover:-translate-y-0.5 hover:bg-[#2558c9] sm:h-[54px] sm:rounded-[16px] sm:text-[15px]"
+                className="inline-flex h-[44px] items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white shadow-[0_16px_48px_rgba(48,110,236,0.30)] transition hover:-translate-y-0.5 hover:bg-[#2558c9] sm:h-[54px] sm:text-[15px]"
               >
                 Become a Member
               </MembershipCtaLink>
               <Link
                 href="#ways-to-work"
-                className="inline-flex h-[44px] items-center justify-center rounded-[15px] border border-[#C5CBD8] bg-white/92 px-5 text-[14px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] sm:h-[54px] sm:rounded-[16px] sm:text-[15px]"
+                className="inline-flex h-[44px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white/92 px-5 text-[14px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] sm:h-[54px] sm:text-[15px]"
               >
                 See How It Works
               </Link>
             </div>
           </div>
 
-          <div className="rounded-[16px] border border-white/70 bg-white/86 p-3.5 shadow-[0_20px_64px_rgba(15,23,42,0.10)] backdrop-blur-xl sm:rounded-[18px] sm:p-5 sm:shadow-[0_28px_90px_rgba(15,23,42,0.12)] lg:p-6">
-            <div className="overflow-hidden rounded-[16px] bg-[#0B1628]">
+          <div className="rounded-[8px] border border-white/70 bg-white/86 p-3.5 shadow-[0_20px_64px_rgba(15,23,42,0.10)] backdrop-blur-xl sm:rounded-[10px] sm:p-5 sm:shadow-[0_28px_90px_rgba(15,23,42,0.12)] lg:p-6">
+            <div className="overflow-hidden rounded-[8px] bg-[#0B1628]">
               <div className="relative aspect-[4/3]">
                 <Image
                   src="/images/Taras.png"
@@ -275,7 +275,7 @@ export default function AboutPage() {
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               {["Membership-first", "Licensed HI-71484", "Fully insured"].map((item) => (
-                <div key={item} className="rounded-[16px] bg-[#F8FAFF] px-4 py-3 text-[12px] font-black uppercase tracking-[0.12em] text-[#34435C]">
+                <div key={item} className="rounded-[8px] bg-[#F8FAFF] px-4 py-3 text-[12px] font-black uppercase tracking-[0.12em] text-[#34435C]">
                   {item}
                 </div>
               ))}
@@ -295,7 +295,7 @@ export default function AboutPage() {
             </h2>
           </div>
 
-          <div className="rounded-[16px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_56px_rgba(15,23,42,0.06)] sm:rounded-[16px] sm:p-8 sm:shadow-[0_22px_70px_rgba(15,23,42,0.06)]">
+          <div className="rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_56px_rgba(15,23,42,0.06)] sm:p-8 sm:shadow-[0_22px_70px_rgba(15,23,42,0.06)]">
             <div className="space-y-4 text-[15px] leading-7 text-[#475569] sm:space-y-5 sm:text-[16px] sm:leading-8">
               <p>
                 Profixter was built by Taras Bandura after years in construction and home services, seeing the same problem repeat: every small home issue forced people to start over.
@@ -317,7 +317,7 @@ export default function AboutPage() {
                 ["Local", "Based near Babylon and accountable to Long Island homeowners."],
                 ["Organized", "The right path for small visits, larger projects, and questions."],
               ].map(([word, body]) => (
-                <div key={word} className="rounded-[13px] border border-[#E5E9F2] bg-[#F8FAFF] p-4">
+                <div key={word} className="rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF] p-4">
                   <div className="text-[19px] font-black text-[#0B1628]">{word}</div>
                   <div className="mt-1 text-[13px] leading-5 text-[#64748B]">
                     {body}
@@ -330,7 +330,7 @@ export default function AboutPage() {
       </section>
 
       <section className="px-4 py-10 sm:px-6 sm:py-9 lg:px-8">
-        <div className="mx-auto max-w-[1240px] overflow-hidden rounded-[16px] border border-[#DDE5F0] bg-[#0B1628] shadow-[0_22px_70px_rgba(15,23,42,0.16)] sm:rounded-[18px] sm:shadow-[0_28px_90px_rgba(15,23,42,0.18)]">
+        <div className="mx-auto max-w-[1240px] overflow-hidden rounded-[8px] border border-[#DDE5F0] bg-[#0B1628] shadow-[0_22px_70px_rgba(15,23,42,0.16)] sm:rounded-[10px] sm:shadow-[0_28px_90px_rgba(15,23,42,0.18)]">
           <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="p-5 text-white sm:p-8 lg:p-10">
               <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#7BAEFF]">
@@ -345,7 +345,7 @@ export default function AboutPage() {
             </div>
 
             <div className="bg-[linear-gradient(145deg,#172033_0%,#0B1628_60%,#306EEC_160%)] p-5 sm:p-7 lg:p-8">
-              <div className="aspect-video overflow-hidden rounded-[16px] border border-white/14 bg-black shadow-[0_18px_56px_rgba(48,110,236,0.22)]">
+              <div className="aspect-video overflow-hidden rounded-[8px] border border-white/14 bg-black shadow-[0_18px_56px_rgba(48,110,236,0.22)]">
                 <iframe
                   src="https://www.youtube.com/embed/HQoAkLNGI9c?rel=0"
                   title="Taras Bandura explains Profixter"
@@ -402,7 +402,7 @@ export default function AboutPage() {
 
           <div className="grid gap-3 sm:grid-cols-2">
             {trustItems.map((item) => (
-              <div key={item.title} className="rounded-[14px] border border-[#DDE5F0] bg-white p-5 shadow-sm">
+              <div key={item.title} className="rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-sm">
                 <div className="flex gap-3">
                   <CheckIcon />
                   <div>
@@ -417,7 +417,7 @@ export default function AboutPage() {
       </section>
 
       <section className="px-4 py-10 sm:px-6 sm:py-9 lg:px-8">
-        <div className="mx-auto max-w-[1240px] rounded-[16px] border border-[#D9E4FF] bg-[#F0F7FF] p-5 sm:rounded-[18px] sm:p-8 lg:p-10">
+        <div className="mx-auto max-w-[1240px] rounded-[8px] border border-[#D9E4FF] bg-[#F0F7FF] p-5 sm:rounded-[10px] sm:p-8 lg:p-10">
           <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
             <div>
               <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
@@ -433,7 +433,7 @@ export default function AboutPage() {
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {serviceAreas.map((area) => (
-                <div key={area} className="rounded-[13px] border border-white bg-white/86 px-4 py-4 text-[14px] font-black text-[#0B1628] shadow-sm">
+                <div key={area} className="rounded-[8px] border border-white bg-white/86 px-4 py-4 text-[14px] font-black text-[#0B1628] shadow-sm">
                   {area}
                 </div>
               ))}
@@ -455,7 +455,7 @@ export default function AboutPage() {
 
           <div className="mt-8 grid gap-3">
             {faqs.map((faq) => (
-              <div key={faq.q} className="rounded-[14px] border border-[#DDE5F0] bg-white p-5 shadow-sm sm:p-6">
+              <div key={faq.q} className="rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-sm sm:p-6">
                 <h3 className="text-[18px] font-black text-[#0B1628]">{faq.q}</h3>
                 <p className="mt-3 text-[14px] leading-7 text-[#64748B]">{faq.a}</p>
               </div>
@@ -465,7 +465,7 @@ export default function AboutPage() {
       </section>
 
       <section className="px-4 py-10 sm:px-6 sm:py-9 lg:px-8">
-        <div className="mx-auto max-w-[1240px] rounded-[16px] bg-[#0B1628] p-5 text-white shadow-[0_22px_70px_rgba(15,23,42,0.16)] sm:rounded-[18px] sm:p-8 sm:shadow-[0_28px_90px_rgba(15,23,42,0.18)] lg:p-10">
+        <div className="mx-auto max-w-[1240px] rounded-[8px] bg-[#0B1628] p-5 text-white shadow-[0_22px_70px_rgba(15,23,42,0.16)] sm:rounded-[10px] sm:p-8 sm:shadow-[0_28px_90px_rgba(15,23,42,0.18)] lg:p-10">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
             <div>
               <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#7BAEFF]">
@@ -486,7 +486,7 @@ export default function AboutPage() {
              * again rather than by closing.
              */}
             <div className="grid gap-3">
-              <MembershipCtaLink className="inline-flex min-h-[48px] items-center justify-center rounded-[13px] bg-white px-5 text-[15px] font-black text-[#0B1628] transition hover:bg-[#EEF5FF]">
+              <MembershipCtaLink className="inline-flex min-h-[48px] items-center justify-center rounded-[8px] bg-white px-5 text-[15px] font-black text-[#0B1628] transition hover:bg-[#EEF5FF]">
                 Become a Member
               </MembershipCtaLink>
               <Link

@@ -179,7 +179,7 @@ export default function HeroSection() {
             <button
               type="button"
               onClick={ctaConfig.primaryAction}
-              className="inline-flex min-h-[46px] items-center justify-center rounded-[15px] bg-[#306EEC] px-6 text-[15px] font-extrabold text-white shadow-[0_16px_42px_rgba(48,110,236,0.32)] transition hover:bg-[#2558c9] active:scale-[0.99] sm:min-h-[58px] sm:min-w-[190px] sm:rounded-[16px] sm:px-6 sm:text-[16px]"
+              className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-extrabold text-white shadow-[0_16px_42px_rgba(48,110,236,0.32)] transition hover:bg-[#2558c9] active:scale-[0.99] sm:min-h-[58px] sm:min-w-[190px] sm:px-6 sm:text-[16px]"
             >
               {ctaConfig.primaryLabel}
             </button>
@@ -187,13 +187,13 @@ export default function HeroSection() {
             <button
               type="button"
               onClick={ctaConfig.secondaryAction}
-              className="inline-flex min-h-[46px] items-center justify-center rounded-[15px] border border-white/20 bg-white/10 px-6 text-[15px] font-extrabold text-white shadow-[0_14px_36px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:bg-white/16 active:scale-[0.99] sm:min-h-[58px] sm:min-w-[190px] sm:rounded-[16px] sm:px-6 sm:text-[16px]"
+              className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] border border-white/20 bg-white/10 px-6 text-[15px] font-extrabold text-white shadow-[0_14px_36px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:bg-white/16 active:scale-[0.99] sm:min-h-[58px] sm:min-w-[190px] sm:px-6 sm:text-[16px]"
             >
               {ctaConfig.secondaryLabel}
             </button>
           </div>
 
-          <div className="mt-7 max-w-[350px] rounded-[16px] border border-white/12 bg-white/8 p-4 backdrop-blur-md sm:max-w-[520px]">
+          <div className="mt-7 max-w-[350px] rounded-[8px] border border-white/12 bg-white/8 p-4 backdrop-blur-md sm:max-w-[520px]">
             <p className="text-[13px] font-bold leading-5 text-white/55">
               Planning something bigger later?
             </p>

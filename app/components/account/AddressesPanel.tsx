@@ -161,7 +161,7 @@ export function AddressesPanel({
 
         <button
           onClick={() => setShowAdd((v) => !v)}
-          className="h-[44px] px-4 rounded-xl bg-[#306EEC] hover:bg-[#2558c9] text-white font-bold transition"
+          className="h-[44px] px-4 rounded-[8px] bg-[#306EEC] hover:bg-[#2558c9] text-white font-bold transition"
         >
           {showAdd ? "Close" : "Add address"}
         </button>
@@ -169,14 +169,14 @@ export function AddressesPanel({
 
       {/* Inline Add Form */}
       {showAdd && (
-        <div className="bg-white border border-[#C5CBD8] rounded-[14px] p-4 sm:p-5 mb-4">
+        <div className="bg-white border border-[#C5CBD8] rounded-[8px] p-4 sm:p-5 mb-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[#6A6D71] text-sm mb-2">Label</label>
               <input
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-[#C5CBD8]"
+                className="w-full px-4 py-3 rounded-[8px] border border-[#C5CBD8]"
                 placeholder="Primary / Rental / Parent's house"
               />
             </div>
@@ -187,7 +187,7 @@ export function AddressesPanel({
                 value={county}
                 onChange={(e) => setCounty(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl border border-[#C5CBD8]"
+                className="w-full px-4 py-3 rounded-[8px] border border-[#C5CBD8]"
               />
 
             </div>
@@ -197,7 +197,7 @@ export function AddressesPanel({
               <input
                 value={line1}
                 onChange={(e) => setLine1(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-[#C5CBD8]"
+                className="w-full px-4 py-3 rounded-[8px] border border-[#C5CBD8]"
                 placeholder="123 Main St"
               />
             </div>
@@ -207,7 +207,7 @@ export function AddressesPanel({
               <input
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-[#C5CBD8]"
+                className="w-full px-4 py-3 rounded-[8px] border border-[#C5CBD8]"
               />
             </div>
 
@@ -216,7 +216,7 @@ export function AddressesPanel({
               <input
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-[#C5CBD8]"
+                className="w-full px-4 py-3 rounded-[8px] border border-[#C5CBD8]"
                 placeholder="NY"
               />
             </div>
@@ -226,7 +226,7 @@ export function AddressesPanel({
               <input
                 value={zip}
                 onChange={(e) => setZip(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-[#C5CBD8]"
+                className="w-full px-4 py-3 rounded-[8px] border border-[#C5CBD8]"
               />
             </div>
           </div>
@@ -237,7 +237,7 @@ export function AddressesPanel({
                 resetForm();
                 setShowAdd(false);
               }}
-              className="h-[44px] px-4 rounded-xl border border-[#C5CBD8] font-bold text-[#313234]"
+              className="h-[44px] px-4 rounded-[8px] border border-[#C5CBD8] font-bold text-[#313234]"
             >
               Cancel
             </button>
@@ -245,7 +245,7 @@ export function AddressesPanel({
             <button
               onClick={addAddress}
               disabled={saving}
-              className="h-[44px] px-4 rounded-xl bg-[#306EEC] hover:bg-[#2558c9] text-white font-bold disabled:opacity-60"
+              className="h-[44px] px-4 rounded-[8px] bg-[#306EEC] hover:bg-[#2558c9] text-white font-bold disabled:opacity-60"
             >
               {saving ? "Saving..." : "Save address"}
             </button>
@@ -265,14 +265,14 @@ export function AddressesPanel({
           return (
             <div
               key={a._id}
-              className="bg-[#EEF2FF] border border-[#C5CBD8] rounded-[14px] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+              className="bg-[#EEF2FF] border border-[#C5CBD8] rounded-[8px] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
             >
               <div>
                 <div className="flex items-center gap-2">
                   <p className="text-[#313234] font-semibold">{a.label || "Address"}</p>
 
                   {isDefault && (
-                    <span className="text-xs font-bold px-2 py-1 rounded-full bg-[#86EFAC] text-[#064E3B]">
+                    <span className="text-xs font-bold px-2 py-1 rounded-[6px] bg-[#86EFAC] text-[#064E3B]">
                       Default
                     </span>
                   )}
@@ -288,7 +288,7 @@ export function AddressesPanel({
                   <button
                     onClick={() => setDefault(a._id)}
                     disabled={loadingId === a._id}
-                    className="h-[42px] px-4 rounded-xl bg-white border border-[#C5CBD8] text-[#313234] font-bold hover:bg-gray-50 transition disabled:opacity-60"
+                    className="h-[42px] px-4 rounded-[8px] bg-white border border-[#C5CBD8] text-[#313234] font-bold hover:bg-gray-50 transition disabled:opacity-60"
                   >
                     {loadingId === a._id ? "Setting..." : "Set default"}
                   </button>
@@ -297,7 +297,7 @@ export function AddressesPanel({
                 <button
                   onClick={() => removeAddress(a._id, isDefault)}
                   disabled={deletingId === a._id || isDefault}
-                  className="h-[42px] px-4 rounded-xl bg-white border border-[#FCA5A5] text-[#B91C1C] font-bold hover:bg-red-50 transition disabled:opacity-60"
+                  className="h-[42px] px-4 rounded-[8px] bg-white border border-[#FCA5A5] text-[#B91C1C] font-bold hover:bg-red-50 transition disabled:opacity-60"
                 >
                   {isDefault ? "Default" : deletingId === a._id ? "Deleting..." : "Delete"}
                 </button>

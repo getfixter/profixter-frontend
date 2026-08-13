@@ -34,7 +34,7 @@ export default function PartnershipsPage() {
   return (
     <div className="min-h-screen px-4 py-9 sm:py-32 bg-[#020617] text-white">
       <div
-        className="max-w-5xl mx-auto rounded-[16px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
+        className="max-w-5xl mx-auto rounded-[8px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
         style={{
           background:
             "linear-gradient(180deg, rgba(49,50,52,0.62) 0%, rgba(49,50,52,0.52) 55%, rgba(49,50,52,0.5) 100%), rgba(15,23,42,0.92)",
@@ -63,7 +63,7 @@ export default function PartnershipsPage() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <p className="font-semibold">A service everyone needs</p>
                 <p className="text-white/75 mt-1">
                   Homeowners always have a list - small repairs, installs, maintenance, “can you fix this?”
@@ -71,7 +71,7 @@ export default function PartnershipsPage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <p className="font-semibold">Very unique offer</p>
                 <p className="text-white/75 mt-1">
                   We’re not a random handyman listing. We’re a structured membership that delivers
@@ -79,14 +79,14 @@ export default function PartnershipsPage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <p className="font-semibold">High trust = high conversions</p>
                 <p className="text-white/75 mt-1">
                   A trusted local recommendation (from you) turns into real long-term value for your audience/clients.
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <p className="font-semibold">We offer strong partnership deals</p>
                 <p className="text-white/75 mt-1">
                   We have multiple partnership programs and we make it worth it - fair, simple, and designed to grow together.
@@ -106,7 +106,7 @@ export default function PartnershipsPage() {
               Influencers, Bloggers & Marketing Companies
             </h2>
 
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+            <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
               <p className="text-white/85">
                 If you create content for homeowners (or local Long Island lifestyle), we can build campaigns that feel
                 real and deliver results. Your audience gets a service that removes stress. You get a partnership
@@ -128,7 +128,7 @@ export default function PartnershipsPage() {
               Realtors: The Perfect Closing Gift for New Homeowners
             </h2>
 
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+            <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
               <p className="text-white/85">
                 Want to stand out from every other realtor? Instead of a bottle of wine or a gift basket,
                 give something that new homeowners actually need:{" "}
@@ -136,7 +136,7 @@ export default function PartnershipsPage() {
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div className="rounded-2xl bg-black/20 border border-white/10 p-5">
+                <div className="rounded-[8px] bg-black/20 border border-white/10 p-5">
                   <p className="font-semibold">Benefits for your client</p>
                   <ul className="list-disc list-inside space-y-2 mt-2 text-white/75">
                     <li>Help right away after move-in (mounting, fixes, adjustments)</li>
@@ -145,7 +145,7 @@ export default function PartnershipsPage() {
                   </ul>
                 </div>
 
-                <div className="rounded-2xl bg-black/20 border border-white/10 p-5">
+                <div className="rounded-[8px] bg-black/20 border border-white/10 p-5">
                   <p className="font-semibold">Benefits for you</p>
                   <ul className="list-disc list-inside space-y-2 mt-2 text-white/75">
                     <li>Be remembered (it’s a unique and practical gift)</li>
@@ -167,14 +167,14 @@ export default function PartnershipsPage() {
               Airbnb & Short-Term Rentals: Protect Your Property and Your Reviews
             </h2>
 
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+            <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
               <p className="text-white/85">
                 Your rental is a business. When something breaks, it’s not just annoying -
                 it can cost bookings and reviews. Profixter helps keep your property running smoothly.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div className="rounded-2xl bg-black/20 border border-white/10 p-5">
+                <div className="rounded-[8px] bg-black/20 border border-white/10 p-5">
                   <p className="font-semibold">Why we’re great for hosts</p>
                   <ul className="list-disc list-inside space-y-2 mt-2 text-white/75">
                     <li>Fast help for the “small stuff” that ruins guest experience</li>
@@ -183,7 +183,7 @@ export default function PartnershipsPage() {
                   </ul>
                 </div>
 
-                <div className="rounded-2xl bg-black/20 border border-white/10 p-5">
+                <div className="rounded-[8px] bg-black/20 border border-white/10 p-5">
                   <p className="font-semibold">What you protect</p>
                   <ul className="list-disc list-inside space-y-2 mt-2 text-white/75">
                     <li>Your guest reviews</li>
@@ -203,7 +203,7 @@ export default function PartnershipsPage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">Let’s Build Something Together</h2>
 
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+            <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
               <p className="text-white/85">
                 We have many partnership programs and we’ll match you with the best option based on your audience,
                 clients, or properties.
@@ -228,7 +228,7 @@ export default function PartnershipsPage() {
           <div className="mt-8 text-center">
             <Link
               href="/"
-              className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
+              className="inline-flex items-center justify-center rounded-[8px] border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
             >
               Back to Home
             </Link>

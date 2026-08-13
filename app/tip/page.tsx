@@ -169,7 +169,7 @@ function TipFlow() {
                 type="button"
                 onClick={() => setSelected(option.choice)}
                 aria-pressed={isSelected}
-                className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors ${
+                className={`flex w-full items-center gap-3 rounded-[8px] border px-4 py-3 text-left transition-colors ${
                   isSelected
                     ? "border-[#0B1628] bg-[#0B1628] text-white"
                     : "border-slate-200 bg-white text-[#0B1628]"
@@ -193,7 +193,7 @@ function TipFlow() {
           type="button"
           onClick={() => void submitChoice()}
           disabled={!selected || submitting}
-          className="mt-5 w-full rounded-2xl bg-[#0B1628] px-5 py-3.5 text-sm font-bold text-white disabled:opacity-40"
+          className="mt-5 w-full rounded-[8px] bg-[#0B1628] px-5 py-3.5 text-sm font-bold text-white disabled:opacity-40"
         >
           {submitting ? "Opening secure payment..." : "Continue"}
         </button>
@@ -218,7 +218,7 @@ function TipFlow() {
       <button
         type="button"
         onClick={retry}
-        className="mt-6 w-full rounded-2xl bg-[#0B1628] px-5 py-3 text-sm font-bold text-white"
+        className="mt-6 w-full rounded-[8px] bg-[#0B1628] px-5 py-3 text-sm font-bold text-white"
       >
         Try again
       </button>
@@ -251,7 +251,7 @@ function Shell({
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#EEF2FF] px-5 py-10">
       <div
-        className={`w-full max-w-sm rounded-3xl bg-white p-7 shadow-[0_18px_48px_rgba(11,22,40,0.10)] ${
+        className={`w-full max-w-sm rounded-[10px] bg-white p-7 shadow-[0_18px_48px_rgba(11,22,40,0.10)] ${
           align === "center" ? "text-center" : ""
         }`}
       >

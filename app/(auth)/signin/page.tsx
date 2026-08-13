@@ -31,7 +31,7 @@ function PasswordToggle({
         onChange={onChange}
         placeholder={placeholder}
         autoComplete="current-password"
-        className="h-12 w-full rounded-[10px] border border-white/[0.12] bg-white/[0.06] px-3.5 pr-11 text-[14px] text-white placeholder-white/25 transition-all backdrop-blur-sm focus:border-[#306EEC]/80 focus:bg-white/[0.09] focus:outline-none"
+        className="h-12 w-full rounded-[6px] border border-white/[0.12] bg-white/[0.06] px-3.5 pr-11 text-[14px] text-white placeholder-white/25 transition-all backdrop-blur-sm focus:border-[#306EEC]/80 focus:bg-white/[0.09] focus:outline-none"
       />
       <button
         type="button"
@@ -135,10 +135,10 @@ export default function SignInPage() {
         </div>
 
         {/* Card */}
-        <div className="rounded-[13px] border border-white/[0.08] bg-white/[0.03] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7">
+        <div className="rounded-[8px] border border-white/[0.08] bg-white/[0.03] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-7">
           <Link
             href="/"
-            className="mb-4 inline-flex min-h-[40px] items-center rounded-[10px] border border-white/[0.10] bg-white/[0.04] px-3 text-[12px] font-semibold text-white/60 transition hover:border-white/[0.18] hover:bg-white/[0.07] hover:text-white sm:mb-5"
+            className="mb-4 inline-flex min-h-[40px] items-center rounded-[6px] border border-white/[0.10] bg-white/[0.04] px-3 text-[12px] font-semibold text-white/60 transition hover:border-white/[0.18] hover:bg-white/[0.07] hover:text-white sm:mb-5"
           >
             ← Back to Home
           </Link>
@@ -168,7 +168,7 @@ export default function SignInPage() {
                 placeholder="you@example.com"
                 autoComplete="email"
                 required
-                className="h-12 w-full rounded-[10px] border border-white/[0.12] bg-white/[0.04] px-3.5 text-[14px] text-white placeholder-white/30 transition-all focus:border-[#306EEC]/60 focus:bg-white/[0.08] focus:outline-none"
+                className="h-12 w-full rounded-[6px] border border-white/[0.12] bg-white/[0.04] px-3.5 text-[14px] text-white placeholder-white/30 transition-all focus:border-[#306EEC]/60 focus:bg-white/[0.08] focus:outline-none"
               />
             </div>
 
@@ -186,7 +186,7 @@ export default function SignInPage() {
 
             {/* Error */}
             {accountChoices.length > 0 && (
-              <div className="rounded-xl border border-white/20 bg-white/5 p-3">
+              <div className="rounded-[8px] border border-white/20 bg-white/5 p-3">
                 <div className="text-sm font-bold text-white">
                   This email has more than one account
                 </div>
@@ -200,7 +200,7 @@ export default function SignInPage() {
                       type="button"
                       disabled={loading}
                       onClick={() => void signIn(choice.accountRole)}
-                      className="w-full rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-[#0a0e27] disabled:opacity-50"
+                      className="w-full rounded-[6px] bg-white px-4 py-2.5 text-sm font-bold text-[#0a0e27] disabled:opacity-50"
                     >
                       {choice.label}
                     </button>
@@ -210,7 +210,7 @@ export default function SignInPage() {
             )}
 
             {error && (
-              <div className="rounded-[10px] border border-red-500/20 bg-red-500/[0.08] px-4 py-3 text-[13px] text-red-400 text-center">
+              <div className="rounded-[6px] border border-red-500/20 bg-red-500/[0.08] px-4 py-3 text-[13px] text-red-400 text-center">
                 {error}
               </div>
             )}
@@ -229,7 +229,7 @@ export default function SignInPage() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 h-12 w-full rounded-[11px] bg-[#306EEC] text-[14px] font-bold text-white transition-all hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-2 h-12 w-full rounded-[6px] bg-[#306EEC] text-[14px] font-bold text-white transition-all hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-50"
               style={{ boxShadow: "0 10px 24px rgba(48,110,236,0.24)" }}
             >
               {loading ? "Logging In..." : "Log In"}

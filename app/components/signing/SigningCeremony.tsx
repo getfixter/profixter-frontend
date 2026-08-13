@@ -102,7 +102,7 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
           <button
             type="button"
             onClick={onExit}
-            className="shrink-0 rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700"
+            className="shrink-0 rounded-[8px] border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700"
           >
             {exitLabel || "Exit"}
           </button>
@@ -121,7 +121,7 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
       <div className="min-h-dvh bg-slate-50">
         {header}
         <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-10">
+          <div className="rounded-[10px] border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-10">
             <div
               className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full ${
                 declined ? "bg-slate-100" : "bg-emerald-100"
@@ -147,7 +147,7 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
                   href={signedDocumentUrl(token)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full rounded-xl bg-slate-900 px-5 py-3.5 text-sm font-bold text-white sm:w-auto"
+                  className="w-full rounded-[8px] bg-slate-900 px-5 py-3.5 text-sm font-bold text-white sm:w-auto"
                 >
                   View Signed {documentWord}
                 </a>
@@ -220,7 +220,7 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
             <h1 className="text-xl font-black text-slate-900 sm:text-2xl">
               Review your {documentWord.toLowerCase()}
             </h1>
-            <dl className="mt-4 grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-2">
+            <dl className="mt-4 grid grid-cols-1 gap-3 rounded-[8px] border border-slate-200 bg-white p-4 sm:grid-cols-2">
               <div>
                 <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
                   Customer
@@ -240,7 +240,7 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
             </dl>
 
             {/* The exact frozen document, streamed by the server. */}
-            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className="mt-4 overflow-hidden rounded-[8px] border border-slate-200 bg-white">
               <iframe
                 src={signingDocumentUrl(token)}
                 title={`${payload.documentLabel} document`}
@@ -269,7 +269,7 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
                 <details
                   key={section.title}
                   open
-                  className="rounded-2xl border border-slate-200 bg-white p-4"
+                  className="rounded-[8px] border border-slate-200 bg-white p-4"
                 >
                   <summary className="cursor-pointer list-none text-sm font-black text-slate-900">
                     {section.title}
@@ -279,7 +279,7 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
               ))}
             </div>
 
-            <label className="mt-5 flex cursor-pointer gap-3 rounded-2xl border-2 border-slate-300 bg-white p-4">
+            <label className="mt-5 flex cursor-pointer gap-3 rounded-[8px] border-2 border-slate-300 bg-white p-4">
               <input
                 type="checkbox"
                 checked={consent}
@@ -310,7 +310,7 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
               />
             </div>
 
-            <p className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700">
+            <p className="mt-5 rounded-[8px] border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700">
               {payload.disclosure?.signIntent}
             </p>
 
@@ -325,7 +325,7 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
         )}
 
         {error && (
-          <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">
+          <p className="mt-4 rounded-[8px] border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">
             {error}
           </p>
         )}
@@ -339,7 +339,7 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
               type="button"
               onClick={() => setStep(step === "sign" ? "disclosure" : "review")}
               disabled={busy}
-              className="rounded-xl border border-slate-300 px-5 py-3.5 text-sm font-bold text-slate-700 disabled:opacity-50"
+              className="rounded-[8px] border border-slate-300 px-5 py-3.5 text-sm font-bold text-slate-700 disabled:opacity-50"
             >
               Back
             </button>
@@ -349,7 +349,7 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
             <button
               type="button"
               onClick={() => setStep("disclosure")}
-              className="flex-1 rounded-xl bg-slate-900 px-5 py-3.5 text-sm font-black text-white"
+              className="flex-1 rounded-[8px] bg-slate-900 px-5 py-3.5 text-sm font-black text-white"
             >
               Continue to Sign
             </button>
@@ -360,7 +360,7 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
               type="button"
               onClick={() => setStep("sign")}
               disabled={!consent}
-              className="flex-1 rounded-xl bg-slate-900 px-5 py-3.5 text-sm font-black text-white disabled:opacity-40"
+              className="flex-1 rounded-[8px] bg-slate-900 px-5 py-3.5 text-sm font-black text-white disabled:opacity-40"
             >
               {consent ? "Continue" : "Agree to continue"}
             </button>
@@ -371,7 +371,7 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
               type="button"
               onClick={submit}
               disabled={!hasSignature || !consent || busy}
-              className="flex-1 rounded-xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white disabled:opacity-40"
+              className="flex-1 rounded-[8px] bg-emerald-600 px-5 py-3.5 text-sm font-black text-white disabled:opacity-40"
             >
               {busy ? "Signing…" : signLabel}
             </button>
@@ -382,7 +382,7 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
       {/* ---------------- decline ---------------- */}
       {showDecline && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/60 p-3 sm:items-center">
-          <div className="w-full max-w-md rounded-3xl bg-white p-5">
+          <div className="w-full max-w-md rounded-[10px] bg-white p-5">
             <h2 className="text-lg font-black text-slate-900">Decline to sign?</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               This {documentWord.toLowerCase()} will not be signed. You can tell us why if you
@@ -393,13 +393,13 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
               onChange={(event) => setDeclineReason(event.target.value)}
               rows={3}
               placeholder="Optional"
-              className="mt-3 w-full rounded-xl border border-slate-300 p-3 text-sm"
+              className="mt-3 w-full rounded-[8px] border border-slate-300 p-3 text-sm"
             />
             <div className="mt-4 flex gap-2">
               <button
                 type="button"
                 onClick={() => setShowDecline(false)}
-                className="flex-1 rounded-xl border border-slate-300 px-4 py-3 text-sm font-bold text-slate-700"
+                className="flex-1 rounded-[8px] border border-slate-300 px-4 py-3 text-sm font-bold text-slate-700"
               >
                 Go back
               </button>
@@ -407,7 +407,7 @@ export default function SigningCeremony({ token, payload, onExit, exitLabel }: P
                 type="button"
                 onClick={decline}
                 disabled={busy}
-                className="flex-1 rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
+                className="flex-1 rounded-[8px] bg-rose-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
               >
                 Decline
               </button>

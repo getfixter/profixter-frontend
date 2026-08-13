@@ -22,13 +22,13 @@ export default function PopularTaskCard({
   const content = (
     <div
       className={[
-        "rounded-[13px] border border-[#E6E8EF] bg-white p-4 sm:p-5 h-full",
+        "rounded-[8px] border border-[#E6E8EF] bg-white p-4 sm:p-5 h-full",
         "shadow-sm transition-all duration-200",
         isInteractive ? "hover:-translate-y-[2px] hover:shadow-md" : "",
       ].join(" ")}
     >
       <div className="flex items-start gap-3">
-        <div className="w-11 h-11 rounded-[14px] bg-[#EEF2FF] border border-[#C5CBD8] flex items-center justify-center shrink-0">
+        <div className="w-11 h-11 rounded-[8px] bg-[#EEF2FF] border border-[#C5CBD8] flex items-center justify-center shrink-0">
           <Icon className="w-5 h-5 text-[#306EEC]" />
         </div>
 

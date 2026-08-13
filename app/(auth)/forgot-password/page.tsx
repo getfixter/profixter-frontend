@@ -158,7 +158,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="relative z-10 min-h-screen flex items-center justify-center px-4 pt-20 pb-8">
       <div
-        className="w-full max-w-[440px] rounded-[14px] p-12 backdrop-blur-[10px]"
+        className="w-full max-w-[440px] rounded-[8px] p-12 backdrop-blur-[10px]"
         style={{
           background:
             'linear-gradient(180deg, rgba(49, 50, 52, 0.4) 0%, rgba(49, 50, 52, 0.2) 50%, rgba(49, 50, 52, 0.3) 100%), rgba(238, 242, 255, 0.1)',
@@ -190,11 +190,11 @@ export default function ForgotPasswordPage() {
                   />
                 </div>
                 {error && (
-                  <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                  <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-[6px] p-3">
                     {error}
                   </div>
                 )}
-                <button type="submit" disabled={loading} className="w-full py-4 bg-[#306EEC] text-white rounded-[14px] text-base font-medium hover:bg-[#2557C7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <button type="submit" disabled={loading} className="w-full py-4 bg-[#306EEC] text-white rounded-[8px] text-base font-medium hover:bg-[#2557C7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   {loading ? 'Sending...' : 'Reset password'}
                 </button>
                 <Link href="/signin" className="block text-white text-base hover:underline">
@@ -228,7 +228,7 @@ export default function ForgotPasswordPage() {
                       value={digit}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      className={`w-12 h-12 sm:w-14 sm:h-14 text-center text-xl sm:text-2xl font-medium rounded-[14px] bg-white/90 text-[#313234] focus:outline-none focus:ring-2 transition-all ${
+                      className={`w-12 h-12 sm:w-14 sm:h-14 text-center text-xl sm:text-2xl font-medium rounded-[8px] bg-white/90 text-[#313234] focus:outline-none focus:ring-2 transition-all ${
                         otpError ? 'border-2 border-red-500 ring-2 ring-red-500' : 'focus:ring-[#306EEC]'
                       }`}
                     />
@@ -240,14 +240,14 @@ export default function ForgotPasswordPage() {
                 )}
                 {!otpError && timer > 0 && <p className="text-white text-base">{formatTime(timer)}</p>}
                 {error && (
-                  <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                  <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-[6px] p-3">
                     {error}
                   </div>
                 )}
                 <button type="button" onClick={handleResendOtp} disabled={loading} className="text-white text-base hover:underline disabled:opacity-50">
                   Re-send
                 </button>
-                <button type="submit" disabled={loading} className="w-full py-4 bg-[#306EEC] text-white rounded-[14px] text-base font-medium hover:bg-[#2557C7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <button type="submit" disabled={loading} className="w-full py-4 bg-[#306EEC] text-white rounded-[8px] text-base font-medium hover:bg-[#2557C7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   {loading ? 'Verifying...' : 'Verify code'}
                 </button>
                 <Link href="/signin" className="block text-white text-base hover:underline">
@@ -284,11 +284,11 @@ export default function ForgotPasswordPage() {
                   required
                 />
                 {error && (
-                  <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                  <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-[6px] p-3">
                     {error}
                   </div>
                 )}
-                <button type="submit" disabled={loading} className="w-full py-4 bg-[#306EEC] text-white rounded-[14px] text-base font-medium hover:bg-[#2557C7] transition-colors mt-8 disabled:opacity-50 disabled:cursor-not-allowed">
+                <button type="submit" disabled={loading} className="w-full py-4 bg-[#306EEC] text-white rounded-[8px] text-base font-medium hover:bg-[#2557C7] transition-colors mt-8 disabled:opacity-50 disabled:cursor-not-allowed">
                   {loading ? 'Updating...' : 'Submit'}
                 </button>
                 <button type="button" onClick={handleCancel} className="block w-full text-white text-base hover:underline">
@@ -306,7 +306,7 @@ export default function ForgotPasswordPage() {
                 </svg>
               </div>
               <p className="text-[#C5CBD8] text-base mb-8">Your password has been updated</p>
-              <Link href="/signin" className="block w-full py-4 bg-[#306EEC] text-white rounded-[14px] text-base font-medium hover:bg-[#2557C7] transition-colors">
+              <Link href="/signin" className="block w-full py-4 bg-[#306EEC] text-white rounded-[8px] text-base font-medium hover:bg-[#2557C7] transition-colors">
                 Log In
               </Link>
             </div>

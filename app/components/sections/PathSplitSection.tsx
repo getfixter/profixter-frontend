@@ -19,7 +19,7 @@ export default function PathSplitSection() {
 
         {/* ── Header ── */}
         <div className="text-center mb-8 sm:mb-16">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-4 py-1.5 mb-5">
+          <div className="inline-flex items-center gap-2 rounded-[6px] border border-white/12 bg-white/5 px-4 py-1.5 mb-5">
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/55">
               Long Island · Licensed HI-71484 · 9+ Years
             </span>
@@ -35,7 +35,7 @@ export default function PathSplitSection() {
         {/* ── Membership card ── */}
         <div className="max-w-[680px] mx-auto">
           <div
-            className="relative flex flex-col overflow-hidden rounded-[14px] border-l-2 border-[#306EEC]/35"
+            className="relative flex flex-col overflow-hidden rounded-[8px] border-l-2 border-[#306EEC]/35"
             style={{ background: "linear-gradient(145deg, #0C1A3A 0%, #0F2050 60%, #0A1630 100%)" }}
           >
             {/* Accent top line */}
@@ -50,7 +50,7 @@ export default function PathSplitSection() {
 
             <div className="relative flex flex-col flex-1 p-8 sm:p-10">
               {/* Eyebrow */}
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#306EEC]/30 bg-[#306EEC]/10 px-3.5 py-1.5 mb-7 self-start">
+              <div className="inline-flex items-center gap-2 rounded-[6px] border border-[#306EEC]/30 bg-[#306EEC]/10 px-3.5 py-1.5 mb-7 self-start">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#86EFAC]" style={{ boxShadow: "0 0 6px rgba(134,239,172,0.9)" }} />
                 <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#7BAEFF]">
                   Handyman Membership
@@ -59,7 +59,7 @@ export default function PathSplitSection() {
 
               {/* Icon */}
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border border-[#306EEC]/20"
+                className="w-14 h-14 rounded-[8px] flex items-center justify-center mb-6 border border-[#306EEC]/20"
                 style={{ background: "rgba(48,110,236,0.12)" }}
               >
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -110,7 +110,7 @@ export default function PathSplitSection() {
               {/* CTA */}
               <div className="mt-auto space-y-3">
                 <MembershipCtaLink
-                  className="w-full min-h-[46px] rounded-[16px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
+                  className="w-full min-h-[46px] rounded-[8px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                   style={{ background: "linear-gradient(135deg, #306EEC 0%, #1D4ED8 100%)", boxShadow: "0 12px 40px rgba(48,110,236,0.32)" }}
                 >
                   Start Membership
@@ -150,7 +150,7 @@ export default function PathSplitSection() {
         {/* ── Need a Bigger Project? ── */}
         <div className="mt-7 max-w-[580px] mx-auto">
           <div
-            className="rounded-[14px] border border-white/8 px-5 py-6 text-center"
+            className="rounded-[8px] border border-white/8 px-5 py-6 text-center"
             style={{ background: "rgba(255,255,255,0.03)" }}
           >
             <h3 className="text-[16px] font-bold text-white/70 mb-2">
@@ -161,7 +161,7 @@ export default function PathSplitSection() {
             </p>
             <a
               href="tel:+16315991363"
-              className="inline-flex items-center gap-2.5 rounded-[12px] border border-white/12 bg-white/[0.06] px-5 py-3 text-[14px] font-bold text-white/80 transition hover:bg-white/[0.10] hover:text-white"
+              className="inline-flex items-center gap-2.5 rounded-[8px] border border-white/12 bg-white/[0.06] px-5 py-3 text-[14px] font-bold text-white/80 transition hover:bg-white/[0.10] hover:text-white"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.37 1.9.72 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />

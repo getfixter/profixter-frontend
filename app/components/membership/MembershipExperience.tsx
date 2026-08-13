@@ -75,14 +75,14 @@ function AccountShortcuts() {
         <Link
           key={link.href}
           href={link.href}
-          className="rounded-[14px] border border-[#D7DEE9] bg-white p-5 transition hover:border-[#306EEC] hover:bg-[#F8FAFF]"
+          className="rounded-[8px] border border-[#D7DEE9] bg-white p-5 transition hover:border-[#306EEC] hover:bg-[#F8FAFF]"
         >
           <div className="flex items-center justify-between gap-4">
             <div>
               <div className="text-[15px] font-extrabold text-[#0B1628]">{link.title}</div>
               <p className="mt-1.5 text-[13px] leading-relaxed text-[#64748B]">{link.body}</p>
             </div>
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-[#D9E4FF] bg-[#EEF5FF] text-[#306EEC]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] border border-[#D9E4FF] bg-[#EEF5FF] text-[#306EEC]">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -115,7 +115,7 @@ function SubscribedCustomerFlow() {
           </div>
           <Link
             href="/book?visit=membership"
-            className="inline-flex min-h-[46px] w-full items-center justify-center rounded-[14px] bg-[#0B1628] px-5 text-[15px] font-semibold text-white transition hover:bg-[#172033] lg:w-auto"
+            className="inline-flex min-h-[46px] w-full items-center justify-center rounded-[8px] bg-[#0B1628] px-5 text-[15px] font-semibold text-white transition hover:bg-[#172033] lg:w-auto"
           >
             Book your next visit
           </Link>
@@ -126,7 +126,7 @@ function SubscribedCustomerFlow() {
         <div className="mx-auto max-w-[1180px]">
           <Link
             href="/membership/plans"
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[#D7DEE9] bg-white px-4 text-[13px] font-bold text-[#306EEC] transition hover:border-[#306EEC] hover:bg-[#F8FAFF]"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-[8px] border border-[#D7DEE9] bg-white px-4 text-[13px] font-bold text-[#306EEC] transition hover:border-[#306EEC] hover:bg-[#F8FAFF]"
           >
             See plans
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -254,13 +254,13 @@ function PostFreeVisitFlow() {
                 placement: "post_free_visit_state",
               })
             }
-            className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]"
+            className="inline-flex min-h-12 items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]"
           >
             See plans
           </a>
           <Link
             href="/book?visit=additional"
-            className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#D2D2D7] bg-white px-5 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]"
+            className="inline-flex min-h-12 items-center justify-center rounded-[8px] border border-[#D2D2D7] bg-white px-5 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]"
           >
             Book a One-Time Visit
           </Link>
@@ -314,7 +314,7 @@ function ProspectMembershipFlow({
           <p className="mt-3 text-[13px] font-medium text-[#86868B]">Ongoing handyman care for Long Island homes.</p>
 
           {showFreeVisitOffer ? (
-            <div className="mx-auto mt-7 max-w-[520px] rounded-[13px] border border-[#E5E5EA] bg-[#F5F5F7] px-5 py-5">
+            <div className="mx-auto mt-7 max-w-[520px] rounded-[8px] border border-[#E5E5EA] bg-[#F5F5F7] px-5 py-5">
               <p className="text-[19px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[19px]">
                 Your first visit is free.
               </p>
@@ -324,7 +324,7 @@ function ProspectMembershipFlow({
               <Link
                 href="/signup?redirect=%2Fmembership"
                 onClick={() => trackEvent("free_visit_cta_clicked", { placement: "membership_hero" })}
-                className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9] sm:w-auto"
+                className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9] sm:w-auto"
               >
                 Book Your First Visit Free
               </Link>
@@ -332,10 +332,10 @@ function ProspectMembershipFlow({
           ) : null}
 
           <div className="mt-6 flex flex-col justify-center gap-3 min-[380px]:flex-row">
-            <a href="#plans" className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#D2D2D7] bg-white px-5 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]">
+            <a href="#plans" className="inline-flex min-h-12 items-center justify-center rounded-[8px] border border-[#D2D2D7] bg-white px-5 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]">
               See plans
             </a>
-            <a href="#how-it-works" className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#D2D2D7] bg-white px-5 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]">
+            <a href="#how-it-works" className="inline-flex min-h-12 items-center justify-center rounded-[8px] border border-[#D2D2D7] bg-white px-5 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]">
               How it works
             </a>
           </div>
@@ -349,7 +349,7 @@ function ProspectMembershipFlow({
           </div>
           <div className="mt-7 grid gap-3 md:grid-cols-3">
             {steps.map(([title, body], index) => (
-              <article key={title} className="rounded-[14px] border border-[#E5E5EA] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
+              <article key={title} className="rounded-[8px] border border-[#E5E5EA] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEF4FF] text-[13px] font-bold text-[#306EEC]">{index + 1}</span>
                 <h3 className="mt-4 text-[18px] font-semibold text-[#111111]">{title}</h3>
                 <p className="mt-1.5 text-[14px] leading-5 text-[#6E6E73]">{body}</p>
@@ -400,7 +400,7 @@ function ProspectMembershipFlow({
         <div className="mx-auto max-w-[680px]">
           <h2 className="text-[26px] font-semibold tracking-[-0.03em] text-[#111111] sm:text-[34px]">Ready to make home care easier?</h2>
           <p className="mt-3 text-[15px] leading-6 text-[#6E6E73]">Choose your membership and book your first visit when you&rsquo;re ready.</p>
-          <a href="#plans" className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]">See plans</a>
+          <a href="#plans" className="mt-6 inline-flex min-h-12 items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]">See plans</a>
           <div className="mt-4">
             <Link href="/book?visit=additional" className="text-[14px] font-semibold text-[#306EEC] hover:underline">Need only one visit? Book an Extra Visit</Link>
           </div>

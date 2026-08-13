@@ -103,7 +103,7 @@ export default function ProjectsSection() {
             {AUTHORITY_STATS.map(({ value, label }) => (
               <div
                 key={label}
-                className="rounded-[13px] border border-white/[0.09] bg-white/[0.04] px-5 py-4 text-center min-w-[100px]"
+                className="rounded-[8px] border border-white/[0.09] bg-white/[0.04] px-5 py-4 text-center min-w-[100px]"
               >
                 <div className="text-[21px] font-extrabold text-white leading-none mb-1.5">
                   {value}
@@ -122,7 +122,7 @@ export default function ProjectsSection() {
 
             {/* Featured image */}
             <div
-              className="relative w-full overflow-hidden rounded-[16px] group"
+              className="relative w-full overflow-hidden rounded-[8px] group"
               style={{ aspectRatio: "16/10" }}
             >
               {/* Main photo */}
@@ -136,7 +136,7 @@ export default function ProjectsSection() {
               />
 
               {/* Premium cinematic vignette */}
-              <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.40)] rounded-[16px]" />
+              <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.40)] rounded-[8px]" />
 
               {/* Bottom gradient overlay */}
               <div
@@ -205,7 +205,7 @@ export default function ProjectsSection() {
                   type="button"
                   onClick={() => setActiveIdx(i)}
                   aria-label={`View ${p.label}`}
-                  className={`relative flex-shrink-0 w-[72px] h-[46px] rounded-[10px] overflow-hidden border-2 transition-all duration-200 focus:outline-none ${
+                  className={`relative flex-shrink-0 w-[72px] h-[46px] rounded-[6px] overflow-hidden border-2 transition-all duration-200 focus:outline-none ${
                     i === activeIdx
                       ? "border-[#86EFAC] shadow-[0_0_14px_rgba(134,239,172,0.22)]"
                       : "border-white/[0.08] hover:border-white/25 opacity-60 hover:opacity-90"
@@ -225,7 +225,7 @@ export default function ProjectsSection() {
 
             {/* Trust card */}
             <div
-              className="rounded-[14px] border border-white/[0.09] p-6 flex flex-col gap-5"
+              className="rounded-[8px] border border-white/[0.09] p-6 flex flex-col gap-5"
               style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)" }}
             >
               <div>
@@ -268,7 +268,7 @@ export default function ProjectsSection() {
 
             {/* CTA card */}
             <div
-              className="rounded-[14px] border border-[#306EEC]/20 p-6 flex flex-col gap-4"
+              className="rounded-[8px] border border-[#306EEC]/20 p-6 flex flex-col gap-4"
               style={{ background: "linear-gradient(145deg, rgba(48,110,236,0.12) 0%, rgba(48,110,236,0.06) 100%)" }}
             >
               <div>
@@ -283,7 +283,7 @@ export default function ProjectsSection() {
               <button
                 type="button"
                 onClick={scrollToPlans}
-                className="w-full min-h-[46px] rounded-[14px] bg-[#306EEC] text-white text-[15px] font-extrabold transition-all hover:bg-[#2558c9] active:scale-[0.99]"
+                className="w-full min-h-[46px] rounded-[8px] bg-[#306EEC] text-white text-[15px] font-extrabold transition-all hover:bg-[#2558c9] active:scale-[0.99]"
                 style={{ boxShadow: "0 12px 36px rgba(48,110,236,0.30)" }}
               >
                 See plans
@@ -295,7 +295,7 @@ export default function ProjectsSection() {
               {AUTHORITY_STATS.map(({ value, label }) => (
                 <div
                   key={label}
-                  className="rounded-[14px] border border-white/[0.09] bg-white/[0.04] p-3 text-center"
+                  className="rounded-[8px] border border-white/[0.09] bg-white/[0.04] p-3 text-center"
                 >
                   <div className="text-[18px] font-extrabold text-white leading-none mb-1">{value}</div>
                   <div className="text-[10px] font-semibold text-white/38 leading-tight">{label}</div>

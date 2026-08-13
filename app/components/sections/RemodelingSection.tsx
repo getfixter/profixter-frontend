@@ -88,7 +88,7 @@ function ServiceCard({
 
   return (
     <div
-      className="flex flex-col overflow-hidden rounded-[16px] shadow-[0_32px_80px_rgba(15,23,42,0.10)] border border-[#E5E9F2] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_44px_100px_rgba(15,23,42,0.14)]"
+      className="flex flex-col overflow-hidden rounded-[8px] shadow-[0_32px_80px_rgba(15,23,42,0.10)] border border-[#E5E9F2] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_44px_100px_rgba(15,23,42,0.14)]"
       style={{ background: service.bgGradient }}
     >
       {/* Image */}
@@ -111,7 +111,7 @@ function ServiceCard({
         {/* Service label chip */}
         <div className="absolute bottom-4 left-5">
           <div
-            className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5"
+            className="inline-flex items-center gap-2 rounded-[6px] px-3.5 py-1.5"
             style={{
               background: service.bgGradient,
               boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
@@ -175,7 +175,7 @@ function ServiceCard({
           <button
             type="button"
             onClick={callNow}
-            className="w-full min-h-[48px] rounded-[16px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
+            className="w-full min-h-[48px] rounded-[8px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
             style={{
               background:
                 service.accent === "#306EEC"
@@ -226,7 +226,7 @@ export default function RemodelingSection() {
 
         {/* ── Header ─────────────────────────────────────────── */}
         <div className="mx-auto max-w-[760px] text-center mb-8 sm:mb-16">
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
+          <div className="inline-flex items-center gap-2.5 rounded-[6px] border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
               <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -256,7 +256,7 @@ export default function RemodelingSection() {
         </div>
 
         {/* ── Bottom authority strip ─────────────────────────── */}
-        <div className="mt-7 sm:mt-8 overflow-hidden rounded-[14px] border border-[#E5E9F2] bg-white shadow-[0_8px_40px_rgba(15,23,42,0.06)]">
+        <div className="mt-7 sm:mt-8 overflow-hidden rounded-[8px] border border-[#E5E9F2] bg-white shadow-[0_8px_40px_rgba(15,23,42,0.06)]">
           <div className="px-6 py-7 sm:px-10 sm:py-8 flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-7">
             {/* Left: Quote */}
             <div className="flex-1">
@@ -274,7 +274,7 @@ export default function RemodelingSection() {
             {/* Right: Phone CTA */}
             <a
               href={`tel:${REMODELING_PHONE_TEL}`}
-              className="flex-shrink-0 group inline-flex items-center gap-3 rounded-[16px] border border-[#0F172A]/12 bg-[#F8FAFF] px-5 py-4 hover:border-[#306EEC]/30 hover:bg-[#EEF5FF] transition-all duration-200 sm:min-w-[220px]"
+              className="flex-shrink-0 group inline-flex items-center gap-3 rounded-[8px] border border-[#0F172A]/12 bg-[#F8FAFF] px-5 py-4 hover:border-[#306EEC]/30 hover:bg-[#EEF5FF] transition-all duration-200 sm:min-w-[220px]"
             >
               <div className="w-10 h-10 rounded-full bg-[#0F172A] flex items-center justify-center flex-shrink-0 group-hover:bg-[#306EEC] transition-colors">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">

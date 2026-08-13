@@ -44,7 +44,7 @@ export default function HowItWorksSection() {
 
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-7 max-w-[720px] text-center sm:mb-16 lg:mb-20">
-          <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-3.5 py-1.5 shadow-[0_2px_12px_rgba(48,110,236,0.08)] sm:mb-6 sm:px-4 sm:py-2">
+          <div className="mb-4 inline-flex items-center gap-2.5 rounded-[6px] border border-[#D9E4FF] bg-white px-3.5 py-1.5 shadow-[0_2px_12px_rgba(48,110,236,0.08)] sm:mb-6 sm:px-4 sm:py-2">
             <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#306EEC]" />
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
               Simple by Design
@@ -100,7 +100,7 @@ export default function HowItWorksSection() {
         </div>
 
         <div id="founder-story" className="mt-8 scroll-mt-[130px] sm:mt-20 lg:mt-28">
-          <div className="mx-auto max-w-[860px] rounded-[16px] border border-[#DDE4F0] bg-white/82 px-5 py-9 text-center shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-sm sm:rounded-[16px] sm:px-10 sm:py-11 sm:shadow-[0_24px_80px_rgba(15,23,42,0.06)] lg:px-16 lg:py-14">
+          <div className="mx-auto max-w-[860px] rounded-[8px] border border-[#DDE4F0] bg-white/82 px-5 py-9 text-center shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-sm sm:px-10 sm:py-11 sm:shadow-[0_24px_80px_rgba(15,23,42,0.06)] lg:px-16 lg:py-14">
             <div className="mx-auto mb-6 h-px w-16 bg-[#D4A574]" />
 
             <div className="relative mx-auto h-[132px] w-[132px] overflow-hidden rounded-full border-[5px] border-white shadow-[0_18px_48px_rgba(15,23,42,0.16)] sm:h-[156px] sm:w-[156px]">
@@ -143,9 +143,9 @@ export default function HowItWorksSection() {
                 That&apos;s why Profixter is built around Membership. Members have one team that gets to know the home, keeps the list moving, and helps small issues get handled before they become bigger problems.
               </p>
               <div className="grid gap-2 py-2 text-[15px] font-extrabold leading-relaxed text-[#0B1628] sm:grid-cols-3 sm:text-center">
-                <p className="rounded-[16px] bg-[#F8FAFF] px-4 py-3">No starting over.</p>
-                <p className="rounded-[16px] bg-[#F8FAFF] px-4 py-3">No contractor chase.</p>
-                <p className="rounded-[16px] bg-[#F8FAFF] px-4 py-3">No guesswork.</p>
+                <p className="rounded-[8px] bg-[#F8FAFF] px-4 py-3">No starting over.</p>
+                <p className="rounded-[8px] bg-[#F8FAFF] px-4 py-3">No contractor chase.</p>
+                <p className="rounded-[8px] bg-[#F8FAFF] px-4 py-3">No guesswork.</p>
               </div>
               <p>Just a simple, predictable way to take care of your home.</p>
               <div className="pt-3 text-[#0B1628]">

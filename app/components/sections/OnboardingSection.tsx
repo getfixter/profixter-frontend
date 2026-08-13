@@ -45,7 +45,7 @@ export default function OnboardingSection() {
 
           {/* LEFT - What happens after you start */}
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-[#EEF2FF] px-4 py-1.5 mb-5">
+            <div className="inline-flex items-center gap-2 rounded-[6px] border border-[#D9E4FF] bg-[#EEF2FF] px-4 py-1.5 mb-5">
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
                 After You Start
               </span>
@@ -77,7 +77,7 @@ export default function OnboardingSection() {
             </div>
 
             {/* No-risk reassurance */}
-            <div className="mt-8 rounded-[16px] border border-[#BBF7D0] bg-[#F0FDF4] px-5 py-4">
+            <div className="mt-8 rounded-[8px] border border-[#BBF7D0] bg-[#F0FDF4] px-5 py-4">
               <p className="text-[14px] font-semibold text-[#166534] leading-relaxed">
                 You&rsquo;re not locked in. Try it for a month and see if it fits your home.
               </p>
@@ -88,7 +88,7 @@ export default function OnboardingSection() {
 
             <Link
               href="/signup"
-              className="mt-6 inline-flex min-h-[46px] items-center justify-center rounded-[14px] bg-[#306EEC] px-6 text-[15px] font-extrabold text-white shadow-[0_12px_32px_rgba(48,110,236,0.28)] transition hover:-translate-y-0.5 hover:bg-[#2558c9]"
+              className="mt-6 inline-flex min-h-[46px] items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-extrabold text-white shadow-[0_12px_32px_rgba(48,110,236,0.28)] transition hover:-translate-y-0.5 hover:bg-[#2558c9]"
             >
               Create Account
             </Link>
@@ -96,7 +96,7 @@ export default function OnboardingSection() {
 
           {/* RIGHT - What most homeowners book first */}
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E4FF] bg-[#EEF2FF] px-4 py-1.5 mb-5">
+            <div className="inline-flex items-center gap-2 rounded-[6px] border border-[#D9E4FF] bg-[#EEF2FF] px-4 py-1.5 mb-5">
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
                 First Visit Ideas
               </span>
@@ -110,7 +110,7 @@ export default function OnboardingSection() {
 
             <ul className="space-y-3 mb-8">
               {FIRST_VISIT_IDEAS.map((idea) => (
-                <li key={idea} className="flex items-center gap-3 rounded-[8px] border-l-2 border-[#D7DEE9] bg-[#F8FAFC] px-4 py-3">
+                <li key={idea} className="flex items-center gap-3 rounded-[6px] border-l-2 border-[#D7DEE9] bg-[#F8FAFC] px-4 py-3">
                   <div className="w-6 h-6 rounded-full bg-[#EAF2FF] flex items-center justify-center flex-shrink-0">
                     <svg width="10" height="8" viewBox="0 0 10 8" fill="none" aria-hidden="true">
                       <path d="M1 4l2.5 2.5L9 1" stroke="#306EEC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -122,7 +122,7 @@ export default function OnboardingSection() {
             </ul>
 
             {/* Social nudge */}
-            <div className="rounded-[16px] border border-[#E2E8F0] bg-[#F8FAFF] px-5 py-4">
+            <div className="rounded-[8px] border border-[#E2E8F0] bg-[#F8FAFF] px-5 py-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">

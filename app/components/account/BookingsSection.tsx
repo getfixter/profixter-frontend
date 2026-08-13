@@ -171,7 +171,7 @@ function Gallery({ images = [] }: { images?: string[] }) {
             key={src + i}
             type="button"
             onClick={() => setOpen(src)}
-            className="relative w-full aspect-square rounded-[10px] overflow-hidden border border-[#E0E6F5] bg-white active:scale-[0.97] transition"
+            className="relative w-full aspect-square rounded-[6px] overflow-hidden border border-[#E0E6F5] bg-white active:scale-[0.97] transition"
             title="View photo"
           >
             <Image
@@ -191,7 +191,7 @@ function Gallery({ images = [] }: { images?: string[] }) {
           onClick={() => setOpen(null)}
         >
           <div
-            className="relative w-full max-w-[900px] bg-black rounded-[16px] overflow-hidden"
+            className="relative w-full max-w-[900px] bg-black rounded-[8px] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative w-full h-[72vh]">
@@ -202,7 +202,7 @@ function Gallery({ images = [] }: { images?: string[] }) {
               <button
                 type="button"
                 onClick={() => setOpen(null)}
-                className="px-4 py-2 rounded-[10px] bg-white text-[#313234] font-semibold text-sm"
+                className="px-4 py-2 rounded-[6px] bg-white text-[#313234] font-semibold text-sm"
               >
                 Close
               </button>
@@ -237,7 +237,7 @@ function CancelModal({
       onClick={onClose}
     >
       <div
-        className="w-full sm:max-w-[460px] bg-white rounded-t-[24px] sm:rounded-[14px] border border-[#E0E6F5] p-5 sm:p-6"
+        className="w-full sm:max-w-[460px] bg-white rounded-t-[10px] sm:rounded-[8px] border border-[#E0E6F5] p-5 sm:p-6"
         onClick={(e) => e.stopPropagation()}
         style={{ boxShadow: "0 -8px 60px rgba(0,0,0,0.18)" }}
       >
@@ -258,7 +258,7 @@ function CancelModal({
         </div>
 
         {error && (
-          <div className="mb-3 rounded-[12px] bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-[13px]">
+          <div className="mb-3 rounded-[8px] bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-[13px]">
             {error}
           </div>
         )}
@@ -268,7 +268,7 @@ function CancelModal({
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="flex-1 py-3 rounded-[14px] border border-[#E0E6F5] bg-white text-[#313234] font-semibold text-[14px] hover:bg-[#F8FAFF] transition disabled:opacity-60"
+            className="flex-1 py-3 rounded-[8px] border border-[#E0E6F5] bg-white text-[#313234] font-semibold text-[14px] hover:bg-[#F8FAFF] transition disabled:opacity-60"
           >
             Keep visit
           </button>
@@ -276,7 +276,7 @@ function CancelModal({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className="flex-1 py-3 rounded-[14px] bg-red-500 text-white font-semibold text-[14px] hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex-1 py-3 rounded-[8px] bg-red-500 text-white font-semibold text-[14px] hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loading ? "Canceling..." : "Yes, cancel"}
           </button>
@@ -342,7 +342,7 @@ function AddDetailsModal({
       onClick={() => !saving && onClose()}
     >
       <div
-        className="w-full sm:max-w-[500px] bg-white rounded-t-[24px] sm:rounded-[14px] border border-[#E0E6F5] p-5 sm:p-6"
+        className="w-full sm:max-w-[500px] bg-white rounded-t-[10px] sm:rounded-[8px] border border-[#E0E6F5] p-5 sm:p-6"
         onClick={(e) => e.stopPropagation()}
         style={{ boxShadow: "0 -8px 60px rgba(0,0,0,0.18)" }}
       >
@@ -362,18 +362,18 @@ function AddDetailsModal({
             value={note}
             onChange={(event) => setNote(event.target.value)}
             rows={4}
-            className="mt-1 w-full rounded-[14px] border border-[#E0E6F5] px-3 py-2 text-[14px] text-[#313234] outline-none focus:border-[#306EEC] focus:ring-4 focus:ring-[#D9E4FF]"
+            className="mt-1 w-full rounded-[8px] border border-[#E0E6F5] px-3 py-2 text-[14px] text-[#313234] outline-none focus:border-[#306EEC] focus:ring-4 focus:ring-[#D9E4FF]"
             placeholder="Add anything the team should know before arriving"
           />
         </label>
 
-        <label className="mt-3 block rounded-[14px] border border-dashed border-[#C7D9FF] bg-[#F8FAFF] px-3 py-3 text-[13px] font-semibold text-[#313234]">
+        <label className="mt-3 block rounded-[8px] border border-dashed border-[#C7D9FF] bg-[#F8FAFF] px-3 py-3 text-[13px] font-semibold text-[#313234]">
           Add photos
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
             multiple
-            className="mt-2 block w-full text-[12px] text-[#6A6D71] file:mr-3 file:rounded-[10px] file:border-0 file:bg-[#306EEC] file:px-3 file:py-2 file:text-[12px] file:font-bold file:text-white"
+            className="mt-2 block w-full text-[12px] text-[#6A6D71] file:mr-3 file:rounded-[6px] file:border-0 file:bg-[#306EEC] file:px-3 file:py-2 file:text-[12px] file:font-bold file:text-white"
             onChange={(event) => setPhotos(Array.from(event.target.files || []))}
           />
           {photos.length > 0 && (
@@ -384,7 +384,7 @@ function AddDetailsModal({
         </label>
 
         {error && (
-          <div className="mt-3 rounded-[12px] bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-[13px]">
+          <div className="mt-3 rounded-[8px] bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-[13px]">
             {error}
           </div>
         )}
@@ -394,7 +394,7 @@ function AddDetailsModal({
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="flex-1 py-3 rounded-[14px] border border-[#E0E6F5] bg-white text-[#313234] font-semibold text-[14px] hover:bg-[#F8FAFF] transition disabled:opacity-60"
+            className="flex-1 py-3 rounded-[8px] border border-[#E0E6F5] bg-white text-[#313234] font-semibold text-[14px] hover:bg-[#F8FAFF] transition disabled:opacity-60"
           >
             Cancel
           </button>
@@ -402,7 +402,7 @@ function AddDetailsModal({
             type="button"
             onClick={submit}
             disabled={saving}
-            className="flex-1 py-3 rounded-[14px] bg-[#306EEC] text-white font-semibold text-[14px] hover:bg-[#2557C7] transition disabled:opacity-60"
+            className="flex-1 py-3 rounded-[8px] bg-[#306EEC] text-white font-semibold text-[14px] hover:bg-[#2557C7] transition disabled:opacity-60"
           >
             {saving ? "Saving..." : "Add details"}
           </button>
@@ -439,7 +439,7 @@ function BookingCard({
   const detailsLockReason = canAddAppointmentDetails ? detailLockReason(booking) : "";
 
   return (
-    <div className="bg-white border border-[#E0E6F5] rounded-[16px] overflow-hidden transition hover:border-[#C7D9FF]">
+    <div className="bg-white border border-[#E0E6F5] rounded-[8px] overflow-hidden transition hover:border-[#C7D9FF]">
       {/* Card header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#F0F4FF]">
         <div>
@@ -452,11 +452,11 @@ function BookingCard({
         </div>
         <div className="flex flex-col items-end gap-1.5">
           {isOneTime && (
-            <span className="rounded-[10px] border border-[#D9E4FF] bg-[#F0F7FF] px-2.5 py-1 text-[11px] font-bold text-[#1D4ED8]">
+            <span className="rounded-[6px] border border-[#D9E4FF] bg-[#F0F7FF] px-2.5 py-1 text-[11px] font-bold text-[#1D4ED8]">
               One-Time Visit
             </span>
           )}
-          <span className={`px-2.5 py-1 rounded-[10px] text-[11px] font-bold border ${statusBadge(booking.status)}`}>
+          <span className={`px-2.5 py-1 rounded-[6px] text-[11px] font-bold border ${statusBadge(booking.status)}`}>
             {statusLabel(booking.status)}
           </span>
         </div>
@@ -531,12 +531,12 @@ function BookingCard({
               <button
                 type="button"
                 onClick={() => setDetailsOpen(true)}
-                className="w-full rounded-[12px] border border-[#D9E4FF] bg-[#F0F7FF] px-3 py-2.5 text-[13px] font-semibold text-[#1D4ED8] transition hover:bg-[#E6F0FF]"
+                className="w-full rounded-[8px] border border-[#D9E4FF] bg-[#F0F7FF] px-3 py-2.5 text-[13px] font-semibold text-[#1D4ED8] transition hover:bg-[#E6F0FF]"
               >
                 Add notes/photos
               </button>
             ) : (
-              <div className="rounded-[12px] border border-[#E0E6F5] bg-[#F8FAFF] px-3 py-2.5 text-[12px] font-semibold text-[#6A6D71]">
+              <div className="rounded-[8px] border border-[#E0E6F5] bg-[#F8FAFF] px-3 py-2.5 text-[12px] font-semibold text-[#6A6D71]">
                 {detailsLockReason}
               </div>
             )}
@@ -549,7 +549,7 @@ function BookingCard({
               type="button"
               onClick={() => onCancelClick(booking)}
               disabled={cancelLoading}
-              className="flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition disabled:opacity-60 disabled:cursor-not-allowed"
+              className="flex-1 py-2.5 rounded-[8px] text-[13px] font-semibold border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {cancelLoading ? "..." : "Cancel visit"}
             </button>
@@ -557,7 +557,7 @@ function BookingCard({
           {showCallToChange && (
             <a
               href="tel:631-599-1363"
-              className="flex-1 rounded-[12px] border border-[#D9E4FF] bg-[#F0F7FF] px-3 py-2.5 text-center text-[13px] font-semibold text-[#1D4ED8] transition hover:bg-[#E6F0FF]"
+              className="flex-1 rounded-[8px] border border-[#D9E4FF] bg-[#F0F7FF] px-3 py-2.5 text-center text-[13px] font-semibold text-[#1D4ED8] transition hover:bg-[#E6F0FF]"
             >
               Need to cancel or reschedule? Call 631-599-1363
             </a>
@@ -568,7 +568,7 @@ function BookingCard({
                 href="https://buy.stripe.com/eVq8wO3W98O03NL3ASawo00"
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold border border-[#E0E6F5] text-[#6A6D71] bg-white hover:bg-[#F8FAFF] transition text-center"
+                className="flex-1 py-2.5 rounded-[8px] text-[13px] font-semibold border border-[#E0E6F5] text-[#6A6D71] bg-white hover:bg-[#F8FAFF] transition text-center"
               >
                 Leave a tip
               </a>
@@ -576,7 +576,7 @@ function BookingCard({
                 href="https://maps.app.goo.gl/Zgf97uUDCh6HBK5o8"
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold border border-[#E0E6F5] bg-white text-[#6A6D71] hover:bg-[#F8FAFF] transition text-center"
+                className="flex-1 py-2.5 rounded-[8px] text-[13px] font-semibold border border-[#E0E6F5] bg-white text-[#6A6D71] hover:bg-[#F8FAFF] transition text-center"
               >
                 Leave a review
               </a>
@@ -585,7 +585,7 @@ function BookingCard({
           {phone && (
             <a
               href={`tel:${sanitizeTel(phone)}`}
-              className="flex-shrink-0 w-10 h-10 rounded-[12px] border border-[#E0E6F5] bg-white flex items-center justify-center hover:bg-[#F8FAFF] transition"
+              className="flex-shrink-0 w-10 h-10 rounded-[8px] border border-[#E0E6F5] bg-white flex items-center justify-center hover:bg-[#F8FAFF] transition"
               title={`Call ${phone}`}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#306EEC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -783,7 +783,7 @@ export default function BookingsSection() {
       </div>
 
       {/* CTA strip */}
-      <div className="bg-white border border-[#E0E6F5] rounded-[16px] p-4 mb-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+      <div className="bg-white border border-[#E0E6F5] rounded-[8px] p-4 mb-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
         <div>
           <div className="text-[14px] font-semibold text-[#313234]">Questions or changes?</div>
           <div className="text-[13px] text-[#6A6D71] mt-0.5">
@@ -804,7 +804,7 @@ export default function BookingsSection() {
               key={t.key}
               type="button"
               onClick={() => setFilter(t.key)}
-              className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-[13px] font-semibold transition ${
+              className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-[6px] text-[13px] font-semibold transition ${
                 filter === t.key
                   ? "bg-[#306EEC] text-white"
                   : "bg-white border border-[#E0E6F5] text-[#6A6D71] hover:text-[#313234] hover:border-[#C7D9FF]"
@@ -830,13 +830,13 @@ export default function BookingsSection() {
       )}
 
       {!loading && error && (
-        <div className="bg-red-50 border border-red-200 rounded-[14px] p-4 text-[14px] text-red-700">
+        <div className="bg-red-50 border border-red-200 rounded-[8px] p-4 text-[14px] text-red-700">
           {error}
         </div>
       )}
 
       {!loading && !error && filtered.length === 0 && (
-        <div className="bg-white border border-[#E0E6F5] rounded-[16px] p-8 text-center">
+        <div className="bg-white border border-[#E0E6F5] rounded-[8px] p-8 text-center">
           <div className="mb-3 text-[26px] text-[#306EEC]">Visit</div>
           {/*
            * Keyed off the real total rather than the tab, because the default
@@ -855,7 +855,7 @@ export default function BookingsSection() {
           {bookings.length === 0 && (
             <a
               href="/book?visit=membership"
-              className="inline-flex items-center justify-center mt-4 px-5 py-2.5 rounded-[12px] bg-[#306EEC] text-white font-semibold text-[13px] hover:bg-[#2557C7] transition"
+              className="inline-flex items-center justify-center mt-4 px-5 py-2.5 rounded-[8px] bg-[#306EEC] text-white font-semibold text-[13px] hover:bg-[#2557C7] transition"
             >
               Book a visit
             </a>
@@ -880,7 +880,7 @@ export default function BookingsSection() {
             <button
               type="button"
               onClick={() => setHistoryExpanded(true)}
-              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[12px] border border-[#E0E6F5] bg-white px-4 text-[14px] font-semibold text-[#306EEC] transition hover:border-[#C7D9FF] hover:bg-[#F8FAFF]"
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[8px] border border-[#E0E6F5] bg-white px-4 text-[14px] font-semibold text-[#306EEC] transition hover:border-[#C7D9FF] hover:bg-[#F8FAFF]"
             >
               Show all {filtered.length}
             </button>
@@ -890,7 +890,7 @@ export default function BookingsSection() {
             <button
               type="button"
               onClick={() => setHistoryExpanded(false)}
-              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[12px] border border-[#E0E6F5] bg-white px-4 text-[14px] font-semibold text-[#6A6D71] transition hover:border-[#C7D9FF] hover:text-[#313234]"
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[8px] border border-[#E0E6F5] bg-white px-4 text-[14px] font-semibold text-[#6A6D71] transition hover:border-[#C7D9FF] hover:text-[#313234]"
             >
               Show less
             </button>

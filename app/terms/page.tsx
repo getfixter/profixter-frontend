@@ -35,7 +35,7 @@ export default function TermsPage() {
   return (
     <div className="min-h-screen px-4 py-9 sm:py-32 bg-[#020617] text-white">
       <div
-        className="max-w-5xl mx-auto rounded-[16px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
+        className="max-w-5xl mx-auto rounded-[8px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
         style={{
           background:
             "linear-gradient(180deg, rgba(49,50,52,0.62) 0%, rgba(49,50,52,0.52) 55%, rgba(49,50,52,0.5) 100%), rgba(15,23,42,0.92)",
@@ -113,7 +113,7 @@ export default function TermsPage() {
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">3. Membership &amp; Billing (Month-to-Month)</h2>
 
             <div className="space-y-4">
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <h3 className="text-lg font-semibold mb-2">3.1 Month-to-Month Auto-Renewal</h3>
                 <p>
                   Memberships renew <span className="font-semibold">automatically month-to-month</span> unless you cancel before your
@@ -125,7 +125,7 @@ export default function TermsPage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <h3 className="text-lg font-semibold mb-2">3.2 Payment Authorization</h3>
                 <ul className="list-disc list-inside space-y-2">
                   <li>
@@ -144,7 +144,7 @@ export default function TermsPage() {
                 </ul>
               </div>
 
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <h3 className="text-lg font-semibold mb-2">3.3 Cancellation</h3>
                 <ul className="list-disc list-inside space-y-2">
                   <li>
@@ -161,7 +161,7 @@ export default function TermsPage() {
                 </ul>
               </div>
 
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <h3 className="text-lg font-semibold mb-2">3.4 No Refunds for Partial Months (General Rule)</h3>
                 <p>
                   To the maximum extent permitted by law, membership fees are charged in advance and are generally{" "}
@@ -174,7 +174,7 @@ export default function TermsPage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <h3 className="text-lg font-semibold mb-2">3.5 Promotions / Promo Codes</h3>
                 <ul className="list-disc list-inside space-y-2">
                   <li>
@@ -192,7 +192,7 @@ export default function TermsPage() {
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">4. What’s Covered vs. Not Covered (Scope Control)</h2>
 
             <div className="space-y-4">
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <h3 className="text-lg font-semibold mb-2">4.1 Standard Visit Time Window</h3>
                 <p>
                   Unless your Plan states otherwise, a standard Visit is intended to be up to{" "}
@@ -204,7 +204,7 @@ export default function TermsPage() {
                 </ul>
               </div>
 
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <h3 className="text-lg font-semibold mb-2">4.2 Covered Tasks (General)</h3>
                 <p>
                   Covered Tasks are generally small to medium home maintenance and repairs that do not require a licensed trade
@@ -217,7 +217,7 @@ export default function TermsPage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <h3 className="text-lg font-semibold mb-2">4.3 Exclusions (Not Covered / Separate Quote)</h3>
                 <ul className="list-disc list-inside space-y-2">
                   <li>
@@ -417,7 +417,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">14. SMS Program Terms</h2>
 
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-5 space-y-3">
+            <div className="rounded-[8px] bg-white/5 border border-white/10 p-5 space-y-3">
               <p className="font-semibold">
   Program Name: Premium Island Homes INC (Profixter) SMS Alerts &amp; Updates
 </p>
@@ -531,7 +531,7 @@ export default function TermsPage() {
             <div className="mt-7 text-center">
               <Link
                 href="/signup"
-                className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
+                className="inline-flex items-center justify-center rounded-[8px] border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
               >
                 Create Account
               </Link>

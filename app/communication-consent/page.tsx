@@ -34,7 +34,7 @@ export default function CommunicationConsentPage() {
   return (
     <div className="min-h-screen px-4 py-9 sm:py-32 bg-[#020617] text-white">
       <div
-        className="max-w-5xl mx-auto rounded-[16px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
+        className="max-w-5xl mx-auto rounded-[8px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
         style={{
           background:
             "linear-gradient(180deg, rgba(49,50,52,0.62) 0%, rgba(49,50,52,0.52) 55%, rgba(49,50,52,0.5) 100%), rgba(15,23,42,0.92)",
@@ -63,7 +63,7 @@ export default function CommunicationConsentPage() {
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">1. Contact Information</h2>
             <p>If you have questions about privacy, consent, or communications, contact us:</p>
 
-            <div className="mt-4 rounded-2xl bg-white/5 border border-white/10 p-5">
+            <div className="mt-4 rounded-[8px] bg-white/5 border border-white/10 p-5">
               <p>
                 Email:{" "}
                 <a className="text-[#93c5fd] underline underline-offset-2" href={PUBLIC_CONTACT_MAILTO}>
@@ -139,7 +139,7 @@ export default function CommunicationConsentPage() {
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">4. Message Categories (What You Might Receive)</h2>
 
             <div className="space-y-4">
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <h3 className="text-lg font-semibold mb-2">4.1 Customer Care / Transactional</h3>
                 <ul className="list-disc list-inside space-y-2">
                   <li>Appointment scheduling, confirmations, rescheduling, and arrival updates</li>
@@ -150,7 +150,7 @@ export default function CommunicationConsentPage() {
                 </ul>
               </div>
 
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <h3 className="text-lg font-semibold mb-2">4.2 Marketing (Only If You Opt In)</h3>
                 <ul className="list-disc list-inside space-y-2">
                   <li>Promotions, discounts, seasonal offers, referral rewards, and special announcements</li>
@@ -169,7 +169,7 @@ export default function CommunicationConsentPage() {
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">5. Opt-Out, HELP, and Preferences</h2>
             <p>You control your messaging preferences. You can opt out anytime:</p>
 
-            <div className="mt-4 rounded-2xl bg-white/5 border border-white/10 p-5">
+            <div className="mt-4 rounded-[8px] bg-white/5 border border-white/10 p-5">
               <ul className="list-disc list-inside space-y-2">
                 <li>
                   Reply <span className="font-semibold">STOP</span> to opt out of SMS messages (or{" "}
@@ -240,7 +240,7 @@ export default function CommunicationConsentPage() {
           {/* 9 */}
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">9. Data Sharing, Transfer Restrictions (SMS Specific)</h2>
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+            <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
               <p className="font-semibold">
                 Mobile opt-in data and consent information is not sold, rented, or shared with third parties for marketing purposes.
               </p>
@@ -292,7 +292,7 @@ export default function CommunicationConsentPage() {
           <div className="mt-7 text-center">
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
+              className="inline-flex items-center justify-center rounded-[8px] border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
             >
               Create Account
             </Link>

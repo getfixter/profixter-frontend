@@ -40,7 +40,7 @@ function PasswordField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           autoComplete={autoComplete}
-          className="w-full px-4 py-3.5 bg-white border border-[#D7E0F5] rounded-[14px] text-[15px] text-[#313234] focus:outline-none focus:border-[#306EEC] focus:ring-2 focus:ring-[#306EEC]/10 transition pr-12"
+          className="w-full px-4 py-3.5 bg-white border border-[#D7E0F5] rounded-[8px] text-[15px] text-[#313234] focus:outline-none focus:border-[#306EEC] focus:ring-2 focus:ring-[#306EEC]/10 transition pr-12"
         />
         <button
           type="button"
@@ -114,7 +114,7 @@ function DeleteAccountModal({
       onClick={phase === "deleting" ? undefined : onClose}
     >
       <div
-        className="w-full sm:max-w-[460px] bg-white rounded-t-[28px] sm:rounded-[22px] shadow-[0_-8px_60px_rgba(0,0,0,0.2)] sm:shadow-[0_32px_100px_rgba(0,0,0,0.3)]"
+        className="w-full sm:max-w-[460px] bg-white rounded-t-[10px] sm:rounded-[10px] shadow-[0_-8px_60px_rgba(0,0,0,0.2)] sm:shadow-[0_32px_100px_rgba(0,0,0,0.3)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag handle (mobile) */}
@@ -140,7 +140,7 @@ function DeleteAccountModal({
           </p>
 
           {/* What gets deleted */}
-          <div className="rounded-[14px] bg-red-50 border border-red-100 p-4 mb-5">
+          <div className="rounded-[8px] bg-red-50 border border-red-100 p-4 mb-5">
             <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-red-700 mb-2.5">
               What will be deleted
             </div>
@@ -161,7 +161,7 @@ function DeleteAccountModal({
 
           {/* Error from server */}
           {phase === "error" && (
-            <div className="rounded-[12px] bg-red-50 border border-red-200 px-4 py-3 text-[13px] text-red-700 font-semibold mb-4">
+            <div className="rounded-[8px] bg-red-50 border border-red-200 px-4 py-3 text-[13px] text-red-700 font-semibold mb-4">
               {errorMsg}
             </div>
           )}
@@ -177,7 +177,7 @@ function DeleteAccountModal({
               onChange={(e) => setEmailInput(e.target.value)}
               placeholder={userEmail}
               disabled={phase === "deleting"}
-              className="w-full px-4 py-3 rounded-[12px] border border-[#D7E0F5] text-[14px] text-[#313234] focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3 rounded-[8px] border border-[#D7E0F5] text-[14px] text-[#313234] focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition disabled:opacity-60 disabled:cursor-not-allowed"
             />
             {emailInput.length > 0 && (
               <div className={`mt-1.5 text-[11px] font-semibold ${emailMatches ? "text-[#10B981]" : "text-red-500"}`}>
@@ -192,7 +192,7 @@ function DeleteAccountModal({
               type="button"
               onClick={onClose}
               disabled={phase === "deleting"}
-              className="flex-1 py-3 rounded-[14px] border border-[#E0E6F5] bg-white text-[#313234] text-[14px] font-semibold hover:bg-[#F8FAFF] transition disabled:opacity-60"
+              className="flex-1 py-3 rounded-[8px] border border-[#E0E6F5] bg-white text-[#313234] text-[14px] font-semibold hover:bg-[#F8FAFF] transition disabled:opacity-60"
             >
               Keep account
             </button>
@@ -200,7 +200,7 @@ function DeleteAccountModal({
               type="button"
               onClick={handleDelete}
               disabled={!emailMatches || phase === "deleting"}
-              className="flex-1 py-3 rounded-[14px] bg-red-600 text-white text-[14px] font-semibold hover:bg-red-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-1 py-3 rounded-[8px] bg-red-600 text-white text-[14px] font-semibold hover:bg-red-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {phase === "deleting" ? "Deleting…" : "Delete account"}
             </button>
@@ -299,7 +299,7 @@ export function PasswordForm() {
           <p className="text-[13px] text-[#6A6D71] mt-0.5">Update your account password</p>
         </div>
 
-        <div className="bg-white border border-[#E0E6F5] rounded-[13px] p-5 sm:p-6 max-w-[480px]">
+        <div className="bg-white border border-[#E0E6F5] rounded-[8px] p-5 sm:p-6 max-w-[480px]">
           <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
             <PasswordField
               id="current-password"
@@ -353,7 +353,7 @@ export function PasswordForm() {
             {/* Status message */}
             {message && (
               <div
-                className={`rounded-[12px] px-4 py-3 text-[13px] font-semibold ${
+                className={`rounded-[8px] px-4 py-3 text-[13px] font-semibold ${
                   status === "success"
                     ? "bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534]"
                     : "bg-red-50 border border-red-200 text-red-700"
@@ -368,7 +368,7 @@ export function PasswordForm() {
                 type="button"
                 onClick={handleDiscard}
                 disabled={status === "loading"}
-                className="flex-1 py-3 rounded-[14px] border border-[#D7E0F5] bg-white text-[#313234] text-[14px] font-semibold hover:bg-[#F8FAFF] transition disabled:opacity-60"
+                className="flex-1 py-3 rounded-[8px] border border-[#D7E0F5] bg-white text-[#313234] text-[14px] font-semibold hover:bg-[#F8FAFF] transition disabled:opacity-60"
               >
                 Discard
               </button>
@@ -376,7 +376,7 @@ export function PasswordForm() {
                 type="button"
                 onClick={handleSave}
                 disabled={status === "loading"}
-                className="flex-1 py-3 rounded-[14px] bg-[#306EEC] text-white text-[14px] font-semibold hover:bg-[#2557C7] transition disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex-1 py-3 rounded-[8px] bg-[#306EEC] text-white text-[14px] font-semibold hover:bg-[#2557C7] transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {status === "loading" ? "Saving…" : "Save Password"}
               </button>
@@ -410,7 +410,7 @@ export function PasswordForm() {
           <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-red-400 mb-3">
             Danger Zone
           </div>
-          <div className="bg-white border border-red-200 rounded-[13px] p-5">
+          <div className="bg-white border border-red-200 rounded-[8px] p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-[14px] font-bold text-[#313234]">Delete Account</div>
@@ -422,7 +422,7 @@ export function PasswordForm() {
               <button
                 type="button"
                 onClick={() => setShowDeleteModal(true)}
-                className="flex-shrink-0 px-4 py-2 rounded-[12px] border border-red-300 bg-white text-red-600 text-[13px] font-semibold hover:bg-red-50 transition"
+                className="flex-shrink-0 px-4 py-2 rounded-[8px] border border-red-300 bg-white text-red-600 text-[13px] font-semibold hover:bg-red-50 transition"
               >
                 Delete
               </button>

@@ -62,7 +62,7 @@ export default function InPersonSigning({
 
       {!loading && (!payload || payload.state !== "ready") && (
         <div className="flex min-h-dvh items-center justify-center px-4">
-          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 text-center">
+          <div className="w-full max-w-md rounded-[10px] border border-slate-200 bg-white p-6 text-center">
             <h1 className="text-lg font-black text-slate-900">This session cannot be opened</h1>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               {payload?.message ||
@@ -71,7 +71,7 @@ export default function InPersonSigning({
             <button
               type="button"
               onClick={onExit}
-              className="mt-5 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white"
+              className="mt-5 rounded-[8px] bg-slate-900 px-5 py-3 text-sm font-bold text-white"
             >
               Back to Project
             </button>

@@ -97,7 +97,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div
-      className={`rounded-[13px] border transition-colors duration-200 ${
+      className={`rounded-[8px] border transition-colors duration-200 ${
         open ? "border-[#D4A574]/35 bg-[#FDF8F2]" : "border-[#D9E4FF] bg-white"
       }`}
     >
@@ -162,7 +162,7 @@ export default function ExteriorLandingPage({ project }: Props) {
             <div className="grid gap-7 lg:grid-cols-[1fr_460px] lg:items-center lg:gap-9">
               {/* Left: Copy */}
               <div>
-                <div className="inline-flex rounded-full border border-[#D4A574]/28 bg-[#D4A574]/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[#E8C49A]">
+                <div className="inline-flex rounded-[6px] border border-[#D4A574]/28 bg-[#D4A574]/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[#E8C49A]">
                   {config.eyebrow}
                 </div>
 
@@ -177,7 +177,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                 <div className="mt-8 flex flex-wrap gap-3">
                   <a
                     href="#estimate-form"
-                    className="inline-flex min-h-[62px] items-center justify-center gap-2.5 rounded-[13px] bg-[#D4A574] px-6 text-[16px] font-extrabold text-[#111827] shadow-[0_16px_48px_rgba(212,165,116,0.30)] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
+                    className="inline-flex min-h-[62px] items-center justify-center gap-2.5 rounded-[8px] bg-[#D4A574] px-6 text-[16px] font-extrabold text-[#111827] shadow-[0_16px_48px_rgba(212,165,116,0.30)] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
                   >
                     {config.cta}
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -186,7 +186,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                   </a>
                   <a
                     href="tel:+16315991363"
-                    className="inline-flex min-h-[62px] items-center justify-center gap-2.5 rounded-[13px] border border-white/18 bg-white/[0.07] px-6 text-[16px] font-bold text-white transition hover:bg-white/[0.12]"
+                    className="inline-flex min-h-[62px] items-center justify-center gap-2.5 rounded-[8px] border border-white/18 bg-white/[0.07] px-6 text-[16px] font-bold text-white transition hover:bg-white/[0.12]"
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.12 1.18 2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.374 1.9.74 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.32-1.32a2 2 0 012.11-.45c.9.36 1.84.61 2.81.74A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -266,9 +266,9 @@ export default function ExteriorLandingPage({ project }: Props) {
               {config.benefits.map(({ title, body }) => (
                 <div
                   key={title}
-                  className="rounded-[14px] border border-[#D9E4FF] bg-white p-6 transition hover:border-[#D4A574]/40 hover:shadow-[0_8px_32px_rgba(212,165,116,0.08)]"
+                  className="rounded-[8px] border border-[#D9E4FF] bg-white p-6 transition hover:border-[#D4A574]/40 hover:shadow-[0_8px_32px_rgba(212,165,116,0.08)]"
                 >
-                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#FDF8F2]">
+                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-[6px] bg-[#FDF8F2]">
                     <CheckMark />
                   </div>
                   <div className="text-[15px] font-extrabold text-[#0B1628]">{title}</div>
@@ -295,14 +295,14 @@ export default function ExteriorLandingPage({ project }: Props) {
                 </p>
                 <a
                   href="#estimate-form"
-                  className="mt-7 inline-flex min-h-[46px] items-center justify-center rounded-[16px] bg-[#D4A574] px-5 text-[15px] font-extrabold text-[#111827] shadow-[0_12px_32px_rgba(212,165,116,0.25)] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
+                  className="mt-7 inline-flex min-h-[46px] items-center justify-center rounded-[8px] bg-[#D4A574] px-5 text-[15px] font-extrabold text-[#111827] shadow-[0_12px_32px_rgba(212,165,116,0.25)] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
                 >
                   Request a Free Estimate
                 </a>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {config.signs.map(({ title, body }) => (
-                  <div key={title} className="rounded-[14px] border border-white/10 bg-white/[0.05] p-5">
+                  <div key={title} className="rounded-[8px] border border-white/10 bg-white/[0.05] p-5">
                     <div className="mb-3 h-1.5 w-10 rounded-full bg-[#D4A574]" />
                     <div className="text-[15px] font-extrabold text-white">{title}</div>
                     <p className="mt-2 text-[13px] leading-relaxed text-white/45">{body}</p>
@@ -317,8 +317,8 @@ export default function ExteriorLandingPage({ project }: Props) {
         <section className="bg-[#EEF2FF] py-10 sm:py-13">
           <div className="mx-auto grid max-w-[1280px] gap-5 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
             {/* Warranty */}
-            <div className="rounded-[16px] border border-[#D9E4FF] bg-white p-7 sm:p-9">
-              <div className="mb-4 inline-flex rounded-[10px] bg-[#FDF8F2] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#C49060]">
+            <div className="rounded-[8px] border border-[#D9E4FF] bg-white p-7 sm:p-9">
+              <div className="mb-4 inline-flex rounded-[6px] bg-[#FDF8F2] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#C49060]">
                 Warranty
               </div>
               <h2 className="text-[23px] font-black tracking-[-0.03em] text-[#0B1628] sm:text-[26px]">
@@ -331,8 +331,8 @@ export default function ExteriorLandingPage({ project }: Props) {
               </div>
             </div>
             {/* Financing */}
-            <div className="rounded-[16px] border border-[#D9E4FF] bg-white p-7 sm:p-9">
-              <div className="mb-4 inline-flex rounded-[10px] bg-[#EFF6FF] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
+            <div className="rounded-[8px] border border-[#D9E4FF] bg-white p-7 sm:p-9">
+              <div className="mb-4 inline-flex rounded-[6px] bg-[#EFF6FF] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
                 Financing
               </div>
               <h2 className="text-[23px] font-black tracking-[-0.03em] text-[#0B1628] sm:text-[26px]">
@@ -354,7 +354,7 @@ export default function ExteriorLandingPage({ project }: Props) {
         <section className="bg-[#08101E] py-10 sm:py-13">
           <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
             <div
-              className="rounded-[13px] border border-[#D4A574]/18 p-8 sm:p-12"
+              className="rounded-[8px] border border-[#D4A574]/18 p-8 sm:p-12"
               style={{
                 background: "linear-gradient(135deg, #0D1F42 0%, #0F1D3A 60%, #0A1628 100%)",
                 boxShadow: "0 0 0 1px rgba(212,165,116,0.08)",
@@ -362,7 +362,7 @@ export default function ExteriorLandingPage({ project }: Props) {
             >
               <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
                 <div>
-                  <div className="inline-flex rounded-full border border-[#D4A574]/28 bg-[#D4A574]/10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#E8C49A]">
+                  <div className="inline-flex rounded-[6px] border border-[#D4A574]/28 bg-[#D4A574]/10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#E8C49A]">
                     Profixter Members
                   </div>
                   <h2 className="mt-4 text-[26px] font-black leading-tight tracking-[-0.03em] text-white sm:text-[32px]">
@@ -389,13 +389,13 @@ export default function ExteriorLandingPage({ project }: Props) {
                 <div className="flex flex-col gap-3 sm:flex-row lg:min-w-[200px] lg:flex-col">
                   <a
                     href="#estimate-form"
-                    className="inline-flex min-h-[48px] items-center justify-center rounded-[16px] bg-[#D4A574] px-6 text-[15px] font-extrabold text-[#111827] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
+                    className="inline-flex min-h-[48px] items-center justify-center rounded-[8px] bg-[#D4A574] px-6 text-[15px] font-extrabold text-[#111827] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
                   >
                     Request Estimate
                   </a>
                   <a
                     href="tel:+16315991363"
-                    className="inline-flex min-h-[48px] items-center justify-center rounded-[16px] border border-white/15 bg-white/[0.05] px-6 text-[15px] font-bold text-white/82 transition hover:bg-white/[0.10]"
+                    className="inline-flex min-h-[48px] items-center justify-center rounded-[8px] border border-white/15 bg-white/[0.05] px-6 text-[15px] font-bold text-white/82 transition hover:bg-white/[0.10]"
                   >
                     Call 631-599-1363
                   </a>
@@ -517,13 +517,13 @@ export default function ExteriorLandingPage({ project }: Props) {
             <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <a
                 href="#estimate-form"
-                className="inline-flex min-h-[48px] w-full items-center justify-center rounded-[13px] bg-[#D4A574] px-9 text-[16px] font-extrabold text-[#111827] shadow-[0_16px_40px_rgba(212,165,116,0.26)] transition hover:-translate-y-0.5 hover:bg-[#E0B886] sm:w-auto"
+                className="inline-flex min-h-[48px] w-full items-center justify-center rounded-[8px] bg-[#D4A574] px-9 text-[16px] font-extrabold text-[#111827] shadow-[0_16px_40px_rgba(212,165,116,0.26)] transition hover:-translate-y-0.5 hover:bg-[#E0B886] sm:w-auto"
               >
                 {config.cta}
               </a>
               <a
                 href="tel:+16315991363"
-                className="inline-flex min-h-[48px] w-full items-center justify-center rounded-[13px] border border-white/18 bg-white/[0.07] px-9 text-[16px] font-bold text-white transition hover:bg-white/[0.12] sm:w-auto"
+                className="inline-flex min-h-[48px] w-full items-center justify-center rounded-[8px] border border-white/18 bg-white/[0.07] px-9 text-[16px] font-bold text-white transition hover:bg-white/[0.12] sm:w-auto"
               >
                 Call 631-599-1363
               </a>

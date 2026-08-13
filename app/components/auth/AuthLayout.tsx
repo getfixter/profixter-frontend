@@ -31,7 +31,7 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
       <div className="relative min-h-screen flex items-center justify-center px-4 py-9 sm:py-32">
         <div className="w-full max-w-[880px] mx-auto">
           <div
-            className="rounded-[16px] px-6 sm:px-10 py-10 sm:py-10 backdrop-blur-xl border border-white/15"
+            className="rounded-[8px] px-6 sm:px-10 py-10 sm:py-10 backdrop-blur-xl border border-white/15"
             style={{
               background:
                 'linear-gradient(145deg, rgba(49,50,52,0.55) 0%, rgba(49,50,52,0.35) 50%, rgba(49,50,52,0.55) 100%)',

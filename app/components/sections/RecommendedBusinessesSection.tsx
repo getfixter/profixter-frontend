@@ -12,7 +12,7 @@ function CallButton({ tel }: { tel: string }) {
   return (
     <a
       href={`tel:${tel}`}
-      className="shrink-0 h-[40px] px-4 rounded-[14px] bg-[#306EEC] hover:bg-[#2558c9] transition-colors text-white text-[13px] font-semibold inline-flex items-center justify-center"
+      className="shrink-0 h-[40px] px-4 rounded-[8px] bg-[#306EEC] hover:bg-[#2558c9] transition-colors text-white text-[13px] font-semibold inline-flex items-center justify-center"
     >
       Call
     </a>
@@ -21,7 +21,7 @@ function CallButton({ tel }: { tel: string }) {
 
 function BusinessCard({ b }: { b: RecommendedBusiness }) {
   return (
-    <div className="rounded-[13px] border border-[#E6E8EF] bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+    <div className="rounded-[8px] border border-[#E6E8EF] bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden">
       {/* Image */}
       <div className="relative w-full h-[190px] bg-[#F6F7FB]">
         <Image
@@ -42,7 +42,7 @@ function BusinessCard({ b }: { b: RecommendedBusiness }) {
 
         {/* LICENSED + VERIFIED */}
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ECFDF3] border border-[#ABEFC6] text-[#067647] text-[11px] font-semibold">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[6px] bg-[#ECFDF3] border border-[#ABEFC6] text-[#067647] text-[11px] font-semibold">
             Licensed & Insured
           </div>
           <div className="text-[11px] font-semibold text-[#6A6D71]">
@@ -64,7 +64,7 @@ function BusinessCard({ b }: { b: RecommendedBusiness }) {
         </div>
 
         {/* Discount box */}
-        <div className="mt-4 rounded-[14px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
+        <div className="mt-4 rounded-[8px] border border-[#E6E8EF] bg-[#F6F7FB] p-4">
           <div className="text-[11px] uppercase tracking-wider text-[#6A6D71] font-semibold">
             For discount say
           </div>
@@ -276,7 +276,7 @@ export default function RecommendedBusinessesSection() {
 
             <a
               href="tel:631-599-1363"
-              className="h-[46px] px-5 rounded-[14px] bg-[#EEF2FF] border border-[#C5CBD8] hover:bg-[#E6ECFF] transition-colors text-[#306EEC] text-[14px] font-semibold inline-flex items-center justify-center"
+              className="h-[46px] px-5 rounded-[8px] bg-[#EEF2FF] border border-[#C5CBD8] hover:bg-[#E6ECFF] transition-colors text-[#306EEC] text-[14px] font-semibold inline-flex items-center justify-center"
             >
               Not sure who to hire? Ask Profixter
             </a>
@@ -334,7 +334,7 @@ export default function RecommendedBusinessesSection() {
           </div>
         </div>
 
-        <div className="mt-8 rounded-[13px] border border-[#E6E8EF] bg-[#F6F7FB] p-6">
+        <div className="mt-8 rounded-[8px] border border-[#E6E8EF] bg-[#F6F7FB] p-6">
           <div className="text-[14px] text-[#313234] font-semibold">
             Independent Professionals
           </div>

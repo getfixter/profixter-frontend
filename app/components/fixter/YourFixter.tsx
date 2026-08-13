@@ -106,7 +106,7 @@ export default function YourFixter({
   return (
     <section
       aria-labelledby="your-fixter-heading"
-      className={`rounded-[14px] border border-[#E6ECF5] bg-white p-5 sm:p-6 ${className}`}
+      className={`rounded-[8px] border border-[#E6ECF5] bg-white p-5 sm:p-6 ${className}`}
     >
       <p
         id="your-fixter-heading"
@@ -161,7 +161,7 @@ export function YourFixterRow({ className = "" }: { className?: string }) {
   return (
     <section
       aria-labelledby="your-fixter-row-heading"
-      className={`rounded-[16px] border border-[#E6ECF5] bg-white p-3.5 sm:p-4 ${className}`}
+      className={`rounded-[8px] border border-[#E6ECF5] bg-white p-3.5 sm:p-4 ${className}`}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
         <div className="flex min-w-0 items-center gap-3 sm:shrink-0">
@@ -204,7 +204,7 @@ export function AskYourFixterLine({ className = "" }: { className?: string }) {
   const fixter = getPrimaryFixter();
   return (
     <div
-      className={`flex items-center gap-3 rounded-[14px] border border-[#E6ECF5] bg-white p-3 ${className}`}
+      className={`flex items-center gap-3 rounded-[8px] border border-[#E6ECF5] bg-white p-3 ${className}`}
     >
       <FixterPortrait fixter={fixter} size="md" />
       <div className="min-w-0 flex-1">

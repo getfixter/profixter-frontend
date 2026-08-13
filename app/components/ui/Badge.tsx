@@ -11,7 +11,7 @@ const colorMap = {
   success: 'bg-[#43A047] text-white'
 } as const;
 
-const roundedMap = { sm: 'rounded', md: 'rounded-md', lg: 'rounded-xl' } as const;
+const roundedMap = { sm: 'rounded', md: 'rounded-md', lg: 'rounded-[8px]' } as const;
 
 export function Badge({ color = 'primary', rounded = 'md', className = '', ...props }: BadgeProps) {
   return (

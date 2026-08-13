@@ -44,7 +44,7 @@ export default function HandymenSection() {
 
         {/* ── Header ── */}
         <div className="mx-auto max-w-[720px] text-center mb-9 sm:mb-16 lg:mb-20">
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
+          <div className="inline-flex items-center gap-2.5 rounded-[6px] border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
               <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -73,7 +73,7 @@ export default function HandymenSection() {
             return (
               <div
                 key={member.id}
-                className="group relative overflow-hidden rounded-[16px] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] transition-all duration-500 hover:shadow-[0_40px_120px_rgba(15,23,42,0.15)] hover:-translate-y-1.5"
+                className="group relative overflow-hidden rounded-[8px] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] transition-all duration-500 hover:shadow-[0_40px_120px_rgba(15,23,42,0.15)] hover:-translate-y-1.5"
                 style={{ border: "1px solid rgba(197,203,216,0.6)" }}
               >
                 {/* Photo with premium cinematic treatment */}
@@ -92,11 +92,11 @@ export default function HandymenSection() {
                     style={{ background: "linear-gradient(to bottom, transparent 45%, rgba(255,255,255,0.95) 100%)" }}
                   />
                   {/* Cinematic vignette */}
-                  <div className="absolute inset-0 shadow-[inset_0_0_60px_rgba(15,23,42,0.12)] rounded-t-[28px]" />
+                  <div className="absolute inset-0 shadow-[inset_0_0_60px_rgba(15,23,42,0.12)] rounded-t-[10px]" />
 
                   {/* Role badge - top left */}
                   {role && (
-                    <div className="absolute top-5 left-5 inline-flex items-center gap-2 rounded-full bg-[#306EEC] px-3.5 py-1.5 shadow-[0_4px_20px_rgba(48,110,236,0.40)]">
+                    <div className="absolute top-5 left-5 inline-flex items-center gap-2 rounded-[6px] bg-[#306EEC] px-3.5 py-1.5 shadow-[0_4px_20px_rgba(48,110,236,0.40)]">
                       <span className="h-1.5 w-1.5 rounded-full bg-white/70 flex-shrink-0" />
                       <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white">
                         {role}
@@ -145,7 +145,7 @@ export default function HandymenSection() {
         {/* ── Trust strip ── */}
         <div className="mt-6 sm:mt-10 mx-auto max-w-[960px]">
           <div
-            className="rounded-[14px] border border-[#C5CBD8] bg-white px-6 py-5 sm:px-6 sm:py-6 shadow-[0_8px_40px_rgba(15,23,42,0.05)]"
+            className="rounded-[8px] border border-[#C5CBD8] bg-white px-6 py-5 sm:px-6 sm:py-6 shadow-[0_8px_40px_rgba(15,23,42,0.05)]"
           >
             <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 sm:gap-x-10">
               {TRUST_ITEMS.map((item) => (

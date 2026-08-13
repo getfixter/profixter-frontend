@@ -78,7 +78,7 @@ export default function ServicesPage() {
         />
 
         <section className="px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
-          <div className="mx-auto max-w-[1180px] rounded-[16px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.05)] sm:p-8">
+          <div className="mx-auto max-w-[1180px] rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.05)] sm:p-8">
             <div className="max-w-[720px]">
               <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
                 Why Membership comes first
@@ -89,7 +89,7 @@ export default function ServicesPage() {
             </div>
             <div className="mt-7 grid gap-3 sm:grid-cols-2">
               {membershipBenefits.map((benefit) => (
-                <div key={benefit.title} className="rounded-[14px] bg-[#F8FAFF] p-5">
+                <div key={benefit.title} className="rounded-[8px] bg-[#F8FAFF] p-5">
                   <h3 className="text-[17px] font-black text-[#0B1628]">{benefit.title}</h3>
                   <p className="mt-2 text-[14px] leading-6 text-[#64748B]">{benefit.body}</p>
                 </div>
@@ -97,7 +97,7 @@ export default function ServicesPage() {
             </div>
             <Link
               href="/membership/plans"
-              className="mt-7 inline-flex min-h-[44px] items-center justify-center rounded-[14px] bg-[#0B1628] px-6 text-[14px] font-black text-white transition hover:bg-[#172033]"
+              className="mt-7 inline-flex min-h-[44px] items-center justify-center rounded-[8px] bg-[#0B1628] px-6 text-[14px] font-black text-white transition hover:bg-[#172033]"
             >
               See plans
             </Link>

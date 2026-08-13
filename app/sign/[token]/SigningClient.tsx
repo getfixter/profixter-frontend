@@ -79,7 +79,7 @@ export default function SigningClient({ token }: { token: string }) {
     const documentWord = payload?.documentType === "CHANGE_ORDER" ? "Change Order" : "Agreement";
     return (
       <div className="flex min-h-dvh items-center justify-center bg-slate-50 px-4 py-10">
-        <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 text-center sm:p-8">
+        <div className="w-full max-w-md rounded-[10px] border border-slate-200 bg-white p-6 text-center sm:p-8">
           <p className="text-sm font-black text-slate-900">
             {payload?.company?.legalName || "Premium Island Homes Inc."}
           </p>
@@ -95,7 +95,7 @@ export default function SigningClient({ token }: { token: string }) {
                 href={signedDocumentUrl(token)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full rounded-xl bg-slate-900 px-5 py-3.5 text-sm font-bold text-white"
+                className="w-full rounded-[8px] bg-slate-900 px-5 py-3.5 text-sm font-bold text-white"
               >
                 View Signed {documentWord}
               </a>

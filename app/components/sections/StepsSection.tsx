@@ -67,7 +67,7 @@ export default function StepsSection() {
               <div
                 key={s.id}
                 className={[
-                  "relative rounded-[14px] border border-black/10 bg-white/70 backdrop-blur-md",
+                  "relative rounded-[8px] border border-black/10 bg-white/70 backdrop-blur-md",
                   "shadow-[0_16px_80px_rgba(0,0,0,0.10)]",
                   "p-6 sm:p-7 lg:p-8",
                   "transition-colors duration-200",
@@ -83,7 +83,7 @@ export default function StepsSection() {
                   </div>
 
                   {/* mini badge */}
-                  <div className="mt-2 shrink-0 rounded-full px-3 py-1 text-xs font-semibold bg-[#306eec]/10 text-[#1B3E86] border border-[#306eec]/15">
+                  <div className="mt-2 shrink-0 rounded-[6px] px-3 py-1 text-xs font-semibold bg-[#306eec]/10 text-[#1B3E86] border border-[#306eec]/15">
                     Step {idx + 1}
                   </div>
                 </div>

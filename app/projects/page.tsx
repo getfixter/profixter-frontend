@@ -172,7 +172,7 @@ const SERVICES: Array<{
 ];
 
 const fieldClass =
-  "h-[46px] w-full rounded-[12px] border border-[#CBD5E1] bg-white px-4 text-[15px] text-[#0B1628] outline-none transition placeholder:text-[#94A3B8] focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/10";
+  "h-[46px] w-full rounded-[8px] border border-[#CBD5E1] bg-white px-4 text-[15px] text-[#0B1628] outline-none transition placeholder:text-[#94A3B8] focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/10";
 
 function projectTypeFromQuery(value: string | null): ProjectType {
   const normalized = String(value || "").toLowerCase();
@@ -326,7 +326,7 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
 
   if (status === "success") {
     return (
-      <div className="rounded-[16px] border border-[#B9E2C5] bg-[#F1FBF4] p-7 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-10">
+      <div className="rounded-[8px] border border-[#B9E2C5] bg-[#F1FBF4] p-7 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-10">
         <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#DCFCE7] text-[#15803D]">
           <CheckIcon />
         </span>
@@ -342,13 +342,13 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
         <div className="mt-7 flex flex-col gap-3 sm:flex-row">
           <Link
             href="/"
-            className="inline-flex h-12 items-center justify-center rounded-[12px] bg-[#0B1628] px-6 text-[14px] font-bold text-white"
+            className="inline-flex h-12 items-center justify-center rounded-[8px] bg-[#0B1628] px-6 text-[14px] font-bold text-white"
           >
             Return home
           </Link>
           <a
             href="tel:+16315991363"
-            className="inline-flex h-12 items-center justify-center rounded-[12px] border border-[#CBD5E1] bg-white px-6 text-[14px] font-bold text-[#0B1628]"
+            className="inline-flex h-12 items-center justify-center rounded-[8px] border border-[#CBD5E1] bg-white px-6 text-[14px] font-bold text-[#0B1628]"
           >
             Call 631-599-1363
           </a>
@@ -360,7 +360,7 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
   return (
     <form
       onSubmit={submit}
-      className="rounded-[16px] border border-[#D7DEE9] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.12)] sm:p-8"
+      className="rounded-[8px] border border-[#D7DEE9] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.12)] sm:p-8"
     >
       <div className="mb-6">
         <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
@@ -445,7 +445,7 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
                 key={option.value}
                 type="button"
                 onClick={() => update("service", option.value)}
-                className={`min-h-[48px] rounded-[14px] border px-3 text-left text-[13px] font-extrabold transition ${
+                className={`min-h-[48px] rounded-[8px] border px-3 text-left text-[13px] font-extrabold transition ${
                   active
                     ? "border-[#306EEC] bg-[#EEF4FF] text-[#1648A8] shadow-[0_10px_24px_rgba(48,110,236,0.16)]"
                     : "border-[#D7DEE9] bg-[#F8FAFC] text-[#334155] hover:border-[#AFC3DF] hover:bg-white"
@@ -508,7 +508,7 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
       </div>
 
       {status === "error" ? (
-        <div className="mt-5 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-700">
+        <div className="mt-5 rounded-[8px] border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-700">
           {message}
         </div>
       ) : null}
@@ -516,7 +516,7 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="mt-6 inline-flex h-[44px] w-full items-center justify-center rounded-[14px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white shadow-[0_14px_36px_rgba(48,110,236,0.25)] transition hover:bg-[#2558C9] disabled:opacity-60 sm:h-[54px] sm:px-6 sm:text-[15px]"
+        className="mt-6 inline-flex h-[44px] w-full items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white shadow-[0_14px_36px_rgba(48,110,236,0.25)] transition hover:bg-[#2558C9] disabled:opacity-60 sm:h-[54px] sm:px-6 sm:text-[15px]"
       >
         {status === "submitting" ? "Sending request..." : "Request Renovation Estimate"}
       </button>
@@ -551,7 +551,7 @@ function ServiceSection({
           index % 2 ? "lg:[&>*:first-child]:order-2" : ""
         }`}
       >
-        <div className="relative min-h-[180px] overflow-hidden rounded-[14px] shadow-[0_18px_44px_rgba(15,23,42,0.14)] sm:min-h-[340px] sm:rounded-[16px]">
+        <div className="relative min-h-[180px] overflow-hidden rounded-[8px] shadow-[0_18px_44px_rgba(15,23,42,0.14)] sm:min-h-[340px]">
           <Image
             src={service.image}
             alt={`${service.title} project by Profixter`}
@@ -561,7 +561,7 @@ function ServiceSection({
             sizes="(max-width: 1024px) 92vw, 590px"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#07101F]/65 via-transparent to-transparent" />
-          <div className="absolute bottom-5 left-5 rounded-full border border-white/20 bg-[#07101F]/70 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur">
+          <div className="absolute bottom-5 left-5 rounded-[6px] border border-white/20 bg-[#07101F]/70 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur">
             Long Island, NY
           </div>
         </div>
@@ -626,7 +626,7 @@ function ServiceSection({
               event.preventDefault();
               onRequestEstimate(estimateType);
             }}
-            className={`mt-6 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[14px] px-5 text-[14px] font-extrabold transition sm:mt-7 sm:min-h-[52px] sm:px-6 ${
+            className={`mt-6 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[8px] px-5 text-[14px] font-extrabold transition sm:mt-7 sm:min-h-[52px] sm:px-6 ${
               dark
                 ? "bg-white text-[#0B1628] hover:bg-[#EAF1FF]"
                 : "bg-[#0B1628] text-white hover:bg-[#17263D]"
@@ -690,7 +690,7 @@ function ProjectsContent() {
           </div>
           <div className="relative mx-auto grid max-w-[1220px] gap-8 px-4 py-10 sm:px-6 sm:py-11 lg:grid-cols-[1fr_460px] lg:items-start lg:gap-8 lg:py-14">
             <div className="max-w-[820px]">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.08] px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/80">
+              <div className="inline-flex items-center gap-2 rounded-[6px] border border-white/15 bg-white/[0.08] px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/80">
                 General Contractor Long Island
               </div>
               <h1 className="mt-4 text-[30px] font-black leading-[1.02] tracking-[-0.035em] sm:mt-5 sm:text-[40px] sm:leading-[0.98] sm:tracking-[-0.04em] lg:text-[44px]">
@@ -715,7 +715,7 @@ function ProjectsContent() {
                        guardrail never applied here and these landed at 36px.
                        The height is explicit now; the chip still looks compact
                        because the extra height is breathing room, not scale. */
-                    className="inline-flex min-h-[44px] items-center rounded-full border border-white/15 bg-white/[0.07] px-4 py-2 text-[12px] font-bold text-white/80 transition hover:bg-white/[0.14] hover:text-white"
+                    className="inline-flex min-h-[44px] items-center rounded-[8px] border border-white/15 bg-white/[0.07] px-4 py-2 text-[12px] font-bold text-white/80 transition hover:bg-white/[0.14] hover:text-white"
                   >
                     {label}
                   </Link>
@@ -731,14 +731,14 @@ function ProjectsContent() {
                     event.preventDefault();
                     goToEstimate(requestedType);
                   }}
-                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[13px] bg-[#306EEC] px-6 text-[14px] font-extrabold text-white shadow-[0_16px_40px_rgba(48,110,236,0.32)] transition hover:bg-[#2558C9] sm:min-h-[52px] sm:px-5 sm:text-[15px] lg:hidden"
+                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[8px] bg-[#306EEC] px-6 text-[14px] font-extrabold text-white shadow-[0_16px_40px_rgba(48,110,236,0.32)] transition hover:bg-[#2558C9] sm:min-h-[52px] sm:px-5 sm:text-[15px] lg:hidden"
                 >
                   Request Renovation Estimate
                   <ArrowIcon />
                 </Link>
                 <a
                   href="tel:+16315991363"
-                  className="inline-flex min-h-[48px] items-center justify-center rounded-[13px] border border-white/20 bg-white/[0.07] px-6 text-[14px] font-bold text-white sm:min-h-[52px] sm:px-5 sm:text-[15px]"
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-[8px] border border-white/20 bg-white/[0.07] px-6 text-[14px] font-bold text-white sm:min-h-[52px] sm:px-5 sm:text-[15px]"
                 >
                   Call 631-599-1363
                 </a>
@@ -788,7 +788,7 @@ function ProjectsContent() {
            */}
           <div id="estimate" ref={estimateRef} className="scroll-mt-[84px] sm:scroll-mt-[96px]">
             <div className="lg:sticky lg:top-24">
-              <Suspense fallback={<div className="min-h-[560px] animate-pulse rounded-[13px] bg-white/10" />}>
+              <Suspense fallback={<div className="min-h-[560px] animate-pulse rounded-[8px] bg-white/10" />}>
                 <EstimateForm requestedType={requestedType} />
               </Suspense>
             </div>
@@ -803,7 +803,7 @@ function ProjectsContent() {
               ["Clear estimate path", "A practical scope conversation before you commit to a project."],
               ["Long Island focused", "Built for Nassau and Suffolk homeowners who want accountable local help."],
             ].map(([title, body]) => (
-              <div key={title} className="rounded-[10px] border-l-2 border-[#CBD5E1] bg-[#F8FAFC] px-4 py-3.5">
+              <div key={title} className="rounded-[6px] border-l-2 border-[#CBD5E1] bg-[#F8FAFC] px-4 py-3.5">
                 <div className="text-[14px] font-extrabold text-[#0B1628]">{title}</div>
                 <p className="mt-1.5 text-[13px] leading-relaxed text-[#64748B]">{body}</p>
               </div>

@@ -240,7 +240,7 @@ export default function NeedItQuizModal({
       <div className="absolute inset-0 bg-black/55" onClick={handleClose} />
 
       {/* Modal */}
-      <div className="relative w-[92vw] max-w-[760px] max-h-[85vh] overflow-auto rounded-[14px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.20)]">
+      <div className="relative w-[92vw] max-w-[760px] max-h-[85vh] overflow-auto rounded-[8px] border border-[#c5cbd8] bg-[#EEF2FF] shadow-[0_0_200px_rgba(0,0,0,0.20)]">
         {/* Header */}
         <div className="px-5 sm:px-5 pt-5 sm:pt-7 pb-4 border-b border-[#c5cbd8]">
           <div className="flex items-start justify-between gap-4">
@@ -258,7 +258,7 @@ export default function NeedItQuizModal({
 
             <button
               onClick={handleClose}
-              className="w-10 h-10 rounded-[12px] border border-[#c5cbd8] bg-white/60 grid place-items-center text-[#313234] hover:bg-white"
+              className="w-10 h-10 rounded-[8px] border border-[#c5cbd8] bg-white/60 grid place-items-center text-[#313234] hover:bg-white"
               aria-label="Close"
             >
               ✕
@@ -292,7 +292,7 @@ export default function NeedItQuizModal({
           {feedback ? (
             <div
               className={[
-                "mt-4 rounded-[14px] border p-4",
+                "mt-4 rounded-[8px] border p-4",
                 pickedWrong
                   ? "border-[#f1b5b5] bg-white/60"
                   : "border-[#c5cbd8] bg-white/60",
@@ -315,7 +315,7 @@ export default function NeedItQuizModal({
               <button
                 key={opt.id}
                 onClick={() => pick(opt)}
-                className="h-[48px] rounded-[14px] border border-[#313234] bg-white/50 text-[#313234] text-[15px] sm:text-[16px] font-semibold hover:bg-white transition-colors"
+                className="h-[48px] rounded-[8px] border border-[#313234] bg-white/50 text-[#313234] text-[15px] sm:text-[16px] font-semibold hover:bg-white transition-colors"
               >
                 {opt.label}
               </button>
@@ -327,7 +327,7 @@ export default function NeedItQuizModal({
             <button
               onClick={goBack}
               disabled={step === 0}
-              className="h-[46px] px-5 rounded-[14px] border border-[#c5cbd8] bg-white/60 text-[#313234] text-[14px] font-semibold hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+              className="h-[46px] px-5 rounded-[8px] border border-[#c5cbd8] bg-white/60 text-[#313234] text-[14px] font-semibold hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Back
             </button>
@@ -342,7 +342,7 @@ export default function NeedItQuizModal({
 
           {/* Final CTA hint */}
           {q.id === "q6" ? (
-            <div className="mt-6 rounded-[14px] border border-[#c5cbd8] bg-white/60 p-4">
+            <div className="mt-6 rounded-[8px] border border-[#c5cbd8] bg-white/60 p-4">
               <div className="text-[14px] font-semibold text-[#313234]">
                 If you choose “Yes - show me plans”
               </div>

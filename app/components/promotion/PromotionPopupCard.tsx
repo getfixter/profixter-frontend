@@ -28,7 +28,7 @@ export default function PromotionPopupCard({
     : { href: popup.ctaUrl, onClick: onAction };
 
   return (
-    <div className="relative w-full max-w-[460px] overflow-hidden rounded-[16px] border border-slate-200 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.24)]">
+    <div className="relative w-full max-w-[460px] overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.24)]">
       <div className="h-1.5 bg-gradient-to-r from-[#306EEC] via-[#5B8EF3] to-[#D4A574]" />
       <div className="p-5 sm:p-6">
         {onClose ? (
@@ -57,7 +57,7 @@ export default function PromotionPopupCard({
         </p>
 
         {popup.promoCode ? (
-          <div className="mt-5 flex items-center justify-between gap-3 rounded-[14px] border border-dashed border-[#9DBAF7] bg-[#F4F7FF] px-4 py-3">
+          <div className="mt-5 flex items-center justify-between gap-3 rounded-[8px] border border-dashed border-[#9DBAF7] bg-[#F4F7FF] px-4 py-3">
             <div>
               <div className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">
                 Promo code
@@ -69,7 +69,7 @@ export default function PromotionPopupCard({
             <button
               type="button"
               onClick={copyCode}
-              className="h-9 rounded-[10px] border border-[#C7D7F8] bg-white px-3 text-[12px] font-extrabold text-[#1D4ED8] transition hover:bg-[#EEF4FF]"
+              className="h-9 rounded-[6px] border border-[#C7D7F8] bg-white px-3 text-[12px] font-extrabold text-[#1D4ED8] transition hover:bg-[#EEF4FF]"
             >
               {copied ? "Copied" : "Copy"}
             </button>
@@ -79,7 +79,7 @@ export default function PromotionPopupCard({
         <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
           <a
             {...actionProps}
-            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-[13px] bg-[#306EEC] px-5 text-center text-[14px] font-extrabold text-white transition hover:bg-[#2558C9]"
+            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-center text-[14px] font-extrabold text-white transition hover:bg-[#2558C9]"
           >
             {popup.ctaText || "Primary action"}
           </a>
@@ -91,7 +91,7 @@ export default function PromotionPopupCard({
                   ? (event) => event.preventDefault()
                   : onAction
               }
-              className="inline-flex min-h-12 flex-1 items-center justify-center rounded-[13px] border border-slate-300 bg-white px-5 text-center text-[14px] font-extrabold text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex min-h-12 flex-1 items-center justify-center rounded-[8px] border border-slate-300 bg-white px-5 text-center text-[14px] font-extrabold text-slate-700 transition hover:bg-slate-50"
             >
               {popup.secondaryText}
             </a>

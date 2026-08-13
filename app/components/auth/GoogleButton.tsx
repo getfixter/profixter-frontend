@@ -79,7 +79,7 @@ function GoogleButtonInner({
         type="button"
         onClick={() => login()}
         disabled={loading}
-        className="w-full h-16 bg-white rounded-[14px] flex items-center justify-start gap-3 px-6 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full h-16 bg-white rounded-[8px] flex items-center justify-start gap-3 px-6 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <svg
           width="24"

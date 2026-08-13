@@ -62,7 +62,7 @@ export function AccountHeader({ userName, activeTab, onSelectTab, onLogout }: Ac
         <Link
           href="/"
           aria-label="Profixter home"
-          className="flex flex-shrink-0 items-center rounded-[9px] bg-[#0B1628] px-2 py-1.5 transition hover:bg-[#172033] sm:rounded-[10px] sm:px-2.5"
+          className="flex flex-shrink-0 items-center rounded-[6px] bg-[#0B1628] px-2 py-1.5 transition hover:bg-[#172033] sm:px-2.5"
         >
           <Image
             src="/images/logo-footer.svg"
@@ -74,12 +74,12 @@ export function AccountHeader({ userName, activeTab, onSelectTab, onLogout }: Ac
         </Link>
 
         {/* Website nav */}
-        <nav className="hidden items-center gap-1 rounded-full border border-[#E6ECF7] bg-[#F8FAFF] p-1 lg:flex" aria-label="Website navigation">
+        <nav className="hidden items-center gap-1 rounded-[6px] border border-[#E6ECF7] bg-[#F8FAFF] p-1 lg:flex" aria-label="Website navigation">
           {MAIN_NAV_LINKS.slice(0, 4).map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-full px-3.5 py-2 text-[13px] font-black text-[#172033] transition-colors hover:bg-white hover:text-[#306EEC]"
+              className="rounded-[6px] px-3.5 py-2 text-[13px] font-black text-[#172033] transition-colors hover:bg-white hover:text-[#306EEC]"
             >
               {item.label}
             </Link>
@@ -93,7 +93,7 @@ export function AccountHeader({ userName, activeTab, onSelectTab, onLogout }: Ac
             onClick={() => setIsAccountOpen((open) => !open)}
             aria-haspopup="menu"
             aria-expanded={isAccountOpen}
-            className="flex items-center gap-2 rounded-full border border-[#D8E2F2] bg-white py-1.5 pl-2 pr-3 shadow-sm transition hover:bg-[#F8FAFF] sm:pl-3"
+            className="flex items-center gap-2 rounded-[6px] border border-[#D8E2F2] bg-white py-1.5 pl-2 pr-3 shadow-sm transition hover:bg-[#F8FAFF] sm:pl-3"
           >
             <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#306EEC]">
               <span className="text-[13px] font-bold leading-none text-white">{initial}</span>
@@ -115,7 +115,7 @@ export function AccountHeader({ userName, activeTab, onSelectTab, onLogout }: Ac
           {isAccountOpen ? (
             <div
               role="menu"
-              className="absolute right-0 top-full mt-2 w-[min(290px,calc(100vw-2rem))] overflow-hidden rounded-[13px] border border-[#E0E6F5] bg-white shadow-[0_18px_55px_rgba(15,23,42,0.16)]"
+              className="absolute right-0 top-full mt-2 w-[min(290px,calc(100vw-2rem))] overflow-hidden rounded-[8px] border border-[#E0E6F5] bg-white shadow-[0_18px_55px_rgba(15,23,42,0.16)]"
             >
               <div className="border-b border-[#EEF2F7] bg-[#F8FAFF] px-4 py-3">
                 <div className="text-[11px] font-black uppercase tracking-[0.14em] text-[#64748B]">My Account</div>
@@ -132,7 +132,7 @@ export function AccountHeader({ userName, activeTab, onSelectTab, onLogout }: Ac
                       role="menuitem"
                       onClick={() => handleSelectTab(item.key)}
                       className={[
-                        "flex w-full items-center justify-between rounded-[13px] px-3 py-3 text-left text-[14px] font-black transition",
+                        "flex w-full items-center justify-between rounded-[8px] px-3 py-3 text-left text-[14px] font-black transition",
                         active ? "bg-[#EEF5FF] text-[#306EEC]" : "text-[#344054] hover:bg-[#F8FAFF]",
                       ].join(" ")}
                     >
@@ -151,7 +151,7 @@ export function AccountHeader({ userName, activeTab, onSelectTab, onLogout }: Ac
                     setIsAccountOpen(false);
                     onLogout();
                   }}
-                  className="flex w-full items-center rounded-[13px] px-3 py-3 text-left text-[14px] font-black text-red-600 transition hover:bg-red-50"
+                  className="flex w-full items-center rounded-[8px] px-3 py-3 text-left text-[14px] font-black text-red-600 transition hover:bg-red-50"
                 >
                   Log out
                 </button>

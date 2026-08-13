@@ -396,7 +396,7 @@ export default function HomeSupportPage() {
                 <button
                   type="button"
                   onClick={newChat}
-                  className="inline-flex h-10 flex-shrink-0 items-center gap-2 rounded-full bg-[#0B1628] px-3.5 text-xs font-black text-white transition hover:bg-[#17263D] sm:h-11 sm:px-4"
+                  className="inline-flex h-10 flex-shrink-0 items-center gap-2 rounded-[8px] bg-[#0B1628] px-3.5 text-xs font-black text-white transition hover:bg-[#17263D] sm:h-11 sm:px-4"
                 >
                   <PlusIcon className="h-4 w-4" aria-hidden="true" />
                   New
@@ -413,7 +413,7 @@ export default function HomeSupportPage() {
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[94%] rounded-[14px] px-3.5 py-3 text-[13px] leading-5 shadow-sm sm:max-w-[78%] sm:rounded-[16px] sm:px-4 sm:text-sm sm:leading-6 lg:max-w-[70%] ${
+                    className={`max-w-[94%] rounded-[8px] px-3.5 py-3 text-[13px] leading-5 shadow-sm sm:max-w-[78%] sm:px-4 sm:text-sm sm:leading-6 lg:max-w-[70%] ${
                       message.role === "user"
                         ? "bg-[#0B1628] text-white shadow-[0_12px_30px_rgba(9,22,43,0.18)]"
                         : message.error
@@ -424,7 +424,7 @@ export default function HomeSupportPage() {
                     <MessageContent text={message.content} />
                     {!!message.files?.length && (
                       <div
-                        className={`mt-3 rounded-[16px] px-3 py-2 text-xs font-semibold ${
+                        className={`mt-3 rounded-[8px] px-3 py-2 text-xs font-semibold ${
                           message.role === "user"
                             ? "bg-white/15 text-white/85"
                             : "bg-[#F1F5FB] text-[#526078]"
@@ -438,7 +438,7 @@ export default function HomeSupportPage() {
                         <button
                           type="button"
                           onClick={() => copyMessage(message)}
-                          className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#EEF4FF] px-3 py-1.5 text-xs font-black text-[#2563EB] transition hover:bg-[#E1ECFF]"
+                          className="mt-3 inline-flex items-center gap-2 rounded-[6px] bg-[#EEF4FF] px-3 py-1.5 text-xs font-black text-[#2563EB] transition hover:bg-[#E1ECFF]"
                         >
                           <ClipboardDocumentIcon className="h-4 w-4" aria-hidden="true" />
                           {copiedId === message.id ? "Copied" : "Copy response"}
@@ -458,7 +458,7 @@ export default function HomeSupportPage() {
                                     href: action.href,
                                   })
                                 }
-                                className="rounded-full bg-[#0B1628] px-3 py-1.5 text-xs font-black text-white transition hover:bg-[#17263D]"
+                                className="rounded-[6px] bg-[#0B1628] px-3 py-1.5 text-xs font-black text-white transition hover:bg-[#17263D]"
                               >
                                 {action.label}
                               </Link>
@@ -472,7 +472,7 @@ export default function HomeSupportPage() {
               ))}
 
               {sending && (
-                <div className="inline-flex max-w-[92%] items-center gap-3 rounded-full bg-white px-3.5 py-2.5 text-[13px] font-semibold text-[#526078] shadow-sm sm:px-4 sm:py-3 sm:text-sm">
+                <div className="inline-flex max-w-[92%] items-center gap-3 rounded-[6px] bg-white px-3.5 py-2.5 text-[13px] font-semibold text-[#526078] shadow-sm sm:px-4 sm:py-3 sm:text-sm">
                   <span className="flex gap-1" aria-hidden="true">
                     <span className="h-2 w-2 animate-pulse rounded-full bg-[#2563EB]" />
                     <span className="h-2 w-2 animate-pulse rounded-full bg-[#41A66A] [animation-delay:120ms]" />
@@ -485,7 +485,7 @@ export default function HomeSupportPage() {
             </div>
 
             {fileNotice && (
-              <div className="mb-3 rounded-[13px] bg-[#FFF8EC] px-4 py-3 text-xs font-bold leading-5 text-[#965C09]">
+              <div className="mb-3 rounded-[8px] bg-[#FFF8EC] px-4 py-3 text-xs font-bold leading-5 text-[#965C09]">
                 {fileNotice}
               </div>
             )}
@@ -495,16 +495,16 @@ export default function HomeSupportPage() {
                 {files.map((item, index) => (
                   <div
                     key={`${item.name}-${index}`}
-                    className="group relative min-w-0 overflow-hidden rounded-[14px] bg-white p-2 text-left text-xs font-bold text-[#34435C] shadow-[0_14px_34px_rgba(15,23,42,0.08)]"
+                    className="group relative min-w-0 overflow-hidden rounded-[8px] bg-white p-2 text-left text-xs font-bold text-[#34435C] shadow-[0_14px_34px_rgba(15,23,42,0.08)]"
                   >
                     {item.url ? (
                       <span
                         aria-hidden="true"
-                        className="mb-2 block h-24 w-full rounded-[14px] bg-cover bg-center"
+                        className="mb-2 block h-24 w-full rounded-[8px] bg-cover bg-center"
                         style={{ backgroundImage: `url(${item.url})` }}
                       />
                     ) : (
-                      <div className="mb-2 flex h-24 items-center justify-center rounded-[14px] bg-white text-[#526078]">
+                      <div className="mb-2 flex h-24 items-center justify-center rounded-[8px] bg-white text-[#526078]">
                         <DocumentTextIcon className="h-8 w-8" aria-hidden="true" />
                       </div>
                     )}
@@ -525,7 +525,7 @@ export default function HomeSupportPage() {
               </div>
             )}
 
-            <div className="rounded-[16px] bg-white p-1.5 shadow-[0_24px_70px_rgba(15,23,42,0.14)] sm:rounded-[34px] sm:p-2 sm:shadow-[0_34px_100px_rgba(15,23,42,0.16)]">
+            <div className="rounded-[8px] bg-white p-1.5 shadow-[0_24px_70px_rgba(15,23,42,0.14)] sm:rounded-[10px] sm:p-2 sm:shadow-[0_34px_100px_rgba(15,23,42,0.16)]">
               <textarea
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
@@ -541,7 +541,7 @@ export default function HomeSupportPage() {
               />
               <div className="flex items-center justify-between gap-2 px-1.5 pb-1.5 sm:px-2 sm:pb-2">
                 <div className="flex items-center gap-2">
-                  <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full bg-[#F5F6F8] px-3 text-xs font-black text-[#34435C] transition hover:bg-[#ECEFF3] sm:h-11 sm:gap-2 sm:px-4 sm:text-sm">
+                  <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-[8px] bg-[#F5F6F8] px-3 text-xs font-black text-[#34435C] transition hover:bg-[#ECEFF3] sm:h-11 sm:gap-2 sm:px-4 sm:text-sm">
                     <PhotoIcon className="h-4 w-4" aria-hidden="true" />
                     Photo
                     <input
@@ -552,7 +552,7 @@ export default function HomeSupportPage() {
                       className="hidden"
                     />
                   </label>
-                  <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full bg-[#F5F6F8] px-3 text-xs font-black text-[#34435C] transition hover:bg-[#ECEFF3] sm:h-11 sm:gap-2 sm:px-4 sm:text-sm">
+                  <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-[8px] bg-[#F5F6F8] px-3 text-xs font-black text-[#34435C] transition hover:bg-[#ECEFF3] sm:h-11 sm:gap-2 sm:px-4 sm:text-sm">
                     <DocumentTextIcon className="h-4 w-4" aria-hidden="true" />
                     PDF
                     <input
@@ -581,7 +581,7 @@ export default function HomeSupportPage() {
                   key={starter}
                   type="button"
                   onClick={() => sendMessage(starter)}
-                  className="max-w-full rounded-full bg-white/70 px-3.5 py-2 text-xs font-black leading-snug text-[#34435C] shadow-sm transition hover:bg-white sm:px-4 sm:py-2.5 sm:text-sm"
+                  className="max-w-full rounded-[8px] bg-white/70 px-3.5 py-2 text-xs font-black leading-snug text-[#34435C] shadow-sm transition hover:bg-white sm:px-4 sm:py-2.5 sm:text-sm"
                 >
                   {starter}
                 </button>

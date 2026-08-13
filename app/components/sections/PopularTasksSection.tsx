@@ -211,7 +211,7 @@ export default function PopularTasksSection() {
               You do not need a different company. The same trusted Profixter team can help your home grow.
             </p>
 
-            <div className="mt-6 rounded-[14px] border border-white/70 bg-white/70 p-4 shadow-[0_16px_50px_rgba(15,23,42,0.07)] backdrop-blur-sm sm:mt-8 sm:rounded-[16px] sm:p-6 sm:shadow-[0_18px_60px_rgba(15,23,42,0.07)]">
+            <div className="mt-6 rounded-[8px] border border-white/70 bg-white/70 p-4 shadow-[0_16px_50px_rgba(15,23,42,0.07)] backdrop-blur-sm sm:mt-8 sm:p-6 sm:shadow-[0_18px_60px_rgba(15,23,42,0.07)]">
               <p className="text-[15px] font-bold leading-relaxed text-[#0B1628] sm:text-[16px]">
                 We take care of the larger work, then keep helping maintain your home after the project is done.
               </p>
@@ -233,13 +233,13 @@ export default function PopularTasksSection() {
             <div className="mt-6 flex flex-col gap-2.5 sm:mt-8 sm:flex-row sm:gap-3">
               <Link
                 href="/projects#estimate"
-                className="inline-flex h-[44px] items-center justify-center rounded-[15px] bg-[#0B1628] px-6 text-[14px] font-extrabold text-white shadow-[0_18px_44px_rgba(15,23,42,0.24)] transition-all hover:-translate-y-0.5 hover:bg-[#14233A] sm:h-[54px] sm:rounded-[16px] sm:px-5 sm:text-[15px]"
+                className="inline-flex h-[44px] items-center justify-center rounded-[8px] bg-[#0B1628] px-6 text-[14px] font-extrabold text-white shadow-[0_18px_44px_rgba(15,23,42,0.24)] transition-all hover:-translate-y-0.5 hover:bg-[#14233A] sm:h-[54px] sm:px-5 sm:text-[15px]"
               >
                 Get Project Estimate
               </Link>
               <Link
                 href="/projects"
-                className="inline-flex h-[44px] items-center justify-center rounded-[15px] border border-[#CBD5E1] bg-white/65 px-6 text-[14px] font-extrabold text-[#0B1628] transition-all hover:-translate-y-0.5 hover:border-[#94A3B8] hover:bg-white sm:h-[54px] sm:rounded-[16px] sm:px-5 sm:text-[15px]"
+                className="inline-flex h-[44px] items-center justify-center rounded-[8px] border border-[#CBD5E1] bg-white/65 px-6 text-[14px] font-extrabold text-[#0B1628] transition-all hover:-translate-y-0.5 hover:border-[#94A3B8] hover:bg-white sm:h-[54px] sm:px-5 sm:text-[15px]"
               >
                 Explore Larger Projects
               </Link>
@@ -247,8 +247,8 @@ export default function PopularTasksSection() {
           </div>
 
           <div className="relative">
-            <div className="rounded-[13px] border border-white/70 bg-white/72 p-4 shadow-[0_28px_90px_rgba(15,23,42,0.10)] backdrop-blur-md sm:p-5 lg:p-6">
-              <div className="overflow-hidden rounded-[16px] border border-[#DDE4F0] bg-[#F8FAFC]">
+            <div className="rounded-[8px] border border-white/70 bg-white/72 p-4 shadow-[0_28px_90px_rgba(15,23,42,0.10)] backdrop-blur-md sm:p-5 lg:p-6">
+              <div className="overflow-hidden rounded-[8px] border border-[#DDE4F0] bg-[#F8FAFC]">
                 <div className="relative min-h-[210px] overflow-hidden bg-[#162235] sm:min-h-[240px]">
                   <div
                     aria-hidden="true"
@@ -286,7 +286,7 @@ export default function PopularTasksSection() {
                         <span className="text-[14px] font-extrabold text-[#0B1628]">
                           {project.label}
                         </span>
-                        <span className="rounded-full bg-[#EFF6FF] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#306EEC] transition group-hover:bg-[#306EEC] group-hover:text-white">
+                        <span className="rounded-[6px] bg-[#EFF6FF] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#306EEC] transition group-hover:bg-[#306EEC] group-hover:text-white">
                           View
                         </span>
                       </div>
@@ -302,7 +302,7 @@ export default function PopularTasksSection() {
                   { title: "Ongoing care", body: "Regular handyman support after" },
                 ].map((step, index) => (
                   <div key={step.title} className="contents">
-                    <div className="rounded-[13px] border border-[#E2E8F0] bg-white/74 p-4 text-center">
+                    <div className="rounded-[8px] border border-[#E2E8F0] bg-white/74 p-4 text-center">
                       <div className="text-[13px] font-extrabold text-[#0B1628]">
                         {step.title}
                       </div>

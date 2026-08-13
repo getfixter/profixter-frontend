@@ -131,7 +131,7 @@ export default function RoofingSection() {
               <button
                 type="button"
                 onClick={callNow}
-                className="inline-flex items-center gap-3 rounded-[13px] px-6 py-5 text-[16px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
+                className="inline-flex items-center gap-3 rounded-[8px] px-6 py-5 text-[16px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                 style={{
                   background: "linear-gradient(135deg, #D4A574 0%, #C49060 100%)",
                   boxShadow: "0 20px 60px rgba(212,165,116,0.30)",
@@ -157,7 +157,7 @@ export default function RoofingSection() {
             {PROOF_STATS.map(({ value, label, icon }) => (
               <div
                 key={value}
-                className="relative rounded-[14px] border border-white/[0.09] p-6 sm:p-7 overflow-hidden group hover:border-white/[0.16] transition-all duration-300"
+                className="relative rounded-[8px] border border-white/[0.09] p-6 sm:p-7 overflow-hidden group hover:border-white/[0.16] transition-all duration-300"
                 style={{
                   background:
                     "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
@@ -166,7 +166,7 @@ export default function RoofingSection() {
                 {/* Hover glow */}
                 <div
                   aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 rounded-[14px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  className="pointer-events-none absolute inset-0 rounded-[8px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                   style={{
                     background:
                       "radial-gradient(circle at 30% 30%, rgba(48,110,236,0.08), transparent 70%)",
@@ -188,7 +188,7 @@ export default function RoofingSection() {
 
           {/* RIGHT: What's included card */}
           <div
-            className="rounded-[16px] border border-white/[0.10] p-7 sm:p-8 flex flex-col"
+            className="rounded-[8px] border border-white/[0.10] p-7 sm:p-8 flex flex-col"
             style={{
               background:
                 "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
@@ -228,7 +228,7 @@ export default function RoofingSection() {
             </ul>
 
             {/* Disclaimer */}
-            <div className="mb-7 rounded-[14px] bg-white/[0.04] border border-white/[0.07] px-4 py-3.5">
+            <div className="mb-7 rounded-[8px] bg-white/[0.04] border border-white/[0.07] px-4 py-3.5">
               <p className="text-[12px] text-white/40 leading-relaxed">
                 &ldquo;Most roofs completed in 1 day&rdquo; applies to standard residential
                 re-roofing. Complex projects, multi-story homes, or structural
@@ -242,7 +242,7 @@ export default function RoofingSection() {
               <button
                 type="button"
                 onClick={callNow}
-                className="w-full min-h-[48px] rounded-[16px] text-[16px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99] flex items-center justify-center gap-3"
+                className="w-full min-h-[48px] rounded-[8px] text-[16px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99] flex items-center justify-center gap-3"
                 style={{
                   background: "linear-gradient(135deg, #D4A574 0%, #C49060 100%)",
                   boxShadow: "0 16px 50px rgba(212,165,116,0.25)",
@@ -279,7 +279,7 @@ export default function RoofingSection() {
         </div>
 
         {/* ── Bottom trust bar ───────────────────────────────── */}
-        <div className="mt-7 sm:mt-8 rounded-[13px] border border-white/[0.07] bg-white/[0.03] px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="mt-7 sm:mt-8 rounded-[8px] border border-white/[0.07] bg-white/[0.03] px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
             {[
               "NY State Licensed · HI-71484",
@@ -302,7 +302,7 @@ export default function RoofingSection() {
           <button
             type="button"
             onClick={callNow}
-            className="lg:hidden w-full sm:w-auto rounded-[14px] border border-[#D4A574]/30 bg-[#D4A574]/10 px-6 py-3 text-[14px] font-bold text-[#D4A574] hover:bg-[#D4A574]/18 transition-colors"
+            className="lg:hidden w-full sm:w-auto rounded-[8px] border border-[#D4A574]/30 bg-[#D4A574]/10 px-6 py-3 text-[14px] font-bold text-[#D4A574] hover:bg-[#D4A574]/18 transition-colors"
           >
             Call for Free Assessment
           </button>

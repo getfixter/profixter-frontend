@@ -119,7 +119,7 @@ const faqs = [
 ];
 
 const fieldClass =
-  "mt-1.5 h-12 w-full rounded-[14px] border border-[#CBD5E1] bg-white px-4 text-[14px] font-semibold text-[#0B1628] outline-none transition placeholder:text-[#94A3B8] focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/12";
+  "mt-1.5 h-12 w-full rounded-[8px] border border-[#CBD5E1] bg-white px-4 text-[14px] font-semibold text-[#0B1628] outline-none transition placeholder:text-[#94A3B8] focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/12";
 
 function IconMark() {
   return (
@@ -132,21 +132,21 @@ function IconMark() {
 function PartnershipIllustration() {
   return (
     <div className="relative mx-auto max-w-[520px]">
-      <div className="absolute -inset-8 rounded-[44px] bg-[#306EEC]/10 blur-3xl" />
-      <div className="relative overflow-hidden rounded-[34px] border border-white/15 bg-white/[0.08] p-5 shadow-[0_34px_120px_rgba(0,0,0,0.28)] backdrop-blur">
-        <div className="rounded-[16px] bg-[#F8FAFC] p-5">
+      <div className="absolute -inset-8 rounded-[10px] bg-[#306EEC]/10 blur-3xl" />
+      <div className="relative overflow-hidden rounded-[10px] border border-white/15 bg-white/[0.08] p-5 shadow-[0_34px_120px_rgba(0,0,0,0.28)] backdrop-blur">
+        <div className="rounded-[8px] bg-[#F8FAFC] p-5">
           <div className="mb-5 flex items-center justify-between">
             <div>
               <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">Community Support</div>
               <div className="mt-1 text-[19px] font-black text-[#0B1628]">Resident Care Hub</div>
             </div>
-            <div className="rounded-full bg-[#DCFCE7] px-3 py-1 text-[11px] font-black text-[#15803D]">Trusted</div>
+            <div className="rounded-[6px] bg-[#DCFCE7] px-3 py-1 text-[11px] font-black text-[#15803D]">Trusted</div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
             {["HOA", "Condo", "55+"].map((label, index) => (
-              <div key={label} className="rounded-[13px] border border-[#E2E8F0] bg-white p-3 shadow-sm">
-                <div className="mb-3 h-12 rounded-[14px] bg-gradient-to-br from-[#DBEAFE] to-[#F8FAFC]" />
+              <div key={label} className="rounded-[8px] border border-[#E2E8F0] bg-white p-3 shadow-sm">
+                <div className="mb-3 h-12 rounded-[8px] bg-gradient-to-br from-[#DBEAFE] to-[#F8FAFC]" />
                 <div className="text-[12px] font-black text-[#0B1628]">{label} Residents</div>
                 <div className="mt-2 h-1.5 rounded-full bg-[#E2E8F0]">
                   <div className="h-1.5 rounded-full bg-[#306EEC]" style={{ width: `${68 + index * 10}%` }} />
@@ -155,9 +155,9 @@ function PartnershipIllustration() {
             ))}
           </div>
 
-          <div className="mt-4 rounded-[14px] border border-[#D9E4FF] bg-[#EEF5FF] p-4">
+          <div className="mt-4 rounded-[8px] border border-[#D9E4FF] bg-[#EEF5FF] p-4">
             <div className="flex items-center gap-3">
-              <div className="grid h-12 w-12 place-items-center rounded-[16px] bg-[#306EEC] text-white">
+              <div className="grid h-12 w-12 place-items-center rounded-[8px] bg-[#306EEC] text-white">
                 <IconMark />
               </div>
               <div>
@@ -168,11 +168,11 @@ function PartnershipIllustration() {
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <div className="rounded-[13px] bg-[#0B1628] p-4 text-white">
+            <div className="rounded-[8px] bg-[#0B1628] p-4 text-white">
               <div className="text-[23px] font-black">Local</div>
               <div className="text-[11px] font-semibold text-white/55">Nassau & Suffolk</div>
             </div>
-            <div className="rounded-[13px] border border-[#E2E8F0] bg-white p-4">
+            <div className="rounded-[8px] border border-[#E2E8F0] bg-white p-4">
               <div className="text-[23px] font-black text-[#0B1628]">Easy</div>
               <div className="text-[11px] font-semibold text-[#64748B]">Resident-first booking</div>
             </div>
@@ -260,7 +260,7 @@ export default function CommunitiesPage() {
         <div className="pointer-events-none absolute inset-0 opacity-[0.035]" style={{ backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)", backgroundSize: "30px 30px" }} />
         <div className="relative mx-auto grid max-w-[1240px] gap-8 pt-9 sm:pt-18 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pt-20">
           <div>
-            <div className="mb-6 inline-flex rounded-full border border-white/12 bg-white/8 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#BFD2FF]">
+            <div className="mb-6 inline-flex rounded-[6px] border border-white/12 bg-white/8 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#BFD2FF]">
               HOA • Condo • 55+ • Property Management
             </div>
             <h1 className="max-w-[760px] text-[36px] font-black leading-[0.95] tracking-[-0.05em] sm:text-[46px] lg:text-[50px]">
@@ -270,16 +270,16 @@ export default function CommunitiesPage() {
               Help residents stay ahead of home repairs, maintenance, and everyday household issues with a local Long Island handyman partner they can trust.
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <a href="#partnership-form" className="inline-flex h-14 items-center justify-center rounded-[16px] bg-[#306EEC] px-5 text-[15px] font-black text-white shadow-[0_18px_52px_rgba(48,110,236,0.35)] transition hover:-translate-y-0.5 hover:bg-[#2558c9]">
+              <a href="#partnership-form" className="inline-flex h-14 items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-black text-white shadow-[0_18px_52px_rgba(48,110,236,0.35)] transition hover:-translate-y-0.5 hover:bg-[#2558c9]">
                 Schedule A Conversation
               </a>
-              <a href={CONTACT_PHONE_TEL} className="inline-flex h-14 items-center justify-center rounded-[16px] border border-white/16 bg-white/8 px-5 text-[15px] font-black text-white transition hover:-translate-y-0.5 hover:bg-white/12">
+              <a href={CONTACT_PHONE_TEL} className="inline-flex h-14 items-center justify-center rounded-[8px] border border-white/16 bg-white/8 px-5 text-[15px] font-black text-white transition hover:-translate-y-0.5 hover:bg-white/12">
                 Call {CONTACT_PHONE_DISPLAY}
               </a>
             </div>
             <div className="mt-8 grid max-w-[620px] gap-3 text-[13px] font-bold text-white/62 sm:grid-cols-3">
               {["No burden on management", "Resident-first support", "Long Island based"].map((item) => (
-                <div key={item} className="rounded-[16px] border border-white/10 bg-white/[0.06] px-4 py-3">
+                <div key={item} className="rounded-[8px] border border-white/10 bg-white/[0.06] px-4 py-3">
                   {item}
                 </div>
               ))}
@@ -291,7 +291,7 @@ export default function CommunitiesPage() {
 
       <section className="px-4 py-10 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-[1240px]">
-          <div className="-mt-14 mb-8 rounded-[16px] border border-white/70 bg-white/85 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur sm:p-6 lg:p-7">
+          <div className="-mt-14 mb-8 rounded-[8px] border border-white/70 bg-white/85 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur sm:p-6 lg:p-7">
             <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
               <div>
                 <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
@@ -309,8 +309,8 @@ export default function CommunitiesPage() {
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
             {trustItems.map((item) => (
-              <div key={item} className="rounded-[13px] border border-[#E2E8F0] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
-                <div className="mb-3 grid h-9 w-9 place-items-center rounded-[12px] bg-[#EEF5FF] text-[#306EEC]">
+              <div key={item} className="rounded-[8px] border border-[#E2E8F0] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
+                <div className="mb-3 grid h-9 w-9 place-items-center rounded-[8px] bg-[#EEF5FF] text-[#306EEC]">
                   <IconMark />
                 </div>
                 <div className="text-[13px] font-black leading-snug text-[#0B1628]">{item}</div>
@@ -328,7 +328,7 @@ export default function CommunitiesPage() {
           </div>
           <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {reasons.map((reason) => (
-              <div key={reason.title} className="rounded-[16px] border border-[#DDE5F0] bg-white p-6 shadow-[0_18px_54px_rgba(15,23,42,0.06)]">
+              <div key={reason.title} className="rounded-[8px] border border-[#DDE5F0] bg-white p-6 shadow-[0_18px_54px_rgba(15,23,42,0.06)]">
                 <h3 className="text-[19px] font-black text-[#0B1628]">{reason.title}</h3>
                 <p className="mt-3 text-[14px] leading-7 text-[#64748B]">{reason.text}</p>
               </div>
@@ -338,7 +338,7 @@ export default function CommunitiesPage() {
       </section>
 
       <section className="px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-[1240px] rounded-[34px] bg-[#0B1628] p-6 text-white shadow-[0_28px_90px_rgba(15,23,42,0.18)] sm:p-9 lg:p-12">
+        <div className="mx-auto max-w-[1240px] rounded-[10px] bg-[#0B1628] p-6 text-white shadow-[0_28px_90px_rgba(15,23,42,0.18)] sm:p-9 lg:p-12">
           <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
             <div>
               <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#93C5FD]">Resident services</div>
@@ -349,8 +349,8 @@ export default function CommunitiesPage() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {services.map((service) => (
-                <div key={service} className="rounded-[13px] border border-white/10 bg-white/[0.06] p-4">
-                  <div className="mb-3 h-9 w-9 rounded-[12px] bg-white/10 text-[#93C5FD] grid place-items-center">
+                <div key={service} className="rounded-[8px] border border-white/10 bg-white/[0.06] p-4">
+                  <div className="mb-3 h-9 w-9 rounded-[8px] bg-white/10 text-[#93C5FD] grid place-items-center">
                     <IconMark />
                   </div>
                   <div className="text-[14px] font-bold text-white/90">{service}</div>
@@ -368,8 +368,8 @@ export default function CommunitiesPage() {
             ["2", "Residents Contact Profixter Directly", "Homeowners reach out when they need help, without creating extra work for management."],
             ["3", "We Handle Scheduling And Service", "Our team manages communication, scheduling, and service coordination."],
           ].map(([step, title, text]) => (
-            <div key={step} className="rounded-[16px] border border-[#DDE5F0] bg-white p-7 shadow-sm">
-              <div className="mb-6 grid h-12 w-12 place-items-center rounded-[16px] bg-[#306EEC] text-[18px] font-black text-white">{step}</div>
+            <div key={step} className="rounded-[8px] border border-[#DDE5F0] bg-white p-7 shadow-sm">
+              <div className="mb-6 grid h-12 w-12 place-items-center rounded-[8px] bg-[#306EEC] text-[18px] font-black text-white">{step}</div>
               <h3 className="text-[19px] font-black text-[#0B1628]">{title}</h3>
               <p className="mt-3 text-[14px] leading-7 text-[#64748B]">{text}</p>
             </div>
@@ -388,7 +388,7 @@ export default function CommunitiesPage() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {benefits.map((benefit) => (
-              <div key={benefit} className="rounded-[14px] border border-[#DDE5F0] bg-white p-5 shadow-sm">
+              <div key={benefit} className="rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-sm">
                 <div className="mb-3 text-[#306EEC]"><IconMark /></div>
                 <div className="text-[15px] font-black text-[#0B1628]">{benefit}</div>
               </div>
@@ -398,9 +398,9 @@ export default function CommunitiesPage() {
       </section>
 
       <section className="px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-[1240px] rounded-[34px] border border-[#DDE5F0] bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.07)] sm:p-9 lg:p-12">
+        <div className="mx-auto max-w-[1240px] rounded-[10px] border border-[#DDE5F0] bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.07)] sm:p-9 lg:p-12">
           <div className="grid gap-8 lg:grid-cols-[0.7fr_1.3fr] lg:items-center">
-            <div className="rounded-[16px] bg-gradient-to-br from-[#0B1628] to-[#1D3557] p-7 text-white">
+            <div className="rounded-[8px] bg-gradient-to-br from-[#0B1628] to-[#1D3557] p-7 text-white">
               <div className="text-[36px] font-black leading-none tracking-[-0.06em]">TB</div>
               <div className="mt-5 text-[21px] font-black">Taras Bandura</div>
               <div className="mt-1 text-[13px] font-bold text-white/50">Founder, Profixter</div>
@@ -427,14 +427,14 @@ export default function CommunitiesPage() {
             <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
               <a
                 href={CONTACT_PHONE_TEL}
-                className="rounded-[14px] border border-[#D9E4FF] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#306EEC]/35 hover:shadow-[0_18px_44px_rgba(48,110,236,0.10)]"
+                className="rounded-[8px] border border-[#D9E4FF] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#306EEC]/35 hover:shadow-[0_18px_44px_rgba(48,110,236,0.10)]"
               >
                 <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#64748B]">Phone</div>
                 <div className="mt-1 text-[18px] font-black text-[#0B1628]">{CONTACT_PHONE_DISPLAY}</div>
               </a>
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
-                className="rounded-[14px] border border-[#D9E4FF] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#306EEC]/35 hover:shadow-[0_18px_44px_rgba(48,110,236,0.10)]"
+                className="rounded-[8px] border border-[#D9E4FF] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#306EEC]/35 hover:shadow-[0_18px_44px_rgba(48,110,236,0.10)]"
               >
                 <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#64748B]">Email</div>
                 <div className="mt-1 break-all text-[18px] font-black text-[#0B1628]">{CONTACT_EMAIL}</div>
@@ -443,7 +443,7 @@ export default function CommunitiesPage() {
           </div>
 
           {status === "success" ? (
-            <div className="rounded-[16px] border border-[#BBE6C7] bg-[#F1FBF4] p-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:p-9">
+            <div className="rounded-[8px] border border-[#BBE6C7] bg-[#F1FBF4] p-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:p-9">
               <div className="grid h-12 w-12 place-items-center rounded-full bg-[#DCFCE7] text-[#15803D]">
                 <IconMark />
               </div>
@@ -455,13 +455,13 @@ export default function CommunitiesPage() {
                   setStatus("idle");
                   setMessage("");
                 }}
-                className="mt-7 inline-flex h-12 items-center justify-center rounded-[14px] bg-[#0B1628] px-6 text-[14px] font-black text-white"
+                className="mt-7 inline-flex h-12 items-center justify-center rounded-[8px] bg-[#0B1628] px-6 text-[14px] font-black text-white"
               >
                 Send another request
               </button>
             </div>
           ) : (
-            <form onSubmit={submit} className="rounded-[16px] border border-[#D7DEE9] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.12)] sm:p-8">
+            <form onSubmit={submit} className="rounded-[8px] border border-[#D7DEE9] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.12)] sm:p-8">
               <div className="mb-6">
                 <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">Partnership inquiry</div>
                 <h3 className="mt-2 text-[26px] font-black text-[#0B1628]">Request A Partnership Conversation</h3>
@@ -510,7 +510,7 @@ export default function CommunitiesPage() {
               </label>
 
               {status === "error" && (
-                <div className="mt-4 rounded-[16px] border border-rose-200 bg-rose-50 px-4 py-3 text-[14px] font-semibold text-rose-700">
+                <div className="mt-4 rounded-[8px] border border-rose-200 bg-rose-50 px-4 py-3 text-[14px] font-semibold text-rose-700">
                   {message}
                 </div>
               )}
@@ -518,7 +518,7 @@ export default function CommunitiesPage() {
               <button
                 type="submit"
                 disabled={status === "submitting"}
-                className="mt-6 inline-flex h-14 w-full items-center justify-center rounded-[16px] bg-[#306EEC] px-6 text-[15px] font-black text-white shadow-[0_18px_48px_rgba(48,110,236,0.28)] transition hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                className="mt-6 inline-flex h-14 w-full items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-black text-white shadow-[0_18px_48px_rgba(48,110,236,0.28)] transition hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 {status === "submitting" ? "Sending..." : "Request A Partnership Conversation"}
               </button>
@@ -535,7 +535,7 @@ export default function CommunitiesPage() {
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             {faqs.map((faq) => (
-              <div key={faq.q} className="rounded-[16px] border border-[#DDE5F0] bg-white p-6 shadow-sm">
+              <div key={faq.q} className="rounded-[8px] border border-[#DDE5F0] bg-white p-6 shadow-sm">
                 <h3 className="text-[17px] font-black text-[#0B1628]">{faq.q}</h3>
                 <p className="mt-3 text-[14px] leading-7 text-[#64748B]">{faq.a}</p>
               </div>

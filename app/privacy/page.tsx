@@ -34,7 +34,7 @@ export default function PrivacyPage() {
   return (
     <div className="min-h-screen px-4 py-9 sm:py-32 bg-[#020617] text-white">
       <div
-        className="max-w-5xl mx-auto rounded-[16px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
+        className="max-w-5xl mx-auto rounded-[8px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
         style={{
           background:
             "linear-gradient(180deg, rgba(49,50,52,0.62) 0%, rgba(49,50,52,0.52) 55%, rgba(49,50,52,0.5) 100%), rgba(15,23,42,0.92)",
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
         </p>
 
         {/* IMPORTANT SMS NOTICE */}
-        <div className="mb-8 rounded-2xl bg-white/5 border border-white/10 p-5">
+        <div className="mb-8 rounded-[8px] bg-white/5 border border-white/10 p-5">
           <p className="text-sm sm:text-base text-white/85 leading-relaxed">
             <span className="font-semibold">
               IMPORTANT NOTICE REGARDING TEXT MESSAGING DATA:
@@ -161,7 +161,7 @@ export default function PrivacyPage() {
               </li>
             </ul>
 
-            <div className="mt-4 rounded-2xl bg-white/5 border border-white/10 p-5">
+            <div className="mt-4 rounded-[8px] bg-white/5 border border-white/10 p-5">
               <p className="font-semibold">
                 No mobile information will be shared with third parties/affiliates
                 for marketing/promotional purposes. Information sharing to
@@ -288,7 +288,7 @@ export default function PrivacyPage() {
           <div className="mt-7 text-center">
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
+              className="inline-flex items-center justify-center rounded-[8px] border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
             >
               Create Account
             </Link>

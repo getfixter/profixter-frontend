@@ -107,7 +107,7 @@ export default function FinalCTASection() {
           </p>
 
           {/* Risk reversal */}
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-white/12 bg-white/[0.05] px-5 py-2 mb-7 sm:mb-12">
+          <div className="inline-flex items-center gap-2.5 rounded-[6px] border border-white/12 bg-white/[0.05] px-5 py-2 mb-7 sm:mb-12">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M5 12.5l4 4 10-10" stroke="#86EFAC" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -122,14 +122,14 @@ export default function FinalCTASection() {
                 trackEvent("start_signup", { placement: "final_cta" });
                 handlePlansClick();
               }}
-              className="inline-flex min-h-[66px] items-center justify-center rounded-[13px] bg-[#306EEC] px-10 text-[17px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99]"
+              className="inline-flex min-h-[66px] items-center justify-center rounded-[8px] bg-[#306EEC] px-10 text-[17px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99]"
               style={{ boxShadow: "0 20px 60px rgba(48,110,236,0.45)" }}
             >
               {isAuthenticated ? "View Membership Plans" : "Create Account"}
             </button>
             <a
               href="tel:+16315991363"
-              className="inline-flex min-h-[66px] items-center justify-center gap-3 rounded-[13px] border border-white/20 bg-white/[0.07] px-10 text-[17px] font-bold text-white/85 backdrop-blur-sm transition-all duration-300 hover:border-white/35 hover:bg-white/[0.13] hover:text-white active:scale-[0.99]"
+              className="inline-flex min-h-[66px] items-center justify-center gap-3 rounded-[8px] border border-white/20 bg-white/[0.07] px-10 text-[17px] font-bold text-white/85 backdrop-blur-sm transition-all duration-300 hover:border-white/35 hover:bg-white/[0.13] hover:text-white active:scale-[0.99]"
             >
               <svg
                 width="18"

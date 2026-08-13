@@ -79,7 +79,7 @@ export default function DepartmentsSection() {
 
         {/* ── Header ── */}
         <div className="mx-auto max-w-[680px] text-center mb-8 sm:mb-9 lg:mb-16">
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
+          <div className="inline-flex items-center gap-2.5 rounded-[6px] border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
               <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
               <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
@@ -109,12 +109,12 @@ export default function DepartmentsSection() {
             <Link
               key={dept.href}
               href={dept.href}
-              className="group relative flex flex-col rounded-[16px] border border-[#C5CBD8] bg-white p-7 shadow-[0_4px_24px_rgba(15,23,42,0.06)] transition-all duration-300 hover:shadow-[0_16px_56px_rgba(15,23,42,0.12)] hover:-translate-y-1 focus:outline-none"
+              className="group relative flex flex-col rounded-[8px] border border-[#C5CBD8] bg-white p-7 shadow-[0_4px_24px_rgba(15,23,42,0.06)] transition-all duration-300 hover:shadow-[0_16px_56px_rgba(15,23,42,0.12)] hover:-translate-y-1 focus:outline-none"
             >
               {/* Badge */}
               {dept.badge && (
                 <div
-                  className="absolute top-5 right-5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em]"
+                  className="absolute top-5 right-5 rounded-[6px] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em]"
                   style={{
                     color: dept.badgeColor,
                     background: dept.badgeBg,
@@ -126,7 +126,7 @@ export default function DepartmentsSection() {
               )}
 
               {/* Icon */}
-              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-[16px] bg-[#EEF2FF] text-[#306EEC] transition-all duration-200 group-hover:bg-[#306EEC] group-hover:text-white">
+              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-[8px] bg-[#EEF2FF] text-[#306EEC] transition-all duration-200 group-hover:bg-[#306EEC] group-hover:text-white">
                 {dept.icon}
               </div>
 

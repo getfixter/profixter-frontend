@@ -131,7 +131,7 @@ function CTA({
   return (
     <Link
       href={signupHref}
-      className={`group inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-[#2F6FED] px-5 text-[15px] font-bold text-white shadow-[0_14px_34px_rgba(47,111,237,0.3)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#2459C4] hover:shadow-[0_18px_42px_rgba(47,111,237,0.38)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2F6FED] ${className}`}
+      className={`group inline-flex min-h-14 items-center justify-center gap-2 rounded-[8px] bg-[#2F6FED] px-5 text-[15px] font-bold text-white shadow-[0_14px_34px_rgba(47,111,237,0.3)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#2459C4] hover:shadow-[0_18px_42px_rgba(47,111,237,0.38)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2F6FED] ${className}`}
     >
       {label}
       <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -173,7 +173,7 @@ export default function July4Page() {
           <Link
             href="/"
             aria-label="Profixter home"
-            className="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+            className="rounded-[6px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
           >
             <Image
               src="/images/logo-footer.svg"
@@ -248,7 +248,7 @@ export default function July4Page() {
             </div>
           </div>
 
-          <aside className="rounded-[16px] border border-white/15 bg-white/[0.1] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:p-6 lg:p-7">
+          <aside className="rounded-[8px] border border-white/15 bg-white/[0.1] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:p-6 lg:p-7">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#9DB9FF]">
@@ -256,7 +256,7 @@ export default function July4Page() {
                 </p>
                 <h2 className="mt-2 text-2xl font-bold">Try Basic for $0</h2>
               </div>
-              <span className="rounded-full bg-[#DCFCE7] px-3 py-1.5 text-[11px] font-extrabold text-[#166534]">
+              <span className="rounded-[6px] bg-[#DCFCE7] px-3 py-1.5 text-[11px] font-extrabold text-[#166534]">
                 First month free
               </span>
             </div>
@@ -270,7 +270,7 @@ export default function July4Page() {
               ))}
             </ul>
 
-            <div className="mt-6 rounded-[13px] bg-black/20 p-4">
+            <div className="mt-6 rounded-[8px] bg-black/20 p-4">
               <div className="flex items-end justify-between gap-3">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/48">Today</p>
@@ -323,9 +323,9 @@ export default function July4Page() {
               return (
                 <article
                   key={item.title}
-                  className="rounded-[16px] border border-[#E4E7EC] bg-white p-6 shadow-[0_14px_45px_rgba(16,24,40,0.05)] sm:p-7"
+                  className="rounded-[8px] border border-[#E4E7EC] bg-white p-6 shadow-[0_14px_45px_rgba(16,24,40,0.05)] sm:p-7"
                 >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EEF3FF] text-[#2F6FED]">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[8px] bg-[#EEF3FF] text-[#2F6FED]">
                     <Icon className="h-5 w-5" />
                   </div>
                   <h3 className="mt-5 text-[18px] font-bold">{item.title}</h3>
@@ -335,7 +335,7 @@ export default function July4Page() {
             })}
           </div>
 
-          <div className="mt-8 rounded-[16px] bg-[#101828] px-6 py-7 text-center text-white sm:px-10 sm:py-9">
+          <div className="mt-8 rounded-[8px] bg-[#101828] px-6 py-7 text-center text-white sm:px-10 sm:py-9">
             <p className="text-[19px] font-bold leading-8 tracking-[-0.02em] sm:text-[23px]">
               The real benefit is not “a handyman visit.”
               <span className="text-[#9DB9FF]"> It is knowing who to call.</span>
@@ -354,7 +354,7 @@ export default function July4Page() {
 
           <ol className="mt-7 grid gap-4 lg:grid-cols-3">
             {steps.map((step, index) => (
-              <li key={step.title} className="relative rounded-[16px] border border-[#E4E7EC] bg-[#F9FAFB] p-6 sm:p-7">
+              <li key={step.title} className="relative rounded-[8px] border border-[#E4E7EC] bg-[#F9FAFB] p-6 sm:p-7">
                 <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2F6FED] text-sm font-extrabold text-white">
                   {index + 1}
                 </span>
@@ -382,7 +382,7 @@ export default function July4Page() {
               {services.map((service, index) => (
                 <div
                   key={service}
-                  className="flex min-h-[76px] items-center gap-3 rounded-[13px] border border-[#D7E2FC] bg-white px-4 py-3 text-[12px] font-bold shadow-[0_8px_24px_rgba(47,111,237,0.05)] sm:text-[14px]"
+                  className="flex min-h-[76px] items-center gap-3 rounded-[8px] border border-[#D7E2FC] bg-white px-4 py-3 text-[12px] font-bold shadow-[0_8px_24px_rgba(47,111,237,0.05)] sm:text-[14px]"
                 >
                   {index % 2 === 0 ? (
                     <HomeModernIcon className="h-5 w-5 flex-none text-[#2F6FED]" />
@@ -399,7 +399,7 @@ export default function July4Page() {
             </p>
           </div>
 
-          <aside className="rounded-[16px] border-2 border-[#2F6FED] bg-white p-6 shadow-[0_24px_70px_rgba(47,111,237,0.15)] sm:p-8 lg:sticky lg:top-6">
+          <aside className="rounded-[8px] border-2 border-[#2F6FED] bg-white p-6 shadow-[0_24px_70px_rgba(47,111,237,0.15)] sm:p-8 lg:sticky lg:top-6">
             <div className="text-center">
               <p className="text-[12px] font-extrabold uppercase tracking-[0.18em] text-[#2F6FED]">
                 Profixter Basic
@@ -411,11 +411,11 @@ export default function July4Page() {
                 <span className="text-[43px] font-bold leading-none tracking-[-0.06em] text-[#101828] sm:text-[46px]">
                   FREE
                 </span>
-                <span className="mb-1.5 rounded-full bg-[#DCFCE7] px-3 py-1.5 text-[13px] font-extrabold text-[#166534]">
+                <span className="mb-1.5 rounded-[6px] bg-[#DCFCE7] px-3 py-1.5 text-[13px] font-extrabold text-[#166534]">
                   $0
                 </span>
               </div>
-              <div className="mx-auto mt-5 flex max-w-[330px] items-center justify-between gap-3 rounded-[13px] border border-[#C9D7FA] bg-[#F2F6FF] p-2 pl-4 text-left">
+              <div className="mx-auto mt-5 flex max-w-[330px] items-center justify-between gap-3 rounded-[8px] border border-[#C9D7FA] bg-[#F2F6FF] p-2 pl-4 text-left">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#667085]">Coupon code</p>
                   <p className="mt-0.5 text-[18px] font-extrabold tracking-[0.12em] text-[#2F6FED]">JULY4</p>
@@ -426,7 +426,7 @@ export default function July4Page() {
 
             <CTA className="mt-6 w-full" />
 
-            <div className="mt-4 rounded-[14px] bg-[#F8F9FC] px-4 py-3 text-center">
+            <div className="mt-4 rounded-[8px] bg-[#F8F9FC] px-4 py-3 text-center">
               <p className="text-[11px] font-semibold leading-5 text-[#667085]">
                 Basic renews at <span className="font-bold text-[#344054]">$149/month</span> unless canceled before
                 renewal.
@@ -459,7 +459,7 @@ export default function July4Page() {
             title="Trade the handyman hunt for one trusted solution."
           />
 
-          <div className="mt-7 overflow-hidden rounded-[16px] border border-[#E4E7EC]">
+          <div className="mt-7 overflow-hidden rounded-[8px] border border-[#E4E7EC]">
             <div className="grid grid-cols-2 bg-[#101828] text-white">
               <div className="p-4 text-center text-[13px] font-bold sm:p-5 sm:text-[16px]">The usual way</div>
               <div className="border-l border-white/15 bg-[#17325E] p-4 text-center text-[13px] font-bold sm:p-5 sm:text-[16px]">
@@ -491,8 +491,8 @@ export default function July4Page() {
       <section className="bg-[#0A1424] px-5 py-10 text-white sm:px-5 sm:py-15 lg:px-8">
         <div className="mx-auto grid max-w-[1080px] items-center gap-7 lg:grid-cols-[0.8fr_1.2fr] lg:gap-10">
           <div className="relative mx-auto w-full max-w-[390px]">
-            <div className="absolute -inset-3 rounded-[13px] bg-[#2F6FED]/25 blur-2xl" />
-            <div className="relative aspect-[4/3] overflow-hidden rounded-[16px] border border-white/10 bg-[#14233A] lg:aspect-[4/5]">
+            <div className="absolute -inset-3 rounded-[8px] bg-[#2F6FED]/25 blur-2xl" />
+            <div className="relative aspect-[4/3] overflow-hidden rounded-[8px] border border-white/10 bg-[#14233A] lg:aspect-[4/5]">
               <Image
                 src="/images/Taras.png"
                 alt="Taras, founder of Profixter"
@@ -523,7 +523,7 @@ export default function July4Page() {
               {["Based in Babylon", "Licensed HI-71484", "Fully insured", "631-599-1363"].map((item) => (
                 <span
                   key={item}
-                  className="rounded-full border border-white/12 bg-white/[0.06] px-4 py-2 text-[11px] font-bold text-white/72 sm:text-[12px]"
+                  className="rounded-[6px] border border-white/12 bg-white/[0.06] px-4 py-2 text-[11px] font-bold text-white/72 sm:text-[12px]"
                 >
                   {item}
                 </span>
@@ -544,7 +544,7 @@ export default function July4Page() {
             {serviceAreas.map((area) => (
               <div
                 key={area}
-                className="flex min-h-20 items-center justify-center gap-2 rounded-[13px] border border-[#DCE3EF] bg-white px-3 text-center text-[12px] font-bold shadow-[0_8px_24px_rgba(16,24,40,0.04)] sm:text-[14px]"
+                className="flex min-h-20 items-center justify-center gap-2 rounded-[8px] border border-[#DCE3EF] bg-white px-3 text-center text-[12px] font-bold shadow-[0_8px_24px_rgba(16,24,40,0.04)] sm:text-[14px]"
               >
                 <MapPinIcon className="h-4 w-4 flex-none text-[#2F6FED]" />
                 {area}
@@ -566,7 +566,7 @@ export default function July4Page() {
             {faqs.map((faq) => (
               <details
                 key={faq.question}
-                className="group rounded-[13px] border border-[#E1E5ED] bg-[#FCFCFD] shadow-[0_8px_28px_rgba(15,23,42,0.025)] open:border-[#B9CBF8] open:bg-white"
+                className="group rounded-[8px] border border-[#E1E5ED] bg-[#FCFCFD] shadow-[0_8px_28px_rgba(15,23,42,0.025)] open:border-[#B9CBF8] open:bg-white"
               >
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-5 px-5 py-5 text-[14px] font-bold marker:content-none sm:px-6 sm:text-[16px]">
                   {faq.question}
@@ -584,7 +584,7 @@ export default function July4Page() {
       <section className="relative overflow-hidden bg-[#07111F] px-5 py-10 text-center text-white sm:px-5 sm:py-15 lg:px-8">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(47,111,237,0.34),transparent_48%)]" />
         <div className="relative mx-auto max-w-[780px]">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#FFD98F]/25 bg-[#F59E0B]/12 px-4 py-2 text-[10px] font-extrabold uppercase tracking-[0.17em] text-[#FFE8B6] sm:text-[11px]">
+          <span className="inline-flex items-center gap-2 rounded-[6px] border border-[#FFD98F]/25 bg-[#F59E0B]/12 px-4 py-2 text-[10px] font-extrabold uppercase tracking-[0.17em] text-[#FFE8B6] sm:text-[11px]">
             <SparklesIcon className="h-4 w-4" />
             JULY4 · Basic first month free
           </span>
