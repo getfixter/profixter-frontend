@@ -16,7 +16,7 @@ export const CORE_PRODUCTS = [
     href: "/book",
     intent: "I need something fixed.",
     title: "One-Time Handyman Services",
-    shortTitle: "Book Handyman",
+    shortTitle: "Book a visit",
     summary:
       "$99 One-Time Visit for one predefined small handyman task, up to 90 minutes.",
     cta: "Book a Handyman",
@@ -27,7 +27,7 @@ export const CORE_PRODUCTS = [
     href: "/projects",
     intent: "I want to renovate.",
     title: "Renovation and Construction",
-    shortTitle: "Renovation",
+    shortTitle: "Projects",
     summary:
       "Bathrooms, kitchens, roofing, siding, additions, full-home renovations, and new construction.",
     cta: "Request Renovation Estimate",

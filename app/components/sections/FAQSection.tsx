@@ -13,7 +13,7 @@ const FAQS = [
   },
   {
     q: "Are there limits per month?",
-    a: "There is no hard monthly cap on standard visit requests. Your plan controls how many active appointments you can have at one time, plus benefits like basic materials, Emergency Visits, and project time. Appointment availability still depends on the schedule.",
+    a: "There is no hard monthly cap on standard visit requests. Your plan controls how many active appointments you can have at one time, plus benefits like basic materials, Priority Visits, and project time. Appointment availability still depends on the schedule.",
   },
   {
     q: "What does \"active appointment\" mean?",

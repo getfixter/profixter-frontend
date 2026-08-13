@@ -14,21 +14,23 @@ export default function NotFound() {
           <h1 className="mt-4 text-4xl font-black leading-tight text-slate-950 sm:text-5xl">
             This page is not part of the house anymore.
           </h1>
+          {/* The same four words the rest of the site uses. This page had its
+              own vocabulary for every destination on it. */}
           <p className="mx-auto mt-4 max-w-[560px] text-base leading-7 text-slate-600">
-            Start with the free Home Support AI, book a handyman visit, compare membership, or request a project estimate.
+            Book a visit, see membership plans, start a project, or ask Profixter AI about your home.
           </p>
           <div className="mt-7 grid gap-3 sm:grid-cols-2">
-            <Link href="/home-support" className="rounded-[8px] bg-blue-600 px-5 py-3 text-sm font-black text-white">
-              Home Support AI
+            <Link href="/book" className="rounded-[8px] bg-blue-600 px-5 py-3 text-sm font-black text-white">
+              Book a visit
             </Link>
-            <Link href="/book" className="rounded-[8px] border border-slate-200 px-5 py-3 text-sm font-black text-slate-900">
-              Book a Handyman
-            </Link>
-            <Link href="/membership" className="rounded-[8px] border border-slate-200 px-5 py-3 text-sm font-black text-slate-900">
-              Membership
+            <Link href="/membership/plans" className="rounded-[8px] border border-slate-200 px-5 py-3 text-sm font-black text-slate-900">
+              See plans
             </Link>
             <Link href="/projects" className="rounded-[8px] border border-slate-200 px-5 py-3 text-sm font-black text-slate-900">
-              Home Projects
+              Projects
+            </Link>
+            <Link href="/home-support" className="rounded-[8px] border border-slate-200 px-5 py-3 text-sm font-black text-slate-900">
+              Profixter AI
             </Link>
           </div>
         </div>

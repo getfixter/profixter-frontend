@@ -82,7 +82,7 @@ export default function FinalCTASection() {
               style={{ boxShadow: "0 0 10px rgba(134,239,172,0.9)" }}
             />
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/70">
-              Long Island&rsquo;s Home Care Membership
+              Long Island&rsquo;s Handyman Membership
             </span>
           </div>
 

@@ -46,7 +46,7 @@ const QUESTIONS = [
   {
     key: "emergency" as const,
     question: "Would you value faster scheduling when something can't wait?",
-    hint: "Emergency Visits help when you need service before the next standard appointment slot, subject to technician availability.",
+    hint: "Priority Visits help when you need service before the next standard appointment slot, subject to technician availability.",
     choices: [
       {
         value: "yes",
@@ -135,7 +135,7 @@ function getRecommendation(answers: { usage?: string; emergency?: string; projec
         type: "plan",
         slug: "/membership/plans",
         title: "Premium Membership",
-        subtitle: "Best if you want Emergency Visits and the strongest coverage.",
+        subtitle: "Best if you want Priority Visits and the strongest coverage.",
         cta: "View Plans",
         color: "#306EEC",
         colorBg: "rgba(48,110,236,0.08)",

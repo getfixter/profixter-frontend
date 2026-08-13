@@ -21,6 +21,24 @@ const nextConfig: NextConfig = {
       { source: "/kitchen", destination: "/projects#kitchen", permanent: true },
       { source: "/services/general-contractor", destination: "/projects", permanent: true },
       { source: "/on-demand", destination: "/book", permanent: false },
+
+      /*
+       * Extra Visit and Priority Visit are named products in the business but
+       * only existed as query strings on Book, so the obvious URLs 404'd.
+       * Deliberately temporary: the canonical implementation is the Book tab,
+       * and a 308 cached in every browser would make it painful to give either
+       * one a real page later.
+       */
+      { source: "/extra", destination: "/book?visit=additional", permanent: false },
+      { source: "/priority", destination: "/book?visit=priority", permanent: false },
+
+      /*
+       * A third copy of the membership content, assembled entirely from the
+       * same section components as /membership and /membership/plans, with an
+       * empty H1 and one inbound link. Permanent because the point is to
+       * consolidate the search signal onto the comparison page.
+       */
+      { source: "/membership-info", destination: "/membership/plans", permanent: true },
     ];
   },
 };

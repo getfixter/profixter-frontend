@@ -33,18 +33,37 @@ export default function Header() {
    * first-class item here rather than only a profile-menu entry, which was too
    * easy to miss.
    */
-  const navLinks = useMemo(
-    () =>
-      isMember
-        ? ([
-            { label: "Home", href: "/" },
-            { label: "Book", href: "/book?visit=membership" },
-            { label: "Projects", href: "/projects" },
-            { label: "Account", href: "/account" },
-          ] as const)
-        : MAIN_NAV_LINKS,
-    [isMember]
-  );
+  const navLinks = useMemo(() => {
+    if (isMember) {
+      return [
+        { label: "Home", href: "/" },
+        { label: "Book", href: "/book?visit=membership" },
+        { label: "Projects", href: "/projects" },
+        { label: "Account", href: "/account" },
+      ] as const;
+    }
+
+    /*
+     * Somebody who signed up but has not joined is neither a stranger nor a
+     * member, and they used to get the stranger's nav: Membership, How it
+     * works, Projects, About Us, with no way to reach Book at all. That is the
+     * state of every person who created an account to claim a free first
+     * visit, so the one thing they came back for was the one thing the header
+     * did not offer. They get the same four destinations as a member, pointed
+     * at the booking flow they are actually entitled to, with See plans in
+     * place of Home because joining is still the open question for them.
+     */
+    if (isAuthenticated) {
+      return [
+        { label: "Home", href: "/" },
+        { label: "Book", href: "/book" },
+        { label: "Projects", href: "/projects" },
+        { label: "See plans", href: "/membership/plans" },
+      ] as const;
+    }
+
+    return MAIN_NAV_LINKS;
+  }, [isMember, isAuthenticated]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -270,13 +289,18 @@ export default function Header() {
                       </div>
                     </div>
                   </div>
-                  <Link
-                    href={accountHref}
-                    onClick={() => setIsMenuOpen(false)}
-                    className="rounded-[16px] bg-[#0B1628] px-5 py-3.5 text-center text-[15px] font-black text-white transition hover:bg-[#172033] sm:px-6 sm:py-4 sm:text-base"
-                  >
-                    My Account
-                  </Link>
+                  {/* Members already have Account in the list above, so this
+                      button repeated the same destination two rows apart. It
+                      stays for everyone whose nav does not carry one. */}
+                  {!navLinks.some((link) => link.href === accountHref) && (
+                    <Link
+                      href={accountHref}
+                      onClick={() => setIsMenuOpen(false)}
+                      className="rounded-[16px] bg-[#0B1628] px-5 py-3.5 text-center text-[15px] font-black text-white transition hover:bg-[#172033] sm:px-6 sm:py-4 sm:text-base"
+                    >
+                      My Account
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="rounded-[16px] border border-red-100 bg-red-50 px-5 py-3.5 text-[15px] font-black text-red-700 transition hover:bg-red-100 sm:px-6 sm:py-4 sm:text-base"

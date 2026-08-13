@@ -15,7 +15,7 @@ interface AccountHeaderProps {
 
 const accountItems: { key: ActiveTab; label: string }[] = [
   { key: 'overview', label: 'Account overview' },
-  { key: 'bookings', label: 'My visits' },
+  // Visits are under Book; ?tab=bookings redirects there.
   { key: 'plan', label: 'Membership' },
   { key: 'personal', label: 'Profile & property' },
   { key: 'password', label: 'Security' },
@@ -56,14 +56,20 @@ export function AccountHeader({ userName, activeTab, onSelectTab, onLogout }: Ac
     <header className="relative z-50 w-full border-b border-[#E0E6F5] bg-white">
       <div className="max-w-[1240px] mx-auto px-4 sm:px-5 h-[48px] flex items-center justify-between gap-4">
 
-        {/* Logo */}
-        <Link href="/" className="flex-shrink-0">
+        {/* Logo. The same dark chip the marketing pages use: Account was the
+            one place the brand appeared as plain black text, so the signed-in
+            half of the site did not look like the half that sold it. */}
+        <Link
+          href="/"
+          aria-label="Profixter home"
+          className="flex flex-shrink-0 items-center rounded-[9px] bg-[#0B1628] px-2 py-1.5 transition hover:bg-[#172033] sm:rounded-[10px] sm:px-2.5"
+        >
           <Image
-            src="/images/logo.svg"
-            alt="Profixter"
-            width={82}
-            height={30}
-            className="h-[28px] w-auto brightness-0 sm:h-[30px]"
+            src="/images/logo-footer.svg"
+            alt="Profixter Long Island"
+            width={113}
+            height={24}
+            className="nav-brand-logo"
           />
         </Link>
 

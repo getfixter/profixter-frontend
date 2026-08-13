@@ -378,7 +378,7 @@ export default function HomeMarketing() {
           <Reveal delay={80}>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
               <QuietLink href="/membership/plans" placement="membership_band" tone="light">
-                {isMember ? "Compare plans" : "See membership"}
+                {isMember ? "Compare plans" : "See plans"}
               </QuietLink>
               <p className="text-[14px] text-white/40 sm:ml-2">Month to month. Cancel any time.</p>
             </div>

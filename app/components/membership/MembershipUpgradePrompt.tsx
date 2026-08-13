@@ -94,11 +94,19 @@ export default function MembershipUpgradePrompt({
         <span className="text-[14px] font-medium text-[#6E6E73]">${plan.price}/mo</span>
       </div>
       <p className="mt-1.5 text-[13px] leading-5 text-[#5C6672]">{reason}</p>
+      {/*
+       * The comparison page, not /membership#my-plan. This CTA names a tier the
+       * member does not have, and #my-plan showed them their own plan instead,
+       * so the promise and the destination disagreed. No per-tier anchor: the
+       * plan cards render through three separate layouts and two of them are in
+       * the DOM at once, so a tier id would be duplicated. The tier is named
+       * directly above this link, and the page it opens shows all four.
+       */}
       <Link
-        href="/membership#my-plan"
+        href="/membership/plans"
         className="mt-3 inline-flex min-h-[40px] items-center text-[14px] font-semibold text-[#306EEC] transition hover:text-[#2558C9]"
       >
-        See {plan.name}
+        See plans
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="ml-1">
           <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>

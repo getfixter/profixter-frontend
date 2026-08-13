@@ -11,7 +11,6 @@ import { hasActiveMembership } from "@/lib/auth-routing";
  * "see the plans" link never reached any plans.
  */
 const MEMBERSHIP_PLANS_HREF = "/membership/plans";
-const MEMBERSHIP_SIGNUP_HREF = "/signup?redirect=%2Fmembership%2Fplans";
 
 type MembershipCtaLinkProps = {
   children: ReactNode;
@@ -34,16 +33,22 @@ export default function MembershipCtaLink({
    * A member is not a prospect. Sending one to "Become a Member" is the site
    * admitting it does not know who is reading, so they get the comparison and
    * the label that matches what it will do.
+   *
+   * A stranger used to get "Create Account" pointing at signup, which put a
+   * registration form in front of four prices that are on a public page
+   * anyway. On a page about mounting a television that is a bureaucratic ask
+   * for something the visitor did not come for, so they now get the plans
+   * themselves and can decide before being asked for anything.
    */
   return (
     <Link
-      href={isAuthenticated ? MEMBERSHIP_PLANS_HREF : MEMBERSHIP_SIGNUP_HREF}
+      href={MEMBERSHIP_PLANS_HREF}
       className={className}
       onClick={onClick}
       style={style}
       {...anchorProps}
     >
-      {isMember ? "Compare plans" : isAuthenticated ? children : "Create Account"}
+      {isMember ? "Compare plans" : isAuthenticated ? children : "See plans"}
     </Link>
   );
 }
