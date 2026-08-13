@@ -71,7 +71,7 @@ export default async function BookConfirmationPage({
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Link
-                href="/account?tab=bookings"
+                href="/book#your-visits"
                 className="inline-flex h-[46px] items-center justify-center rounded-[16px] bg-[#306EEC] px-5 text-[15px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#2558c9] active:scale-[0.99]"
                 style={{ boxShadow: "0 16px 48px rgba(48,110,236,0.30)" }}
               >

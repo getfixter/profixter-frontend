@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/lib/useAuth";
+import { hasActiveMembership } from "@/lib/auth-routing";
 
 const FAQS = [
   {
@@ -58,6 +60,13 @@ type FAQSectionProps = {
 };
 
 export default function FAQSection({ hideCancellationUi = false }: FAQSectionProps = {}) {
+  /*
+   * The heading used to read "Questions before you become a Member" for
+   * everybody, including people who became one months ago. Same answers,
+   * but addressed to whoever is actually reading.
+   */
+  const { user } = useAuth();
+  const isMember = hasActiveMembership(user);
   const [open, setOpen] = useState<number | null>(null);
   const faqs = hideCancellationUi
     ? FAQS.filter(({ q }) => !q.toLowerCase().includes("cancellation"))
@@ -83,7 +92,7 @@ export default function FAQSection({ hideCancellationUi = false }: FAQSectionPro
             </span>
           </div>
           <h2 className="text-[23px] font-extrabold leading-[1.12] tracking-[-0.025em] text-white sm:text-[34px] sm:tracking-[-0.03em]">
-            Questions before you become a Member
+            {isMember ? "Questions about your membership" : "Questions before you become a Member"}
           </h2>
           <p className="mx-auto mt-4 max-w-[520px] text-[15px] leading-relaxed text-white/42 sm:text-[16px]">
             Clear answers about how ongoing home care works, what fits, and what belongs in a project estimate.

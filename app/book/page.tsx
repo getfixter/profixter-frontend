@@ -1304,10 +1304,28 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
             {/* Straight to the visit list. This used to leave Book for an
                 Account tab whose only remaining content was a link back to
                 Book. */}
-            {isAuthenticated && <Link href="/book?visit=membership#your-visits" className="font-bold text-[#306EEC]">View Visits</Link>}
+            {isAuthenticated && <Link href="#your-visits" className="font-bold text-[#306EEC]">View Visits</Link>}
           </div>
         </details>
       </section>
+
+      {/*
+       * Visits, for people who are not members.
+       *
+       * The visit list only ever rendered on the membership branch, so somebody
+       * who paid for a one-time visit could not see it again anywhere: Account
+       * sends them here, and here had nothing to show them. Same component and
+       * same anchor the member page uses, so there is still one visit history
+       * on the site, and it is still under Book.
+       */}
+      {isAuthenticated && (
+        <section
+          id="your-visits"
+          className="mx-auto w-full max-w-[1280px] scroll-mt-[84px] px-4 pb-10 pt-2 sm:scroll-mt-[96px] sm:px-6 sm:pb-12 lg:px-8"
+        >
+          <BookingsSection />
+        </section>
+      )}
 
       <Footer />
     </main>

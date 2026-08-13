@@ -51,11 +51,26 @@ export function getCustomerHomePath(user: User | null | undefined) {
   return "/";
 }
 
-/** Destination used only for automatic app entry and successful sign-in. */
+/**
+ * Destination used only for automatic app entry and successful sign-in.
+ *
+ * A member lands on Book. They pay every month for a team that comes to the
+ * house, so the reason they signed in is nearly always the next visit, and Book
+ * is where that happens: the booking form first, then their Fixter and their
+ * visit history under it. Account is where you go to change something about the
+ * arrangement, which is a rarer errand, so it costs a tap instead of saving one.
+ *
+ * This is the automatic destination only. Home still means Home, and nothing
+ * here changes where anyone lands when they choose a destination themselves.
+ *
+ * Only the paying member is affected: staff keep their workspace, and everybody
+ * else keeps the homepage, including a registered non-member whose free first
+ * visit journey starts from there.
+ */
 export function getAutomaticEntryPath(user: User | null | undefined) {
   const kind = getRoleLandingKind(user);
   if (kind === "admin") return "/admin";
   if (kind === "general_fixter" || kind === "fixter") return "/admin?tab=bookings";
-  if (kind === "customer" && hasActiveMembership(user)) return "/membership";
+  if (kind === "customer" && hasActiveMembership(user)) return "/book?visit=membership";
   return "/";
 }
