@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { login, type AccountChoice } from "@/lib/auth-service";
 import { useAuth } from "@/lib/useAuth";
-import { getAutomaticEntryPath } from "@/lib/auth-routing";
+import { getAutomaticEntryPath, safeReturnPath } from "@/lib/auth-routing";
 import { trackEvent } from "@/lib/analytics";
 import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
 
@@ -57,7 +57,7 @@ function PasswordToggle({
   );
 }
 
-export default function SignInPage() {
+function SignInForm() {
   const [email, setEmail] = useState(() => {
     if (typeof window === "undefined") return "";
     return localStorage.getItem("rememberedEmail") || "";
@@ -71,7 +71,14 @@ export default function SignInPage() {
   const [accountChoices, setAccountChoices] = useState<AccountChoice[]>([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login: authLogin } = useAuth();
+  /*
+   * Where they were going. Someone sent here from halfway through booking a
+   * Full Day should land back on the Full Day, not on a home page that has
+   * forgotten what they were doing.
+   */
+  const returnPath = safeReturnPath(searchParams.get("next"));
 
   useEffect(() => {
     trackEvent("view_login", { page: "/signin" });
@@ -91,7 +98,7 @@ export default function SignInPage() {
         throw new Error("We could not verify your account. Please try again.");
       }
       localStorage.setItem("rememberedEmail", email);
-      router.replace(getAutomaticEntryPath(verifiedUser));
+      router.replace(returnPath || getAutomaticEntryPath(verifiedUser));
     } catch (err: unknown) {
       const error = err as {
         response?: { status?: number; data?: { message?: string; code?: string; accounts?: AccountChoice[] } };
@@ -240,7 +247,9 @@ export default function SignInPage() {
           <p className="mt-4 text-center text-[13px] text-white/50">
             Don&apos;t have an account?{" "}
             <Link
-              href="/signup"
+              // Carry the destination across, or someone who chose Create
+              // Account instead of Log In loses the page they were sent from.
+              href={returnPath ? `/signup?next=${encodeURIComponent(returnPath)}` : "/signup"}
               className="font-semibold text-white hover:text-white/80 transition"
             >
               Create Account
@@ -272,5 +281,18 @@ export default function SignInPage() {
       </div>
     </div>
     </RoleEntryGate>
+  );
+}
+
+/**
+ * Reading ?next= needs useSearchParams, and useSearchParams needs a boundary
+ * or the route stops being prerenderable. The fallback is the page's own
+ * background so there is no flash of a different colour behind the form.
+ */
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0B1628]" />}>
+      <SignInForm />
+    </Suspense>
   );
 }

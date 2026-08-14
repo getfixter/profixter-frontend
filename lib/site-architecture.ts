@@ -59,10 +59,21 @@ export const COMPANY_LINKS = [
  * visit is a fallback, not a peer product. Home Support AI is intentionally not
  * a top-level item - it competes with the primary conversion journey and is
  * reachable from the footer.
+ *
+ * Book sits in the middle because it is a service destination rather than a
+ * marketing page. It was missing here for a long time, from back when /book was
+ * treated as somewhere you arrived from a call to action rather than somewhere
+ * you navigate to. The phone has had a Book tab in the bottom bar throughout,
+ * so a visitor on a desktop was the only customer on the site with no ordinary
+ * way to reach it.
+ *
+ * Bare /book on purpose. The page resolves its own default from customer state,
+ * so pinning a ?visit= here would override a decision that belongs to Book.
  */
 export const MAIN_NAV_LINKS = [
   { label: "Membership", href: "/membership" },
   { label: "How it works", href: "/#how-it-works" },
+  { label: "Book", href: "/book" },
   { label: "Projects", href: "/projects" },
   { label: "About Us", href: "/about" },
 ] as const;

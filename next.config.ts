@@ -23,13 +23,14 @@ const nextConfig: NextConfig = {
       { source: "/on-demand", destination: "/book", permanent: false },
 
       /*
-       * Extra Visit and Priority Visit are named products in the business but
-       * only existed as query strings on Book, so the obvious URLs 404'd.
-       * Deliberately temporary: the canonical implementation is the Book tab,
-       * and a 308 cached in every browser would make it painful to give either
-       * one a real page later.
+       * Extra Visit, Full Day Fixter and Priority Visit are named products in
+       * the business but only exist as query strings on Book, so the obvious
+       * URLs 404'd. Deliberately temporary: the canonical implementation is the
+       * Book tab, and a 308 cached in every browser would make it painful to
+       * give any of them a real page later.
        */
       { source: "/extra", destination: "/book?visit=additional", permanent: false },
+      { source: "/full-day", destination: "/book?visit=full-day", permanent: false },
       { source: "/priority", destination: "/book?visit=priority", permanent: false },
 
       /*

@@ -73,9 +73,11 @@ export function AccountHeader({ userName, activeTab, onSelectTab, onLogout }: Ac
           />
         </Link>
 
-        {/* Website nav */}
+        {/* Website nav. This used to slice the first four, which meant "all of
+            them" when the list had four; the moment Book was added it would
+            have quietly dropped About Us instead. It renders the list. */}
         <nav className="hidden items-center gap-1 rounded-[6px] border border-[#E6ECF7] bg-[#F8FAFF] p-1 lg:flex" aria-label="Website navigation">
-          {MAIN_NAV_LINKS.slice(0, 4).map((item) => (
+          {MAIN_NAV_LINKS.map((item) => (
             <Link
               key={item.href}
               href={item.href}

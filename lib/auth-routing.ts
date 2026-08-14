@@ -67,6 +67,23 @@ export function getCustomerHomePath(user: User | null | undefined) {
  * else keeps the homepage, including a registered non-member whose free first
  * visit journey starts from there.
  */
+/**
+ * A destination the customer asked for before they were sent to sign in.
+ *
+ * Only same-site paths survive this. A `next` value arrives from the URL bar,
+ * so anything that could be read as another origin is discarded rather than
+ * sanitized: this is the open-redirect that turns a login page into a phishing
+ * hop, and the safe answer is always to fall back to the normal landing.
+ */
+export function safeReturnPath(value: string | null | undefined) {
+  const path = String(value || "").trim();
+  if (!path.startsWith("/")) return null;
+  // "//evil.com" and "/\evil.com" are both read as protocol-relative URLs.
+  if (path.startsWith("//") || path.startsWith("/\\")) return null;
+  if (/[\r\n]/.test(path)) return null;
+  return path;
+}
+
 export function getAutomaticEntryPath(user: User | null | undefined) {
   const kind = getRoleLandingKind(user);
   if (kind === "admin") return "/admin";

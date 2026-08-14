@@ -343,12 +343,143 @@ export const createOneTimeVisitCheckout = async (
   return response.json();
 };
 
+/* ------------------------------------------------------------------ */
+/* Full Day Fixter                                                     */
+/* ------------------------------------------------------------------ */
+
+export interface FullDayConfig {
+  enabled: boolean;
+  priceCents: number;
+  currency: string;
+  approximateHours: number;
+  holdMinutes: number;
+  cancellationPhone: string;
+}
+
+export interface FullDayAvailabilityDay {
+  date: string;
+  available: boolean;
+  fixtersAvailable: number;
+  startTime: string;
+  endTime: string;
+  hours: number;
+  reason: string;
+}
+
+export interface FullDayAvailability {
+  timezone: string;
+  engine: "legacy" | "reservation";
+  days: FullDayAvailabilityDay[];
+}
+
+/**
+ * Whether this customer's next Full Day is included or paid.
+ *
+ * Answered by the server rather than inferred from the plan name, because the
+ * question is not "are they Elite" but "have they used this period's Full Day",
+ * and only the server knows the billing period.
+ */
+export interface FullDayEligibility {
+  addressId?: string;
+  includedAvailable: boolean;
+  includedUsed: boolean;
+  isElite: boolean;
+  periodStart: string | null;
+  periodEnd: string | null;
+  reason: string;
+}
+
+export interface FullDayBookingData {
+  addressId: string;
+  date: string;
+  note: string;
+  images: File[];
+}
+
+export const getFullDayConfig = async (): Promise<FullDayConfig> => {
+  const response = await API.get<FullDayConfig>("/api/bookings/full-day/config");
+  return response.data;
+};
+
+export const getFullDayAvailability = async (
+  from: string,
+  to: string
+): Promise<FullDayAvailability> => {
+  const response = await API.get<FullDayAvailability>(
+    "/api/bookings/full-day/availability",
+    { params: { from, to } }
+  );
+  return response.data;
+};
+
+export const getFullDayEligibility = async (
+  addressId?: string
+): Promise<FullDayEligibility> => {
+  const response = await API.get<FullDayEligibility>(
+    "/api/bookings/full-day/eligibility",
+    { params: addressId ? { addressId } : {} }
+  );
+  return response.data;
+};
+
+async function postFullDay<T>(path: string, data: FullDayBookingData): Promise<T> {
+  const formData = new FormData();
+  formData.append("addressId", data.addressId);
+  formData.append("date", data.date);
+  formData.append("note", data.note);
+  data.images.forEach((image) => formData.append("images", image));
+
+  const token = localStorage.getItem("token") || "";
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
+    method: "POST",
+    body: formData,
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    const error = new Error(
+      body.message || "Unable to book your Full Day"
+    ) as Error & { code?: string };
+    error.code = body.code;
+    throw error;
+  }
+
+  return response.json();
+}
+
+/** Elite's included Full Day. No payment step at all. */
+export const bookIncludedFullDay = async (
+  data: FullDayBookingData
+): Promise<{
+  bookingId: string;
+  bookingNumber: string;
+  date: string;
+  included: true;
+}> => postFullDay("/api/bookings/full-day/book", data);
+
+/** The $499 Full Day. Returns a Stripe Checkout URL to redirect to. */
+export const createFullDayCheckout = async (
+  data: FullDayBookingData
+): Promise<{ url: string; bookingId: string; holdExpiresAt: string }> =>
+  postFullDay("/api/bookings/full-day/checkout", data);
+
 export const cancelBooking = async (
   bookingId: string
-): Promise<{ ok: boolean; action: string; message: string }> => {
-  const response = await API.delete<{ ok: boolean; action: string; message: string }>(
-    `/api/bookings/cancel/${bookingId}`
-  );
+): Promise<{
+  ok: boolean;
+  action: string;
+  message: string;
+  includedFullDayRestored?: boolean;
+  includedFullDayRestoreReason?: string;
+}> => {
+  const response = await API.delete<{
+    ok: boolean;
+    action: string;
+    message: string;
+    includedFullDayRestored?: boolean;
+    includedFullDayRestoreReason?: string;
+  }>(`/api/bookings/cancel/${bookingId}`);
   return response.data;
 };
 

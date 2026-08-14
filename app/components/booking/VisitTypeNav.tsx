@@ -19,7 +19,12 @@ import Link from "next/link";
  * bookmark already pointing at /book?visit=membership for the sake of a word
  * nobody sees.
  */
-export const VISIT_TYPES = ["membership", "additional", "priority"] as const;
+export const VISIT_TYPES = [
+  "membership",
+  "full-day",
+  "additional",
+  "priority",
+] as const;
 export type VisitType = (typeof VISIT_TYPES)[number];
 
 export const DEFAULT_VISIT_TYPE: VisitType = "membership";
@@ -62,6 +67,9 @@ export function resolveVisitType(
 function tabsFor(isMember: boolean): { type: VisitType; label: string }[] {
   return [
     { type: "membership", label: "Book Fixter" },
+    // Second, not last. It sits next to the ordinary visit because that is the
+    // comparison the customer is actually making: one job or the whole list.
+    { type: "full-day", label: "Full Day" },
     // No price on the tab. It is a label, not an offer, and the price is
     // unmissable inside the section itself.
     { type: "additional", label: isMember ? "Extra" : "One-Time" },
@@ -83,7 +91,15 @@ export default function VisitTypeNav({
       aria-label="Visit type"
       className="mx-auto w-full max-w-[1280px] px-4 pt-3 sm:px-6 sm:pt-5 lg:px-8"
     >
-      <div className="flex w-full gap-1 rounded-[8px] border border-[#E4E9F2] bg-[#F1F4F9] p-1 sm:max-w-[620px]">
+      {/*
+        Four tabs in one row, down to 375px. Measured rather than assumed: at
+        that width each tab gets about 80px and the longest label, "Book
+        Fixter", sets about 68px at 11.5px, so the row holds without wrapping
+        and without a scroller. A scroller would have hidden the fourth option
+        behind a gesture, which is the opposite of what a segmented control is
+        for.
+      */}
+      <div className="flex w-full gap-1 rounded-[8px] border border-[#E4E9F2] bg-[#F1F4F9] p-1 sm:max-w-[680px]">
         {TABS.map((tab) => {
           const selected = tab.type === active;
           return (
@@ -93,7 +109,7 @@ export default function VisitTypeNav({
               scroll={false}
               aria-current={selected ? "page" : undefined}
               className={[
-                "flex min-h-[42px] flex-1 items-center justify-center rounded-[6px] px-2 text-center text-[12.5px] font-semibold leading-tight tracking-[-0.01em] transition sm:min-h-[44px] sm:text-[14px]",
+                "flex min-h-[42px] flex-1 items-center justify-center whitespace-nowrap rounded-[6px] px-1 text-center text-[11.5px] font-semibold leading-tight tracking-[-0.01em] transition sm:min-h-[44px] sm:px-2 sm:text-[14px]",
                 "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]",
                 selected
                   ? "bg-white text-[#0B1628] shadow-[0_1px_3px_rgba(11,22,40,0.12)]"
