@@ -12,7 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { register } from "@/lib/auth-service";
-import { getRoleLandingPath } from "@/lib/auth-routing";
+import { getRoleLandingPath, safeReturnPath } from "@/lib/auth-routing";
 import { useAuth } from "@/lib/useAuth";
 import { extractUSNationalPhoneDigits, isValidUSNationalPhoneDigits } from "@/lib/phone";
 import { trackEvent } from "@/lib/analytics";
@@ -314,8 +314,15 @@ export default function SignUpPage() {
       if (checkoutPromo) {
         sessionStorage.setItem("pendingPromoCode", checkoutPromo);
       }
+      // Where they were heading before they were asked to create an account,
+      // if anywhere. Same-site paths only; see safeReturnPath.
+      const returnPath = safeReturnPath(
+        new URLSearchParams(window.location.search).get("next")
+      );
       const landingPath = getRoleLandingPath(verifiedUser);
-      router.replace(landingPath === "/account" ? "/membership" : landingPath);
+      router.replace(
+        returnPath || (landingPath === "/account" ? "/membership" : landingPath)
+      );
     } catch (err: unknown) {
       const errorResponse = err as { response?: { data?: { message?: string } }; message?: string };
       const message = errorResponse?.response?.data?.message || errorResponse.message || "We couldn't finish setting up your home. Please try again.";

@@ -14,7 +14,7 @@ type Booking = {
   service?: string;
   selectedTask?: string;
   accessType?: "membership" | "one_time" | "free_first_visit" | "admin" | string;
-  bookingType?: "membership_visit" | "one_time_handyman_visit" | string;
+  bookingType?: "membership_visit" | "one_time_handyman_visit" | "full_day_visit" | string;
   paymentState?: string;
   entitlementId?: string | null;
   note?: string;
@@ -71,7 +71,18 @@ function detailLockReason(booking: Booking) {
   return "";
 }
 
+function isFullDayVisit(booking: Booking) {
+  return booking.bookingType === "full_day_visit";
+}
+
+/*
+ * A paid Full Day also carries accessType "one_time", because that is what it
+ * is from the billing side: bought, not included. That would have badged it
+ * "One-Time Visit", which is a different product at a different price, so the
+ * booking type is checked first and wins.
+ */
 function isOneTimeVisit(booking: Booking) {
+  if (isFullDayVisit(booking)) return false;
   return (
     booking.bookingType === "one_time_handyman_visit" ||
     booking.accessType === "one_time"
@@ -434,6 +445,7 @@ function BookingCard({
   const showCallToChange = canCancel(booking.status) && !memberCanSelfCancel;
   const bookingId = booking.bookingNumber || booking._id.slice(-6).toUpperCase();
   const isOneTime = isOneTimeVisit(booking);
+  const isFullDay = isFullDayVisit(booking);
   const serviceLabel = booking.selectedTask || booking.service || "-";
   const canAddAppointmentDetails = canAddDetails(booking.status);
   const detailsLockReason = canAddAppointmentDetails ? detailLockReason(booking) : "";
@@ -451,11 +463,15 @@ function BookingCard({
           </div>
         </div>
         <div className="flex flex-col items-end gap-1.5">
-          {isOneTime && (
+          {isFullDay ? (
+            <span className="rounded-[6px] border border-[#D9E4FF] bg-[#F0F7FF] px-2.5 py-1 text-[11px] font-bold text-[#1D4ED8]">
+              Full Day Fixter
+            </span>
+          ) : isOneTime ? (
             <span className="rounded-[6px] border border-[#D9E4FF] bg-[#F0F7FF] px-2.5 py-1 text-[11px] font-bold text-[#1D4ED8]">
               One-Time Visit
             </span>
-          )}
+          ) : null}
           <span className={`px-2.5 py-1 rounded-[6px] text-[11px] font-bold border ${statusBadge(booking.status)}`}>
             {statusLabel(booking.status)}
           </span>
@@ -554,12 +570,21 @@ function BookingCard({
               {cancelLoading ? "..." : "Cancel visit"}
             </button>
           )}
+          {/*
+            A paid Full Day is deliberately not self-service. There is $499 on
+            it and no automatic refund, so cancelling is a conversation with a
+            person rather than a button that quietly does nothing about money.
+            The included Elite Full Day is a membership booking and keeps the
+            normal Cancel button above, which is what returns the entitlement.
+          */}
           {showCallToChange && (
             <a
               href="tel:631-599-1363"
               className="flex-1 rounded-[8px] border border-[#D9E4FF] bg-[#F0F7FF] px-3 py-2.5 text-center text-[13px] font-semibold text-[#1D4ED8] transition hover:bg-[#E6F0FF]"
             >
-              Need to cancel or reschedule? Call 631-599-1363
+              {isFullDay
+                ? "Need to change or cancel your Full Day? Call ProFixter at 631-599-1363"
+                : "Need to cancel or reschedule? Call 631-599-1363"}
             </a>
           )}
           {isCompletedStatus(booking.status) && (
@@ -644,6 +669,7 @@ export default function BookingsSection() {
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelError, setCancelError] = useState("");
+  const [fullDayCancelNotice, setFullDayCancelNotice] = useState("");
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -748,13 +774,24 @@ export default function BookingsSection() {
     setCancelError("");
 
     try {
-      await axios.post(`${apiBase}/api/bookings/cancel/${cancelTarget._id}`, null, { headers });
+      const response = await axios.post<{
+        includedFullDayRestored?: boolean;
+      }>(`${apiBase}/api/bookings/cancel/${cancelTarget._id}`, null, { headers });
 
       setBookings((prev) =>
         prev.map((b) =>
           b._id === cancelTarget._id ? { ...b, status: "cancelled" } : b
         )
       );
+      // Whether an included Full Day came back is the one thing a customer
+      // needs to be told at this moment, and the answer is not always yes.
+      if (isFullDayVisit(cancelTarget)) {
+        setFullDayCancelNotice(
+          response.data?.includedFullDayRestored
+            ? "Your included Full Day is available again for this billing period."
+            : ""
+        );
+      }
       setCancelTarget(null);
     } catch (e: unknown) {
       const error = e as { response?: { data?: { message?: string } }; message?: string };
@@ -782,12 +819,20 @@ export default function BookingsSection() {
         <p className="text-[13px] text-[#6A6D71] mt-0.5">Upcoming and past home visits</p>
       </div>
 
+      {fullDayCancelNotice ? (
+        <div className="mb-5 rounded-[8px] border border-[#D9E7D2] bg-[#F4F9F1] px-4 py-3">
+          <p className="text-[13.5px] font-semibold text-[#1E4620]">
+            {fullDayCancelNotice}
+          </p>
+        </div>
+      ) : null}
+
       {/* CTA strip */}
       <div className="bg-white border border-[#E0E6F5] rounded-[8px] p-4 mb-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
         <div>
           <div className="text-[14px] font-semibold text-[#313234]">Questions or changes?</div>
           <div className="text-[13px] text-[#6A6D71] mt-0.5">
-            One-Time Visit changes require a call. Call{" "}
+            Paid visits, including a purchased Full Day, are changed by phone. Call{" "}
             <a className="text-[#306EEC] font-semibold" href="tel:631-599-1363">
               631-599-1363
             </a>{" "}

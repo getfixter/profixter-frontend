@@ -22,6 +22,7 @@ import VisitTypeNav, { resolveVisitType } from "@/app/components/booking/VisitTy
 import { YourFixterRow } from "@/app/components/fixter/YourFixter";
 import BookingsSection from "@/app/components/account/BookingsSection";
 import PriorityVisitPanel from "@/app/components/booking/PriorityVisitPanel";
+import FullDayVisitPanel from "@/app/components/booking/FullDayVisitPanel";
 import MembershipGatewayPanel from "@/app/components/booking/MembershipGatewayPanel";
 import MembershipUpgradePrompt, { normalizePlanKey } from "@/app/components/membership/MembershipUpgradePrompt";
 import { hasActiveMembership as hasActiveMembershipFor } from "@/lib/auth-routing";
@@ -1369,6 +1370,25 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
 
 
 /**
+ * The same visit list the other tabs show, under the same anchor.
+ *
+ * Split out only because Full Day renders it beside a different panel; it is
+ * the one BookingsSection the site has, not a Full Day copy of it.
+ */
+function FullDayVisitHistory() {
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) return null;
+  return (
+    <section
+      id="your-visits"
+      className="mx-auto w-full max-w-[1280px] scroll-mt-[84px] px-4 pb-10 sm:scroll-mt-[96px] sm:px-6 sm:pb-12 lg:px-8"
+    >
+      <BookingsSection />
+    </section>
+  );
+}
+
+/**
  * The booking entrance.
  *
  * Three ways to get a Fixter to the house, and everybody sees all three now.
@@ -1400,6 +1420,24 @@ function BookExperience() {
   const nav = <VisitTypeNav active={visit} isMember={isMember} />;
 
   if (visit === "additional") return <AdditionalVisitBooking navSlot={nav} />;
+
+  /*
+   * Full Day is the same page for everybody: a visitor reads it, picks a day
+   * and is asked to sign in at the last step, and a member sees whether the day
+   * is on their plan. So it is not behind the membership branch below, and it
+   * shows the visit list to anyone signed in, exactly like the other tabs.
+   */
+  if (visit === "full-day") {
+    return (
+      <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
+        <Header />
+        {nav}
+        <FullDayVisitPanel />
+        <FullDayVisitHistory />
+        <Footer />
+      </main>
+    );
+  }
 
   /*
    * A non-member landing on ?visit=membership gets the gateway rather than a
