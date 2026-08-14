@@ -115,20 +115,83 @@ function isManagedActiveStatus(status?: string | null): boolean {
   return ["active", "trialing"].includes(String(status || "").toLowerCase());
 }
 
-function getDisplayPrice(plan: Plan, billing: BillingCycle): number {
+/*
+ * Annual members are charged for ten months and get twelve.
+ *
+ * Ten is the whole offer, so it is stated once here rather than spelled into
+ * each card. These figures mirror the live Stripe annual prices exactly
+ * ($1,490 / $2,490 / $3,490 / $4,990); the backend still resolves the real
+ * Stripe price id from the plan and cycle, so this is presentation only and
+ * cannot put a price on screen that checkout would not honour.
+ */
+const ANNUAL_MONTHS_CHARGED = 10;
+const MONTHS_PER_YEAR = 12;
+
+type PlanPricing = {
+  /** The number the customer actually pays this cycle. */
+  amount: number;
+  suffix: "/mo" | "/year";
+  /** Twelve months at the monthly rate, shown struck through. Null on monthly. */
+  regular: number | null;
+};
+
+function getPlanPricing(plan: Plan, billing: BillingCycle): PlanPricing {
   const monthly = toNumberPrice(plan.price);
-  return billing === "annual" ? monthly * 11 : monthly;
+
+  if (billing !== "annual") {
+    return { amount: monthly, suffix: "/mo", regular: null };
+  }
+
+  return {
+    amount: monthly * ANNUAL_MONTHS_CHARGED,
+    suffix: "/year",
+    regular: monthly * MONTHS_PER_YEAR,
+  };
 }
 
-function getAnnualPromotion(plan: Plan) {
-  const monthly = toNumberPrice(plan.price);
-  const original = monthly * 12;
-  const discounted = monthly * 10;
-  return {
-    original,
-    discounted,
-    monthlyEquivalent: Math.round(discounted / 12),
-  };
+/**
+ * The price area of a plan card.
+ *
+ * Monthly renders exactly what it always did: one number and "/mo". Annual adds
+ * a single line above it carrying the struck-through twelve-month price and the
+ * saving, so the deal is legible before the eye reaches the big number, the big
+ * number stays the strongest thing in the block, and the card grows by one line
+ * rather than by a promotional panel.
+ *
+ * The line wraps as a unit on narrow phones instead of splitting the amount from
+ * its label, and the annual figure carries "/year" so an upfront yearly charge is
+ * never labelled "/mo".
+ */
+function PlanPriceBlock({
+  plan,
+  billing,
+  amountClassName,
+}: {
+  plan: Plan;
+  billing: BillingCycle;
+  amountClassName: string;
+}) {
+  const pricing = getPlanPricing(plan, billing);
+
+  return (
+    <>
+      {pricing.regular !== null ? (
+        <div className="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <span className="text-[14px] font-medium text-[#86868B] line-through decoration-[#B0B0B8] decoration-1">
+            ${formatMoney(pricing.regular)}
+          </span>
+          <span className="whitespace-nowrap rounded-[6px] bg-[#EEF4FF] px-2 py-[3px] text-[11px] font-semibold tracking-[0.01em] text-[#1F5ED8]">
+            2 months free
+          </span>
+        </div>
+      ) : null}
+
+      <div className="flex flex-wrap items-end gap-x-1">
+        <span className={amountClassName}>${formatMoney(pricing.amount)}</span>
+        <span className="pb-1 text-sm font-medium text-[#6E6E73]">{pricing.suffix}</span>
+      </div>
+    </>
+  );
 }
 
 type PlansSectionProps = {
@@ -642,6 +705,21 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           })}
         </div>
       </div>
+
+      {/*
+        * The annual offer said once, where the choice is actually made.
+        *
+        * Only when this section carries no annual note of its own: the compact
+        * layout already opens with the "Annual special" panel above this toggle,
+        * and the same sentence twice within one screen reads as advertising
+        * rather than as a detail of the product.
+        */}
+      {!compact ? (
+        <p className="mt-3 max-w-[320px] text-center text-[13px] leading-5 text-[#6E6E73] sm:max-w-none">
+          Choose annual and get{" "}
+          <span className="font-semibold text-[#111111]">12 months for the price of 10</span>.
+        </p>
+      ) : null}
     </div>
   );
 
@@ -696,7 +774,6 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
             const action = getActionForPlan(plan.name);
             const disabled = action.disabled || !!actionLoadingPlan || checkingAddr;
             const isPopular = plan.name === "Plus";
-            const annual = getAnnualPromotion(plan);
             const adds = planCopy[plan.name].adds;
 
             return (
@@ -718,17 +795,13 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                 </h3>
                 <p className="mt-1 text-[14px] leading-[1.45] text-[#6E6E73]">{plan.tagline}</p>
 
-                <div className="mt-4 flex items-baseline gap-1.5">
-                  <span className="text-[30px] font-semibold tracking-[-0.03em] text-[#111111]">
-                    ${billing === "annual" ? formatMoney(annual.monthlyEquivalent) : formatMoney(plan.price)}
-                  </span>
-                  <span className="text-[15px] font-medium text-[#86868B]">/mo</span>
+                <div className="mt-4">
+                  <PlanPriceBlock
+                    plan={plan}
+                    billing={billing}
+                    amountClassName="text-[30px] font-semibold tracking-[-0.03em] text-[#111111]"
+                  />
                 </div>
-                {billing === "annual" ? (
-                  <p className="mt-1 text-[13px] text-[#6E6E73]">
-                    ${formatMoney(annual.discounted)} billed yearly, 12 months for the price of 10
-                  </p>
-                ) : null}
 
                 {adds.length ? (
                   <ul className="mt-4 space-y-2 border-t border-[#EDEDF0] pt-4">
@@ -888,7 +961,6 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
               const action = getActionForPlan(plan.name);
               const isPopular = plan.name === "Plus";
               const disabled = action.disabled || !!actionLoadingPlan || checkingAddr;
-              const displayPrice = getDisplayPrice(plan, billing);
               const content = planDisplayContent[plan.name];
 
               return (
@@ -914,14 +986,11 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                   </div>
 
                   <div className="mt-6 sm:mt-8">
-                    <div className="flex items-end gap-1">
-                      <span className="text-[34px] font-semibold leading-none tracking-normal text-[#111111] sm:text-5xl">
-                        ${formatMoney(displayPrice)}
-                      </span>
-                      <span className="pb-1 text-sm font-medium text-[#6E6E73]">
-                        /{billing === "annual" ? "year" : "mo"}
-                      </span>
-                    </div>
+                    <PlanPriceBlock
+                      plan={plan}
+                      billing={billing}
+                      amountClassName="text-[34px] font-semibold leading-none tracking-normal text-[#111111] sm:text-5xl"
+                    />
                     <p className="mt-4 min-h-[46px] text-[14px] leading-5 text-[#6E6E73] sm:mt-5 sm:min-h-[52px] sm:text-[15px] sm:leading-6">
                       {content.description}
                     </p>
@@ -961,7 +1030,6 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
             const action = getActionForPlan(plan.name);
             const isPopular = plan.name === "Plus";
             const disabled = action.disabled || !!actionLoadingPlan || checkingAddr;
-            const displayPrice = getDisplayPrice(plan, billing);
             const content = planDisplayContent[plan.name];
 
             return (
@@ -987,14 +1055,11 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                 </div>
 
                 <div className="mt-8">
-                  <div className="flex items-end gap-1">
-                    <span className="text-5xl font-semibold leading-none tracking-normal text-[#111111]">
-                      ${formatMoney(displayPrice)}
-                    </span>
-                    <span className="pb-1 text-sm font-medium text-[#6E6E73]">
-                      /{billing === "annual" ? "year" : "mo"}
-                    </span>
-                  </div>
+                  <PlanPriceBlock
+                    plan={plan}
+                    billing={billing}
+                    amountClassName="text-5xl font-semibold leading-none tracking-normal text-[#111111]"
+                  />
                   <p className="mt-5 min-h-[46px] break-words text-[15px] leading-6 text-[#6E6E73]">
                     {content.description}
                   </p>

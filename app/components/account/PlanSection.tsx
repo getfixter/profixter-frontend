@@ -25,6 +25,33 @@ const PLAN_PRICES: Record<PlanKey, number> = {
   elite: 499,
 };
 
+/*
+ * What an annual member is charged: ten months, for twelve months of
+ * membership. Mirrors the live Stripe annual prices.
+ */
+const ANNUAL_MONTHS_CHARGED = 10;
+
+/**
+ * The amount on the member's own subscription card.
+ *
+ * The backend sends planPrice already matched to the billing cycle, so that is
+ * preferred. The fallback has to respect the cycle too: an annual member whose
+ * record predates that field would otherwise be shown the monthly figure with a
+ * "/year" label beside it.
+ */
+function planAmountForCycle(
+  planPrice: number | null | undefined,
+  plan: PlanKey,
+  billingCycle?: string | null
+): string {
+  const monthly = PLAN_PRICES[plan];
+  const fallback =
+    String(billingCycle || "").toLowerCase() === "annual"
+      ? monthly * ANNUAL_MONTHS_CHARGED
+      : monthly;
+  return Number(planPrice || fallback).toLocaleString("en-US");
+}
+
 const PLAN_INCLUDES: Record<PlanKey, string[]> = {
   basic: [
     "Your home, handled",
@@ -673,7 +700,12 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
 
                         <div className="rounded-[8px] border border-[#C5CBD8] bg-white/70 px-4 py-3 text-right">
                           <div className="text-2xl font-semibold text-[#313234]">
-                            ${subscription.planPrice || PLAN_PRICES[plan]}
+                            $
+                            {planAmountForCycle(
+                              subscription.planPrice,
+                              plan,
+                              subscription.billingCycle
+                            )}
                           </div>
                           <div className="text-sm text-[#6A6D71]">
                             /{subscription.billingCycle === "annual" ? "year" : "month"}
