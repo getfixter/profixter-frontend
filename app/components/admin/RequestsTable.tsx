@@ -35,6 +35,7 @@ function niceServiceType(value?: string) {
     case "both":             return "Roofing & Siding";
     case "bathroom":         return "Bathroom Remodel";
     case "kitchen":          return "Kitchen Remodel";
+    case "kitchen-bathroom": return "Kitchen & Bathroom Remodel";
     case "full-house":       return "Full House Renovation";
     case "basement":         return "Basement Finishing";
     case "interior":         return "Interior Renovation";
