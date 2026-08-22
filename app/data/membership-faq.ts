@@ -65,13 +65,28 @@ export const MEMBERSHIP_FAQS: MembershipFaq[] = [
   },
 ];
 
+/**
+ * The questions a given surface actually renders.
+ *
+ * /membership/plans hides the cancellation question, because the plan cards
+ * beside it already carry the cancellation controls. The markup has to hide it
+ * too: Google only accepts FAQ structured data whose questions and answers are
+ * visible on the page, so a list built from the full set would have been
+ * describing a question that surface does not show.
+ */
+export function visibleMembershipFaqs(hideCancellation = false): MembershipFaq[] {
+  return hideCancellation
+    ? MEMBERSHIP_FAQS.filter(({ q }) => !q.toLowerCase().includes("cancellation"))
+    : MEMBERSHIP_FAQS;
+}
+
 /** FAQPage JSON-LD for a page that actually displays these questions. */
-export function membershipFaqJsonLd(pageUrl: string) {
+export function membershipFaqJsonLd(pageUrl: string, hideCancellation = false) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "@id": `${pageUrl}#faq`,
-    mainEntity: MEMBERSHIP_FAQS.map((faq) => ({
+    mainEntity: visibleMembershipFaqs(hideCancellation).map((faq) => ({
       "@type": "Question",
       name: faq.q,
       acceptedAnswer: { "@type": "Answer", text: faq.a },
