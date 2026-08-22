@@ -3,11 +3,9 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { hasActiveMembership } from "@/lib/auth-routing";
-import { MEMBERSHIP_FAQS } from "@/app/data/membership-faq";
+import { visibleMembershipFaqs } from "@/app/data/membership-faq";
 
-/* The answers now live in app/data/membership-faq.ts, shared with the
-   FAQPage markup and the /handyman-membership explainer. */
-const FAQS = MEMBERSHIP_FAQS;
+
 
 type FAQSectionProps = {
   hideCancellationUi?: boolean;
@@ -22,9 +20,9 @@ export default function FAQSection({ hideCancellationUi = false }: FAQSectionPro
   const { user } = useAuth();
   const isMember = hasActiveMembership(user);
   const [open, setOpen] = useState<number | null>(null);
-  const faqs = hideCancellationUi
-    ? FAQS.filter(({ q }) => !q.toLowerCase().includes("cancellation"))
-    : FAQS;
+  /* Same helper the FAQPage markup uses, so the two cannot disagree about
+     which questions this surface shows. */
+  const faqs = visibleMembershipFaqs(hideCancellationUi);
 
   return (
     <section
