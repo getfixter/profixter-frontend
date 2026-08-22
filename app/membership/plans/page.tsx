@@ -25,6 +25,8 @@ import FAQSection from "@/app/components/sections/FAQSection";
 import { useAuth } from "@/lib/useAuth";
 import { hasActiveMembership } from "@/lib/auth-routing";
 import Link from "next/link";
+import { membershipFaqJsonLd } from "@/app/data/membership-faq";
+import { absoluteUrl } from "@/lib/seo";
 
 export default function MembershipPlansPage() {
   const { user } = useAuth();
@@ -32,6 +34,17 @@ export default function MembershipPlansPage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white">
+      {/*
+        The accordion below renders every one of these questions and answers as
+        real text, which is the condition Google puts on FAQ markup. Same source
+        as the accordion, so the two cannot drift apart.
+      */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(membershipFaqJsonLd(absoluteUrl("/membership/plans"))),
+        }}
+      />
       <div className="sticky top-0 z-50">
         <Header />
       </div>

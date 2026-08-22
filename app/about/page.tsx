@@ -235,7 +235,10 @@ export default function AboutPage() {
               Profixter is a modern Long Island home services company built around long-term relationships. Membership is the preferred way to work with us.
             </p>
             <p className="mt-3 max-w-[640px] text-[14px] leading-6 text-[#64748B] sm:mt-4 sm:text-[15px] sm:leading-7">
-              When one visit, a renovation, or a question makes more sense, those paths stay connected to the same trusted local company.
+              Two things sit under that: a handyman membership for the ongoing small repairs,
+              maintenance and installations a house keeps generating, and kitchen, bathroom and
+              other renovation work handled as general contracting projects. When a single visit
+              or a question makes more sense instead, those paths stay with the same local company.
             </p>
 
             <div className="mt-6 grid gap-2.5 sm:mt-7 sm:grid-cols-2 sm:gap-3">
