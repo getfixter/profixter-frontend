@@ -18,6 +18,22 @@ export const SITE_NAME = "Profixter";
  */
 export const BUSINESS_PHONE_DISPLAY = "631-599-1363";
 export const BUSINESS_PHONE_E164 = "+1-631-599-1363";
+/**
+ * The ProFixter brand mark: PRO in brand blue over FIXTER in white, on black,
+ * with Long Island beneath it.
+ *
+ * The same artwork as app/favicon.ico, the manifest icons and the Apple touch
+ * icon, all generated from public/images/LogoSquare.png. Square, because
+ * that is what both Google's favicon guidance and the manifest want, and
+ * because every surface that shows a site icon crops to a square anyway.
+ */
+export const PROFIXTER_LOGO = {
+  url: "/icon.png",
+  width: 512,
+  height: 512,
+  alt: "ProFixter Long Island",
+};
+
 export const DEFAULT_OG_IMAGE = {
   url: "/images/hero-bg.webp",
   width: 1200,
@@ -68,6 +84,17 @@ export const PROFIXTER_STRUCTURED_DATA = {
       name: SITE_NAME,
       url: SITE_URL,
       telephone: BUSINESS_PHONE_E164,
+      /*
+       * The brand mark, not the hero photograph.
+       *
+       * `image` is a picture of the work and is what Google may show beside a
+       * result; `logo` is the identity, and is what it reads for the knowledge
+       * panel. Without one, the only logo signal the site published was the
+       * favicon - which for a long time was the retired Mr. Fixter mascot.
+       * /icon.png is the 512px square lockup, the same artwork as the manifest
+       * icons and the favicon.
+       */
+      logo: `${SITE_URL}${PROFIXTER_LOGO.url}`,
       image: `${SITE_URL}${DEFAULT_OG_IMAGE.url}`,
       priceRange: "$$",
       areaServed: schemaServiceAreas,
