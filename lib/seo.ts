@@ -37,6 +37,7 @@ export const PUBLIC_SITEMAP_ROUTES = [
   { path: "/membership", changeFrequency: "weekly", priority: 0.98 },
   { path: "/book", changeFrequency: "weekly", priority: 0.94 },
   { path: "/projects", changeFrequency: "weekly", priority: 0.94 },
+  { path: "/kitchen-bathroom", changeFrequency: "monthly", priority: 0.9 },
   { path: "/home-support", changeFrequency: "weekly", priority: 0.82 },
   { path: "/about", changeFrequency: "monthly", priority: 0.8 },
   { path: "/communities", changeFrequency: "monthly", priority: 0.72 },

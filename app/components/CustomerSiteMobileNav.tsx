@@ -96,7 +96,9 @@ function buildItems({ homeHref, isMember }: { homeHref: string; isMember: boolea
     match: (pathname) =>
       pathname === "/projects" ||
       pathname.startsWith("/renovations") ||
-      ["/roofing", "/siding", "/kitchen", "/bathroom", "/remodeling", "/estimate"].includes(pathname),
+      ["/roofing", "/siding", "/kitchen", "/bathroom", "/remodeling", "/estimate", "/kitchen-bathroom"].includes(
+        pathname
+      ),
     icon: (
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M4 20V8l8-4 8 4v12" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
