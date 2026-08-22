@@ -97,13 +97,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Profixter" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <Script
-          id="profixter-local-business-structured-data"
+        {/*
+          A plain script tag rather than next/script.
+
+          With strategy="beforeInteractive" this markup never reached the
+          served HTML as a script of its own: Next queued it into __next_s and
+          injected it from JavaScript after hydration. Google does render, so
+          it was reachable, but the site-wide business node - the one carrying
+          the name, the phone number and the logo - was the only structured
+          data on the site that depended on rendering to be seen at all. Every
+          other page in app/ already emits its JSON-LD exactly like this.
+        */}
+        <script
           type="application/ld+json"
-          strategy="beforeInteractive"
-        >
-          {JSON.stringify(PROFIXTER_STRUCTURED_DATA)}
-        </Script>
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(PROFIXTER_STRUCTURED_DATA) }}
+        />
         <Script id="gtm-head" strategy="afterInteractive">
           {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
