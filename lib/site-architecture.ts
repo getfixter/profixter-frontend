@@ -83,6 +83,13 @@ export const FOOTER_PRODUCT_LINKS = [
     label: product.shortTitle,
     href: product.href,
   })),
+  /*
+   * The explainer, linked from every page. Membership is the part of the
+   * business that needs defining before it can be chosen, and a footer link is
+   * how somebody who is still working out what the product is reaches the page
+   * that says so.
+   */
+  { label: "What is a handyman membership?", href: "/handyman-membership" },
   { label: HOME_SUPPORT_AI.shortTitle, href: HOME_SUPPORT_AI.href },
 ] as const;
 

@@ -642,21 +642,37 @@ function ServiceSection({
 }
 
 function ProjectsContent() {
-  const searchParams = useSearchParams();
-  const selectedType = projectTypeFromQuery(searchParams.get("type"));
   const { user } = useAuth();
   const isMember = hasActiveMembership(user);
 
   /*
-   * The type the hero form should show. Seeded from the query so
-   * /projects?type=kitchen still deep links, then owned here so a service CTA
-   * can change it without a navigation.
+   * The type the hero form should show, once a service CTA on this page has
+   * asked for one. Undefined until then, and deliberately not seeded from the
+   * query string here.
+   *
+   * Reading useSearchParams at this level opted the whole component out of
+   * server rendering: Next has to suspend anything that reads the query during
+   * SSR, so the nearest boundary was the one wrapping the entire page, and
+   * /projects went out to crawlers as an empty shell - twelve words of markup
+   * against nearly eight hundred once JavaScript ran. Everything a retrieval
+   * system could learn about the general contracting side of the business was
+   * behind that boundary.
+   *
+   * Nothing is lost by dropping it. EstimateForm already resolves
+   * /projects?type=kitchen from the query itself and sits inside its own, much
+   * smaller Suspense boundary, so deep links keep working while the marketing
+   * content around them renders on the server.
    */
-  const [requestedType, setRequestedType] = useState<ProjectType>(selectedType);
+  const [requestedType, setRequestedType] = useState<ProjectType | undefined>(undefined);
   const estimateRef = useRef<HTMLDivElement | null>(null);
 
-  const goToEstimate = useCallback((type: ProjectType) => {
-    setRequestedType(type);
+  /*
+   * Optional type: the hero button only scrolls, because the form is already
+   * showing whatever the query string asked for. The service CTAs further down
+   * pass their own type, which is the case that has to change the form.
+   */
+  const goToEstimate = useCallback((type?: ProjectType) => {
+    if (type) setRequestedType(type);
     /*
      * scrollIntoView honours the wrapper's scroll-margin-top, which is what
      * keeps the form clear of the sticky header. The wrapper is deliberately

@@ -3,6 +3,7 @@ import {
   HOME_SUPPORT_AI,
   MAIN_NAV_LINKS,
 } from "@/lib/site-architecture";
+import { plans } from "@/app/data/content";
 import {
   getSeoEngineSitemapRoutes,
   renovationServices,
@@ -10,6 +11,13 @@ import {
 } from "@/lib/seo-content";
 
 export const SITE_URL = "https://www.profixter.com";
+
+/**
+ * Annual membership is billed as ten months and runs for twelve. Restated here
+ * for the structured data; PlansSection holds the same constant for the UI.
+ */
+const ANNUAL_MONTHS_CHARGED = 10;
+
 export const SITE_NAME = "Profixter";
 /**
  * ProFixter Customer Care. Membership, billing, scheduling problems, Priority
@@ -54,6 +62,13 @@ export const PUBLIC_SITEMAP_ROUTES = [
   { path: "/book", changeFrequency: "weekly", priority: 0.94 },
   { path: "/projects", changeFrequency: "weekly", priority: 0.94 },
   { path: "/kitchen-bathroom", changeFrequency: "monthly", priority: 0.9 },
+  /*
+   * Both were reachable and indexable but absent from the sitemap: /membership/plans
+   * is where the prices are, and /handyman-membership is the explainer that
+   * defines the product category.
+   */
+  { path: "/membership/plans", changeFrequency: "weekly", priority: 0.9 },
+  { path: "/handyman-membership", changeFrequency: "monthly", priority: 0.88 },
   { path: "/home-support", changeFrequency: "weekly", priority: 0.82 },
   { path: "/about", changeFrequency: "monthly", priority: 0.8 },
   { path: "/communities", changeFrequency: "monthly", priority: 0.72 },
@@ -137,6 +152,58 @@ export const PROFIXTER_STRUCTURED_DATA = {
           },
         ],
       },
+    },
+    /*
+     * The membership, as a service with published prices.
+     *
+     * The graph already named Membership in the offer catalogue, but with no
+     * price and no explanation, so the one thing that distinguishes Profixter
+     * from an ordinary handyman company was the one thing a machine could not
+     * read. The four tiers are the live monthly prices from app/data/content.ts,
+     * the same numbers the plan cards and Stripe checkout use, and each carries
+     * the annual alternative underneath it.
+     *
+     * `plans` is imported rather than restated so a price can never drift
+     * between what a homeowner is charged and what the markup claims.
+     */
+    {
+      "@type": "Service",
+      "@id": `${SITE_URL}/#membership`,
+      name: "Handyman membership",
+      alternateName: "Home maintenance membership",
+      serviceType: "Handyman and home maintenance membership",
+      provider: { "@id": `${SITE_URL}/#business` },
+      areaServed: schemaServiceAreas,
+      url: `${SITE_URL}/handyman-membership`,
+      description:
+        "A monthly membership giving Long Island homeowners ongoing access to a handyman team for small and medium repairs, installations and maintenance, instead of hiring a new contractor for each task. Standard visits are up to 90 minutes and each plan sets how many appointments a member can have active at one time.",
+      offers: plans.map((plan) => ({
+        "@type": "Offer",
+        name: `${plan.name} membership`,
+        description: plan.description,
+        url: `${SITE_URL}/membership/plans`,
+        price: plan.price.toFixed(2),
+        priceCurrency: "USD",
+        availability: "https://schema.org/InStock",
+        priceSpecification: [
+          {
+            "@type": "UnitPriceSpecification",
+            price: plan.price.toFixed(2),
+            priceCurrency: "USD",
+            /* Schema.org's own duration code for "per month". */
+            unitCode: "MON",
+            billingIncrement: 1,
+          },
+          {
+            "@type": "UnitPriceSpecification",
+            name: "Annual billing",
+            price: (plan.price * ANNUAL_MONTHS_CHARGED).toFixed(2),
+            priceCurrency: "USD",
+            unitCode: "ANN",
+            billingIncrement: 1,
+          },
+        ],
+      })),
     },
     {
       "@type": "Service",
