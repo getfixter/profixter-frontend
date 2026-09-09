@@ -15,6 +15,8 @@ import {
   type ManagedSubscription,
   type RetentionOfferDebug,
 } from "@/lib/subscription-service";
+import GiftMembershipSection from "./GiftMembershipSection";
+import GiftEntryPoint from "./GiftEntryPoint";
 
 type PlanKey = "basic" | "plus" | "premium" | "elite";
 
@@ -224,6 +226,15 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
 
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  /*
+   * Whether a gift membership is currently covering this customer.
+   *
+   * Reported up by GiftMembershipSection rather than fetched again here, so
+   * there is one request and one source of truth. It exists to stop the
+   * "No active membership" upsell appearing beside a running gift — which
+   * would be telling somebody they have nothing while they are using it.
+   */
+  const [hasActiveGift, setHasActiveGift] = useState(false);
   const [billingPortalLoadingId, setBillingPortalLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -558,6 +569,21 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
           My plan{activeSubscriptions.length > 1 ? "s" : ""}
         </h2>
 
+        {/*
+          * Gift memberships, above the plan cards.
+          *
+          * Renders nothing at all when the customer holds none, which is
+          * almost everybody — so the account screen is unchanged for them.
+          * It reports back whether a gift is currently covering them, which
+          * suppresses the "No active membership" upsell below: telling
+          * somebody they have no membership while a gift is running would
+          * be plainly wrong.
+          */}
+        <GiftMembershipSection
+          hasPaidMembership={activeSubscriptions.length > 0}
+          onActiveGiftChange={setHasActiveGift}
+        />
+
         {notice ? (
           <div className="mb-4 rounded-[8px] border border-[#86EFAC]/50 bg-[#ECFDF3] px-4 py-3 text-sm font-semibold text-[#166534]">
             {notice}
@@ -600,7 +626,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
               Book a visit
             </Link>
           </Card>
-        ) : !activeSubscriptions.length ? (
+        ) : !activeSubscriptions.length && !hasActiveGift ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card className="max-w-[620px]">
               <div className="mb-4 flex items-start justify-between gap-4">
@@ -1254,7 +1280,9 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
               </button>
             </div>
           </div>
-        </div>
+          {/* Only rendered when the server says gifting is live. */}
+        <GiftEntryPoint />
+      </div>
       ) : null}
     </>
   );
