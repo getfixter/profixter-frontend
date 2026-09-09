@@ -105,7 +105,7 @@ export default function GiftConfirmationClient() {
         <>
           <p className="mt-4 text-center text-[15px] leading-relaxed text-[#6A6D71]">
             We have emailed{" "}
-            <span className="break-all font-medium text-[#313234]">{gift.recipientEmail}</span> an
+            <span className="break-words font-medium text-[#313234]">{gift.recipientEmail}</span> an
             invitation to claim {monthsLabel(gift.durationMonths)} of ProFixter{" "}
             {planLabel(gift.plan)}.
           </p>

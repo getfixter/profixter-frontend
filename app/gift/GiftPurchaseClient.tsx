@@ -39,8 +39,15 @@ type Step = "plan" | "recipient" | "review";
 
 const US_STATES = ["NY", "NJ", "CT", "PA"];
 
+/*
+ * min-h is not decoration. A <select> renders about two pixels shorter than an
+ * <input> with identical padding, which left the State control at 43px — under
+ * the 44px tap-target guideline, and visibly misaligned beside the City and ZIP
+ * fields on the same row. Pinning a floor makes every control match and clear
+ * the guideline regardless of how the browser measures it.
+ */
 const FIELD =
-  "w-full rounded-[8px] border border-[#C5CBD8] bg-white px-4 py-2.5 text-sm text-[#313234] " +
+  "w-full min-h-[46px] rounded-[8px] border border-[#C5CBD8] bg-white px-4 py-2.5 text-sm text-[#313234] " +
   "outline-none transition focus:border-[#306EEC] focus:ring-2 focus:ring-[#306EEC]/20 " +
   "sm:px-5 sm:py-3 sm:text-base";
 

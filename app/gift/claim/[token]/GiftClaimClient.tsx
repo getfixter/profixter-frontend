@@ -398,7 +398,7 @@ export default function GiftClaimClient({ token }: { token: string }) {
         <div className="mt-6 rounded-[10px] border border-[#E0E6F5] bg-[#F8FAFF] p-5">
           <p className="text-[14px] leading-relaxed text-[#6A6D71]">
             Sign in to claim it. The invitation was sent to{" "}
-            <span className="break-all font-medium text-[#313234]">{gift.recipientEmail}</span>, so
+            <span className="break-words font-medium text-[#313234]">{gift.recipientEmail}</span>, so
             use that address.
           </p>
           <div className="mt-4 flex flex-col gap-3">
