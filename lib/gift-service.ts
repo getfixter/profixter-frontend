@@ -44,6 +44,14 @@ export type GiftRecipientInput = {
   firstName: string;
   lastName: string;
   email: string;
+  /*
+   * A second delivery channel, not an identity.
+   *
+   * Optional: send "" when the purchaser does not know it. Email stays
+   * required because it is what the claim check binds on — a phone number
+   * here decides only whether the invitation is also texted.
+   */
+  phone?: string;
 };
 
 /** What the purchaser chose about how the gift looks. Never about what it is. */
