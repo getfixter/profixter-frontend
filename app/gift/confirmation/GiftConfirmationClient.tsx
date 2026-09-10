@@ -14,6 +14,7 @@
 
 import { useEffect, useState } from "react";
 import DigitalGiftCard from "@/app/components/gift/DigitalGiftCard";
+import GiftClaimLink from "@/app/components/gift/GiftClaimLink";
 import { useAuth } from "@/lib/useAuth";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -144,6 +145,22 @@ export default function GiftConfirmationClient() {
               size="compact"
             />
           </div>
+
+          {/*
+            A way to deliver it by hand.
+
+            Under the card and above the receipt: it belongs with "what you
+            sent", not with "what you paid". Nothing is fetched until the
+            purchaser presses the button, because the link is a credential
+            and a page load is not a request for one.
+          */}
+          <GiftClaimLink
+            className="mt-7"
+            giftNumber={gift.giftNumber}
+            recipientFirstName={gift.recipientFirstName}
+            claimed={Boolean(gift.claimedAt) || gift.status === "claimed"}
+            invitationExpired={gift.invitationExpired}
+          />
 
           <dl className="mt-7 divide-y divide-[#EEF2FF] rounded-[10px] border border-[#E0E6F5] bg-white">
             <div className="flex items-start justify-between gap-4 px-4 py-3.5 sm:px-5">

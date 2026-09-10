@@ -331,6 +331,10 @@ export async function getPurchasedGifts() {
       currency: string;
       automaticTaxStatus: string;
       refundStatus: string;
+      /* Whether the link already emailed still works. The date only - the
+       * token itself is never returned by this endpoint. */
+      invitationExpiresAt: string | null;
+      invitationExpired: boolean;
       purchasedAt: string | null;
       claimedAt: string | null;
     }>;
@@ -338,6 +342,33 @@ export async function getPurchasedGifts() {
     const giftError = toGiftError(error);
     if (giftError.code === "FEATURE_OFF") return [];
     throw giftError;
+  }
+}
+
+
+/**
+ * Get a claim link for a gift this account bought, to send by hand.
+ *
+ * ISSUES A FRESH LINK, and the caller must say so before offering it. The
+ * emailed token cannot be read back - only its hash is stored - so this
+ * mints a new invitation, which supersedes whatever was emailed. It is a
+ * deliberate press, never something a page does on load.
+ *
+ * The returned URL is a credential. Put it on screen and in the clipboard;
+ * do not log it, store it, or send it anywhere else.
+ */
+export async function issueGiftClaimLink(giftNumber: string) {
+  try {
+    const { data } = await API.post(
+      `/api/gifts/purchased/${encodeURIComponent(giftNumber)}/claim-link`
+    );
+    return data as {
+      claimUrl: string;
+      expiresAt: string;
+      supersededPreviousLink: boolean;
+    };
+  } catch (error) {
+    throw toGiftError(error);
   }
 }
 
