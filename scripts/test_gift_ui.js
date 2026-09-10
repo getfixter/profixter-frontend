@@ -159,8 +159,10 @@ test("no disabled future durations are rendered", () => {
 section("Purchase flow");
 /* ========================================================================== */
 
-test("the flow has plan, recipient and review steps", () => {
-  assert.match(code(purchase), /type Step = "plan" \| "recipient" \| "review"/);
+test("the flow has plan, length, recipient and review steps", () => {
+  // Length became its own step once gifts stopped being two months only.
+  assert.match(code(purchase), /type Step = "plan" \| "length" \| "recipient" \| "review"/);
+  assert.match(purchase, /How long should it run/);
   assert.match(purchase, /Review your gift/);
 });
 

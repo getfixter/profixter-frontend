@@ -31,6 +31,10 @@ const confirmation = read("app", "gift", "confirmation", "GiftConfirmationClient
 const css = read("app", "globals.css");
 const layout = read("app", "layout.tsx");
 const service = read("lib", "gift-service.ts");
+const callout = read("app", "components", "gift", "GiftCallout.tsx");
+const architecture = read("lib", "site-architecture.ts");
+const homeMarketing = read("app", "components", "sections", "HomeMarketing.tsx");
+const plansSection = read("app", "components", "sections", "PlansSection.tsx");
 
 let passed = 0;
 const failures = [];
@@ -464,6 +468,83 @@ check("a gift with no recorded breakdown shows the total alone", () => {
     "gift.amountSubtotalCents + gift.taxCents - gift.discountCents === gift.amountPaidCents",
     "and only shown when the figures reconcile"
   );
+});
+
+console.log("\nDiscoverability\n");
+
+check("gifting is reachable without knowing the URL", () => {
+  // Main navigation and the footer product list, so a visitor who has never
+  // heard of it can still find it.
+  has(architecture, '{ label: "Gift", href: "/gift" }', "gifting belongs in the main nav");
+  has(architecture, '{ label: "Gift a Membership", href: "/gift" }', "and in the footer");
+});
+
+check("the homepage and the plan comparison both offer it", () => {
+  has(homeMarketing, "<GiftCallout />", "the homepage carries the full band");
+  has(plansSection, 'GiftCallout variant="inline"', "the comparison carries one quiet line");
+  // Not before the primary call to action: gifting must not outrank booking.
+  const bookAt = homeMarketing.lastIndexOf("BookFree");
+  const giftAt = homeMarketing.indexOf("<GiftCallout />");
+  assert(giftAt > bookAt, "the gift band sits after the closing call to action");
+});
+
+check("the callout speaks to real occasions, not just realtors", () => {
+  for (const audience of ["New homeowners", "Birthdays", "Thank-yous", "Family and friends", "Clients"]) {
+    has(callout, audience, `${audience} should be named`);
+  }
+  assert.ok(!/realtor/i.test(callout), "the product is not realtor-specific");
+  has(callout, "Give ProFixter as a", "the approved headline direction");
+  has(callout, "add a personal message", "and the approved description");
+});
+
+check("the public callout costs the homepage no API call", () => {
+  // The account entry point gates itself on the API; this one must not, or
+  // every homepage view pays for a request just to decide whether to draw.
+  const code = codeOnly(callout);
+  for (const forbidden of ["useEffect", "useState", "getGiftOptions", "API."]) {
+    lacks(code, forbidden, `the marketing callout must not ${forbidden}`);
+  }
+  has(callout, 'href="/gift"');
+});
+
+console.log("\nLength selection\n");
+
+check("the purchase flow asks for a length as its own step", () => {
+  has(purchase, 'type Step = "plan" | "length" | "recipient" | "review"');
+  has(purchase, '"plan", "length", "recipient", "review"', "the rail shows four steps");
+  has(purchase, 'step === "length"', "and the step renders");
+  has(purchase, "setChosenDuration", "the length is a choice");
+});
+
+check("the default length comes from the server, not the client", () => {
+  has(
+    purchase,
+    "chosenDuration ?? options?.defaultDurationMonths",
+    "the server nominates the starting length"
+  );
+  has(service, "defaultDurationMonths", "and the type carries it");
+  // No hardcoded default anywhere in the client.
+  const code = codeOnly(purchase);
+  assert.ok(
+    !/durationMonths\s*=\s*1\b/.test(code),
+    "the client must not hardcode a default length"
+  );
+});
+
+check("every offered length is rendered, with its own total", () => {
+  has(purchase, "options?.durations ?? []", "the list comes from the server");
+  has(purchase, "quoteForDuration", "each length shows its own quote");
+  has(purchase, "formatMoneyCents(quote.totalCents)", "and its own total");
+  // The total must be visible before checkout.
+  has(purchase, "before tax");
+});
+
+check("months are labelled singular or plural correctly", () => {
+  const presentation = read("app", "components", "gift", "giftPresentation.ts");
+  has(presentation, 'value === 1 ? "1 Month"', "one month is singular");
+  has(presentation, "`${value} Months`", "and the rest are plural");
+  // The card renders through that helper rather than its own string.
+  has(card, "monthsLabel(durationMonths)");
 });
 
 console.log("\nSecurity and the feature flag\n");

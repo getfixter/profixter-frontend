@@ -8,6 +8,7 @@ import { getRoleLandingPath } from "@/lib/auth-routing";
 import type { PlanType } from "@/lib/stripe-links";
 import type { Address } from "@/lib/auth-service";
 import { trackInitiateCheckout } from "@/lib/analytics";
+import GiftCallout from "@/app/components/gift/GiftCallout";
 import {
   createBillingPortalSession,
   getSubscriptionActionErrorMessage,
@@ -1097,6 +1098,17 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         {!compact && <p className="mx-auto mt-8 max-w-[760px] text-center text-sm leading-6 text-[#6E6E73] sm:text-base">
           All Membership plans include the same trusted team, online booking, and access to every Profixter service.
         </p>}
+
+        {/*
+          The same plans can be bought for somebody else, and this is where a
+          person deciding between them would think of it. One quiet line: the
+          comparison is the job of this section, not the gift.
+        */}
+        {!compact && (
+          <div className="mx-auto mt-5 max-w-[760px] text-center">
+            <GiftCallout variant="inline" />
+          </div>
+        )}
       </div>
     </section>
   );

@@ -9,6 +9,7 @@ import { trackEvent } from "@/lib/analytics";
 import { plans } from "@/app/data/content";
 import Reveal from "@/app/components/ui/Reveal";
 import BookingPreview from "@/app/components/sections/BookingPreview";
+import GiftCallout from "@/app/components/gift/GiftCallout";
 
 /* ------------------------------------------------------------------ */
 /* Content                                                             */
@@ -553,6 +554,13 @@ export default function HomeMarketing() {
           </Reveal>
         </div>
       </section>
+
+      {/*
+        Gifting, after the closing call to action rather than competing with
+        it. Somebody who has read to the bottom and not booked may still be
+        the person who buys this for a friend, a client or a new homeowner.
+      */}
+      <GiftCallout />
     </main>
   );
 }

@@ -75,6 +75,12 @@ export const MAIN_NAV_LINKS = [
   { label: "How it works", href: "/#how-it-works" },
   { label: "Book", href: "/book" },
   { label: "Projects", href: "/projects" },
+  /*
+   * Gifting is a product somebody buys, not a page they stumble on, and it
+   * is the one thing here bought FOR another household. Without a nav entry
+   * the only way to find it was to know the URL.
+   */
+  { label: "Gift", href: "/gift" },
   { label: "About Us", href: "/about" },
 ] as const;
 
@@ -90,6 +96,7 @@ export const FOOTER_PRODUCT_LINKS = [
    * that says so.
    */
   { label: "What is a handyman membership?", href: "/handyman-membership" },
+  { label: "Gift a Membership", href: "/gift" },
   { label: HOME_SUPPORT_AI.shortTitle, href: HOME_SUPPORT_AI.href },
 ] as const;
 
