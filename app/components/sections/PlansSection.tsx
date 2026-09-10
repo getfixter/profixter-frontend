@@ -1103,12 +1103,15 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           The same plans can be bought for somebody else, and this is where a
           person deciding between them would think of it. One quiet line: the
           comparison is the job of this section, not the gift.
+
+          Shown in the compact layout too. Compact is what /membership renders,
+          which is the single page most likely to be open when the thought
+          "I could buy this for someone" occurs — hiding it there would leave
+          the gift line everywhere except where it is most use.
         */}
-        {!compact && (
-          <div className="mx-auto mt-5 max-w-[760px] text-center">
-            <GiftCallout variant="inline" />
-          </div>
-        )}
+        <div className={`mx-auto max-w-[760px] text-center ${compact ? "mt-6" : "mt-5"}`}>
+          <GiftCallout variant="inline" />
+        </div>
       </div>
     </section>
   );

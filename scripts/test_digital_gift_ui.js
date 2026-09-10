@@ -482,6 +482,15 @@ check("gifting is reachable without knowing the URL", () => {
 check("the homepage and the plan comparison both offer it", () => {
   has(homeMarketing, "<GiftCallout />", "the homepage carries the full band");
   has(plansSection, 'GiftCallout variant="inline"', "the comparison carries one quiet line");
+  // /membership renders PlansSection with `compact`, so a !compact gate here
+  // would hide the gift line on the very page most likely to prompt the idea.
+  const inlineAt = plansSection.indexOf('<GiftCallout variant="inline" />');
+  assert.ok(inlineAt > 0, "the inline callout should be rendered");
+  const preceding = plansSection.slice(Math.max(0, inlineAt - 220), inlineAt);
+  assert.ok(
+    !preceding.includes("!compact &&"),
+    "the gift line must not be gated on the non-compact layout"
+  );
   // Not before the primary call to action: gifting must not outrank booking.
   const bookAt = homeMarketing.lastIndexOf("BookFree");
   const giftAt = homeMarketing.indexOf("<GiftCallout />");
