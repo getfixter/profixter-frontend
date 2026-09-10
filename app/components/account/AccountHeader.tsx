@@ -13,14 +13,6 @@ interface AccountHeaderProps {
   onLogout: () => void;
 }
 
-const accountItems: { key: ActiveTab; label: string }[] = [
-  { key: 'overview', label: 'Account overview' },
-  // Visits are under Book; ?tab=bookings redirects there.
-  { key: 'plan', label: 'Membership' },
-  { key: 'personal', label: 'Profile & property' },
-  { key: 'password', label: 'Security' },
-];
-
 export function AccountHeader({ userName, activeTab, onSelectTab, onLogout }: AccountHeaderProps) {
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
@@ -125,24 +117,31 @@ export function AccountHeader({ userName, activeTab, onSelectTab, onLogout }: Ac
               </div>
 
               <div className="p-2">
-                {accountItems.map((item) => {
-                  const active = activeTab === item.key;
-                  return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      role="menuitem"
-                      onClick={() => handleSelectTab(item.key)}
-                      className={[
-                        "flex w-full items-center justify-between rounded-[8px] px-3 py-3 text-left text-[14px] font-black transition",
-                        active ? "bg-[#EEF5FF] text-[#306EEC]" : "text-[#344054] hover:bg-[#F8FAFF]",
-                      ].join(" ")}
-                    >
-                      <span>{item.label}</span>
-                      {active ? <span className="h-1.5 w-1.5 rounded-full bg-[#306EEC]" /> : null}
-                    </button>
-                  );
-                })}
+                {/*
+                  No section list here. The overview's Account tools are the
+                  one way into personal information, membership, properties
+                  and security; repeating them in a menu meant two places to
+                  look and two places to keep in step.
+
+                  What is left is what a header menu is actually for: get me
+                  back to my account, and sign me out.
+                */}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleSelectTab("overview")}
+                  className={[
+                    "flex w-full items-center justify-between rounded-[8px] px-3 py-3 text-left text-[14px] font-black transition",
+                    activeTab === "overview"
+                      ? "bg-[#EEF5FF] text-[#306EEC]"
+                      : "text-[#344054] hover:bg-[#F8FAFF]",
+                  ].join(" ")}
+                >
+                  <span>My Account</span>
+                  {activeTab === "overview" ? (
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#306EEC]" />
+                  ) : null}
+                </button>
 
                 <div className="my-2 border-t border-[#EEF2F7]" />
 

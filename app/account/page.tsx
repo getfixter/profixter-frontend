@@ -8,11 +8,10 @@ import { ActiveTab, AccountFormData } from "../components/account/types";
 import { initialAccountFormData } from "../data/account";
 
 import { AccountHeader } from "../components/account/AccountHeader";
-import { AccountSidebar } from "../components/account/AccountSidebar";
 import { PersonalInfoForm } from "../components/account/PersonalInfoForm";
 import { PlanSection } from "../components/account/PlanSection";
 import { PasswordForm } from "../components/account/PasswordForm";
-import OverviewSection from "../components/account/OverviewSection";
+import AccountOverview, { AccountAside } from "../components/account/AccountOverview";
 
 import { useAuth } from "@/lib/useAuth";
 import { getRoleLandingPath } from "@/lib/auth-routing";
@@ -120,7 +119,7 @@ export default function AccountPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#EEF2FF]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F6F8FC]">
         <div className="text-center">
           <div className="w-10 h-10 border-[3px] border-[#306EEC] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-[#6A6D71] text-[14px] font-medium">Loading your account…</p>
@@ -133,7 +132,7 @@ export default function AccountPage() {
   if (user && getRoleLandingPath(user) !== "/account") return null;
 
   return (
-    <div className="min-h-screen bg-[#EEF2FF]">
+    <div className="min-h-screen bg-[#F6F8FC]">
       <AccountHeader
         userName={formData.name}
         activeTab={activeTab}
@@ -145,23 +144,34 @@ export default function AccountPage() {
         <TabSync onTab={applyTab} />
       </Suspense>
 
-      <main className="max-w-[1240px] mx-auto px-4 sm:px-5 py-5 sm:py-8 lg:py-10">
-        <div className="flex flex-col lg:flex-row gap-5 lg:gap-6">
+      <main className="mx-auto max-w-[1180px] px-4 py-5 sm:px-5 sm:py-8 lg:py-9">
+        {/*
+          ONE WAY IN, ONE WAY BACK.
 
-          <AccountSidebar
-            activeTab={activeTab}
-            setActiveTab={selectTab}
-            userName={formData.name}
-            userEmail={formData.email}
-            onLogout={handleLogout}
-          />
+          There used to be three navigations to the same four screens: a
+          260px sidebar, a dropdown in the header, and the tools grid on the
+          overview. Two of them are gone. The overview's tools grid is the
+          way in, and the row below is the way back — a control centre should
+          not ask which of its menus you meant.
+        */}
+        {activeTab !== "overview" ? (
+          <button
+            type="button"
+            onClick={() => selectTab("overview")}
+            className="mb-4 -ml-1 inline-flex min-h-[40px] items-center gap-1.5 rounded-[8px] px-2 text-[14px] font-semibold text-[#306EEC] transition hover:bg-[#EEF5FF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]"
+          >
+            <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="m15 18-6-6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            My Account
+          </button>
+        ) : null}
 
-          <div className="flex-1 min-w-0">
+        <div className="flex flex-col gap-5 xl:flex-row xl:gap-6">
+
+          <div className="min-w-0 flex-1">
             {activeTab === "overview" && (
-              <OverviewSection
-                formData={formData}
-                onSwitchTab={selectTab}
-              />
+              <AccountOverview formData={formData} onSwitchTab={selectTab} />
             )}
             {activeTab === "personal" && <PersonalInfoForm formData={formData} />}
             {activeTab === "plan" && <PlanSection />}
@@ -174,6 +184,17 @@ export default function AccountPage() {
             )}
             {activeTab === "password" && <PasswordForm />}
           </div>
+
+          {/*
+            The third column, on the overview only. Useful but never the
+            reason somebody opened the page, so it sits beside the main
+            content on a wide screen and after it on a phone.
+          */}
+          {activeTab === "overview" ? (
+            <aside className="w-full shrink-0 xl:w-[320px]">
+              <AccountAside />
+            </aside>
+          ) : null}
 
         </div>
       </main>
