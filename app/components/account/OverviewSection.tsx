@@ -14,6 +14,7 @@ import {
   type PlanKey,
 } from "@/app/components/membership/MembershipUpgradePrompt";
 import { AskYourFixterLine } from "@/app/components/fixter/YourFixter";
+import GiftCallout from "@/app/components/gift/GiftCallout";
 
 type Booking = {
   _id: string;
@@ -341,6 +342,16 @@ export default function OverviewSection({
        * introducing another card.
        */}
       <AskYourFixterLine />
+
+      {/*
+        Gifting, on the screen a member lands on.
+
+        The account already had an entry point, but it sat at the foot of the
+        Plan tab - behind a tab change and a long scroll, which is no
+        placement at all. This is the landing view, above Quick Actions, so a
+        member sees it on the way past rather than having to go looking.
+      */}
+      <GiftCallout variant="bar" audience="member" headingId="account-gift-heading" />
 
       {/* ── Quick actions ── */}
       <div className="rounded-[8px] border border-[#E6E8EF] bg-white p-5 sm:p-6">

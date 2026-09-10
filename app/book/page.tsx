@@ -19,6 +19,7 @@ import { trackEvent, trackInitiateCheckout } from "@/lib/analytics";
 import { useSearchParams } from "next/navigation";
 import BookingSection from "@/app/components/sections/BookingSection";
 import VisitTypeNav, { resolveVisitType } from "@/app/components/booking/VisitTypeNav";
+import GiftCallout from "@/app/components/gift/GiftCallout";
 import { YourFixterRow } from "@/app/components/fixter/YourFixter";
 import BookingsSection from "@/app/components/account/BookingsSection";
 import PriorityVisitPanel from "@/app/components/booking/PriorityVisitPanel";
@@ -1432,6 +1433,13 @@ function BookExperience() {
       <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
         <Header />
         {nav}
+        <section className="mx-auto w-full max-w-[1280px] px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
+          <GiftCallout
+            variant="bar"
+            audience={isMember ? "member" : "public"}
+            headingId="fullday-gift-heading"
+          />
+        </section>
         <FullDayVisitPanel />
         <FullDayVisitHistory />
         <Footer />
@@ -1463,6 +1471,38 @@ function BookExperience() {
         <PriorityVisitPanel currentPlan={currentPlanKey} isMember={isMember} />
       ) : (
         <>
+          {/*
+           * Gifting, to the people most likely to do it.
+           *
+           * Members come back to this page every time they want a visit, and
+           * they are the audience that needs no convincing about what
+           * ProFixter is worth - which is exactly what makes them the right
+           * people to ask to give it to somebody else.
+           *
+           * ABOVE THE FORM, AND COMPACT, and both halves of that matter. Above
+           * because a promotion below a tall booking form is a promotion
+           * nobody on a phone will ever see. Compact - one row on desktop, a
+           * tight stack on mobile - because booking is why they came, and this
+           * must cost the form a few dozen pixels rather than a screenful.
+           *
+           * A banner, not a dialog: nothing here interrupts, blocks, or has to
+           * be dismissed before a member can book.
+           */}
+          <section className="mx-auto w-full max-w-[1280px] px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
+            {/*
+             * The pitch follows the reader. This branch also serves the
+             * one-time tab, which a non-member reaches from /on-demand, and
+             * telling somebody who has never had a visit that they "already
+             * know how useful a Fixter is" would be selling them their own
+             * experience of nothing.
+             */}
+            <GiftCallout
+              variant="bar"
+              audience={isMember ? "member" : "public"}
+              headingId="book-gift-heading"
+            />
+          </section>
+
           {/*
            * Book is where a member comes to deal with visits, so the order is
            * the order of the job: book one, then who is coming, then the ones

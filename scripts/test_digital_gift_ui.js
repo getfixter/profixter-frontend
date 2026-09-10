@@ -480,7 +480,7 @@ check("gifting is reachable without knowing the URL", () => {
 });
 
 check("the homepage and the plan comparison both offer it", () => {
-  has(homeMarketing, "<GiftCallout />", "the homepage carries the full band");
+  has(homeMarketing, "<GiftCallout variant=\"card\"", "the homepage carries a full gift card");
   has(plansSection, 'GiftCallout variant="inline"', "the comparison carries one quiet line");
   // /membership renders PlansSection with `compact`, so a !compact gate here
   // would hide the gift line on the very page most likely to prompt the idea.
@@ -491,10 +491,21 @@ check("the homepage and the plan comparison both offer it", () => {
     !preceding.includes("!compact &&"),
     "the gift line must not be gated on the non-compact layout"
   );
-  // Not before the primary call to action: gifting must not outrank booking.
-  const bookAt = homeMarketing.lastIndexOf("BookFree");
-  const giftAt = homeMarketing.indexOf("<GiftCallout />");
-  assert(giftAt > bookAt, "the gift band sits after the closing call to action");
+  /*
+   * The rule CHANGED, deliberately. Gifting used to be required to sit after
+   * the closing call to action, which is how it ended up as the last thing
+   * on the page and why nobody found it.
+   *
+   * It must still not outrank the primary message - the hero and the
+   * membership pitch come first - but it now sits between them and the rest
+   * of the page rather than after everything.
+   */
+  const heroAt = homeMarketing.indexOf("=========================== HERO");
+  const giftAt = homeMarketing.indexOf("<GiftCallout variant=\"card\"");
+  const membershipAt = homeMarketing.indexOf("=========================== MEMBERSHIP");
+  assert(giftAt > 0, "the homepage must promote gifting");
+  assert(heroAt < 0 || giftAt > heroAt, "but never above the hero");
+  assert(giftAt < membershipAt, "and before the membership section, not after the whole page");
 });
 
 check("the callout speaks to real occasions, not just realtors", () => {
@@ -502,8 +513,9 @@ check("the callout speaks to real occasions, not just realtors", () => {
     has(callout, audience, `${audience} should be named`);
   }
   assert.ok(!/realtor/i.test(callout), "the product is not realtor-specific");
-  has(callout, "Give ProFixter as a", "the approved headline direction");
-  has(callout, "add a personal message", "and the approved description");
+  has(callout, "Give ProFixter to", "the member headline");
+  has(callout, "Give the Gift of", "the public headline");
+  has(callout, "Add a personal message", "and the approved description");
 });
 
 check("the public callout costs the homepage no API call", () => {
@@ -625,6 +637,143 @@ check("a half-typed phone number is refused rather than dropped", () => {
   // ignoring it would have them believe a text went out.
   has(purchase, 'const digits = phone.replace(/\\D/g, "")');
   has(purchase, "Enter a 10-digit US phone number, or leave it blank.");
+});
+
+console.log("\nGift visibility across the site\n");
+
+const bookPage = read("app", "book", "page.tsx");
+const overview = read("app", "components", "account", "OverviewSection.tsx");
+const membershipExp = read("app", "components", "membership", "MembershipExperience.tsx");
+const plansPage = read("app", "membership", "plans", "page.tsx");
+const aboutPage = read("app", "about", "page.tsx");
+const promoCode = read("app", "components", "gift", "GiftPromoCode.tsx");
+
+check("gift marketing comes from ONE component, not a copy per page", () => {
+  // The alternative is wording that drifts until the homepage and the
+  // booking page are selling slightly different products.
+  for (const [name, source] of [
+    ["book", bookPage],
+    ["account overview", overview],
+    ["membership", membershipExp],
+    ["plans", plansPage],
+    ["about", aboutPage],
+    ["homepage", homeMarketing],
+  ]) {
+    has(source, "GiftCallout", `${name} should use the shared component`);
+  }
+  // And every shape lives in that one file.
+  for (const variant of ['"band"', '"card"', '"bar"', '"inline"']) {
+    has(callout, variant, `the shared component defines ${variant}`);
+  }
+});
+
+check("the booking page carries a gift promotion above the form", () => {
+  // Members return here constantly and already know what ProFixter is worth,
+  // which makes this the strongest placement on the site.
+  const at = bookPage.indexOf('variant="bar"');
+  const form = bookPage.indexOf("<BookingSection />");
+  assert.ok(at > 0, "the booking page must promote gifting");
+  assert.ok(form > 0, "the booking form should still be there");
+  assert.ok(at < form, "the promotion must sit ABOVE the booking form");
+  has(bookPage, "book-gift-heading");
+});
+
+check("the booking promotion never interrupts booking", () => {
+  // A banner, not a dialog. Nothing to dismiss before a member can book.
+  // Asserted on the gift component, because a modal would have to live
+  // there - the booking page itself uses dialogs for its own purposes.
+  const code = codeOnly(callout);
+  for (const forbidden of ["Modal", "Dialog", 'role="dialog"', "position:fixed", "fixed inset-0"]) {
+    lacks(code, forbidden, `gift marketing must never be a ${forbidden}`);
+  }
+  // And the booking page takes the compact shape, not the full band.
+  lacks(codeOnly(bookPage), 'variant="band"', "the booking page must not carry the full band");
+  has(bookPage, 'variant="bar"', "it takes the compact one");
+});
+
+check("the pitch follows the reader, member or not", () => {
+  // /on-demand redirects to /book, so a non-member reaches this branch too;
+  // telling them they "already know" would be selling them their own
+  // experience of nothing.
+  has(bookPage, 'audience={isMember ? "member" : "public"}');
+  has(overview, 'audience="member"', "the account is members only");
+  has(membershipExp, 'audience="public"', "the membership page is for visitors");
+  // The two pitches must actually differ.
+  has(callout, "You already know the convenience of having a Fixter");
+  has(callout, "Give family, friends, clients or a new homeowner");
+});
+
+check("gifting is discoverable high on the homepage", () => {
+  // It used to be the last thing on the page, which is why nobody found it.
+  const giftAt = homeMarketing.indexOf("home-gift-heading");
+  const membershipAt = homeMarketing.indexOf("=========================== MEMBERSHIP");
+  const end = homeMarketing.length;
+  assert.ok(giftAt > 0, "the homepage must promote gifting");
+  assert.ok(
+    giftAt < membershipAt,
+    "gifting should appear before the membership section, not after everything"
+  );
+  assert.ok(
+    giftAt < end * 0.75,
+    `the gift block is ${Math.round((giftAt / end) * 100)}% through the file; it must not be stranded at the bottom`
+  );
+});
+
+check("the homepage does not promote gifting twice", () => {
+  // Two near-identical gift sections on one page is the clutter this was
+  // meant to fix; the evergreen popup covers the second touch.
+  const occurrences = homeMarketing.split("<GiftCallout").length - 1;
+  assert.equal(occurrences, 1, `expected one gift block on the homepage, found ${occurrences}`);
+});
+
+check("the membership pages promote gifting above the fold-and-a-half", () => {
+  const giftAt = membershipExp.indexOf("membership-gift-heading");
+  const plansAt = membershipExp.indexOf("<PlansSection hideCancellationUi compact />");
+  assert.ok(giftAt > 0 && plansAt > 0);
+  assert.ok(
+    giftAt < plansAt,
+    "on /membership the card must sit ABOVE the comparison; below it landed three quarters down the page"
+  );
+  has(plansPage, "plans-gift-heading", "the comparison page carries one too");
+});
+
+check("the account promotes gifting on the screen members land on", () => {
+  const giftAt = overview.indexOf("account-gift-heading");
+  // The rendered heading, not the phrase: the comment above the callout
+  // mentions Quick Actions too, and matched first.
+  const quickActions = overview.indexOf(">Quick Actions<");
+  assert.ok(giftAt > 0, "the account overview must promote gifting");
+  assert.ok(quickActions > 0, "Quick Actions should still be there");
+  assert.ok(giftAt < quickActions, "and gifting should sit above it");
+});
+
+check("the GIFT code is shown, and can be copied", () => {
+  has(promoCode, 'export const GIFT_PROMO_CODE = "GIFT"');
+  has(promoCode, 'export const GIFT_PROMO_LABEL = "10% off"');
+  has(promoCode, "navigator.clipboard.writeText");
+  // Readable even when the clipboard is unavailable.
+  has(promoCode, "{GIFT_PROMO_CODE}", "the code is rendered as text, not only copied");
+  has(promoCode, "catch", "a blocked clipboard must not throw");
+  has(callout, "GiftPromoCode", "the callouts show it");
+});
+
+check("every gift call to action goes to /gift", () => {
+  const links = callout.match(/href="[^"]*"/g) || [];
+  assert.ok(links.length > 0, "there should be links");
+  for (const link of links) {
+    assert.equal(link, 'href="/gift"', `unexpected gift destination: ${link}`);
+  }
+  has(callout, "Give a Membership", "the approved call to action");
+});
+
+check("the shared component still costs the page no API call", () => {
+  // The account entry point gates itself on the API; these must not, or
+  // every homepage and booking view pays for a request to decide whether
+  // to draw a card.
+  const code = codeOnly(callout);
+  for (const forbidden of ["useEffect", "getGiftOptions", "API."]) {
+    lacks(code, forbidden, `the marketing callout must not ${forbidden}`);
+  }
 });
 
 console.log("\nSecurity and the feature flag\n");

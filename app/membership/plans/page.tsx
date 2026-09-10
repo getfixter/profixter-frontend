@@ -21,6 +21,7 @@
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import PlansSection from "@/app/components/sections/PlansSection";
+import GiftCallout from "@/app/components/gift/GiftCallout";
 import FAQSection from "@/app/components/sections/FAQSection";
 import { useAuth } from "@/lib/useAuth";
 import { hasActiveMembership } from "@/lib/auth-routing";
@@ -86,6 +87,16 @@ export default function MembershipPlansPage() {
 
         {/* The one plan comparison in the product. No duplicate plan data. */}
         <PlansSection hideCancellationUi hideIntro />
+
+        {/*
+          Directly under the comparison, where somebody weighing four prices
+          is most likely to think of the person they would buy one for.
+        */}
+        <section className="bg-white px-4 pb-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
+          <div className="mx-auto max-w-[1120px]">
+            <GiftCallout variant="card" audience="public" headingId="plans-gift-heading" />
+          </div>
+        </section>
 
         <FAQSection hideCancellationUi />
       </main>
