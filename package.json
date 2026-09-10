@@ -19,7 +19,8 @@
     "postinstall": "npm run build",
     "test:free-visit-e2e": "node scripts/test_free_visit_e2e.js",
     "test:native-signing-ui": "node scripts/test_native_signing_ui.js",
-    "test:gift-ui": "node scripts/test_gift_ui.js"
+    "test:gift-ui": "node scripts/test_gift_ui.js",
+    "test:digital-gift-ui": "node scripts/test_digital_gift_ui.js"
   },
   "engines": {
     "node": "20.x"

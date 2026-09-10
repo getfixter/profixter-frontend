@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Montserrat } from "next/font/google";
+import { Cormorant_Garamond, Geist, Geist_Mono, Montserrat } from "next/font/google";
 import Script from "next/script";
 import Providers from "./providers";
 import ScrollToTop from "./ScrollToTop";
@@ -14,6 +14,26 @@ const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+});
+
+/*
+ * The display face, used ONLY on Digital Gift surfaces.
+ *
+ * Montserrat is the ProFixter voice and stays the voice everywhere else. A
+ * gift needs one register the geometric sans cannot reach: the occasion line
+ * and the handwritten-feeling personal message. High-contrast old-style at a
+ * large size is what makes those read as considered rather than as another
+ * heading.
+ *
+ * Two weights and italic, latin only, exposed as a variable so it applies
+ * where a component asks for it and nowhere else.
+ */
+const cormorant = Cormorant_Garamond({
+  variable: "--font-gift-display",
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -89,7 +109,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} ${cormorant.variable}`}
     >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />

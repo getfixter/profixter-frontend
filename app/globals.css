@@ -247,3 +247,422 @@ select:-webkit-autofill:active {
     animation: none !important;
   }
 }
+
+/* =========================
+   Digital Gift
+   =========================
+
+   The gift card is meant to read as a physical object, so the depth is built
+   from real light behaviour rather than a single drop shadow:
+
+     - two shadows, a tight contact one and a wide ambient one
+     - a 1px highlight on the top edge and a shade on the bottom, which is
+       where most of the "thickness" comes from
+     - a hairline gold rim, kept very low alpha so it reads as a bevel
+
+   Kept here rather than as utility classes because inset ring + layered
+   shadow + rim is one material, and splitting it across three call sites is
+   how it ends up inconsistent.
+*/
+.gift-card {
+  box-shadow:
+    0 2px 6px rgba(9, 18, 32, 0.28),
+    0 18px 40px -12px rgba(9, 18, 32, 0.45),
+    0 46px 90px -30px rgba(9, 18, 32, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(212, 165, 116, 0.22);
+}
+
+/*
+   Foil. background-clip:text over a warm gradient is as close as CSS gets to
+   stamped metal. The solid colour is declared first so a browser that cannot
+   clip still renders warm gold rather than nothing at all.
+*/
+.gift-foil {
+  color: #e8cfae;
+  background-image: linear-gradient(
+    100deg,
+    #b98d5d 0%,
+    #e3c49e 24%,
+    #fbecd8 46%,
+    #e0bf96 66%,
+    #b98d5d 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  .gift-foil {
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+/*
+   The reveal.
+
+   One transform and one opacity, composited, nothing per-frame in JS. The
+   card lifts and settles rather than sliding, which is the difference between
+   "opening something" and "a page loading".
+*/
+@keyframes gift-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 26px, 0) scale(0.972);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes gift-settle {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.gift-reveal {
+  animation: gift-rise 900ms cubic-bezier(0.16, 0.84, 0.28, 1) both;
+  will-change: transform, opacity;
+}
+
+.gift-reveal-step {
+  animation: gift-settle 620ms cubic-bezier(0.22, 0.7, 0.3, 1) both;
+}
+
+/*
+   A single slow pass of light across the card, once, after it has landed.
+   It runs one time — a looping shimmer is the thing that makes a premium
+   surface look like a casino.
+*/
+@keyframes gift-sheen {
+  0% {
+    opacity: 0;
+    transform: translate3d(-130%, 0, 0) rotate(8deg);
+  }
+  18% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(130%, 0, 0) rotate(8deg);
+  }
+}
+
+.gift-sheen {
+  animation: gift-sheen 1900ms ease-out 700ms 1 both;
+}
+
+/*
+   With reduced motion the page must be excellent, not merely static: every
+   element ends at its resting state, fully visible, immediately.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .gift-reveal,
+  .gift-reveal-step,
+  .gift-sheen {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .gift-sheen {
+    display: none !important;
+  }
+}
+
+/*
+   The gift CTA.
+
+   Warm metal rather than the product blue: on the gift surfaces the blue
+   button is what every other page uses, and this one moment should not look
+   like the rest of the account. Dark text on gold clears AA comfortably.
+*/
+.gift-cta {
+  background: linear-gradient(180deg, #e6c396 0%, #d4a574 52%, #bf8d59 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 10px 28px -8px rgba(212, 165, 116, 0.55),
+    0 2px 6px rgba(9, 18, 32, 0.35);
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+
+.gift-cta:hover {
+  filter: brightness(1.045);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 14px 34px -8px rgba(212, 165, 116, 0.62),
+    0 3px 8px rgba(9, 18, 32, 0.38);
+}
+
+.gift-cta:active {
+  transform: translateY(1px);
+}
+
+.gift-cta:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gift-cta {
+    transition: none;
+  }
+  .gift-cta:active {
+    transform: none;
+  }
+}
+
+/*
+   The logo on the gift card.
+
+   Sized with a real class for the same reason .nav-brand-logo is: the
+   unlayered `img { height: auto }` rule above beats Tailwind's height
+   utilities, which live in a cascade layer. A utility class here renders the
+   mark at its full 357x76 intrinsic size and swallows the card.
+*/
+.gift-card-logo {
+  height: 19px;
+  width: auto;
+}
+
+@media (min-width: 640px) {
+  .gift-card-logo {
+    height: 23px;
+  }
+}
+
+.gift-card-logo-compact {
+  height: 15px;
+  width: auto;
+}
+
+/*
+   The stage.
+
+   On a large screen the gift gets the whole frame: the section fills the
+   viewport and the card is centred in it, so the photograph's ring of light
+   lands behind the card instead of beside it. On a phone the section is just
+   as tall as its contents — a forced 100vh there would push the card itself
+   out of the first screen, which is the opposite of what it is for.
+*/
+/*
+   The photograph, scaled up on desktop.
+
+   At 1920 the frame is cropped vertically, so the ring renders large enough
+   for its top arc to clear the card — which is the moment the composition
+   works, the gift standing in front of a halo of light. At 1440 the crop is
+   horizontal only and the ring comes out about 40px too small, so the card
+   covers it entirely and the same layout loses the effect.
+
+   A modest scale at lg makes the ring the same relative size at both widths.
+   The origin sits above centre so it grows around the ring rather than around
+   the middle of the frame.
+*/
+@media (min-width: 1024px) {
+  .gift-photo {
+    transform: scale(1.24);
+    transform-origin: 50% 44%;
+  }
+}
+
+@media (min-width: 1536px) {
+  .gift-photo {
+    transform: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .gift-stage {
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+  }
+  /* The stage holds only the card, so its padding can be symmetric and the
+     card lands on the frame's centre line — which is where the light is. */
+  .gift-stage > div {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+}
+
+
+/* =========================
+   Opening the gift
+   =========================
+
+   Three overlapping movements over about 1.3s, all composited (transform and
+   opacity only), no per-frame JavaScript:
+
+     0-420ms    the ribbon's two halves slide apart and off the sleeve
+     240-900ms  the sleeve drops away, tilting slightly as it goes
+     420-1180ms the card rises into the space and settles
+
+   The overlap is what makes it read as one gesture instead of three steps.
+*/
+.gift-reveal-root {
+  perspective: 1400px;
+}
+
+.gift-sleeve {
+  background: linear-gradient(158deg, #17283f 0%, #0b1628 46%, #081120 100%);
+  box-shadow:
+    0 2px 6px rgba(9, 18, 32, 0.3),
+    0 20px 44px -12px rgba(9, 18, 32, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(212, 165, 116, 0.3);
+  transform-origin: 50% 100%;
+  cursor: pointer;
+  /* The whole sleeve is the control, so it gets the focus ring. */
+  outline-offset: 3px;
+}
+
+.gift-sleeve:focus-visible {
+  outline: 3px solid #e8cfae;
+}
+
+/* Satin, the same recipe as the gilt edge, rotated flat. */
+.gift-ribbon-half {
+  background: linear-gradient(
+    180deg,
+    rgba(120, 82, 42, 0.98) 0%,
+    #c9995f 16%,
+    #e7c89e 34%,
+    #fbeedb 50%,
+    #e2c094 66%,
+    #c08a50 84%,
+    rgba(120, 82, 42, 0.98) 100%
+  );
+  box-shadow:
+    0 -8px 18px -8px rgba(0, 0, 0, 0.6),
+    0 8px 18px -8px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+@keyframes gift-ribbon-part-left {
+  0% {
+    transform: translate3d(0, -50%, 0);
+  }
+  100% {
+    transform: translate3d(-104%, -50%, 0);
+  }
+}
+
+@keyframes gift-ribbon-part-right {
+  0% {
+    transform: translate3d(0, -50%, 0);
+  }
+  100% {
+    transform: translate3d(104%, -50%, 0);
+  }
+}
+
+@keyframes gift-sleeve-away {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotateX(0deg);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 62%, 0) rotateX(-13deg) scale(0.985);
+  }
+}
+
+@keyframes gift-card-rise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 30px, 0) scale(0.955);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* Held under the sleeve, already laid out, simply not yet shown. */
+.gift-card-waiting {
+  opacity: 0;
+}
+
+.gift-card-rising {
+  animation: gift-card-rise 760ms cubic-bezier(0.16, 0.84, 0.28, 1) 420ms both;
+  will-change: transform, opacity;
+}
+
+.gift-sleeve-opening {
+  animation: gift-sleeve-away 660ms cubic-bezier(0.5, 0, 0.75, 0.35) 240ms both;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.gift-sleeve-opening .gift-ribbon-left {
+  animation: gift-ribbon-part-left 420ms cubic-bezier(0.5, 0, 0.3, 1) both;
+}
+
+.gift-sleeve-opening .gift-ribbon-right {
+  animation: gift-ribbon-part-right 420ms cubic-bezier(0.5, 0, 0.3, 1) both;
+}
+
+/*
+   Reduced motion never reaches most of this — the component skips straight to
+   the open phase, so no sleeve is rendered at all. These rules are the belt to
+   that braces: if a phase is ever entered anyway, nothing moves and nothing
+   stays hidden.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .gift-card-waiting,
+  .gift-card-rising,
+  .gift-sleeve-opening,
+  .gift-sleeve-opening .gift-ribbon-left,
+  .gift-sleeve-opening .gift-ribbon-right {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .gift-sleeve {
+    display: none !important;
+  }
+}
+
+/*
+   The sleeve's own arrival.
+
+   Short and quiet: the sleeve is not the event, opening it is. The container
+   entrance is suppressed while the reveal will play, because two entrances
+   stacked left the "closed gift" translucent for its whole hold — the room
+   was visible straight through the object the viewer is meant to open.
+*/
+@keyframes gift-sleeve-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.gift-sleeve-enter {
+  animation: gift-sleeve-in 340ms cubic-bezier(0.22, 0.7, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gift-sleeve-enter {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
