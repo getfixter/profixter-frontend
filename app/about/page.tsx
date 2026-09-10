@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import GiftCallout from "@/app/components/gift/GiftCallout";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import MembershipCtaLink from "@/app/components/membership/MembershipCtaLink";
@@ -386,6 +387,19 @@ export default function AboutPage() {
               ))}
             </div>
           </div>
+
+          {/*
+            Compact on purpose. This page is about who ProFixter is, and the
+            section above has just listed the ways to work with us - a gift
+            membership is one more of those, worth a line rather than a
+            full marketing block that would change the subject.
+          */}
+          <GiftCallout
+            variant="bar"
+            audience="public"
+            className="mt-6"
+            headingId="about-gift-heading"
+          />
         </div>
       </section>
 

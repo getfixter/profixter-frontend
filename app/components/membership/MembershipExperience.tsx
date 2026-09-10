@@ -12,6 +12,7 @@ import { trackEvent } from "@/lib/analytics";
 import Header from "@/app/components/sections/Header";
 import BookingSection from "@/app/components/sections/BookingSection";
 import PlansSection from "@/app/components/sections/PlansSection";
+import GiftCallout from "@/app/components/gift/GiftCallout";
 import FAQSection from "@/app/components/sections/FAQSection";
 import YourFixter from "@/app/components/fixter/YourFixter";
 import Footer from "@/app/components/sections/Footer";
@@ -372,6 +373,24 @@ function ProspectMembershipFlow({
           <p className="mt-7 text-center text-[13px] leading-5 text-[#6E6E73]">
             Larger renovations and multi-day work are handled through Project Estimates. <Link href="/services" className="font-semibold text-[#306EEC] hover:underline">View all services</Link>
           </p>
+        </div>
+      </section>
+
+      {/*
+        Above the comparison, not below it.
+
+        Placed after the prices this landed three quarters of the way down a
+        long page - the exact problem it was added to fix. Here the reader has
+        just been told what a membership is and is about to be shown what it
+        costs, which is early enough to be seen and late enough to make sense.
+
+        PlansSection carries its own one-line gift prompt at its foot; that
+        stays, as the quiet reminder after the decision rather than a second
+        pitch.
+      */}
+      <section className="bg-white px-4 pb-2 pt-6 sm:px-6 sm:pt-8">
+        <div className="mx-auto max-w-[1120px]">
+          <GiftCallout variant="card" audience="public" headingId="membership-gift-heading" />
         </div>
       </section>
 

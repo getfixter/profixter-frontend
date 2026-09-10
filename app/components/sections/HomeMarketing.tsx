@@ -338,6 +338,29 @@ export default function HomeMarketing() {
         </div>
       </section>
 
+      {/* ============================== GIFT =========================== */}
+      {/*
+        Gifting, high enough that somebody actually finds it.
+
+        This used to sit at the very bottom, after seven sections, which
+        meant most visitors never saw it at all. It is a real product now,
+        so it goes where the reader has just learned what ProFixter does and
+        the thought "I know who needs this" is available to them.
+
+        Placed AFTER How it works and BEFORE Membership on purpose: it must
+        not be the first thing the homepage says, because the primary
+        message is still the membership itself. A contained card rather than
+        a full-bleed band, for the same reason - it should read as an aside
+        with weight, not as the page changing subject.
+      */}
+      <section className="px-5 py-8 sm:px-6 sm:py-10">
+        <div className="mx-auto max-w-[1120px]">
+          <Reveal>
+            <GiftCallout variant="card" audience="public" headingId="home-gift-heading" />
+          </Reveal>
+        </div>
+      </section>
+
       {/* =========================== MEMBERSHIP ======================== */}
       <section className="bg-[#0B1628] px-5 py-10 text-white sm:px-6 sm:py-13">
         <div className="mx-auto max-w-[1120px]">
@@ -556,11 +579,12 @@ export default function HomeMarketing() {
       </section>
 
       {/*
-        Gifting, after the closing call to action rather than competing with
-        it. Somebody who has read to the bottom and not booked may still be
-        the person who buys this for a friend, a client or a new homeowner.
+        No second gift block down here. There used to be one, and it was the
+        ONLY one - which is why nobody found it. The card above replaces it
+        rather than joining it: two near-identical gift sections on one page
+        is the clutter this was meant to fix, and the evergreen gift popup
+        already covers the visitor who reads to the bottom.
       */}
-      <GiftCallout />
     </main>
   );
 }
