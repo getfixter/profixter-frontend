@@ -576,6 +576,57 @@ check("months are labelled singular or plural correctly", () => {
   has(card, "monthsLabel(durationMonths)");
 });
 
+check("the recipient address is optional and collapsed by default", () => {
+  // Most people buying for a colleague or a client do not know the street
+  // address, and requiring it was where the purchase was being abandoned.
+  has(purchase, "Add recipient address (optional)", "the section says it is optional");
+  has(purchase, "const [addressOpen, setAddressOpen]", "and starts closed");
+  has(purchase, 'aria-expanded={addressOpen}', "the disclosure is announced");
+  has(purchase, 'aria-controls="gift-address-fields"');
+
+  const code = codeOnly(purchase);
+  // The old unconditional requirements must be gone.
+  lacks(code, 'next.line1 = "Enter their street address."', "the street is no longer demanded");
+  lacks(code, 'next.city = "Enter their city."', "nor the city");
+  // But a half-typed address is still refused.
+  has(code, "const anyAddress = Boolean(line1.trim() || city.trim() || zip.trim())");
+  has(code, "if (anyAddress) {", "partial addresses are still caught");
+});
+
+check("the review screen copes with no address", () => {
+  // Rendering the row unconditionally produced ", , NY" on the last screen
+  // before payment, which reads as a bug.
+  has(purchase, "line1.trim() ? (", "the property row is conditional");
+  has(purchase, "They choose it when they claim", "and says so plainly instead");
+});
+
+check("a phone number can be given, and is optional", () => {
+  has(purchase, 'label="Mobile number (optional)"', "labelled optional");
+  has(purchase, 'type="tel"');
+  has(purchase, 'autoComplete="tel"');
+  has(purchase, "phone: phone.trim()", "and is sent with the purchase");
+  has(service, "phone?: string", "the type marks it optional");
+  has(purchase, "We will text them the gift as well as emailing it.", "what it does is explained");
+});
+
+check("email stays required, because identity binds on it", () => {
+  // Phone-only gifts are deliberately not purchasable: nothing in the account
+  // system can prove a claimant controls a phone number, so a phone-only gift
+  // would be claimable by anyone holding the link.
+  const code = codeOnly(purchase);
+  has(code, 'next.email = "Enter their email address."', "email is still demanded");
+  // The phone must never be offered as a replacement for it.
+  lacks(code, "email || phone", "email is not an either/or");
+  lacks(code, "phone || email");
+});
+
+check("a half-typed phone number is refused rather than dropped", () => {
+  // Somebody who started typing a number expects it to be used; silently
+  // ignoring it would have them believe a text went out.
+  has(purchase, 'const digits = phone.replace(/\\D/g, "")');
+  has(purchase, "Enter a 10-digit US phone number, or leave it blank.");
+});
+
 console.log("\nSecurity and the feature flag\n");
 
 check("no claim token is exposed on any purchaser surface", () => {

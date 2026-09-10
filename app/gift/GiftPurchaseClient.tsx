@@ -169,6 +169,8 @@ export default function GiftPurchaseClient() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [addressOpen, setAddressOpen] = useState(false);
   const [line1, setLine1] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("NY");
@@ -289,13 +291,39 @@ export default function GiftPurchaseClient() {
       next.email = "A gift has to be for someone else. To start your own membership, choose a plan from your account.";
     }
 
-    if (!line1.trim()) next.line1 = "Enter their street address.";
-    if (!city.trim()) next.city = "Enter their city.";
-    if (!/^\d{5}$/.test(zip.trim())) next.zip = "Enter a 5-digit ZIP code.";
+    /*
+     * A phone number is optional, but a HALF-TYPED one is not acceptable:
+     * somebody who started entering a number expects it to be used, and
+     * silently dropping it would have them believe a text went out.
+     */
+    const digits = phone.replace(/\D/g, "");
+    if (digits && !/^1?\d{10}$/.test(digits)) {
+      next.phone = "Enter a 10-digit US phone number, or leave it blank.";
+    }
+
+    /*
+     * THE ADDRESS IS OPTIONAL, and this is the point of the section.
+     *
+     * A purchaser buying for a colleague, a client or a sister-in-law very
+     * often does not know their street address, and being stopped at that
+     * question is where the sale was being lost. The recipient chooses the
+     * property themselves at claim time on their own account, and THAT is
+     * the address entitlement uses — what is typed here is only a hint to
+     * help them recognise which home the gift was meant for.
+     *
+     * So: nothing is required. But a partly-filled address is still refused,
+     * because half an address is worse than none on the claim screen.
+     */
+    const anyAddress = Boolean(line1.trim() || city.trim() || zip.trim());
+    if (anyAddress) {
+      if (!line1.trim()) next.line1 = "Add the street, or clear the address.";
+      if (!city.trim()) next.city = "Add the city, or clear the address.";
+      if (!/^\d{5}$/.test(zip.trim())) next.zip = "Enter a 5-digit ZIP, or clear the address.";
+    }
 
     setErrors(next);
     return Object.keys(next).length === 0;
-  }, [firstName, lastName, email, line1, city, zip, user]);
+  }, [firstName, lastName, email, phone, line1, city, zip, user]);
 
   const handlePay = useCallback(async () => {
     if (submitLock.current) return;
@@ -309,7 +337,12 @@ export default function GiftPurchaseClient() {
       const { url } = await createGiftCheckoutSession({
         plan,
         durationMonths,
-        recipient: { firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim().toLowerCase() },
+        recipient: {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim().toLowerCase(),
+          phone: phone.trim(),
+        },
         address: { line1: line1.trim(), city: city.trim(), state, zip: zip.trim() },
         occasion,
         personalMessage: personalMessage.trim(),
@@ -333,6 +366,7 @@ export default function GiftPurchaseClient() {
     firstName,
     lastName,
     email,
+    phone,
     line1,
     city,
     state,
@@ -676,60 +710,110 @@ export default function GiftPurchaseClient() {
               maxLength={200}
             />
 
-            <div className="pt-1">
-              <h3 className="text-[15px] font-semibold text-[#313234]">Their property</h3>
-              <p className="mt-1 text-[13px] leading-relaxed text-[#6A6D71]">
-                A membership covers one home. They will confirm this address when they claim the
-                gift, so an approximate answer is fine.
-              </p>
-            </div>
+            {/*
+              A phone number is optional and is a second way to reach them.
 
+              Email stays required because it is what proves, at claim time,
+              that the person signing in is the one the gift was addressed to.
+              A phone number is typed by the purchaser and verified by nobody,
+              so it decides whether we also text them — never who they are.
+            */}
             <Field
-              id="line1"
-              label="Street address"
-              value={line1}
-              onChange={setLine1}
-              error={errors.line1}
-              autoComplete="address-line1"
-              maxLength={200}
+              id="phone"
+              label="Mobile number (optional)"
+              type="tel"
+              value={phone}
+              onChange={setPhone}
+              error={errors.phone}
+              placeholder="(631) 555-0134"
+              autoComplete="tel"
+              maxLength={20}
             />
+            <p className="-mt-2 text-[13px] leading-relaxed text-[#6A6D71]">
+              We will text them the gift as well as emailing it.
+            </p>
 
-            <div className="grid gap-4 sm:grid-cols-[1fr_120px_140px]">
-              <Field
-                id="city"
-                label="City"
-                value={city}
-                onChange={setCity}
-                error={errors.city}
-                autoComplete="address-level2"
-                maxLength={100}
-              />
-              <div>
-                <label htmlFor="state" className={LABEL}>
-                  State
-                </label>
-                <select
-                  id="state"
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                  className={FIELD}
-                >
-                  {US_STATES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
+            {/*
+              THE ADDRESS IS OPTIONAL, and collapsed by default.
+
+              Most people buying a present for a colleague, a client or a
+              sister-in-law do not know their street address, and being asked
+              for it as a required field is where the purchase was being
+              abandoned. The recipient picks the property on their own account
+              when they claim, and that is the one entitlement uses; anything
+              entered here is only a hint so they recognise which home it was
+              meant for.
+            */}
+            <div className="rounded-[10px] border border-[#E0E6F5] bg-[#FAFBFE]">
+              <button
+                type="button"
+                onClick={() => setAddressOpen((open) => !open)}
+                aria-expanded={addressOpen}
+                aria-controls="gift-address-fields"
+                className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left"
+              >
+                <span>
+                  <span className="block text-[15px] font-semibold text-[#313234]">
+                    Add recipient address (optional)
+                  </span>
+                  <span className="mt-0.5 block text-[13px] leading-relaxed text-[#6A6D71]">
+                    Skip this if you do not know it. They choose the property when they claim.
+                  </span>
+                </span>
+                <span aria-hidden="true" className="text-[18px] leading-none text-[#6A6D71]">
+                  {addressOpen ? "\u2212" : "+"}
+                </span>
+              </button>
+
+              <div id="gift-address-fields" hidden={!addressOpen} className="space-y-4 px-4 pb-4">
+                <Field
+                  id="line1"
+                  label="Street address"
+                  value={line1}
+                  onChange={setLine1}
+                  error={errors.line1}
+                  autoComplete="address-line1"
+                  maxLength={200}
+                />
+
+                <div className="grid gap-4 sm:grid-cols-[1fr_120px_140px]">
+                  <Field
+                    id="city"
+                    label="City"
+                    value={city}
+                    onChange={setCity}
+                    error={errors.city}
+                    autoComplete="address-level2"
+                    maxLength={100}
+                  />
+                  <div>
+                    <label htmlFor="state" className={LABEL}>
+                      State
+                    </label>
+                    <select
+                      id="state"
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                      className={FIELD}
+                    >
+                      {US_STATES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <Field
+                    id="zip"
+                    label="ZIP"
+                    value={zip}
+                    onChange={(v) => setZip(v.replace(/\D/g, "").slice(0, 5))}
+                    error={errors.zip}
+                    autoComplete="postal-code"
+                    maxLength={5}
+                  />
+                </div>
               </div>
-              <Field
-                id="zip"
-                label="ZIP"
-                value={zip}
-                onChange={(v) => setZip(v.replace(/\D/g, "").slice(0, 5))}
-                error={errors.zip}
-                autoComplete="postal-code"
-                maxLength={5}
-              />
             </div>
 
             {/* ------------------------- Presentation ------------------------- */}
@@ -850,12 +934,26 @@ export default function GiftPurchaseClient() {
                   {firstName} {lastName}
                 </span>
                 <span className="block break-all text-[13px] font-normal text-[#6A6D71]">{email}</span>
+                {phone.trim() ? (
+                  <span className="block text-[13px] font-normal text-[#6A6D71]">{phone.trim()}</span>
+                ) : null}
               </dd>
             </div>
+            {/*
+              Only shown when an address was actually given. With the field
+              optional, rendering it unconditionally produced ", , NY" — a
+              line that looks like a bug on the last screen before payment.
+            */}
             <div className="flex items-start justify-between gap-4 px-4 py-3.5 sm:px-5">
               <dt className="text-[13px] text-[#6A6D71]">Property</dt>
               <dd className="min-w-0 break-words text-right text-[15px] font-medium text-[#313234]">
-                {line1}, {city}, {state} {zip}
+                {line1.trim() ? (
+                  `${line1}, ${city}, ${state} ${zip}`
+                ) : (
+                  <span className="font-normal text-[#6A6D71]">
+                    They choose it when they claim
+                  </span>
+                )}
               </dd>
             </div>
             <div className="flex items-start justify-between gap-4 px-4 py-3.5 sm:px-5">
