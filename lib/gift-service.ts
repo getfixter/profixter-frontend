@@ -57,17 +57,32 @@ export type GiftAddressInput = {
   zip: string;
 };
 
+/**
+ * What an UNAUTHENTICATED holder of a claim link may see.
+ *
+ * Deliberately thin. The route has no auth so the recipient can look at their
+ * gift before signing in, which means anyone the link reaches can read this —
+ * including somebody it was forwarded to by mistake. So: no full email (a
+ * masked hint instead), no surname, and no property address. The address is a
+ * real home and is fetched separately once identity is proven.
+ */
 export type ClaimPreview = {
   plan: GiftPlan;
   durationMonths: number;
   from: string;
-  recipientEmail: string;
+  /** e.g. "jo••••••@example.com" — enough to know which account to use. */
+  recipientEmailHint: string;
   recipientFirstName: string;
-  recipientLastName: string;
   /* Presentation only. The server sanitises and stores both; see
    * utils/gifts/giftOccasions.js. An unknown occasion arrives as "neutral". */
   occasion: string;
   personalMessage: string;
+};
+
+/** The rest, released only to the signed-in recipient it belongs to. */
+export type ClaimDetails = {
+  recipientEmail: string;
+  recipientLastName: string;
   addressSnapshot: GiftAddressInput | null;
 };
 
@@ -220,6 +235,22 @@ export async function getClaimPreview(token: string): Promise<ClaimPreview & { h
 }
 
 /** Attach the gift to the signed-in account, against a chosen property. */
+/**
+ * The address hint and full email, for a recipient who has signed in.
+ *
+ * Returns null rather than throwing when it is not available: the claim
+ * screen works without it, it just cannot say which property the purchaser
+ * had in mind.
+ */
+export async function getClaimDetails(token: string): Promise<ClaimDetails | null> {
+  try {
+    const { data } = await API.get(`/api/gifts/claim/${encodeURIComponent(token)}/details`);
+    return data as ClaimDetails;
+  } catch {
+    return null;
+  }
+}
+
 export async function claimGift(
   token: string,
   addressId: string
