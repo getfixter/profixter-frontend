@@ -198,7 +198,22 @@ export default function GiftPurchaseClient() {
   const [submitting, setSubmitting] = useState(false);
   const submitLock = useRef(false);
 
+  /*
+   * Plans are fetched only once somebody is signed in.
+   *
+   * /gifts/options requires authentication, and the shared axios client
+   * treats ANY 401 as a dead session: it clears the token and sends the
+   * browser to /signin. Asking for options while signed out therefore
+   * bounced anonymous visitors straight off this page — the server-rendered
+   * intro appeared for a frame and then vanished.
+   *
+   * It went unnoticed until launch because the route answered 404 while the
+   * feature was off, and 404 does not trip that interceptor. Nothing on the
+   * signed-out screen needs the options anyway: it shows a generic intro and
+   * two links.
+   */
   useEffect(() => {
+    if (authLoading || !isAuthenticated) return undefined;
     let cancelled = false;
     (async () => {
       try {
@@ -217,7 +232,7 @@ export default function GiftPurchaseClient() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authLoading, isAuthenticated]);
 
   /* Launch offers one length. The API says which; this never assumes two. */
   const durationMonths = options?.durations?.[0] ?? null;
@@ -300,7 +315,12 @@ export default function GiftPurchaseClient() {
 
   /* ---------------------------------------------------------------------- */
 
-  if (optionsState === "loading" || authLoading) {
+  /*
+   * Signed out there is nothing to load, because the options fetch is gated
+   * on being signed in. Without the isAuthenticated term here the anonymous
+   * visitor would sit on a spinner forever instead of reaching the intro.
+   */
+  if (authLoading || (isAuthenticated && optionsState === "loading")) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6">
         <div
