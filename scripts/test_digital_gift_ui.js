@@ -507,6 +507,26 @@ check("the public callout costs the homepage no API call", () => {
   has(callout, 'href="/gift"');
 });
 
+check("prices are visible before anyone creates an account", () => {
+  // The options route is public now, so gating the fetch on a session would
+  // only withhold the same figures the membership pages already print - and
+  // it would cost us the person who came to price a present.
+  const code = codeOnly(purchase);
+  has(code, "if (authLoading) return undefined;", "the fetch waits for auth to settle, not to succeed");
+  lacks(code, "if (authLoading || !isAuthenticated) return undefined;", "the signed-out gate is gone");
+  // And the signed-out screen actually renders them.
+  has(purchase, "const preview = options?.plans ?? []", "the intro reads the plans");
+  has(purchase, "entry.quotes[0]?.perMonthCents", "and prices each one");
+});
+
+check("buying still requires an account", () => {
+  // Discovery is public; purchase is not. A gift needs a purchaser on record
+  // and a recipient address behind it, so the sign-in step stays.
+  has(purchase, "if (!isAuthenticated)", "the signed-out branch still exists");
+  has(purchase, 'href="/signin?next=%2Fgift"', "and brings them back here afterwards");
+  has(purchase, 'href="/signup?next=%2Fgift"');
+});
+
 console.log("\nLength selection\n");
 
 check("the purchase flow asks for a length as its own step", () => {

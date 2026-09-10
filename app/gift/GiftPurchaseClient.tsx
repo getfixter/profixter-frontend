@@ -201,21 +201,23 @@ export default function GiftPurchaseClient() {
   const submitLock = useRef(false);
 
   /*
-   * Plans are fetched only once somebody is signed in.
+   * Plans are fetched for everybody, signed in or not.
    *
-   * /gifts/options requires authentication, and the shared axios client
-   * treats ANY 401 as a dead session: it clears the token and sends the
-   * browser to /signin. Asking for options while signed out therefore
-   * bounced anonymous visitors straight off this page — the server-rendered
-   * intro appeared for a frame and then vanished.
+   * This was once gated on being signed in, for a good reason: the route
+   * required authentication, and the shared axios client treats ANY 401 as a
+   * dead session — it clears the token and sends the browser to /signin. So
+   * asking for options while signed out bounced anonymous visitors straight
+   * off this page. (It went unnoticed until launch because the route
+   * answered 404 while the feature was off, and 404 does not trip that
+   * interceptor.)
    *
-   * It went unnoticed until launch because the route answered 404 while the
-   * feature was off, and 404 does not trip that interceptor. Nothing on the
-   * signed-out screen needs the options anyway: it shows a generic intro and
-   * two links.
+   * /gifts/options is public now. It returns plan names, lengths and prices
+   * — the same figures printed on the membership pages — so there is nothing
+   * to protect, and somebody deciding whether to buy a present should not
+   * have to create an account to find out what it costs.
    */
   useEffect(() => {
-    if (authLoading || !isAuthenticated) return undefined;
+    if (authLoading) return undefined;
     let cancelled = false;
     (async () => {
       try {
@@ -234,7 +236,7 @@ export default function GiftPurchaseClient() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAuthenticated]);
+  }, [authLoading]);
 
   /* Launch offers one length. The API says which; this never assumes two. */
   /*
@@ -341,12 +343,8 @@ export default function GiftPurchaseClient() {
 
   /* ---------------------------------------------------------------------- */
 
-  /*
-   * Signed out there is nothing to load, because the options fetch is gated
-   * on being signed in. Without the isAuthenticated term here the anonymous
-   * visitor would sit on a spinner forever instead of reaching the intro.
-   */
-  if (authLoading || (isAuthenticated && optionsState === "loading")) {
+  /* Everyone waits for the same fetch now, signed in or not. */
+  if (authLoading || optionsState === "loading") {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6">
         <div
@@ -399,19 +397,56 @@ export default function GiftPurchaseClient() {
   }
 
   /*
-   * Signed out. The intro is worth showing — somebody may have arrived from a
-   * search — but buying needs an account, and the destination is preserved so
-   * they land back here rather than on a generic page.
+   * Signed out. Prices are shown rather than withheld: someone weighing up a
+   * present wants to know what it costs, and making them create an account
+   * to find out loses them. Buying still needs an account — a gift has a
+   * purchaser and a recipient address behind it — and the destination is
+   * preserved so they land back here rather than on a generic page.
    */
   if (!isAuthenticated) {
+    const preview = options?.plans ?? [];
+    const shortest = options?.durations?.length ? Math.min(...options.durations) : null;
+    const longest = options?.durations?.length ? Math.max(...options.durations) : null;
+
     return (
       <div className="mx-auto max-w-2xl px-4 py-14 sm:px-6">
         <h1 className="text-[26px] font-semibold leading-tight text-[#313234] sm:text-[34px]">
           Give someone a ProFixter membership
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-[#6A6D71] sm:text-base">
-          A professional handyman at their home, for {durationMonths ? monthsLabel(durationMonths) : "a fixed term"}.
-          You pay once. They book the visits. Nothing renews.
+          A professional handyman at their home
+          {shortest && longest ? `, for ${shortest} to ${longest} months` : ""}. You pay once. They
+          book the visits. Nothing renews.
+        </p>
+
+        {preview.length > 0 ? (
+          <div className="mt-8 overflow-hidden rounded-[12px] border border-[#E0E6F5]">
+            <div className="flex items-baseline justify-between border-b border-[#E0E6F5] bg-[#F8FAFF] px-4 py-3">
+              <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-[#6A6D71]">
+                Plans
+              </p>
+              <p className="text-[13px] text-[#6A6D71]">Per month of the gift</p>
+            </div>
+            <ul>
+              {preview.map((entry) => (
+                <li
+                  key={entry.plan}
+                  className="flex items-baseline justify-between gap-4 border-b border-[#EEF1F8] px-4 py-3 last:border-b-0"
+                >
+                  <span className="text-[15px] font-semibold text-[#313234]">{entry.label}</span>
+                  <span className="text-[15px] tabular-nums text-[#313234]">
+                    {formatMoneyCents(entry.quotes[0]?.perMonthCents ?? 0)}
+                    <span className="text-[#6A6D71]">/mo</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        <p className="mt-3 text-[13px] leading-relaxed text-[#6A6D71]">
+          Choose the length when you buy. The total is the monthly price times the number of
+          months, plus tax.
         </p>
 
         <div className="mt-7 rounded-[10px] border border-[#E0E6F5] bg-[#F8FAFF] p-5">
