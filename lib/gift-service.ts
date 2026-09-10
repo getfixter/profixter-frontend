@@ -33,6 +33,8 @@ export type GiftPlanOption = {
 };
 
 export type GiftOptions = {
+  /** Where the purchase screen starts. The server decides, not the client. */
+  defaultDurationMonths?: number;
   plans: GiftPlanOption[];
   durations: number[];
   currency: string;

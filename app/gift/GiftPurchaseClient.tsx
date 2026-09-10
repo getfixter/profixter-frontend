@@ -42,7 +42,7 @@ import {
   type GiftPlan,
 } from "@/lib/gift-service";
 
-type Step = "plan" | "recipient" | "review";
+type Step = "plan" | "length" | "recipient" | "review";
 
 const US_STATES = ["NY", "NJ", "CT", "PA"];
 
@@ -110,9 +110,10 @@ function Field({
 
 /** The step rail. Compact on mobile, never a horizontal scroll. */
 function Steps({ current }: { current: Step }) {
-  const order: Step[] = ["plan", "recipient", "review"];
+  const order: Step[] = ["plan", "length", "recipient", "review"];
   const labels: Record<Step, string> = {
     plan: "Plan",
+    length: "Length",
     recipient: "Recipient",
     review: "Review",
   };
@@ -164,6 +165,7 @@ export default function GiftPurchaseClient() {
 
   const [step, setStep] = useState<Step>("plan");
   const [plan, setPlan] = useState<GiftPlan | null>(null);
+  const [chosenDuration, setChosenDuration] = useState<number | null>(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -235,7 +237,15 @@ export default function GiftPurchaseClient() {
   }, [authLoading, isAuthenticated]);
 
   /* Launch offers one length. The API says which; this never assumes two. */
-  const durationMonths = options?.durations?.[0] ?? null;
+  /*
+   * The chosen length, defaulting to the one the server nominates.
+   *
+   * Derived rather than copied into state by an effect: the default arrives
+   * with the options, and mirroring it would mean a render where the two
+   * disagree. `chosenDuration` is only set once somebody picks.
+   */
+  const durationMonths =
+    chosenDuration ?? options?.defaultDurationMonths ?? options?.durations?.[0] ?? null;
 
   const quoteFor = useCallback(
     (which: GiftPlan) => {
@@ -245,6 +255,22 @@ export default function GiftPurchaseClient() {
     },
     [options, durationMonths]
   );
+
+  /** Any plan at any offered length, straight from the server's quotes. */
+  const quoteForDuration = useCallback(
+    (which: GiftPlan | null, months: number | null) => {
+      if (!which || months === null) return null;
+      const entry = options?.plans.find((p) => p.plan === which);
+      return entry?.quotes.find((q) => q.durationMonths === months) || null;
+    },
+    [options]
+  );
+
+  const perMonthCents = useMemo(() => {
+    if (!plan) return null;
+    const entry = options?.plans.find((p) => p.plan === plan);
+    return entry?.quotes[0]?.perMonthCents ?? null;
+  }, [options, plan]);
 
   const selectedQuote = useMemo(() => (plan ? quoteFor(plan) : null), [plan, quoteFor]);
 
@@ -418,8 +444,8 @@ export default function GiftPurchaseClient() {
           Gift a Membership
         </h1>
         <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-[#6A6D71]">
-          Choose a plan, tell us who it is for, and we will send them an invitation.
-          {durationMonths ? ` Every gift is ${monthsLabel(durationMonths)}.` : ""}
+          Choose a plan and how long it runs, tell us who it is for, and we will send
+          them a beautiful digital gift.
         </p>
       </header>
 
@@ -458,14 +484,12 @@ export default function GiftPurchaseClient() {
                   </div>
                   <div className="mt-3 flex items-baseline gap-2">
                     <span className="text-[24px] font-semibold text-[#313234]">
-                      {formatMoneyCents(quote.totalCents)}
+                      {formatMoneyCents(quote.perMonthCents)}
                     </span>
-                    <span className="text-[13px] text-[#6A6D71]">
-                      total for {monthsLabel(quote.durationMonths)}
-                    </span>
+                    <span className="text-[13px] text-[#6A6D71]">per month</span>
                   </div>
                   <p className="mt-1 text-[13px] text-[#9CA3AF]">
-                    {formatMoneyCents(quote.perMonthCents)} &times; {quote.durationMonths}
+                    You choose how many months next
                   </p>
                 </button>
               );
@@ -481,8 +505,87 @@ export default function GiftPurchaseClient() {
             <button
               type="button"
               disabled={!plan}
-              onClick={() => setStep("recipient")}
+              onClick={() => setStep("length")}
               className="inline-flex min-h-[46px] w-full items-center justify-center rounded-[8px] bg-[#306EEC] px-7 text-[15px] font-semibold text-white transition hover:bg-[#2558C4] disabled:cursor-not-allowed disabled:bg-[#C5CBD8] sm:w-auto"
+            >
+              Continue
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {/* ------------------------------ Length ----------------------------- */}
+      {step === "length" && plan ? (
+        <section aria-labelledby="length-heading">
+          <h2 id="length-heading" className="text-[19px] font-semibold text-[#313234]">
+            How long should it run?
+          </h2>
+          <p className="mt-1.5 text-[14px] leading-relaxed text-[#6A6D71]">
+            {planLabel(plan)} is {formatMoneyCents(perMonthCents ?? 0)} a month. The whole gift is
+            paid once, up front — nothing renews and there is no card left on file.
+          </p>
+
+          <div
+            role="radiogroup"
+            aria-label="Gift length"
+            className="mt-5 grid gap-3 sm:grid-cols-2"
+          >
+            {(options?.durations ?? []).map((months) => {
+              const quote = quoteForDuration(plan, months);
+              if (!quote) return null;
+              const selected = durationMonths === months;
+              return (
+                <button
+                  key={months}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => setChosenDuration(months)}
+                  className={[
+                    "flex items-baseline justify-between gap-3 rounded-[10px] border px-4 py-4 text-left transition sm:px-5",
+                    selected
+                      ? "border-[#306EEC] bg-[#F5F9FF] ring-2 ring-[#306EEC]/20"
+                      : "border-[#E0E6F5] bg-white hover:border-[#C5CBD8]",
+                  ].join(" ")}
+                >
+                  <span className="min-w-0">
+                    <span className="block text-[16px] font-semibold text-[#313234]">
+                      {monthsLabel(months)}
+                    </span>
+                    <span className="mt-0.5 block text-[13px] text-[#9CA3AF]">
+                      {formatMoneyCents(quote.perMonthCents)} &times; {months}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-[20px] font-semibold text-[#313234]">
+                    {formatMoneyCents(quote.totalCents)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {selectedQuote ? (
+            <p className="mt-5 rounded-[8px] bg-[#F8FAFF] px-4 py-3 text-[14px] text-[#313234]">
+              <span className="font-semibold">
+                {monthsLabel(selectedQuote.durationMonths)} of ProFixter {planLabel(plan)}
+              </span>{" "}
+              &middot; {formatMoneyCents(selectedQuote.totalCents)} before tax
+            </p>
+          ) : null}
+
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-between">
+            <button
+              type="button"
+              onClick={() => setStep("plan")}
+              className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-6 text-[15px] font-semibold text-[#313234] transition hover:bg-[#F8FAFF]"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              disabled={!durationMonths}
+              onClick={() => setStep("recipient")}
+              className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] bg-[#306EEC] px-7 text-[15px] font-semibold text-white transition hover:bg-[#2558C4] disabled:cursor-not-allowed disabled:bg-[#C5CBD8]"
             >
               Continue
             </button>
@@ -655,7 +758,7 @@ export default function GiftPurchaseClient() {
           <div className="flex flex-col gap-3 pt-3 sm:flex-row sm:justify-between">
               <button
                 type="button"
-                onClick={() => setStep("plan")}
+                onClick={() => setStep("length")}
                 className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-6 text-[15px] font-semibold text-[#313234] transition hover:bg-[#F8FAFF]"
               >
                 Back
