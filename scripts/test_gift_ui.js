@@ -169,18 +169,26 @@ test("the one-time nature is stated plainly, before payment", () => {
   assert.match(purchase, /does not automatically renew/);
 });
 
-test("no coupon field is built — Stripe Checkout owns promotion codes", () => {
+test("no coupon field is built, and none is promised", () => {
   /*
-   * Telling the customer WHERE to enter a code is right; building an input
-   * for one is not — it would either duplicate Stripe's validation badly or
-   * lie about what it had accepted. So this looks for state and inputs, not
-   * for the word.
+   * Building a coupon input would either duplicate Stripe's validation badly
+   * or lie about what it had accepted, so this looks for state and inputs
+   * rather than for the word.
+   *
+   * The copy changed too. It used to point the customer at the code field on
+   * Stripe's screen; gift checkout now refuses promotion codes entirely,
+   * because every active code in the live account is unrestricted and
+   * several are worth 100%. Promising a field that rejects every code would
+   * be worse than saying nothing, so the line was replaced.
    */
   const body = code(purchase);
   assert.ok(!/\[(promo|coupon)[A-Za-z]*, set/i.test(body), "no coupon state");
   assert.ok(!/id="(promo|coupon)/i.test(body), "no coupon input");
   assert.ok(!/allow_promotion_codes/.test(body), "Stripe config belongs on the server");
-  assert.match(purchase, /enter it on the next screen, at checkout/);
+  assert.ok(
+    !/enter it on the next screen/i.test(purchase),
+    "the purchase screen must not promise a code field that refuses every code"
+  );
 });
 
 test("recipient fields are validated before review", () => {
