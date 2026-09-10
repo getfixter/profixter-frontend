@@ -26,9 +26,11 @@ import {
   GiftError,
   claimGift,
   formatGiftDate,
+  getClaimDetails,
   getClaimPreview,
   monthsLabel,
   planLabel,
+  type ClaimDetails,
   type ClaimPreview,
 } from "@/lib/gift-service";
 
@@ -128,6 +130,14 @@ export default function GiftClaimClient({ token }: { token: string }) {
   const [chosenAddressId, setChosenAddressId] = useState<string>("");
   const [claimError, setClaimError] = useState<string | null>(null);
 
+  /*
+   * The address hint is not in the public payload — it is somebody's home,
+   * and the claim link is readable by anyone it reaches. Fetched separately
+   * once the viewer is signed in and the server has checked they are the
+   * intended recipient.
+   */
+  const [details, setDetails] = useState<ClaimDetails | null>(null);
+
   const [claiming, setClaiming] = useState(false);
   const claimLock = useRef(false);
 
@@ -147,6 +157,27 @@ export default function GiftClaimClient({ token }: { token: string }) {
       cancelled = true;
     };
   }, [token]);
+
+  /*
+   * The address hint, once the viewer is signed in.
+   *
+   * A separate authenticated request on purpose: the server only releases it
+   * after checking that this account is the intended recipient, so a
+   * forwarded link in the wrong hands never sees somebody's home address.
+   * Failure is silent — the claim works without the hint, it just cannot say
+   * which property the purchaser had in mind.
+   */
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+    let cancelled = false;
+    (async () => {
+      const found = await getClaimDetails(token);
+      if (!cancelled && found) setDetails(found);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, isAuthenticated]);
 
   /*
    * The recipient's own saved properties.
@@ -175,7 +206,7 @@ export default function GiftClaimClient({ token }: { token: string }) {
    */
   const defaultAddressId = useMemo(() => {
     if (!addresses.length) return "";
-    const snapshot = phase.kind === "preview" ? phase.gift.addressSnapshot : null;
+    const snapshot = details?.addressSnapshot || null;
     const wanted = String(snapshot?.line1 || "").trim().toLowerCase();
     const match = wanted
       ? addresses.find((a) => String(a.line1 || "").trim().toLowerCase() === wanted)
@@ -373,7 +404,6 @@ export default function GiftClaimClient({ token }: { token: string }) {
         plan={gift.plan}
         durationMonths={gift.durationMonths}
         recipientFirstName={gift.recipientFirstName}
-        recipientLastName={gift.recipientLastName}
         from={gift.from}
         personalMessage={gift.personalMessage}
         actionNote={`Your ${monthsLabel(gift.durationMonths).toLowerCase()} start when you claim.`}
@@ -401,7 +431,7 @@ export default function GiftClaimClient({ token }: { token: string }) {
               <p className="mt-2 text-[14px] leading-relaxed text-[#6A6D71]">
                 The invitation was sent to{" "}
                 <span className="break-words font-medium text-[#313234]">
-                  {gift.recipientEmail}
+                  {gift.recipientEmailHint}
                 </span>
                 , so use that address.
               </p>
@@ -436,12 +466,12 @@ export default function GiftClaimClient({ token }: { token: string }) {
               </h2>
               <p className="mt-1.5 text-[13px] leading-relaxed text-[#6A6D71]">
                 A membership covers one home.
-                {gift.addressSnapshot?.line1 ? (
+                {details?.addressSnapshot?.line1 ? (
                   <>
                     {" "}
                     The person who sent it had{" "}
                     <span className="font-medium text-[#313234]">
-                      {gift.addressSnapshot.line1}
+                      {details.addressSnapshot.line1}
                     </span>{" "}
                     in mind.
                   </>
