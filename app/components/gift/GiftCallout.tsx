@@ -108,7 +108,20 @@ export default function GiftCallout({
     return (
       <section
         aria-labelledby={headingId || "gift-bar-heading"}
-        className={`relative isolate overflow-hidden rounded-[14px] border border-[#E4D7C3] bg-gradient-to-r from-[#FDF8F1] via-[#FCF4E9] to-[#FAEEDD] ${className}`}
+        /*
+         * @container, and the children below use @md rather than md.
+         *
+         * This lays out from the width of its OWN container, not the
+         * viewport. It sits full width on the booking page and inside a
+         * ~590px column on the account, and a viewport breakpoint cannot
+         * tell those apart: at 1280px wide md: applied in both, so the
+         * account version became a row and squeezed its own text into a
+         * strip about ten characters across.
+         *
+         * @3xl, not @md: Tailwind's container sizes are their own scale and
+         * @md is 28rem, well under the width this row needs.
+         */
+        className={`@container relative isolate overflow-hidden rounded-[14px] border border-[#E4D7C3] bg-gradient-to-r from-[#FDF8F1] via-[#FCF4E9] to-[#FAEEDD] ${className}`}
       >
         {/* A single warm sweep, not a photograph: this must stay light. */}
         <div
@@ -119,11 +132,11 @@ export default function GiftCallout({
               "radial-gradient(120% 140% at 100% 0%, rgba(212,165,116,0.22) 0%, rgba(212,165,116,0) 62%)",
           }}
         />
-        <div className="flex flex-col gap-3 px-4 py-4 sm:px-5 md:flex-row md:items-center md:justify-between md:gap-5">
-          <div className="flex items-start gap-3 md:items-center">
+        <div className="flex flex-col gap-3 px-4 py-4 sm:px-5 @3xl:flex-row @3xl:items-center @3xl:justify-between @3xl:gap-5">
+          <div className="flex items-start gap-3 @3xl:items-center">
             <span
               aria-hidden="true"
-              className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#D4A574]/18 text-[17px] md:mt-0"
+              className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#D4A574]/18 text-[17px] @3xl:mt-0"
             >
               🎁
             </span>

@@ -90,8 +90,13 @@ check("the hero uses an approved photograph already in the repository", () => {
 check("only real ProFixter colours are used", () => {
   // The warm gold is a real token: it is used across a dozen existing
   // components, not invented for this feature.
-  const accountOverview = read("app", "components", "account", "OverviewSection.tsx");
-  has(accountOverview, "#D4A574", "the gold must be an existing brand colour");
+  // Asserted against the stylesheet that defines the token rather than one
+  // component that happens to use it: the account overview was rebuilt and
+  // the check went with the file.
+  assert(
+    /#d4a574/i.test(css),
+    "the gold must be an existing brand colour"
+  );
   for (const token of ["#0B1628", "#306EEC", "#EEF2FF", "#D4A574"]) {
     assert(card.includes(token) || css.includes(token), `${token} should appear in the card system`);
   }
@@ -642,7 +647,7 @@ check("a half-typed phone number is refused rather than dropped", () => {
 console.log("\nGift visibility across the site\n");
 
 const bookPage = read("app", "book", "page.tsx");
-const overview = read("app", "components", "account", "OverviewSection.tsx");
+const overview = read("app", "components", "account", "AccountOverview.tsx");
 const membershipExp = read("app", "components", "membership", "MembershipExperience.tsx");
 const plansPage = read("app", "membership", "plans", "page.tsx");
 const aboutPage = read("app", "about", "page.tsx");
@@ -696,7 +701,11 @@ check("the pitch follows the reader, member or not", () => {
   // telling them they "already know" would be selling them their own
   // experience of nothing.
   has(bookPage, 'audience={isMember ? "member" : "public"}');
-  has(overview, 'audience="member"', "the account is members only");
+  has(
+    overview,
+    'audience={covered ? "member" : "public"}',
+    "the account pitch follows whether this person actually has cover"
+  );
   has(membershipExp, 'audience="public"', "the membership page is for visitors");
   // The two pitches must actually differ.
   has(callout, "You already know the convenience of having a Fixter");
@@ -738,13 +747,18 @@ check("the membership pages promote gifting above the fold-and-a-half", () => {
 });
 
 check("the account promotes gifting on the screen members land on", () => {
-  const giftAt = overview.indexOf("account-gift-heading");
+  const giftAt = overview.indexOf("acct-gift");
   // The rendered heading, not the phrase: the comment above the callout
   // mentions Quick Actions too, and matched first.
-  const quickActions = overview.indexOf(">Quick Actions<");
+  /*
+   * Quick Actions is gone with the old overview. The rule that survives is
+   * the one that mattered: gifting is on the screen a member lands on, and
+   * above the secondary account tools rather than buried under them.
+   */
+  const tools = overview.indexOf("Account tools");
   assert.ok(giftAt > 0, "the account overview must promote gifting");
-  assert.ok(quickActions > 0, "Quick Actions should still be there");
-  assert.ok(giftAt < quickActions, "and gifting should sit above it");
+  assert.ok(tools > 0, "the account tools section should still be there");
+  assert.ok(giftAt < tools, "and gifting should sit above them");
 });
 
 check("the GIFT code is shown, and can be copied", () => {
