@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import DigitalGiftHero from "@/app/components/gift/DigitalGiftHero";
 import { useAuth } from "@/lib/useAuth";
 import {
   GiftError,
@@ -117,36 +118,6 @@ function errorPhase(error: unknown): Phase {
 
   const chosen = copy[code] || copy.UNKNOWN;
   return { kind: "error", code, ...chosen };
-}
-
-/** The gift, as a card. Used on the preview and after a successful claim. */
-function GiftCard({
-  from,
-  plan,
-  durationMonths,
-}: {
-  from: string;
-  plan: string;
-  durationMonths: number;
-}) {
-  return (
-    <div className="rounded-[12px] border border-[#E0E6F5] bg-gradient-to-b from-[#F5F9FF] to-white p-6 text-center">
-      {from ? (
-        <p className="text-[14px] text-[#6A6D71]">
-          <span className="font-semibold text-[#313234]">{from}</span> sent you
-        </p>
-      ) : (
-        <p className="text-[14px] text-[#6A6D71]">You have been sent</p>
-      )}
-      <p className="mt-2 text-[30px] font-semibold leading-tight text-[#313234] sm:text-[36px]">
-        {planLabel(plan)}
-      </p>
-      <p className="mt-1 text-[15px] text-[#6A6D71]">{monthsLabel(durationMonths)} of ProFixter</p>
-      <p className="mt-4 inline-block rounded-full bg-[#EEF2FF] px-3 py-1 text-[12px] font-medium text-[#306EEC]">
-        Nothing to pay
-      </p>
-    </div>
-  );
 }
 
 export default function GiftClaimClient({ token }: { token: string }) {
@@ -384,148 +355,187 @@ export default function GiftClaimClient({ token }: { token: string }) {
   }
 
   /* ------------------------------- Preview ------------------------------- */
+  /*
+   * The recipient sees the GIFT first, then the mechanics.
+   *
+   * The old screen opened on a heading and a form, which is how you tell
+   * somebody they have received a document. The reveal below is the whole
+   * point of the feature: the card, who it is from, what they wrote, and one
+   * way forward. Everything needed to actually claim it lives under #claim,
+   * one tap away and reachable by keyboard.
+   */
   const { gift } = phase;
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-12 sm:px-6 sm:py-14">
-      <h1 className="mb-5 text-center text-[22px] font-semibold leading-tight text-[#313234] sm:text-[26px]">
-        You have received a ProFixter membership
-      </h1>
+    <div className="bg-[#070D18]">
+      <DigitalGiftHero
+        occasion={gift.occasion}
+        plan={gift.plan}
+        durationMonths={gift.durationMonths}
+        recipientFirstName={gift.recipientFirstName}
+        recipientLastName={gift.recipientLastName}
+        from={gift.from}
+        personalMessage={gift.personalMessage}
+        actionNote={`Your ${monthsLabel(gift.durationMonths).toLowerCase()} start when you claim.`}
+        action={
+          <a
+            href="#claim"
+            className="gift-cta inline-flex min-h-[52px] w-full items-center justify-center gap-2.5 rounded-[10px] px-8 text-[15px] font-semibold tracking-[0.02em] text-[#1A1206] sm:w-auto sm:text-[16px]"
+          >
+            Claim your gift
+            <span aria-hidden="true">&rarr;</span>
+          </a>
+        }
+      />
 
-      <GiftCard from={gift.from} plan={gift.plan} durationMonths={gift.durationMonths} />
-
-      {!isAuthenticated ? (
-        <div className="mt-6 rounded-[10px] border border-[#E0E6F5] bg-[#F8FAFF] p-5">
-          <p className="text-[14px] leading-relaxed text-[#6A6D71]">
-            Sign in to claim it. The invitation was sent to{" "}
-            <span className="break-words font-medium text-[#313234]">{gift.recipientEmail}</span>, so
-            use that address.
-          </p>
-          <div className="mt-4 flex flex-col gap-3">
-            {/* The token rides along in ?next=, so the link survives sign-in. */}
-            <Link
-              href={
-                gift.hasAccount
-                  ? `/signin?next=${encodeURIComponent(returnTo)}`
-                  : `/signup?next=${encodeURIComponent(returnTo)}`
-              }
-              className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-semibold text-white transition hover:bg-[#2558C4]"
-            >
-              {gift.hasAccount ? "Sign in to claim" : "Create an account to claim"}
-            </Link>
-            <Link
-              href={
-                gift.hasAccount
-                  ? `/signup?next=${encodeURIComponent(returnTo)}`
-                  : `/signin?next=${encodeURIComponent(returnTo)}`
-              }
-              className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-6 text-[15px] font-semibold text-[#313234] transition hover:bg-[#F8FAFF]"
-            >
-              {gift.hasAccount ? "I need an account" : "I already have an account"}
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-6">
-          <h2 className="text-[16px] font-semibold text-[#313234]">Which property is it for?</h2>
-          <p className="mt-1 text-[13px] leading-relaxed text-[#6A6D71]">
-            A membership covers one home.
-            {gift.addressSnapshot?.line1 ? (
-              <>
-                {" "}
-                The person who sent it had{" "}
-                <span className="font-medium text-[#313234]">{gift.addressSnapshot.line1}</span> in
-                mind.
-              </>
-            ) : null}
-          </p>
-
-          {addresses.length ? (
-            <fieldset className="mt-4 space-y-2">
-              <legend className="sr-only">Choose a property</legend>
-              {addresses.map((address) => (
-                <label
-                  key={address._id}
-                  className={[
-                    "flex cursor-pointer items-start gap-3 rounded-[8px] border p-3.5 transition",
-                    addressId === String(address._id)
-                      ? "border-[#306EEC] bg-[#F5F9FF]"
-                      : "border-[#E0E6F5] bg-white hover:border-[#C5CBD8]",
-                  ].join(" ")}
-                >
-                  <input
-                    type="radio"
-                    name="addressId"
-                    value={String(address._id)}
-                    checked={addressId === String(address._id)}
-                    onChange={() => setChosenAddressId(String(address._id))}
-                    className="mt-0.5 h-4 w-4 shrink-0 accent-[#306EEC]"
-                  />
-                  <span className="min-w-0 text-[14px] leading-snug text-[#313234]">
-                    <span className="block break-words font-medium">{address.line1}</span>
-                    <span className="block break-words text-[13px] text-[#6A6D71]">
-                      {address.city}, {address.state} {address.zip}
-                    </span>
-                  </span>
-                </label>
-              ))}
-            </fieldset>
-          ) : (
-            /*
-             * No saved property. Sent to the existing account address flow
-             * rather than given a second address form here — the recipient
-             * owns the address, and there should be one place it is created.
-             */
-            <div className="mt-4 rounded-[8px] border border-[#E0E6F5] bg-[#F8FAFF] p-4">
-              <p className="text-[14px] leading-relaxed text-[#6A6D71]">
-                You do not have a property saved yet. Add one to your account, then come back to
-                this link to claim your gift.
+      {/* ---------------------------------------------------------------- */}
+      {/* Claiming. Unchanged behaviour, on a surface that can be read.     */}
+      {/* ---------------------------------------------------------------- */}
+      <section id="claim" className="scroll-mt-6 bg-[#F4F6FB] px-4 py-12 sm:px-6 sm:py-16">
+        <div className="mx-auto w-full max-w-[560px]">
+          {!isAuthenticated ? (
+            <div className="rounded-[14px] border border-[#E0E6F5] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:p-7">
+              <h2 className="text-[19px] font-semibold text-[#313234] sm:text-[21px]">
+                Claim your gift
+              </h2>
+              <p className="mt-2 text-[14px] leading-relaxed text-[#6A6D71]">
+                The invitation was sent to{" "}
+                <span className="break-words font-medium text-[#313234]">
+                  {gift.recipientEmail}
+                </span>
+                , so use that address.
               </p>
-              <Link
-                href={`/account?tab=personal&next=${encodeURIComponent(returnTo)}`}
-                className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[14px] font-semibold text-white transition hover:bg-[#2558C4]"
-              >
-                Add your property
-              </Link>
+              <div className="mt-5 flex flex-col gap-3">
+                {/* The token rides along in ?next=, so the link survives sign-in. */}
+                <Link
+                  href={
+                    gift.hasAccount
+                      ? `/signin?next=${encodeURIComponent(returnTo)}`
+                      : `/signup?next=${encodeURIComponent(returnTo)}`
+                  }
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-semibold text-white transition hover:bg-[#2558C4]"
+                >
+                  {gift.hasAccount ? "Sign in to claim" : "Create an account to claim"}
+                </Link>
+                <Link
+                  href={
+                    gift.hasAccount
+                      ? `/signup?next=${encodeURIComponent(returnTo)}`
+                      : `/signin?next=${encodeURIComponent(returnTo)}`
+                  }
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-6 text-[15px] font-semibold text-[#313234] transition hover:bg-[#F8FAFF]"
+                >
+                  {gift.hasAccount ? "I need an account" : "I already have an account"}
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-[14px] border border-[#E0E6F5] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:p-7">
+              <h2 className="text-[19px] font-semibold text-[#313234] sm:text-[21px]">
+                Which property is it for?
+              </h2>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-[#6A6D71]">
+                A membership covers one home.
+                {gift.addressSnapshot?.line1 ? (
+                  <>
+                    {" "}
+                    The person who sent it had{" "}
+                    <span className="font-medium text-[#313234]">
+                      {gift.addressSnapshot.line1}
+                    </span>{" "}
+                    in mind.
+                  </>
+                ) : null}
+              </p>
+
+              {addresses.length ? (
+                <fieldset className="mt-4 space-y-2">
+                  <legend className="sr-only">Choose a property</legend>
+                  {addresses.map((address) => (
+                    <label
+                      key={address._id}
+                      className={[
+                        "flex cursor-pointer items-start gap-3 rounded-[8px] border p-3.5 transition",
+                        addressId === String(address._id)
+                          ? "border-[#306EEC] bg-[#F5F9FF]"
+                          : "border-[#E0E6F5] bg-white hover:border-[#C5CBD8]",
+                      ].join(" ")}
+                    >
+                      <input
+                        type="radio"
+                        name="addressId"
+                        value={String(address._id)}
+                        checked={addressId === String(address._id)}
+                        onChange={() => setChosenAddressId(String(address._id))}
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-[#306EEC]"
+                      />
+                      <span className="min-w-0 text-[14px] leading-snug text-[#313234]">
+                        <span className="block break-words font-medium">{address.line1}</span>
+                        <span className="block break-words text-[13px] text-[#6A6D71]">
+                          {address.city}, {address.state} {address.zip}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </fieldset>
+              ) : (
+                /*
+                 * No saved property. Sent to the existing account address flow
+                 * rather than given a second address form here — the recipient
+                 * owns the address, and there should be one place it is created.
+                 */
+                <div className="mt-4 rounded-[8px] border border-[#E0E6F5] bg-[#F8FAFF] p-4">
+                  <p className="text-[14px] leading-relaxed text-[#6A6D71]">
+                    You do not have a property saved yet. Add one to your account, then come back
+                    to this link to claim your gift.
+                  </p>
+                  <Link
+                    href={`/account?tab=personal&next=${encodeURIComponent(returnTo)}`}
+                    className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[14px] font-semibold text-white transition hover:bg-[#2558C4]"
+                  >
+                    Add your property
+                  </Link>
+                </div>
+              )}
+
+              {claimError ? (
+                <p
+                  role="alert"
+                  className="mt-4 rounded-[8px] border border-[#F3C9C4] bg-[#FDF3F2] px-4 py-3 text-sm text-[#A03227]"
+                >
+                  {claimError}
+                </p>
+              ) : null}
+
+              {addresses.length ? (
+                <button
+                  type="button"
+                  onClick={handleClaim}
+                  disabled={claiming}
+                  aria-busy={claiming}
+                  className="mt-5 inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-semibold text-white transition hover:bg-[#2558C4] disabled:cursor-not-allowed disabled:bg-[#8FB3F5]"
+                >
+                  {claiming ? (
+                    <>
+                      <span
+                        className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                        aria-hidden
+                      />
+                      Claiming&hellip;
+                    </>
+                  ) : (
+                    "Claim your gift"
+                  )}
+                </button>
+              ) : null}
+
+              <p className="mt-3 text-center text-[12px] text-[#9CA3AF]">
+                Your {monthsLabel(gift.durationMonths).toLowerCase()} start when you claim.
+              </p>
             </div>
           )}
-
-          {claimError ? (
-            <p
-              role="alert"
-              className="mt-4 rounded-[8px] border border-[#F3C9C4] bg-[#FDF3F2] px-4 py-3 text-sm text-[#A03227]"
-            >
-              {claimError}
-            </p>
-          ) : null}
-
-          {addresses.length ? (
-            <button
-              type="button"
-              onClick={handleClaim}
-              disabled={claiming}
-              aria-busy={claiming}
-              className="mt-5 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-semibold text-white transition hover:bg-[#2558C4] disabled:cursor-not-allowed disabled:bg-[#8FB3F5]"
-            >
-              {claiming ? (
-                <>
-                  <span
-                    className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                    aria-hidden
-                  />
-                  Claiming&hellip;
-                </>
-              ) : (
-                "Claim your gift"
-              )}
-            </button>
-          ) : null}
-
-          <p className="mt-3 text-center text-[12px] text-[#9CA3AF]">
-            Your {monthsLabel(gift.durationMonths)} start when you claim.
-          </p>
         </div>
-      )}
+      </section>
     </div>
   );
 }

@@ -13,6 +13,8 @@
  */
 
 import { useEffect, useState } from "react";
+import DigitalGiftCard from "@/app/components/gift/DigitalGiftCard";
+import { useAuth } from "@/lib/useAuth";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -30,6 +32,22 @@ export default function GiftConfirmationClient() {
   const sessionId = searchParams.get("session_id");
 
   const [gift, setGift] = useState<Purchased | null>(null);
+  /* The viewer of this page is the purchaser, so the gift is from them. */
+  const { user } = useAuth();
+
+  /*
+   * Whether the server sent a real breakdown.
+   *
+   * Checked rather than assumed: gifts recorded before tax was captured have
+   * these fields at their schema defaults, and rendering "Sales tax $0.00"
+   * for one of those would be stating something we do not know to be true.
+   */
+  const hasBreakdown =
+    !!gift &&
+    typeof gift.amountSubtotalCents === "number" &&
+    gift.amountSubtotalCents > 0 &&
+    gift.amountSubtotalCents + gift.taxCents - gift.discountCents === gift.amountPaidCents;
+
   const [state, setState] = useState<"loading" | "ready" | "pending">("loading");
 
   useEffect(() => {
@@ -110,6 +128,23 @@ export default function GiftConfirmationClient() {
             {planLabel(gift.plan)}.
           </p>
 
+          {/*
+            The card they just sent, at compact size — the same component the
+            recipient will open, so "here is what you sent" is literally true.
+          */}
+          <div className="mt-7 rounded-[14px] bg-[#0B1628] p-4 sm:p-5">
+            <DigitalGiftCard
+              occasion={gift.occasion}
+              plan={gift.plan}
+              durationMonths={gift.durationMonths}
+              recipientFirstName={gift.recipientFirstName}
+              recipientLastName={gift.recipientLastName}
+              from={String(user?.name || "").trim()}
+              personalMessage={gift.personalMessage}
+              size="compact"
+            />
+          </div>
+
           <dl className="mt-7 divide-y divide-[#EEF2FF] rounded-[10px] border border-[#E0E6F5] bg-white">
             <div className="flex items-start justify-between gap-4 px-4 py-3.5 sm:px-5">
               <dt className="text-[13px] text-[#6A6D71]">Recipient</dt>
@@ -123,9 +158,47 @@ export default function GiftConfirmationClient() {
                 {planLabel(gift.plan)} &middot; {monthsLabel(gift.durationMonths)}
               </dd>
             </div>
-            <div className="flex items-start justify-between gap-4 px-4 py-3.5 sm:px-5">
-              <dt className="text-[13px] text-[#6A6D71]">Paid</dt>
-              <dd className="text-right text-[15px] font-medium text-[#313234]">
+            {/*
+              The money, broken out.
+
+              The review screen quotes $498 and the receipt says $541.58; the
+              difference is sales tax, and until now the purchaser had to work
+              that out for themselves. Every figure here is the authoritative
+              one Stripe returned on the completed session and the server
+              stored — nothing on this page computes or estimates tax.
+
+              The rows appear only when the server actually sent them. An
+              older gift recorded before these fields existed shows the total
+              alone rather than a breakdown padded out with zeroes that would
+              read as "no tax was charged".
+            */}
+            {hasBreakdown ? (
+              <>
+                <div className="flex items-start justify-between gap-4 px-4 py-2.5 sm:px-5">
+                  <dt className="text-[13px] text-[#6A6D71]">Subtotal</dt>
+                  <dd className="text-right text-[14px] tabular-nums text-[#313234]">
+                    {formatMoneyCents(gift.amountSubtotalCents)}
+                  </dd>
+                </div>
+                {gift.discountCents > 0 ? (
+                  <div className="flex items-start justify-between gap-4 px-4 py-2.5 sm:px-5">
+                    <dt className="text-[13px] text-[#6A6D71]">Discount</dt>
+                    <dd className="text-right text-[14px] tabular-nums text-[#1B7F5A]">
+                      &minus;{formatMoneyCents(gift.discountCents)}
+                    </dd>
+                  </div>
+                ) : null}
+                <div className="flex items-start justify-between gap-4 px-4 py-2.5 sm:px-5">
+                  <dt className="text-[13px] text-[#6A6D71]">Sales tax</dt>
+                  <dd className="text-right text-[14px] tabular-nums text-[#313234]">
+                    {formatMoneyCents(gift.taxCents)}
+                  </dd>
+                </div>
+              </>
+            ) : null}
+            <div className="flex items-start justify-between gap-4 bg-[#F8FAFF] px-4 py-3.5 sm:px-5">
+              <dt className="text-[14px] font-semibold text-[#313234]">Total paid</dt>
+              <dd className="text-right text-[16px] font-semibold tabular-nums text-[#313234]">
                 {formatMoneyCents(gift.amountPaidCents)}
               </dd>
             </div>

@@ -44,6 +44,12 @@ export type GiftRecipientInput = {
   email: string;
 };
 
+/** What the purchaser chose about how the gift looks. Never about what it is. */
+export type GiftPresentationInput = {
+  occasion: string;
+  personalMessage: string;
+};
+
 export type GiftAddressInput = {
   line1: string;
   city: string;
@@ -57,6 +63,11 @@ export type ClaimPreview = {
   from: string;
   recipientEmail: string;
   recipientFirstName: string;
+  recipientLastName: string;
+  /* Presentation only. The server sanitises and stores both; see
+   * utils/gifts/giftOccasions.js. An unknown occasion arrives as "neutral". */
+  occasion: string;
+  personalMessage: string;
   addressSnapshot: GiftAddressInput | null;
 };
 
@@ -182,12 +193,14 @@ export async function getGiftOptions(): Promise<GiftOptions | null> {
  * Returns a Stripe Checkout URL. Nothing is recorded until Stripe confirms
  * payment on the webhook, so abandoning this leaves no trace.
  */
-export async function createGiftCheckoutSession(input: {
-  plan: GiftPlan;
-  durationMonths: number;
-  recipient: GiftRecipientInput;
-  address: GiftAddressInput;
-}): Promise<{ url: string; sessionId: string }> {
+export async function createGiftCheckoutSession(
+  input: {
+    plan: GiftPlan;
+    durationMonths: number;
+    recipient: GiftRecipientInput;
+    address: GiftAddressInput;
+  } & Partial<GiftPresentationInput>
+): Promise<{ url: string; sessionId: string }> {
   try {
     const { data } = await API.post("/api/gifts/checkout-session", input);
     return data;
@@ -256,9 +269,26 @@ export async function getPurchasedGifts() {
       durationMonths: number;
       recipientEmail: string;
       recipientName: string;
+      recipientFirstName: string;
+      recipientLastName: string;
+      /* Presentation the purchaser wrote. Never a claim token: the token is a
+       * credential and only ever reaches the recipient's email. */
+      occasion: string;
+      personalMessage: string;
       status: string;
       state: string;
+      /*
+       * The money as Stripe reported it on the completed session, passed
+       * through by the server. Never recomputed here: the client must not
+       * derive tax, and a total that disagrees with the receipt is worse
+       * than no breakdown at all.
+       */
+      amountSubtotalCents: number;
+      discountCents: number;
+      taxCents: number;
       amountPaidCents: number;
+      currency: string;
+      automaticTaxStatus: string;
       refundStatus: string;
       purchasedAt: string | null;
       claimedAt: string | null;

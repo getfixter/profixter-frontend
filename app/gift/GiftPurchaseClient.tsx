@@ -21,6 +21,13 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import DigitalGiftCard from "@/app/components/gift/DigitalGiftCard";
+import {
+  MESSAGE_MAX_LENGTH,
+  OCCASIONS,
+  OCCASION_ORDER,
+  type GiftOccasion,
+} from "@/app/components/gift/giftPresentation";
 import Link from "next/link";
 
 import { useAuth } from "@/lib/useAuth";
@@ -165,6 +172,18 @@ export default function GiftPurchaseClient() {
   const [state, setState] = useState("NY");
   const [zip, setZip] = useState("");
 
+  /*
+   * Presentation only. Neither of these reaches pricing, duration or
+   * entitlement — the server ignores them for everything but the words on
+   * the card, and sanitises both before storing them.
+   */
+  /* The signed-in purchaser is who the gift is from. Shown on the preview
+   * so it matches the card the recipient will actually open. */
+  const purchaserName = String(user?.name || "").trim();
+
+  const [occasion, setOccasion] = useState<GiftOccasion>("neutral");
+  const [personalMessage, setPersonalMessage] = useState("");
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -249,6 +268,8 @@ export default function GiftPurchaseClient() {
         durationMonths,
         recipient: { firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim().toLowerCase() },
         address: { line1: line1.trim(), city: city.trim(), state, zip: zip.trim() },
+        occasion,
+        personalMessage: personalMessage.trim(),
       });
       // Leaving the page: the lock is never released, so a fast double click
       // during navigation cannot start a second session.
@@ -263,7 +284,19 @@ export default function GiftPurchaseClient() {
       submitLock.current = false;
       setSubmitting(false);
     }
-  }, [plan, durationMonths, firstName, lastName, email, line1, city, state, zip]);
+  }, [
+    plan,
+    durationMonths,
+    firstName,
+    lastName,
+    email,
+    line1,
+    city,
+    state,
+    zip,
+    occasion,
+    personalMessage,
+  ]);
 
   /* ---------------------------------------------------------------------- */
 
@@ -541,7 +574,65 @@ export default function GiftPurchaseClient() {
               />
             </div>
 
-            <div className="flex flex-col gap-3 pt-3 sm:flex-row sm:justify-between">
+            {/* ------------------------- Presentation ------------------------- */}
+          {/*
+            What the gift SAYS, kept apart from what the gift IS.
+
+            Both fields are optional and neither touches the plan, the length
+            or the price — the server treats them as words for the card and
+            nothing else. The heading says so plainly, because a purchaser
+            choosing "Birthday" should not have to wonder whether they have
+            just changed what they are buying.
+          */}
+          <fieldset className="mt-8 border-t border-[#EEF2FF] pt-7">
+            <legend className="sr-only">How the gift is presented</legend>
+            <h3 className="text-[15px] font-semibold text-[#313234]">Make it personal</h3>
+            <p className="mt-1 text-[13px] leading-relaxed text-[#6A6D71]">
+              Optional. This changes the wording on the gift, not the membership.
+            </p>
+
+            <label
+              htmlFor="gift-occasion"
+              className="mt-5 block text-[13px] font-medium text-[#313234]"
+            >
+              Occasion
+            </label>
+            <select
+              id="gift-occasion"
+              value={occasion}
+              onChange={(e) => setOccasion(e.target.value as GiftOccasion)}
+              className={FIELD}
+            >
+              {OCCASION_ORDER.map((key) => (
+                <option key={key} value={key}>
+                  {OCCASIONS[key].label}
+                </option>
+              ))}
+            </select>
+
+            <div className="mt-5 flex items-baseline justify-between gap-3">
+              <label htmlFor="gift-message" className="text-[13px] font-medium text-[#313234]">
+                Personal message
+              </label>
+              <span
+                className="text-[12px] tabular-nums text-[#9CA3AF]"
+                aria-live="polite"
+              >
+                {personalMessage.length}/{MESSAGE_MAX_LENGTH}
+              </span>
+            </div>
+            <textarea
+              id="gift-message"
+              value={personalMessage}
+              maxLength={MESSAGE_MAX_LENGTH}
+              rows={3}
+              onChange={(e) => setPersonalMessage(e.target.value.slice(0, MESSAGE_MAX_LENGTH))}
+              placeholder="Congratulations on your new home!"
+              className={`${FIELD} min-h-[92px] resize-y py-3 leading-relaxed`}
+            />
+          </fieldset>
+
+          <div className="flex flex-col gap-3 pt-3 sm:flex-row sm:justify-between">
               <button
                 type="button"
                 onClick={() => setStep("plan")}
@@ -566,6 +657,32 @@ export default function GiftPurchaseClient() {
           <h2 id="review-heading" className="mb-4 text-[19px] font-semibold text-[#313234]">
             Review your gift
           </h2>
+
+          {/*
+            The real card, not a mock of it.
+
+            This is the same DigitalGiftCard the recipient opens, given the
+            same props, so the promise "this is what they will receive" is
+            true by construction rather than by somebody remembering to keep
+            two designs in step. animate is off: it re-renders as the
+            purchaser types, and a card that replays its entrance on every
+            keystroke is a nuisance rather than a delight.
+          */}
+          <div className="mb-6 rounded-[14px] bg-[#0B1628] p-4 sm:p-6">
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8AA2CC]">
+              What they will receive
+            </p>
+            <DigitalGiftCard
+              occasion={occasion}
+              plan={plan}
+              durationMonths={selectedQuote.durationMonths}
+              recipientFirstName={firstName}
+              recipientLastName={lastName}
+              from={purchaserName}
+              personalMessage={personalMessage}
+              previewNote="Preview only. Pricing and payment are shown below."
+            />
+          </div>
 
           <dl className="divide-y divide-[#EEF2FF] rounded-[10px] border border-[#E0E6F5] bg-white">
             <div className="flex items-start justify-between gap-4 px-4 py-3.5 sm:px-5">
