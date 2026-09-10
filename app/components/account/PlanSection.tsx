@@ -17,6 +17,7 @@ import {
 } from "@/lib/subscription-service";
 import GiftMembershipSection from "./GiftMembershipSection";
 import GiftEntryPoint from "./GiftEntryPoint";
+import GiftsSentSection from "./GiftsSentSection";
 
 type PlanKey = "basic" | "plus" | "premium" | "elite";
 
@@ -1282,6 +1283,11 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
           </div>
           {/* Only rendered when the server says gifting is live. */}
         <GiftEntryPoint />
+        {/*
+          And the other half of gifting: what this account has already sent.
+          Renders nothing for the overwhelming majority who have sent none.
+        */}
+        <GiftsSentSection />
       </div>
       ) : null}
     </>
