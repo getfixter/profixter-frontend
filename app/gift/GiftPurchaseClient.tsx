@@ -742,13 +742,8 @@ export default function GiftPurchaseClient() {
           </dl>
 
           <p className="mt-4 text-[13px] leading-relaxed text-[#6A6D71]">
-            {/*
-              Gift checkout does not accept promotion codes. Every active code
-              in the account is unrestricted, so any of them would have applied
-              to a gift — including several worth 100%. Promising a code field
-              that refuses every code would be worse than saying nothing.
-            */}
-            Taxes are calculated at checkout.
+            Have a promotion code? You can enter it on the next screen, at
+            checkout. Tax is added there too.
           </p>
 
           {submitError ? (
