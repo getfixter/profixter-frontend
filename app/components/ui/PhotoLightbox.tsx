@@ -51,7 +51,24 @@ export default function PhotoLightbox({
    */
   const [loadedId, setLoadedId] = useState<string | null>(null);
   const [failedIds, setFailedIds] = useState<Set<string>>(() => new Set());
-  const start = useRef<{ x: number; y: number; axis: "" | "x" | "y" } | null>(null);
+  /*
+   * The gesture lives in a ref, not in state.
+   *
+   * drag state exists to move the image while a finger is down, and React is
+   * free to batch those updates - so at pointerup the closure can still be
+   * holding {0,0} and the swipe is judged as no movement at all. That is not
+   * hypothetical: dispatching a realistic pointerdown/move/up sequence against
+   * the deployed page reproduced it every time, and a fast flick on a real
+   * phone is the same shape. The ref is written synchronously on every move, so
+   * it always describes the gesture that actually happened.
+   */
+  const start = useRef<{
+    x: number;
+    y: number;
+    axis: "" | "x" | "y";
+    dx: number;
+    dy: number;
+  } | null>(null);
 
   const item = items[index];
 
@@ -105,7 +122,7 @@ export default function PhotoLightbox({
 
   const onPointerDown = (event: React.PointerEvent) => {
     if (event.pointerType === "mouse") return;
-    start.current = { x: event.clientX, y: event.clientY, axis: "" };
+    start.current = { x: event.clientX, y: event.clientY, axis: "", dx: 0, dy: 0 };
     setDrag({ x: 0, y: 0, active: true });
   };
 
@@ -118,22 +135,28 @@ export default function PhotoLightbox({
     if (!start.current.axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
       start.current.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
     }
-    if (start.current.axis === "x") setDrag({ x: dx, y: 0, active: true });
-    else if (start.current.axis === "y") setDrag({ x: 0, y: Math.max(0, dy), active: true });
+    if (start.current.axis === "x") {
+      start.current.dx = dx;
+      start.current.dy = 0;
+      setDrag({ x: dx, y: 0, active: true });
+    } else if (start.current.axis === "y") {
+      start.current.dx = 0;
+      start.current.dy = Math.max(0, dy);
+      setDrag({ x: 0, y: Math.max(0, dy), active: true });
+    }
   };
 
   const onPointerUp = () => {
     if (!start.current) return;
-    const { x, y } = drag;
-    const axis = start.current.axis;
+    const { axis, dx, dy } = start.current;
     start.current = null;
+    setDrag({ x: 0, y: 0, active: false });
 
-    if (axis === "y" && y > SWIPE_DISMISS_PX) {
+    if (axis === "y" && dy > SWIPE_DISMISS_PX) {
       onClose();
       return;
     }
-    if (axis === "x" && Math.abs(x) > SWIPE_NEXT_PX) go(x < 0 ? 1 : -1);
-    setDrag({ x: 0, y: 0, active: false });
+    if (axis === "x" && Math.abs(dx) > SWIPE_NEXT_PX) go(dx < 0 ? 1 : -1);
   };
 
   const dismissProgress = Math.min(drag.y / 320, 0.75);
