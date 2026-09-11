@@ -120,11 +120,6 @@ function AdminPageContent() {
     (tab: string) => {
       if (!allowedTabs.some((allowedTab) => allowedTab.id === tab)) return;
 
-      if (tab === "jarvis") {
-        router.push("/admin/jarvis");
-        return;
-      }
-
       setActive(tab);
       const params = new URLSearchParams(searchParams.toString());
       params.set("tab", tab);
@@ -198,11 +193,6 @@ function AdminPageContent() {
     if (!initialQueryAppliedRef.current && requestedQuery !== null) {
       initialQueryAppliedRef.current = true;
       setQ(requestedQuery);
-    }
-
-    if (requestedTab === "jarvis" && isAdmin) {
-      router.replace("/admin/jarvis");
-      return;
     }
 
     const nextTab = requestedTab && allowedTabs.some((tab) => tab.id === requestedTab)
