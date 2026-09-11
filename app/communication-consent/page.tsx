@@ -258,10 +258,9 @@ export default function CommunicationConsentPage() {
                 promotional purposes.
               </p>
               <p className="mt-3">
-                Mobile opt-in data and consent information is never sold, rented or traded. The only third parties that ever
-                receive a mobile number are the messaging platform and carriers that physically deliver a message you asked us
-                to send; they act on our instructions, may not use the number for their own purposes, and receive no consent
-                records. That is delivery, not sharing, and it is not an exception to the statement above.
+                We may use service providers, such as messaging platforms and telecommunications carriers, solely as necessary
+                to deliver messages and operate the messaging service. They may not use this information for their own
+                marketing or promotional purposes. We never sell, rent or trade mobile information or SMS consent records.
               </p>
             </div>
           </section>
