@@ -153,8 +153,24 @@ export default function SignUpPage() {
   const router = useRouter();
   const { login: authLogin } = useAuth();
   const [step, setStep] = useState<Step>(1);
-  const [agreeTerms, setAgreeTerms] = useState(true);
+  /*
+   * Unchecked, deliberately.
+   *
+   * A pre-ticked box is not affirmative consent. TCPA/CTIA and Twilio's web
+   * form opt-in standard both require the customer to perform the tick
+   * themselves, and an A2P reviewer loading this page checks exactly this.
+   */
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const [consentError, setConsentError] = useState(false);
+  /*
+   * Marketing SMS consent. SEPARATE FROM EVERYTHING ELSE, AND OPTIONAL.
+   *
+   * Never required, never blocks registration, and never inferred from the
+   * fact that a phone number was typed. Service texts about a visit the
+   * customer booked are a different thing with a different legal basis, and
+   * collapsing the two is the mistake this checkbox exists to prevent.
+   */
+  const [smsMarketingConsent, setSmsMarketingConsent] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; phone?: string }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -299,6 +315,13 @@ export default function SignUpPage() {
         termsAccepted: true,
         consentSource: "website_signup",
         consentAt: new Date().toISOString(),
+        /*
+         * The marketing tick, sent as the customer actually left it.
+         *
+         * Never coerced to true, and never derived from the presence of a phone
+         * number. The server records consent only when this is literally true.
+         */
+        smsMarketingConsent,
       };
 
       const { token } = await register(registrationPayload);
@@ -538,6 +561,38 @@ export default function SignUpPage() {
                         {fieldErrors.phone ? (
                           <p className="mt-2 text-[12px] font-semibold text-red-300">{fieldErrors.phone}</p>
                         ) : null}
+                        {/*
+                          * Service SMS disclosure, at the point of collection.
+                          *
+                          * Twilio's web form opt-in standard wants the sender, the
+                          * frequency, the rates line and the STOP/HELP keywords where
+                          * the number is actually typed - not only buried in Terms. It
+                          * sits under the field it describes for that reason.
+                          *
+                          * This is a DISCLOSURE, not a checkbox: these are service
+                          * messages about a visit the customer books, which is the
+                          * transactional basis. Marketing gets its own tick on step 4.
+                          */}
+                        <p className="mt-2 text-[11.5px] leading-relaxed text-white/50">
+                          <span className="font-semibold text-white/70">We text you about your visits.</span>{" "}
+                          Confirmations, reminders and updates come from{" "}
+                          <span className="font-semibold text-white/70">(631) 888-6340</span>. Message frequency
+                          varies. Message and data rates may apply. Reply STOP to opt out or HELP for help. See our{" "}
+                          <Link
+                            href="/privacy"
+                            className="text-white/72 underline decoration-white/25 underline-offset-4 transition hover:text-white"
+                          >
+                            Privacy Policy
+                          </Link>
+                          {" "}and{" "}
+                          <Link
+                            href="/terms"
+                            className="text-white/72 underline decoration-white/25 underline-offset-4 transition hover:text-white"
+                          >
+                            SMS Terms
+                          </Link>
+                          .
+                        </p>
                       </div>
                       <div>
                         <FieldLabel htmlFor="email">Email Address</FieldLabel>
@@ -609,6 +664,42 @@ export default function SignUpPage() {
                           <Link href="/privacy" className="text-white/82 underline decoration-white/30 underline-offset-4 transition hover:text-white">
                             Privacy Policy
                           </Link>.
+                        </span>
+                      </label>
+
+                      {/*
+                        * Marketing SMS. OPTIONAL, AND NOTHING DEPENDS ON IT.
+                        *
+                        * Deliberately a second control rather than extra words on the
+                        * one above: bundling promotional consent into the agreement a
+                        * customer must accept to register is precisely what "consent is
+                        * not a condition of purchase" forbids. It is never read by
+                        * validateSecurityStep, so leaving it alone cannot block
+                        * registration - that is the behaviour the compliance claim rests
+                        * on, not an incidental detail.
+                        */}
+                      <label className="flex cursor-pointer items-start gap-2.5 rounded-[8px] border border-white/[0.07] bg-white/[0.02] p-3">
+                        <span className="relative mt-0.5 flex flex-shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={smsMarketingConsent}
+                            onChange={(e) => setSmsMarketingConsent(e.target.checked)}
+                            className="peer sr-only"
+                          />
+                          <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[4px] border border-white/30 transition peer-checked:border-[#306EEC] peer-checked:bg-[#306EEC]">
+                            {smsMarketingConsent ? (
+                              <svg width="9" height="7" viewBox="0 0 9 7" fill="none" aria-hidden="true">
+                                <path d="M1 3.5l2 2L8 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            ) : null}
+                          </span>
+                        </span>
+                        <span className="text-[12px] leading-relaxed text-white/56">
+                          <span className="font-semibold text-white/72">Text me occasional ProFixter offers.</span>{" "}
+                          <span className="text-white/44">
+                            Optional — you do not need this to book, and it is separate from the service texts
+                            above. Message frequency varies. Message and data rates may apply. Reply STOP to opt out.
+                          </span>
                         </span>
                       </label>
                     </>

@@ -67,6 +67,16 @@ export interface RegisterData {
   state: string;
   zip: string;
   county: string;
+
+  /**
+   * Affirmative marketing-SMS consent, exactly as the customer left the box.
+   *
+   * Optional because nothing requires it and no other caller sends it. It is
+   * never inferred from `phone` being populated: a number is given to book a
+   * visit, which is the transactional basis, and promotional texting needs a
+   * separate express opt-in that only this field carries.
+   */
+  smsMarketingConsent?: boolean;
 }
 
 export interface LoginData {

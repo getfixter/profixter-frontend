@@ -52,6 +52,15 @@ export const COMPANY_LINKS = [
   { label: "Careers", href: "/careers" },
   { label: "Privacy Policy", href: "/privacy" },
   { label: "Terms of Service", href: "/terms" },
+  /*
+   * Reachable, not merely published.
+   *
+   * This page carries the SMS consent, opt-out and message-frequency
+   * disclosures. It was in the sitemap but linked from nowhere, which makes it
+   * a page a customer cannot find and an A2P reviewer has to be handed. A legal
+   * disclosure nobody can navigate to is not much of a disclosure.
+   */
+  { label: "Communication Consent", href: "/communication-consent" },
 ] as const;
 
 /**

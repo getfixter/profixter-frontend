@@ -119,18 +119,29 @@ export default function PrivacyPage() {
               3. SMS Messaging &amp; Compliance
             </h2>
             <p>
-              If you opt into our text messaging services, you may receive
-              messages related to our services, including appointment reminders,
-              account notifications, customer support, and important updates.
-              Promotional/marketing texts are sent only with specific marketing
-              consent.
+              We send service messages about visits you book — appointment
+              confirmations, reminders, scheduling updates, account
+              notifications and customer support replies. Marketing texts are
+              sent only if you separately opt in.
             </p>
 
             <ul className="list-disc list-inside space-y-2 mt-3">
               <li>
-                <span className="font-semibold">Opt-In &amp; Consent:</span> You
-                will only receive messages if you explicitly opt in. We may
-                maintain timestamped records of opt-in/opt-out actions.
+                <span className="font-semibold">Service messages:</span> When you
+                create an account you give us a mobile number so we can text you
+                about the visits you book. The sign-up form tells you this at the
+                point where you enter the number.
+              </li>
+              <li>
+                <span className="font-semibold">
+                  Marketing messages (separate opt-in):
+                </span>{" "}
+                Promotional texts are sent only if you tick the separate,
+                optional marketing box when you create your account. It is
+                unchecked by default, you can register and book without it, and
+                providing a phone number alone is never treated as consent to
+                marketing. We keep timestamped records of opt-in and opt-out
+                actions.
               </li>
               <li>
                 <span className="font-semibold">Opt-Out:</span> Reply{" "}

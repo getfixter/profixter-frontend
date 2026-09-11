@@ -85,11 +85,23 @@ export default function CommunicationConsentPage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">2. Your Consent to Contact You</h2>
             <p>
-              By providing your phone number and/or email address, creating an account, booking a service, requesting a quote, or
-              checking an “SMS consent” box (or taking any equivalent affirmative action), you consent to receive communications from
-              Premium Island Homes Inc. (DBA Profixter / Mr. Fixter) as described here.
+              We treat service communications and marketing communications as two separate things, and we ask for them separately.
             </p>
             <ul className="list-disc list-inside space-y-2 mt-3">
+              <li>
+                <span className="font-semibold">Service communications.</span> By creating an account, booking a service, or
+                requesting a quote with Premium Island Homes Inc. (DBA Profixter / Mr. Fixter), you consent to receive
+                communications about that service — confirmations, scheduling updates, reminders, account notices and support
+                replies — at the phone number and email address you give us.
+              </li>
+              <li>
+                <span className="font-semibold">Marketing communications require a separate opt-in.</span> Promotional texts are
+                sent only if you tick the separate, optional marketing box when you create your account. That box is unchecked by
+                default and you can register and book without it.{" "}
+                <span className="font-semibold">
+                  Providing a phone number is never by itself treated as consent to marketing.
+                </span>
+              </li>
               <li>
                 <span className="font-semibold">Consent is not a condition of purchase</span> for marketing messages.
               </li>
@@ -247,11 +259,6 @@ export default function CommunicationConsentPage() {
               <p className="mt-3">
                 We may share limited data with service providers who help us send messages (messaging platforms, carriers, delivery
                 partners, cloud providers) solely to operate communications and under appropriate confidentiality obligations.
-              </p>
-              <p className="mt-3 text-white/70">
-                If you want the absolute strict version (like your old line “not transferred under any circumstances”), it can
-                conflict with how SMS delivery actually works (carriers + messaging vendors must process the message). The language
-                above is safer and more realistic.
               </p>
             </div>
           </section>
