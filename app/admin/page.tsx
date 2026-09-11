@@ -1030,6 +1030,7 @@ function AdminPageContent() {
                 <BookingsTable
                   bookings={filteredBookings}
                   updateStatus={handleUpdateBookingStatus}
+                  onToast={showToast}
                   users={users}
                   onUpdateBooking={handleUpdateBooking}
                   assignees={bookingAssignees}
