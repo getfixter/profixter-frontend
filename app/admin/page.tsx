@@ -12,7 +12,7 @@ import UsersTable from "@/app/components/admin/UsersTable";
 import BookingsTable from "@/app/components/admin/BookingsTable";
 import BookingsCalendar from "@/app/components/admin/BookingsCalendar";
 import BlacklistTable from "@/app/components/admin/BlacklistTable";
-import EmailComposer from "@/app/components/admin/EmailComposer";
+import CommunicationsModule from "../components/admin/CommunicationsModule";
 import RequestsTable from "@/app/components/admin/RequestsTable";
 import ProjectsModule from "@/app/components/admin/ProjectsModule";
 import FixtersModule from "@/app/components/admin/FixtersModule";
@@ -917,7 +917,7 @@ function AdminPageContent() {
               </div>
             )}
 
-            {active === "emails" && <EmailComposer />}
+            {active === "emails" && <CommunicationsModule />}
             {active === "promotion" && isAdmin && <PromotionPopupEditor />}
             {active === "activity" && isAdmin && <AdminActivityLog />}
 

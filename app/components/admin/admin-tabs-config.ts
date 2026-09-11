@@ -27,7 +27,7 @@ export const ADMIN_TABS: AdminTabItem[] = [
   { id: "users",      label: "All Users",  shortLabel: "Users",   description: "Customer CRM" },
   { id: "projects",   label: "Projects",   shortLabel: "Projects", description: "Sales pipeline" },
   { id: "requests",   label: "Leads",      shortLabel: "Leads",   description: "Estimate requests" },
-  { id: "emails",     label: "Emails",     shortLabel: "Emails",  description: "Campaigns & history" },
+  { id: "emails",     label: "Communications", shortLabel: "Comms", description: "Email & SMS templates, history" },
   { id: "jarvis",     label: "Jarvis",     shortLabel: "Jarvis",  description: "GHL AI Commander" },
   { id: "promotion",  label: "Promotion Popup", shortLabel: "Popup", description: "Visitor promotion" },
   { id: "activity",   label: "Activity Log", shortLabel: "Activity", description: "Admin audit trail" },
