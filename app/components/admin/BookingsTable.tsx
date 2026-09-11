@@ -5,6 +5,7 @@ import type { Booking, BookingAdminPatch, BookingAssignee, User } from "@/lib/ad
 import BookingStatusSelect from "./BookingStatusSelect";
 import BookingImageGallery from "./BookingImageGallery";
 import BookingHistory from "./BookingHistory";
+import CommunicationHistory from "./CommunicationHistory";
 import { formatAddress, sanitizeTel, formatTimeNY } from "@/lib/utils/timezone-helpers";
 
 interface BookingsTableProps {
@@ -739,6 +740,15 @@ export default function BookingsTable({
                       )}
 
                       <BookingHistory bookingId={booking._id} />
+
+                      {/*
+                        * Did the customer actually get told? Scoped to this booking
+                        * only - the account's password resets and membership notices
+                        * would bury the answer.
+                        */}
+                      <div className="mt-4">
+                        <CommunicationHistory bookingNumber={String(booking.bookingNumber || "")} />
+                      </div>
                     </div>
                   </article>
                 );

@@ -8,6 +8,7 @@ import {
   type User,
 } from '@/lib/admin-service';
 import { formatDateNY, getTodayNY } from '@/lib/utils/timezone-helpers';
+import CommunicationHistory from './CommunicationHistory';
 
 type PlanFilter = 'all' | 'basic' | 'plus' | 'premium' | 'elite' | 'cancel';
 
@@ -999,6 +1000,16 @@ export default function UsersTable({
             </div>
 
             <div className="max-h-[58vh] overflow-y-auto px-5 py-4 sm:px-6">
+              {/*
+                * Every email and text this customer was actually sent, above the
+                * activity feed. It answers a different question from the activity
+                * log - not "what did they do" but "what did we tell them, and did
+                * it arrive" - which is the one support calls start with.
+                */}
+              <div className="mb-5 border-b border-slate-200 pb-5">
+                <CommunicationHistory userId={historyUser._id} />
+              </div>
+
               {historyLoading ? (
                 <div className="space-y-3">
                   {[1, 2, 3].map((item) => (
