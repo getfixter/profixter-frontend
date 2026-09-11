@@ -1,5 +1,6 @@
 import type { AccountAddress, AccountFormData } from "./types";
 import { AddressesPanel } from "./AddressesPanel";
+import { SmsMarketingPreference } from "./SmsMarketingPreference";
 
 interface PersonalInfoFormProps {
   formData: AccountFormData;
@@ -56,6 +57,16 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
           </p>
         </div>
       </details>
+
+      {/*
+        * Outside the collapsed "Account details", deliberately.
+        *
+        * This is the one control on the page a customer can actually change,
+        * and it is a consent decision. Burying it behind a disclosure toggle
+        * would make opting out harder than opting in, which is the asymmetry
+        * these rules exist to prevent.
+        */}
+      <SmsMarketingPreference />
     </div>
   );
 }
