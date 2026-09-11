@@ -12,7 +12,7 @@ const STATUSES: { value: string; label: string; idle: string; active: string }[]
   {
     value: 'Pending',
     label: 'Pending',
-    idle: 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100',
+    idle: 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
     active: 'border-amber-500 bg-amber-500 text-white shadow-[0_2px_8px_rgba(245,158,11,0.35)]',
   },
   {
