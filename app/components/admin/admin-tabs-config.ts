@@ -10,6 +10,7 @@ export type AdminTabId =
   | "fixters"
   | "tips"
   | "promotion"
+  | "recent-work"
   | "activity";
 
 export type AdminTabItem = {
@@ -27,6 +28,7 @@ export const ADMIN_TABS: AdminTabItem[] = [
   { id: "projects",   label: "Projects",   shortLabel: "Projects", description: "Sales pipeline" },
   { id: "requests",   label: "Leads",      shortLabel: "Leads",   description: "Estimate requests" },
   { id: "emails",     label: "Communications", shortLabel: "Comms", description: "Email & SMS templates, history" },
+  { id: "recent-work", label: "Recent Work", shortLabel: "Photos", description: "Public work gallery" },
   { id: "promotion",  label: "Promotion Popup", shortLabel: "Popup", description: "Visitor promotion" },
   { id: "activity",   label: "Activity Log", shortLabel: "Activity", description: "Admin audit trail" },
   { id: "blacklist",  label: "Blacklist",  shortLabel: "Block",   description: "Blocked users" },
