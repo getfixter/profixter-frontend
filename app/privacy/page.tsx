@@ -59,10 +59,12 @@ export default function PrivacyPage() {
             <span className="font-semibold">
               IMPORTANT NOTICE REGARDING TEXT MESSAGING DATA:
             </span>{" "}
-            We do <span className="font-semibold">not</span> share customer opt-in
-            information (including phone numbers and consent records) with
-            affiliates or third parties for marketing or promotional purposes.
-            Text messaging originator opt-in data and consent are kept strictly
+            <span className="font-semibold">
+              Mobile information and SMS consent will not be shared with third
+              parties or affiliates for marketing or promotional purposes.
+            </span>{" "}
+            This includes phone numbers, opt-in records and consent records. Text
+            messaging originator opt-in data and consent are kept strictly
             confidential and are used only to provide our direct services.
           </p>
         </div>
@@ -174,6 +176,10 @@ export default function PrivacyPage() {
 
             <div className="mt-4 rounded-[8px] bg-white/5 border border-white/10 p-5">
               <p className="font-semibold">
+                Mobile information and SMS consent will not be shared with third
+                parties or affiliates for marketing or promotional purposes.
+              </p>
+              <p className="mt-3 font-semibold">
                 No mobile information will be shared with third parties/affiliates
                 for marketing/promotional purposes. Information sharing to
                 subcontractors in support services, such as customer service is
@@ -200,14 +206,17 @@ export default function PrivacyPage() {
             <p className="mt-3">
   <span className="font-semibold">SMS data protection:</span> All
   categories above exclude text messaging originator opt-in data and
-  consent. This information will not be shared with any third parties,
-  except as needed to deliver messages you consented to receive (for
-  example, SMS platform/aggregator providers).
+  consent. The only third parties that ever receive a mobile number are the
+  messaging platform and carriers that physically deliver a message you
+  asked us to send — they act on our instructions, may not use the number
+  for their own purposes, and receive no consent records.
 </p>
 
-<p className="mt-3">
-  SMS opt-in consent and phone numbers collected for SMS purposes are not
-  shared with third parties or affiliates for marketing purposes.
+<p className="mt-3 font-semibold">
+  Mobile information and SMS consent will not be shared with third parties
+  or affiliates for marketing or promotional purposes. This is absolute:
+  there is no exception for delivery, for subcontractors, or for any
+  affiliate, and we never sell, rent or trade this information.
 </p>
           </section>
 
