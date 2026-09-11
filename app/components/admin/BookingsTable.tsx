@@ -89,12 +89,31 @@ function getStatusTone(status: string) {
   return "border-slate-200 bg-slate-50 text-slate-700";
 }
 
+/**
+ * Which kind of visit this is, for the badge on the card.
+ *
+ * FULL DAY IS TESTED FIRST, AND THE ORDER IS THE WHOLE FIX.
+ *
+ * bookingType is the authoritative field - it is the only one of the two with
+ * an enum on the model - but accessType is what the other branches key off, and
+ * a Full Day carries whichever accessType the customer bought it under. Both
+ * spellings exist in production today: one Full Day has accessType "one_time"
+ * and one has "membership". Checked in the old order they came out as
+ * "One-Time Visit" and "Membership" respectively, so the same job type was
+ * mislabelled two different ways depending on how it was paid for.
+ *
+ * Asking the authoritative field first makes accessType what it actually is
+ * here: how it was paid for, not what it is.
+ */
 function bookingTypeLabel(booking: Booking) {
-  if (isOneTimeBooking(booking)) {
-    return "One-Time Visit";
-  }
+  if (isFullDayBooking(booking)) return "Full Day";
+  if (isOneTimeBooking(booking)) return "One-Time Visit";
   if (booking.accessType === "free_first_visit") return "Free First Visit";
   return "Membership";
+}
+
+function isFullDayBooking(booking: Booking) {
+  return booking.bookingType === "full_day_visit";
 }
 
 function isOneTimeBooking(booking: Booking) {
@@ -119,11 +138,22 @@ function paymentStateTone(booking: Booking) {
   return "bg-slate-50 text-slate-600";
 }
 
+/*
+ * Full Day is excluded from both one-time branches for the same reason as the
+ * badge: one of the two in production carries accessType "one_time", so it was
+ * being named "One-Time Visit" and priced "$99 / 90 min" - a real Full Day is
+ * neither. Its own service string ("Full Day Fixter") is already correct, so
+ * the fix is to stop overriding it rather than to hardcode a second price.
+ */
 function serviceDisplayName(booking: Booking) {
+  if (isFullDayBooking(booking)) return booking.service || "Full Day";
   return isOneTimeBooking(booking) ? "One-Time Visit" : booking.service || "Not set";
 }
 
 function serviceDisplayMeta(booking: Booking, user?: User) {
+  if (isFullDayBooking(booking)) {
+    return booking.subscription || user?.subscription || "Full day visit";
+  }
   return isOneTimeBooking(booking)
     ? "$99 / 90 min"
     : booking.subscription || user?.subscription || "No plan";
@@ -407,9 +437,39 @@ export default function BookingsTable({
                             {booking.note && <span>Notes</span>}
                             {hasPhotos && <span>Photos ({booking.images?.length})</span>}
                             {email && <span className="truncate">{email}</span>}
-                            <span className="rounded-full bg-blue-50 px-2 py-1 font-bold text-blue-700">
-                              {booking.assignedFixterName || "Unassigned"}
-                            </span>
+                            {/*
+                              * Assigned and unassigned must not look alike.
+                              *
+                              * Both used to be the same blue pill, so the one
+                              * state that needs somebody to act - nobody is
+                              * going to this job - read exactly like the state
+                              * that needs nothing. Amber plus a warning glyph
+                              * separates them at a glance while scrolling, and
+                              * the padding is unchanged so nothing reflows or
+                              * shrinks on a phone.
+                              */}
+                            {booking.assignedFixterName ? (
+                              <span className="rounded-full bg-blue-50 px-2 py-1 font-bold text-blue-700">
+                                {booking.assignedFixterName}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-100 px-2 py-1 font-bold text-amber-900">
+                                <svg
+                                  className="h-3 w-3 flex-shrink-0"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M12 9v4" />
+                                  <path d="M12 17h.01" />
+                                  <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                                </svg>
+                                Unassigned
+                              </span>
+                            )}
                           </div>
                         </div>
 

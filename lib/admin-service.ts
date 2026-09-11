@@ -137,7 +137,13 @@ export interface Booking {
   service: string;
   subscription?: string;
   accessType?: "membership" | "one_time" | "free_first_visit" | "admin";
-  bookingType?: "membership_visit" | "one_time_handyman_visit";
+  /*
+   * Mirrors the enum on the Booking model, which has carried full_day_visit
+   * since Full Day launched. This union did not, which is why Admin had no
+   * Full Day branch to take: the type made the case unrepresentable, so the
+   * label fell through to whatever accessType happened to say.
+   */
+  bookingType?: "membership_visit" | "one_time_handyman_visit" | "full_day_visit";
   paymentState?: "not_required" | "pending" | "paid" | "failed" | "expired" | "refunded";
   entitlementId?: string | null;
   selectedTask?: string;
