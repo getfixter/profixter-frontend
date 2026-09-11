@@ -51,10 +51,6 @@ export default function TermsPage() {
           <span className="font-semibold">Premium Island Homes Inc.</span>, doing business as{" "}
           <span className="font-semibold">&quot;Profixter&quot;</span> and/or{" "}
           <span className="font-semibold">&quot;Mr. Fixter&quot;</span> (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;).
-          <br />
-          <span className="text-white/55">
-            This is general website terms language-consider a NY attorney review for your exact operations and insurance coverage.
-          </span>
         </p>
 
         <div className="space-y-10 text-sm sm:text-base text-white/85 leading-relaxed">

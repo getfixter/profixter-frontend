@@ -17,7 +17,11 @@ const TRUST_BADGES = [
 
 export default function Footer({ compact = false }: { compact?: boolean }) {
   const companyLinks = compact
-    ? COMPANY_LINKS.filter((link) => ["About Us", "Privacy Policy", "Terms of Service"].includes(link.label))
+    ? COMPANY_LINKS.filter((link) =>
+        // Communication Consent keeps its place in the compact footer: it is a
+        // legal disclosure, so it belongs wherever Privacy and Terms appear.
+        ["About Us", "Privacy Policy", "Terms of Service", "Communication Consent"].includes(link.label)
+      )
     : COMPANY_LINKS;
 
   return (
