@@ -204,19 +204,22 @@ export default function PrivacyPage() {
             </p>
 
             <p className="mt-3">
-  <span className="font-semibold">SMS data protection:</span> All
-  categories above exclude text messaging originator opt-in data and
-  consent. The only third parties that ever receive a mobile number are the
-  messaging platform and carriers that physically deliver a message you
-  asked us to send — they act on our instructions, may not use the number
-  for their own purposes, and receive no consent records.
+  <span className="font-semibold">SMS data protection:</span> Text messaging
+  originator opt-in data and consent records are excluded from every category
+  above. They are not part of any marketing, analytics or partner disclosure.
 </p>
 
 <p className="mt-3 font-semibold">
   Mobile information and SMS consent will not be shared with third parties
-  or affiliates for marketing or promotional purposes. This is absolute:
-  there is no exception for delivery, for subcontractors, or for any
-  affiliate, and we never sell, rent or trade this information.
+  or affiliates for marketing or promotional purposes.
+</p>
+
+<p className="mt-3">
+  We may use service providers, such as messaging platforms and
+  telecommunications carriers, solely as necessary to deliver messages and
+  operate the messaging service. They may not use this information for their
+  own marketing or promotional purposes. We never sell, rent or trade
+  mobile information or SMS consent records.
 </p>
           </section>
 
