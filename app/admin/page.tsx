@@ -49,7 +49,31 @@ import type {
 import AdminCalendarSettings from "@/app/components/admin/AdminCalendarSettings";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-type BookingQuickFilter = "today" | "upcoming" | "pending" | "confirmed" | "completed" | "custom";
+type BookingQuickFilter =
+  | "today"
+  | "upcoming"
+  | "pending"
+  | "confirmed"
+  | "completed"
+  | "unassigned"
+  | "custom";
+
+/**
+ * A job nobody is going to.
+ *
+ * Module scope on purpose: filteredBookings reads it during render, above where
+ * a const in the component body would be initialised, and hoisting it here also
+ * keeps it out of the memo's dependency list. It closes over nothing.
+ *
+ * Only live jobs count. A completed or cancelled visit with no Fixter recorded
+ * is history, not a hole in tomorrow's schedule, and counting those would pin a
+ * number on the chip that never drops and so never means anything.
+ */
+function isUnassignedActive(booking: Booking) {
+  const status = String(booking.status || "").toLowerCase();
+  if (["completed", "canceled", "cancelled"].includes(status)) return false;
+  return !String(booking.assignedFixterName || "").trim();
+}
 
 // ✅ NY "today" helper (YYYY-MM-DD)
 function todayNY() {
@@ -219,17 +243,66 @@ function AdminPageContent() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  /*
+   * A status change updates one booking in place. It does NOT refetch.
+   *
+   * This used to call fetchAll(), which flips the global `loading` flag - and
+   * that flag replaces the entire content area, QuickStats and job list
+   * included, with a spinner card. The list unmounted, the page collapsed to
+   * a couple of hundred pixels so the browser clamped scroll to the top, and
+   * anything expanded mid-edit was lost. It read as a full page reload
+   * because, visually, that is what it was. It also refetched every booking,
+   * every user, the blacklist, every request and the assignee list to reflect
+   * one changed field.
+   *
+   * The request itself is untouched: same endpoint, same payload, so every
+   * reservation, reminder, SMS, email, GHL and activity-log side effect still
+   * fires exactly as before. All that changed is what we do with the reply -
+   * the endpoint already returns the saved booking and we were discarding it.
+   */
   const handleUpdateBookingStatus = async (
     bookingId: string,
     status: string,
     assignedFixterId?: string | null
   ) => {
+    /* Captured before the optimistic write so a failure can put it back. */
+    const previous = bookings.find((booking) => booking._id === bookingId);
+
+    setBookings((prev) =>
+      prev.map((booking) =>
+        booking._id === bookingId ? { ...booking, status } : booking
+      )
+    );
+
     try {
-      await updateBookingStatus(bookingId, status, assignedFixterId);
-      fetchAll();
+      const updated = await updateBookingStatus(bookingId, status, assignedFixterId);
+      /*
+       * Reconcile with the server's version, which carries fields the optimistic
+       * write could not know: statusHistory, completedAt, and the assignment when
+       * this came from the confirm-and-assign action.
+       *
+       * One asymmetry worth knowing: the list endpoint populates `user` and
+       * this one does not, so the spread replaces a populated user with a bare
+       * id at runtime. That is harmless because the Booking type does not
+       * declare `user` at all and the card resolves people through userMap, so
+       * nothing can read it without a compile error first.
+       */
+      setBookings((prev) =>
+        prev.map((booking) =>
+          booking._id === bookingId ? { ...booking, ...updated } : booking
+        )
+      );
     } catch (error) {
       console.error("Failed to update booking:", error);
-      showToast("Failed to update booking status");
+      if (previous) {
+        setBookings((prev) =>
+          prev.map((booking) => (booking._id === bookingId ? previous : booking))
+        );
+      }
+      const message =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Failed to update booking status";
+      showToast(message);
     }
   };
 
@@ -560,6 +633,10 @@ function AdminPageContent() {
       list = list.filter((b) => bookingMatchesSearch(b, qlc));
     }
 
+    if (bookingQuickFilter === "unassigned") {
+      list = list.filter(isUnassignedActive);
+    }
+
     if (bookingQuickFilter === "upcoming") {
       const today = todayNY();
       list = list.filter((b) => {
@@ -640,6 +717,8 @@ function AdminPageContent() {
     const status = String(booking.status || "").toLowerCase();
     return toYMDNY(new Date(booking.date)) >= today && !["completed", "canceled", "cancelled"].includes(status);
   }).length;
+
+  const unassignedCount = bookings.filter(isUnassignedActive).length;
 
   const selectQuickFilter = (filter: BookingQuickFilter) => {
     setBookingQuickFilter(filter);
@@ -729,6 +808,27 @@ function AdminPageContent() {
               >
                 All Pending ({pendingCount})
               </button>
+              {/*
+                * Only rendered when something is actually unassigned.
+                *
+                * A chip permanently reading "Unassigned (0)" is noise that
+                * teaches you to ignore it; one that appears only when a job
+                * needs an owner is a signal. It also costs no width on a phone
+                * on the normal day when there is nothing to fix.
+                */}
+              {unassignedCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => selectQuickFilter("unassigned")}
+                  className={`flex-shrink-0 rounded-xl border px-3.5 py-2.5 text-sm font-black shadow-sm ${
+                    bookingQuickFilter === "unassigned"
+                      ? "border-amber-500 bg-amber-500 text-white"
+                      : "border-amber-300 bg-amber-100 text-amber-900"
+                  }`}
+                >
+                  Unassigned ({unassignedCount})
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => selectQuickFilter("confirmed")}
