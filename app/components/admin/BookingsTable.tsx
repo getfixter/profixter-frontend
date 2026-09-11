@@ -3,7 +3,7 @@ import type { Booking, BookingAdminPatch, BookingAssignee, User } from "@/lib/ad
 import BookingStatusSelect from "./BookingStatusSelect";
 import BookingImageGallery from "./BookingImageGallery";
 import BookingHistory from "./BookingHistory";
-import CommunicationHistory from "./CommunicationHistory";
+import { CollapsibleCommunicationHistory } from "./CommunicationHistory";
 import {
   formatAddress,
   sanitizeTel,
@@ -21,6 +21,8 @@ interface BookingsTableProps {
   assignees?: BookingAssignee[];
   canAssign?: boolean;
   emptyMessage?: string;
+  /** The admin page's toast, so a copy can confirm itself. */
+  onToast?: (message: string) => void;
 }
 
 type BookingGroups = Record<string, Booking[]>;
@@ -208,6 +210,42 @@ function dayHeading(ymd: string, sampleISO: string, todayKey: string, tomorrowKe
   return formatDateNY(sampleISO, "EEEE, MMMM d, yyyy");
 }
 
+/**
+ * Put text on the clipboard, and say whether it actually happened.
+ *
+ * navigator.clipboard is undefined on an insecure origin and can be refused by
+ * permission policy, so the modern call is not a given - and a copy that
+ * silently does nothing is worse than one that says it failed, because the
+ * address looks copied until it is pasted. The textarea fallback covers the
+ * http case an admin hits opening this on the office LAN by IP.
+ */
+async function writeToClipboard(text: string) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* fall through and try the legacy path */
+  }
+
+  try {
+    const field = document.createElement("textarea");
+    field.value = text;
+    field.setAttribute("readonly", "");
+    field.style.position = "fixed";
+    field.style.top = "0";
+    field.style.opacity = "0";
+    document.body.appendChild(field);
+    field.select();
+    const copied = document.execCommand("copy");
+    document.body.removeChild(field);
+    return copied;
+  } catch {
+    return false;
+  }
+}
+
 export default function BookingsTable({
   bookings,
   updateStatus,
@@ -217,6 +255,7 @@ export default function BookingsTable({
   assignees = [],
   canAssign = false,
   emptyMessage = "No bookings in this view",
+  onToast,
 }: BookingsTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftNote, setDraftNote] = useState("");
@@ -242,6 +281,11 @@ export default function BookingsTable({
     const timer = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(timer);
   }, []);
+
+  const copyAddress = async (address: string) => {
+    const copied = await writeToClipboard(address);
+    onToast?.(copied ? "Address copied" : "Could not copy the address");
+  };
 
   const toggleExpanded = (bookingId: string) => {
     setExpandedIds((current) => {
@@ -563,8 +607,31 @@ export default function BookingsTable({
                             </span>
                           </div>
 
+                            {/*
+                              * The address stays written out - it is the thing a
+                              * tech reads off the card - and the copy button sits
+                              * beside it rather than replacing it. Tapping the
+                              * text itself does nothing, deliberately: an address
+                              * you cannot select without copying is worse than one
+                              * with a button next to it.
+                              */}
                             {fullAddress && (
-                              <p className="mt-0.5 truncate text-[13px] text-slate-600">{fullAddress}</p>
+                              <div className="mt-0.5 flex items-center gap-0.5">
+                                <p className="min-w-0 truncate text-[13px] text-slate-600">
+                                  {fullAddress}
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => copyAddress(fullAddress)}
+                                  className="-my-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 active:bg-slate-200 md:my-0 md:h-7 md:w-7"
+                                  title="Copy address"
+                                  aria-label={`Copy address: ${fullAddress}`}
+                                >
+                                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-4 12h6a2 2 0 002-2v-8a2 2 0 00-2-2h-6a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                  </svg>
+                                </button>
+                              </div>
                             )}
                           </div>
 
@@ -977,7 +1044,7 @@ export default function BookingsTable({
                             {fullAddress && (
                               <button
                                 type="button"
-                                onClick={() => navigator.clipboard.writeText(fullAddress)}
+                                onClick={() => copyAddress(fullAddress)}
                                 className="inline-flex min-h-[38px] items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                               >
                                 <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1011,12 +1078,14 @@ export default function BookingsTable({
                         {/*
                           * Did the customer actually get told? Scoped to this
                           * booking - the account's password resets and membership
-                          * notices would bury the answer - and mounted only now.
-                          * It fetches on mount, so rendering one per card meant a
-                          * request for every job on the screen whether or not
-                          * anybody ever looked at it.
+                          * notices would bury the answer - and closed until asked
+                          * for, like History beside it. The list underneath only
+                          * mounts when the section opens, which is what keeps the
+                          * request off a card nobody is reading.
                           */}
-                        <CommunicationHistory bookingNumber={String(booking.bookingNumber || "")} />
+                        <CollapsibleCommunicationHistory
+                          bookingNumber={String(booking.bookingNumber || "")}
+                        />
                       </div>
                     )}
                   </article>

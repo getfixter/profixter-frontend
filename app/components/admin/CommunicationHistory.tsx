@@ -156,9 +156,12 @@ function Row({ record }: { record: Record_ }) {
 export default function CommunicationHistory({
   userId,
   bookingNumber,
+  hideHeading = false,
 }: {
   userId?: string;
   bookingNumber?: string;
+  /** Set when a wrapper already shows the "Communications" title. */
+  hideHeading?: boolean;
 }) {
   const [records, setRecords] = useState<Record_[] | null>(null);
   const [error, setError] = useState("");
@@ -198,7 +201,9 @@ export default function CommunicationHistory({
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <h4 className="text-[14px] font-bold text-[#313234]">Communications</h4>
+        {!hideHeading && (
+          <h4 className="text-[14px] font-bold text-[#313234]">Communications</h4>
+        )}
         {(["all", "sms", "email"] as const).map((f) => (
           <button
             key={f}
@@ -233,5 +238,56 @@ export default function CommunicationHistory({
         </div>
       )}
     </div>
+  );
+}
+/**
+ * Communications, closed until asked for.
+ *
+ * The job card mounts this, not CommunicationHistory, and CommunicationHistory
+ * is not rendered at all until the section is open - so the history request is
+ * not merely deferred, it is never issued. That is the same reason the card
+ * collapses its detail panel: this component fetches on mount, so anything that
+ * renders one per booking issues one request per booking.
+ *
+ * It unmounts again on close, which means reopening refetches. That is wanted
+ * here rather than wasteful: delivery status arrives from Twilio after the fact,
+ * so the second look should show what is true now, not what was true the first
+ * time the panel was opened.
+ *
+ * Shaped like BookingHistory on purpose. Two collapsible panels sitting next to
+ * each other that opened differently would be a small puzzle to solve every
+ * time.
+ */
+export function CollapsibleCommunicationHistory({
+  userId,
+  bookingNumber,
+}: {
+  userId?: string;
+  bookingNumber?: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-bold text-slate-700"
+        aria-expanded={open}
+      >
+        <span>Communications</span>
+        <span className="text-slate-400">{open ? "−" : "+"}</span>
+      </button>
+
+      {open && (
+        <div className="border-t border-slate-100 p-3">
+          <CommunicationHistory
+            userId={userId}
+            bookingNumber={bookingNumber}
+            hideHeading
+          />
+        </div>
+      )}
+    </section>
   );
 }
