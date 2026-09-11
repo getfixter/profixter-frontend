@@ -10,6 +10,7 @@ import BottomNav from "@/app/components/admin/BottomNav";
 import QuickStats from "@/app/components/admin/QuickStats";
 import UsersTable from "@/app/components/admin/UsersTable";
 import BookingsTable from "@/app/components/admin/BookingsTable";
+import RecentWorkModule from "@/app/components/admin/RecentWorkModule";
 import BookingsCalendar from "@/app/components/admin/BookingsCalendar";
 import BlacklistTable from "@/app/components/admin/BlacklistTable";
 import CommunicationsModule from "../components/admin/CommunicationsModule";
@@ -931,6 +932,8 @@ function AdminPageContent() {
                 placeholder={
                   active === "bookings"
                     ? "Search name, phone, email, address, zip, booking #..."
+                    : active === "recent-work"
+                    ? "Search photos by title, caption or booking #"
                     : active === "users" || active === "subscribed"
                     ? "Search by name, email, phone, address, zip, plan, or ID"
                     : "Search..."
@@ -1045,6 +1048,9 @@ function AdminPageContent() {
             )}
 
             {active === "emails" && <CommunicationsModule />}
+            {active === "recent-work" && isAdmin && (
+              <RecentWorkModule onToast={showToast} searchQuery={q} />
+            )}
             {active === "promotion" && isAdmin && <PromotionPopupEditor />}
             {active === "activity" && isAdmin && <AdminActivityLog />}
 
