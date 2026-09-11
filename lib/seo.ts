@@ -61,6 +61,8 @@ export const PUBLIC_SITEMAP_ROUTES = [
   { path: "/membership", changeFrequency: "weekly", priority: 0.98 },
   { path: "/book", changeFrequency: "weekly", priority: 0.94 },
   { path: "/projects", changeFrequency: "weekly", priority: 0.94 },
+  /* Proof of work, and the page most likely to answer "are these people any good". */
+  { path: "/recent-work", changeFrequency: "weekly", priority: 0.92 },
   { path: "/kitchen-bathroom", changeFrequency: "monthly", priority: 0.9 },
   /*
    * Both were reachable and indexable but absent from the sitemap: /membership/plans
