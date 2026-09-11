@@ -590,7 +590,8 @@ export default function GiftPurchaseClient() {
             How long should it run?
           </h2>
           <p className="mt-1.5 text-[14px] leading-relaxed text-[#6A6D71]">
-            {planLabel(plan)} is {formatMoneyCents(perMonthCents ?? 0)} a month. The whole gift is
+            {planLabel(plan)} is {formatMoneyCents(perMonthCents ?? 0)} a month, and a full year is
+            priced like an annual membership. The whole gift is
             paid once, up front — nothing renews and there is no card left on file.
           </p>
 
@@ -621,8 +622,29 @@ export default function GiftPurchaseClient() {
                     <span className="block text-[16px] font-semibold text-[#313234]">
                       {monthsLabel(months)}
                     </span>
+                    {/*
+                      Twelve months is sold at the annual rate, so printing
+                      "per month times months" beside it would be arithmetic
+                      that does not reach the price shown. The server says
+                      which basis it used; the saving is the honest thing to
+                      show in its place.
+                    */}
                     <span className="mt-0.5 block text-[13px] text-[#9CA3AF]">
-                      {formatMoneyCents(quote.perMonthCents)} &times; {months}
+                      {quote.pricingBasis === "annual" ? (
+                        <>
+                          Pay 10, get 12
+                          {quote.savingsCents ? (
+                            <span className="font-semibold text-[#1E7C4A]">
+                              {" "}
+                              &middot; save {formatMoneyCents(quote.savingsCents)}
+                            </span>
+                          ) : null}
+                        </>
+                      ) : (
+                        <>
+                          {formatMoneyCents(quote.perMonthCents)} &times; {months}
+                        </>
+                      )}
                     </span>
                   </span>
                   <span className="shrink-0 text-[20px] font-semibold text-[#313234]">

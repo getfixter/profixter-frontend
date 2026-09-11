@@ -24,6 +24,13 @@ export type GiftQuote = {
   durationMonths: number;
   totalCents: number;
   perMonthCents: number;
+  /*
+   * "annual" means this length is priced at the annual membership rate
+   * rather than the monthly rate times the months - twelve months, today.
+   * The screen reads this instead of assuming the multiplication holds.
+   */
+  pricingBasis?: "monthly" | "annual";
+  savingsCents?: number;
 };
 
 export type GiftPlanOption = {
