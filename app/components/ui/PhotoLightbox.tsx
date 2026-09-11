@@ -5,10 +5,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 /**
  * A viewer for photographs, where the photograph is the point.
  *
- * Not BookingImageGallery. That one carries HEIC conversion, download buttons
- * and a gradient on every surface because it serves a different job - proving
- * what an operational photo shows. Here the image is the product, so the chrome
- * is a dark ground, a counter, and controls that get out of the way.
+ * Shared by the admin gallery and the public one. Not BookingImageGallery:
+ * that carries HEIC conversion, download buttons and a gradient on every
+ * surface because it answers a different question - what does this operational
+ * photo show. Here the image is the product, so the chrome is a dark ground and
+ * controls that get out of the way.
  *
  * Gestures are the ones a phone already taught people: swipe across to move,
  * swipe down to dismiss. Both are horizontal-or-vertical decisions made once at
@@ -49,6 +50,7 @@ export default function PhotoLightbox({
    * loaded" needs no effect at all.
    */
   const [loadedId, setLoadedId] = useState<string | null>(null);
+  const [failedIds, setFailedIds] = useState<Set<string>>(() => new Set());
   const start = useRef<{ x: number; y: number; axis: "" | "x" | "y" } | null>(null);
 
   const item = items[index];
@@ -81,9 +83,25 @@ export default function PhotoLightbox({
     };
   }, []);
 
+  /*
+   * Warm the neighbours so arrowing through a gallery does not flash a spinner
+   * every time. Two images, not the whole set: prefetching forty photos to save
+   * one spinner is a worse trade than the spinner.
+   */
+  useEffect(() => {
+    if (items.length < 2) return;
+    [index + 1, index - 1].forEach((i) => {
+      const neighbour = items[(i + items.length) % items.length];
+      if (!neighbour) return;
+      const img = new Image();
+      img.src = neighbour.url;
+    });
+  }, [index, items]);
+
   if (!item) return null;
 
   const loaded = loadedId === item.id;
+  const failed = failedIds.has(item.id);
 
   const onPointerDown = (event: React.PointerEvent) => {
     if (event.pointerType === "mouse") return;
@@ -124,9 +142,9 @@ export default function PhotoLightbox({
     <div
       className="fixed inset-0 z-[1200] flex flex-col"
       /*
-       * Opaque at rest. A viewer that lets the admin page ghost through behind
-       * the photograph reads as unfinished, and the thing being looked at here
-       * is the photograph. The ground only thins while a dismiss drag is in
+       * Opaque at rest. A viewer that lets the page ghost through behind the
+       * photograph reads as unfinished, and the thing being looked at here is
+       * the photograph. The ground only thins while a dismiss drag is in
        * progress, where seeing what you are returning to is the point.
        */
       style={{ background: `rgba(9, 12, 18, ${1 - dismissProgress})` }}
@@ -167,23 +185,35 @@ export default function PhotoLightbox({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        {!loaded && (
+        {!loaded && !failed && (
           <div className="absolute h-9 w-9 animate-spin rounded-full border-2 border-white/25 border-t-white/80" />
         )}
 
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={item.url}
-          alt={item.title || "Work photo"}
-          onLoad={() => setLoadedId(item.id)}
-          draggable={false}
-          className="max-h-full max-w-full rounded-lg object-contain"
-          style={{
-            transform: `translate3d(${drag.x}px, ${drag.y}px, 0) scale(${1 - dismissProgress * 0.12})`,
-            transition: drag.active ? "none" : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
-            opacity: loaded ? 1 : 0,
-          }}
-        />
+        {failed ? (
+          <div className="flex flex-col items-center gap-2 text-white/50">
+            <svg className="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <path d="m3 17 5-5 4 4 3-3 6 6" />
+              <path d="M3 3l18 18" />
+            </svg>
+            <p className="text-sm">This image could not be loaded.</p>
+          </div>
+        ) : (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={item.url}
+            alt={item.title || "Work photo"}
+            onLoad={() => setLoadedId(item.id)}
+            onError={() => setFailedIds((current) => new Set(current).add(item.id))}
+            draggable={false}
+            className="max-h-full max-w-full rounded-lg object-contain"
+            style={{
+              transform: `translate3d(${drag.x}px, ${drag.y}px, 0) scale(${1 - dismissProgress * 0.12})`,
+              transition: drag.active ? "none" : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+              opacity: loaded ? 1 : 0,
+            }}
+          />
+        )}
 
         {items.length > 1 && (
           <>

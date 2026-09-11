@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import PhotoLightbox from "./PhotoLightbox";
+import PhotoLightbox from "../ui/PhotoLightbox";
 import RecentWorkUploader from "./RecentWorkUploader";
 import {
   STATUS_LABELS,
@@ -184,7 +184,14 @@ export default function RecentWorkModule({ onToast, searchQuery }: RecentWorkMod
     () =>
       photos.map((photo) => ({
         id: photo.id,
-        url: photo.fullUrl || photo.imageUrl,
+        /*
+         * The 1280px display variant, not the 2000px full one. On any screen
+         * an admin is actually using, display is indistinguishable and roughly
+         * half the bytes - and this viewer is opened to decide about a photo,
+         * not to pixel-peep it. full stays in the DTO for anything that later
+         * needs true detail.
+         */
+        url: photo.imageUrl || photo.fullUrl,
         title: photo.title || "Untitled",
         subtitle: [
           STATUS_LABELS[photo.status],
@@ -402,6 +409,7 @@ function PhotoTile({
   onPublish: () => void;
   onReject: () => void;
 }) {
+  const [broken, setBroken] = useState(false);
   const countdown = countdownTo(photo.publishAt, now);
   const needsReview = photo.status === "pending_review";
   /*
@@ -421,15 +429,36 @@ function PhotoTile({
       <button
         type="button"
         onClick={onOpen}
-        className="relative block aspect-square w-full overflow-hidden bg-slate-100"
+        className="group relative block aspect-square w-full overflow-hidden bg-slate-100"
         aria-label={`Open ${photo.title || "photo"}`}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {/*
+          * A photo that will not load must say so. The browser's broken-image
+          * glyph in a grid of photographs reads as "this one is corrupt" when
+          * the real answer is usually "the storage is not reachable from here",
+          * and an admin deciding whether to delete something needs to know
+          * which of those it is.
+          */}
+        {broken ? (
+          <span className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-slate-100 px-2 text-center text-slate-400">
+            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <path d="m3 17 5-5 4 4 3-3 6 6" />
+              <path d="M3 3l18 18" />
+            </svg>
+            <span className="text-[10px] font-semibold leading-tight">Preview unavailable</span>
+          </span>
+        ) : (
+        /* eslint-disable-next-line @next/next/no-img-element */
         <img
           src={photo.thumbUrl}
           alt={photo.title || "Work photo"}
           loading="lazy"
-          className="absolute inset-0 object-cover transition duration-300 hover:scale-[1.03]"
+          decoding="async"
+          width={480}
+          height={480}
+          onError={() => setBroken(true)}
+          className="absolute inset-0 object-cover transition duration-300 group-hover:scale-[1.04]"
           /*
            * Height inline, not as a utility. globals.css carries an unlayered
            * `img { height: auto }`, and an unlayered rule beats Tailwind's
@@ -441,6 +470,7 @@ function PhotoTile({
            */
           style={{ height: "100%", width: "100%" }}
         />
+        )}
         <span
           className={`absolute left-1.5 top-1.5 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${STATUS_TONES[photo.status]}`}
         >
@@ -640,8 +670,10 @@ function EditSheet({
             <img
               src={photo.thumbUrl}
               alt=""
+              width={160}
+              height={160}
               style={{ height: "5rem", width: "5rem" }}
-              className="shrink-0 rounded-lg border border-slate-200 object-cover"
+              className="shrink-0 rounded-lg border border-slate-200 bg-slate-100 object-cover"
             />
             <div className="min-w-0 text-xs text-slate-500">
               <div>
