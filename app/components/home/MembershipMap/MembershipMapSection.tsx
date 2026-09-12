@@ -8,6 +8,7 @@ import {
 } from "@/lib/public-membership-map";
 import { ISLAND_PATH, MAP_VIEWBOX } from "./island-geometry";
 import { LegendMarker, Marker, MarkerDefs, PLAN_LABEL, PLAN_ORDER } from "./markers";
+import { declutter } from "./declutter";
 
 /**
  * Where ProFixter members are, drawn rather than counted.
@@ -39,15 +40,34 @@ const STAGGER_MS = 22;
 const MAX_ENTRANCE_MS = 1100;
 
 /**
+ * How often an open page re-reads the map.
+ *
+ * Three minutes is not about freshness - almost nobody sits on the homepage that
+ * long - it is so a page left open does not go stale for hours. Paused entirely
+ * while the tab is hidden, and resumed with one read when it comes back, so a
+ * backgrounded tab costs nothing.
+ *
+ * The server answers from cache, so this is a conditional-ish read rather than a
+ * query. Nothing about it is live-activity theatre: new points fade in where
+ * they belong and departed ones fade out, with no message, no counter and no
+ * announcement.
+ */
+const REFRESH_MS = 3 * 60 * 1000;
+
+/**
  * Marker scale for the rendered width.
  *
  * The viewBox is fixed, so without this a pin would shrink with the viewport
- * until a phone showed a field of specks. The curve holds a Basic marker at
- * roughly twelve to fourteen screen pixels from 390px to 1440px.
+ * until a phone showed a field of specks.
+ *
+ * The curve is tuned so a Basic dot lands near 8.4px on a phone or tablet and
+ * about 11px on a desktop card, rather than V1's uniform thirteen to fifteen.
+ * Small screens are where crowding hurts, so they keep the tighter figure; a
+ * wide card has room for the markers to carry some presence.
  */
 function markerScaleFor(width: number): number {
   if (!width) return 1;
-  return Math.max(1, 900 / width);
+  return Math.max(1, 903 / width);
 }
 
 type LoadState = "idle" | "ready" | "empty";
@@ -58,6 +78,8 @@ export default function MembershipMapSection({ className = "" }: { className?: s
   const [state, setState] = useState<LoadState>("idle");
   const [data, setData] = useState<MembershipMapData | null>(null);
   const [scale, setScale] = useState(1);
+  /* The card's drawn width, so pixels can be converted into viewBox units. */
+  const [frameWidth, setFrameWidth] = useState(0);
   const [entered, setEntered] = useState(false);
 
   /*
@@ -107,10 +129,70 @@ export default function MembershipMapSection({ className = "" }: { className?: s
     return () => controller.abort();
   }, []);
 
+  /* ------------------------------------------------------- quiet refresh */
+  useEffect(() => {
+    if (state !== "ready") return;
+
+    let controller: AbortController | null = null;
+    let timer: number | undefined;
+
+    /*
+     * A refresh that fails changes nothing.
+     *
+     * The section is already on screen with good data. An endpoint that blips
+     * must not empty it, so a failed re-read is discarded and the next one tries
+     * again - unlike the first load, where there is nothing to keep.
+     */
+    const reread = () => {
+      controller?.abort();
+      controller = new AbortController();
+      fetchMembershipMap(controller.signal)
+        .then((payload) => {
+          if (controller?.signal.aborted) return;
+          if (payload.points.length) setData(payload);
+        })
+        .catch(() => {});
+    };
+
+    const schedule = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        reread();
+        schedule();
+      }, REFRESH_MS);
+    };
+
+    /*
+     * Nothing runs while the tab is in the background. A page left open in a
+     * tab nobody is looking at should cost the server and the battery nothing;
+     * when it comes back, one read catches it up immediately rather than
+     * waiting out the rest of the interval.
+     */
+    const onVisibility = () => {
+      if (document.hidden) {
+        window.clearTimeout(timer);
+        controller?.abort();
+      } else {
+        reread();
+        schedule();
+      }
+    };
+
+    if (!document.hidden) schedule();
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller?.abort();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [state]);
+
   /* ------------------------------------------------- responsive pin sizing */
   const measure = useCallback(() => {
     const width = frameRef.current?.clientWidth || 0;
     setScale(markerScaleFor(width));
+    setFrameWidth(width);
   }, []);
 
   useEffect(() => {
@@ -146,9 +228,17 @@ export default function MembershipMapSection({ className = "" }: { className?: s
   const viewBox = data?.viewBox || MAP_VIEWBOX;
   const points = data?.points || [];
 
+  /*
+   * A few pixels of screen-space separation for markers that would otherwise
+   * eclipse each other. Purely a rendering treatment - see declutter.ts - and
+   * applied here rather than upstream so the published coordinates and the
+   * geographic logic stay exactly as the server sent them.
+   */
+  const drawn = declutter(points, scale, frameWidth / viewBox.width);
+
   return (
     <section
-      className={`bg-[#0B1628] px-5 py-14 sm:px-6 sm:py-18 ${className}`}
+      className={`bg-[#0B1628] px-5 py-11 sm:px-6 sm:py-16 ${className}`}
       aria-labelledby="membership-map-heading"
     >
       <style>{`
@@ -164,6 +254,11 @@ export default function MembershipMapSection({ className = "" }: { className?: s
         .pfm-entered .pfm-pin {
           animation: pfm-pin-in 460ms cubic-bezier(0.34, 1.36, 0.64, 1) forwards;
         }
+        /*
+          A refresh keeps the markers already on screen and only animates what
+          is genuinely new, because the key is the position itself. Nothing is
+          torn down and rebuilt, so a quiet update looks like nothing happening.
+        */
         @media (prefers-reduced-motion: reduce) {
           .pfm-entered .pfm-pin { animation: none; opacity: 1; }
         }
@@ -177,9 +272,15 @@ export default function MembershipMapSection({ className = "" }: { className?: s
           >
             Homes with a Fixter
           </h2>
-          <p className="mx-auto mt-2.5 max-w-[520px] text-[14px] font-semibold leading-relaxed text-white/58 sm:text-[15px]">
-            Long Island homeowners keeping a Fixter on their side &mdash; from the South
-            Shore to the forks.
+          {/*
+            * Says only what the picture supports.
+            *
+            * V1 claimed "from the South Shore to the forks", which the real
+            * distribution does not back up - there is nothing on the forks. The
+            * line now describes the thing that is actually true and visible.
+            */}
+          <p className="mx-auto mt-2.5 max-w-[460px] text-[14px] font-semibold leading-relaxed text-white/58 sm:text-[15px]">
+            See where Profixter memberships are growing across Long Island.
           </p>
         </div>
 
@@ -194,9 +295,18 @@ export default function MembershipMapSection({ className = "" }: { className?: s
           <MarkerDefs />
         </svg>
 
+        {/*
+          * Edge to edge on a phone.
+          *
+          * The section's own horizontal padding costs the island 40px of an
+          * already narrow screen, and Long Island is a wide shape - every pixel
+          * of width is width the map gets. The negative margin cancels the
+          * padding below the small breakpoint and hands it back; from sm up the
+          * card returns to its rounded, inset form where there is room for it.
+          */}
         <div
           ref={frameRef}
-          className={`relative overflow-hidden rounded-[14px] border border-white/[0.08] bg-[#081120] ${
+          className={`relative -mx-5 overflow-hidden border-y border-white/[0.08] bg-[#081120] sm:mx-0 sm:rounded-[14px] sm:border ${
             entered ? "pfm-entered" : ""
           }`}
         >
@@ -226,15 +336,17 @@ export default function MembershipMapSection({ className = "" }: { className?: s
               strokeLinejoin="round"
             />
 
-            {points.map((point, index) => (
+            {drawn.map((point, index) => (
               <g
-                key={`${point.plan}-${point.x}-${point.y}-${index}`}
+                /* Keyed by position, not index, so a refresh reuses the markers
+                   that stayed put and only animates the ones that are new. */
+                key={`${point.x}-${point.y}-${point.plan}`}
                 className="pfm-pin"
                 style={{
                   animationDelay: `${Math.min(index * STAGGER_MS, MAX_ENTRANCE_MS)}ms`,
                 }}
               >
-                <Marker plan={point.plan} x={point.x} y={point.y} scale={scale} />
+                <Marker plan={point.plan} x={point.dx} y={point.dy} scale={scale} />
               </g>
             ))}
           </svg>
@@ -263,9 +375,8 @@ export default function MembershipMapSection({ className = "" }: { className?: s
             * Says the pins are areas, once, quietly. Enough that nobody reads
             * a dot as a doorstep, short enough not to become a disclaimer.
             */}
-          <p className="text-[11.5px] font-semibold text-white/38">
-            Approximate areas shown &middot; membership levels
-          </p>
+          {/* The legend already explains the tiers; this only has one job. */}
+          <p className="text-[11.5px] font-semibold text-white/38">Approximate locations</p>
         </div>
       </div>
     </section>
