@@ -214,7 +214,7 @@ export default function Header() {
                   href="/signup?redirect=%2Fmembership"
                   className="rounded-[8px] bg-[#306EEC] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#2558C9]"
                 >
-                  Book free visit
+                  Book your free visit
                 </Link>
                 <Link
                   href="/signin"

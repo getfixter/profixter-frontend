@@ -81,25 +81,30 @@ export const COMPANY_LINKS = [
  */
 export const MAIN_NAV_LINKS = [
   { label: "Membership", href: "/membership" },
-  { label: "How it works", href: "/#how-it-works" },
+  /*
+   * "What we fix" rather than "Our work".
+   *
+   * The gallery's job is to answer "can they handle MY thing" - it is the
+   * membership's inclusions, shown rather than listed. "Our work" framed the
+   * same photographs as a portfolio, and sitting beside Projects it read as
+   * that page's sibling: renovations. The customer's question is what gets
+   * fixed, so that is what the link says.
+   */
+  { label: "What we fix", href: "/recent-work" },
   { label: "Book", href: "/book" },
   { label: "Projects", href: "/projects" },
-  /*
-   * Proof, next to the two pages that ask for the job.
-   *
-   * Projects is a quote form and Book is a booking form; neither shows that we
-   * have actually done any of this. The gallery was reachable only by typing
-   * /recent-work, which is no route at all for somebody deciding whether to let
-   * strangers into their house.
-   */
-  { label: "Our work", href: "/recent-work" },
-  /*
-   * Gifting is a product somebody buys, not a page they stumble on, and it
-   * is the one thing here bought FOR another household. Without a nav entry
-   * the only way to find it was to know the URL.
-   */
-  { label: "Gift", href: "/gift" },
   { label: "About Us", href: "/about" },
+  /*
+   * Gift and How it works both left this list.
+   *
+   * Gift is a real product but a secondary one, bought for somebody else; it
+   * keeps its footer entry and its page. How it works is an anchor on the
+   * homepage, not a destination, and the hero already links to it - a nav item
+   * that scrolls the page you are already on is a wasted slot.
+   *
+   * Five is also what the header can actually hold: at 1024px seven items wrap
+   * their labels onto two lines.
+   */
 ] as const;
 
 export const FOOTER_PRODUCT_LINKS = [
@@ -142,9 +147,10 @@ export const FOOTER_SEO_LINKS = [
   { label: "Renovations", href: "/renovations" },
   { label: "Locations", href: "/locations" },
   /*
-   * The persistent route to the gallery. The header entry and the homepage
-   * band both reach it too, but those are on pages a visitor may have already
-   * scrolled past; the footer is on every page and does not move.
+   * The persistent route to the gallery, named the same way the header names
+   * it. The header entry and the homepage band both reach it too, but those
+   * are on pages a visitor may have already scrolled past; the footer is on
+   * every page and does not move.
    */
-  { label: "Recent Work", href: "/recent-work" },
+  { label: "What we fix", href: "/recent-work" },
 ] as const;
