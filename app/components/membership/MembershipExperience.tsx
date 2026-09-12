@@ -11,8 +11,7 @@ import { trackEvent } from "@/lib/analytics";
 
 import Header from "@/app/components/sections/Header";
 import BookingSection from "@/app/components/sections/BookingSection";
-import PlansSection from "@/app/components/sections/PlansSection";
-import GiftCallout from "@/app/components/gift/GiftCallout";
+import { plans } from "@/app/data/content";
 import FAQSection from "@/app/components/sections/FAQSection";
 import YourFixter from "@/app/components/fixter/YourFixter";
 import Footer from "@/app/components/sections/Footer";
@@ -231,6 +230,9 @@ function FreeVisitFlow() {
  * Shown to a non-member whose introductory visit has been completed.
  * Replaces the previous dead-end "no active membership" state.
  */
+/** The entry price, read from the plan data rather than typed here. */
+const startingPrice = Math.min(...plans.map((plan) => plan.price));
+
 function PostFreeVisitFlow() {
   return (
     <section className="bg-white px-4 pb-10 pt-10 sm:px-6 sm:pb-12 sm:pt-10">
@@ -245,8 +247,8 @@ function PostFreeVisitFlow() {
           Keep the same team for the rest of your list with a Profixter membership.
         </p>
         <div className="mt-7 flex flex-col justify-center gap-3 min-[380px]:flex-row">
-          <a
-            href="#plans"
+          <Link
+            href="/membership/plans"
             onClick={() =>
               trackEvent("membership_plans_viewed_after_free_visit", {
                 placement: "post_free_visit_state",
@@ -254,8 +256,8 @@ function PostFreeVisitFlow() {
             }
             className="inline-flex min-h-12 items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]"
           >
-            See plans
-          </a>
+            Compare plans
+          </Link>
           <Link
             href="/book?visit=additional"
             className="inline-flex min-h-12 items-center justify-center rounded-[8px] border border-[#D2D2D7] bg-white px-5 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]"
@@ -286,14 +288,6 @@ function ProspectMembershipFlow({
     "Caulking and touch-ups",
     "Furniture assembly",
     "General home maintenance",
-  ];
-  const faqs = [
-    ["What kinds of jobs are included?", "Membership covers everyday handyman repairs, maintenance, and installations. Larger or multi-day work is quoted separately as a Project Estimate."],
-    ["How long is each visit?", "Standard membership visits are up to 90 minutes. Elite also includes one full project day each month."],
-    ["How often can I book?", "There is no fixed monthly visit count for standard member bookings. Basic keeps one visit on the calendar at a time; the other plans allow two. Book the next as soon as one is done."],
-    ["Are materials included?", "Plus and Premium include basic materials. For other materials, tell us what the task needs when you book so the team can prepare."],
-    ["Can I change my plan?", "Yes. You can adjust your plan as your home's needs change."],
-    ["What if I need a larger project?", "Use Project Estimates for renovations, multi-day work, or tasks that need a larger scope."],
   ];
 
   return (
@@ -388,35 +382,59 @@ function ProspectMembershipFlow({
         stays, as the quiet reminder after the decision rather than a second
         pitch.
       */}
-      <section className="bg-white px-4 pb-2 pt-6 sm:px-6 sm:pt-8">
-        <div className="mx-auto max-w-[1120px]">
-          <GiftCallout variant="card" audience="public" headingId="membership-gift-heading" />
+      {/*
+        A price, not a pricing page.
+
+        This carried the whole four-plan grid, so a visitor compared Basic
+        through Elite here and then pressed "Compare plans" to be shown the same
+        four plans again. Comparing is the plans page's entire job; this page
+        only has to answer "what does it cost to start" and get out of the way.
+
+        The gift card that sat directly above it is gone too. Somebody reading
+        the membership page is shopping for their own house; Gift keeps its own
+        page and its footer entry.
+      */}
+      <section id="plans" className="scroll-mt-[90px] bg-white px-4 pb-9 pt-8 sm:px-6 sm:pb-12 sm:pt-11">
+        <div className="mx-auto max-w-[680px] text-center">
+          <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">
+            Membership
+          </p>
+          <h2 className="mt-3 text-[26px] font-semibold tracking-[-0.03em] text-[#111111] sm:text-[32px]">
+            From ${startingPrice} a month.
+          </h2>
+          <p className="mx-auto mt-3 max-w-[46ch] text-[15px] leading-6 text-[#6E6E73] sm:text-[16px]">
+            Four levels, depending on how much your home has going on. Month to month,
+            or pay for ten months and get twelve.
+          </p>
+          <Link
+            href="/membership/plans"
+            className="mt-6 inline-flex min-h-12 items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]"
+          >
+            Compare plans
+          </Link>
+          <p className="mt-4 text-[13.5px] text-[#6E6E73]">
+            Not sure it covers your list?{" "}
+            <Link href="/recent-work" className="font-semibold text-[#306EEC] underline-offset-4 hover:underline">
+              See what we fix
+            </Link>
+          </p>
         </div>
       </section>
 
-      <PlansSection hideCancellationUi compact />
+      {/*
+        The FAQ moved to /membership/plans.
 
-      <section className="bg-white px-4 py-8 sm:px-6 sm:py-11">
-        <div className="mx-auto max-w-[760px]">
-          <h2 className="text-center text-[26px] font-semibold tracking-[-0.025em] text-[#111111] sm:text-[32px]">Membership questions</h2>
-          <div className="mt-7 divide-y divide-[#E5E5EA] border-y border-[#E5E5EA]">
-            {faqs.map(([question, answer]) => (
-              <details key={question} className="group py-4">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-semibold text-[#111111] marker:content-none">
-                  {question}<span className="text-[19px] font-normal text-[#86868B] transition group-open:rotate-45" aria-hidden="true">+</span>
-                </summary>
-                <p className="max-w-[680px] pr-8 pt-2 text-[14px] leading-5 text-[#6E6E73]">{answer}</p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
-
+        This page had six hand-written questions while the plans page rendered a
+        separate canonical twelve - nineteen answers across one purchase
+        journey, maintained apart and already disagreeing about materials. The
+        canonical set in app/data/membership-faq.ts now renders in exactly one
+        place: the surface where an unanswered question stops a purchase.
+      */}
       <section className="bg-[#F5F5F7] px-4 py-9 text-center sm:px-6 sm:py-13">
         <div className="mx-auto max-w-[680px]">
           <h2 className="text-[26px] font-semibold tracking-[-0.03em] text-[#111111] sm:text-[34px]">Ready to make home care easier?</h2>
           <p className="mt-3 text-[15px] leading-6 text-[#6E6E73]">Choose your membership and book your first visit when you&rsquo;re ready.</p>
-          <a href="#plans" className="mt-6 inline-flex min-h-12 items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]">See plans</a>
+          <Link href="/membership/plans" className="mt-6 inline-flex min-h-12 items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]">Compare plans</Link>
           <div className="mt-4">
             <Link href="/book?visit=additional" className="text-[14px] font-semibold text-[#306EEC] hover:underline">Need only one visit? Book an Extra Visit</Link>
           </div>

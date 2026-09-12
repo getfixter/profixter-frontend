@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { plans, type Plan } from "@/app/data/content";
 import API from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
@@ -8,7 +9,6 @@ import { getRoleLandingPath } from "@/lib/auth-routing";
 import type { PlanType } from "@/lib/stripe-links";
 import type { Address } from "@/lib/auth-service";
 import { trackInitiateCheckout } from "@/lib/analytics";
-import GiftCallout from "@/app/components/gift/GiftCallout";
 import {
   createBillingPortalSession,
   getSubscriptionActionErrorMessage,
@@ -34,6 +34,24 @@ type ChangeActionKind =
   | "upgrade"
   | "downgrade";
 
+/**
+ * What each tier ADDS, not what each tier has.
+ *
+ * These lists used to be absolute, and they were absolute inconsistently:
+ * Basic was the only plan that said "All handyman services included", Elite was
+ * the only plan that did NOT say "Basic materials included", and "90-minute
+ * visits" vanished at Premium. Read literally - which is how a homeowner
+ * comparing four boxes reads them - the $499 plan appeared to include less than
+ * the $249 one, and Elite's project discount was missing altogether.
+ *
+ * Nothing about the plans changed. The ladder is now stated cumulatively, so
+ * each card carries only its own differences and inherits everything below it.
+ * That fixes the false implications, makes the reason to pay more the only
+ * thing on the card, and makes the cards shorter at the same time.
+ *
+ * The Priority Visit caveat used to be repeated verbatim inside two cards,
+ * where it took about a quarter of each. It is now stated once under the grid.
+ */
 const planDisplayContent: Record<
   Plan["name"],
   {
@@ -45,38 +63,34 @@ const planDisplayContent: Record<
     description: "A simple way to keep occasional home tasks moving.",
     features: [
       "Request membership visits as needed",
-      "1 active appointment at a time",
       "All handyman services included",
       "90-minute visits",
+      "1 active appointment at a time",
     ],
   },
   Plus: {
     description: "The balanced plan for homeowners who want steady support.",
     features: [
-      "Request membership visits as needed",
+      "Everything in Basic",
       "2 active appointments at a time",
       "Basic materials included",
-      "90-minute visits",
     ],
   },
   Premium: {
     description: "For homes that need priority support when timing matters.",
     features: [
-      "Request membership visits as needed",
-      "2 active appointments at a time",
-      "Basic materials included",
+      "Everything in Plus",
       "1 Priority Visit per month",
-      "Priority Visits help when you need service before the next standard appointment slot, subject to technician availability.",
+      "Direct line to Taras, the founder",
     ],
   },
   Elite: {
     description: "The most hands-on care for homes with larger ongoing needs.",
     features: [
-      "Request membership visits as needed",
-      "2 active appointments at a time",
-      "1 full project day per month (up to 8 hours)",
+      "Everything in Premium",
       "2 Priority Visits per month",
-      "Priority Visits help when you need service before the next standard appointment slot, subject to technician availability.",
+      "1 full project day per month (up to 8 hours)",
+      "10% off home improvement projects",
     ],
   },
 };
@@ -216,6 +230,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
   const [promoCode, setPromoCode] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [actionError, setActionError] = useState("");
+  const [checkoutCanceled, setCheckoutCanceled] = useState(false);
   const [actionLoadingPlan, setActionLoadingPlan] = useState<string | null>(null);
   const { user, isAuthenticated, token } = useAuth();
   const roleLandingPath = getRoleLandingPath(user);
@@ -290,6 +305,15 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
       setBilling(requestedBilling);
     }
 
+    /*
+      Backing out of Stripe is ordinary behaviour, not an error. Stripe used to
+      return these people to the homepage with their plan in a query string
+      nothing read, so the selection was effectively thrown away. They now come
+      back here, with the cycle and address restored above, and a line telling
+      them where they are.
+    */
+    if (params.get("canceled") === "true") setCheckoutCanceled(true);
+
     if (requestedPromo) {
       setPromoCode(requestedPromo);
       sessionStorage.setItem("pendingPromoCode", requestedPromo);
@@ -334,9 +358,15 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     const authToken = token || localStorage.getItem("token");
     const endpointPath = "/api/stripe/checkout/create-checkout-session";
     const endpointUrl = `${apiBase.replace(/\/$/, "")}${endpointPath}`;
-    const preservePlanUrl = `/membership?plan=${encodeURIComponent(plan)}&billingCycle=${encodeURIComponent(
+    /*
+      Where to land after signing up: the page that actually holds the
+      comparison. This pointed at /membership#plans, which was correct while the
+      grid was duplicated there - it is not any more, and a customer returning
+      from signup would have found a price and no way to resume.
+    */
+    const preservePlanUrl = `/membership/plans?plan=${encodeURIComponent(plan)}&billingCycle=${encodeURIComponent(
       cycle
-    )}&addressId=${encodeURIComponent(addressId)}#plans`;
+    )}&addressId=${encodeURIComponent(addressId)}`;
 
     if (!authToken) {
       console.error("[checkout] Missing auth token before checkout request", {
@@ -600,8 +630,9 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         "pendingCheckoutPlan",
         JSON.stringify({ plan: planType, billingCycle: billing, planName })
       );
+      /* Back to the comparison, which is where the grid now lives. */
       window.location.href = `/signup?redirect=${encodeURIComponent(
-        `/membership?plan=${encodeURIComponent(planType)}&billingCycle=${encodeURIComponent(billing)}#plans`
+        `/membership/plans?plan=${encodeURIComponent(planType)}&billingCycle=${encodeURIComponent(billing)}`
       )}`;
       return;
     }
@@ -716,9 +747,26 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         * rather than as a detail of the product.
         */}
       {!compact ? (
-        <p className="mt-3 max-w-[320px] text-center text-[13px] leading-5 text-[#6E6E73] sm:max-w-none">
-          Choose annual and get{" "}
-          <span className="font-semibold text-[#111111]">12 months for the price of 10</span>.
+        /*
+          The terms of the cycle you are actually looking at.
+          
+          "Every plan is month to month" used to sit above this as the page's
+          governing sentence, and it stayed there while Annual was selected -
+          telling somebody reading a once-a-year price that they were buying
+          month to month. Each cycle now states its own terms.
+        */
+        <p className="mt-3 max-w-[340px] text-center text-[13px] leading-5 text-[#6E6E73] sm:max-w-none">
+          {billing === "annual" ? (
+            <>
+              Billed once for the year &mdash;{" "}
+              <span className="font-semibold text-[#111111]">12 months for the price of 10</span>.
+            </>
+          ) : (
+            <>
+              <span className="font-semibold text-[#111111]">Month to month.</span> Cancel any
+              time. Choose annual and get 12 months for the price of 10.
+            </>
+          )}
         </p>
       ) : null}
     </div>
@@ -892,6 +940,23 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           <BillingToggle />
         </div>
 
+        {/*
+          Somebody who backed out of Stripe. Not an error, not a warning colour,
+          no automatic retry - just an acknowledgement that they are back where
+          they were, with the plan still there to press.
+        */}
+        {checkoutCanceled && (
+          <div className="mx-auto mt-6 max-w-[560px] rounded-[8px] border border-[#D7E0F5] bg-[#F8FAFF] px-5 py-4 text-center">
+            <p className="text-[14px] font-semibold text-[#0B1628]">
+              You didn&rsquo;t finish checking out.
+            </p>
+            <p className="mt-1 text-[13.5px] leading-5 text-[#6E6E73]">
+              Nothing was charged. Your plan is still selected below whenever you
+              want to pick it up again.
+            </p>
+          </div>
+        )}
+
         {isAuthenticated && user && addresses.length > 0 && <AddressPicker />}
 
         {isAuthenticated && user && addresses.length === 0 && (
@@ -957,7 +1022,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           </div>
         </div>}
 
-        {compact ? <CompactPlanComparison /> : <><div className="grid gap-4 lg:hidden">
+        {compact ? <CompactPlanComparison /> : <><div className="grid gap-4 md:hidden">
           {mobilePlans.map((plan) => {
               const action = getActionForPlan(plan.name);
               const isPopular = plan.name === "Plus";
@@ -1019,14 +1084,14 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                           : "border-[#111111]/20 bg-white text-[#111111] hover:border-[#111111] hover:bg-[#F8F8F8]",
                     ].join(" ")}
                   >
-                    {actionLoadingPlan === plan.name ? "Working..." : !isAuthenticated ? "Create Account" : action.label}
+                    {actionLoadingPlan === plan.name ? "Working..." : !isAuthenticated ? `Choose ${plan.displayName}` : action.label}
                   </button>
                 </article>
               );
             })}
         </div>
 
-        <div className="hidden gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-4 lg:grid">
+        <div className="hidden gap-4 sm:gap-5 md:grid md:grid-cols-2 xl:grid-cols-4">
           {plans.map((plan) => {
             const action = getActionForPlan(plan.name);
             const isPopular = plan.name === "Plus";
@@ -1088,7 +1153,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                         : "border-[#111111]/20 bg-white text-[#111111] hover:border-[#111111] hover:bg-[#F8F8F8]",
                   ].join(" ")}
                 >
-                  {actionLoadingPlan === plan.name ? "Working..." : !isAuthenticated ? "Create Account" : action.label}
+                  {actionLoadingPlan === plan.name ? "Working..." : !isAuthenticated ? `Choose ${plan.displayName}` : action.label}
                 </button>
               </article>
             );
@@ -1100,17 +1165,56 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         </p>}
 
         {/*
-          The same plans can be bought for somebody else, and this is where a
-          person deciding between them would think of it. One quiet line: the
-          comparison is the job of this section, not the gift.
+          The two things every card used to repeat, said once.
 
-          Shown in the compact layout too. Compact is what /membership renders,
-          which is the single page most likely to be open when the thought
-          "I could buy this for someone" occurs — hiding it there would leave
-          the gift line everywhere except where it is most use.
+          "Active appointments" is the single most misread number on this page:
+          it is concurrency, not an allowance, and nothing anywhere said so. The
+          Priority caveat was printed in full inside both cards that offer it.
+          Neither belongs in a box a customer is trying to compare.
+
+          The gift line left this section entirely. Somebody choosing between
+          four plans for their own house is not shopping for a present, and Gift
+          keeps its own page and its footer entry.
         */}
-        <div className={`mx-auto max-w-[760px] text-center ${compact ? "mt-6" : "mt-5"}`}>
-          <GiftCallout variant="inline" />
+        <div className={`mx-auto max-w-[720px] ${compact ? "mt-6" : "mt-5"}`}>
+          <dl className="grid gap-x-8 gap-y-3 text-left sm:grid-cols-2">
+            <div>
+              <dt className="text-[13px] font-semibold text-[#111111]">Active appointments</dt>
+              <dd className="mt-1 text-[13.5px] leading-[1.5] text-[#6E6E73]">
+                How many visits can be open at the same time &mdash; not a monthly
+                allowance. Book the next one once an open visit is done.
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[13px] font-semibold text-[#111111]">Priority Visits</dt>
+              <dd className="mt-1 text-[13.5px] leading-[1.5] text-[#6E6E73]">
+                Help when you need service before the next standard appointment
+                slot, subject to Fixter availability.
+              </dd>
+            </div>
+          </dl>
+
+          {/*
+            The reassurance a person wants in the second before they enter a
+            card, and nothing more. Home carries the full trust band; this is
+            four facts and a link.
+          */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-[#E5E5EA] pt-5 text-[13px] text-[#6E6E73]">
+            <span>Licensed <span className="font-medium text-[#111111]">NY HIC HI-71484</span></span>
+            <span aria-hidden="true" className="text-[#D2D2D7]">&middot;</span>
+            <span>Insured for in-home work</span>
+            <span aria-hidden="true" className="text-[#D2D2D7]">&middot;</span>
+            <span>Nassau &amp; Suffolk</span>
+            <span aria-hidden="true" className="text-[#D2D2D7]">&middot;</span>
+            <span>Secure payment by Stripe</span>
+          </div>
+
+          <p className="mt-4 text-center text-[13.5px] text-[#6E6E73]">
+            Not sure it covers your list?{" "}
+            <Link href="/recent-work" className="font-semibold text-[#306EEC] underline-offset-4 hover:underline">
+              See what we fix
+            </Link>
+          </p>
         </div>
       </div>
     </section>

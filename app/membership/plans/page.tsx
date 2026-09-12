@@ -21,7 +21,6 @@
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import PlansSection from "@/app/components/sections/PlansSection";
-import GiftCallout from "@/app/components/gift/GiftCallout";
 import FAQSection from "@/app/components/sections/FAQSection";
 import { useAuth } from "@/lib/useAuth";
 import { hasActiveMembership } from "@/lib/auth-routing";
@@ -63,7 +62,7 @@ export default function MembershipPlansPage() {
             <p className="mt-3 max-w-[52ch] text-[16px] leading-[1.55] text-[#6E6E73] sm:text-[17px]">
               {isMember
                 ? "Your current plan is marked below. You can move up or down at any time, and the change follows your normal billing."
-                : "Every plan is month to month. Start where it makes sense today and change it as your home needs change."}
+                : "Four levels, depending on how much your home has going on. Start where it makes sense today and change it as your home needs change."}
             </p>
 
             {isMember && (
@@ -89,15 +88,10 @@ export default function MembershipPlansPage() {
         <PlansSection hideCancellationUi hideIntro />
 
         {/*
-          Directly under the comparison, where somebody weighing four prices
-          is most likely to think of the person they would buy one for.
+          No gift band here. Somebody comparing four prices for their own house
+          is not shopping for a present, and this is the one surface where a
+          second pitch costs a decision. Gift keeps its page and footer entry.
         */}
-        <section className="bg-white px-4 pb-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
-          <div className="mx-auto max-w-[1120px]">
-            <GiftCallout variant="card" audience="public" headingId="plans-gift-heading" />
-          </div>
-        </section>
-
         <FAQSection hideCancellationUi />
       </main>
 

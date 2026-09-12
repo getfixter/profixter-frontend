@@ -309,7 +309,16 @@ export type Plan = {
   // Card badge label - only used by 1-2 plans to anchor the ladder.
   badge?: "StartHere" | "StayHere";
 
-  stripeLink: string;
+  /*
+   * stripeLink is gone.
+   *
+   * Four hardcoded Stripe payment-link URLs lived here, each with a price baked
+   * into it, and nothing in either repository read them - checkout has used a
+   * server-created session (POST /api/stripe/checkout/create-checkout-session)
+   * for a long time. Unused price data that looks authoritative is how a page
+   * ends up quoting a number Stripe would not honour, so it is removed rather
+   * than left as a trap. No Stripe product, price or link was touched.
+   */
 };
 
 export const plans: Plan[] = [
@@ -330,7 +339,6 @@ export const plans: Plan[] = [
     buttonText: "Become a Member",
     retentionLine:
       "Most members stay for the long haul - your home keeps getting better, not worse.",
-    stripeLink: "https://buy.stripe.com/eVqfZgeAN2pCgAxb3kawo02",
   },
   {
     name: "Plus",
@@ -351,7 +359,6 @@ export const plans: Plan[] = [
     badge: "StartHere",
     retentionLine:
       "Where most homeowners with active homes start - and stay for years.",
-    stripeLink: "https://buy.stripe.com/4gMaEWboB1ly3NL4EWawo03",
   },
   {
     name: "Premium",
@@ -365,7 +372,7 @@ export const plans: Plan[] = [
     features: [
       "2 active appointments at a time",
       "One Priority Visit per month",
-      "Priority Visits help when you need service before the next standard appointment slot, subject to technician availability",
+      "Priority Visits help when you need service before the next standard appointment slot, subject to Fixter availability",
       "Same trusted team - on call for the moments that matter",
       "Direct line to Taras, the founder",
     ],
@@ -373,7 +380,6 @@ export const plans: Plan[] = [
     badge: "StayHere",
     retentionLine:
       "The plan members keep when they have kids, pets, or a finished basement.",
-    stripeLink: "https://buy.stripe.com/9B614m78lc0c6ZXb3kawo04",
   },
   {
     name: "Elite",
@@ -388,13 +394,12 @@ export const plans: Plan[] = [
       "2 active appointments at a time",
       "Two Priority Visits per month",
       "One full project day per month (up to 8 hours)",
-      "Priority Visits help when you need service before the next standard appointment slot, subject to technician availability",
+      "Priority Visits help when you need service before the next standard appointment slot, subject to Fixter availability",
       "10% off home improvement projects (roofing, remodeling, kitchen)",
     ],
     buttonText: "Become a Member",
     retentionLine:
       "The plan that replaces the contractor list in your phone.",
-    stripeLink: "https://buy.stripe.com/5kQ28qeANaW8ac93ASawo01",
   },
 ];
 
