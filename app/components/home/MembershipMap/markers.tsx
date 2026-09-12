@@ -5,29 +5,49 @@ import type { MembershipPlan } from "@/lib/public-membership-map";
  *
  * GOOD → BETTER → PREMIUM → SPECIAL, and Basic is not the loser.
  *
- * The hierarchy is built from three things that escalate together - size, the
- * number of rings around the dot, and the material the dot is made of - rather
- * than from making the lower tiers duller. Basic is full-strength ProFixter
- * blue with a crisp white collar: on its own it looks like a considered brand
- * mark, which matters because most pins on the map are Basic and a map of
- * apologetic dots would sell nothing.
+ * The hierarchy escalates through three things at once - size, ring structure,
+ * and the material the dot is made of - rather than by making the lower tiers
+ * duller. Basic is full-strength ProFixter blue with a crisp white collar. Most
+ * pins on the map are Basic, and a map of apologetic dots would sell nothing.
  *
- * What changes going up is presence, not quality. Plus gains a halo. Premium
- * changes material to brushed platinum and gains a second ring. Elite is gold,
- * carries a soft glow and a faceted collar, and is the only marker that reads
- * as lit from within.
+ * WHAT V2 CHANGED, AND WHY
+ *
+ * V1 was too loud at real map scale. Elite carried a glow three times the width
+ * of its own dot, which on a phone fused neighbouring gold pins into a single
+ * bright smear; Premium's rings and halo made it read as a button rather than a
+ * marker; and Plus was so close to Basic that the second tier was invisible.
+ *
+ * So every marker is roughly a third smaller, the decorative radii are pulled
+ * in much harder than the dots themselves, and the glows are dimmed. Elite is
+ * now a luxury badge - gold, quietly lit, with a fine faceted collar - instead
+ * of a light source. The tier order is still readable at a glance, but the
+ * island underneath is the thing you see first.
+ *
+ * EVERY TIER CARRIES A DARK OUTER EDGE. Same-ZIP members sit close enough to
+ * overlap on a phone, and the seam is what keeps two overlapping pins reading
+ * as two memberships instead of one blob. It is load-bearing, not decoration.
  *
  * NO TIER USES A COLOUR OUTSIDE THE BRAND'S RANGE. Blue, blue, platinum, gold -
- * a progression a visitor can rank at a glance without a legend, and which
- * never turns the map into weather radar.
+ * rankable at a glance, and never weather radar.
  */
 
-/** Base radius in viewBox units. ~165 metres per unit at this scale. */
+/**
+ * Base radius in viewBox units. ~163 metres per unit at this scale.
+ *
+ * V1 was 6.2 / 7.6 / 8.6 / 9.8. The ladder came down about a quarter, and the
+ * gap between the top tiers narrowed, because Premium and Elite were winning on
+ * bulk rather than on craft. The decorative radii around them came down much
+ * further - see each marker below - which is what actually removed the glare.
+ *
+ * Sized so a Basic dot draws about 11px across on a desktop card. The scale
+ * curve in the section holds phones and tablets near 8.4px, so raising this
+ * raised the roomy end without inflating the crowded one.
+ */
 export const MARKER_RADIUS: Record<MembershipPlan, number> = {
-  basic: 6.2,
-  plus: 7.6,
-  premium: 8.6,
-  elite: 9.8,
+  basic: 4.65,
+  plus: 5.4,
+  premium: 6.05,
+  elite: 6.75,
 };
 
 /** Order for the legend and for paint order: rarer tiers last, so on top. */
@@ -41,7 +61,7 @@ export const PLAN_LABEL: Record<MembershipPlan, string> = {
 };
 
 /**
- * Gradients, glows and the sparkle, defined once for the whole map.
+ * Gradients and glows, defined once for the whole page.
  *
  * Rendered in one <defs> and referenced by every marker, so forty pins cost one
  * gradient each rather than forty. Ids are prefixed because this SVG shares a
@@ -57,7 +77,7 @@ export function MarkerDefs() {
       </radialGradient>
 
       <radialGradient id="pfm-plus" cx="35%" cy="28%">
-        <stop offset="0%" stopColor="#9CC6FF" />
+        <stop offset="0%" stopColor="#A8CEFF" />
         <stop offset="50%" stopColor="#4A87FF" />
         <stop offset="100%" stopColor="#1B54CC" />
       </radialGradient>
@@ -65,29 +85,27 @@ export function MarkerDefs() {
       {/* Brushed platinum: a cool light-to-steel sweep with a bright shoulder. */}
       <linearGradient id="pfm-premium" x1="20%" y1="0%" x2="80%" y2="100%">
         <stop offset="0%" stopColor="#FFFFFF" />
-        <stop offset="28%" stopColor="#E2E9F2" />
-        <stop offset="58%" stopColor="#A9B7C9" />
-        <stop offset="100%" stopColor="#75869B" />
+        <stop offset="30%" stopColor="#DFE7F1" />
+        <stop offset="62%" stopColor="#A3B2C5" />
+        <stop offset="100%" stopColor="#6E7F95" />
       </linearGradient>
 
       {/* Gold, warm at the top and deep at the base so it reads as metal. */}
       <linearGradient id="pfm-elite" x1="22%" y1="0%" x2="78%" y2="100%">
-        <stop offset="0%" stopColor="#FFF3C4" />
-        <stop offset="30%" stopColor="#F5CE5B" />
-        <stop offset="65%" stopColor="#D9A017" />
-        <stop offset="100%" stopColor="#A9740A" />
+        <stop offset="0%" stopColor="#FFF0B8" />
+        <stop offset="32%" stopColor="#F2C94F" />
+        <stop offset="68%" stopColor="#D19B12" />
+        <stop offset="100%" stopColor="#9E6C08" />
       </linearGradient>
 
+      {/*
+        Dimmed hard from V1. The old glow ran to 55% opacity across three times
+        the dot's width, which merged adjacent Elite pins into one bright patch.
+      */}
       <radialGradient id="pfm-elite-glow">
-        <stop offset="0%" stopColor="#F5CE5B" stopOpacity="0.55" />
-        <stop offset="60%" stopColor="#F5CE5B" stopOpacity="0.16" />
-        <stop offset="100%" stopColor="#F5CE5B" stopOpacity="0" />
-      </radialGradient>
-
-      <radialGradient id="pfm-premium-glow">
-        <stop offset="0%" stopColor="#DCE6F2" stopOpacity="0.42" />
-        <stop offset="65%" stopColor="#DCE6F2" stopOpacity="0.12" />
-        <stop offset="100%" stopColor="#DCE6F2" stopOpacity="0" />
+        <stop offset="0%" stopColor="#F2C94F" stopOpacity="0.3" />
+        <stop offset="55%" stopColor="#F2C94F" stopOpacity="0.09" />
+        <stop offset="100%" stopColor="#F2C94F" stopOpacity="0" />
       </radialGradient>
     </defs>
   );
@@ -100,7 +118,7 @@ export function MarkerDefs() {
  * without becoming a blob on a 1440px desktop - the viewBox is fixed, so
  * without this a marker would shrink with the viewport until it vanished.
  *
- * Deliberately inert: no id, no title, no data attribute, no pointer handler
+ * Deliberately inert: no id, no title, no data attribute, no pointer handler,
  * and aria-hidden. There is nothing to click and nothing behind it to reveal,
  * because the component was never given anything to reveal.
  */
@@ -117,6 +135,19 @@ export function Marker({
 }) {
   const r = MARKER_RADIUS[plan] * scale;
 
+  /* The seam that keeps overlapping pins countable. */
+  const edge = (radius: number, opacity = 0.42) => (
+    <circle
+      cx={x}
+      cy={y}
+      r={radius}
+      fill="none"
+      stroke="#06101E"
+      strokeOpacity={opacity}
+      strokeWidth={r * 0.16}
+    />
+  );
+
   if (plan === "basic") {
     return (
       <g aria-hidden="true">
@@ -127,45 +158,35 @@ export function Marker({
           r={r}
           fill="none"
           stroke="#FFFFFF"
-          strokeOpacity="0.92"
-          strokeWidth={r * 0.22}
+          strokeOpacity="0.94"
+          strokeWidth={r * 0.26}
         />
-        {/* Seats the pin against the land instead of floating on it. */}
-        <circle
-          cx={x}
-          cy={y}
-          r={r * 1.12}
-          fill="none"
-          stroke="#0B1628"
-          strokeOpacity="0.28"
-          strokeWidth={r * 0.12}
-        />
+        {edge(r * 1.14)}
       </g>
     );
   }
 
   if (plan === "plus") {
     /*
-     * The detached outer ring is what separates Plus from Basic at a glance.
+     * A detached outer ring with dark between it and the dot.
      *
-     * An earlier version differed only by a faint halo and a fraction of a
-     * pixel, which read as the same marker twice - the two tiers were
-     * indistinguishable on the map and nearly so in the legend. A clear ring
-     * with a gap of dark between it and the dot is legible at every size the
-     * map is rendered at, and still unmistakably the same family as Basic.
+     * This is the whole difference from Basic and it has to survive being drawn
+     * nine pixels wide, so it is a hard ring at near-full opacity rather than
+     * the soft halo V1 used - that halo disappeared at map scale and left two
+     * tiers looking identical.
      */
     return (
       <g aria-hidden="true">
-        <circle cx={x} cy={y} r={r * 1.78} fill="#4A87FF" fillOpacity="0.18" />
         <circle
           cx={x}
           cy={y}
-          r={r * 1.46}
+          r={r * 1.5}
           fill="none"
-          stroke="#8CBAFF"
-          strokeOpacity="0.92"
-          strokeWidth={r * 0.17}
+          stroke="#7FB2FF"
+          strokeOpacity="0.95"
+          strokeWidth={r * 0.2}
         />
+        {edge(r * 1.66, 0.34)}
         <circle cx={x} cy={y} r={r} fill="url(#pfm-plus)" />
         <circle
           cx={x}
@@ -174,110 +195,104 @@ export function Marker({
           fill="none"
           stroke="#FFFFFF"
           strokeOpacity="0.96"
-          strokeWidth={r * 0.26}
+          strokeWidth={r * 0.24}
         />
       </g>
     );
   }
 
   if (plan === "premium") {
+    /*
+     * Platinum, and noticeably tighter than V1: the halo is gone entirely and
+     * the rings came in from 1.52/1.26 to 1.34/1.16. Premium should read as
+     * better made than Plus, not as physically bigger.
+     */
     return (
       <g aria-hidden="true">
-        <circle cx={x} cy={y} r={r * 2.1} fill="url(#pfm-premium-glow)" />
         <circle
           cx={x}
           cy={y}
-          r={r * 1.52}
+          r={r * 1.34}
           fill="none"
-          stroke="#E8EEF7"
-          strokeOpacity="0.5"
-          strokeWidth={r * 0.1}
+          stroke="#D9E3F0"
+          strokeOpacity="0.62"
+          strokeWidth={r * 0.12}
         />
+        {edge(r * 1.48, 0.34)}
         <circle
           cx={x}
           cy={y}
-          r={r * 1.26}
+          r={r * 1.16}
           fill="none"
           stroke="#FFFFFF"
-          strokeOpacity="0.82"
-          strokeWidth={r * 0.16}
+          strokeOpacity="0.88"
+          strokeWidth={r * 0.15}
         />
         <circle cx={x} cy={y} r={r} fill="url(#pfm-premium)" />
         {/* The bright shoulder that makes a flat disc read as brushed metal. */}
         <path
-          d={`M ${x - r * 0.62} ${y - r * 0.28} A ${r * 0.72} ${r * 0.72} 0 0 1 ${x + r * 0.12} ${y - r * 0.7}`}
+          d={`M ${x - r * 0.6} ${y - r * 0.3} A ${r * 0.7} ${r * 0.7} 0 0 1 ${x + r * 0.1} ${y - r * 0.68}`}
           fill="none"
           stroke="#FFFFFF"
-          strokeOpacity="0.85"
-          strokeWidth={r * 0.2}
+          strokeOpacity="0.9"
+          strokeWidth={r * 0.19}
           strokeLinecap="round"
         />
-        <circle
-          cx={x}
-          cy={y}
-          r={r}
-          fill="none"
-          stroke="#5E7186"
-          strokeOpacity="0.55"
-          strokeWidth={r * 0.1}
-        />
+        {edge(r, 0.5)}
       </g>
     );
   }
 
-  /* Elite. The only marker that is lit rather than filled. */
+  /*
+   * Elite. A luxury badge, not a light source.
+   *
+   * The glow is down from 3.1x the dot at 55% opacity to 1.85x at 30%, and the
+   * faceted collar came in from 1.46x to 1.3x with smaller facets. It still
+   * draws the eye first - it is the only gold on the map - but two Elite pins
+   * in neighbouring towns now read as two pins.
+   */
   const facets = 8;
+  const collarR = r * 1.3;
   const collar = Array.from({ length: facets }, (_, i) => {
     const angle = (i / facets) * Math.PI * 2 - Math.PI / 2;
-    return {
-      cx: x + Math.cos(angle) * r * 1.46,
-      cy: y + Math.sin(angle) * r * 1.46,
-    };
+    return { cx: x + Math.cos(angle) * collarR, cy: y + Math.sin(angle) * collarR };
   });
 
   return (
     <g aria-hidden="true">
-      <circle cx={x} cy={y} r={r * 3.1} fill="url(#pfm-elite-glow)" />
-      {/* A faceted collar rather than a crown: prestige without costume. */}
+      <circle cx={x} cy={y} r={r * 1.85} fill="url(#pfm-elite-glow)" />
       {collar.map((p, i) => (
-        <circle key={i} cx={p.cx} cy={p.cy} r={r * 0.17} fill="#F5CE5B" fillOpacity="0.75" />
+        <circle key={i} cx={p.cx} cy={p.cy} r={r * 0.13} fill="#F2C94F" fillOpacity="0.8" />
       ))}
       <circle
         cx={x}
         cy={y}
-        r={r * 1.46}
+        r={collarR}
         fill="none"
-        stroke="#F5CE5B"
-        strokeOpacity="0.62"
-        strokeWidth={r * 0.1}
+        stroke="#F2C94F"
+        strokeOpacity="0.55"
+        strokeWidth={r * 0.08}
       />
+      {edge(r * 1.44, 0.32)}
       <circle
         cx={x}
         cy={y}
-        r={r * 1.2}
+        r={r * 1.15}
         fill="none"
         stroke="#FFF6D8"
-        strokeOpacity="0.9"
-        strokeWidth={r * 0.18}
+        strokeOpacity="0.92"
+        strokeWidth={r * 0.16}
       />
       <circle cx={x} cy={y} r={r} fill="url(#pfm-elite)" />
       <path
-        d={`M ${x - r * 0.6} ${y - r * 0.3} A ${r * 0.7} ${r * 0.7} 0 0 1 ${x + r * 0.1} ${y - r * 0.68}`}
+        d={`M ${x - r * 0.58} ${y - r * 0.3} A ${r * 0.68} ${r * 0.68} 0 0 1 ${x + r * 0.1} ${y - r * 0.66}`}
         fill="none"
         stroke="#FFFBEA"
         strokeOpacity="0.95"
-        strokeWidth={r * 0.22}
+        strokeWidth={r * 0.2}
         strokeLinecap="round"
       />
-      <circle
-        cx={x}
-        cy={y}
-        r={r}
-        fill="none"
-        stroke="#8A5E08"
-        strokeOpacity="0.5"
-        strokeWidth={r * 0.1}
-      />
+      {edge(r, 0.45)}
     </g>
   );
 }
@@ -289,19 +304,21 @@ export function Marker({
  * from the map - if a marker design changes, the legend changes with it.
  *
  * No <defs> of its own. The gradients are declared once per page by the
- * section; repeating them here would put four duplicate ids in the document and
+ * section; repeating them here would put duplicate ids in the document and
  * leave which gradient wins up to document order.
  *
- * Elite is scaled down relative to the others because its glow and collar reach
- * much further than its dot; matched on the dot they would not fit the swatch.
+ * Each tier is scaled so the SWATCHES match in outer size while the dots keep
+ * their real proportions - otherwise Elite's collar and glow would make its
+ * swatch twice the size of Basic's and the legend would exaggerate a difference
+ * the map states more subtly.
  */
 export function LegendMarker({ plan }: { plan: MembershipPlan }) {
-  const box = 34;
+  const box = 30;
   const swatchScale: Record<MembershipPlan, number> = {
-    basic: 1.5,
-    plus: 1.25,
-    premium: 1.05,
-    elite: 0.92,
+    basic: 1.7,
+    plus: 1.26,
+    premium: 1.36,
+    elite: 1.24,
   };
   return (
     <svg
