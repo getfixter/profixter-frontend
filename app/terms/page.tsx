@@ -401,11 +401,19 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">13. Electronic Communications (Email, SMS, Phone)</h2>
             <p>
-  By providing your phone number and opting in, you consent to receive
-  service-related SMS communications, including scheduling updates,
-  appointment reminders, customer support messages, and account notices.
-  Message frequency may vary. Msg &amp; data rates may apply. We are not
-  responsible for carrier delays, spam filtering, or inaccurate contact info.
+  Text messages are optional. You may create an account, book visits, purchase a
+  membership and use the Service without agreeing to receive any SMS, and
+  providing a phone number is not by itself consent to text you.
+</p>
+            <p className="mt-3">
+  If you separately opt in to service texts, you consent to receive
+  service-related SMS communications, including scheduling updates, appointment
+  reminders, customer support messages, and account notices. Marketing texts
+  require a second, separate opt-in. Either choice may be withdrawn at any time
+  in your account settings or by replying STOP. Message frequency may vary. Msg
+  &amp; data rates may apply. We are not responsible for carrier delays, spam
+  filtering, or inaccurate contact info. Email and phone communications about
+  services you request are not affected by your SMS choices.
 </p>
           </section>
 

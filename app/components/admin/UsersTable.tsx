@@ -9,6 +9,7 @@ import {
 } from '@/lib/admin-service';
 import { formatDateNY, getTodayNY } from '@/lib/utils/timezone-helpers';
 import CommunicationHistory from './CommunicationHistory';
+import SmsConsentPanel from './SmsConsentPanel';
 
 type PlanFilter = 'all' | 'basic' | 'plus' | 'premium' | 'elite' | 'cancel';
 
@@ -1000,6 +1001,17 @@ export default function UsersTable({
             </div>
 
             <div className="max-h-[58vh] overflow-y-auto px-5 py-4 sm:px-6">
+              {/*
+                * What we are ALLOWED to tell them, above what we actually told
+                * them. Support reads these in that order: a missing reminder is
+                * explained by the consent state far more often than by a
+                * delivery failure, and checking the history first sends people
+                * looking for a bug that is not there.
+                */}
+              <div className="mb-5 border-b border-slate-200 pb-5">
+                <SmsConsentPanel userId={historyUser._id} />
+              </div>
+
               {/*
                 * Every email and text this customer was actually sent, above the
                 * activity feed. It answers a different question from the activity

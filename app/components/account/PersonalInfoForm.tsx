@@ -1,6 +1,6 @@
 import type { AccountAddress, AccountFormData } from "./types";
 import { AddressesPanel } from "./AddressesPanel";
-import { SmsMarketingPreference } from "./SmsMarketingPreference";
+import { SmsPreferences } from "./SmsPreferences";
 
 interface PersonalInfoFormProps {
   formData: AccountFormData;
@@ -66,7 +66,7 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
         * would make opting out harder than opting in, which is the asymmetry
         * these rules exist to prevent.
         */}
-      <SmsMarketingPreference />
+      <SmsPreferences />
     </div>
   );
 }

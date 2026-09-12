@@ -121,29 +121,42 @@ export default function PrivacyPage() {
               3. SMS Messaging &amp; Compliance
             </h2>
             <p>
-              We send service messages about visits you book — appointment
-              confirmations, reminders, scheduling updates, account
-              notifications and customer support replies. Marketing texts are
-              sent only if you separately opt in.
+              All text messages from Profixter are optional. You can create an
+              account, book visits, buy a membership and use every part of our
+              service without agreeing to receive any text message. Service texts
+              and marketing texts are two separate choices, and neither is a
+              condition of anything.
             </p>
 
             <ul className="list-disc list-inside space-y-2 mt-3">
               <li>
-                <span className="font-semibold">Service messages:</span> When you
-                create an account you give us a mobile number so we can text you
-                about the visits you book. The sign-up form tells you this at the
-                point where you enter the number.
+                <span className="font-semibold">Service messages (optional opt-in):</span>{" "}
+                Appointment confirmations, reminders, scheduling updates and
+                service notifications are sent only if you tick the separate,
+                optional service-text box. It is unchecked by default. Giving us a
+                phone number is never by itself treated as consent to text you —
+                we ask for a number so we can call you and so your Fixter can
+                reach you at the door.
               </li>
               <li>
                 <span className="font-semibold">
-                  Marketing messages (separate opt-in):
+                  Marketing messages (separate optional opt-in):
                 </span>{" "}
                 Promotional texts are sent only if you tick the separate,
-                optional marketing box when you create your account. It is
-                unchecked by default, you can register and book without it, and
-                providing a phone number alone is never treated as consent to
-                marketing. We keep timestamped records of opt-in and opt-out
-                actions.
+                optional marketing box. It is unchecked by default, it is not the
+                same box as the service one, and ticking either never ticks the
+                other. We keep timestamped records of opt-in and opt-out actions.
+              </li>
+              <li>
+                <span className="font-semibold">If you decline both:</span> Nothing
+                about your account, your bookings, your membership or your pricing
+                changes. Confirmations, reminders and receipts reach you by email
+                exactly as they otherwise would.
+              </li>
+              <li>
+                <span className="font-semibold">Changing your mind:</span> Both
+                choices can be turned on or off at any time in your account
+                settings, independently of each other.
               </li>
               <li>
                 <span className="font-semibold">Opt-Out:</span> Reply{" "}

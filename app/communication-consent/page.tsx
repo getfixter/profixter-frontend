@@ -85,34 +85,39 @@ export default function CommunicationConsentPage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">2. Your Consent to Contact You</h2>
             <p>
-              We treat service communications and marketing communications as two separate things, and we ask for them separately.
+              We treat service communications and marketing communications as two separate things, we ask for them separately, and
+              every text message of either kind is optional.
             </p>
             <ul className="list-disc list-inside space-y-2 mt-3">
               <li>
-                <span className="font-semibold">Service communications.</span> By creating an account, booking a service, or
-                requesting a quote with Premium Island Homes Inc. (DBA Profixter / Mr. Fixter), you consent to receive
-                communications about that service — confirmations, scheduling updates, reminders, account notices and support
-                replies — at the phone number and email address you give us.
+                <span className="font-semibold">Text messages are never required.</span> You can create an account, book a service,
+                request a quote, buy a membership and use everything Premium Island Homes Inc. (DBA Profixter / Mr. Fixter) offers
+                without agreeing to receive any SMS. Providing a phone number is not consent to text you.
               </li>
               <li>
-                <span className="font-semibold">Marketing communications require a separate opt-in.</span> Promotional texts are
-                sent only if you tick the separate, optional marketing box when you create your account. That box is unchecked by
-                default and you can register and book without it.{" "}
+                <span className="font-semibold">Service texts require their own opt-in.</span> Appointment confirmations, reminders,
+                scheduling updates and service notifications are sent by SMS only if you tick the separate, optional service-text
+                box. It is unchecked by default.
+              </li>
+              <li>
+                <span className="font-semibold">Marketing texts require a second, separate opt-in.</span> Promotional texts are sent
+                only if you tick the separate, optional marketing box. It is unchecked by default, it is not the same box as the
+                service one, and ticking either never ticks the other.{" "}
                 <span className="font-semibold">
                   Providing a phone number is never by itself treated as consent to marketing.
                 </span>
               </li>
               <li>
-                <span className="font-semibold">Consent is not a condition of purchase</span> for marketing messages.
+                <span className="font-semibold">Neither consent is a condition of purchase</span> or of using the Service.
               </li>
               <li>
-                You may still receive <span className="font-semibold">non-marketing</span> /{" "}
-                <span className="font-semibold">transactional</span> messages (for example, service updates) where permitted by law,
-                even if you opt out of marketing.
+                <span className="font-semibold">Declining texts changes nothing else.</span> By creating an account or booking a
+                service you consent to be contacted about that service by <span className="font-semibold">email</span> and at the{" "}
+                <span className="font-semibold">phone number you give us</span> — confirmations, receipts, scheduling and support
+                replies — and those reach you normally whether or not you accept text messages.
               </li>
               <li>
-                You agree that your consent applies even if your number is on a state or federal Do Not Call list, to the extent
-                permitted for Service-related communications you requested.
+                You may change either text-message choice at any time in your account settings, independently of the other.
               </li>
             </ul>
           </section>
@@ -199,9 +204,10 @@ export default function CommunicationConsentPage() {
                 </li>
               </ul>
               <p className="mt-3 text-white/70">
-                After you text STOP, you may receive a final confirmation message. If you opt out, we will stop sending marketing
-                texts and (where required) stop other SMS categories; however, in some cases we may still send essential
-                service-related messages by other methods (email/phone) or as otherwise permitted by law.
+                After you text STOP, you may receive a final confirmation message. STOP blocks every category of text message to
+                that handset — service and marketing alike — and we will not text you again unless you opt back in. We may still
+                send essential service-related messages by other methods (email/phone), which are not affected by your SMS
+                choices.
               </p>
             </div>
           </section>
@@ -229,11 +235,18 @@ export default function CommunicationConsentPage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">7. How We Collect Opt-In (Consent Records)</h2>
             <p>
-              Customers typically opt in through our website or forms by providing a phone number and checking an SMS consent box (or
-              taking equivalent affirmative action), and/or by initiating a conversation with us via text.
+              Customers opt in on our website sign-up form, which presents two separate, unchecked, optional SMS checkboxes — one
+              for service texts and one for marketing texts — alongside a separate required acceptance of the Terms of Service and
+              Privacy Policy. Neither SMS box is required to submit the form. The same two choices are available at any time in
+              account settings, and a customer may also opt in by initiating a conversation with us via text.
             </p>
             <ul className="list-disc list-inside space-y-2 mt-3">
               <li>We maintain consent records where required (timestamp, source, and consent language version).</li>
+              <li>
+                Replying <span className="font-semibold">START</span> lifts a previous STOP block on your handset. It does not by
+                itself switch either category of message back on; you choose those again in your account settings, so that our
+                record always reflects a choice you actually made.
+              </li>
               <li>
                 If you are providing a number that is not yours, you represent you have authorization from the account holder.
               </li>
