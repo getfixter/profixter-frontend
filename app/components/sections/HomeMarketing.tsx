@@ -324,24 +324,52 @@ export default function HomeMarketing() {
 
       {/* ================== MEMBERSHIP + WHAT IT HANDLES ============== */}
       {/*
-        The product and the evidence for it, as one section rather than two.
+        The product, then the evidence for it - as one visual block, but not
+        one component.
 
-        This began as a paragraph band followed by the gallery's own heading,
-        which meant two headings in a row telling a homeowner roughly the same
-        thing before either showed them anything. The sentence lists the work;
-        the photographs underneath are that list in somebody's actual house. One
-        heading, one claim, one set of proof.
+        These were briefly merged into the gallery so there would not be two
+        headings in a row. That was wrong in a way only production showed: the
+        gallery correctly renders nothing when no photos are published, and it
+        took the entire membership explanation down with it. A product
+        description is not allowed to depend on a photo library being non-empty.
+
+        So the words live here and always render; the photographs continue the
+        same dark band underneath and disappear on their own when there is
+        nothing published. One heading either way.
 
         It also had to stop sitting under "Small fix today. Bigger project
         later.", which quietly filed these photographs as renovation work. They
         are not - they are what membership covers.
       */}
-      <RecentWorkSection
-        variant="preview"
-        eyebrow="Membership"
-        heading="One team that already knows your house."
-        subheading="Instead of finding someone each time, you have a company already set up for your home - mounting, repairs, installations, drywall, caulking and fixtures. This is the everyday list a membership is meant for."
-      />
+      <section
+        className="relative w-full overflow-hidden px-5 pt-11 sm:px-6 sm:pt-14"
+        style={{ background: "#080F1E" }}
+        aria-labelledby="membership-covers-heading"
+      >
+        <div
+          aria-hidden="true"
+          className="absolute top-0 left-0 right-0 h-px"
+          style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.18), transparent)" }}
+        />
+        <div className="mx-auto max-w-[1120px] text-white">
+          <Reveal>
+            <Eyebrow tone="light">Membership</Eyebrow>
+            <h2
+              id="membership-covers-heading"
+              className="mt-4 max-w-[18ch] text-balance text-[26px] font-semibold leading-[1.08] tracking-[-0.035em] sm:text-[34px] lg:text-[36px]"
+            >
+              One team that already knows your house.
+            </h2>
+            <p className="mt-5 max-w-[52ch] text-pretty text-[17px] leading-[1.5] text-white/60 sm:text-[19px]">
+              Instead of finding someone each time, you have a company already set up for
+              your home &mdash; mounting, repairs, installations, drywall, caulking and
+              fixtures. This is the everyday list a membership is meant for.
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      <RecentWorkSection variant="preview" showHeading={false} />
 
       {/* ========================== HOW IT WORKS ======================= */}
       <section id="how-it-works" className="scroll-mt-2 bg-[#F5F5F7] px-5 py-9 sm:px-6 sm:py-13">
