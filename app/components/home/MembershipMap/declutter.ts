@@ -66,7 +66,8 @@ export function declutter(
   /* The budget, converted from pixels into the units the SVG is drawn in. */
   const budget = MAX_DISPLACEMENT_PX / pxPerUnit;
 
-  const radiusOf = (p: MembershipMapPoint) => MARKER_RADIUS[p.plan] * scale;
+  /* One marker type since V3, so one radius for every collision test. */
+  const radius = MARKER_RADIUS * scale;
 
   /*
    * Single linkage: anything overlapping anything already in the group joins
@@ -83,7 +84,7 @@ export function declutter(
       const a = queue.pop() as number;
       for (let b = 0; b < points.length; b += 1) {
         if (groupOf[b] !== -1) continue;
-        const reach = (radiusOf(points[a]) + radiusOf(points[b])) * COLLISION_FACTOR;
+        const reach = radius * 2 * COLLISION_FACTOR;
         const dx = points[a].x - points[b].x;
         const dy = points[a].y - points[b].y;
         if (dx * dx + dy * dy <= reach * reach) {

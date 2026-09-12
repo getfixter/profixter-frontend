@@ -2,9 +2,14 @@
  * The public membership map feed.
  *
  * Unauthenticated, cached hard at the edge, and carrying nothing that belongs
- * to anybody: a drawing position and a plan word per active membership. There
+ * to anybody: a drawing position per active membership and nothing else. There
  * is no id to request, no filter to widen and no customer to look up - the
  * endpoint answers one question and has one shape.
+ *
+ * SINCE V3 IT DOES NOT CARRY THE MEMBERSHIP TIER EITHER. The map says that
+ * somebody in this area is a member; which plan they pay for is not the public's
+ * business, and a payload that included it would let anyone reading the network
+ * tab rank ProFixter's customers by spend.
  *
  * A failure here is not an error the visitor should ever see. The map is a
  * decoration on a marketing page; if the feed is unavailable the section simply
@@ -13,14 +18,10 @@
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
-/** The four tiers, lowercase, exactly as the server emits them. */
-export type MembershipPlan = "basic" | "plus" | "premium" | "elite";
-
 export interface MembershipMapPoint {
   /** Position inside the map viewBox. Not a coordinate; see the server module. */
   x: number;
   y: number;
-  plan: MembershipPlan;
 }
 
 export interface MembershipMapData {
@@ -28,19 +29,16 @@ export interface MembershipMapData {
   points: MembershipMapPoint[];
 }
 
-const PLANS: readonly MembershipPlan[] = ["basic", "plus", "premium", "elite"];
-
-function isPlan(value: unknown): value is MembershipPlan {
-  return typeof value === "string" && (PLANS as readonly string[]).includes(value);
-}
-
 /**
  * Keep only rows that are structurally sound.
  *
  * A malformed row is dropped, never rendered half-drawn and never allowed to
- * throw. One bad record must not cost the whole section, and a plan the client
- * does not recognise has no marker design to use - guessing one would invent a
- * tier that does not exist.
+ * throw. One bad record must not cost the whole section.
+ *
+ * Note what this deliberately does NOT do: it does not read, keep or forward any
+ * other field the server might one day send. The shape is rebuilt from two
+ * numbers, so a field added upstream by accident cannot reach the DOM through
+ * here.
  */
 function sanitize(raw: unknown): MembershipMapPoint[] {
   if (!Array.isArray(raw)) return [];
@@ -48,8 +46,7 @@ function sanitize(raw: unknown): MembershipMapPoint[] {
   for (const row of raw) {
     const point = row as Partial<MembershipMapPoint>;
     if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) continue;
-    if (!isPlan(point?.plan)) continue;
-    out.push({ x: Number(point.x), y: Number(point.y), plan: point.plan });
+    out.push({ x: Number(point.x), y: Number(point.y) });
   }
   return out;
 }
