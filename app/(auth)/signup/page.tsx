@@ -149,6 +149,59 @@ function FieldInput({
   );
 }
 
+/**
+ * One tick box, shared by all three consents on this page.
+ *
+ * THE THREE BOXES DELIBERATELY LOOK ALIKE.
+ *
+ * Terms acceptance is required and the two SMS boxes are not, but they are
+ * rendered by the same component at the same weight so that nobody - customer
+ * or carrier reviewer - can mistake the optional ones for fine print bolted
+ * onto the required one. Bundling is the thing being disproved here, and three
+ * visibly equal, visibly separate controls is what disproves it.
+ */
+function ConsentCheckbox({
+  id,
+  checked,
+  onChange,
+  label,
+  children,
+}: {
+  id: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  label: string;
+  children?: ReactNode;
+}) {
+  return (
+    <label
+      htmlFor={id}
+      className="flex cursor-pointer items-start gap-2.5 rounded-[8px] border border-white/[0.09] bg-white/[0.04] p-3"
+    >
+      <span className="relative mt-0.5 flex flex-shrink-0">
+        <input
+          id={id}
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="peer sr-only"
+        />
+        <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[4px] border border-white/30 transition peer-checked:border-[#306EEC] peer-checked:bg-[#306EEC]">
+          {checked ? (
+            <svg width="9" height="7" viewBox="0 0 9 7" fill="none" aria-hidden="true">
+              <path d="M1 3.5l2 2L8 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ) : null}
+        </span>
+      </span>
+      <span className="text-[12px] leading-relaxed text-white/56">
+        <span className="font-semibold text-white/78">{label}</span>
+        {children ? <span className="mt-1 block text-white/44">{children}</span> : null}
+      </span>
+    </label>
+  );
+}
+
 export default function SignUpPage() {
   const router = useRouter();
   const { login: authLogin } = useAuth();
@@ -163,13 +216,22 @@ export default function SignUpPage() {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [consentError, setConsentError] = useState(false);
   /*
-   * Marketing SMS consent. SEPARATE FROM EVERYTHING ELSE, AND OPTIONAL.
+   * THE TWO SMS CONSENTS. BOTH OPTIONAL, BOTH UNCHECKED, BOTH INERT.
    *
-   * Never required, never blocks registration, and never inferred from the
-   * fact that a phone number was typed. Service texts about a visit the
-   * customer booked are a different thing with a different legal basis, and
-   * collapsing the two is the mistake this checkbox exists to prevent.
+   * Neither is read by any validator on this page. That is not an incidental
+   * detail, it is the whole compliance claim: a customer can leave both alone
+   * and still register, book, pay and use every part of ProFixter, and the only
+   * consequence is that we never text them. Everything they need still arrives
+   * by email.
+   *
+   * Service and marketing are two separate states rather than one, because they
+   * rest on different permissions and a customer may reasonably want
+   * appointment reminders and no advertising. Collapsing them into a single
+   * box, or into the Terms box above, is the forced-consent defect this pair
+   * exists to remove - the carrier reviewer who rejected the campaign was
+   * looking at a page where service texts had no box at all.
    */
+  const [smsTransactionalConsent, setSmsTransactionalConsent] = useState(false);
   const [smsMarketingConsent, setSmsMarketingConsent] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; phone?: string }>({});
   const [loading, setLoading] = useState(false);
@@ -316,11 +378,14 @@ export default function SignUpPage() {
         consentSource: "website_signup",
         consentAt: new Date().toISOString(),
         /*
-         * The marketing tick, sent as the customer actually left it.
+         * The two ticks, sent exactly as the customer left them.
          *
          * Never coerced to true, and never derived from the presence of a phone
-         * number. The server records consent only when this is literally true.
+         * number or from Terms acceptance. The server records consent only when
+         * one of these is literally true, and writes nothing at all when it is
+         * not, so that "never asked" stays distinguishable from "said no".
          */
+        smsTransactionalConsent,
         smsMarketingConsent,
       };
 
@@ -562,36 +627,26 @@ export default function SignUpPage() {
                           <p className="mt-2 text-[12px] font-semibold text-red-300">{fieldErrors.phone}</p>
                         ) : null}
                         {/*
-                          * Service SMS disclosure, at the point of collection.
+                          * WHY WE ASK FOR A PHONE NUMBER, AND WHAT IT DOES NOT BUY US.
                           *
-                          * Twilio's web form opt-in standard wants the sender, the
-                          * frequency, the rates line and the STOP/HELP keywords where
-                          * the number is actually typed - not only buried in Terms. It
-                          * sits under the field it describes for that reason.
+                          * This used to read "We text you about your visits", stated as
+                          * a fact, with no way to decline. A carrier reviewer read that
+                          * exactly as written - a number is required to register, and
+                          * the site then says it will text you - and rejected the A2P
+                          * campaign for forced consent.
                           *
-                          * This is a DISCLOSURE, not a checkbox: these are service
-                          * messages about a visit the customer books, which is the
-                          * transactional basis. Marketing gets its own tick on step 4.
+                          * It is now a plain statement of purpose. The number is for
+                          * calling and for the Fixter standing at the door. Texting is a
+                          * separate question, asked with its own checkbox further down
+                          * the page, and the answer may be no.
                           */}
                         <p className="mt-2 text-[11.5px] leading-relaxed text-white/50">
-                          <span className="font-semibold text-white/70">We text you about your visits.</span>{" "}
-                          Confirmations, reminders and updates come from{" "}
-                          <span className="font-semibold text-white/70">(631) 888-6340</span>. Message frequency
-                          varies. Message and data rates may apply. Reply STOP to opt out or HELP for help. See our{" "}
-                          <Link
-                            href="/privacy"
-                            className="text-white/72 underline decoration-white/25 underline-offset-4 transition hover:text-white"
-                          >
-                            Privacy Policy
-                          </Link>
-                          {" "}and{" "}
-                          <Link
-                            href="/terms"
-                            className="text-white/72 underline decoration-white/25 underline-offset-4 transition hover:text-white"
-                          >
-                            SMS Terms
-                          </Link>
-                          .
+                          Your Fixter uses this to reach you about your visit.{" "}
+                          <span className="font-semibold text-white/70">
+                            Text messages are optional
+                          </span>{" "}
+                          and you choose them separately below &mdash; you do not need them to
+                          create an account or book.
                         </p>
                       </div>
                       <div>
@@ -636,72 +691,31 @@ export default function SignUpPage() {
                         ) : null}
                       </div>
 
-                      <label className="flex cursor-pointer items-start gap-2.5 rounded-[8px] border border-white/[0.09] bg-white/[0.04] p-3">
-                        <span className="relative mt-0.5 flex flex-shrink-0">
-                          <input
-                            type="checkbox"
-                            checked={agreeTerms}
-                            onChange={(e) => {
-                              setAgreeTerms(e.target.checked);
-                              if (consentError) setConsentError(false);
-                            }}
-                            className="peer sr-only"
-                          />
-                          <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[4px] border border-white/30 transition peer-checked:border-[#306EEC] peer-checked:bg-[#306EEC]">
-                            {agreeTerms ? (
-                              <svg width="9" height="7" viewBox="0 0 9 7" fill="none" aria-hidden="true">
-                                <path d="M1 3.5l2 2L8 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                            ) : null}
-                          </span>
-                        </span>
-                        <span className="text-[12px] leading-relaxed text-white/56">
-                          I agree to the{" "}
-                          <Link href="/terms" className="text-white/82 underline decoration-white/30 underline-offset-4 transition hover:text-white">
-                            Terms of Service
-                          </Link>
-                          {" "}and{" "}
-                          <Link href="/privacy" className="text-white/82 underline decoration-white/30 underline-offset-4 transition hover:text-white">
-                            Privacy Policy
-                          </Link>.
-                        </span>
-                      </label>
-
                       {/*
-                        * Marketing SMS. OPTIONAL, AND NOTHING DEPENDS ON IT.
+                        * The one required box, and the only one.
                         *
-                        * Deliberately a second control rather than extra words on the
-                        * one above: bundling promotional consent into the agreement a
-                        * customer must accept to register is precisely what "consent is
-                        * not a condition of purchase" forbids. It is never read by
-                        * validateSecurityStep, so leaving it alone cannot block
-                        * registration - that is the behaviour the compliance claim rests
-                        * on, not an incidental detail.
+                        * It covers the Terms and the Privacy Policy and nothing else.
+                        * No SMS consent of any kind is bundled into it, because consent
+                        * a customer must give to register is not consent at all.
                         */}
-                      <label className="flex cursor-pointer items-start gap-2.5 rounded-[8px] border border-white/[0.07] bg-white/[0.02] p-3">
-                        <span className="relative mt-0.5 flex flex-shrink-0">
-                          <input
-                            type="checkbox"
-                            checked={smsMarketingConsent}
-                            onChange={(e) => setSmsMarketingConsent(e.target.checked)}
-                            className="peer sr-only"
-                          />
-                          <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[4px] border border-white/30 transition peer-checked:border-[#306EEC] peer-checked:bg-[#306EEC]">
-                            {smsMarketingConsent ? (
-                              <svg width="9" height="7" viewBox="0 0 9 7" fill="none" aria-hidden="true">
-                                <path d="M1 3.5l2 2L8 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                            ) : null}
-                          </span>
-                        </span>
-                        <span className="text-[12px] leading-relaxed text-white/56">
-                          <span className="font-semibold text-white/72">Text me occasional ProFixter offers.</span>{" "}
-                          <span className="text-white/44">
-                            Optional — you do not need this to book, and it is separate from the service texts
-                            above. Message frequency varies. Message and data rates may apply. Reply STOP to opt out.
-                          </span>
-                        </span>
-                      </label>
+                      <ConsentCheckbox
+                        id="agree-terms"
+                        checked={agreeTerms}
+                        onChange={(next) => {
+                          setAgreeTerms(next);
+                          if (consentError) setConsentError(false);
+                        }}
+                        label="I agree to the Terms of Service and Privacy Policy."
+                      >
+                        Required to create an account.{" "}
+                        <Link href="/terms" className="text-white/72 underline decoration-white/25 underline-offset-4 transition hover:text-white">
+                          Terms of Service
+                        </Link>
+                        {" · "}
+                        <Link href="/privacy" className="text-white/72 underline decoration-white/25 underline-offset-4 transition hover:text-white">
+                          Privacy Policy
+                        </Link>
+                      </ConsentCheckbox>
                     </>
                   ) : null}
 
@@ -719,6 +733,82 @@ export default function SignUpPage() {
                     {step === 4 ? (loading ? "Finishing..." : "Finish") : "Continue"}
                   </button>
                 </form>
+
+                {/*
+                  * TEXT MESSAGES. RENDERED ON EVERY STEP, ON PURPOSE.
+                  *
+                  * Signup is a four-step wizard, and the consent boxes used to sit on
+                  * the last step. That meant somebody opening /signup - a customer
+                  * deciding whether to start, or a carrier reviewer auditing the
+                  * campaign - saw an address form and no sign that text messages were
+                  * optional, or that they existed at all. The reviewer who rejected us
+                  * could not have seen a service-SMS choice on this page, because
+                  * reaching one required inventing a real address, a real name and a
+                  * real phone number first.
+                  *
+                  * So this panel sits outside the step form and is always on screen.
+                  * The controls are real: ticking one here at step 1 is the same state
+                  * that gets submitted at step 4. Nothing about it is a preview, and
+                  * nothing about it is required.
+                  */}
+                <section
+                  aria-labelledby="sms-consent-heading"
+                  className="mt-5 rounded-[10px] border border-white/[0.12] bg-white/[0.03] p-4"
+                >
+                  <h3
+                    id="sms-consent-heading"
+                    className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/70"
+                  >
+                    Text messages &mdash; optional
+                  </h3>
+                  <p className="mt-1.5 text-[12px] leading-relaxed text-white/50">
+                    You can create an account, book visits and use every ProFixter service
+                    without agreeing to receive text messages. These choices are separate
+                    from the Terms of Service, and separate from each other.
+                  </p>
+
+                  <div className="mt-3 space-y-2.5">
+                    <ConsentCheckbox
+                      id="sms-service-consent"
+                      checked={smsTransactionalConsent}
+                      onChange={setSmsTransactionalConsent}
+                      label="Text me about my ProFixter visits."
+                    >
+                      Optional. Receive booking confirmations, appointment reminders and
+                      service updates from ProFixter at{" "}
+                      <span className="font-semibold text-white/62">(631) 888-6340</span>.
+                      Message frequency varies. Message and data rates may apply. Reply STOP
+                      to opt out or HELP for help.
+                    </ConsentCheckbox>
+
+                    <ConsentCheckbox
+                      id="sms-marketing-consent"
+                      checked={smsMarketingConsent}
+                      onChange={setSmsMarketingConsent}
+                      label="Text me occasional ProFixter offers."
+                    >
+                      Optional, and separate from the service texts above. Not required to
+                      create an account, book or buy anything. Message frequency varies.
+                      Message and data rates may apply. Reply STOP to opt out or HELP for
+                      help.
+                    </ConsentCheckbox>
+                  </div>
+
+                  <p className="mt-3 text-[11.5px] leading-relaxed text-white/42">
+                    Leave both unchecked and we will not text you. Your confirmations,
+                    reminders and receipts still arrive by email, and you can change either
+                    choice any time in your account. See our{" "}
+                    <Link href="/privacy" className="text-white/64 underline decoration-white/20 underline-offset-4 transition hover:text-white">
+                      Privacy Policy
+                    </Link>
+                    {" "}and{" "}
+                    <Link href="/communication-consent" className="text-white/64 underline decoration-white/20 underline-offset-4 transition hover:text-white">
+                      SMS Terms
+                    </Link>
+                    . Mobile information and SMS consent will not be shared with third
+                    parties or affiliates for marketing or promotional purposes.
+                  </p>
+                </section>
 
                 <p className="mt-4 text-center text-[13px] text-white/48">
                   Already have an account?{" "}
