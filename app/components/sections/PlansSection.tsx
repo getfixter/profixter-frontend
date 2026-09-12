@@ -81,7 +81,6 @@ const planDisplayContent: Record<
     features: [
       "Everything in Plus",
       "1 Priority Visit per month",
-      "Direct line to Taras, the founder",
     ],
   },
   Elite: {
@@ -790,7 +789,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     const planCopy: Record<Plan["name"], { adds: string[] }> = {
       Basic: { adds: [] },
       Plus: { adds: ["Everyday materials included", "A second visit can be on the calendar at once"] },
-      Premium: { adds: ["Everything in Plus", "One Priority Visit each month", "Direct line to Taras, the founder"] },
+      Premium: { adds: ["Everything in Plus", "One Priority Visit each month"] },
       Elite: { adds: ["Everything in Premium", "Two Priority Visits each month", "One full project day each month", "10% off larger home projects"] },
     };
 
