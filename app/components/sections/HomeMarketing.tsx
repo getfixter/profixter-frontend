@@ -9,7 +9,6 @@ import { trackEvent } from "@/lib/analytics";
 import { plans } from "@/app/data/content";
 import Reveal from "@/app/components/ui/Reveal";
 import BookingPreview from "@/app/components/sections/BookingPreview";
-import GiftCallout from "@/app/components/gift/GiftCallout";
 import RecentWorkSection from "@/app/components/sections/RecentWorkSection";
 
 /* ------------------------------------------------------------------ */
@@ -53,6 +52,29 @@ const PROJECTS = [
   { src: "/images/projects/Kitchen Project.jpg", label: "Kitchen" },
   { src: "/images/projects/Bathroom Project.jpg", label: "Bathroom" },
   { src: "/images/projects/Siding Project.jpg", label: "Siding" },
+];
+
+/**
+ * The entry price, read from the plans themselves.
+ *
+ * Hard-coding 149 here would be one more place to forget when pricing moves,
+ * and a homepage that disagrees with the plans page about what membership costs
+ * is worse than one that says nothing.
+ */
+const startingPrice = Math.min(...plans.map((plan) => plan.price));
+
+/**
+ * Why somebody pays monthly instead of calling whoever answers.
+ *
+ * Drawn from what the plans actually include, not written to sell. The value of
+ * this product is not a discount - it is that the finding, vetting and briefing
+ * stops happening, and small jobs get done instead of accumulating.
+ */
+const MEMBERSHIP_VALUE = [
+  "Book online whenever something comes up",
+  "The same local team, learning your home",
+  "Small fixes and maintenance, no estimates",
+  "One predictable monthly price",
 ];
 
 /* ------------------------------------------------------------------ */
@@ -188,13 +210,13 @@ export default function HomeMarketing() {
         />
 
         {/*
-         * Top aligned, not centred. The right column carries two stacked cards
-         * (the booking preview and the callback form) and is far taller than
-         * the proposition beside it, so centring pushed the H1 past the middle
-         * of a desktop viewport and left the top half of the hero empty. Each
+         * Top aligned, not centred. The right column carries the booking
+         * preview and is taller than the proposition beside it, so centring
+         * pushed the H1 past the middle of a desktop viewport and left the top
+         * half of the hero empty. Each
          * column now starts at the top and the right one simply runs longer.
          */}
-        <div className="relative mx-auto grid max-w-[1120px] gap-8 px-5 pb-9 pt-10 sm:px-6 sm:pb-24 sm:pt-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10 lg:pb-28 lg:pt-24">
+        <div className="relative mx-auto grid max-w-[1120px] gap-8 px-5 pb-9 pt-10 sm:px-6 sm:pb-14 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10 lg:pb-28 lg:pt-24">
           <div>
             <Reveal>
               <Eyebrow tone="light">Handyman membership · Long Island</Eyebrow>
@@ -246,16 +268,12 @@ export default function HomeMarketing() {
             )}
 
             {/*
-              The callback form, for the visitor who is interested but not
-              ready to read a plan comparison or make an account. On a phone it
-              sits under the CTA as a compact block; from lg it moves into the
-              second column, so it never pushes the proposition down.
+              The callback form used to sit here, directly under the primary
+              button. Three conversions inside the first screen - book it,
+              explain it, call me - is a choice a stranger cannot make yet, so
+              it moved down to the membership band, where somebody is actually
+              weighing the product up.
              */}
-            {!isMember && (
-              <Reveal delay={340}>
-                <MembershipCallbackForm className="mt-6 max-w-[420px] lg:hidden" />
-              </Reveal>
-            )}
           </div>
 
           {/* Product, not a stock photo. The form rides with it on desktop so
@@ -267,11 +285,11 @@ export default function HomeMarketing() {
                 className="absolute -inset-8 rounded-full bg-[#306EEC]/18 blur-3xl"
               />
               <BookingPreview className="relative mx-auto" />
-              {!isMember && <MembershipCallbackForm className="relative mt-4" />}
             </div>
           </Reveal>
         </div>
       </section>
+
 
       {/* ========================= RECOGNITION ========================= */}
       <section className="px-5 py-9 sm:px-6 sm:py-13">
@@ -282,7 +300,7 @@ export default function HomeMarketing() {
           </Reveal>
 
           <ul className="mt-7 grid grid-cols-1 gap-x-14 sm:mt-8 sm:grid-cols-2">
-            {THE_LIST.map((item, i) => (
+            {THE_LIST.slice(0, 6).map((item, i) => (
               <Reveal as="li" key={item} delay={Math.min(i, 5) * 45}>
                 <span className="flex items-center gap-3 border-b border-[#EDEDF0] py-2.5 text-[17px] leading-[1.35] text-[#1D1D1F] sm:py-3 sm:text-[18px]">
                   <span
@@ -303,6 +321,28 @@ export default function HomeMarketing() {
         </div>
       </section>
 
+
+      {/* ================== MEMBERSHIP + WHAT IT HANDLES ============== */}
+      {/*
+        The product and the evidence for it, as one section rather than two.
+
+        This began as a paragraph band followed by the gallery's own heading,
+        which meant two headings in a row telling a homeowner roughly the same
+        thing before either showed them anything. The sentence lists the work;
+        the photographs underneath are that list in somebody's actual house. One
+        heading, one claim, one set of proof.
+
+        It also had to stop sitting under "Small fix today. Bigger project
+        later.", which quietly filed these photographs as renovation work. They
+        are not - they are what membership covers.
+      */}
+      <RecentWorkSection
+        variant="preview"
+        eyebrow="Membership"
+        heading="One team that already knows your house."
+        subheading="Instead of finding someone each time, you have a company already set up for your home - mounting, repairs, installations, drywall, caulking and fixtures. This is the everyday list a membership is meant for."
+      />
+
       {/* ========================== HOW IT WORKS ======================= */}
       <section id="how-it-works" className="scroll-mt-2 bg-[#F5F5F7] px-5 py-9 sm:px-6 sm:py-13">
         <div className="mx-auto max-w-[1120px]">
@@ -319,7 +359,7 @@ export default function HomeMarketing() {
             <ol className="lg:order-1">
               {STEPS.map((s, i) => (
                 <Reveal as="li" key={s.n} delay={i * 70}>
-                  <span className="flex gap-5 border-t border-[#DEDEE3] py-6 sm:py-7">
+                  <span className="flex gap-5 border-t border-[#DEDEE3] py-5 sm:py-7">
                     <span className="pt-0.5 text-[13px] font-semibold tabular-nums text-[#306EEC]">
                       {s.n}
                     </span>
@@ -339,77 +379,6 @@ export default function HomeMarketing() {
         </div>
       </section>
 
-      {/* ============================== GIFT =========================== */}
-      {/*
-        Gifting, high enough that somebody actually finds it.
-
-        This used to sit at the very bottom, after seven sections, which
-        meant most visitors never saw it at all. It is a real product now,
-        so it goes where the reader has just learned what ProFixter does and
-        the thought "I know who needs this" is available to them.
-
-        Placed AFTER How it works and BEFORE Membership on purpose: it must
-        not be the first thing the homepage says, because the primary
-        message is still the membership itself. A contained card rather than
-        a full-bleed band, for the same reason - it should read as an aside
-        with weight, not as the page changing subject.
-      */}
-      <section className="px-5 py-8 sm:px-6 sm:py-10">
-        <div className="mx-auto max-w-[1120px]">
-          <Reveal>
-            <GiftCallout variant="card" audience="public" headingId="home-gift-heading" />
-          </Reveal>
-        </div>
-      </section>
-
-      {/* =========================== MEMBERSHIP ======================== */}
-      <section className="bg-[#0B1628] px-5 py-10 text-white sm:px-6 sm:py-13">
-        <div className="mx-auto max-w-[1120px]">
-          <Reveal>
-            <Eyebrow tone="light">Membership</Eyebrow>
-            <h2 className="mt-4 max-w-[17ch] text-balance text-[26px] font-semibold leading-[1.08] tracking-[-0.035em] sm:text-[34px] lg:text-[36px]">
-              One membership. Help around your home.
-            </h2>
-            <p className="mt-5 max-w-[46ch] text-pretty text-[17px] leading-[1.5] text-white/60 sm:text-[19px]">
-              Instead of finding someone each time, you have a company already set up for
-              your home. Mounting, repairs, installations, drywall, caulking and
-              fixtures. Book as often as you need. There&rsquo;s no monthly visit count.
-            </p>
-          </Reveal>
-
-          <div className="mt-7 grid gap-3 sm:mt-9 sm:grid-cols-2 lg:grid-cols-4">
-            {plans.map((plan, i) => (
-              <Reveal key={plan.name} delay={i * 60}>
-                {/* Compact row on phones so four plans stay scannable; a card
-                    from sm up, where the grid has room to breathe. */}
-                <div className="flex h-full items-center justify-between gap-4 rounded-[8px] border border-white/[0.10] bg-white/[0.04] px-5 py-4 sm:flex-col sm:items-start sm:justify-start sm:p-6">
-                  <div className="min-w-0">
-                    <p className="text-[16px] font-semibold tracking-[-0.015em] sm:text-[17px]">
-                      {plan.displayName}
-                    </p>
-                    <p className="mt-1 text-[13.5px] leading-[1.35] text-white/50 sm:mt-1.5 sm:min-h-[40px] sm:text-[14px] sm:leading-[1.4]">
-                      {plan.tagline}
-                    </p>
-                  </div>
-                  <p className="flex-none text-[21px] font-semibold tracking-[-0.03em] tabular-nums sm:mt-5 sm:text-[26px]">
-                    ${plan.price}
-                    <span className="text-[13px] font-medium text-white/45 sm:text-[15px]">/mo</span>
-                  </p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-
-          <Reveal delay={80}>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <QuietLink href="/membership/plans" placement="membership_band" tone="light">
-                {isMember ? "Compare plans" : "See plans"}
-              </QuietLink>
-              <p className="text-[14px] text-white/40 sm:ml-2">Month to month. Cancel any time.</p>
-            </div>
-          </Reveal>
-        </div>
-      </section>
 
       {/* =========================== FREE VISIT ========================
           Acquisition only. A member already pays us, so an offer for their
@@ -431,7 +400,7 @@ export default function HomeMarketing() {
               {[
                 ["Cost", "$0. No card needed to book."],
                 ["Length", "One 90-minute visit of standard handyman work."],
-                ["We'll need", "A photo of the job, so your technician arrives prepared."],
+                ["We'll need", "A photo of the job, so your Fixter arrives prepared."],
                 ["Who", "New customers, one visit per home, Nassau and Suffolk."],
               ].map(([k, v]) => (
                 <div key={k} className="grid gap-1 py-5 sm:grid-cols-[150px_1fr] sm:gap-8">
@@ -451,70 +420,82 @@ export default function HomeMarketing() {
       </section>
       )}
 
-      {/* ========================== BIGGER PROJECTS ==================== */}
-      <section className="bg-[#F5F5F7] px-5 py-9 sm:px-6 sm:py-9">
-        <div className="mx-auto max-w-[1120px]">
+
+      {/* ========================= WHAT IT COSTS ======================= */}
+      {/*
+        One price, not a wall of four.
+
+        Home used to show Basic through Elite, $149 to $499, with a one-line
+        tagline each - and the taglines were interchangeable enough that nobody
+        could tell why one cost more than another. That is a decision demanded
+        before the value has landed. Home now says where it starts and what the
+        arrangement is; comparison lives on the page built to compare, which has
+        the real feature lists behind it.
+      */}
+      <section className="px-5 py-9 sm:px-6 sm:py-13">
+        <div className="mx-auto max-w-[820px]">
           <Reveal>
-            <Eyebrow>Bigger projects</Eyebrow>
-            <H2 className="mt-4 max-w-[20ch]">Small fix today. Bigger project later.</H2>
-            <Lede className="mt-5 max-w-[46ch]">
-              The same company that hangs your shelf also does kitchens, bathrooms, roofing
-              and siding. Work at that scale gets its own estimate.
+            <Eyebrow>What it costs</Eyebrow>
+            <H2 className="mt-4 max-w-[20ch]">Membership starts at ${startingPrice} a month.</H2>
+            <Lede className="mt-5 max-w-[48ch]">
+              Month to month, cancel any time. What you are paying for is not a discount
+              on a call-out &mdash; it is not having to find, vet and brief somebody every
+              time the house needs something.
             </Lede>
           </Reveal>
 
-          <div className="mt-7 grid grid-cols-2 gap-2.5 sm:mt-8 sm:grid-cols-3 sm:gap-3">
-            {PROJECTS.map((p, i) => (
-              <Reveal key={p.label} delay={i * 70}>
-                <figure className="group relative overflow-hidden rounded-[8px] bg-[#E5E5EA]">
-                  <div className="relative aspect-square sm:aspect-[4/3]">
-                    <Image
-                      src={p.src}
-                      alt={`${p.label} project completed by Profixter on Long Island`}
-                      fill
-                      sizes="(max-width: 640px) 100vw, 33vw"
-                      className="object-cover transition-transform duration-[700ms] ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-                    />
-                  </div>
-                  <figcaption className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-4 pb-3.5 pt-8 text-[15px] font-semibold text-white">
-                    {p.label}
-                  </figcaption>
-                </figure>
-              </Reveal>
-            ))}
-          </div>
+          <Reveal delay={70}>
+            <ul className="mt-7 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+              {MEMBERSHIP_VALUE.map((item) => (
+                <li
+                  key={item}
+                  className="flex items-start gap-2.5 text-[15px] leading-[1.5] text-[#3C4453]"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="mt-[8px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#306EEC]"
+                  />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </Reveal>
 
-          <Reveal delay={100}>
-            <div className="mt-8">
-              <QuietLink href="/projects" placement="projects_band">
-                See projects
+          <Reveal delay={120}>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <QuietLink href="/membership/plans" placement="membership_band">
+                Compare plans
               </QuietLink>
+              {!isMember && (
+                <p className="text-[14px] text-[#A1A1A6] sm:ml-2">
+                  Or try it first &mdash; your first visit is free.
+                </p>
+              )}
             </div>
           </Reveal>
+
+          {/*
+            Human help, kept as an option rather than a competitor. Somebody
+            still unsure here has read the product and the price, which is
+            exactly when a phone call is worth offering - and not before.
+          */}
+          {!isMember && (
+            <Reveal delay={160}>
+              <MembershipCallbackForm tone="light" className="mt-8" />
+            </Reveal>
+          )}
         </div>
       </section>
 
-      {/* ========================= RECENT WORK ========================= */}
+      {/* ============================= TRUST ========================== */}
       {/*
-        * Proof, placed where the pitch has just got ambitious.
-        *
-        * The band above says we also do kitchens, bathrooms and roofs, using
-        * three category pictures. This one answers the obvious next question -
-        * did you, though - with photographs of jobs we actually finished, and
-        * it renders nothing at all until some have been published, so the
-        * homepage never carries an empty frame where the evidence should be.
-        *
-        * Dark, between two light bands: the photographs carry the section, and
-        * they carry it better against the same ground the membership band uses
-        * than against another sheet of #F5F5F7.
-        */}
-      <RecentWorkSection
-        variant="preview"
-        heading="Work we finished nearby"
-        subheading="Photographs from real Long Island homes, taken the day the job was done."
-      />
+        Moved up out of the last fifth of the page.
 
-      {/* ========================= TRUST + CLOSE ======================= */}
+        "A local company, not a marketplace" plus a real licence number is the
+        argument that beats calling whoever answers the phone, and it was
+        arriving at 71% - after most people had stopped scrolling. It now sits
+        where the decision is being made, between the price and the ask.
+      */}
       <section className="px-5 py-9 sm:px-6 sm:py-13">
         <div className="mx-auto max-w-[1120px]">
           <div className="grid gap-8 lg:grid-cols-[1fr_380px] lg:gap-10">
@@ -564,7 +545,60 @@ export default function HomeMarketing() {
               </figure>
             </Reveal>
           </div>
+        </div>
+      </section>
 
+      {/* ========================== BIGGER PROJECTS ==================== */}
+      <section className="bg-[#F5F5F7] px-5 py-9 sm:px-6 sm:py-9">
+        <div className="mx-auto max-w-[1120px]">
+          <Reveal>
+            <Eyebrow>Bigger projects</Eyebrow>
+            <H2 className="mt-4 max-w-[20ch]">Small fix today. Bigger project later.</H2>
+            <Lede className="mt-5 max-w-[46ch]">
+              The same company that hangs your shelf also does kitchens, bathrooms, roofing
+              and siding. Work at that scale is quoted separately from membership.
+            </Lede>
+          </Reveal>
+
+          <div className="mt-7 grid grid-cols-2 gap-2.5 sm:mt-8 sm:grid-cols-3 sm:gap-3">
+            {PROJECTS.map((p, i) => (
+              <Reveal key={p.label} delay={i * 70}>
+                <figure className="group relative overflow-hidden rounded-[8px] bg-[#E5E5EA]">
+                  <div className="relative aspect-[4/3]">
+                    <Image
+                      src={p.src}
+                      alt={`${p.label} project completed by Profixter on Long Island`}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 33vw"
+                      className="object-cover transition-transform duration-[700ms] ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                    />
+                  </div>
+                  <figcaption className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-4 pb-3.5 pt-8 text-[15px] font-semibold text-white">
+                    {p.label}
+                  </figcaption>
+                </figure>
+              </Reveal>
+            ))}
+          </div>
+
+          <Reveal delay={100}>
+            <div className="mt-8">
+              {/*
+                "See projects" promised a portfolio and opened a quote form.
+                The destination asks about your project; so does the button now.
+              */}
+              <QuietLink href="/projects" placement="projects_band">
+                Get a project estimate
+              </QuietLink>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+
+      {/* ============================= CLOSE ========================== */}
+      <section className="px-5 pb-11 pt-3 sm:px-6 sm:pb-14">
+        <div className="mx-auto max-w-[1120px]">
           {/* Close */}
           <Reveal delay={60}>
             <div className="mt-8 border-t border-[#EDEDF0] pt-9 text-center sm:mt-9 sm:pt-11">
@@ -599,13 +633,6 @@ export default function HomeMarketing() {
         </div>
       </section>
 
-      {/*
-        No second gift block down here. There used to be one, and it was the
-        ONLY one - which is why nobody found it. The card above replaces it
-        rather than joining it: two near-identical gift sections on one page
-        is the clutter this was meant to fix, and the evergreen gift popup
-        already covers the visitor who reads to the bottom.
-      */}
     </main>
   );
 }

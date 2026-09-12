@@ -24,9 +24,23 @@ function localDateKey() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
+/*
+ * The homepage is not a place to interrupt.
+ *
+ * A first-time visitor arrived at profixter.com and, 700ms later, was asked to
+ * buy a handyman membership as a gift for somebody else - before they had read
+ * a single line about what a handyman membership is. That is the one page where
+ * a stranger is still working out what this company does, and an overlay is the
+ * most expensive thing you can put in front of that.
+ *
+ * The mechanism is untouched and still admin-configurable: promotions continue
+ * to run on every other public page, and the Gift product keeps its own page and
+ * its footer entry. Only the cold-arrival ambush is gone.
+ */
 function targetMatches(popup: PromotionPopup, pathname: string) {
   if (PRIVATE_PATHS.some((path) => pathname.startsWith(path))) return false;
-  return popup.target === "all_public" || pathname === "/";
+  if (pathname === "/") return false;
+  return popup.target === "all_public";
 }
 
 export default function VisitorPromotionPopup() {

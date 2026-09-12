@@ -45,8 +45,8 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
       />
 
       <div className={`relative mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-5 ${compact ? "py-8 sm:py-10" : "py-10 sm:py-11"}`}>
-        <div className={`grid items-start ${compact ? "grid-cols-2 gap-7 sm:gap-8 lg:grid-cols-[1.3fr_0.7fr_0.7fr_0.9fr] lg:gap-10" : "grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-7 lg:grid-cols-[1.35fr_0.62fr_0.72fr_0.68fr_0.78fr] lg:gap-8"}`}>
-          <div className={compact ? "col-span-2 lg:col-span-1" : ""}>
+        <div className={`grid items-start ${compact ? "grid-cols-2 gap-7 sm:gap-8 lg:grid-cols-[1.3fr_0.7fr_0.7fr_0.9fr] lg:gap-10" : "grid-cols-2 gap-x-6 gap-y-7 sm:gap-7 lg:grid-cols-[1.35fr_0.62fr_0.72fr_0.68fr_0.78fr] lg:gap-8"}`}>
+          <div className="col-span-2 lg:col-span-1">
             <Image
               src="/images/logo-footer.svg"
               alt="Profixter"
@@ -136,7 +136,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
             </nav>
           </div> : null}
 
-          <div className={compact ? "col-span-2 lg:col-span-1" : ""}>
+          <div className="col-span-2 lg:col-span-1">
             <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 sm:mb-5">
               Contact
             </div>

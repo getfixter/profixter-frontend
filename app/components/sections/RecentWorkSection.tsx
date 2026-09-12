@@ -28,21 +28,44 @@ import {
  * image until they ask for one by opening it.
  */
 
+/**
+ * The width a stored variant actually has, for srcset's w descriptor.
+ *
+ * Variants are capped on the LONG edge, so a 480px thumbnail of a portrait
+ * photo is only ~270px wide. Declaring a flat 480w would tell the browser the
+ * thumbnail is wider than it is, and it would keep choosing it for tiles it
+ * cannot fill - which is exactly how the desktop preview ended up upscaling
+ * 270px images into 395px tiles.
+ */
+function variantWidth(photo: PublicWorkPhoto, longEdge: number) {
+  const w = Number(photo.width) || 0;
+  const h = Number(photo.height) || 0;
+  if (!w || !h) return longEdge;
+  return w >= h ? longEdge : Math.round((longEdge * w) / h);
+}
+
 const PAGE_SIZE = 12;
 
 interface RecentWorkSectionProps {
   /** A compact teaser (homepage) or the full browsable gallery (its own page). */
   variant?: "preview" | "full";
   limit?: number;
+  eyebrow?: string;
   heading?: string;
   subheading?: string;
+  /** Where "see more" goes. Omitted on the gallery page, which is already there. */
+  moreHref?: string;
+  moreLabel?: string;
 }
 
 export default function RecentWorkSection({
   variant = "full",
   limit,
-  heading = "Recent work",
-  subheading = "Real jobs, finished by the same team that would come to you.",
+  eyebrow = "What we fix",
+  heading = "The kind of work members book",
+  subheading = "Real jobs from Long Island homes - doors, drywall, caulking, fixtures, mounting. The everyday list a membership is meant for.",
+  moreHref = "/recent-work",
+  moreLabel = "See what else we fix",
 }: RecentWorkSectionProps) {
   const isPreview = variant === "preview";
   /*
@@ -158,7 +181,7 @@ export default function RecentWorkSection({
         <div className="mb-7 text-center sm:mb-10">
           <div className="mb-4 inline-flex items-center gap-2 rounded-[6px] border border-white/10 bg-white/[0.04] px-4 py-1.5">
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/45">
-              Our work
+              {eyebrow}
             </span>
           </div>
           <h2
@@ -232,6 +255,18 @@ export default function RecentWorkSection({
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={photo.thumbUrl}
+                    /*
+                     * Let the browser pick. The thumbnail is right for a phone
+                     * tile and for most of the gallery grid; a three-up preview
+                     * on a desktop - especially a retina one - needs the larger
+                     * variant or the photograph arrives soft.
+                     */
+                    srcSet={`${photo.thumbUrl} ${variantWidth(photo, 480)}w, ${photo.imageUrl} ${variantWidth(photo, 1280)}w`}
+                    sizes={
+                      isPreview
+                        ? "(min-width: 640px) 33vw, 50vw"
+                        : "(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                    }
                     alt={photo.title || photo.caption || "Completed work by Profixter"}
                     /* The first row is what a visitor sees immediately; the rest can wait. */
                     loading={index < 4 ? "eager" : "lazy"}
@@ -276,10 +311,10 @@ export default function RecentWorkSection({
         {isPreview && photos.length > 0 && (
           <div className="mt-7 text-center sm:mt-8">
             <Link
-              href="/recent-work"
+              href={moreHref}
               className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[10px] bg-white px-7 text-[15px] font-semibold text-[#0B1628] transition hover:bg-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#060C18]"
             >
-              See all our work
+              {moreLabel}
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M5 12h14M13 6l6 6-6 6" />
               </svg>
