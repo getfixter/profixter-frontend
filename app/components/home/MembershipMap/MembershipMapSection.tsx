@@ -1,13 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  fetchMembershipMap,
-  type MembershipMapData,
-  type MembershipPlan,
-} from "@/lib/public-membership-map";
+import { fetchMembershipMap, type MembershipMapData } from "@/lib/public-membership-map";
 import { ISLAND_PATH, MAP_VIEWBOX } from "./island-geometry";
-import { LegendMarker, Marker, MarkerDefs, PLAN_LABEL, PLAN_ORDER } from "./markers";
+import { Marker, MarkerDefs } from "./markers";
 import { declutter } from "./declutter";
 
 /**
@@ -23,16 +19,23 @@ import { declutter } from "./declutter";
  * none of those things exist in it - the absence is structural, not a setting
  * somebody could flip back.
  *
+ * ONE MARKER, ONE CLAIM.
+ *
+ * V2 drew four tiers and a legend to explain them. Both are gone: the map exists
+ * to say that real homeowners across Long Island keep a Fixter, and which plan
+ * each of them pays for is not the public's business. With a single marker there
+ * is nothing left to explain, so the legend went with it - which also took a
+ * block of vertical space off the phone layout.
+ *
  * WHAT IS NEVER SHOWN, AND NEVER COMPUTED
  *
- * No number. Not a total, not a per-plan total, not a per-town total, not a
- * cluster badge. Visitors read the density off the picture and draw their own
- * conclusion, which is the honest way to make this point. Nothing in this file
- * counts anything for display.
+ * No number. Not a total, not a per-town total, not a cluster badge. Visitors
+ * read the density off the picture and draw their own conclusion, which is the
+ * honest way to make this point. Nothing in this file counts anything.
  *
- * The payload behind it carries a position and a plan word per membership and
- * nothing else - no name, address, ZIP, coordinate or id - so what a curious
- * visitor finds in devtools is what they already see on screen.
+ * The payload behind it is a list of positions and nothing else - no name,
+ * address, ZIP, coordinate, id, or membership tier - so what a curious visitor
+ * finds in devtools is exactly what they already see on screen.
  */
 
 /** Stagger between markers appearing, and the cap on the whole entrance. */
@@ -238,7 +241,7 @@ export default function MembershipMapSection({ className = "" }: { className?: s
 
   return (
     <section
-      className={`bg-[#0B1628] px-5 py-11 sm:px-6 sm:py-16 ${className}`}
+      className={`bg-[#0B1628] px-5 py-10 sm:px-6 sm:py-14 ${className}`}
       aria-labelledby="membership-map-heading"
     >
       <style>{`
@@ -265,7 +268,7 @@ export default function MembershipMapSection({ className = "" }: { className?: s
       `}</style>
 
       <div className="mx-auto max-w-[1180px]">
-        <div className="mb-6 text-center sm:mb-8">
+        <div className="mb-5 text-center sm:mb-7">
           <h2
             id="membership-map-heading"
             className="text-[26px] font-black leading-tight tracking-[-0.035em] text-white sm:text-[34px]"
@@ -276,11 +279,10 @@ export default function MembershipMapSection({ className = "" }: { className?: s
             * Says only what the picture supports.
             *
             * V1 claimed "from the South Shore to the forks", which the real
-            * distribution does not back up - there is nothing on the forks. The
-            * line now describes the thing that is actually true and visible.
+            * distribution does not back up - there is nothing on the forks.
             */}
-          <p className="mx-auto mt-2.5 max-w-[460px] text-[14px] font-semibold leading-relaxed text-white/58 sm:text-[15px]">
-            See where Profixter memberships are growing across Long Island.
+          <p className="mx-auto mt-2.5 max-w-[430px] text-[14px] font-semibold leading-relaxed text-white/58 sm:text-[15px]">
+            See where homeowners across Long Island have a Fixter.
           </p>
         </div>
 
@@ -338,46 +340,40 @@ export default function MembershipMapSection({ className = "" }: { className?: s
 
             {drawn.map((point, index) => (
               <g
-                /* Keyed by position, not index, so a refresh reuses the markers
-                   that stayed put and only animates the ones that are new. */
-                key={`${point.x}-${point.y}-${point.plan}`}
+                /*
+                  Keyed by published position, not by array index and not by
+                  anything that was removed with the tiers. A refresh therefore
+                  reuses every marker that stayed put and only animates the ones
+                  that are genuinely new - no flicker, no re-run of the entrance
+                  every three minutes.
+                */
+                key={`${point.x}-${point.y}`}
                 className="pfm-pin"
                 style={{
                   animationDelay: `${Math.min(index * STAGGER_MS, MAX_ENTRANCE_MS)}ms`,
                 }}
               >
-                <Marker plan={point.plan} x={point.dx} y={point.dy} scale={scale} />
+                <Marker x={point.dx} y={point.dy} scale={scale} />
               </g>
             ))}
           </svg>
         </div>
 
-        {/* ------------------------------- legend ------------------------------- */}
-        <div className="mt-5 flex flex-col items-center gap-3 sm:mt-6">
-          {/*
-            * Two-by-two on a phone, one row from small tablets up.
-            *
-            * Left to wrap, four items break three-and-one and the odd tier out
-            * reads as an afterthought. A grid keeps the tiers balanced and the
-            * progression legible at any width.
-            */}
-          <ul className="grid grid-cols-2 justify-items-start gap-x-6 gap-y-3 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-7 sm:gap-y-2.5">
-            {PLAN_ORDER.map((plan: MembershipPlan) => (
-              <li key={plan} className="flex items-center gap-2">
-                <LegendMarker plan={plan} />
-                <span className="text-[13px] font-bold text-white/78 sm:text-sm">
-                  {PLAN_LABEL[plan]}
-                </span>
-              </li>
-            ))}
-          </ul>
-          {/*
-            * Says the pins are areas, once, quietly. Enough that nobody reads
-            * a dot as a doorstep, short enough not to become a disclaimer.
-            */}
-          {/* The legend already explains the tiers; this only has one job. */}
-          <p className="text-[11.5px] font-semibold text-white/38">Approximate locations</p>
-        </div>
+        {/*
+          * No legend any more, and nothing in its place.
+          *
+          * Four swatches existed to explain four marker styles. There is one
+          * marker now, so a key would be explaining a distinction that no longer
+          * exists - and removing it takes roughly ninety pixels off the phone
+          * layout, which is most of why the section used to run long.
+          *
+          * The privacy note stays. It is the one thing the picture cannot say
+          * for itself, and it is the reason nobody should read a dot as a
+          * doorstep.
+          */}
+        <p className="mt-4 text-center text-[11.5px] font-semibold text-white/38 sm:mt-5">
+          Approximate locations
+        </p>
       </div>
     </section>
   );
