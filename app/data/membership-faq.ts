@@ -37,7 +37,7 @@ export const MEMBERSHIP_FAQS: MembershipFaq[] = [
   },
   {
     q: "Are materials included?",
-    a: "Basic includes labor only. Plus and Premium include basic materials for small tasks. Larger materials, special-order items, fixtures, appliances, and project materials are quoted or approved separately.",
+    a: "Basic includes labor only. Plus and above include basic materials for small tasks. Larger materials, special-order items, fixtures, appliances, and project materials are quoted or approved separately.",
   },
   {
     q: "How does cancellation work?",

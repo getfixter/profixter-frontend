@@ -171,7 +171,7 @@ export default function HandymanMembershipPage() {
               "Members book online, choose a date, and add notes or photos before the visit.",
               "The same team comes back, so the house does not have to be re-explained.",
               "Plans are month to month. There is no long-term contract, and a cancelled plan runs to the end of the billing period already paid for.",
-              "Materials differ by tier: Basic covers labour only, while Plus and Premium include basic materials for small tasks. Fixtures, appliances, special-order and project materials are quoted separately.",
+              "Materials differ by tier: Basic covers labor only, while Plus and above include basic materials for small tasks. Fixtures, appliances, special-order and project materials are quoted separately.",
             ].map((item) => (
               <li key={item} className="flex gap-3 text-[16px] leading-[1.65] text-[#3F4854] sm:text-[17px]">
                 <span aria-hidden="true" className="mt-[10px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#306EEC]" />

@@ -134,7 +134,7 @@ export const faqs: Faq[] = [
     id: "03",
     question: "How does Membership work?",
     answer:
-      "Members can request help whenever they need it. Plans differ by active appointment capacity, basic materials, Priority Visit benefits, project time, and premium support. Appointment availability still depends on the schedule.",
+      "Members can request help whenever they need it. Plans differ by active appointment capacity, basic materials, Priority Visit benefits, and project time. Appointment availability still depends on the schedule.",
     color: "dark",
     size: "normal",
     offset: 0,
@@ -266,7 +266,7 @@ export const homepageFaqs: Faq[] = [
     id: "05",
     question: "What if I need more flexibility?",
     answer:
-      "Higher Memberships add more flexibility: more active appointment capacity, Priority Visit benefits, basic materials, project time, and premium support.",
+      "Higher Memberships add more flexibility: more active appointment capacity, Priority Visit benefits, basic materials, and project time.",
     color: "blue",
     size: "normal",
     offset: -50,
@@ -374,7 +374,6 @@ export const plans: Plan[] = [
       "One Priority Visit per month",
       "Priority Visits help when you need service before the next standard appointment slot, subject to Fixter availability",
       "Same trusted team - on call for the moments that matter",
-      "Direct line to Taras, the founder",
     ],
     buttonText: "Become a Member",
     badge: "StayHere",
