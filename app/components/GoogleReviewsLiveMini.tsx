@@ -228,6 +228,17 @@ export default function GoogleReviewsLiveMini() {
   const ratingLabel =
     rating && Number.isFinite(rating) ? rating.toFixed(1) : String(current?.rating || 5);
 
+  /*
+   * No real reviews, no widget.
+   *
+   * Every fallback in here defaults to five stars - rating, ratingLabel, the
+   * per-review rating - so a failed fetch rendered a 5.0 Google badge with
+   * nothing behind it. That is a fabricated rating on a trust surface, which is
+   * worse than showing nothing at all, and the endpoint has been returning 502
+   * in production for some time. Render only what Google actually returned.
+   */
+  if (!data?.ok || reviews.length === 0) return null;
+
   return (
     <div
       className="w-full max-w-[560px] mt-8 sm:mt-10"
