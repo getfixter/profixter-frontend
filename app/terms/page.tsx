@@ -426,18 +426,23 @@ export default function TermsPage() {
   Program Name: Premium Island Homes INC (Profixter) SMS Alerts &amp; Updates
 </p>
               <p>
-  Program Description: By opting in, you may receive appointment confirmations,
-  scheduling updates, service reminders, customer support messages, account
-  updates, and, if you separately opt in, occasional marketing messages from
-  Premium Island Homes INC (Profixter).
+  Program Description: Text messages are optional. If you opt in to service
+  texts, you may receive appointment confirmations, scheduling updates, service
+  reminders, customer support messages and account updates from Premium Island
+  Homes INC (Profixter). If you separately opt in to marketing texts, you may
+  also receive occasional offers. Each category has its own optional, unchecked
+  checkbox at sign-up and in your account settings, and neither is required to
+  create an account or use our services.
 </p>
 
               <ul className="list-disc list-inside space-y-2">
                 <li>
                   You can cancel the SMS service at any time. Simply text <span className="font-semibold">&quot;STOP&quot;</span> to the number
                   that texted you. Upon sending &quot;STOP,&quot; we will confirm your unsubscribe status via SMS. Following this confirmation,
-                  you will no longer receive SMS messages from us. To rejoin, start again as you did initially, and we will resume sending
-                  SMS messages to you.
+                  you will no longer receive SMS messages from us, and your service and marketing text preferences are switched off.
+                  To rejoin: replying <span className="font-semibold">&quot;START&quot;</span> removes the block on your phone number, but it
+                  does not by itself resume any messages. Turn the categories you want back on in your account settings, which is where
+                  we record your consent.
                 </li>
                 <li>
                   If you experience issues with the messaging program, reply with the keyword{" "}

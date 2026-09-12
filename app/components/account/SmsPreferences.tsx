@@ -147,8 +147,8 @@ export function SmsPreferences() {
          */
         <p className="mt-3 rounded-[6px] bg-[#FFF6E9] px-3 py-2 text-xs leading-relaxed text-[#8A5A1B]">
           This phone number has opted out of SMS. Text <span className="font-semibold">START</span>{" "}
-          to {"("}631{")"} 888-6340 to re-enable messages, then you can turn these back on
-          here.
+          to {"("}631{")"} 888-6340 to lift the block on your phone. That on its own does not
+          resume any texts &mdash; come back here afterwards and switch on the ones you want.
         </p>
       ) : null}
 
