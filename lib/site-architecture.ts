@@ -85,6 +85,15 @@ export const MAIN_NAV_LINKS = [
   { label: "Book", href: "/book" },
   { label: "Projects", href: "/projects" },
   /*
+   * Proof, next to the two pages that ask for the job.
+   *
+   * Projects is a quote form and Book is a booking form; neither shows that we
+   * have actually done any of this. The gallery was reachable only by typing
+   * /recent-work, which is no route at all for somebody deciding whether to let
+   * strangers into their house.
+   */
+  { label: "Our work", href: "/recent-work" },
+  /*
    * Gifting is a product somebody buys, not a page they stumble on, and it
    * is the one thing here bought FOR another household. Without a nav entry
    * the only way to find it was to know the URL.
@@ -132,4 +141,10 @@ export const FOOTER_SEO_LINKS = [
   { label: "Services", href: "/services" },
   { label: "Renovations", href: "/renovations" },
   { label: "Locations", href: "/locations" },
+  /*
+   * The persistent route to the gallery. The header entry and the homepage
+   * band both reach it too, but those are on pages a visitor may have already
+   * scrolled past; the footer is on every page and does not move.
+   */
+  { label: "Recent Work", href: "/recent-work" },
 ] as const;
