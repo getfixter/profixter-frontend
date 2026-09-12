@@ -56,6 +56,16 @@ interface RecentWorkSectionProps {
   /** Where "see more" goes. Omitted on the gallery page, which is already there. */
   moreHref?: string;
   moreLabel?: string;
+  /*
+   * Let the caller own the heading.
+   *
+   * The homepage introduces this band itself, because the membership
+   * explanation has to survive an empty gallery - a product description that
+   * vanishes when a photo library happens to be empty is a worse failure than
+   * a missing photo. When the caller has already said it, saying it again here
+   * is just two headings in a row.
+   */
+  showHeading?: boolean;
 }
 
 export default function RecentWorkSection({
@@ -66,6 +76,7 @@ export default function RecentWorkSection({
   subheading = "Real jobs from Long Island homes - doors, drywall, caulking, fixtures, mounting. The everyday list a membership is meant for.",
   moreHref = "/recent-work",
   moreLabel = "See what else we fix",
+  showHeading = true,
 }: RecentWorkSectionProps) {
   const isPreview = variant === "preview";
   /*
@@ -167,17 +178,20 @@ export default function RecentWorkSection({
 
   return (
     <section
-      className="relative w-full overflow-hidden py-12 sm:py-16"
+      className={`relative w-full overflow-hidden ${showHeading ? "py-12 sm:py-16" : "pb-12 pt-6 sm:pb-16 sm:pt-7"}`}
       style={{ background: "linear-gradient(180deg, #080F1E 0%, #060C18 100%)" }}
-      aria-labelledby="recent-work-heading"
+      {...(showHeading ? { "aria-labelledby": "recent-work-heading" } : { "aria-label": "Examples of work a membership covers" })}
     >
-      <div
-        aria-hidden="true"
-        className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.18), transparent)" }}
-      />
+      {showHeading && (
+        <div
+          aria-hidden="true"
+          className="absolute top-0 left-0 right-0 h-px"
+          style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.18), transparent)" }}
+        />
+      )}
 
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+        {showHeading && (
         <div className="mb-7 text-center sm:mb-10">
           <div className="mb-4 inline-flex items-center gap-2 rounded-[6px] border border-white/10 bg-white/[0.04] px-4 py-1.5">
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/45">
@@ -194,6 +208,7 @@ export default function RecentWorkSection({
             {subheading}
           </p>
         </div>
+        )}
 
         {/* Category filter, only where there is room to browse and more than one kind. */}
         {!isPreview && categories.length > 1 && (
