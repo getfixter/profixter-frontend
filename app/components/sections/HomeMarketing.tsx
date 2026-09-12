@@ -11,6 +11,7 @@ import Reveal from "@/app/components/ui/Reveal";
 import BookingPreview from "@/app/components/sections/BookingPreview";
 import RecentWorkSection from "@/app/components/sections/RecentWorkSection";
 import GoogleRatingCompact from "@/app/components/home/GoogleRatingCompact";
+import MembershipMap from "@/app/components/home/MembershipMap";
 
 /* ------------------------------------------------------------------ */
 /* Content                                                             */
@@ -584,6 +585,16 @@ export default function HomeMarketing() {
           </div>
         </div>
       </section>
+
+      {/* ====================== WHERE MEMBERS ARE ===================== */}
+      {/*
+        Straight after the trust band, where "a real local company" has just
+        been asserted and a picture of the actual footprint is the evidence
+        for it. Self-contained: it fetches its own data, renders nothing at
+        all when there is nothing to show, and can be moved during the larger
+        homepage redesign without touching anything around it.
+      */}
+      <MembershipMap />
 
       {/* ========================== BIGGER PROJECTS ==================== */}
       <section className="bg-[#F5F5F7] px-5 py-9 sm:px-6 sm:py-9">
