@@ -10,6 +10,7 @@ import { plans } from "@/app/data/content";
 import Reveal from "@/app/components/ui/Reveal";
 import BookingPreview from "@/app/components/sections/BookingPreview";
 import RecentWorkSection from "@/app/components/sections/RecentWorkSection";
+import GoogleRatingCompact from "@/app/components/home/GoogleRatingCompact";
 
 /* ------------------------------------------------------------------ */
 /* Content                                                             */
@@ -549,6 +550,14 @@ export default function HomeMarketing() {
                   </div>
                 ))}
               </dl>
+
+              {/*
+                Licensed, insured and local are claims we make about ourselves.
+                This is the only line on the homepage that is somebody else
+                talking, so it sits directly under them - and it renders nothing
+                at all unless Google actually returned reviews.
+              */}
+              <GoogleRatingCompact className="mt-4" />
             </Reveal>
 
             <Reveal delay={90}>
