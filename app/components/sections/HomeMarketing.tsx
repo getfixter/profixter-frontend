@@ -10,6 +10,7 @@ import { plans } from "@/app/data/content";
 import Reveal from "@/app/components/ui/Reveal";
 import BookingPreview from "@/app/components/sections/BookingPreview";
 import GiftCallout from "@/app/components/gift/GiftCallout";
+import RecentWorkSection from "@/app/components/sections/RecentWorkSection";
 
 /* ------------------------------------------------------------------ */
 /* Content                                                             */
@@ -492,6 +493,26 @@ export default function HomeMarketing() {
           </Reveal>
         </div>
       </section>
+
+      {/* ========================= RECENT WORK ========================= */}
+      {/*
+        * Proof, placed where the pitch has just got ambitious.
+        *
+        * The band above says we also do kitchens, bathrooms and roofs, using
+        * three category pictures. This one answers the obvious next question -
+        * did you, though - with photographs of jobs we actually finished, and
+        * it renders nothing at all until some have been published, so the
+        * homepage never carries an empty frame where the evidence should be.
+        *
+        * Dark, between two light bands: the photographs carry the section, and
+        * they carry it better against the same ground the membership band uses
+        * than against another sheet of #F5F5F7.
+        */}
+      <RecentWorkSection
+        variant="preview"
+        heading="Work we finished nearby"
+        subheading="Photographs from real Long Island homes, taken the day the job was done."
+      />
 
       {/* ========================= TRUST + CLOSE ======================= */}
       <section className="px-5 py-9 sm:px-6 sm:py-13">

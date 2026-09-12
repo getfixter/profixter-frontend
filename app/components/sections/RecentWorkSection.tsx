@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PhotoLightbox from "@/app/components/ui/PhotoLightbox";
 import {
@@ -44,7 +45,31 @@ export default function RecentWorkSection({
   subheading = "Real jobs, finished by the same team that would come to you.",
 }: RecentWorkSectionProps) {
   const isPreview = variant === "preview";
-  const pageSize = limit ?? (isPreview ? 8 : PAGE_SIZE);
+  /*
+   * Six on the homepage, not eight.
+   *
+   * Six divides evenly into two columns on a phone, three on a tablet and
+   * three on a desktop, so the teaser is always a filled rectangle rather than
+   * a row with two orphans on the end. It is also the point where a homepage
+   * band still reads as a sample worth following rather than a gallery the
+   * visitor has already finished looking at.
+   */
+  const PREVIEW_SIZE = 6;
+  const pageSize = limit ?? (isPreview ? PREVIEW_SIZE : PAGE_SIZE);
+  /*
+   * On a phone the grid is two wide, so an odd number of photos leaves the
+   * last one sitting beside a hole. With a single published photo that hole is
+   * half the width of the screen, which reads as a layout that broke rather
+   * than a gallery with one picture in it. Letting a trailing odd tile span
+   * both columns turns every small count back into a filled rectangle; from
+   * the three-column breakpoint up there is enough furniture around it that a
+   * short last row looks normal, so the span is dropped.
+   */
+  const fillTrailingOrphan =
+    "[&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1";
+  const gridColumns = isPreview
+    ? `grid-cols-2 sm:grid-cols-3 ${fillTrailingOrphan}`
+    : `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 ${fillTrailingOrphan}`;
 
   const [photos, setPhotos] = useState<PublicWorkPhoto[]>([]);
   const [categories, setCategories] = useState<PublicWorkCategory[]>([]);
@@ -174,7 +199,7 @@ export default function RecentWorkSection({
         )}
 
         {status === "loading" ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className={`grid gap-3 ${gridColumns}`}>
             {Array.from({ length: pageSize > 8 ? 8 : pageSize }).map((_, index) => (
               <div
                 key={index}
@@ -187,7 +212,7 @@ export default function RecentWorkSection({
             Nothing in this category yet.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className={`grid gap-3 ${gridColumns}`}>
             {photos.map((photo, index) => (
               <button
                 key={photo.id}
@@ -241,6 +266,24 @@ export default function RecentWorkSection({
                 )}
               </button>
             ))}
+          </div>
+        )}
+
+        {/*
+          * The teaser's whole job is to be left. Without this the homepage band
+          * is a dead end, and /recent-work stays a URL you have to know.
+          */}
+        {isPreview && photos.length > 0 && (
+          <div className="mt-7 text-center sm:mt-8">
+            <Link
+              href="/recent-work"
+              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[10px] bg-white px-7 text-[15px] font-semibold text-[#0B1628] transition hover:bg-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#060C18]"
+            >
+              See all our work
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </Link>
           </div>
         )}
 
