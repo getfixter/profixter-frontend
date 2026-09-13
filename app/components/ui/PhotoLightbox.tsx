@@ -21,6 +21,14 @@ export interface LightboxItem {
   url: string;
   title?: string;
   subtitle?: string;
+  /**
+   * A description shown under the image, in full.
+   *
+   * Separate from subtitle on purpose. subtitle is a line of chrome in the
+   * top bar and truncates; this is the thing the viewer was opened to read,
+   * so it wraps, and scrolls rather than shrinking the photograph away.
+   */
+  caption?: string;
 }
 
 interface PhotoLightboxProps {
@@ -263,6 +271,17 @@ export default function PhotoLightbox({
           </>
         )}
       </div>
+
+      {item.caption && (
+        <div
+          className="border-t border-white/10 bg-black/40 px-4 py-3 sm:px-6 sm:py-4"
+          style={actions ? undefined : { paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
+          <p className="mx-auto max-h-[26vh] max-w-[70ch] overflow-y-auto text-center text-[13.5px] leading-relaxed text-white/80 sm:text-[15px]">
+            {item.caption}
+          </p>
+        </div>
+      )}
 
       {actions && (
         <div
