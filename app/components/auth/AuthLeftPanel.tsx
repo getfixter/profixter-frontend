@@ -21,7 +21,7 @@ export default function AuthLeftPanel() {
     <div className="hidden lg:flex flex-col justify-between h-full px-12 xl:px-16 py-8 border-r border-white/[0.07]">
       {/* Logo */}
       <Link href="/" className="inline-block">
-        <Image src="/images/logo.svg" alt="Profixter" width={90} height={34} />
+        <Image src="/images/logo.svg" alt="ProFixter" width={90} height={34} />
       </Link>
 
       {/* Value content */}
