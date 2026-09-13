@@ -19,6 +19,27 @@ const PRIVATE_PATHS = [
   "/confirmationpage",
 ];
 
+/*
+ * Pages a promotion may never cover.
+ *
+ * These four are the compliance surface: the privacy policy, the terms, the
+ * SMS terms, and the page that shows a carrier reviewer how consent is
+ * collected. A reviewer opening the privacy policy to check our
+ * mobile-information language was being shown a modal offering 10% off a gift
+ * membership, 700ms after load, on top of the document they came to read.
+ *
+ * That is bad for a customer looking up how to opt out, and it is worse for
+ * review: an overlay selling something on a consent page is the visual
+ * definition of the thing A2P vetting is looking for. These pages carry no
+ * marketing of any kind now, and that includes what floats above them.
+ */
+const COMPLIANCE_PATHS = [
+  "/privacy",
+  "/terms",
+  "/communication-consent",
+  "/sms-consent-example",
+];
+
 function localDateKey() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -39,6 +60,7 @@ function localDateKey() {
  */
 function targetMatches(popup: PromotionPopup, pathname: string) {
   if (PRIVATE_PATHS.some((path) => pathname.startsWith(path))) return false;
+  if (COMPLIANCE_PATHS.some((path) => pathname.startsWith(path))) return false;
   if (pathname === "/") return false;
   return popup.target === "all_public";
 }

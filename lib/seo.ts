@@ -81,6 +81,18 @@ export const PUBLIC_SITEMAP_ROUTES = [
   { path: "/privacy", changeFrequency: "yearly", priority: 0.25 },
   { path: "/terms", changeFrequency: "yearly", priority: 0.25 },
   { path: "/communication-consent", changeFrequency: "yearly", priority: 0.2 },
+  /*
+   * In the sitemap so a carrier reviewer's crawler can find it without being
+   * handed the URL. Low priority because no customer is searching for it; it
+   * exists to be verifiable, not to rank.
+   */
+  { path: "/sms-consent-example", changeFrequency: "yearly", priority: 0.2 },
+  /*
+   * The sign-up form is the page A2P vetting has to be able to fetch: it is
+   * where SMS consent is collected. It used to be disallowed in robots.txt,
+   * which told a reviewer's crawler not to request it at all.
+   */
+  { path: "/signup", changeFrequency: "monthly", priority: 0.3 },
 ] as const;
 
 export function absoluteUrl(path = "/") {

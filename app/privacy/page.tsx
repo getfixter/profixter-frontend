@@ -321,14 +321,27 @@ export default function PrivacyPage() {
             Last Updated: January 22, 2026
           </p>
 
-          <div className="mt-7 text-center">
-            <Link
-              href="/signup"
-              className="inline-flex items-center justify-center rounded-[8px] border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
-            >
-              Create Account
+          {/*
+            * A compliance page ends with the other compliance pages, not a CTA.
+            *
+            * This used to be a "Create Account" button. Selling from the bottom
+            * of the privacy policy is a small thing that reads badly in exactly
+            * one audience's eyes - the carrier reviewer checking whether our
+            * SMS disclosures are a genuine legal notice or dressing on a
+            * funnel. What a reader of this page actually wants next is the
+            * neighbouring document, so that is what is here.
+            */}
+          <nav aria-label="Related legal documents" className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs sm:text-sm text-white/55">
+            <Link href="/terms" className="underline underline-offset-4 transition hover:text-white">
+              Terms of Service
             </Link>
-          </div>
+            <Link href="/communication-consent" className="underline underline-offset-4 transition hover:text-white">
+              Communication Consent &amp; SMS Terms
+            </Link>
+            <Link href="/sms-consent-example" className="underline underline-offset-4 transition hover:text-white">
+              How we collect SMS consent
+            </Link>
+          </nav>
         </div>
       </div>
     </div>

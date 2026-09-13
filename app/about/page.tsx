@@ -84,8 +84,18 @@ const trustItems = [
     body: "Based near Babylon and built around the way Nassau and Suffolk homeowners actually maintain their homes.",
   },
   {
+    /*
+     * The company behind the brand, on the page where someone goes to find it.
+     *
+     * ProFixter is a trading name of Premium Island Homes Inc. That is the
+     * entity on the licence, on the invoices and on our carrier-registered
+     * messaging brand, and "About Us" is the first place a customer - or a
+     * reviewer checking that this website belongs to that company - will look
+     * for it. It sits inside the existing licence card rather than in a new
+     * legal block, because it is the same fact the card was already making.
+     */
     title: "Licensed and insured",
-    body: "Profixter operates with NY State Home Improvement Contractor license HI-71484 and insurance for peace of mind.",
+    body: "ProFixter is operated by Premium Island Homes Inc., holding NY State Home Improvement Contractor license HI-71484, with insurance for peace of mind.",
   },
   {
     title: "No contractor chasing",

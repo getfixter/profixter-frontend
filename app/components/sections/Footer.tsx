@@ -20,7 +20,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
     ? COMPANY_LINKS.filter((link) =>
         // Communication Consent keeps its place in the compact footer: it is a
         // legal disclosure, so it belongs wherever Privacy and Terms appear.
-        ["About Us", "Privacy Policy", "Terms of Service", "Communication Consent"].includes(link.label)
+        ["About Us", "Privacy Policy", "Terms of Service", "Communication Consent", "SMS Consent"].includes(link.label)
       )
     : COMPANY_LINKS;
 
@@ -167,8 +167,23 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
         </div>
 
         <div className={`flex flex-col items-center justify-between gap-3 border-t border-white/[0.09] pt-5 sm:flex-row ${compact ? "mt-7" : "mt-6 sm:mt-8 sm:pt-6"}`}>
+          {/*
+            * THE LEGAL ENTITY, SAID ONCE, WHERE EVERY PAGE CARRIES IT.
+            *
+            * ProFixter is a trading name. The company is Premium Island Homes
+            * Inc., and that is the name on the EIN, on the Twilio A2P brand and
+            * on all three legal pages - but until now it appeared nowhere a
+            * visitor or a carrier reviewer would actually look. Someone
+            * checking whether profixter.com belongs to the registered brand had
+            * to open the privacy policy to find out, which is exactly the kind
+            * of gap that reads as a brand/website mismatch.
+            *
+            * One line in the footer closes it on every page at once, and it is
+            * the conventional place for it, so nothing about the marketing site
+            * has to become more legalistic to carry it.
+            */}
           <p className="text-[13px] text-[#4A5568]">
-            &copy; 2026 Profixter. All rights reserved. &middot; NY State Licensed HI-71484
+            &copy; 2026 Premium Island Homes Inc., d/b/a ProFixter. All rights reserved. &middot; NY State Licensed HI-71484
           </p>
           {!compact ? <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
             {TRUST_BADGES.map((item) => (

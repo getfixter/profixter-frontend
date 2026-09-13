@@ -423,8 +423,13 @@ export default function TermsPage() {
 
             <div className="rounded-[8px] bg-white/5 border border-white/10 p-5 space-y-3">
               <p className="font-semibold">
-  Program Name: Premium Island Homes INC (Profixter) SMS Alerts &amp; Updates
+  Program Name: Premium Island Homes Inc. (ProFixter) SMS Alerts &amp; Updates
 </p>
+              <p>
+                Messages are sent from <span className="font-semibold">631-888-6340</span>, our
+                carrier-registered messaging number. Our customer-service line, where a person answers, is a
+                different number: <span className="font-semibold">631-599-1363</span>.
+              </p>
               <p>
   Program Description: Text messages are optional. If you opt in to service
   texts, you may receive appointment confirmations, scheduling updates, service
@@ -446,7 +451,7 @@ export default function TermsPage() {
                 </li>
                 <li>
                   If you experience issues with the messaging program, reply with the keyword{" "}
-                  <span className="font-semibold">HELP</span> for more assistance, or reach out directly to{" "}
+                  <span className="font-semibold">HELP</span> for more assistance, or reach our customer-service line directly on{" "}
                   <span className="font-semibold">631-599-1363</span> or{" "}
                   <a href={PUBLIC_CONTACT_MAILTO} className="text-[#93c5fd] underline underline-offset-2">
                     {PUBLIC_CONTACT_EMAIL}
@@ -462,6 +467,18 @@ export default function TermsPage() {
                   For privacy-related inquiries, please refer to our Privacy Policy:{" "}
                   <Link href="/privacy" className="text-[#93c5fd] underline underline-offset-2">
                     https://www.profixter.com/privacy
+                  </Link>
+                  .
+                </li>
+                <li>
+                  The full SMS programme terms — message categories, frequency, opt-out and HELP behaviour, and how consent is
+                  recorded — are set out in our Communication Consent &amp; SMS Terms:{" "}
+                  <Link href="/communication-consent" className="text-[#93c5fd] underline underline-offset-2">
+                    https://www.profixter.com/communication-consent
+                  </Link>
+                  . How we collect that consent, with screenshots of the sign-up form, is shown at{" "}
+                  <Link href="/sms-consent-example" className="text-[#93c5fd] underline underline-offset-2">
+                    https://www.profixter.com/sms-consent-example
                   </Link>
                   .
                 </li>
@@ -537,14 +554,18 @@ export default function TermsPage() {
           <div className="pt-2">
             <p className="text-xs sm:text-sm text-white/55 mt-6 text-center">Last Updated: January 9, 2026</p>
 
-            <div className="mt-7 text-center">
-              <Link
-                href="/signup"
-                className="inline-flex items-center justify-center rounded-[8px] border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
-              >
-                Create Account
+            {/* See the note on the privacy policy: neighbouring documents, not a CTA. */}
+            <nav aria-label="Related legal documents" className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs sm:text-sm text-white/55">
+              <Link href="/privacy" className="underline underline-offset-4 transition hover:text-white">
+                Privacy Policy
               </Link>
-            </div>
+              <Link href="/communication-consent" className="underline underline-offset-4 transition hover:text-white">
+                Communication Consent &amp; SMS Terms
+              </Link>
+              <Link href="/sms-consent-example" className="underline underline-offset-4 transition hover:text-white">
+                How we collect SMS consent
+              </Link>
+            </nav>
           </div>
         </div>
       </div>
