@@ -11,7 +11,7 @@ import { fetchSubmittableJobs } from "@/lib/work-photo-submissions";
  *
  * It used to be one: an "Add photos" button on each completed visit. That
  * button read as paperwork - attach something to this job - when the thing
- * being asked for is the opposite: would you show other people what we fixed
+ * being asked for is the opposite: would you show other people what we did
  * in your home. Those are different requests and they deserve different
  * shapes, so this is one small invitation that belongs to the customer rather
  * than one action repeated on every card in their history.
@@ -69,8 +69,8 @@ export default function ShareFinishedProject({ className = "" }: { className?: s
               Share your finished project
             </h3>
             <p className="mt-1 max-w-[58ch] text-[13px] leading-relaxed text-[#6A6D71]">
-              Happy with something we fixed? Share a photo and a few words about the
-              work. We may feature it on our What We Fix page.
+              Happy with something we worked on? Share a photo and a few words about
+              the work. We may feature it on our What We Do page.
             </p>
           </div>
         </div>
@@ -89,7 +89,12 @@ export default function ShareFinishedProject({ className = "" }: { className?: s
         onClose={() => setOpen(false)}
         title="Share your finished project"
         intro="Add a photo or two of the finished work."
-        notePrompt="What did we fix?"
+        /*
+         * Not "What did we fix?" any more. Plenty of what gets shared was
+         * never broken - a fan that went up, a dishwasher swapped - and the
+         * label should not quietly ask those people to call it a repair.
+         */
+        notePrompt="Tell us about the work"
         notePlaceholder="Tell us about the work — what it was, how it turned out."
         offerJobPicker
         sharingNotice="By submitting, you're sharing these photos and your note with Profixter for possible use on our public website. We'll review everything before it's posted."

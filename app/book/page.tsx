@@ -1348,7 +1348,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
       </section>
 
       {/*
-       * The invitation to show what we fixed.
+       * The invitation to show what we did.
        *
        * After booking and its fine print, before the visit list. It is not
        * part of booking and it is not part of history, which is the whole

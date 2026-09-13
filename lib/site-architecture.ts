@@ -82,15 +82,19 @@ export const COMPANY_LINKS = [
 export const MAIN_NAV_LINKS = [
   { label: "Membership", href: "/membership" },
   /*
-   * "What we fix" rather than "Our work".
+   * "What we do" rather than "Our work" - or "What we fix", which this was.
    *
    * The gallery's job is to answer "can they handle MY thing" - it is the
    * membership's inclusions, shown rather than listed. "Our work" framed the
    * same photographs as a portfolio, and sitting beside Projects it read as
-   * that page's sibling: renovations. The customer's question is what gets
-   * fixed, so that is what the link says.
+   * that page's sibling: renovations.
+   *
+   * "What we fix" was narrower than the work. Half of what these people do
+   * arrives unbroken: a fan to hang, a dishwasher to swap, a handrail nobody
+   * ever put in. A visitor with an installation to book should not have to
+   * decide whether it counts as fixing before they click.
    */
-  { label: "What we fix", href: "/recent-work" },
+  { label: "What we do", href: "/recent-work" },
   { label: "Book", href: "/book" },
   { label: "Projects", href: "/projects" },
   { label: "About Us", href: "/about" },
@@ -152,5 +156,5 @@ export const FOOTER_SEO_LINKS = [
    * are on pages a visitor may have already scrolled past; the footer is on
    * every page and does not move.
    */
-  { label: "What we fix", href: "/recent-work" },
+  { label: "What we do", href: "/recent-work" },
 ] as const;
