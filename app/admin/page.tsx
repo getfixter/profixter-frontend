@@ -11,6 +11,7 @@ import QuickStats from "@/app/components/admin/QuickStats";
 import UsersTable from "@/app/components/admin/UsersTable";
 import BookingsTable from "@/app/components/admin/BookingsTable";
 import RecentWorkModule from "@/app/components/admin/RecentWorkModule";
+import FixterWorkPhotos from "@/app/components/admin/FixterWorkPhotos";
 import BookingsCalendar from "@/app/components/admin/BookingsCalendar";
 import BlacklistTable from "@/app/components/admin/BlacklistTable";
 import CommunicationsModule from "../components/admin/CommunicationsModule";
@@ -1048,6 +1049,14 @@ function AdminPageContent() {
             )}
 
             {active === "emails" && <CommunicationsModule />}
+            {/*
+              The contributor screen, for employees. Gated by isEmployee rather
+              than by the tab list alone: the tab config decides what is shown,
+              this decides what is mounted, and the server decides what either
+              of them is allowed to send.
+            */}
+            {active === "work-photos" && isEmployee && <FixterWorkPhotos />}
+
             {active === "recent-work" && isAdmin && (
               <RecentWorkModule onToast={showToast} searchQuery={q} />
             )}

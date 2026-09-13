@@ -11,6 +11,7 @@ export type AdminTabId =
   | "tips"
   | "promotion"
   | "recent-work"
+  | "work-photos"
   | "activity";
 
 export type AdminTabItem = {
@@ -34,6 +35,7 @@ export const ADMIN_TABS: AdminTabItem[] = [
   { id: "blacklist",  label: "Blacklist",  shortLabel: "Block",   description: "Blocked users" },
   { id: "calendar",   label: "Schedule",   shortLabel: "Sched",   description: "Calendar config" },
   { id: "fixters",    label: "Fixters",    shortLabel: "Fixters", description: "Employee accounts" },
+  { id: "work-photos", label: "Work Photos", shortLabel: "Photos", description: "Send photos of finished work" },
 ];
 
 /**
@@ -43,13 +45,20 @@ export const ADMIN_TABS: AdminTabItem[] = [
  */
 export function tabsForUser(role?: string, position?: string) {
   if (role === "admin") return ADMIN_TABS;
+  /*
+   * Work Photos is for employees only, and deliberately not for admins.
+   *
+   * An admin already has Recent Work, which is the same photos plus the
+   * moderation the contributor screen exists to stay out of. Giving them both
+   * would be two doors to one gallery, and the second one would be the weaker.
+   */
   if (role === "employee" && position === "General Fixter") {
     return ADMIN_TABS.filter((tab) =>
-      ["bookings", "tips", "subscribed", "calendar"].includes(tab.id)
+      ["bookings", "work-photos", "tips", "subscribed", "calendar"].includes(tab.id)
     );
   }
   if (role === "employee") {
-    return ADMIN_TABS.filter((tab) => ["bookings", "tips"].includes(tab.id));
+    return ADMIN_TABS.filter((tab) => ["bookings", "work-photos", "tips"].includes(tab.id));
   }
   return [];
 }
