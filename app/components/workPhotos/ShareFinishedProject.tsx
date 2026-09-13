@@ -95,7 +95,7 @@ export default function ShareFinishedProject({ className = "" }: { className?: s
          * label should not quietly ask those people to call it a repair.
          */
         notePrompt="Tell us about the work"
-        notePlaceholder="Tell us about the work — what it was, how it turned out."
+        notePlaceholder="What it was, how it turned out."
         offerJobPicker
         sharingNotice="By submitting, you're sharing these photos and your note with Profixter for possible use on our public website. We'll review everything before it's posted."
         doneMessage="Thanks for sharing. We'll review your photos before anything appears on the Profixter website."
