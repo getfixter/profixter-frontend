@@ -30,8 +30,8 @@ const stepCopy: Record<Step, { title: string; subtitle: string }> = {
     subtitle: "Tell us whose home we are helping.",
   },
   3: {
-    title: "How should we reach you?",
-    subtitle: "We'll only use this to contact you about your appointments and service.",
+    title: "What is your email?",
+    subtitle: "Confirmations, reminders and receipts go here.",
   },
   4: {
     title: "Almost done",
@@ -611,59 +611,38 @@ export default function SignUpPage() {
                     </div>
                   ) : null}
 
+                  {/*
+                    * Step 3 is email only. The mobile number moved OUT of here.
+                    *
+                    * It used to sit on this step, which meant the phone field did
+                    * not exist in the document until somebody had typed a real
+                    * Long Island address and a name. The SMS consent boxes were
+                    * always on screen, so the page offered a reviewer two consent
+                    * checkboxes and no phone field to attach them to, and Twilio's
+                    * campaign check said exactly that: "your opt-in form doesn't
+                    * have a phone number field connected to SMS consent".
+                    *
+                    * The number now lives in the fieldset below, beside the
+                    * checkboxes that refer to it, on every step. It is still the
+                    * same single input bound to the same formData.phone - it was
+                    * moved, not duplicated - so the number a customer consents for
+                    * and the number on their account cannot drift apart.
+                    */}
                   {step === 3 ? (
-                    <>
-                      <div>
-                        <FieldLabel htmlFor="phone">Phone Number</FieldLabel>
-                        <FieldInput
-                          id="phone"
-                          type="tel"
-                          value={formData.phone}
-                          onChange={(e) => handleChange("phone", formatPhone(e.target.value))}
-                          placeholder="(631) 000-0000"
-                          autoComplete="tel"
-                        />
-                        {fieldErrors.phone ? (
-                          <p className="mt-2 text-[12px] font-semibold text-red-300">{fieldErrors.phone}</p>
-                        ) : null}
-                        {/*
-                          * WHY WE ASK FOR A PHONE NUMBER, AND WHAT IT DOES NOT BUY US.
-                          *
-                          * This used to read "We text you about your visits", stated as
-                          * a fact, with no way to decline. A carrier reviewer read that
-                          * exactly as written - a number is required to register, and
-                          * the site then says it will text you - and rejected the A2P
-                          * campaign for forced consent.
-                          *
-                          * It is now a plain statement of purpose. The number is for
-                          * calling and for the Fixter standing at the door. Texting is a
-                          * separate question, asked with its own checkbox further down
-                          * the page, and the answer may be no.
-                          */}
-                        <p className="mt-2 text-[11.5px] leading-relaxed text-white/50">
-                          Your Fixter uses this to reach you about your visit.{" "}
-                          <span className="font-semibold text-white/70">
-                            Text messages are optional
-                          </span>{" "}
-                          and you choose them separately below &mdash; you do not need them to
-                          create an account or book.
-                        </p>
-                      </div>
-                      <div>
-                        <FieldLabel htmlFor="email">Email Address</FieldLabel>
-                        <FieldInput
-                          id="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => handleChange("email", e.target.value)}
-                          placeholder="you@example.com"
-                          autoComplete="email"
-                        />
-                        {fieldErrors.email ? (
-                          <p className="mt-2 text-[12px] font-semibold text-red-300">{fieldErrors.email}</p>
-                        ) : null}
-                      </div>
-                    </>
+                    <div>
+                      <FieldLabel htmlFor="email">Email Address</FieldLabel>
+                      <FieldInput
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleChange("email", e.target.value)}
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                      />
+                      {fieldErrors.email ? (
+                        <p className="mt-2 text-[12px] font-semibold text-red-300">{fieldErrors.email}</p>
+                      ) : null}
+                    </div>
                   ) : null}
 
                   {step === 4 ? (
@@ -719,6 +698,168 @@ export default function SignUpPage() {
                     </>
                   ) : null}
 
+                  {/*
+                    * THE NUMBER AND THE PERMISSION, IN ONE GROUP, ON EVERY STEP.
+                    *
+                    * Twilio's campaign check reported that the opt-in form had no
+                    * phone field connected to the SMS consent, and it was right for
+                    * two separate reasons. The phone input lived inside step 3, so
+                    * it did not exist in the document at all until a reviewer had
+                    * invented an address and a name - the server-rendered HTML
+                    * shipped two consent checkboxes and zero phone fields. And the
+                    * consent panel sat AFTER </form>, so checkbox.form was null:
+                    * the two controls never shared a form at any step, even once
+                    * the phone field appeared.
+                    *
+                    * Both are fixed structurally rather than cosmetically. This
+                    * fieldset is inside the form, outside every step branch, so it
+                    * renders on the first paint and in the server HTML, and the
+                    * phone input and both checkboxes are siblings inside one
+                    * <fieldset> - which is the standard way to say "these controls
+                    * belong to each other" to a person and to a parser.
+                    *
+                    * ONE INPUT. The number was MOVED here, not copied. There is no
+                    * second phone field anywhere on the page, so the number a
+                    * customer gives permission for is necessarily the number on
+                    * their account.
+                    *
+                    * Grouping a required field with two optional ones is the one
+                    * risk this shape carries, so the phone's own help text says
+                    * plainly that entering it enrols nobody in anything, and the
+                    * checkboxes keep their own separate wording below.
+                    */}
+                  <fieldset className="mt-5 rounded-[10px] border border-white/[0.12] bg-white/[0.03] px-4 pb-4 pt-1">
+                    {/*
+                      * Slightly tighter on a phone so the group label stays on one
+                      * line. A wrapped <legend> breaks out of the border notch and
+                      * the second line sits oddly against the frame; shrinking the
+                      * type a touch is cheaper than shortening the label, and the
+                      * label is doing real work here - it is the thing that tells a
+                      * reader the number and the checkboxes are one group.
+                      */}
+                    <legend className="px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/70 sm:text-[11px] sm:tracking-[0.14em]">
+                      Your mobile number and text messages
+                    </legend>
+
+                    <div className="mt-2">
+                      <FieldLabel htmlFor="phone">Mobile Phone Number</FieldLabel>
+                      <FieldInput
+                        id="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => handleChange("phone", formatPhone(e.target.value))}
+                        placeholder="(631) 000-0000"
+                        autoComplete="tel"
+                      />
+                      {fieldErrors.phone ? (
+                        <p className="mt-2 text-[12px] font-semibold text-red-300">{fieldErrors.phone}</p>
+                      ) : null}
+                      {/*
+                        * WHY WE ASK FOR A NUMBER, AND WHAT IT DOES NOT BUY US.
+                        *
+                        * This once read "We text you about your visits", stated as a
+                        * fact with no way to decline, and a carrier reviewer read it
+                        * exactly as written - a number is required to register, and
+                        * the site then says it will text you - and rejected the
+                        * campaign for forced consent. It is now a statement of
+                        * purpose, and it is doubly load-bearing here because the
+                        * field shares a fieldset with two consent boxes.
+                        */}
+                      <p className="mt-2 text-[11.5px] leading-relaxed text-white/50">
+                        Required for your account, so we can call you and so your Fixter can
+                        reach you at the door.{" "}
+                        <span className="font-semibold text-white/70">
+                          Entering it does not sign you up for text messages.
+                        </span>
+                      </p>
+                    </div>
+
+                    <section
+                      aria-labelledby="sms-consent-heading"
+                      className="mt-4 border-t border-white/[0.09] pt-4"
+                    >
+                      <h3
+                        id="sms-consent-heading"
+                        className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/70"
+                      >
+                        Text messages &mdash; optional
+                      </h3>
+                      <p className="mt-1.5 text-[12px] leading-relaxed text-white/50">
+                        You can create an account, book visits and use every ProFixter service
+                        without agreeing to receive text messages. These choices are separate
+                        from the Terms of Service, and separate from each other.
+                      </p>
+
+                      <div className="mt-3 space-y-2.5">
+                        <ConsentCheckbox
+                          id="sms-service-consent"
+                          checked={smsTransactionalConsent}
+                          onChange={setSmsTransactionalConsent}
+                          label="Text me about my ProFixter visits at the mobile number above."
+                        >
+                          Optional. Booking confirmations, appointment reminders and service
+                          updates, sent from{" "}
+                          <span className="font-semibold text-white/62">(631) 888-6340</span>.
+                          Message frequency varies. Message and data rates may apply. Reply STOP
+                          to opt out or HELP for help.
+                        </ConsentCheckbox>
+
+                        <ConsentCheckbox
+                          id="sms-marketing-consent"
+                          checked={smsMarketingConsent}
+                          onChange={setSmsMarketingConsent}
+                          label="Text me occasional ProFixter offers at the mobile number above."
+                        >
+                          Optional, and separate from the service texts above. Not required to
+                          create an account, book or buy anything. Message frequency varies.
+                          Message and data rates may apply. Reply STOP to opt out or HELP for
+                          help.
+                        </ConsentCheckbox>
+                      </div>
+
+                      {/*
+                        * All three legal links, at step 1, without typing anything.
+                        *
+                        * The Terms link used to live only beside the required
+                        * acceptance checkbox on step 4, so a reviewer had to invent
+                        * an address, a name, a number and an email before the page
+                        * showed them a Terms link. This is a LINK ONLY - the
+                        * acceptance checkbox stays on step 4, stays required, and
+                        * stays the one box with no SMS consent in it.
+                        */}
+                      <p className="mt-3 text-[11.5px] leading-relaxed text-white/42">
+                        Leave both unchecked and we will not text you. Your confirmations,
+                        reminders and receipts still arrive by email, and you can change either
+                        choice any time in your account. See our{" "}
+                        <Link href="/terms" className="text-white/64 underline decoration-white/20 underline-offset-4 transition hover:text-white">
+                          Terms of Service
+                        </Link>
+                        ,{" "}
+                        <Link href="/privacy" className="text-white/64 underline decoration-white/20 underline-offset-4 transition hover:text-white">
+                          Privacy Policy
+                        </Link>
+                        {" "}and{" "}
+                        <Link href="/communication-consent" className="text-white/64 underline decoration-white/20 underline-offset-4 transition hover:text-white">
+                          SMS Terms
+                        </Link>
+                        . Mobile information and SMS consent will not be shared with third
+                        parties or affiliates for marketing or promotional purposes.
+                      </p>
+                      {/*
+                        * Two numbers, and the difference stated rather than implied.
+                        * 631-888-6340 sends the texts; 631-599-1363 is the office
+                        * line a person answers. Neither is the number above, which
+                        * is the customer's own.
+                        */}
+                      <p className="mt-2 text-[11.5px] leading-relaxed text-white/38">
+                        Texts are sent from{" "}
+                        <span className="font-semibold text-white/52">(631) 888-6340</span>.
+                        For help from a person, call customer service on{" "}
+                        <span className="font-semibold text-white/52">(631) 599-1363</span>.
+                      </p>
+                    </section>
+                  </fieldset>
+
                   {error ? (
                     <div className="rounded-[6px] border border-red-400/25 bg-red-500/[0.10] px-3.5 py-2.5 text-center text-[12px] font-semibold text-red-200">
                       {error}
@@ -734,119 +875,7 @@ export default function SignUpPage() {
                   </button>
                 </form>
 
-                {/*
-                  * TEXT MESSAGES. RENDERED ON EVERY STEP, ON PURPOSE.
-                  *
-                  * Signup is a four-step wizard, and the consent boxes used to sit on
-                  * the last step. That meant somebody opening /signup - a customer
-                  * deciding whether to start, or a carrier reviewer auditing the
-                  * campaign - saw an address form and no sign that text messages were
-                  * optional, or that they existed at all. The reviewer who rejected us
-                  * could not have seen a service-SMS choice on this page, because
-                  * reaching one required inventing a real address, a real name and a
-                  * real phone number first.
-                  *
-                  * So this panel sits outside the step form and is always on screen.
-                  * The controls are real: ticking one here at step 1 is the same state
-                  * that gets submitted at step 4. Nothing about it is a preview, and
-                  * nothing about it is required.
-                  */}
-                <section
-                  aria-labelledby="sms-consent-heading"
-                  className="mt-5 rounded-[10px] border border-white/[0.12] bg-white/[0.03] p-4"
-                >
-                  <h3
-                    id="sms-consent-heading"
-                    className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/70"
-                  >
-                    Text messages &mdash; optional
-                  </h3>
-                  <p className="mt-1.5 text-[12px] leading-relaxed text-white/50">
-                    You can create an account, book visits and use every ProFixter service
-                    without agreeing to receive text messages. These choices are separate
-                    from the Terms of Service, and separate from each other.
-                  </p>
-
-                  <div className="mt-3 space-y-2.5">
-                    <ConsentCheckbox
-                      id="sms-service-consent"
-                      checked={smsTransactionalConsent}
-                      onChange={setSmsTransactionalConsent}
-                      label="Text me about my ProFixter visits."
-                    >
-                      Optional. Receive booking confirmations, appointment reminders and
-                      service updates from ProFixter, sent from{" "}
-                      <span className="font-semibold text-white/62">(631) 888-6340</span>.
-                      Message frequency varies. Message and data rates may apply. Reply STOP
-                      to opt out or HELP for help.
-                    </ConsentCheckbox>
-
-                    <ConsentCheckbox
-                      id="sms-marketing-consent"
-                      checked={smsMarketingConsent}
-                      onChange={setSmsMarketingConsent}
-                      label="Text me occasional ProFixter offers."
-                    >
-                      Optional, and separate from the service texts above. Not required to
-                      create an account, book or buy anything. Message frequency varies.
-                      Message and data rates may apply. Reply STOP to opt out or HELP for
-                      help.
-                    </ConsentCheckbox>
-                  </div>
-
-                  {/*
-                    * ALL THREE LEGAL LINKS, AT STEP 1, WITHOUT TYPING ANYTHING.
-                    *
-                    * The Terms of Service link used to live only beside the
-                    * required acceptance checkbox on step 4, which meant a
-                    * reviewer had to invent an address, a name, a phone number
-                    * and an email before the page showed them a Terms link at
-                    * all. Twilio names that precise situation as a rejection
-                    * cause: the site used for opt-in must carry accessible
-                    * Terms AND Privacy links.
-                    *
-                    * So the link appears here, in the panel that is on screen
-                    * from the first paint. This is a LINK ONLY. The acceptance
-                    * checkbox stays on step 4, stays required, and stays the
-                    * one box with no SMS consent in it - linking to a document
-                    * and agreeing to it are different acts, and merging them is
-                    * the bundling defect this whole panel exists to disprove.
-                    */}
-                  <p className="mt-3 text-[11.5px] leading-relaxed text-white/42">
-                    Leave both unchecked and we will not text you. Your confirmations,
-                    reminders and receipts still arrive by email, and you can change either
-                    choice any time in your account. See our{" "}
-                    <Link href="/terms" className="text-white/64 underline decoration-white/20 underline-offset-4 transition hover:text-white">
-                      Terms of Service
-                    </Link>
-                    ,{" "}
-                    <Link href="/privacy" className="text-white/64 underline decoration-white/20 underline-offset-4 transition hover:text-white">
-                      Privacy Policy
-                    </Link>
-                    {" "}and{" "}
-                    <Link href="/communication-consent" className="text-white/64 underline decoration-white/20 underline-offset-4 transition hover:text-white">
-                      SMS Terms
-                    </Link>
-                    . Mobile information and SMS consent will not be shared with third
-                    parties or affiliates for marketing or promotional purposes.
-                  </p>
-                  {/*
-                    * Two numbers, and the difference stated rather than implied.
-                    *
-                    * 631-888-6340 sends the texts; 631-599-1363 is the office
-                    * line a person answers. Both are correct and they are not
-                    * interchangeable, so a reviewer comparing the consent
-                    * disclosure against the registered campaign should be told
-                    * which is which instead of being left to guess that one of
-                    * them is a mistake.
-                    */}
-                  <p className="mt-2 text-[11.5px] leading-relaxed text-white/38">
-                    Texts are sent from{" "}
-                    <span className="font-semibold text-white/52">(631) 888-6340</span>.
-                    For help from a person, call customer service on{" "}
-                    <span className="font-semibold text-white/52">(631) 599-1363</span>.
-                  </p>
-                </section>
+                
 
                 <p className="mt-4 text-center text-[13px] text-white/48">
                   Already have an account?{" "}
