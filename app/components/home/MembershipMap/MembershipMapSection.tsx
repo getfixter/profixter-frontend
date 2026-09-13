@@ -269,20 +269,33 @@ export default function MembershipMapSection({ className = "" }: { className?: s
 
       <div className="mx-auto max-w-[1180px]">
         <div className="mb-5 text-center sm:mb-7">
+          {/*
+            * WHAT A PIN IS, SAID IN WORDS.
+            *
+            * "Homes with a Fixter" was ambiguous in the worst available
+            * direction: it reads just as easily as "places ProFixter has
+            * worked", which would make the map a portfolio of finished jobs
+            * rather than what it is. Every pin is a membership that is live
+            * today - it appears when one starts and disappears when one
+            * ends - and the heading now has to carry that.
+            */}
+          <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/40">
+            ProFixter members
+          </div>
           <h2
             id="membership-map-heading"
-            className="text-[26px] font-black leading-tight tracking-[-0.035em] text-white sm:text-[34px]"
+            className="mt-2.5 text-[26px] font-black leading-tight tracking-[-0.035em] text-white sm:text-[34px]"
           >
-            Homes with a Fixter
+            Homes with an active membership
           </h2>
           {/*
-            * Says only what the picture supports.
+            * Says only what the picture supports, and now what it means.
             *
             * V1 claimed "from the South Shore to the forks", which the real
             * distribution does not back up - there is nothing on the forks.
             */}
           <p className="mx-auto mt-2.5 max-w-[430px] text-[14px] font-semibold leading-relaxed text-white/58 sm:text-[15px]">
-            See where homeowners across Long Island have a Fixter.
+            Each pin is a Long Island home with an active ProFixter membership today.
           </p>
         </div>
 
@@ -316,7 +329,17 @@ export default function MembershipMapSection({ className = "" }: { className?: s
             viewBox={`0 0 ${viewBox.width} ${viewBox.height}`}
             className="block h-auto w-full"
             role="img"
-            aria-label="Approximate areas across Long Island where Profixter currently serves active membership customers. Marker styles represent Basic, Plus, Premium and Elite membership levels."
+            /*
+             * The same sentence the sighted visitor gets, and nothing more.
+             *
+             * This used to end "Marker styles represent Basic, Plus, Premium
+             * and Elite membership levels", which stopped being true when V3
+             * removed tiers from the map - one universal marker, no legend,
+             * no plan in the payload. A screen reader was being told about a
+             * distinction that no longer exists and that we deliberately do
+             * not publish.
+             */
+            aria-label="Approximate locations across Long Island. Each marker is one home with an active ProFixter membership."
           >
             {/*
               * The service area itself, drawn from the ZIP areas ProFixter
@@ -372,7 +395,7 @@ export default function MembershipMapSection({ className = "" }: { className?: s
           * doorstep.
           */}
         <p className="mt-4 text-center text-[11.5px] font-semibold text-white/38 sm:mt-5">
-          Approximate locations
+          Approximate locations for privacy
         </p>
       </div>
     </section>

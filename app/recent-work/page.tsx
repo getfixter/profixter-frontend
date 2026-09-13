@@ -12,12 +12,12 @@ export const metadata: Metadata = {
    */
   title: "What We Do",
   description:
-    "Photographs of real handyman jobs finished by Profixter across Long Island - repairs, installations, replacements, mounting, maintenance and the rest of the everyday list a membership is meant for.",
+    "See the everyday work a Profixter membership covers - mounting, repairs, installations, replacements, adjustments and maintenance - in photographs of real jobs across Long Island.",
   alternates: { canonical: "https://www.profixter.com/recent-work" },
   openGraph: {
     title: "What We Do | Profixter",
     description:
-      "Real handyman jobs finished across Long Island - repairs, installations, mounting and maintenance - and the kind of work a Profixter membership is meant for.",
+      "The everyday work a Profixter membership covers - mounting, repairs, installations, replacements and maintenance - shown in real Long Island homes.",
     url: "https://www.profixter.com/recent-work",
     type: "website",
   },
@@ -41,9 +41,22 @@ export default function RecentWorkPage() {
       <Header />
       <RecentWorkSection
         variant="full"
-        eyebrow="What we do"
-        heading="Real work completed by Profixter"
-        subheading="Repairs, installations, replacements, mounting, maintenance and the everyday jobs that keep a home working. Every photo is a real job in a real Long Island home, done by the same team that would come to yours. Bigger renovations are quoted separately."
+        /*
+         * Framed as coverage, not as a portfolio.
+         *
+         * "Real work completed by Profixter" is true and answers the wrong
+         * question. Somebody weighing a membership is not asking whether we
+         * have done work before; they are asking what they would be able to
+         * book. These are the same photographs, introduced as the answer to
+         * that question instead.
+         *
+         * The materials and renovations line stays. It is what keeps this
+         * from reading as a promise that anything pictured is always covered
+         * at no extra cost, which depends on the plan and the job.
+         */
+        eyebrow="What your membership covers"
+        heading="See the kind of work included"
+        subheading="Mounting, repairs, installations, replacements, adjustments and maintenance - real examples of the everyday jobs ProFixter members book, in real Long Island homes. Materials are separate, and bigger renovations are quoted on their own."
       />
       <Footer />
     </main>

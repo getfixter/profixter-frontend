@@ -83,11 +83,12 @@ function shortLabel(caption: string): string {
 export default function RecentWorkSection({
   variant = "full",
   limit,
-  eyebrow = "What we do",
+  eyebrow = "What your membership covers",
   heading = "The kind of work members book",
-  subheading = "Real jobs from Long Island homes - repairs, installations, replacements, mounting and maintenance. The everyday list a membership is meant for.",
+  subheading = "Real jobs from Long Island homes - mounting, repairs, installations, replacements, adjustments and maintenance. The everyday list a membership is meant for.",
   moreHref = "/recent-work",
-  moreLabel = "See more of what we do",
+  /* Points at coverage rather than at us, like everything else here now. */
+  moreLabel = "See more of what's included",
   showHeading = true,
 }: RecentWorkSectionProps) {
   const isPreview = variant === "preview";
