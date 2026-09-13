@@ -68,6 +68,18 @@ interface RecentWorkSectionProps {
   showHeading?: boolean;
 }
 
+/**
+ * A caption cut down to something a button can reasonably be called.
+ *
+ * The full description is on the page and in the viewer; an accessible name
+ * three hundred characters long is not a name, it is the article read out
+ * before you are told what the control does.
+ */
+function shortLabel(caption: string): string {
+  const flat = caption.replace(/\s+/g, " ").trim();
+  return flat.length > 80 ? `${flat.slice(0, 77).trimEnd()}…` : flat;
+}
+
 export default function RecentWorkSection({
   variant = "full",
   limit,
@@ -158,13 +170,22 @@ export default function RecentWorkSection({
     return () => controller.abort();
   }, [isPreview]);
 
+  /*
+   * The photograph and, if an admin wrote one, the description they
+   * approved. Nothing else is handed over: no title bar, no town, no date,
+   * no counter of things a visitor did not ask about.
+   *
+   * caption rather than title, deliberately. Both are public fields an
+   * admin can fill, and falling back from one to the other would publish
+   * whichever text happened to exist rather than the one written to be
+   * read here.
+   */
   const lightboxItems = useMemo(
     () =>
       photos.map((photo) => ({
         id: photo.id,
         url: photo.imageUrl,
-        title: photo.title || "",
-        subtitle: [photo.location, photo.caption].filter(Boolean).join(" · "),
+        caption: photo.caption || "",
       })),
     [photos]
   );
@@ -252,69 +273,86 @@ export default function RecentWorkSection({
         ) : (
           <div className={`grid gap-3 ${gridColumns}`}>
             {photos.map((photo, index) => (
-              <button
-                key={photo.id}
-                type="button"
-                onClick={() => setLightboxIndex(index)}
-                className="group relative block aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.04] transition duration-300 hover:border-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#306EEC]"
-                aria-label={photo.title ? `View ${photo.title}` : "View photo"}
-              >
-                {broken.has(photo.id) ? (
-                  <span className="absolute inset-0 flex items-center justify-center text-white/20">
-                    <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="5" width="18" height="14" rx="2" />
-                      <path d="m3 17 5-5 4 4 3-3 6 6" />
-                    </svg>
-                  </span>
-                ) : (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={photo.thumbUrl}
-                    /*
-                     * Let the browser pick. The thumbnail is right for a phone
-                     * tile and for most of the gallery grid; a three-up preview
-                     * on a desktop - especially a retina one - needs the larger
-                     * variant or the photograph arrives soft.
-                     */
-                    srcSet={`${photo.thumbUrl} ${variantWidth(photo, 480)}w, ${photo.imageUrl} ${variantWidth(photo, 1280)}w`}
-                    sizes={
-                      isPreview
-                        ? "(min-width: 640px) 33vw, 50vw"
-                        : "(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-                    }
-                    alt={photo.title || photo.caption || "Completed work by Profixter"}
-                    /* The first row is what a visitor sees immediately; the rest can wait. */
-                    loading={index < 4 ? "eager" : "lazy"}
-                    decoding="async"
-                    width={480}
-                    height={360}
-                    onError={() =>
-                      setBroken((current) => new Set(current).add(photo.id))
-                    }
-                    style={{ height: "100%", width: "100%" }}
-                    className="absolute inset-0 object-cover transition duration-500 group-hover:scale-[1.05]"
-                  />
-                )}
+              /*
+               * figure/figcaption, because that is exactly what this is: a
+               * photograph with a line about it. The caption sits outside
+               * the button so it can be read and selected without being a
+               * click target, and so a long one wraps under the picture
+               * rather than over it.
+               */
+              <figure key={photo.id} className="m-0 flex flex-col">
+                <button
+                  type="button"
+                  onClick={() => setLightboxIndex(index)}
+                  className="group relative block aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.04] transition duration-300 hover:border-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#306EEC]"
+                  aria-label={photo.caption ? `View photo: ${shortLabel(photo.caption)}` : "View photo"}
+                >
+                  {broken.has(photo.id) ? (
+                    <span className="absolute inset-0 flex items-center justify-center text-white/20">
+                      <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="5" width="18" height="14" rx="2" />
+                        <path d="m3 17 5-5 4 4 3-3 6 6" />
+                      </svg>
+                    </span>
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={photo.thumbUrl}
+                      /*
+                       * Let the browser pick. The thumbnail is right for a phone
+                       * tile and for most of the gallery grid; a three-up preview
+                       * on a desktop - especially a retina one - needs the larger
+                       * variant or the photograph arrives soft.
+                       */
+                      srcSet={`${photo.thumbUrl} ${variantWidth(photo, 480)}w, ${photo.imageUrl} ${variantWidth(photo, 1280)}w`}
+                      sizes={
+                        isPreview
+                          ? "(min-width: 640px) 33vw, 50vw"
+                          : "(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                      }
+                      /*
+                       * Empty when the caption is on the page: a screen
+                       * reader that meets the figcaption a moment later
+                       * should not hear the same sentence twice, and the
+                       * button beside it already carries a name.
+                       */
+                      alt={photo.caption ? "" : "Completed work by Profixter"}
+                      /* The first row is what a visitor sees immediately; the rest can wait. */
+                      loading={index < 4 ? "eager" : "lazy"}
+                      decoding="async"
+                      width={480}
+                      height={360}
+                      onError={() =>
+                        setBroken((current) => new Set(current).add(photo.id))
+                      }
+                      style={{ height: "100%", width: "100%" }}
+                      className="absolute inset-0 object-cover transition duration-500 group-hover:scale-[1.05]"
+                    />
+                  )}
+                </button>
 
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent opacity-0 transition duration-300 group-hover:opacity-100"
-                />
-                {(photo.title || photo.location) && (
-                  <span className="absolute inset-x-0 bottom-0 translate-y-1 p-2.5 text-left opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                    {photo.title && (
-                      <span className="block truncate text-[13px] font-semibold text-white">
-                        {photo.title}
-                      </span>
-                    )}
-                    {photo.location && (
-                      <span className="block truncate text-[11px] text-white/60">
-                        {photo.location}
-                      </span>
-                    )}
-                  </span>
-                )}
-              </button>
+                {/*
+                  The description, when an admin approved one.
+
+                  Under the photograph rather than across it: text laid over an
+                  image is a gamble on whatever the image happens to look like
+                  behind it, and these are photographs of other people's
+                  kitchens rather than art-directed shots.
+
+                  Nothing renders at all without a caption - no empty row, no
+                  placeholder, no reserved height - so a gallery of uncaptioned
+                  photographs looks exactly as it does today.
+                */}
+                {photo.caption ? (
+                  <figcaption
+                    className={`mt-2 text-[12.5px] leading-[1.45] text-white/70 sm:text-[13px] ${
+                      isPreview ? "line-clamp-2" : "line-clamp-3"
+                    }`}
+                  >
+                    {photo.caption}
+                  </figcaption>
+                ) : null}
+              </figure>
             ))}
           </div>
         )}

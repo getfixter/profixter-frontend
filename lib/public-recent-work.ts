@@ -14,7 +14,7 @@ export interface PublicWorkPhoto {
   category: string;
   location: string;
   featured: boolean;
-  publishedAt: string | null;
+  /* No date of any kind. The server does not send one; see toPublicDTO. */
   thumbUrl: string;
   imageUrl: string;
   fullUrl: string;
