@@ -362,10 +362,21 @@ export default function HomeMarketing() {
             >
               One team that already knows your house.
             </h2>
+            {/*
+              The last sentence is the whole job of this paragraph.
+
+              The photographs directly below are real finished work, and for a
+              long time nothing told the reader why they were there. Read as a
+              portfolio they answer "are these people any good"; read as what
+              they are, they answer the question somebody deciding on a
+              membership is actually asking - what would I use it for. One
+              sentence, because the pictures do the rest.
+            */}
             <p className="mt-5 max-w-[52ch] text-pretty text-[17px] leading-[1.5] text-white/60 sm:text-[19px]">
               Instead of finding someone each time, you have a company already set up for
-              your home &mdash; mounting, repairs, installations, drywall, caulking and
-              fixtures. This is the everyday list a membership is meant for.
+              your home &mdash; mounting, repairs, installations, replacements, adjustments
+              and maintenance. The photos below are real examples of the everyday jobs a
+              membership covers.
             </p>
           </Reveal>
         </div>
