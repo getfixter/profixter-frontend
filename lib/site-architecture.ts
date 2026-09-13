@@ -61,6 +61,19 @@ export const COMPANY_LINKS = [
    * disclosure nobody can navigate to is not much of a disclosure.
    */
   { label: "Communication Consent", href: "/communication-consent" },
+  /*
+   * The A2P reviewer's entry point, and deliberately a public footer link.
+   *
+   * A carrier reviewer verifying how ProFixter collects SMS consent should not
+   * have to be handed a URL out of band, and should not have to invent a Long
+   * Island address to see the sign-up form's consent panel. This page shows the
+   * real flow with real screenshots and collects nothing.
+   *
+   * It is EVIDENCE, never an opt-in method: no form, no checkbox, no control
+   * that could be read as a second place consent is gathered. See the page
+   * itself for why that distinction is load-bearing.
+   */
+  { label: "SMS Consent", href: "/sms-consent-example" },
 ] as const;
 
 /**

@@ -70,13 +70,21 @@ export default function CommunicationConsentPage() {
                   {PUBLIC_CONTACT_EMAIL}
                 </a>
                 <br />
-                Main Phone/Text Support: <span className="font-semibold">631-599-1363</span>
+                Text messages are sent from: <span className="font-semibold">631-888-6340</span>
+                <br />
+                Customer service and HELP by phone: <span className="font-semibold">631-599-1363</span>
               </p>
               <p className="mt-3 text-white/70">
-                <span className="font-semibold">Important:</span> We may contact you from{" "}
-                <span className="font-semibold">different phone numbers</span> (including local numbers, toll-free numbers, or
-                carrier-registered messaging numbers) for routing, reliability, staffing, and deliverability. Our{" "}
-                <span className="font-semibold">primary number is 631-599-1363</span>.
+                <span className="font-semibold">These two numbers are different on purpose.</span>{" "}
+                <span className="font-semibold">631-888-6340</span> is our carrier-registered messaging number and is the number
+                our text messages come from. <span className="font-semibold">631-599-1363</span> is our customer-service line,
+                where a person answers. Replying <span className="font-semibold">HELP</span> to a text reaches our automated help
+                reply; calling 631-599-1363 reaches our office.
+              </p>
+              <p className="mt-3 text-white/70">
+                We may also contact you from{" "}
+                <span className="font-semibold">other phone numbers</span> (including local numbers, toll-free numbers, or
+                additional carrier-registered messaging numbers) for routing, reliability, staffing, and deliverability.
               </p>
             </div>
           </section>
@@ -238,14 +246,23 @@ export default function CommunicationConsentPage() {
               Customers opt in on our website sign-up form, which presents two separate, unchecked, optional SMS checkboxes — one
               for service texts and one for marketing texts — alongside a separate required acceptance of the Terms of Service and
               Privacy Policy. Neither SMS box is required to submit the form. The same two choices are available at any time in
-              account settings, and a customer may also opt in by initiating a conversation with us via text.
+              account settings.
+            </p>
+            <p className="mt-3">
+              The sign-up form and your account settings are the only places we collect SMS consent. Texting us does not by itself
+              subscribe you to any category of message. We do not accept verbal or paper opt-ins, we do not use a keyword sign-up,
+              and we never buy, rent or accept a shared list of phone numbers.
             </p>
             <ul className="list-disc list-inside space-y-2 mt-3">
-              <li>We maintain consent records where required (timestamp, source, and consent language version).</li>
               <li>
-                Replying <span className="font-semibold">START</span> lifts a previous STOP block on your handset. It does not by
-                itself switch either category of message back on; you choose those again in your account settings, so that our
-                record always reflects a choice you actually made.
+                For each choice we keep the consent status, the date and time it was recorded, and the place it came from — the
+                sign-up form or your account settings. Service texts and marketing texts are recorded separately.
+              </li>
+              <li>
+                Replying <span className="font-semibold">START</span> or <span className="font-semibold">UNSTOP</span> lifts a
+                previous STOP block on your handset, so this number is able to reach you again. It does not grant service SMS
+                consent and it does not grant marketing SMS consent. You must switch the category you want back on yourself in
+                your account settings, so that our record always reflects a choice you actually made.
               </li>
               <li>
                 If you are providing a number that is not yours, you represent you have authorization from the account holder.
@@ -311,14 +328,18 @@ export default function CommunicationConsentPage() {
             Last Updated: January 9, 2026
           </p>
 
-          <div className="mt-7 text-center">
-            <Link
-              href="/signup"
-              className="inline-flex items-center justify-center rounded-[8px] border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
-            >
-              Create Account
+          {/* See the note on the privacy policy: neighbouring documents, not a CTA. */}
+          <nav aria-label="Related legal documents" className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs sm:text-sm text-white/55">
+            <Link href="/privacy" className="underline underline-offset-4 transition hover:text-white">
+              Privacy Policy
             </Link>
-          </div>
+            <Link href="/terms" className="underline underline-offset-4 transition hover:text-white">
+              Terms of Service
+            </Link>
+            <Link href="/sms-consent-example" className="underline underline-offset-4 transition hover:text-white">
+              How we collect SMS consent
+            </Link>
+          </nav>
         </div>
       </div>
     </div>

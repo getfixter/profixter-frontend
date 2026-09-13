@@ -775,7 +775,7 @@ export default function SignUpPage() {
                       label="Text me about my ProFixter visits."
                     >
                       Optional. Receive booking confirmations, appointment reminders and
-                      service updates from ProFixter at{" "}
+                      service updates from ProFixter, sent from{" "}
                       <span className="font-semibold text-white/62">(631) 888-6340</span>.
                       Message frequency varies. Message and data rates may apply. Reply STOP
                       to opt out or HELP for help.
@@ -794,10 +794,32 @@ export default function SignUpPage() {
                     </ConsentCheckbox>
                   </div>
 
+                  {/*
+                    * ALL THREE LEGAL LINKS, AT STEP 1, WITHOUT TYPING ANYTHING.
+                    *
+                    * The Terms of Service link used to live only beside the
+                    * required acceptance checkbox on step 4, which meant a
+                    * reviewer had to invent an address, a name, a phone number
+                    * and an email before the page showed them a Terms link at
+                    * all. Twilio names that precise situation as a rejection
+                    * cause: the site used for opt-in must carry accessible
+                    * Terms AND Privacy links.
+                    *
+                    * So the link appears here, in the panel that is on screen
+                    * from the first paint. This is a LINK ONLY. The acceptance
+                    * checkbox stays on step 4, stays required, and stays the
+                    * one box with no SMS consent in it - linking to a document
+                    * and agreeing to it are different acts, and merging them is
+                    * the bundling defect this whole panel exists to disprove.
+                    */}
                   <p className="mt-3 text-[11.5px] leading-relaxed text-white/42">
                     Leave both unchecked and we will not text you. Your confirmations,
                     reminders and receipts still arrive by email, and you can change either
                     choice any time in your account. See our{" "}
+                    <Link href="/terms" className="text-white/64 underline decoration-white/20 underline-offset-4 transition hover:text-white">
+                      Terms of Service
+                    </Link>
+                    ,{" "}
                     <Link href="/privacy" className="text-white/64 underline decoration-white/20 underline-offset-4 transition hover:text-white">
                       Privacy Policy
                     </Link>
@@ -807,6 +829,22 @@ export default function SignUpPage() {
                     </Link>
                     . Mobile information and SMS consent will not be shared with third
                     parties or affiliates for marketing or promotional purposes.
+                  </p>
+                  {/*
+                    * Two numbers, and the difference stated rather than implied.
+                    *
+                    * 631-888-6340 sends the texts; 631-599-1363 is the office
+                    * line a person answers. Both are correct and they are not
+                    * interchangeable, so a reviewer comparing the consent
+                    * disclosure against the registered campaign should be told
+                    * which is which instead of being left to guess that one of
+                    * them is a mistake.
+                    */}
+                  <p className="mt-2 text-[11.5px] leading-relaxed text-white/38">
+                    Texts are sent from{" "}
+                    <span className="font-semibold text-white/52">(631) 888-6340</span>.
+                    For help from a person, call customer service on{" "}
+                    <span className="font-semibold text-white/52">(631) 599-1363</span>.
                   </p>
                 </section>
 
