@@ -447,7 +447,7 @@ export default function SignUpPage() {
           <Link href="/" className="hidden items-center lg:inline-flex">
             <Image
               src="/images/logo.svg"
-              alt="Profixter"
+              alt="ProFixter"
               width={132}
               height={44}
               className="h-9 w-auto sm:h-11"

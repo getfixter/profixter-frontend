@@ -49,7 +49,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
           <div className="col-span-2 lg:col-span-1">
             <Image
               src="/images/logo-footer.svg"
-              alt="Profixter"
+              alt="ProFixter"
               width={200}
               height={48}
               className={`h-auto ${compact ? "mb-3 w-[150px] sm:w-[160px]" : "mb-4 w-[160px] sm:mb-5 sm:w-[180px]"}`}
@@ -76,7 +76,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
               </div>
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">
-                  Call Profixter
+                  Call ProFixter
                 </div>
                 <div className="text-[15px] font-bold text-white sm:text-[16px]">
                   631-599-1363

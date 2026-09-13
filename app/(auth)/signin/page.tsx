@@ -133,7 +133,7 @@ function SignInForm() {
           <Link href="/" className="inline-block">
             <Image
               src="/images/logo.svg"
-              alt="Profixter"
+              alt="ProFixter"
               width={132}
               height={44}
               className="h-11 w-auto"
