@@ -1211,7 +1211,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           <p className="mt-4 text-center text-[13.5px] text-[#6E6E73]">
             Not sure it covers your list?{" "}
             <Link href="/recent-work" className="font-semibold text-[#306EEC] underline-offset-4 hover:underline">
-              See what we fix
+              See what we do
             </Link>
           </p>
         </div>

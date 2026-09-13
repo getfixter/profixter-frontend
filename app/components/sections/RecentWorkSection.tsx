@@ -71,11 +71,11 @@ interface RecentWorkSectionProps {
 export default function RecentWorkSection({
   variant = "full",
   limit,
-  eyebrow = "What we fix",
+  eyebrow = "What we do",
   heading = "The kind of work members book",
-  subheading = "Real jobs from Long Island homes - doors, drywall, caulking, fixtures, mounting. The everyday list a membership is meant for.",
+  subheading = "Real jobs from Long Island homes - repairs, installations, replacements, mounting and maintenance. The everyday list a membership is meant for.",
   moreHref = "/recent-work",
-  moreLabel = "See what else we fix",
+  moreLabel = "See more of what we do",
   showHeading = true,
 }: RecentWorkSectionProps) {
   const isPreview = variant === "preview";

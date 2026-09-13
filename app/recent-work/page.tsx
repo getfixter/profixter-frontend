@@ -4,14 +4,20 @@ import Footer from "@/app/components/sections/Footer";
 import RecentWorkSection from "@/app/components/sections/RecentWorkSection";
 
 export const metadata: Metadata = {
-  title: "What We Fix | Profixter",
+  /*
+   * The name on its own. The root layout appends " | Profixter" through its
+   * title template, and this page carried the suffix itself as well - so the
+   * browser tab, and every search result, read "... | Profixter | Profixter".
+   * The Open Graph title below is not templated and keeps its own suffix.
+   */
+  title: "What We Do",
   description:
-    "Photographs of real handyman jobs finished by Profixter across Long Island - doors, drywall, caulking, fixtures, mounting, shelving and the rest of the everyday list a membership is meant for.",
+    "Photographs of real handyman jobs finished by Profixter across Long Island - repairs, installations, replacements, mounting, maintenance and the rest of the everyday list a membership is meant for.",
   alternates: { canonical: "https://www.profixter.com/recent-work" },
   openGraph: {
-    title: "What We Fix | Profixter",
+    title: "What We Do | Profixter",
     description:
-      "Real handyman jobs finished across Long Island, and the kind of work a Profixter membership is meant for.",
+      "Real handyman jobs finished across Long Island - repairs, installations, mounting and maintenance - and the kind of work a Profixter membership is meant for.",
     url: "https://www.profixter.com/recent-work",
     type: "website",
   },
@@ -35,9 +41,9 @@ export default function RecentWorkPage() {
       <Header />
       <RecentWorkSection
         variant="full"
-        eyebrow="What we fix"
-        heading="The work a membership is for"
-        subheading="Every photo is a real job in a real Long Island home, done by the same team that would come to yours. Bigger renovations are quoted separately."
+        eyebrow="What we do"
+        heading="Real work completed by Profixter"
+        subheading="Repairs, installations, replacements, mounting, maintenance and the everyday jobs that keep a home working. Every photo is a real job in a real Long Island home, done by the same team that would come to yours. Bigger renovations are quoted separately."
       />
       <Footer />
     </main>
