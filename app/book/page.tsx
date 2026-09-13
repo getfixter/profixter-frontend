@@ -22,6 +22,7 @@ import VisitTypeNav, { resolveVisitType } from "@/app/components/booking/VisitTy
 import GiftCallout from "@/app/components/gift/GiftCallout";
 import { YourFixterRow } from "@/app/components/fixter/YourFixter";
 import BookingsSection from "@/app/components/account/BookingsSection";
+import ShareFinishedProject from "@/app/components/workPhotos/ShareFinishedProject";
 import PriorityVisitPanel from "@/app/components/booking/PriorityVisitPanel";
 import FullDayVisitPanel from "@/app/components/booking/FullDayVisitPanel";
 import MembershipGatewayPanel from "@/app/components/booking/MembershipGatewayPanel";
@@ -1347,6 +1348,20 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
       </section>
 
       {/*
+       * The invitation to show what we fixed.
+       *
+       * After booking and its fine print, before the visit list. It is not
+       * part of booking and it is not part of history, which is the whole
+       * point: asking somebody to show their finished kitchen is a different
+       * request from either, so it gets its own small line on the page.
+       */}
+      {isAuthenticated && (
+        <section className="mx-auto w-full max-w-[1280px] px-4 pb-8 sm:px-6 lg:px-8">
+          <ShareFinishedProject />
+        </section>
+      )}
+
+      {/*
        * Visits, for people who are not members.
        *
        * The visit list only ever rendered on the membership branch, so somebody
@@ -1515,6 +1530,16 @@ function BookExperience() {
 
           <section className="mx-auto w-full max-w-[1280px] px-4 pt-1 sm:px-6 lg:px-8">
             <YourFixterRow />
+          </section>
+
+          {/*
+           * Book a visit, see who is coming, then - quietly - show us the
+           * last one. Secondary to all of it, and deliberately above the
+           * visit list rather than inside it: sharing a finished project is
+           * not an action on a booking, and it stopped being one here.
+           */}
+          <section className="mx-auto w-full max-w-[1280px] px-4 pt-5 sm:px-6 lg:px-8">
+            <ShareFinishedProject />
           </section>
 
           {/*

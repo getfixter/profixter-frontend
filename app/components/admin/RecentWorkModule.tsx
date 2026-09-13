@@ -496,6 +496,24 @@ function PhotoTile({
           {UPLOADER_LABELS[photo.uploaderType]} · {relativeDate(photo.createdAt)}
         </div>
 
+        {/*
+          What the person who sent it said about it.
+
+          On the card rather than one tap deeper, because this is the tab
+          where a photo is approved or rejected and the sender's own sentence
+          is often the only thing that says what is being looked at. It is
+          their words, not a caption: nothing here is on the website, and
+          putting any of it there is a separate, deliberate act in the editor.
+        */}
+        {moderating && photo.internalNote ? (
+          <p
+            title={photo.internalNote}
+            className="mt-1.5 line-clamp-3 rounded-md bg-slate-50 px-2 py-1.5 text-[11px] leading-4 text-slate-600"
+          >
+            {photo.internalNote}
+          </p>
+        ) : null}
+
         {moderating && (
           <div className="mt-2 grid grid-cols-2 gap-1.5">
             <button
@@ -701,6 +719,40 @@ function EditSheet({
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-400"
             />
           </label>
+
+          {/*
+            The sender's note, immediately above the caption written from it.
+
+            Read-only on purpose, and never copied across on its own. "Use as
+            caption" fills the field below and nothing else - the admin still
+            edits it, still saves, still publishes. A customer's sentence
+            about their own home does not become site copy by arriving.
+          */}
+          {photo.internalNote ? (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  From the sender
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    /* The attribution is for the office. It is not site copy. */
+                    setCaption(photo.internalNote.replace(/^(?:Customer|Fixter) note:\s*/i, "").slice(0, 400))
+                  }
+                  className="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100"
+                >
+                  Use as caption
+                </button>
+              </div>
+              <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-5 text-slate-700">
+                {photo.internalNote}
+              </p>
+              <p className="mt-1.5 text-[11px] text-slate-500">
+                Internal. Not shown on the website unless you put it in the caption.
+              </p>
+            </div>
+          ) : null}
 
           <label className="block">
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
