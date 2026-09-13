@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import Image from "next/image";
-import WorkPhotoUploadSheet from "@/app/components/workPhotos/WorkPhotoUploadSheet";
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { addBookingDetails } from "@/lib/booking-service";
@@ -438,17 +437,6 @@ function BookingCard({
   cancelLoading: boolean;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
-  /*
-   * Finished-work photos, which are NOT the booking photos above.
-   *
-   * "Add notes/photos" attaches evidence of the problem to a booking that has
-   * not happened yet - it is how a customer explains what needs fixing, and it
-   * stays on the booking. This is the other end: the work is done, and these
-   * go to the team as a possible Recent Work submission. Same person, same
-   * job, different purpose - so they are deliberately different actions rather
-   * than one button that means two things depending on the status.
-   */
-  const [workPhotosOpen, setWorkPhotosOpen] = useState(false);
   const addr = formatAddress(booking);
   const phone = booking.phone || me?.phone;
   const memberBooking = isMemberBooking(booking);
@@ -601,17 +589,6 @@ function BookingCard({
           )}
           {isCompletedStatus(booking.status) && (
             <>
-              {/*
-                First of the three, because it is the only one that asks the
-                customer for something while the work is still fresh in mind.
-              */}
-              <button
-                type="button"
-                onClick={() => setWorkPhotosOpen(true)}
-                className="flex-1 py-2.5 rounded-[8px] text-[13px] font-semibold border border-[#C7D9FF] bg-[#F5F9FF] text-[#306EEC] hover:bg-[#EDF4FF] transition text-center"
-              >
-                Add photos
-              </button>
               <a
                 href="https://buy.stripe.com/eVq8wO3W98O03NL3ASawo00"
                 target="_blank"
@@ -653,14 +630,6 @@ function BookingCard({
         }}
       />
 
-      <WorkPhotoUploadSheet
-        open={workPhotosOpen}
-        onClose={() => setWorkPhotosOpen(false)}
-        bookingNumber={booking.bookingNumber || ""}
-        jobLabel={`Visit #${bookingId} · ${formatNY(booking.date)}`}
-        title="Add photos of the finished work"
-        intro="If you are happy with how it turned out, send us a photo. We may feature it on the Profixter website - only after our team has reviewed it."
-      />
     </div>
   );
 }

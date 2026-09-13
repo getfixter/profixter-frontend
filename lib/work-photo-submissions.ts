@@ -84,6 +84,14 @@ export async function submitWorkPhotos(input: {
   files: File[];
   bookingNumber?: string;
   caption?: string;
+  /**
+   * The uploader's own description of the work.
+   *
+   * Deliberately not "caption". The server files this as an internal note
+   * the office reads while reviewing; it is never part of the public shape,
+   * so nothing typed by a customer can reach the website as written.
+   */
+  note?: string;
   onProgress?: (percent: number) => void;
   signal?: AbortSignal;
 }): Promise<SubmissionResult> {
@@ -91,6 +99,7 @@ export async function submitWorkPhotos(input: {
   for (const file of input.files) form.append("photos", file);
   if (input.bookingNumber) form.append("bookingNumber", input.bookingNumber);
   if (input.caption) form.append("caption", input.caption);
+  if (input.note) form.append("note", input.note);
 
   const { data } = await API.post<SubmissionResult>("/api/recent-work/submissions", form, {
     signal: input.signal,

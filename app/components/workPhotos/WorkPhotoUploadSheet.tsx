@@ -5,7 +5,10 @@ import {
   ACCEPTED_FILE_TYPES,
   MAX_FILES_PER_UPLOAD,
   MAX_UPLOAD_BYTES,
+  describeJob,
+  fetchSubmittableJobs,
   submitWorkPhotos,
+  type SubmittableJob,
 } from "@/lib/work-photo-submissions";
 
 /**
@@ -43,6 +46,15 @@ interface Selected {
 
 type Phase = "choosing" | "uploading" | "done";
 
+/*
+ * Comfortably inside what the server keeps (420 characters, plus the line that
+ * says who wrote it). The counter runs out in front of the person typing,
+ * which is the only place a limit should ever be met - a note silently losing
+ * its last sentence somewhere between here and the office is worse than a
+ * field that visibly stops accepting one.
+ */
+const NOTE_MAX = 380;
+
 export default function WorkPhotoUploadSheet({
   open,
   onClose,
@@ -50,6 +62,11 @@ export default function WorkPhotoUploadSheet({
   jobLabel,
   title = "Add finished-work photos",
   intro,
+  notePrompt,
+  notePlaceholder,
+  offerJobPicker = false,
+  sharingNotice,
+  doneMessage = "Thank you. Our team reviews photos before any of them appear on the Profixter website.",
   onUploaded,
 }: {
   open: boolean;
@@ -58,6 +75,20 @@ export default function WorkPhotoUploadSheet({
   jobLabel?: string;
   title?: string;
   intro?: string;
+  /** Shows the optional note field when set. Customer surface only. */
+  notePrompt?: string;
+  notePlaceholder?: string;
+  /** Offers "which visit was this?" when the caller has no booking in hand. */
+  offerJobPicker?: boolean;
+  /**
+   * What submitting actually means, shown beside the button that does it.
+   *
+   * Customer surface only. A Fixter uploading from a job is doing their work;
+   * a customer is volunteering something of their home for possible public
+   * use, and that is a different thing to be told before pressing send.
+   */
+  sharingNotice?: string;
+  doneMessage?: string;
   onUploaded?: (count: number) => void;
 }) {
   const [selected, setSelected] = useState<Selected[]>([]);
@@ -65,7 +96,30 @@ export default function WorkPhotoUploadSheet({
   const [percent, setPercent] = useState(0);
   const [error, setError] = useState("");
   const [sentCount, setSentCount] = useState(0);
+  const [note, setNote] = useState("");
+  const [jobs, setJobs] = useState<SubmittableJob[]>([]);
+  const [chosenJob, setChosenJob] = useState("");
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  /*
+   * The optional "which visit was this?" list.
+   *
+   * Loaded only when the sheet is open and only where it is offered, because
+   * the customer surface is launched without a job in hand and most people
+   * will leave it alone. A failure here is silent: not knowing which visit a
+   * photo belongs to costs the office a little context and must never cost
+   * the customer the ability to send it.
+   */
+  useEffect(() => {
+    if (!open || !offerJobPicker) return;
+    const controller = new AbortController();
+    fetchSubmittableJobs(controller.signal)
+      .then((rows) => {
+        if (!controller.signal.aborted) setJobs(rows);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [open, offerJobPicker]);
 
   /* Object URLs are a leak if nobody revokes them; a phone gallery is big. */
   useEffect(() => {
@@ -84,6 +138,8 @@ export default function WorkPhotoUploadSheet({
     setPercent(0);
     setError("");
     setSentCount(0);
+    setNote("");
+    setChosenJob("");
   }, []);
 
   const close = useCallback(() => {
@@ -94,37 +150,51 @@ export default function WorkPhotoUploadSheet({
   const addFiles = useCallback(
     (files: FileList | null) => {
       if (!files?.length) return;
-      setError("");
-      setSelected((current) => {
-        const room = MAX_FILES_PER_UPLOAD - current.length;
-        if (room <= 0) {
-          setError(`You can send ${MAX_FILES_PER_UPLOAD} photos at a time.`);
-          return current;
+
+      /*
+       * COPIED OUT OF THE INPUT BEFORE ANYTHING ELSE HAPPENS.
+       *
+       * A FileList is a live view of the input, not a snapshot of it, and the
+       * change handler clears input.value immediately afterwards so that
+       * picking the same photo twice still fires. Reading the list inside a
+       * state updater - which React runs later, during render - therefore read
+       * an input that had already been emptied, and every photo a person chose
+       * silently vanished on the way to the preview grid.
+       */
+      const chosen = Array.from(files);
+      const room = MAX_FILES_PER_UPLOAD - selected.length;
+      if (room <= 0) {
+        setError(`You can send ${MAX_FILES_PER_UPLOAD} photos at a time.`);
+        return;
+      }
+
+      let message = "";
+      const incoming: Selected[] = [];
+      for (const file of chosen.slice(0, room)) {
+        /*
+         * Refused here as well as on the server. A 40MB photo rejected after
+         * it has been pushed up a hallway connection is a minute of somebody's
+         * life for an answer their phone already knew.
+         */
+        if (file.size > MAX_UPLOAD_BYTES) {
+          message = `${file.name || "That photo"} is larger than 25 MB.`;
+          continue;
         }
-        const incoming: Selected[] = [];
-        for (const file of Array.from(files).slice(0, room)) {
-          /*
-           * Refused here as well as on the server. A 40MB photo rejected after
-           * it has been pushed up a hallway connection is a minute of somebody's
-           * life for an answer their phone already knew.
-           */
-          if (file.size > MAX_UPLOAD_BYTES) {
-            setError(`${file.name || "That photo"} is larger than 25 MB.`);
-            continue;
-          }
-          incoming.push({
-            id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
-            file,
-            url: URL.createObjectURL(file),
-            sent: false,
-            error: "",
-          });
-        }
-        if (files.length > room) setError(`Only the first ${room} were added.`);
-        return [...current, ...incoming];
-      });
+        incoming.push({
+          id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
+          file,
+          url: URL.createObjectURL(file),
+          sent: false,
+          error: "",
+        });
+      }
+      if (chosen.length > room) message = `Only the first ${room} were added.`;
+
+      setError(message);
+      /* The updater stays pure: no object URL is created twice by a replay. */
+      setSelected((current) => [...current, ...incoming]);
     },
-    []
+    [selected.length]
   );
 
   const removeAt = useCallback((id: string) => {
@@ -146,7 +216,9 @@ export default function WorkPhotoUploadSheet({
     try {
       const result = await submitWorkPhotos({
         files: pending.map((item) => item.file),
-        bookingNumber,
+        /* The caller's job if it has one, else whatever the picker chose. */
+        bookingNumber: bookingNumber || chosenJob || undefined,
+        note: note.trim() || undefined,
         onProgress: setPercent,
       });
 
@@ -186,7 +258,7 @@ export default function WorkPhotoUploadSheet({
       setError(response?.data?.message || "That upload did not go through. Please try again.");
       setPhase("choosing");
     }
-  }, [pending, phase, bookingNumber, onUploaded]);
+  }, [pending, phase, bookingNumber, chosenJob, note, onUploaded]);
 
   if (!open) return null;
 
@@ -232,9 +304,8 @@ export default function WorkPhotoUploadSheet({
               copy. A contributor who is told their photo is "live" and then
               cannot find it has been misled; this is the true and short version.
             */}
-            <p className="mx-auto mt-2 max-w-[320px] text-[13.5px] leading-relaxed text-[#6A6D71]">
-              Thank you. Our team reviews photos before any of them appear on the
-              Profixter website.
+            <p className="mx-auto mt-2 max-w-[330px] text-[13.5px] leading-relaxed text-[#6A6D71]">
+              {doneMessage}
             </p>
             <button
               type="button"
@@ -307,6 +378,73 @@ export default function WorkPhotoUploadSheet({
               </ul>
             )}
 
+            {/*
+              WHICH VISIT, OPTIONALLY.
+
+              Offered only where the sheet was opened without a job, and
+              never required. A customer who cannot remember which visit a
+              photo came from still has a photo worth sending, and the office
+              can usually tell from the picture. The server re-checks any
+              number chosen here against this account's own bookings.
+            */}
+            {offerJobPicker && !bookingNumber && jobs.length > 0 && (
+              <div className="mt-4">
+                <label
+                  htmlFor="work-photo-visit"
+                  className="block text-[13px] font-bold text-[#0B1628]"
+                >
+                  Which visit was this?{" "}
+                  <span className="font-semibold text-[#8A9099]">(optional)</span>
+                </label>
+                <select
+                  id="work-photo-visit"
+                  value={chosenJob}
+                  onChange={(event) => setChosenJob(event.target.value)}
+                  disabled={phase === "uploading"}
+                  className="mt-1.5 h-12 w-full rounded-[10px] border border-[#E0E6F5] bg-white px-3 text-[14px] text-[#0B1628] outline-none transition focus:border-[#306EEC] disabled:opacity-50"
+                >
+                  <option value="">I&rsquo;d rather not say</option>
+                  {jobs.map((job) => (
+                    <option key={job.bookingNumber} value={job.bookingNumber}>
+                      {describeJob(job)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/*
+              THE CUSTOMER'S OWN WORDS.
+
+              Optional, and it travels to the office rather than to the site.
+              Nothing typed here is published as written: an admin reads it
+              while reviewing and writes the public caption themselves. That
+              is why the field promises nothing about where the words go.
+            */}
+            {notePrompt ? (
+              <div className="mt-4">
+                <label
+                  htmlFor="work-photo-note"
+                  className="block text-[13px] font-bold text-[#0B1628]"
+                >
+                  {notePrompt}{" "}
+                  <span className="font-semibold text-[#8A9099]">(optional)</span>
+                </label>
+                <textarea
+                  id="work-photo-note"
+                  value={note}
+                  onChange={(event) => setNote(event.target.value.slice(0, NOTE_MAX))}
+                  disabled={phase === "uploading"}
+                  rows={3}
+                  placeholder={notePlaceholder}
+                  className="mt-1.5 w-full resize-none rounded-[10px] border border-[#E0E6F5] bg-white px-3 py-2.5 text-[14px] leading-relaxed text-[#0B1628] outline-none transition placeholder:text-[#A8AEB8] focus:border-[#306EEC] disabled:opacity-50"
+                />
+                <p className="mt-1 text-right text-[11.5px] text-[#A8AEB8]">
+                  {note.length}/{NOTE_MAX}
+                </p>
+              </div>
+            ) : null}
+
             {phase === "uploading" && (
               <div className="mt-4">
                 <div className="h-2 w-full overflow-hidden rounded-full bg-[#E8EDF7]">
@@ -327,6 +465,20 @@ export default function WorkPhotoUploadSheet({
               </p>
             ) : null}
 
+            {/*
+              WHAT SUBMITTING MEANS, BESIDE THE BUTTON THAT DOES IT.
+
+              Not in the terms, not in a link, not after the fact. A customer
+              sharing a photo of their own home is entitled to know it may be
+              used publicly before they press send - and equally entitled not
+              to be told it will be, because that is not a promise we keep.
+            */}
+            {sharingNotice ? (
+              <p className="mt-5 rounded-[10px] bg-[#F5F8FF] px-3.5 py-3 text-[12.5px] leading-relaxed text-[#4A5568]">
+                {sharingNotice}
+              </p>
+            ) : null}
+
             <button
               type="button"
               onClick={upload}
@@ -340,9 +492,11 @@ export default function WorkPhotoUploadSheet({
                   : `Send ${pending.length || ""} photo${pending.length === 1 ? "" : "s"}`.replace("  ", " ")}
             </button>
 
-            <p className="mt-3 text-center text-[12px] leading-relaxed text-[#8A9099]">
-              Photos are reviewed by our team before anything appears publicly.
-            </p>
+            {sharingNotice ? null : (
+              <p className="mt-3 text-center text-[12px] leading-relaxed text-[#8A9099]">
+                Photos are reviewed by our team before anything appears publicly.
+              </p>
+            )}
           </>
         )}
       </div>
