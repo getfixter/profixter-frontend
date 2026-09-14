@@ -737,8 +737,8 @@ export default function SignUpPage() {
                       * label is doing real work here - it is the thing that tells a
                       * reader the number and the checkboxes are one group.
                       */}
-                    <legend className="px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/70 sm:text-[11px] sm:tracking-[0.14em]">
-                      Your mobile number and text messages
+                    <legend className="px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/70">
+                      Mobile number &amp; texts
                     </legend>
 
                     <div className="mt-2">
@@ -754,108 +754,81 @@ export default function SignUpPage() {
                       {fieldErrors.phone ? (
                         <p className="mt-2 text-[12px] font-semibold text-red-300">{fieldErrors.phone}</p>
                       ) : null}
-                      {/*
-                        * WHY WE ASK FOR A NUMBER, AND WHAT IT DOES NOT BUY US.
-                        *
-                        * This once read "We text you about your visits", stated as a
-                        * fact with no way to decline, and a carrier reviewer read it
-                        * exactly as written - a number is required to register, and
-                        * the site then says it will text you - and rejected the
-                        * campaign for forced consent. It is now a statement of
-                        * purpose, and it is doubly load-bearing here because the
-                        * field shares a fieldset with two consent boxes.
-                        */}
-                      <p className="mt-2 text-[11.5px] leading-relaxed text-white/50">
-                        Required for your account, so we can call you and so your Fixter can
-                        reach you at the door.{" "}
-                        <span className="font-semibold text-white/70">
+                      <p className="mt-1.5 text-[11px] leading-snug text-white/45">
+                        Required for your account.{" "}
+                        <span className="font-semibold text-white/65">
                           Entering it does not sign you up for text messages.
                         </span>
                       </p>
                     </div>
 
+                    {/*
+                      * ONE SHARED DISCLOSURE LINE, NOT TWO PARAGRAPHS EACH.
+                      *
+                      * This section used to run to about twenty lines of copy:
+                      * an intro paragraph, a four-line explanation under each
+                      * checkbox, a five-line closing paragraph and a two-line
+                      * note about the phone numbers. Every required disclosure
+                      * was in there two or three times over, and the result was
+                      * a registration form dominated by SMS legal text.
+                      *
+                      * Everything the approved campaign needs is still here and
+                      * now appears exactly ONCE, beneath both boxes: the sending
+                      * number, that frequency varies, that rates may apply, STOP,
+                      * HELP, and the three documents as links rather than as
+                      * recited text.
+                      *
+                      * WHAT DELIBERATELY DID NOT CHANGE: the two checkbox labels
+                      * are word-for-word what the A2P campaign was approved on
+                      * and what /sms-consent-example quotes to reviewers, both
+                      * boxes remain OPTIONAL and SEPARATE, and they stay inside
+                      * the fieldset with the phone input - that grouping is the
+                      * fix for the last rejection and must not be undone for
+                      * layout.
+                      */}
                     <section
                       aria-labelledby="sms-consent-heading"
-                      className="mt-4 border-t border-white/[0.09] pt-4"
+                      className="mt-3 border-t border-white/[0.09] pt-3"
                     >
                       <h3
                         id="sms-consent-heading"
-                        className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/70"
+                        className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/55"
                       >
                         Text messages &mdash; optional
                       </h3>
-                      <p className="mt-1.5 text-[12px] leading-relaxed text-white/50">
-                        You can create an account, book visits and use every ProFixter service
-                        without agreeing to receive text messages. These choices are separate
-                        from the Terms of Service, and separate from each other.
-                      </p>
 
-                      <div className="mt-3 space-y-2.5">
+                      <div className="mt-2 space-y-1.5">
                         <ConsentCheckbox
                           id="sms-service-consent"
                           checked={smsTransactionalConsent}
                           onChange={setSmsTransactionalConsent}
                           label="Text me about my ProFixter visits at the mobile number above."
-                        >
-                          Optional. Booking confirmations, appointment reminders and service
-                          updates, sent from{" "}
-                          <span className="font-semibold text-white/62">(631) 888-6340</span>.
-                          Message frequency varies. Message and data rates may apply. Reply STOP
-                          to opt out or HELP for help.
-                        </ConsentCheckbox>
-
+                        />
                         <ConsentCheckbox
                           id="sms-marketing-consent"
                           checked={smsMarketingConsent}
                           onChange={setSmsMarketingConsent}
                           label="Text me occasional ProFixter offers at the mobile number above."
-                        >
-                          Optional, and separate from the service texts above. Not required to
-                          create an account, book or buy anything. Message frequency varies.
-                          Message and data rates may apply. Reply STOP to opt out or HELP for
-                          help.
-                        </ConsentCheckbox>
+                        />
                       </div>
 
-                      {/*
-                        * All three legal links, at step 1, without typing anything.
-                        *
-                        * The Terms link used to live only beside the required
-                        * acceptance checkbox on step 4, so a reviewer had to invent
-                        * an address, a name, a number and an email before the page
-                        * showed them a Terms link. This is a LINK ONLY - the
-                        * acceptance checkbox stays on step 4, stays required, and
-                        * stays the one box with no SMS consent in it.
-                        */}
-                      <p className="mt-3 text-[11.5px] leading-relaxed text-white/42">
-                        Leave both unchecked and we will not text you. Your confirmations,
-                        reminders and receipts still arrive by email, and you can change either
-                        choice any time in your account. See our{" "}
-                        <Link href="/terms" className="text-white/64 underline decoration-white/20 underline-offset-4 transition hover:text-white">
-                          Terms of Service
+                      <p className="mt-2 text-[10.5px] leading-snug text-white/40">
+                        Both optional and separate; you can register, book and buy without either.
+                        Sent from (631) 888-6340 &middot; frequency varies &middot; msg &amp; data rates
+                        may apply &middot; reply STOP to opt out, HELP for help. Mobile information and
+                        SMS consent are not shared with third parties or affiliates for marketing.{" "}
+                        <Link href="/terms" className="text-white/60 underline underline-offset-2 transition hover:text-white">
+                          Terms
                         </Link>
-                        ,{" "}
-                        <Link href="/privacy" className="text-white/64 underline decoration-white/20 underline-offset-4 transition hover:text-white">
-                          Privacy Policy
+                        {" · "}
+                        <Link href="/privacy" className="text-white/60 underline underline-offset-2 transition hover:text-white">
+                          Privacy
                         </Link>
-                        {" "}and{" "}
-                        <Link href="/communication-consent" className="text-white/64 underline decoration-white/20 underline-offset-4 transition hover:text-white">
+                        {" · "}
+                        <Link href="/communication-consent" className="text-white/60 underline underline-offset-2 transition hover:text-white">
                           SMS Terms
                         </Link>
-                        . Mobile information and SMS consent will not be shared with third
-                        parties or affiliates for marketing or promotional purposes.
-                      </p>
-                      {/*
-                        * Two numbers, and the difference stated rather than implied.
-                        * 631-888-6340 sends the texts; 631-599-1363 is the office
-                        * line a person answers. Neither is the number above, which
-                        * is the customer's own.
-                        */}
-                      <p className="mt-2 text-[11.5px] leading-relaxed text-white/38">
-                        Texts are sent from{" "}
-                        <span className="font-semibold text-white/52">(631) 888-6340</span>.
-                        For help from a person, call customer service on{" "}
-                        <span className="font-semibold text-white/52">(631) 599-1363</span>.
+                        . Questions? Call (631) 599-1363.
                       </p>
                     </section>
                   </fieldset>
