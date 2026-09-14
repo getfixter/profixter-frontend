@@ -813,10 +813,22 @@ export default function SignUpPage() {
                       </div>
 
                       <p className="mt-2 text-[10.5px] leading-snug text-white/40">
-                        Both optional and separate; you can register, book and buy without either.
-                        Sent from (631) 888-6340 &middot; frequency varies &middot; msg &amp; data rates
-                        may apply &middot; reply STOP to opt out, HELP for help. Mobile information and
-                        SMS consent are not shared with third parties or affiliates for marketing.{" "}
+                        {/*
+                          * The canonical phrasings, not shortened versions of them.
+                          *
+                          * An earlier pass at this compaction wrote "frequency
+                          * varies" and "msg & data rates may apply" to save a
+                          * line. Those are the exact forms carriers look for and
+                          * the ones the approved campaign was submitted with, so
+                          * abbreviating them trades a compliance disclosure for
+                          * whitespace. The layout is compact; the words are not.
+                          */}
+                        Both optional and separate. You can create an account, book visits and use
+                        every ProFixter service without agreeing to receive text messages. Sent from
+                        (631) 888-6340. Message frequency varies. Message and data rates may apply.
+                        Reply STOP to opt out or HELP for help. Mobile information and SMS consent
+                        will not be shared with third parties or affiliates for marketing or
+                        promotional purposes.{" "}
                         <Link href="/terms" className="text-white/60 underline underline-offset-2 transition hover:text-white">
                           Terms
                         </Link>
