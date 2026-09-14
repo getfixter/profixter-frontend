@@ -34,6 +34,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import GiftCallout from "@/app/components/gift/GiftCallout";
+import ManagePlanModal from "./ManagePlanModal";
 import { getPrimaryFixter } from "@/lib/fixter";
 import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
 import { BUSINESS_PHONE_DISPLAY, BUSINESS_PHONE_E164 } from "@/lib/seo";
@@ -41,8 +42,10 @@ import { PLAN_DETAILS, type PlanType } from "@/lib/stripe-links";
 import { getNextBooking, type NextBookingResponse } from "@/lib/booking-service";
 import {
   createBillingPortalSession,
+  getLoyaltyStatus,
   getMySubscriptions,
   getSubscriptionActionErrorMessage,
+  type LoyaltyStatus,
   type ManagedSubscription,
 } from "@/lib/subscription-service";
 
@@ -122,6 +125,8 @@ export default function AccountOverview({
   );
 
   const [subscriptions, setSubscriptions] = useState<ManagedSubscription[]>([]);
+  const [managePlanOpen, setManagePlanOpen] = useState(false);
+  const [managePlanLoyalty, setManagePlanLoyalty] = useState<LoyaltyStatus | null>(null);
   const [next, setNext] = useState<NextBookingResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [portalBusy, setPortalBusy] = useState(false);
@@ -205,7 +210,36 @@ export default function AccountOverview({
   const upcoming = next?.future || null;
   const freeVisit = Boolean(next?.freeFirstVisitAvailable) && next?.introVisitServiceable !== false;
 
-  const openPortal = useCallback(async () => {
+  /*
+   * Manage Plan now opens OUR summary first, and creating the Stripe session is
+   * deferred until the member actually chooses to continue.
+   *
+   * That ordering is the point. A portal session is a real Stripe object with a
+   * live URL, and minting one for somebody who glances at the modal and closes
+   * it is waste with no upside. It also means the modal genuinely costs nothing
+   * to dismiss, which is what separates it from a retention gate.
+   */
+  const openManagePlan = useCallback(async () => {
+    setPortalError("");
+    setManagePlanOpen(true);
+
+    const targetAddressId = subscription?.addressId || addressId || null;
+    if (!targetAddressId) return;
+
+    try {
+      const status = await getLoyaltyStatus(String(targetAddressId));
+      setManagePlanLoyalty(status);
+    } catch {
+      /*
+       * A missing Loyalty panel is a smaller failure than a blocked Manage
+       * Plan. The modal still opens, still summarises the membership, and
+       * Continue still works.
+       */
+      setManagePlanLoyalty(null);
+    }
+  }, [subscription, addressId]);
+
+  const continueToPortal = useCallback(async () => {
     setPortalBusy(true);
     setPortalError("");
     try {
@@ -374,11 +408,10 @@ export default function AccountOverview({
                 {isLive(subscription) ? (
                   <button
                     type="button"
-                    onClick={openPortal}
-                    disabled={portalBusy}
+                    onClick={openManagePlan}
                     className="inline-flex min-h-[46px] flex-1 items-center justify-center rounded-[9px] border border-[#CBD6E8] bg-white px-5 text-[15px] font-semibold text-[#0F172A] transition hover:bg-[#F5F8FF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] disabled:opacity-60 sm:flex-none sm:px-7"
                   >
-                    {portalBusy ? "Opening…" : "Manage Plan"}
+                    Manage Plan
                   </button>
                 ) : null}
 
@@ -544,7 +577,11 @@ export default function AccountOverview({
                   {
                     label: "Billing & invoices",
                     hint: "Card, receipts, plan changes",
-                    onClick: openPortal,
+                    /*
+                     * The same door as Manage Plan, so there is one path to
+                     * Stripe and one place a portal session is created.
+                     */
+                    onClick: openManagePlan,
                   },
                 ]
               : []),
@@ -580,6 +617,24 @@ export default function AccountOverview({
           })}
         </ul>
       </section>
+
+      {/*
+        Manage Plan opens here first. Nothing about Stripe is created until the
+        member presses Continue, so closing this costs nothing and creates
+        nothing.
+      */}
+      <ManagePlanModal
+        open={managePlanOpen}
+        subscription={subscription}
+        loyalty={managePlanLoyalty}
+        busy={portalBusy}
+        error={portalError}
+        onContinue={continueToPortal}
+        onClose={() => {
+          setManagePlanOpen(false);
+          setPortalError("");
+        }}
+      />
     </div>
   );
 }
