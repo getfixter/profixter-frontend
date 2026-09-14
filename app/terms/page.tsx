@@ -401,9 +401,12 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">13. Electronic Communications (Email, SMS, Phone)</h2>
             <p>
-  Text messages are optional. You may create an account, book visits, purchase a
-  membership and use the Service without agreeing to receive any SMS, and
-  providing a phone number is not by itself consent to text you.
+  Service text messages are required to create an account: registration asks you
+  to agree to receive texts about your visits, and the box is never pre-ticked.
+  Marketing texts are separate and optional, and are never required to create an
+  account, book, or buy anything. Providing a phone number is not by itself
+  consent to text you, and either category can be switched off in your account
+  settings at any time.
 </p>
             <p className="mt-3">
   If you separately opt in to service texts, you consent to receive
@@ -431,13 +434,14 @@ export default function TermsPage() {
                 different number: <span className="font-semibold">631-599-1363</span>.
               </p>
               <p>
-  Program Description: Text messages are optional. If you opt in to service
-  texts, you may receive appointment confirmations, scheduling updates, service
-  reminders, customer support messages and account updates from Premium Island
-  Homes INC (Profixter). If you separately opt in to marketing texts, you may
-  also receive occasional offers. Each category has its own optional, unchecked
-  checkbox at sign-up and in your account settings, and neither is required to
-  create an account or use our services.
+  Program Description: Creating a Profixter account requires agreeing to receive
+  service texts, so you may receive appointment confirmations, scheduling
+  updates, service reminders, customer support messages and account updates from
+  Premium Island Homes Inc. (Profixter). If you separately opt in to marketing
+  texts, you may also receive occasional offers. Each category has its own
+  unchecked checkbox at sign-up and in your account settings; neither box is
+  pre-ticked, marketing is never required, and either can be switched off in your
+  account settings at any time.
 </p>
 
               <ul className="list-disc list-inside space-y-2">

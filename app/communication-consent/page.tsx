@@ -94,18 +94,21 @@ export default function CommunicationConsentPage() {
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">2. Your Consent to Contact You</h2>
             <p>
               We treat service communications and marketing communications as two separate things, we ask for them separately, and
-              every text message of either kind is optional.
+              service texts are required to create an account while marketing texts are optional.
             </p>
             <ul className="list-disc list-inside space-y-2 mt-3">
               <li>
-                <span className="font-semibold">Text messages are never required.</span> You can create an account, book a service,
-                request a quote, buy a membership and use everything Premium Island Homes Inc. (DBA Profixter / Mr. Fixter) offers
-                without agreeing to receive any SMS. Providing a phone number is not consent to text you.
+                <span className="font-semibold">Service texts are part of having an account.</span> Creating a ProFixter
+                account requires agreeing to receive service text messages about your visits. Marketing texts are separate
+                and are never required for anything. Providing a phone number is still not by itself consent to text you
+                &mdash; the tick is the act that matters &mdash; and service texts can be switched off in your account
+                settings at any time after registration.
               </li>
               <li>
-                <span className="font-semibold">Service texts require their own opt-in.</span> Appointment confirmations, reminders,
-                scheduling updates and service notifications are sent by SMS only if you tick the separate, optional service-text
-                box. It is unchecked by default.
+                <span className="font-semibold">Service texts are required to create an account.</span> Appointment
+                confirmations, reminders, scheduling updates and service notifications are sent by SMS once you tick the
+                service-text box during registration. The box is never pre-ticked &mdash; you tick it yourself &mdash; and you
+                can turn service texts off at any time in your account settings afterwards.
               </li>
               <li>
                 <span className="font-semibold">Marketing texts require a second, separate opt-in.</span> Promotional texts are sent
@@ -116,7 +119,8 @@ export default function CommunicationConsentPage() {
                 </span>
               </li>
               <li>
-                <span className="font-semibold">Neither consent is a condition of purchase</span> or of using the Service.
+                <span className="font-semibold">Marketing consent is never a condition of purchase</span> or of using the
+                Service, and declining it changes nothing about your account, your bookings or your pricing.
               </li>
               <li>
                 <span className="font-semibold">Declining texts changes nothing else.</span> By creating an account or booking a

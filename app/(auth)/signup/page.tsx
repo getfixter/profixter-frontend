@@ -321,6 +321,20 @@ export default function SignUpPage() {
       setError("You must agree to the Terms and Privacy Policy to continue.");
       return false;
     }
+    /*
+     * Service texts are now a condition of registration.
+     *
+     * Checked here AND on the server: this stops the button, routes/auth.js
+     * stops the request, and neither alone is enough - a form validator is
+     * trivially bypassed by posting to the endpoint directly.
+     *
+     * Marketing is deliberately absent from this check and must stay absent.
+     */
+    if (!smsTransactionalConsent) {
+      setConsentError(true);
+      setError("Please agree to receive ProFixter service text messages to continue.");
+      return false;
+    }
     setError("");
     setConsentError(false);
     return true;
@@ -794,22 +808,46 @@ export default function SignUpPage() {
                         id="sms-consent-heading"
                         className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/55"
                       >
-                        Text messages &mdash; optional
+                        Text messages
                       </h3>
 
-                      <div className="mt-2 space-y-1.5">
-                        <ConsentCheckbox
-                          id="sms-service-consent"
-                          checked={smsTransactionalConsent}
-                          onChange={setSmsTransactionalConsent}
-                          label="Text me about my ProFixter visits at the mobile number above."
-                        />
-                        <ConsentCheckbox
-                          id="sms-marketing-consent"
-                          checked={smsMarketingConsent}
-                          onChange={setSmsMarketingConsent}
-                          label="Text me occasional ProFixter offers at the mobile number above."
-                        />
+                      {/*
+                        * Each box states its own status, because they no longer
+                        * share one.
+                        *
+                        * The heading used to read "TEXT MESSAGES - OPTIONAL",
+                        * which stopped being true for the top box and would have
+                        * been actively misleading above a required control.
+                        * Neither box is pre-ticked: required means the customer
+                        * has to perform the tick, not that we perform it for them.
+                        */}
+                      <div className="mt-2 space-y-2">
+                        <div>
+                          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.1em] text-white/45">
+                            Service texts &mdash;{" "}
+                            <span className="text-[#93c5fd]">Required</span>
+                          </p>
+                          <ConsentCheckbox
+                            id="sms-service-consent"
+                            checked={smsTransactionalConsent}
+                            onChange={(next) => {
+                              setSmsTransactionalConsent(next);
+                              if (consentError) setConsentError(false);
+                            }}
+                            label="Text me about my ProFixter visits at the mobile number above."
+                          />
+                        </div>
+                        <div>
+                          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.1em] text-white/45">
+                            Offers &amp; promotions &mdash; Optional
+                          </p>
+                          <ConsentCheckbox
+                            id="sms-marketing-consent"
+                            checked={smsMarketingConsent}
+                            onChange={setSmsMarketingConsent}
+                            label="Text me occasional ProFixter offers at the mobile number above."
+                          />
+                        </div>
                       </div>
 
                       <p className="mt-2 text-[10.5px] leading-snug text-white/40">
@@ -823,8 +861,8 @@ export default function SignUpPage() {
                           * abbreviating them trades a compliance disclosure for
                           * whitespace. The layout is compact; the words are not.
                           */}
-                        Both optional and separate. You can create an account, book visits and use
-                        every ProFixter service without agreeing to receive text messages. Sent from
+                        Service texts are required to create an account; offers are optional and
+                        separate, and declining them changes nothing else. Sent from
                         (631) 888-6340. Message frequency varies. Message and data rates may apply.
                         Reply STOP to opt out or HELP for help. Mobile information and SMS consent
                         will not be shared with third parties or affiliates for marketing or
