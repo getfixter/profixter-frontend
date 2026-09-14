@@ -121,19 +121,21 @@ export default function PrivacyPage() {
               3. SMS Messaging &amp; Compliance
             </h2>
             <p>
-              All text messages from Profixter are optional. You can create an
-              account, book visits, buy a membership and use every part of our
-              service without agreeing to receive any text message. Service texts
-              and marketing texts are two separate choices, and neither is a
-              condition of anything.
+              Service text messages are required to create a Profixter account:
+              registration asks you to agree to receive texts about your visits,
+              and the box is never pre-ticked. Marketing texts are a separate,
+              optional choice and are never a condition of anything. Both can be
+              switched off in your account settings at any time after you register.
             </p>
 
             <ul className="list-disc list-inside space-y-2 mt-3">
               <li>
-                <span className="font-semibold">Service messages (optional opt-in):</span>{" "}
+                <span className="font-semibold">Service messages (required to register):</span>{" "}
                 Appointment confirmations, reminders, scheduling updates and
-                service notifications are sent only if you tick the separate,
-                optional service-text box. It is unchecked by default. Giving us a
+                service notifications are sent once you tick the service-text box,
+                which is required to create a ProFixter account. The box is never
+                pre-ticked, and service texts can be switched off in your account
+                settings at any time afterwards. Giving us a
                 phone number is never by itself treated as consent to text you —
                 we ask for a number so we can call you and so your Fixter can
                 reach you at the door.
@@ -148,10 +150,11 @@ export default function PrivacyPage() {
                 other. We keep timestamped records of opt-in and opt-out actions.
               </li>
               <li>
-                <span className="font-semibold">If you decline both:</span> Nothing
+                <span className="font-semibold">If you decline marketing:</span> Nothing
                 about your account, your bookings, your membership or your pricing
-                changes. Confirmations, reminders and receipts reach you by email
-                exactly as they otherwise would.
+                changes. If you later switch service texts off, confirmations,
+                reminders and receipts still reach you by email exactly as they
+                otherwise would.
               </li>
               <li>
                 <span className="font-semibold">Changing your mind:</span> Both

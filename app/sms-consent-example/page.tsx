@@ -11,7 +11,7 @@ import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
  * THE WHOLE DESIGN CONSTRAINT.
  *
  * A carrier reviewing an A2P 10DLC campaign has to satisfy themselves that
- * consent is real: that the checkboxes are optional, that they start unticked,
+ * consent is real: that the boxes start unticked and are ticked by the person,
  * that refusing them still leaves a usable account, and that nothing about the
  * required Terms acceptance smuggles SMS consent in with it. On ProFixter that
  * all happens at /signup - which is a form behind four steps of address, name,
@@ -35,7 +35,7 @@ import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 const TITLE = "How ProFixter collects SMS consent";
 const DESCRIPTION =
-  "Evidence for carrier and A2P review: how ProFixter collects SMS consent at sign-up, with screenshots. Service texts and marketing texts are two separate, optional, unchecked choices, and neither is required to register, book or buy.";
+  "Evidence for carrier and A2P review: how ProFixter collects SMS consent at sign-up, with screenshots. Service texts are required to create an account; marketing texts are a separate, optional choice. Neither box is pre-ticked.";
 
 export const metadata: Metadata = {
   title: { absolute: `${TITLE} | ProFixter` },
@@ -223,7 +223,7 @@ export default function SmsConsentExamplePage() {
 
               <div className="border-t border-white/10 pt-4">
                 <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/50">
-                  Checkbox 1 &mdash; service texts (optional, unchecked by default)
+                  Checkbox 1 &mdash; service texts (required, unchecked by default)
                 </p>
                 <p className="mt-1 font-semibold">
                   Text me about my ProFixter visits at the mobile number above.
@@ -263,7 +263,10 @@ export default function SmsConsentExamplePage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">4. What is, and is not, consent</h2>
             <ul className="list-disc list-inside space-y-2">
-              <li>Service SMS is optional. It is off unless the customer ticks the service box themselves.</li>
+              <li>
+                Service SMS is required to create a ProFixter account, and is still an affirmative act:
+                the box is never pre-ticked and the customer has to tick it themselves.
+              </li>
               <li>Marketing SMS is separately optional. It has its own box and its own record.</li>
               <li>Both boxes are unchecked by default. Neither is pre-selected at any point.</li>
               <li>Neither is required to register an account.</li>
