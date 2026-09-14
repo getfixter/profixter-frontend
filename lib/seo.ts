@@ -190,7 +190,7 @@ export const PROFIXTER_STRUCTURED_DATA = {
       areaServed: schemaServiceAreas,
       url: `${SITE_URL}/handyman-membership`,
       description:
-        "A monthly membership giving Long Island homeowners ongoing access to a handyman team for small and medium repairs, installations and maintenance, instead of hiring a new contractor for each task. Standard visits are up to 90 minutes and each plan sets how many appointments a member can have active at one time.",
+        "A monthly membership giving Long Island homeowners ongoing access to a handyman team for small and medium repairs, installations and maintenance, instead of hiring a new contractor for each task. Standard visits are up to 90 minutes. Membership is not a fixed number of visits per month: members book as often as they need, and each plan sets how many visits can be booked at the same time.",
       offers: plans.map((plan) => ({
         "@type": "Offer",
         name: `${plan.name} membership`,

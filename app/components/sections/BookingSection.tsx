@@ -1977,12 +1977,22 @@ if (next?.date) {
             {/* Booking limit warning */}
             {isAuthenticated && hasSubscription && hasActiveBooking && (
               <div className="order-5 rounded-[6px] border border-amber-200 bg-amber-50 p-2 sm:rounded-[8px] sm:p-5 lg:order-none">
-                <div className="mb-0.5 text-[12px] font-extrabold text-amber-800 sm:mb-1 sm:text-[15px]">Visit limit reached</div>
+                {/*
+                  The one place a customer meets the concurrency rule as an
+                  obstacle, and it used to read "Visit limit reached" — which
+                  sounds like a monthly allowance running out and like being
+                  punished for using the product. Neither is true. It is a queue,
+                  not a cap, so it now says what is actually the case and what
+                  happens next.
+                */}
+                <div className="mb-0.5 text-[12px] font-extrabold text-amber-800 sm:mb-1 sm:text-[15px]">
+                  {activeBookingLimit === 1 ? "Your next visit is booked" : "Your visits are booked"}
+                </div>
                 <div className="mb-1 text-[10px] text-amber-700 sm:mb-2 sm:text-[13px]">
-                  You have{" "}
-                  <span className="font-semibold">{activeBookingCount}</span> of{" "}
-                  <span className="font-semibold">{activeBookingLimit}</span> scheduled{" "}
-                  {activeBookingLimit === 1 ? "visit" : "visits"} booked.
+                  You can have{" "}
+                  <span className="font-semibold">{activeBookingLimit}</span>{" "}
+                  {activeBookingLimit === 1 ? "visit" : "visits"} booked at a time on this plan.
+                  Once {activeBookingLimit === 1 ? "it's" : "one is"} done, you can book the next.
                 </div>
                 {existingBookingDate && (
                   <div className="mb-2 text-[10px] text-amber-700 sm:mb-4 sm:text-[13px]">

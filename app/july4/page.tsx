@@ -22,7 +22,7 @@ const signupHref = "/signup?promo=JULY4";
 const planBenefits = [
   "90-minute handyman visits",
   "Request visits as needed",
-  "One active appointment at a time",
+  "Book 1 visit at a time, as often as you need",
   "Easy online scheduling",
 ];
 
@@ -87,12 +87,12 @@ const faqs = [
   {
     question: "What is included with the Basic Plan?",
     answer:
-      "Basic includes 90-minute handyman visits and one active appointment at a time. It is designed for common small and medium home-maintenance tasks that can be completed within the visit time. Materials and work outside the membership scope may cost extra.",
+      "Basic includes 90-minute handyman visits, with one visit booked at a time. It is designed for common small and medium home-maintenance tasks that can be completed within the visit time. Materials and work outside the membership scope may cost extra.",
   },
   {
-    question: "Can I really book more than one visit per month?",
+    question: "How many visits do I get each month?",
     answer:
-      "Yes. Members can request visits as needed. Basic includes one active appointment at a time; after that appointment is completed, you can schedule the next visit subject to availability.",
+      "Membership isn't a set number of visits per month. Book as often as you need — Basic lets you have one visit booked at a time, and once it is done you can book the next. Scheduling is subject to availability.",
   },
   {
     question: "Do I need to schedule an estimate first?",

@@ -246,9 +246,9 @@ export default function TermsPage() {
                 density, weather, supply constraints, and operational capacity. We do not guarantee same-day or next-day service.
               </li>
               <li>
-                <span className="font-semibold">Concurrent active bookings:</span> To keep scheduling fair, we limit how many
-                future bookings you can hold at the same time (Pending/Confirmed). Basic plans allow 1 active booking; Plus,
-                Premium, and Elite plans allow up to 2 active bookings.
+                <span className="font-semibold">Visits booked at one time:</span> To keep scheduling fair, we limit how many
+                upcoming visits you can have booked at the same time (Pending or Confirmed). Basic allows 1; Plus, Premium
+                and Elite allow up to 2. Membership does not include a fixed number of visits per month.
               </li>
               <li>
                 <span className="font-semibold">Access:</span> You must provide safe, reasonable access to the work area at the

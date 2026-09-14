@@ -23,13 +23,22 @@ export const MEMBERSHIP_FAQS: MembershipFaq[] = [
     q: "What's included in the membership?",
     a: "Membership is built for small and medium home tasks that fit within your visit time: repairs, installations, maintenance, drywall patches, caulking, paint touch-ups, doors, locks, shelves, fixtures, and similar handyman work. Larger work moves into a project estimate.",
   },
+  /*
+   * THE QUESTION CUSTOMERS ACTUALLY ASK.
+   *
+   * This used to be "What does 'active appointment' mean?" — a question that
+   * only existed because we had invented the term, and which answered it by
+   * teaching the customer our vocabulary. What a homeowner wants to know is how
+   * many visits they get, and the honest answer is that the question does not
+   * apply: membership is a pace, not an allowance. Say that first.
+   */
   {
-    q: "Are there limits per month?",
-    a: "There is no hard monthly cap on standard visit requests. Your plan controls how many active appointments you can have at one time, plus benefits like basic materials, Priority Visits, and project time. Appointment availability still depends on the schedule.",
+    q: "How many visits do I get each month?",
+    a: "Membership isn't a set number of visits per month. Book as often as you need — Basic lets you have one visit booked at a time, while Plus, Premium and Elite let you have up to two. Once a visit is done, you can book the next one. Scheduling is subject to availability.",
   },
   {
-    q: 'What does "active appointment" mean?',
-    a: "An active appointment is a visit that is pending, booked, or scheduled. Once that visit is completed, you can book the next one. Basic includes 1 active appointment at a time. Plus, Premium, and Elite include 2 active appointments at a time.",
+    q: "Is there a limit on how often I can book?",
+    a: "There's no monthly visit allowance. Your plan simply determines how many visits you can have booked at the same time, and scheduling depends on the calendar. Plans also differ by basic materials, Priority Visits and project time.",
   },
   {
     q: "How long is each visit?",

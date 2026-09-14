@@ -65,14 +65,14 @@ const planDisplayContent: Record<
       "Request membership visits as needed",
       "All handyman services included",
       "90-minute visits",
-      "1 active appointment at a time",
+      "Book 1 visit at a time, as often as you need",
     ],
   },
   Plus: {
     description: "The balanced plan for homeowners who want steady support.",
     features: [
       "Everything in Basic",
-      "2 active appointments at a time",
+      "Book up to 2 visits at a time, as often as you need",
       "Basic materials included",
     ],
   },
@@ -802,7 +802,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           </p>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {[
-              "No fixed monthly visit count",
+              "No monthly visit allowance",
               "90 minutes of work per visit",
               "The same local team each time",
               "Month to month, cancel any time",
@@ -896,8 +896,8 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         </div>
 
         <p className="mt-5 text-[13px] leading-5 text-[#86868B]">
-          Standard member visits have no fixed monthly count. Basic keeps one visit on the
-          calendar at a time; the other plans allow two. Larger renovations are quoted separately.
+          There&rsquo;s no monthly visit allowance. Basic keeps one visit on the calendar at a
+          time; the other plans allow two. Larger renovations are quoted separately.
         </p>
       </div>
     );
@@ -1208,10 +1208,12 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         {/*
           The two things every card used to repeat, said once.
 
-          "Active appointments" is the single most misread number on this page:
-          it is concurrency, not an allowance, and nothing anywhere said so. The
-          Priority caveat was printed in full inside both cards that offer it.
-          Neither belongs in a box a customer is trying to compare.
+          This block used to define "Active appointments" — our own term, which
+          customers read as a monthly allowance no matter how it was worded. The
+          fix was not a better definition but a different frame: describe the
+          PACE a member books at, and never make them learn a noun. The Priority
+          caveat was printed in full inside both cards that offer it. Neither
+          belongs in a box a customer is trying to compare.
 
           The gift line left this section entirely. Somebody choosing between
           four plans for their own house is not shopping for a present, and Gift
@@ -1220,10 +1222,11 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         <div className={`mx-auto max-w-[720px] ${compact ? "mt-6" : "mt-5"}`}>
           <dl className="grid gap-x-8 gap-y-3 text-left sm:grid-cols-2">
             <div>
-              <dt className="text-[13px] font-semibold text-[#111111]">Active appointments</dt>
+              <dt className="text-[13px] font-semibold text-[#111111]">How booking works</dt>
               <dd className="mt-1 text-[13.5px] leading-[1.5] text-[#6E6E73]">
-                How many visits can be open at the same time &mdash; not a monthly
-                allowance. Book the next one once an open visit is done.
+                There&rsquo;s no monthly visit allowance. Book as often as you need &mdash;
+                your plan simply determines how many visits you can have booked at the
+                same time.
               </dd>
             </div>
             <div>
