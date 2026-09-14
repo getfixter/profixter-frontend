@@ -18,6 +18,7 @@ import {
   type RetentionOfferDebug,
 } from "@/lib/subscription-service";
 import LoyaltyBenefitsPanel from "./LoyaltyBenefitsPanel";
+import ManagePlanModal from "./ManagePlanModal";
 import GiftMembershipSection from "./GiftMembershipSection";
 import GiftEntryPoint from "./GiftEntryPoint";
 import GiftsSentSection from "./GiftsSentSection";
@@ -268,6 +269,8 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
    */
   const [hasActiveGift, setHasActiveGift] = useState(false);
   const [billingPortalLoadingId, setBillingPortalLoadingId] = useState<string | null>(null);
+  const [managePlanTarget, setManagePlanTarget] = useState<ManagedSubscription | null>(null);
+  const [managePlanLoyalty, setManagePlanLoyalty] = useState<LoyaltyStatus | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -552,6 +555,22 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
     } finally {
       setReactivatingId(null);
     }
+  };
+
+  /*
+   * Manage Plan opens the membership summary first, for the PROPERTY whose card
+   * was pressed — loyalty is per address, and a customer with two houses must
+   * never be shown the other one's progress.
+   *
+   * No Stripe session is created here. Closing the modal creates nothing.
+   */
+  const openManagePlan = (subscription: ManagedSubscription) => {
+    setError("");
+    setManagePlanTarget(subscription);
+    // Already fetched for the account cards; no second request for the modal.
+    setManagePlanLoyalty(
+      subscription.addressId ? loyaltyByAddress[String(subscription.addressId)] || null : null
+    );
   };
 
   const handleManageBilling = async (subscription: ManagedSubscription) => {
@@ -905,13 +924,10 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                         ) : (
                           <button
                             type="button"
-                            disabled={billingPortalLoadingId === subscription._id}
-                            onClick={() => handleManageBilling(subscription)}
+                            onClick={() => openManagePlan(subscription)}
                             className="block w-full rounded-[8px] bg-[#306EEC] py-3 text-center text-base font-semibold text-[#EEF2FF] transition-colors hover:bg-[#2557C7]"
                           >
-                            {billingPortalLoadingId === subscription._id
-                              ? "Opening billing..."
-                              : "Manage Billing"}
+                            Manage Billing
                           </button>
                         )}
 
@@ -1014,6 +1030,22 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
           </div>
         )}
       </div>
+
+      {/* ── Manage Plan: the membership summary, before Stripe ── */}
+      <ManagePlanModal
+        open={!!managePlanTarget}
+        subscription={managePlanTarget}
+        loyalty={managePlanLoyalty}
+        busy={billingPortalLoadingId === managePlanTarget?._id}
+        error={error}
+        onContinue={() => {
+          if (managePlanTarget) handleManageBilling(managePlanTarget);
+        }}
+        onClose={() => {
+          setManagePlanTarget(null);
+          setManagePlanLoyalty(null);
+        }}
+      />
 
       {/* ── Cancel confirmation modal ── */}
       {showCancellationUi && cancelTarget ? (

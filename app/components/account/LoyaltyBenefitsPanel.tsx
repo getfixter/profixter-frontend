@@ -112,15 +112,67 @@ function BenefitRow({
   );
 }
 
+/**
+ * The booking-page form of the same data: one row, no meter, no small print.
+ *
+ * Reinforcement, not an obstacle. It sits above the form and costs it a single
+ * line, because somebody who came to book a visit came to book a visit — the
+ * moment is right for a reminder and wrong for anything that has to be read.
+ */
+function CompactStrip({ status }: { status: LoyaltyStatus }) {
+  const active = (status.activeBenefits || []).find((benefit) => benefit.active || benefit.pendingFreeMonth);
+
+  const headline = active
+    ? active.headline
+    : status.nextReward?.headline || "";
+  if (!headline) return null;
+
+  const lead = active
+    ? "Active Loyalty Benefit"
+    : status.countedMonths > 0 && status.nextMilestone
+      ? `${status.countedMonths} of ${status.nextMilestone} months · Next Loyalty Benefit`
+      : "Next Loyalty Benefit";
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[8px] border border-[#D7E0F5] bg-[#F8FAFF] px-4 py-3">
+      <span className="text-[11px] font-bold uppercase tracking-[0.13em] text-[#306EEC]">
+        {lead}
+      </span>
+      <span className="min-w-0 flex-1 text-[14px] font-semibold leading-[1.35] text-[#0B1628]">
+        {headline}
+      </span>
+      <Link
+        href="/membership/loyalty"
+        className="text-[12.5px] font-semibold text-[#306EEC] underline-offset-2 hover:underline"
+      >
+        Details
+      </Link>
+    </div>
+  );
+}
+
 export default function LoyaltyBenefitsPanel({
   status,
   variant = "account",
 }: {
   status: LoyaltyStatus | null;
-  /** "cancel" trims it to the one thing that matters on the way out. */
-  variant?: "account" | "cancel";
+  /**
+   * "cancel" trims it to the one thing that matters on the way out.
+   * "compact" is the single-row form used above the booking form.
+   */
+  variant?: "account" | "cancel" | "compact";
 }) {
   if (!status || !status.enabled) return null;
+
+  /*
+   * The compact form has no annual variant and no launch-date note: a booking
+   * page is not where either belongs, and an annual member booking a visit
+   * needs no reminder about how their billing works.
+   */
+  if (variant === "compact") {
+    if (!status.eligible) return null;
+    return <CompactStrip status={status} />;
+  }
 
   /*
    * Annual members are not on this ladder, and must never be shown an empty

@@ -251,6 +251,196 @@ test("the panel renders nothing rather than something wrong", () => {
 
 /* ========================================================================== */
 
+const modal = read("app", "components", "account", "ManagePlanModal.tsx");
+const modalVisible = withoutComments(modal);
+const booking = read("app", "components", "sections", "BookingSection.tsx");
+const home = read("app", "components", "sections", "HomeMarketing.tsx");
+const overview = read("app", "components", "account", "AccountOverview.tsx");
+
+section("Manage Plan opens ProFixter first, and Stripe only on Continue");
+
+/*
+ * The behavioural core of this feature. A portal session is a real Stripe
+ * object with a live URL; minting one for somebody who glances at the modal and
+ * closes it is waste, and it would also mean the modal was not really optional.
+ */
+test("no Manage Plan button calls Stripe directly any more", () => {
+  assert.doesNotMatch(
+    withoutComments(overview),
+    /onClick=\{openPortal\}/,
+    "AccountOverview must open the modal, not the portal"
+  );
+  assert.match(withoutComments(overview), /onClick=\{openManagePlan\}/);
+  assert.match(
+    withoutComments(planSection),
+    /onClick=\{\(\) => openManagePlan\(subscription\)\}/,
+    "PlanSection must open the modal, not the portal"
+  );
+});
+
+test("opening the modal creates no Stripe session", () => {
+  const open = withoutComments(overview).match(
+    /const openManagePlan[\s\S]*?\n  \}, \[/
+  );
+  assert.ok(open, "openManagePlan not found");
+  assert.doesNotMatch(
+    open[0],
+    /createBillingPortalSession/,
+    "*** opening the modal must not create a portal session ***"
+  );
+  assert.match(open[0], /getLoyaltyStatus/, "it loads loyalty for the property instead");
+});
+
+test("only Continue creates the session, and it still reaches Stripe", () => {
+  const cont = withoutComments(overview).match(/const continueToPortal[\s\S]*?\n  \}, \[/);
+  assert.ok(cont, "continueToPortal not found");
+  assert.match(cont[0], /createBillingPortalSession/);
+  assert.match(cont[0], /window\.location\.href = url/);
+  assert.match(
+    withoutComments(modal),
+    /onClick=\{onContinue\}/,
+    "the Continue button is wired to it"
+  );
+});
+
+test("closing the modal does nothing but close", () => {
+  assert.match(withoutComments(overview), /onClose=\{\(\) => \{[\s\S]{0,120}setManagePlanOpen\(false\)/);
+  assert.doesNotMatch(
+    withoutComments(modal),
+    /createBillingPortalSession/,
+    "the modal itself never touches Stripe"
+  );
+});
+
+test("Continue is never hidden, disabled-by-default, or buried", () => {
+  assert.match(modalVisible, /Continue to Manage Plan/);
+  // Only the in-flight state may disable it.
+  assert.match(modalVisible, /disabled=\{busy\}/);
+  assert.doesNotMatch(modalVisible, /disabled=\{true\}/);
+  assert.match(modalVisible, /Stay on My Account/, "and there is a plain way out");
+});
+
+/* The portal must not regain the cancellation we deliberately turned off. */
+test("nothing here re-enables Stripe portal cancellation", () => {
+  for (const source of [modal, overview, planSection]) {
+    assert.doesNotMatch(withoutComments(source), /subscription_cancel/);
+  }
+});
+
+section("the modal covers every membership state");
+
+test("it handles annual without showing monthly progress", () => {
+  assert.match(modalVisible, /annual_membership/);
+  assert.match(modalVisible, /status\.annual\.headline/);
+});
+
+test("it shows an active temporary upgrade with its end date", () => {
+  assert.match(modalVisible, /Active Loyalty Benefit/);
+  assert.match(modalVisible, /benefit\.effectiveUntil/);
+  assert.match(modalVisible, /Available through/);
+});
+
+test("it shows Elite's extra Full Days, not a plan upgrade", () => {
+  assert.match(modalVisible, /loyaltyFullDaysAvailable/);
+  assert.match(modalVisible, /extra Full Day/);
+  assert.match(modalVisible, /nextLoyaltyFullDayExpiresAt/);
+});
+
+test("it makes a pending free month prominent and calls it applied", () => {
+  assert.match(modalVisible, /pendingFreeMonth/);
+  assert.match(modalVisible, /Your next month is on us/);
+  assert.match(modalVisible, /Already applied/);
+  assert.doesNotMatch(modalVisible, /coupon/i);
+});
+
+test("zero progress reads as a start, not a disappointment", () => {
+  assert.match(modalVisible, /countedMonths === 0/);
+  assert.match(modalVisible, /Your Loyalty journey has started/);
+});
+
+test("a completed ladder promises nothing beyond twelve months", () => {
+  assert.match(modalVisible, /ladderComplete/);
+  assert.doesNotMatch(modalVisible, /year two|second year/i);
+});
+
+test("nothing in the modal is hardcoded", () => {
+  for (const forbidden of [/2 of 3/, /18 days/, /complimentary Plus benefits/, /October 14/]) {
+    assert.doesNotMatch(modalVisible, forbidden);
+  }
+  assert.match(modalVisible, /status\.nextReward\.headline/, "the reward is read, not written");
+  assert.match(modalVisible, /status\.countedMonths/);
+  assert.match(modalVisible, /status\.nextMilestone/);
+});
+
+test("it degrades safely when loyalty is unavailable", () => {
+  assert.match(modalVisible, /if \(!status \|\| !status\.enabled\) return null;/);
+  assert.match(withoutComments(overview), /catch \{[\s\S]{0,120}setManagePlanLoyalty\(null\)/);
+});
+
+/* Guilt is not the mechanism. The reward is. */
+test("the modal uses no loss or pressure language", () => {
+  assert.doesNotMatch(
+    modalVisible,
+    /you'?ll lose|don'?t lose|are you sure|don'?t leave|mistake|last chance|hurry/i
+  );
+});
+
+section("multi-property members see the right property");
+
+test("the modal is given the subscription whose button was pressed", () => {
+  assert.match(
+    withoutComments(planSection),
+    /openManagePlan = \(subscription: ManagedSubscription\)/,
+    "PlanSection passes the card's own subscription"
+  );
+  assert.match(
+    withoutComments(planSection),
+    /loyaltyByAddress\[String\(subscription\.addressId\)\]/,
+    "and that address's loyalty"
+  );
+});
+
+test("booking reinforcement follows the address being booked against", () => {
+  assert.match(withoutComments(booking), /getLoyaltyStatus\(addressId\)/);
+  assert.match(withoutComments(booking), /setLoyalty\(null\)/, "cleared when there is no membership");
+});
+
+section("the light-touch surfaces stay light");
+
+test("the homepage mentions Loyalty once, with a link", () => {
+  const visible = withoutComments(home);
+  assert.match(visible, /Membership gets better the longer you stay/);
+  assert.match(visible, /\/membership\/loyalty/);
+  assert.equal(
+    (visible.match(/membership\/loyalty/g) || []).length,
+    1,
+    "exactly one Loyalty link on the homepage"
+  );
+});
+
+test("the plans page states Loyalty before the cards, not after", () => {
+  const visible = withoutComments(plansSection);
+  const loyaltyAt = visible.indexOf("Loyalty Benefits");
+  const gridAt = visible.indexOf("CompactPlanComparison /> :");
+  assert.ok(loyaltyAt > 0 && gridAt > 0);
+  assert.ok(loyaltyAt < gridAt, "Loyalty must appear above the plan grid");
+});
+
+test("booking reinforcement is one compact row and never blocks the form", () => {
+  const visible = withoutComments(booking);
+  assert.match(visible, /variant="compact"/);
+  assert.doesNotMatch(visible, /await getLoyaltyStatus/, "booking must not wait on it");
+  assert.match(visible, /\.catch\(\(\) => setLoyalty\(null\)\)/);
+});
+
+test("the compact strip has no meter, no small print, no annual framing", () => {
+  const compact = panelVisible.match(/function CompactStrip[\s\S]*?\n\}/);
+  assert.ok(compact, "CompactStrip not found");
+  assert.doesNotMatch(compact[0], /ProgressMeter|Loyalty Benefits started on|45 days/);
+});
+
+/* ========================================================================== */
+
 console.log(`\nLoyalty UI: ${passed} passed, ${failures.length} failed.`);
 if (failures.length) {
   for (const { name, error } of failures) {

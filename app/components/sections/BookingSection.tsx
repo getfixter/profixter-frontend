@@ -2,6 +2,8 @@
 
 
 import Link from "next/link";
+import LoyaltyBenefitsPanel from "@/app/components/account/LoyaltyBenefitsPanel";
+import { getLoyaltyStatus, type LoyaltyStatus } from "@/lib/subscription-service";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { trackEvent } from "@/lib/analytics";
@@ -346,6 +348,14 @@ export default function BookingSection() {
 
   // Plan used to lock services (basic | plus | premium | elite | free)
   const [plan, setPlan] = useState<string>("");
+
+  /*
+   * Loyalty for the address being booked against.
+   *
+   * Fetched after the access check, never awaited by it, and dropped silently
+   * on failure — a reminder is not worth a slower or broken booking form.
+   */
+  const [loyalty, setLoyalty] = useState<LoyaltyStatus | null>(null);
 
   /* Membership visits submit the API's existing labor-only service value automatically. */
   const memberService: ServiceKey = "labor_only";
@@ -835,6 +845,7 @@ useEffect(() => {
       setExistingBookingTime("");
       setSubscriptionError("");
       setActiveBookings([]);
+      setLoyalty(null);
       return;
     }
 
@@ -851,6 +862,19 @@ setFreeFirstVisitAvailable(freeVisit);
 setIntroVisitConsumed(!hasSub && data?.introVisitStatus === "consumed");
 setOutOfServiceArea(!hasSub && data?.introVisitServiceable === false && data?.introVisitStatus === "available");
 setPlan(String(data?.plan || ""));
+
+/*
+ * Deliberately not awaited into the access check above. The form is usable
+ * the moment access is known; the reminder arrives when it arrives, and a
+ * failure leaves it absent rather than breaking anything.
+ */
+if (hasSub) {
+  getLoyaltyStatus(addressId)
+    .then((status) => setLoyalty(status?.eligible ? status : null))
+    .catch(() => setLoyalty(null));
+} else {
+  setLoyalty(null);
+}
 
 // A non-member with an unclaimed introductory visit can book. Only warn when
 // there is neither a membership nor an available first visit.
@@ -1464,6 +1488,20 @@ if (next?.date) {
           Choose a date and time, describe the task, and add at least one photo.
         </p>
 
+        {/*
+          A one-line reminder of what staying is earning them, above the form
+          and never in front of it.
+
+          Tied to the address they are actually booking against, so a customer
+          with two properties sees the right one — and it renders nothing at all
+          for a non-member, an annual member, or while the lookup is in flight.
+          Booking must not wait for this.
+        */}
+        {loyalty ? (
+          <div className="mb-2 sm:mb-4">
+            <LoyaltyBenefitsPanel status={loyalty} variant="compact" />
+          </div>
+        ) : null}
 
         {/* ── Main grid ── */}
         <div className="grid grid-cols-1 gap-0.5 sm:gap-3 lg:grid-cols-12 lg:gap-5">

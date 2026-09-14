@@ -1021,6 +1021,48 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           </div>
         </div>}
 
+        {/*
+          Loyalty Benefits, once, at the decision point.
+
+          Deliberately NOT a fifth bullet on every card. The cards exist to make
+          four plans comparable at a glance, and a milestone ladder repeated four
+          times would bury the difference between them under a benefit they all
+          share. It is a shared fact, so it is stated where the other shared
+          facts are, with a link for anybody who wants the detail.
+
+          Above the cards rather than below them. Below, it sat past four plan
+          cards and a feature table - a scroll a phone user making the decision
+          never reached, which is exactly the visibility problem this fixes.
+
+          The annual cycle gets its own sentence rather than being left out. An
+          annual member reading "monthly memberships include Loyalty Benefits"
+          would reasonably conclude they had picked the worse deal — when in
+          fact they took the same reward up front.
+        */}
+        <div className="mx-auto mb-6 max-w-[720px] rounded-[8px] border border-[#E5E5EA] bg-[#F8FAFF] px-5 py-4 text-left sm:px-6">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#306EEC]">
+            Loyalty Benefits
+          </p>
+          {billing === "annual" ? (
+            <p className="mt-2 text-[14.5px] leading-6 text-[#1D1D1F]">
+              <span className="font-semibold">Your loyalty savings are already built in.</span>{" "}
+              Annual members pay for 10 months and get 12 &mdash; the reward, taken up front.
+            </p>
+          ) : (
+            <p className="mt-2 text-[14.5px] leading-6 text-[#1D1D1F]">
+              <span className="font-semibold">Stay a member and your benefits get better.</span>{" "}
+              At 3 and 6 months we give you the plan above yours, complimentary. At 12
+              months, your next month is on us.
+            </p>
+          )}
+          <Link
+            href="/membership/loyalty"
+            className="mt-2 inline-block text-[13.5px] font-semibold text-[#306EEC] underline-offset-4 hover:underline"
+          >
+            See how Loyalty Benefits work
+          </Link>
+        </div>
+
         {compact ? <CompactPlanComparison /> : <><div className="grid gap-4 md:hidden">
           {mobilePlans.map((plan) => {
               const action = getActionForPlan(plan.name);
@@ -1175,44 +1217,6 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           four plans for their own house is not shopping for a present, and Gift
           keeps its own page and its footer entry.
         */}
-        {/*
-          Loyalty Benefits, once, under the grid.
-
-          Deliberately NOT a fifth bullet on every card. The cards exist to make
-          four plans comparable at a glance, and a milestone ladder repeated four
-          times would bury the difference between them under a benefit they all
-          share. It is a shared fact, so it is stated where the other shared
-          facts are, with a link for anybody who wants the detail.
-
-          The annual cycle gets its own sentence rather than being left out. An
-          annual member reading "monthly memberships include Loyalty Benefits"
-          would reasonably conclude they had picked the worse deal — when in
-          fact they took the same reward up front.
-        */}
-        <div className="mx-auto mt-6 max-w-[720px] rounded-[8px] border border-[#E5E5EA] bg-[#F8FAFF] px-5 py-4 text-left sm:px-6">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#306EEC]">
-            Loyalty Benefits
-          </p>
-          {billing === "annual" ? (
-            <p className="mt-2 text-[14.5px] leading-6 text-[#1D1D1F]">
-              <span className="font-semibold">Your loyalty savings are already built in.</span>{" "}
-              Annual members pay for 10 months and get 12 &mdash; the reward, taken up front.
-            </p>
-          ) : (
-            <p className="mt-2 text-[14.5px] leading-6 text-[#1D1D1F]">
-              <span className="font-semibold">Stay a member and your benefits get better.</span>{" "}
-              At 3 and 6 months we give you the plan above yours, complimentary. At 12
-              months, your next month is on us.
-            </p>
-          )}
-          <Link
-            href="/membership/loyalty"
-            className="mt-2 inline-block text-[13.5px] font-semibold text-[#306EEC] underline-offset-4 hover:underline"
-          >
-            See how Loyalty Benefits work
-          </Link>
-        </div>
-
         <div className={`mx-auto max-w-[720px] ${compact ? "mt-6" : "mt-5"}`}>
           <dl className="grid gap-x-8 gap-y-3 text-left sm:grid-cols-2">
             <div>

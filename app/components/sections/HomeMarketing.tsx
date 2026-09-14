@@ -77,6 +77,15 @@ const MEMBERSHIP_VALUE = [
   "The same local team, learning your home",
   "Small fixes and maintenance, no estimates",
   "One predictable monthly price",
+  /*
+   * Loyalty, as one line among the others rather than a section of its own.
+   *
+   * It belongs here because it IS part of what the monthly price buys, and
+   * stating it beside the other four is what makes it read as a fact about
+   * membership rather than a promotion. A standalone band would have turned
+   * the homepage into a Loyalty page; the detail lives one link away.
+   */
+  "Benefits that get better the longer you stay",
 ];
 
 /* ------------------------------------------------------------------ */
@@ -503,9 +512,24 @@ export default function HomeMarketing() {
           </Reveal>
 
           <Reveal delay={120}>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            {/*
+              One sentence and one link, sharing the row the comparison link
+              already occupies. Enough for somebody weighing the monthly price
+              to learn the arrangement improves, without the homepage having to
+              explain milestones it has no room for.
+            */}
+            <p className="mt-6 max-w-[48ch] text-[15px] leading-[1.6] text-[#3C4453]">
+              <span className="font-semibold text-[#111111]">Membership gets better the longer you stay.</span>{" "}
+              Complimentary plan benefits at 3 and 6 months, and your next month on us
+              after 12.
+            </p>
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
               <QuietLink href="/membership/plans" placement="membership_band">
                 Compare plans
+              </QuietLink>
+              <QuietLink href="/membership/loyalty" placement="membership_band_loyalty">
+                See Loyalty Benefits
               </QuietLink>
               {!isMember && (
                 <p className="text-[14px] text-[#A1A1A6] sm:ml-2">
