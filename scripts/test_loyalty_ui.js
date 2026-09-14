@@ -441,6 +441,101 @@ test("the compact strip has no meter, no small print, no annual framing", () => 
 
 /* ========================================================================== */
 
+section("membership is described as a pace, never a monthly allowance");
+
+/*
+ * Customers kept reading "active appointment" as "visits per month". These
+ * guard the replacement wording on every surface that carries it, because the
+ * old framing is the kind that creeps back one card at a time.
+ */
+const surfaces = {
+  "lib/stripe-links.ts": read("lib", "stripe-links.ts"),
+  "app/data/content.ts": read("app", "data", "content.ts"),
+  "app/data/membership-faq.ts": read("app", "data", "membership-faq.ts"),
+  "PlansSection.tsx": plansSection,
+  "account/PlanSection.tsx": planSection,
+  "app/terms/page.tsx": read("app", "terms", "page.tsx"),
+  "app/july4/page.tsx": read("app", "july4", "page.tsx"),
+  "lib/seo.ts": read("lib", "seo.ts"),
+  "ConfirmationClient.tsx": read("app", "confirmationpage", "ConfirmationClient.tsx"),
+  "BookingSection.tsx": read("app", "components", "sections", "BookingSection.tsx"),
+};
+
+test("no customer-facing surface says 'active booking' or 'active appointment'", () => {
+  for (const [name, source] of Object.entries(surfaces)) {
+    const visible = withoutComments(source);
+    assert.doesNotMatch(
+      visible,
+      /active (booking|appointment)/i,
+      `${name} still uses the retired term`
+    );
+  }
+});
+
+/*
+ * The false Elite promise. The system has never allowed three — the booking
+ * gate is `plan === "basic" ? 1 : 2` — but the plan details advertised
+ * "2-3 active bookings" until this change.
+ *
+ * Checked only on the surfaces that describe plans; scanning every file caught
+ * "l2-3h6" inside an SVG path.
+ */
+test("Elite is never advertised as more than 2 visits at a time", () => {
+  for (const name of [
+    "lib/stripe-links.ts",
+    "app/data/content.ts",
+    "PlansSection.tsx",
+    "account/PlanSection.tsx",
+    "app/terms/page.tsx",
+  ]) {
+    const visible = withoutComments(surfaces[name]);
+    assert.doesNotMatch(visible, /2-3\s*(active\s*)?(visits?|bookings?|appointments?)/i, name);
+    assert.doesNotMatch(visible, /up to 3 (visits|bookings|appointments)/i, name);
+  }
+});
+
+test("no standard membership visit is described as a monthly quantity", () => {
+  for (const [name, source] of Object.entries(surfaces)) {
+    const visible = withoutComments(source);
+    /*
+     * Priority Visits and the Elite project day ARE genuinely monthly, so the
+     * ban is on the standard visit only — "N visits per month" and the credit
+     * vocabulary, not the phrase "per month" itself.
+     */
+    assert.doesNotMatch(visible, /\b\d+\s*visits?\s*(per|a)\s*month/i, `${name}: visits/month`);
+    assert.doesNotMatch(visible, /visit credits?|monthly visit (count|limit)/i, `${name}: credits`);
+    assert.doesNotMatch(visible, /unlimited visits/i, `${name}: promises unlimited`);
+  }
+});
+
+test("the plan cards carry the approved pace wording", () => {
+  for (const name of ["lib/stripe-links.ts", "app/data/content.ts", "PlansSection.tsx", "account/PlanSection.tsx"]) {
+    const visible = withoutComments(surfaces[name]);
+    assert.match(visible, /Book 1 visit at a time, as often as you need/, `${name}: Basic`);
+    assert.match(
+      visible,
+      /Book up to 2 visits at a time, as often as you need/,
+      `${name}: Plus and above`
+    );
+  }
+});
+
+test("the FAQ answers the question customers actually ask", () => {
+  const faq = surfaces["app/data/membership-faq.ts"];
+  assert.match(faq, /How many visits do I get each month\?/);
+  assert.match(faq, /isn't a set number of visits per month/);
+  assert.doesNotMatch(withoutComments(faq), /What does "active appointment" mean/);
+});
+
+/* Terms must keep stating the rule precisely, and now denies the wrong model. */
+test("Terms still state the concurrency rule and deny the monthly model", () => {
+  const terms = surfaces["app/terms/page.tsx"];
+  assert.match(terms, /Basic allows 1; Plus, Premium\s*\n?\s*and Elite allow up to 2/);
+  assert.match(terms, /does not include a fixed number of visits per month/);
+});
+
+/* ========================================================================== */
+
 console.log(`\nLoyalty UI: ${passed} passed, ${failures.length} failed.`);
 if (failures.length) {
   for (const { name, error } of failures) {

@@ -288,8 +288,9 @@ export default function ConfirmationClient() {
             <div className="mt-4 rounded-[8px] border border-[#E5E7EB] bg-white p-4 text-left">
               <p className="text-sm font-black text-[#0B1628]">How booking works as a Member</p>
               <p className="mt-2 text-sm leading-relaxed text-[#6A6D71]">
-                Members can request visits online as needed, subject to availability and
-                active booking rules.
+                There&rsquo;s no monthly visit allowance. Book as often as you need &mdash;
+                your plan simply determines how many visits you can have booked at the same
+                time, and scheduling is subject to availability.
               </p>
             </div>
           </>

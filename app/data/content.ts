@@ -134,7 +134,7 @@ export const faqs: Faq[] = [
     id: "03",
     question: "How does Membership work?",
     answer:
-      "Members can request help whenever they need it. Plans differ by active appointment capacity, basic materials, Priority Visit benefits, and project time. Appointment availability still depends on the schedule.",
+      "Members can request help whenever they need it. There's no monthly visit allowance — book as often as you need, and your plan simply determines how many visits you can have booked at the same time. Plans also differ by basic materials, Priority Visit benefits and project time. Scheduling is subject to availability.",
     color: "dark",
     size: "normal",
     offset: 0,
@@ -215,7 +215,7 @@ export const faqs: Faq[] = [
     id: "12",
     question: "How often can I book?",
     answer:
-      "Members can request visits as needed, subject to availability and active appointment rules.",
+      "Book as often as you need. Your plan sets how many visits you can have booked at the same time, and scheduling is subject to availability.",
     color: "light",
     size: "normal",
     offset: -20,
@@ -239,7 +239,7 @@ export const homepageFaqs: Faq[] = [
     id: "02",
     question: "How often can I book?",
     answer:
-      "You can book as often as availability allows. Most members use one visit per month.",
+      "Book as often as you need. Basic lets you have one visit booked at a time; Plus, Premium and Elite let you have up to two. Scheduling is subject to availability.",
     color: "light",
     size: "normal",
     offset: 0,
@@ -266,7 +266,7 @@ export const homepageFaqs: Faq[] = [
     id: "05",
     question: "What if I need more flexibility?",
     answer:
-      "Higher Memberships add more flexibility: more active appointment capacity, Priority Visit benefits, basic materials, and project time.",
+      "Higher Memberships add more flexibility: a second visit booked at the same time, Priority Visit benefits, basic materials, and project time.",
     color: "blue",
     size: "normal",
     offset: -50,
@@ -293,7 +293,8 @@ export type Plan = {
   // One-line outcome promise (replaces old "positioning label").
   tagline: string;
 
-  // Short cadence line shown above features (replaces "1 active booking" framing).
+  // Short cadence line shown above features. Describes the PACE a member books
+  // at, never a number of visits per month - membership is not an allowance.
   cadence: string;
 
   description: string;
@@ -331,7 +332,7 @@ export const plans: Plan[] = [
       "The easiest way to keep your home handled, year-round.",
     price: 149,
     features: [
-      "1 active appointment at a time",
+      "Book 1 visit at a time, as often as you need",
       "Same trusted team - they get to know your home",
       "Small fixes and regular maintenance, no estimates",
       "Predictable monthly billing",
@@ -344,13 +345,13 @@ export const plans: Plan[] = [
     name: "Plus",
     displayName: "Plus",
     tagline: "Stay ahead of your home, not behind it.",
-    cadence: "More active appointment capacity",
+    cadence: "Two visits booked at the same time",
     description:
       "More flexibility for active homes with an ongoing list.",
     price: 249,
     subtitle: "Everything in Basic",
     features: [
-      "2 active appointments at a time",
+      "Book up to 2 visits at a time, as often as you need",
       "Same trusted team - they remember every detail",
       "Tackle the to-do list before it becomes a problem list",
       "Priority on open scheduling slots",
@@ -370,7 +371,7 @@ export const plans: Plan[] = [
     price: 349,
     subtitle: "Everything in Plus",
     features: [
-      "2 active appointments at a time",
+      "Book up to 2 visits at a time, as often as you need",
       "One Priority Visit per month",
       "Priority Visits help when you need service before the next standard appointment slot, subject to Fixter availability",
       "Same trusted team - on call for the moments that matter",
@@ -390,7 +391,7 @@ export const plans: Plan[] = [
     price: 499,
     subtitle: "Everything in Premium",
     features: [
-      "2 active appointments at a time",
+      "Book up to 2 visits at a time, as often as you need",
       "Two Priority Visits per month",
       "One full project day per month (up to 8 hours)",
       "Priority Visits help when you need service before the next standard appointment slot, subject to Fixter availability",

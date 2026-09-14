@@ -62,23 +62,23 @@ function planAmountForCycle(
 const PLAN_INCLUDES: Record<PlanKey, string[]> = {
   basic: [
     "Your home, handled",
-    "1 active appointment at a time",
+    "Book 1 visit at a time, as often as you need",
     "Each visit covers up to 90 minutes of work",
   ],
   plus: [
     "Everything in Basic, with more capacity",
-    "2 active appointments at a time",
+    "Book up to 2 visits at a time, as often as you need",
     "Same trusted team, every visit",
   ],
   premium: [
     "Everything in Plus, plus faster scheduling",
-    "2 active appointments at a time",
+    "Book up to 2 visits at a time, as often as you need",
     "One Priority Visit per month",
     "Priority Visits help when you need service before the next standard appointment slot, subject to technician availability",
   ],
   elite: [
     "Everything in Premium, plus project time",
-    "2 active appointments at a time",
+    "Book up to 2 visits at a time, as often as you need",
     "Two Priority Visits per month",
     "One full project day per month (up to 8 hours)",
   ],
@@ -1233,7 +1233,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                 <div className="text-sm font-semibold text-[#313234]">Before you cancel</div>
                 <div className="mt-2 space-y-1.5 text-sm text-[#6A6D71]">
                   <div>Keep predictable monthly billing and the same trusted team.</div>
-                  <div>Higher Memberships add more active appointment capacity, Priority Visits, project time, and premium support.</div>
+                  <div>Higher Memberships let you book more visits at the same time, and add Priority Visits, project time and premium support.</div>
                   <div>You can keep your current membership and continue scheduling visits online.</div>
                 </div>
               </div>
