@@ -35,7 +35,7 @@ const stepCopy: Record<Step, { title: string; subtitle: string }> = {
   },
   4: {
     title: "Almost done",
-    subtitle: "Create a secure password for your account.",
+    subtitle: "Set a password and choose which texts you want.",
   },
 };
 
@@ -202,6 +202,96 @@ function ConsentCheckbox({
   );
 }
 
+/**
+ * One consent row whose visible name is the link.
+ *
+ * WHY THIS IS NOT ConsentCheckbox WITH AN ANCHOR PASSED IN.
+ *
+ * That component wraps its whole row in a <label>, and a click anywhere inside
+ * a label is forwarded to the control - so a customer tapping "Service text
+ * messages" to find out what it means would silently tick the box on the way
+ * out of the page, and arrive at the explanation having already agreed to the
+ * thing it explains. Here the <label> covers the tick target alone and the
+ * anchor is its sibling: tapping the box toggles, tapping the words opens the
+ * page, and neither does the other's job.
+ *
+ * The link opens in a new tab because the alternative is losing a part-filled
+ * four-step registration in order to read a definition.
+ */
+function ConsentRow({
+  id,
+  checked,
+  onChange,
+  label,
+  href,
+  requirement,
+}: {
+  id: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  label: string;
+  href: string;
+  /*
+   * NOT RENDERED, AND STILL LOAD-BEARING.
+   *
+   * The row used to print this word beside the label. The owner removed it:
+   * two names and two boxes is the whole of what the final step should look
+   * like, and a customer who has to be told which one is compulsory before
+   * they have tried anything is being warned rather than asked.
+   *
+   * The value survives because required-ness has three other jobs to do. It
+   * marks the control for assistive technology, it is what the source-scanning
+   * compliance tests read to prove the SERVICE box is the required one and the
+   * marketing box never is, and it keeps the distinction stated in the file
+   * rather than implied by which of two <ConsentRow>s came first.
+   */
+  requirement: "Required" | "Optional";
+}) {
+  return (
+    <div className="flex items-center gap-2.5 rounded-[8px] border border-white/[0.09] bg-white/[0.04] px-3 py-2.5">
+      {/*
+        * The negative margin is what keeps this honest: the padding grows the
+        * tap target to something a thumb can hit, and the -m-2 pulls the row
+        * back to the height it would have had, so the control gets bigger
+        * without the row getting taller.
+        */}
+      <label htmlFor={id} className="-m-2 flex flex-shrink-0 cursor-pointer items-center p-2">
+        <input
+          id={id}
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          /*
+           * aria-required, never the HTML `required` attribute. The real one
+           * would hand the browser the failure and pop its own bubble, which
+           * is the one thing the inline message exists to avoid; this one only
+           * announces, and leaves the reporting where we put it.
+           */
+          aria-required={requirement === "Required"}
+          className="peer sr-only"
+        />
+        <span className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-[4px] border border-white/30 transition peer-checked:border-[#306EEC] peer-checked:bg-[#306EEC] peer-focus-visible:ring-2 peer-focus-visible:ring-[#306EEC]/60">
+          {checked ? (
+            <svg width="10" height="8" viewBox="0 0 9 7" fill="none" aria-hidden="true">
+              <path d="M1 3.5l2 2L8 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ) : null}
+        </span>
+      </label>
+      <span className="text-[13px] leading-snug">
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-white/82 underline decoration-white/25 underline-offset-4 transition hover:text-white"
+        >
+          {label}
+        </a>
+      </span>
+    </div>
+  );
+}
+
 export default function SignUpPage() {
   const router = useRouter();
   const { login: authLogin } = useAuth();
@@ -215,6 +305,8 @@ export default function SignUpPage() {
    */
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [consentError, setConsentError] = useState(false);
+  /* Raised only by an attempt to finish, and only by the service box. */
+  const [smsConsentError, setSmsConsentError] = useState(false);
   /*
    * THE TWO SMS CONSENTS. BOTH OPTIONAL, BOTH UNCHECKED, BOTH INERT.
    *
@@ -302,8 +394,6 @@ export default function SignUpPage() {
   };
 
   const validateContactStep = () => {
-    if (!formData.phone.trim()) { setFieldErrors((p) => ({ ...p, phone: "Please enter your phone number" })); return false; }
-    if (phoneDigits.length !== 10 || !isValidUSNationalPhoneDigits(phoneDigits)) { setFieldErrors((p) => ({ ...p, phone: "Please enter a valid 10-digit US phone number" })); return false; }
     if (!formData.email.trim()) { setFieldErrors((p) => ({ ...p, email: "Please enter your email" })); return false; }
     if (!isValidEmail(formData.email)) { setFieldErrors((p) => ({ ...p, email: "Please enter a valid email address" })); return false; }
     setError("");
@@ -312,6 +402,10 @@ export default function SignUpPage() {
   };
 
   const validateSecurityStep = () => {
+    /* The number is collected on this step now, so it is checked on this step. */
+    if (!formData.phone.trim()) { setFieldErrors((p) => ({ ...p, phone: "Please enter your phone number" })); return false; }
+    if (phoneDigits.length !== 10 || !isValidUSNationalPhoneDigits(phoneDigits)) { setFieldErrors((p) => ({ ...p, phone: "Please enter a valid 10-digit US phone number" })); return false; }
+    setFieldErrors((p) => ({ ...p, phone: undefined }));
     if (!formData.password) { setError("Please create a password"); return false; }
     if (formData.password.length < 8) { setError("Password must be at least 8 characters"); return false; }
     if (!formData.repeatPassword) { setError("Please repeat your password"); return false; }
@@ -331,12 +425,18 @@ export default function SignUpPage() {
      * Marketing is deliberately absent from this check and must stay absent.
      */
     if (!smsTransactionalConsent) {
-      setConsentError(true);
-      setError("Please agree to receive ProFixter service text messages to continue.");
+      /*
+       * Inline, beneath the box itself, not in the banner at the foot of the
+       * form. There is exactly one control that can fix this and it is six
+       * pixels above the message.
+       */
+      setSmsConsentError(true);
+      setError("");
       return false;
     }
     setError("");
     setConsentError(false);
+    setSmsConsentError(false);
     return true;
   };
 
@@ -625,23 +725,6 @@ export default function SignUpPage() {
                     </div>
                   ) : null}
 
-                  {/*
-                    * Step 3 is email only. The mobile number moved OUT of here.
-                    *
-                    * It used to sit on this step, which meant the phone field did
-                    * not exist in the document until somebody had typed a real
-                    * Long Island address and a name. The SMS consent boxes were
-                    * always on screen, so the page offered a reviewer two consent
-                    * checkboxes and no phone field to attach them to, and Twilio's
-                    * campaign check said exactly that: "your opt-in form doesn't
-                    * have a phone number field connected to SMS consent".
-                    *
-                    * The number now lives in the fieldset below, beside the
-                    * checkboxes that refer to it, on every step. It is still the
-                    * same single input bound to the same formData.phone - it was
-                    * moved, not duplicated - so the number a customer consents for
-                    * and the number on their account cannot drift apart.
-                    */}
                   {step === 3 ? (
                     <div>
                       <FieldLabel htmlFor="email">Email Address</FieldLabel>
@@ -685,11 +768,96 @@ export default function SignUpPage() {
                       </div>
 
                       {/*
+                        * THE NUMBER AND THE TWO CHOICES, ON THE LAST STEP ONLY.
+                        *
+                        * This used to be a bordered panel that rendered on every
+                        * step, carrying a legend, two sub-headings, the phone field,
+                        * an explanation of the phone field, a six-line disclosure
+                        * paragraph and three document links. Somebody arriving to
+                        * type their address met a compliance form before they had
+                        * entered anything, which is a poor way to start and a worse
+                        * way to ask permission.
+                        *
+                        * It is now the number and two rows, shown once, at the point
+                        * the account is actually created - which is also where a
+                        * consent decision belongs.
+                        *
+                        * WHY THE PHONE INPUT CAME WITH IT. Twilio's campaign check
+                        * rejected an earlier version for having "no phone number
+                        * field connected to SMS consent". Moving the boxes into this
+                        * step means they no longer exist at first paint, which gives
+                        * up half that fix; keeping the number beside them inside one
+                        * <fieldset> keeps the other half, on the one screen where
+                        * consent is actually collected. The fieldset is borderless
+                        * and its legend is screen-reader-only, so the grouping is
+                        * real to a parser and invisible as a panel.
+                        *
+                        * Its validation moved with it, from validateContactStep to
+                        * validateSecurityStep - a field cannot be validated on a step
+                        * that does not show it.
+                        */}
+                      <fieldset className="m-0 space-y-2.5 border-0 p-0">
+                        <legend className="sr-only">
+                          Mobile number and text message preferences
+                        </legend>
+
+                        <div>
+                          <FieldLabel htmlFor="phone">Mobile Phone Number</FieldLabel>
+                          <FieldInput
+                            id="phone"
+                            type="tel"
+                            value={formData.phone}
+                            onChange={(e) => handleChange("phone", formatPhone(e.target.value))}
+                            placeholder="(631) 000-0000"
+                            autoComplete="tel"
+                          />
+                          {fieldErrors.phone ? (
+                            <p className="mt-2 text-[12px] font-semibold text-red-300">{fieldErrors.phone}</p>
+                          ) : null}
+                        </div>
+
+                        <ConsentRow
+                          id="sms-service-consent"
+                          checked={smsTransactionalConsent}
+                          onChange={(next) => {
+                            setSmsTransactionalConsent(next);
+                            if (smsConsentError) setSmsConsentError(false);
+                          }}
+                          label="Service text messages"
+                          href="/communication-consent#service-texts"
+                          requirement="Required"
+                        />
+                        {/*
+                          * Directly beneath the box that caused it, not at the foot
+                          * of the group - where it sat under "Offers & promotions"
+                          * and read as though declining offers had blocked the
+                          * account. Raised by an attempt to finish, never by typing,
+                          * and never by the marketing box, which has no failing
+                          * state to report.
+                          */}
+                        {smsConsentError ? (
+                          <p className="text-[12px] font-semibold text-red-300">
+                            Service texts are required to create your account.
+                          </p>
+                        ) : null}
+
+                        <ConsentRow
+                          id="sms-marketing-consent"
+                          checked={smsMarketingConsent}
+                          onChange={setSmsMarketingConsent}
+                          label="Offers & promotions"
+                          href="/communication-consent#marketing"
+                          requirement="Optional"
+                        />
+                      </fieldset>
+
+                      {/*
                         * The one required box, and the only one.
                         *
                         * It covers the Terms and the Privacy Policy and nothing else.
-                        * No SMS consent of any kind is bundled into it, because consent
-                        * a customer must give to register is not consent at all.
+                        * No SMS consent of any kind is bundled into it: the two text
+                        * message choices above are their own controls, and the
+                        * fieldset boundary keeps them out of this one.
                         */}
                       <ConsentCheckbox
                         id="agree-terms"
@@ -712,176 +880,6 @@ export default function SignUpPage() {
                     </>
                   ) : null}
 
-                  {/*
-                    * THE NUMBER AND THE PERMISSION, IN ONE GROUP, ON EVERY STEP.
-                    *
-                    * Twilio's campaign check reported that the opt-in form had no
-                    * phone field connected to the SMS consent, and it was right for
-                    * two separate reasons. The phone input lived inside step 3, so
-                    * it did not exist in the document at all until a reviewer had
-                    * invented an address and a name - the server-rendered HTML
-                    * shipped two consent checkboxes and zero phone fields. And the
-                    * consent panel sat AFTER </form>, so checkbox.form was null:
-                    * the two controls never shared a form at any step, even once
-                    * the phone field appeared.
-                    *
-                    * Both are fixed structurally rather than cosmetically. This
-                    * fieldset is inside the form, outside every step branch, so it
-                    * renders on the first paint and in the server HTML, and the
-                    * phone input and both checkboxes are siblings inside one
-                    * <fieldset> - which is the standard way to say "these controls
-                    * belong to each other" to a person and to a parser.
-                    *
-                    * ONE INPUT. The number was MOVED here, not copied. There is no
-                    * second phone field anywhere on the page, so the number a
-                    * customer gives permission for is necessarily the number on
-                    * their account.
-                    *
-                    * Grouping a required field with two optional ones is the one
-                    * risk this shape carries, so the phone's own help text says
-                    * plainly that entering it enrols nobody in anything, and the
-                    * checkboxes keep their own separate wording below.
-                    */}
-                  <fieldset className="mt-5 rounded-[10px] border border-white/[0.12] bg-white/[0.03] px-4 pb-4 pt-1">
-                    {/*
-                      * Slightly tighter on a phone so the group label stays on one
-                      * line. A wrapped <legend> breaks out of the border notch and
-                      * the second line sits oddly against the frame; shrinking the
-                      * type a touch is cheaper than shortening the label, and the
-                      * label is doing real work here - it is the thing that tells a
-                      * reader the number and the checkboxes are one group.
-                      */}
-                    <legend className="px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/70">
-                      Mobile number &amp; texts
-                    </legend>
-
-                    <div className="mt-2">
-                      <FieldLabel htmlFor="phone">Mobile Phone Number</FieldLabel>
-                      <FieldInput
-                        id="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => handleChange("phone", formatPhone(e.target.value))}
-                        placeholder="(631) 000-0000"
-                        autoComplete="tel"
-                      />
-                      {fieldErrors.phone ? (
-                        <p className="mt-2 text-[12px] font-semibold text-red-300">{fieldErrors.phone}</p>
-                      ) : null}
-                      <p className="mt-1.5 text-[11px] leading-snug text-white/45">
-                        Required for your account.{" "}
-                        <span className="font-semibold text-white/65">
-                          Entering it does not sign you up for text messages.
-                        </span>
-                      </p>
-                    </div>
-
-                    {/*
-                      * ONE SHARED DISCLOSURE LINE, NOT TWO PARAGRAPHS EACH.
-                      *
-                      * This section used to run to about twenty lines of copy:
-                      * an intro paragraph, a four-line explanation under each
-                      * checkbox, a five-line closing paragraph and a two-line
-                      * note about the phone numbers. Every required disclosure
-                      * was in there two or three times over, and the result was
-                      * a registration form dominated by SMS legal text.
-                      *
-                      * Everything the approved campaign needs is still here and
-                      * now appears exactly ONCE, beneath both boxes: the sending
-                      * number, that frequency varies, that rates may apply, STOP,
-                      * HELP, and the three documents as links rather than as
-                      * recited text.
-                      *
-                      * WHAT DELIBERATELY DID NOT CHANGE: the two checkbox labels
-                      * are word-for-word what the A2P campaign was approved on
-                      * and what /sms-consent-example quotes to reviewers, both
-                      * boxes remain OPTIONAL and SEPARATE, and they stay inside
-                      * the fieldset with the phone input - that grouping is the
-                      * fix for the last rejection and must not be undone for
-                      * layout.
-                      */}
-                    <section
-                      aria-labelledby="sms-consent-heading"
-                      className="mt-3 border-t border-white/[0.09] pt-3"
-                    >
-                      <h3
-                        id="sms-consent-heading"
-                        className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/55"
-                      >
-                        Text messages
-                      </h3>
-
-                      {/*
-                        * Each box states its own status, because they no longer
-                        * share one.
-                        *
-                        * The heading used to read "TEXT MESSAGES - OPTIONAL",
-                        * which stopped being true for the top box and would have
-                        * been actively misleading above a required control.
-                        * Neither box is pre-ticked: required means the customer
-                        * has to perform the tick, not that we perform it for them.
-                        */}
-                      <div className="mt-2 space-y-2">
-                        <div>
-                          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.1em] text-white/45">
-                            Service texts &mdash;{" "}
-                            <span className="text-[#93c5fd]">Required</span>
-                          </p>
-                          <ConsentCheckbox
-                            id="sms-service-consent"
-                            checked={smsTransactionalConsent}
-                            onChange={(next) => {
-                              setSmsTransactionalConsent(next);
-                              if (consentError) setConsentError(false);
-                            }}
-                            label="Text me about my ProFixter visits at the mobile number above."
-                          />
-                        </div>
-                        <div>
-                          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.1em] text-white/45">
-                            Offers &amp; promotions &mdash; Optional
-                          </p>
-                          <ConsentCheckbox
-                            id="sms-marketing-consent"
-                            checked={smsMarketingConsent}
-                            onChange={setSmsMarketingConsent}
-                            label="Text me occasional ProFixter offers at the mobile number above."
-                          />
-                        </div>
-                      </div>
-
-                      <p className="mt-2 text-[10.5px] leading-snug text-white/40">
-                        {/*
-                          * The canonical phrasings, not shortened versions of them.
-                          *
-                          * An earlier pass at this compaction wrote "frequency
-                          * varies" and "msg & data rates may apply" to save a
-                          * line. Those are the exact forms carriers look for and
-                          * the ones the approved campaign was submitted with, so
-                          * abbreviating them trades a compliance disclosure for
-                          * whitespace. The layout is compact; the words are not.
-                          */}
-                        Service texts are required to create an account; offers are optional and
-                        separate, and declining them changes nothing else. Sent from
-                        (631) 888-6340. Message frequency varies. Message and data rates may apply.
-                        Reply STOP to opt out or HELP for help. Mobile information and SMS consent
-                        will not be shared with third parties or affiliates for marketing or
-                        promotional purposes.{" "}
-                        <Link href="/terms" className="text-white/60 underline underline-offset-2 transition hover:text-white">
-                          Terms
-                        </Link>
-                        {" · "}
-                        <Link href="/privacy" className="text-white/60 underline underline-offset-2 transition hover:text-white">
-                          Privacy
-                        </Link>
-                        {" · "}
-                        <Link href="/communication-consent" className="text-white/60 underline underline-offset-2 transition hover:text-white">
-                          SMS Terms
-                        </Link>
-                        . Questions? Call (631) 599-1363.
-                      </p>
-                    </section>
-                  </fieldset>
 
                   {error ? (
                     <div className="rounded-[6px] border border-red-400/25 bg-red-500/[0.10] px-3.5 py-2.5 text-center text-[12px] font-semibold text-red-200">

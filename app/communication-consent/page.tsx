@@ -168,7 +168,7 @@ export default function CommunicationConsentPage() {
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">4. Message Categories (What You Might Receive)</h2>
 
             <div className="space-y-4">
-              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
+              <div id="service-texts" className="scroll-mt-24 rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <h3 className="text-lg font-semibold mb-2">4.1 Customer Care / Transactional</h3>
                 <ul className="list-disc list-inside space-y-2">
                   <li>Appointment scheduling, confirmations, rescheduling, and arrival updates</li>
@@ -179,7 +179,7 @@ export default function CommunicationConsentPage() {
                 </ul>
               </div>
 
-              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
+              <div id="marketing" className="scroll-mt-24 rounded-[8px] bg-white/5 border border-white/10 p-5">
                 <h3 className="text-lg font-semibold mb-2">4.2 Marketing (Only If You Opt In)</h3>
                 <ul className="list-disc list-inside space-y-2">
                   <li>Promotions, discounts, seasonal offers, referral rewards, and special announcements</li>

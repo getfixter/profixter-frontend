@@ -183,19 +183,26 @@ export default function SmsConsentExamplePage() {
           {/* 3 */}
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">3. The exact consent language</h2>
-            <p>This is the wording shown beside each checkbox, verbatim.</p>
+            <p>
+              This is the wording shown beside each checkbox, verbatim, followed by what each choice covers. The two
+              SMS labels are deliberately short: each one is a link to the{" "}
+              <a href="/communication-consent" className="underline underline-offset-4">SMS Terms</a>, which carry the
+              sending number, the frequency and rate disclosures and the STOP and HELP instructions in full.
+              Following the link opens a new tab and does not tick the box.
+            </p>
 
             <div className="mt-4 rounded-[8px] bg-white/5 border border-white/10 p-5 space-y-4">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/50">
                   Group label (HTML &lt;legend&gt;)
                 </p>
-                <p className="mt-1 font-semibold">Your mobile number and text messages</p>
+                <p className="mt-1 font-semibold">Mobile number and text message preferences</p>
                 <p className="mt-1 text-white/70">
                   The mobile number field and both SMS checkboxes are inside this one group &mdash; a single HTML
                   &lt;fieldset&gt; within the sign-up &lt;form&gt; &mdash; so it is unambiguous which number a
                   customer is giving permission for. There is only one phone field on the page, and it is the number
-                  saved to the account.
+                  saved to the account. The group is presented without a visible frame or heading, so the legend is
+                  addressed to assistive technology and to anything parsing the form.
                 </p>
               </div>
 
@@ -206,7 +213,8 @@ export default function SmsConsentExamplePage() {
                 <p className="mt-1 font-semibold">Mobile Phone Number</p>
                 <p className="mt-1 text-white/70">
                   Required for your account, so we can call you and so your Fixter can reach you at the door.
-                  Entering it does not sign you up for text messages.
+                  Entering it does not by itself switch on any text message: the two checkboxes below it are what
+                  record a choice, and both start empty.
                 </p>
               </div>
 
@@ -214,10 +222,14 @@ export default function SmsConsentExamplePage() {
                 <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/50">
                   Sub-heading
                 </p>
-                <p className="mt-1 font-semibold">Text messages &mdash; optional</p>
+                <p className="mt-1 font-semibold">Where the two boxes appear</p>
                 <p className="mt-1 text-white/70">
-                  You can create an account, book visits and use every ProFixter service without agreeing to receive
-                  text messages. These choices are separate from the Terms of Service, and separate from each other.
+                  On the final step of the sign-up form, immediately before the account is created, together with the
+                  mobile number they apply to. No text-message question is asked on any earlier step. The form shows
+                  the two names above and nothing else &mdash; no status word is printed beside either box. Service
+                  texts are a condition of creating an account and are enforced when the customer presses Finish, by
+                  the form and again by the server; offers and promotions are optional and can never stop an account
+                  being created. Both are separate from the Terms of Service and from each other.
                 </p>
               </div>
 
@@ -225,13 +237,12 @@ export default function SmsConsentExamplePage() {
                 <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/50">
                   Checkbox 1 &mdash; service texts (required, unchecked by default)
                 </p>
-                <p className="mt-1 font-semibold">
-                  Text me about my ProFixter visits at the mobile number above.
-                </p>
+                <p className="mt-1 font-semibold">Service text messages</p>
                 <p className="mt-1 text-white/70">
-                  Optional. Booking confirmations, appointment reminders and service updates, sent from
-                  (631) 888-6340. Message frequency varies. Message and data rates may apply. Reply STOP to opt out or
-                  HELP for help.
+                  Booking confirmations, appointment reminders and service updates about the customer&rsquo;s own
+                  visits, sent from (631) 888-6340. Message frequency varies. Message and data rates may apply. Reply
+                  STOP to opt out or HELP for help. The label links to the SMS Terms, where all of this is set out in
+                  full. Required to create an account, and never pre-ticked: the customer performs the tick.
                 </p>
               </div>
 
@@ -239,13 +250,12 @@ export default function SmsConsentExamplePage() {
                 <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/50">
                   Checkbox 2 &mdash; marketing texts (optional, unchecked by default, separate)
                 </p>
-                <p className="mt-1 font-semibold">
-                  Text me occasional ProFixter offers at the mobile number above.
-                </p>
+                <p className="mt-1 font-semibold">Offers &amp; promotions</p>
                 <p className="mt-1 text-white/70">
                   Optional, and separate from the service texts above. Not required to create an account, book or buy
-                  anything. Message frequency varies. Message and data rates may apply. Reply STOP to opt out or HELP
-                  for help.
+                  anything, and declining it can never stop an account being created. Message frequency varies.
+                  Message and data rates may apply. Reply STOP to opt out or HELP for help. The label links to the
+                  marketing section of the SMS Terms.
                 </p>
               </div>
 
@@ -269,9 +279,14 @@ export default function SmsConsentExamplePage() {
               </li>
               <li>Marketing SMS is separately optional. It has its own box and its own record.</li>
               <li>Both boxes are unchecked by default. Neither is pre-selected at any point.</li>
-              <li>Neither is required to register an account.</li>
-              <li>Neither is required to book a visit.</li>
-              <li>Neither is required to purchase a membership or any service.</li>
+              <li>
+                Marketing SMS is not required to register an account, to book a visit, or to purchase a membership or
+                any service, and declining it changes nothing about price, availability or service.
+              </li>
+              <li>
+                Service SMS is a condition of holding an account and nothing further. It is not a condition of any
+                individual booking, membership or purchase, and it never implies marketing consent.
+              </li>
               <li>
                 <span className="font-semibold">Entering a phone number is not consent.</span> A number is required to
                 register so that we can telephone you and so your Fixter can reach you at the door. It never by itself
@@ -304,52 +319,59 @@ export default function SmsConsentExamplePage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">5. What the sign-up form actually looks like</h2>
             <p>
-              These screenshots are taken from the live site. The group headed &ldquo;Your mobile number and text
-              messages&rdquo; is visible from the first step, before anything has been typed, so the mobile number
-              field and the two SMS choices are on screen together the moment the page opens.
+              These screenshots are taken from the live site. Sign-up is a four-step form, and the two text-message
+              choices are asked once, on the final step, immediately before the account is created &mdash; together
+              with the mobile number they apply to. The three earlier steps collect the property address, the
+              customer&rsquo;s name and their email address, and none of them mentions text messages or shows a
+              consent control of any kind.
             </p>
             <p className="mt-3">
-              The mobile number field and both checkboxes sit inside a single HTML <code>&lt;fieldset&gt;</code>
-              within the sign-up <code>&lt;form&gt;</code>. There is exactly one phone input on the page, so the
-              number being consented is necessarily the number saved to the account &mdash; the two cannot differ.
-              The required Terms of Service checkbox is in the same form but deliberately outside that group, because
-              it carries no SMS consent.
+              On that final step the mobile number field and both checkboxes sit inside a single HTML
+              <code>&lt;fieldset&gt;</code> within the sign-up <code>&lt;form&gt;</code>. There is exactly one phone
+              input on the page, so the number being consented is necessarily the number saved to the account &mdash;
+              the two cannot differ. The required Terms of Service checkbox is in the same form but deliberately
+              outside that group, because it carries no SMS consent.
+            </p>
+            <p className="mt-3">
+              Each checkbox label is a link to the SMS Terms. Clicking the box toggles it; clicking the label opens
+              the terms in a new tab and leaves the box exactly as it was, so nobody can record a consent while
+              trying to read what it means.
             </p>
 
             <Evidence
-              label="A &mdash; Desktop, /signup on load"
+              label="A &mdash; Desktop, the final sign-up step"
               src="/compliance/a2p-signup-desktop.png"
-              alt="The ProFixter sign-up page on a desktop browser, showing the mobile phone number field and two unchecked SMS checkboxes inside one bordered group."
+              alt="The final step of the ProFixter sign-up form on a desktop browser, showing the mobile phone number field with two unchecked SMS checkboxes directly beneath it."
               width={1440}
-              height={900}
-              caption="The sign-up page as it first loads on a desktop browser. The mobile phone number field and both SMS checkboxes sit together in one group, both boxes unchecked, with links to the Terms of Service, Privacy Policy and SMS Terms."
+              height={930}
+              caption="The final step of the sign-up form on a desktop browser, reached after the address, name and email steps. The mobile phone number field and both SMS checkboxes sit together in one group; both boxes are unchecked, and each label links to the SMS Terms."
             />
 
             <Evidence
-              label="B &mdash; Mobile, /signup on load"
+              label="B &mdash; Mobile, the final sign-up step"
               src="/compliance/a2p-signup-mobile.png"
-              alt="The ProFixter sign-up page on a phone-sized screen, showing the same mobile number field and two unchecked SMS checkboxes in one group."
+              alt="The same final sign-up step at phone width, showing the mobile number field and two unchecked SMS checkboxes in one group."
               width={390}
-              height={844}
-              caption="The same page at phone width. The mobile number field and both unchecked checkboxes are shown together without the reviewer entering any information."
+              height={918}
+              caption="The same step at phone width. The mobile number field and both unchecked checkboxes are shown together on one screen, immediately above the button that creates the account."
             />
 
             <Evidence
-              label="C &mdash; Terms accepted, both SMS choices left off"
+              label="C &mdash; Service texts ticked, marketing deliberately left off"
               src="/compliance/a2p-signup-terms-separate.png"
-              alt="The final sign-up step showing the required Terms checkbox ticked, the mobile number filled in, and both optional SMS checkboxes still unticked."
+              alt="The final sign-up step with the Terms checkbox and the service text checkbox ticked, and the offers and promotions checkbox left unticked."
               width={1440}
-              height={1100}
-              caption="The final step immediately before the account is created. The mobile number is filled in and the required Terms of Service checkbox is ticked; both optional SMS checkboxes are untouched. The form submits in this state, and no SMS consent is recorded."
+              height={930}
+              caption="The same step, completed. The Terms of Service box and the service text box have each been ticked by the customer; the offers and promotions box has been left alone. The form submits in exactly this state and creates the account, and no marketing consent is recorded &mdash; which is what makes the two genuinely separate."
             />
 
             <Evidence
-              label="D &mdash; A real account registered with both SMS choices off"
+              label="D &mdash; A real account with both text categories switched off"
               src="/compliance/a2p-registered-no-sms.png"
-              alt="A signed-in ProFixter account showing both SMS preferences switched off after registration."
+              alt="A signed-in ProFixter account showing both SMS preferences switched off in account settings."
               width={1440}
               height={1100}
-              caption="The resulting account, signed in. Registration completed normally and no SMS consent of any kind was recorded. Confirmations, reminders and receipts continue to arrive by email."
+              caption="A signed-in account with both categories switched off from account settings. Service texts are a condition of creating an account, but they are not a condition of keeping one: a customer can switch them off here at any time afterwards, in one place, without contacting us. Confirmations, reminders and receipts continue to arrive by email."
             />
 
             <Evidence
