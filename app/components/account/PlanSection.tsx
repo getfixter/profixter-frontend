@@ -12,9 +12,12 @@ import {
   requestSubscriptionRetentionOffer,
   acceptSubscriptionRetentionOffer,
   getSubscriptionActionErrorMessage,
+  getLoyaltyStatus,
+  type LoyaltyStatus,
   type ManagedSubscription,
   type RetentionOfferDebug,
 } from "@/lib/subscription-service";
+import LoyaltyBenefitsPanel from "./LoyaltyBenefitsPanel";
 import GiftMembershipSection from "./GiftMembershipSection";
 import GiftEntryPoint from "./GiftEntryPoint";
 import GiftsSentSection from "./GiftsSentSection";
@@ -210,12 +213,40 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
   const [loading, setLoading] = useState(true);
   const [subscriptions, setSubscriptions] = useState<ManagedSubscription[]>([]);
 
+  /*
+   * Loyalty Benefits, per property.
+   *
+   * Keyed by address because a customer with two houses has two memberships,
+   * two plans and two independent runs of progress — collapsing them to one
+   * would tell somebody their Basic house had earned what their Premium house
+   * did.
+   */
+  const [loyaltyByAddress, setLoyaltyByAddress] = useState<Record<string, LoyaltyStatus>>({});
+
   const [cancelTarget, setCancelTarget] = useState<ManagedSubscription | null>(null);
-  const [cancelMode, setCancelMode] = useState<"checking" | "offer" | "confirm" | "accepted">("confirm");
+  /*
+   * "progress" is the first screen now.
+   *
+   * A member on the way out sees what they are walking away from, in real days
+   * and a named benefit. The discount, if it is still switched on at all, comes
+   * after — so the thing we teach people is that staying is worth something,
+   * not that clicking Cancel produces a coupon.
+   */
+  const [cancelMode, setCancelMode] = useState<
+    "checking" | "progress" | "offer" | "confirm" | "accepted"
+  >("confirm");
   const [canceling, setCanceling] = useState(false);
   const [acceptingRetention, setAcceptingRetention] = useState(false);
   const [retentionError, setRetentionError] = useState("");
   const [retentionDebug, setRetentionDebug] = useState<RetentionOfferDebug | null>(null);
+  /*
+   * Whether the discount screen exists behind the progress screen at all.
+   *
+   * False once RETENTION_OFFER_ENABLED is turned off on the server, at which
+   * point the progress screen leads straight to the confirmation — no dead
+   * button, no second redesign.
+   */
+  const [retentionOfferAvailable, setRetentionOfferAvailable] = useState(false);
 
   const [reactivatingId, setReactivatingId] = useState<string | null>(null);
 
@@ -260,6 +291,33 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
         });
 
         setSubscriptions(ranked);
+
+        /*
+         * Loyalty is fetched per property, after the plans are on screen.
+         *
+         * Deliberately not awaited before rendering: a member should see their
+         * membership immediately, and the benefit panel can arrive a moment
+         * later. A failure here leaves the panel absent rather than breaking
+         * the page — losing sight of a benefit for one page load is
+         * recoverable, losing the membership card is not.
+         */
+        const manageable = ranked.filter(
+          (subscription) => subscription.addressId && isManageableStatus(subscription.status)
+        );
+
+        const results = await Promise.allSettled(
+          manageable.map((subscription) => getLoyaltyStatus(String(subscription.addressId)))
+        );
+        if (!alive) return;
+
+        const nextLoyalty: Record<string, LoyaltyStatus> = {};
+        results.forEach((result, index) => {
+          const addressId = String(manageable[index].addressId);
+          if (result.status === "fulfilled" && result.value) {
+            nextLoyalty[addressId] = result.value;
+          }
+        });
+        setLoyaltyByAddress(nextLoyalty);
       } catch (err: unknown) {
         if (!alive) return;
         setError(getSubscriptionActionErrorMessage(err));
@@ -373,7 +431,22 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
         );
       }
 
-      setCancelMode(result.eligible ? "offer" : "confirm");
+      /*
+       * Progress first, whenever there is progress worth showing.
+       *
+       * The discount, if it is still switched on, waits behind it — reachable
+       * from the progress screen, never the headline. Somebody who has nothing
+       * to lose yet (a brand new member, or one who has finished the ladder)
+       * skips straight to whichever screen actually has something to say.
+       */
+      const loyalty = loyaltyByAddress[String(subscription.addressId)];
+      const hasProgressToShow =
+        !!loyalty?.enabled &&
+        !!loyalty?.eligible &&
+        (!!loyalty.nextMilestone || (loyalty.activeBenefits?.length || 0) > 0);
+
+      setRetentionOfferAvailable(result.eligible);
+      setCancelMode(hasProgressToShow ? "progress" : result.eligible ? "offer" : "confirm");
     } catch (err) {
       const apiError = err as ApiErrorWithResponse;
       const responseDebug = apiError.response?.data?.debug || null;
@@ -781,6 +854,22 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                         </ul>
                       </div>
 
+                      {/*
+                        Loyalty sits on the membership card, per property,
+                        because that is the only place on the account that knows
+                        which address it is talking about. A customer with a
+                        Basic house and a Premium house sees two meters, each
+                        telling the truth about its own membership.
+                      */}
+                      {subscription.addressId &&
+                      loyaltyByAddress[String(subscription.addressId)] ? (
+                        <div className="mt-4">
+                          <LoyaltyBenefitsPanel
+                            status={loyaltyByAddress[String(subscription.addressId)]}
+                          />
+                        </div>
+                      ) : null}
+
                       {showCancellationUi && subscription.cancelAtPeriodEnd ? (
                         <div className="mt-5 rounded-[8px] border border-[#FDE68A] bg-[#FFFBEB] p-4 text-sm text-[#92400E]">
                           <div className="font-semibold">Cancellation scheduled</div>
@@ -953,6 +1042,63 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                     We&apos;re checking whether a retention offer is available for this membership.
                   </p>
                 </div>
+              ) : cancelMode === "progress" ? (
+                /*
+                 * What they are walking away from, stated factually.
+                 *
+                 * No countdown, no guilt, no hidden cancel button. The claim is
+                 * simply true — they are a known number of days from a named
+                 * benefit — and the honest consequence is spelled out including
+                 * the part that helps them: come back within 45 days and the
+                 * progress is still here.
+                 */
+                <>
+                  <div className="mx-auto mb-5 inline-flex rounded-[6px] border border-[#D7E0F5] bg-[#EEF2FF] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#306EEC]">
+                    Before you go
+                  </div>
+
+                  <h3 className="text-2xl font-extrabold tracking-[-0.02em] text-[#313234] sm:text-3xl">
+                    You have Loyalty Benefits building
+                  </h3>
+
+                  <div className="mt-5">
+                    <LoyaltyBenefitsPanel
+                      status={loyaltyByAddress[String(cancelTarget.addressId)] || null}
+                      variant="cancel"
+                    />
+                  </div>
+
+                  {retentionError ? (
+                    <div className="mt-4 rounded-[8px] border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3 text-left text-sm font-semibold text-[#92400E]">
+                      {retentionError}
+                    </div>
+                  ) : null}
+
+                  <div className="mt-6 grid grid-cols-1 gap-3">
+                    <button
+                      type="button"
+                      disabled={canceling || acceptingRetention}
+                      onClick={() => {
+                        setCancelTarget(null);
+                        setRetentionError("");
+                        setRetentionDebug(null);
+                      }}
+                      className="min-h-[46px] rounded-[8px] bg-[#306EEC] px-4 py-3 text-base font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
+                    >
+                      Keep my membership
+                    </button>
+                    <button
+                      type="button"
+                      disabled={canceling || acceptingRetention}
+                      onClick={() =>
+                        retentionOfferAvailable ? setCancelMode("offer") : handleCancel(false)
+                      }
+                      className="min-h-[46px] rounded-[8px] border border-[#D1D5DB] bg-white px-4 py-3 text-base font-extrabold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
+                    >
+                      {canceling ? "Scheduling cancellation..." : "Continue cancellation"}
+                    </button>
+                  </div>
+                </>
               ) : cancelMode === "offer" ? (
                 <>
                   <div className="mx-auto mb-5 inline-flex rounded-[6px] border border-[#D7E0F5] bg-[#EEF2FF] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#306EEC]">
