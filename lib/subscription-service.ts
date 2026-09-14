@@ -90,6 +90,56 @@ export type RetentionOfferAcceptResponse = {
   };
 };
 
+/**
+ * One property's Loyalty Benefits, exactly as the server describes them.
+ *
+ * Every headline and every sentence is composed on the server, so the account
+ * screen, the cancellation screen and the emails cannot drift apart, and the
+ * ladder can change without a front-end deploy. Nothing here is computed on the
+ * client — including the dates, which come from the real billing period.
+ */
+export type LoyaltyReward = {
+  headline: string;
+  detail: string;
+};
+
+export type LoyaltyBenefit = {
+  id: string;
+  milestone: number;
+  kind: "tier_upgrade" | "loyalty_full_day" | "free_month";
+  headline: string;
+  detail: string;
+  rewardPlan: SubscriptionPlan | null;
+  status: string;
+  grantedAt?: string | null;
+  effectiveFrom?: string | null;
+  effectiveUntil?: string | null;
+  active: boolean;
+  pendingFreeMonth: boolean;
+};
+
+export type LoyaltyStatus = {
+  enabled: boolean;
+  programStartedAt?: string | null;
+  eligible: boolean;
+  reason?: string;
+  addressId?: string;
+  plan?: SubscriptionPlan | null;
+  countedMonths: number;
+  nextMilestone: number | null;
+  monthsRemaining: number | null;
+  daysUntilNextMilestone: number | null;
+  estimatedUnlockDate?: string | null;
+  nextReward: LoyaltyReward | null;
+  ladderComplete?: boolean;
+  activeBenefits: LoyaltyBenefit[];
+  loyaltyFullDaysAvailable: number;
+  nextLoyaltyFullDayExpiresAt?: string | null;
+  history: LoyaltyBenefit[];
+  /** Only present for annual members, who take their reward up front. */
+  annual?: { headline: string; detail: string };
+};
+
 type SubscriptionActionErrorShape = {
   response?: {
     status?: number;
@@ -147,6 +197,20 @@ export async function getManagedSubscriptionForAddress(
     `/api/subscriptions/manage/address/${addressId}`
   );
   return response.data?.subscription || null;
+}
+
+/**
+ * Loyalty Benefits for one property.
+ *
+ * Never throws for a member who has none — the server answers with an
+ * ineligible status and a reason, so the caller renders the right thing rather
+ * than having to distinguish "no benefits" from "request failed".
+ */
+export async function getLoyaltyStatus(addressId: string): Promise<LoyaltyStatus | null> {
+  const response = await API.get<{ loyalty: LoyaltyStatus }>(
+    `/api/subscriptions/loyalty/address/${addressId}`
+  );
+  return response.data?.loyalty || null;
 }
 
 export async function changeSubscriptionPlan(params: {
