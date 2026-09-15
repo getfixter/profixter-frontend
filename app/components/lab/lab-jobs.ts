@@ -1,5 +1,7 @@
 import type { ObjectKind } from "./lab-objects";
 import type { ToolKind } from "./lab-tools";
+import type { LayoutId, StagePoint } from "./lab-stage";
+import { REGIONS } from "./lab-stage";
 
 /**
  * The job library — the data the whole experience is assembled from.
@@ -142,208 +144,170 @@ export type JobDefinition = {
   id: string;
   label: string;
   object: ObjectKind;
-  /** Where the object floats. Y is dictated by the work motion's hand height. */
-  anchor: [number, number, number];
+  /**
+   * Where the job sits on the page, per layout, in normalised stage
+   * coordinates. Not world units, and never a depth: a phone is a tall stage
+   * with its own arrangement rather than a narrow desktop, so each job names
+   * its own spot on each.
+   */
+  placement: Record<LayoutId, StagePoint>;
   workMotion: keyof typeof WORK_MOTIONS;
   tool: ToolKind | null;
-  /** How far short of the object the hand stops, leaving the tool room. */
+  /**
+   * How far in FRONT of his hand the object floats, toward the viewer. This is
+   * the only depth a job has, and it exists so the tool spans the gap instead
+   * of his wrist ending up inside the object.
+   */
   toolGap: number;
   workSeconds: number;
   /**
-   * Which side he works from, as a direction in XZ.
-   *
-   * Left unset, he arrives from wherever the previous job was, which is natural
-   * but hands the camera whatever angle the ring happens to produce — and on a
-   * fixed frame that means watching his back half the time while his own body
-   * hides the thing he is fixing. Setting it points him broadly toward the
-   * viewer, so the object sits between him and the camera and the work is
-   * actually visible. Varied slightly per job so six stops do not all read as
-   * the same pose.
+   * A few degrees off dead-on while working, so six jobs are not six identical
+   * front-facing poses. The stand-mark is solved from this, so the hand still
+   * lands on the object.
    */
-  approachFrom?: [number, number];
-  /**
-   * Which way the object itself faces, in degrees about Y. 0 faces the viewer.
-   *
-   * Deliberately NOT derived from where the character stands. Turning each
-   * object to face whoever is working on it is the physically honest answer and
-   * it looks wrong: the camera then sees the back of every faceplate, frame and
-   * cabinet door. Objects face out, the character works from the side, and the
-   * small per-job variation stops six props reading as a shop display.
-   */
-  objectYawDeg?: number;
-  /**
-   * Shifts the DRAWN object relative to the anchor his hand reaches for.
-   *
-   * Without it every prop is centred exactly on his hand, which puts a picture
-   * frame across his face and a shelf through his chest. Offsetting lets the
-   * hand land on an edge — the corner of the frame, one end of the shelf —
-   * which is where someone would actually take hold of it, and keeps the
-   * character's face visible. Pushed away from whichever side he works from.
-   */
-  objectOffset?: [number, number, number];
+  workYawDeg?: number;
+  /** Tilts the prop so it shows more than one face and reads as a solid. */
+  objectRotationDeg?: [number, number, number];
+  /** Shifts the drawn prop on the stage plane so his hand lands on an edge. */
+  objectOffset?: [number, number];
 };
 
 /**
- * Six jobs, ordered so the tour zig-zags rather than marching along one line,
- * and so the working height changes every time: low, high, mid, high, reach,
- * mid. Two jobs share a posture only where the objects and tools differ enough
- * that it does not read as a repeat.
+ * Six jobs, placed around the page rather than around a floor.
  *
- * Anchor Y is not chosen by taste — it is the work motion's hand height, so the
- * object is placed exactly where the hand goes rather than the hand being asked
- * to find the object.
+ * The order is chosen for the travel between them: four of the six legs are
+ * long diagonals across the stage, because a diagonal is the movement that
+ * proves this is a page and not a room. Working height alternates too, so no
+ * two neighbours look alike.
+ *
+ *   outlet   lower-left   ↗   lamp     upper-right
+ *   lamp     upper-right  ↙   cabinet  mid-left
+ *   cabinet  mid-left     ↘   faucet   lower-right
+ *   faucet   lower-right  ↖   frame    upper-left
+ *   frame    upper-left   ↘   shelf    mid-right
+ *   shelf    mid-right    ↙   outlet   lower-left
  */
 export const JOBS: JobDefinition[] = [
   {
     id: "outlet",
     label: "Loose wall outlet",
     object: "outlet",
-    anchor: [-2.0, 0.57, 0.7],
+    placement: {
+      desktop: { x: -0.72, y: -0.6 },
+      tablet: { x: -0.66, y: -0.64 },
+      mobile: { x: -0.5, y: -0.74 },
+    },
     workMotion: "low",
     tool: "screwdriver",
     toolGap: 0.16,
     workSeconds: 5.5,
-    approachFrom: [0.85, 0.5],
-    objectYawDeg: 0,
-    objectOffset: [0.06, 0.03, 0],
+    workYawDeg: -8,
+    objectRotationDeg: [-6, 24, 0],
+    objectOffset: [0.13, 0.04],
   },
   {
     id: "lamp",
     label: "Crooked pendant light",
     object: "lamp",
-    anchor: [-0.7, 1.31, -1.3],
+    placement: {
+      desktop: { x: 0.7, y: 0.64 },
+      tablet: { x: 0.64, y: 0.66 },
+      mobile: { x: 0.5, y: 0.72 },
+    },
     workMotion: "high",
     tool: "screwdriver",
     toolGap: 0.14,
     workSeconds: 6,
-    approachFrom: [-0.85, 0.5],
-    objectYawDeg: 8,
-    objectOffset: [-0.14, 0.1, 0],
-  },
-  {
-    id: "faucet",
-    label: "Dripping faucet",
-    object: "faucet",
-    anchor: [0.7, 1.1, 0.9],
-    workMotion: "mid",
-    tool: "wrench",
-    toolGap: 0.15,
-    workSeconds: 5.5,
-    approachFrom: [0.8, 0.6],
-    objectYawDeg: -6,
-    objectOffset: [0.1, -0.06, 0],
-  },
-  {
-    id: "frame",
-    label: "Crooked picture frame",
-    object: "frame",
-    anchor: [1.9, 1.31, -0.5],
-    workMotion: "high",
-    tool: null,
-    toolGap: 0.06,
-    workSeconds: 4.5,
-    approachFrom: [-0.8, 0.6],
-    objectYawDeg: 5,
-    objectOffset: [-0.16, 0.18, 0],
-  },
-  {
-    id: "shelf",
-    label: "Drooping shelf",
-    object: "shelf",
-    anchor: [2.2, 1.21, 0.8],
-    workMotion: "reach",
-    tool: "drill",
-    toolGap: 0.16,
-    workSeconds: 6,
-    approachFrom: [0.85, 0.5],
-    objectYawDeg: -9,
-    objectOffset: [0.3, -0.03, 0],
+    workYawDeg: 10,
+    objectRotationDeg: [0, 18, 0],
+    objectOffset: [-0.3, 0.26],
   },
   {
     id: "cabinet",
     label: "Loose cabinet handle",
     object: "cabinet",
-    anchor: [0.8, 1.1, -1.9],
+    placement: {
+      desktop: { x: -0.8, y: 0.12 },
+      tablet: { x: -0.74, y: 0.16 },
+      mobile: { x: -0.58, y: 0.2 },
+    },
     workMotion: "mid",
     tool: "screwdriver",
     toolGap: 0.15,
     workSeconds: 5,
-    approachFrom: [-0.8, 0.6],
-    objectYawDeg: 7,
-    objectOffset: [-0.15, -0.06, 0],
+    workYawDeg: 12,
+    objectRotationDeg: [-5, 28, 0],
+    objectOffset: [-0.3, -0.05],
+  },
+  {
+    id: "faucet",
+    label: "Dripping faucet",
+    object: "faucet",
+    placement: {
+      desktop: { x: 0.66, y: -0.58 },
+      tablet: { x: 0.62, y: -0.6 },
+      mobile: { x: 0.54, y: -0.42 },
+    },
+    workMotion: "mid",
+    tool: "wrench",
+    toolGap: 0.15,
+    workSeconds: 5.5,
+    workYawDeg: -12,
+    objectRotationDeg: [0, 26, 0],
+    objectOffset: [0.24, -0.07],
+  },
+  {
+    id: "frame",
+    label: "Crooked picture frame",
+    object: "frame",
+    placement: {
+      desktop: { x: -0.7, y: 0.68 },
+      tablet: { x: -0.64, y: 0.68 },
+      mobile: { x: -0.46, y: 0.74 },
+    },
+    workMotion: "high",
+    tool: null,
+    toolGap: 0.06,
+    workSeconds: 4.5,
+    workYawDeg: -6,
+    objectRotationDeg: [-8, 22, 0],
+    objectOffset: [-0.32, 0.26],
+  },
+  {
+    id: "shelf",
+    label: "Drooping shelf",
+    object: "shelf",
+    placement: {
+      desktop: { x: 0.76, y: 0.04 },
+      tablet: { x: 0.7, y: 0.02 },
+      mobile: { x: 0.58, y: -0.04 },
+    },
+    workMotion: "reach",
+    tool: "drill",
+    toolGap: 0.16,
+    workSeconds: 6,
+    workYawDeg: 8,
+    objectRotationDeg: [6, 24, 0],
+    objectOffset: [0.4, 0.0],
   },
 ];
 
-/* ------------------------------------------------------------------ layout */
-
-/**
- * Composition presets.
- *
- * Mobile is not the desktop scene shrunk — a narrow viewport cannot carry a
- * 6.4-unit spread and still show a 1.7-unit character, so the anchors are
- * drawn in toward the middle and the camera follows him instead of framing
- * everything at once. Same jobs, same order, tighter staging.
- */
-export type LayoutId = "desktop" | "mobile";
-
-export const LAYOUTS: Record<LayoutId, { spread: number; camera: CameraPreset }> = {
-  desktop: { spread: 1, camera: "page" },
-  mobile: { spread: 0.74, camera: "follow" },
-};
-
-export type CameraPreset = "page" | "follow";
-
-/** Anchor for a job under a layout: XZ is drawn in, height is untouched. */
-export function layoutAnchor(
-  job: JobDefinition,
-  spread: number
-): [number, number, number] {
-  return [job.anchor[0] * spread, job.anchor[1], job.anchor[2] * spread];
-}
-
-/**
- * Framing that shows the whole composition.
- *
- * Chosen from the geometry, not by nudging: the props span about 4.6 units
- * across, and the Fixter has to read at roughly a third of frame height or
- * there is nothing to judge — which puts the visible height near 4.8 units and
- * the camera about 7 back at this field of view. Sitting further out turns the
- * whole thing into specks on a white field, which is what the first attempt
- * did.
- */
-export const PAGE_CAMERA = {
-  position: [1.3, 2.65, 7.3] as [number, number, number],
-  target: [0.15, 0.88, -0.3] as [number, number, number],
-};
-
-/**
- * Props are drawn at 1.5x true scale.
- *
- * A real 12 cm outlet next to a 1.7 m man is four pixels on a phone. The page
- * is stylised anyway, and scaling every prop by the same factor keeps them
- * honest relative to each other while letting each one actually read. The
- * anchor — where his hand goes — is unaffected; only the object drawn around
- * it grows.
- */
-export const OBJECT_SCALE = 1.45;
-
-/** How the following camera sits relative to the Fixter. */
-/**
- * How the following camera sits relative to the Fixter.
- *
- * Far enough back that the object he is working on fits in frame beside him —
- * the first attempt sat close enough that a shelf crossed his face and the tool
- * was behind it. Offset to one side rather than straight behind, so the work
- * reads in three-quarter rather than as the back of a head.
- */
-export const FOLLOW_CAMERA = {
-  offset: [2.0, 1.55, 4.5] as [number, number, number],
-  lookHeight: 0.85,
-  /** Seconds-ish lag. Low is floaty, high is jerky. */
-  stiffness: 1.4,
-};
+/** Props are drawn larger than life so they read at page scale. */
+export const OBJECT_SCALE = 1.7;
 
 export const TOOL_ATTACH_BONE = "RightHand";
-
-/** Base tool scale. The Fixter is stylised; a life-size tool disappears. */
 export const TOOL_SCALE = 1.3;
+
+/**
+ * The camera looks very slightly down and across rather than dead-on.
+ *
+ * Orthographic, so a job's screen position is its stage position and nothing
+ * else — no perspective, no depth cue from placement. The small tilt is what
+ * keeps the Fixter and the props reading as solid objects instead of a flat
+ * elevation drawing: enough to catch a second face on every box, far too
+ * little to make world Y anything other than screen up.
+ */
+export const CAMERA_TILT = { x: 1.15, y: 1.35, z: 12 };
+
+/** Region shortcuts, re-exported so jobs can be talked about by place. */
+export { REGIONS };

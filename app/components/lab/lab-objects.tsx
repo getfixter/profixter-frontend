@@ -32,11 +32,7 @@ export type ObjectKind =
   | "cabinet"
   | "lamp";
 
-export type FixableProps = {
-  id: string;
-  position: [number, number, number];
-  faceYaw: number;
-};
+export type FixableProps = { id: string };
 
 const DEG = THREE.MathUtils.degToRad;
 
@@ -47,7 +43,7 @@ function ease(current: number, target: number, dt: number, rate = 4.5) {
 
 /* ------------------------------------------------------------------ outlet */
 
-function Outlet({ id, position, faceYaw }: FixableProps) {
+function Outlet({ id }: FixableProps) {
   const plate = useRef<THREE.Group>(null);
   const screw = useRef<THREE.Mesh>(null);
   const f = useRef(0);
@@ -59,7 +55,7 @@ function Outlet({ id, position, faceYaw }: FixableProps) {
   });
 
   return (
-    <group position={position} rotation={[0, faceYaw, 0]}>
+    <group>
       <group ref={plate}>
         <mesh material={M.shell}>
           <boxGeometry args={[0.075, 0.122, 0.008]} />
@@ -87,7 +83,7 @@ function Outlet({ id, position, faceYaw }: FixableProps) {
 
 /* ------------------------------------------------------------- picture frame */
 
-function PictureFrame({ id, position, faceYaw }: FixableProps) {
+function PictureFrame({ id }: FixableProps) {
   const tilt = useRef<THREE.Group>(null);
   const f = useRef(0);
 
@@ -101,7 +97,7 @@ function PictureFrame({ id, position, faceYaw }: FixableProps) {
   const T = 0.016;
 
   return (
-    <group position={position} rotation={[0, faceYaw, 0]}>
+    <group>
       <group ref={tilt}>
         {/* four rails rather than a slab, so it reads as a frame edge-on */}
         {[
@@ -146,7 +142,7 @@ function ShelfBracket() {
   );
 }
 
-function Shelf({ id, position, faceYaw }: FixableProps) {
+function Shelf({ id }: FixableProps) {
   const board = useRef<THREE.Group>(null);
   const loose = useRef<THREE.Group>(null);
   const f = useRef(0);
@@ -166,7 +162,7 @@ function Shelf({ id, position, faceYaw }: FixableProps) {
   const W = 0.56;
 
   return (
-    <group position={position} rotation={[0, faceYaw, 0]}>
+    <group>
       <group ref={board}>
         <mesh material={M.wood} position={[0, 0, 0.055]}>
           <boxGeometry args={[W, 0.03, 0.14]} />
@@ -187,7 +183,7 @@ function Shelf({ id, position, faceYaw }: FixableProps) {
 
 /* ------------------------------------------------------------------- faucet */
 
-function Faucet({ id, position, faceYaw }: FixableProps) {
+function Faucet({ id }: FixableProps) {
   const handle = useRef<THREE.Group>(null);
   const spout = useRef<THREE.Group>(null);
   const drip = useRef<THREE.Mesh>(null);
@@ -214,7 +210,7 @@ function Faucet({ id, position, faceYaw }: FixableProps) {
   });
 
   return (
-    <group position={position} rotation={[0, faceYaw, 0]}>
+    <group>
       {/* base */}
       <mesh material={M.metal} position={[0, -0.09, 0]}>
         <cylinderGeometry args={[0.035, 0.042, 0.02, 16]} />
@@ -249,7 +245,7 @@ function Faucet({ id, position, faceYaw }: FixableProps) {
 
 /* ------------------------------------------------------------------ cabinet */
 
-function Cabinet({ id, position, faceYaw }: FixableProps) {
+function Cabinet({ id }: FixableProps) {
   const door = useRef<THREE.Group>(null);
   const handle = useRef<THREE.Group>(null);
   const f = useRef(0);
@@ -269,7 +265,7 @@ function Cabinet({ id, position, faceYaw }: FixableProps) {
   const H = 0.42;
 
   return (
-    <group position={position} rotation={[0, faceYaw, 0]}>
+    <group>
       <group ref={door} position={[-W / 2, 0, 0]}>
         <group position={[W / 2, 0, 0]}>
           <mesh material={M.shell}>
@@ -295,7 +291,7 @@ function Cabinet({ id, position, faceYaw }: FixableProps) {
 
 /* --------------------------------------------------------------------- lamp */
 
-function Lamp({ id, position, faceYaw }: FixableProps) {
+function Lamp({ id }: FixableProps) {
   const swing = useRef<THREE.Group>(null);
   const shade = useRef<THREE.Mesh>(null);
   const f = useRef(0);
@@ -316,7 +312,7 @@ function Lamp({ id, position, faceYaw }: FixableProps) {
   });
 
   return (
-    <group position={position} rotation={[0, faceYaw, 0]}>
+    <group>
       {/* ceiling rose, floating like everything else */}
       <mesh material={M.shell} position={[0, 0.2, 0]}>
         <cylinderGeometry args={[0.035, 0.035, 0.012, 14]} />
@@ -350,23 +346,42 @@ const REGISTRY: Record<string, (props: FixableProps) => React.JSX.Element> = {
 export default function FixableObject({
   kind,
   scale = 1,
-  ...props
-}: FixableProps & { kind: ObjectKind; scale?: number }) {
+  rotationDeg = [0, 0, 0],
+  id,
+  position,
+}: {
+  kind: ObjectKind;
+  id: string;
+  position: [number, number, number];
+  scale?: number;
+  /**
+   * A few degrees of tilt on each prop.
+   *
+   * The camera is almost head-on, and head-on a box shows one face and reads
+   * as a rectangle. Turning each prop a little catches a second, shaded face
+   * and it becomes a solid again — which is the whole point: the stage is
+   * flat, the things standing on it are not.
+   */
+  rotationDeg?: [number, number, number];
+}) {
   const Component = REGISTRY[kind];
   if (!Component) return null;
   /*
-   * Position and facing go on the wrapper, scale with them, and the prop
-   * itself is drawn at the origin. Scaling a group that also carries the
-   * position would scale the position — the object would drift away from the
-   * anchor the choreography reaches for, by 50% of however far out it sits.
+   * Position, rotation and scale all go on the wrapper and the prop is drawn
+   * at the origin. Scaling a group that also carries the position would scale
+   * the position, drifting the object off the anchor his hand reaches for.
    */
   return (
     <group
-      position={props.position}
-      rotation={[0, props.faceYaw, 0]}
+      position={position}
+      rotation={[
+        THREE.MathUtils.degToRad(rotationDeg[0]),
+        THREE.MathUtils.degToRad(rotationDeg[1]),
+        THREE.MathUtils.degToRad(rotationDeg[2]),
+      ]}
       scale={scale}
     >
-      <Component id={props.id} position={[0, 0, 0]} faceYaw={0} />
+      <Component id={id} />
     </group>
   );
 }
