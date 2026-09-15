@@ -6,19 +6,15 @@ import { useAnimations, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { BVHLoader } from "three/examples/jsm/loaders/BVHLoader.js";
+import { FIXTER_GLB, resolveClipRoles } from "./lab-config";
 import {
-  FIXTER_GLB,
-  MESHY_MOTIONS,
-  resolveClipRoles,
-  type MovementMode,
-} from "./lab-config";
-import {
-  IDLE_BVH,
-  REPAIR_ARC_BVH,
-  SQUAT_WORK_BVH,
-  SEQUENCE_CLIPS,
-  SOURCE_WINDOWS,
+  JOBS,
+  MOTION_FILES,
   TOOL_ATTACH_BONE,
+  TOOL_SCALE,
+  WORK_MOTIONS,
+  allClipSpecs,
+  type ClipSpec,
   type LoopStyle,
 } from "./lab-jobs";
 import { retargetClipRestCompensated } from "./lab-retarget";
@@ -26,43 +22,22 @@ import { FIXTER_HIPS_BONE, MESHY_BVH_TO_FIXTER } from "./meshy-bone-map";
 import { reverseClip, subclipByTime } from "./lab-clip-utils";
 import { publishRetargetReport, publishTelemetry } from "./lab-telemetry";
 import {
+  buildTour,
   clipRoleForPhase,
-  createSequenceRuntime,
-  stepSequence,
-  type JobDefinition,
-  type SequencePhase,
-  type SequenceRuntime,
+  createTourRuntime,
+  stepTour,
+  type TourPhase,
+  type TourRuntime,
+  type TourStop,
 } from "./lab-choreography";
-import Screwdriver from "./Screwdriver";
-import {
-  createTravelRuntime,
-  isMoving,
-  stepTravel,
-  type TaskAnchor,
-  type TravelPhase,
-  type TravelRuntime,
-} from "./lab-travel";
+import HandTool from "./lab-tools";
+import { resetObjectFix } from "./lab-object-state";
+import { setFixterPose } from "./lab-pose";
 
 useGLTF.preload(FIXTER_GLB);
 
-/** Every BVH the Lab loads: two diagnostics takes, two sequence sources. */
-const BVH_FILES = [
-  ...MESHY_MOTIONS.map((m) => m.file),
-  REPAIR_ARC_BVH,
-  SQUAT_WORK_BVH,
-  IDLE_BVH,
-];
-
-export type TravelCommand = {
+export type TourCommand = {
   token: number;
-  anchors: TaskAnchor[];
-  start: [number, number, number];
-  loop: boolean;
-};
-
-export type SequenceCommand = {
-  token: number;
-  job: JobDefinition;
   paused: boolean;
 };
 
@@ -72,12 +47,15 @@ export type ToolOffset = {
   scale: number;
 };
 
-export type SequenceState = {
-  phase: SequencePhase;
+export type TourState = {
+  phase: TourPhase;
+  jobId: string;
+  jobLabel: string;
+  clip: string;
+  tool: string;
   workProgress: number;
-  objectFixed: boolean;
-  toolEquipped: boolean;
-  done: boolean;
+  jobsDone: number;
+  laps: number;
 };
 
 export type FixterModelProps = {
@@ -88,35 +66,35 @@ export type FixterModelProps = {
   isPlaying: boolean;
   timeScale: number;
   stopToken: number;
-  travel: TravelCommand | null;
-  movementMode: MovementMode;
-  travelSpeed: number;
-  sequence: SequenceCommand | null;
+  tour: TourCommand | null;
+  /** Layout compression: 1 desktop, smaller draws the anchors inward. */
+  spread: number;
   toolOffset: ToolOffset;
   onReady: (clipNames: string[]) => void;
-  onTravelEnd: (position: [number, number, number], yawDeg: number) => void;
-  onSequenceState: (state: SequenceState) => void;
+  onTourState: (state: TourState) => void;
 };
 
 const TELEMETRY_INTERVAL = 0.25;
-const CROSSFADE = 0.2;
+const MANUAL_FADE = 0.2;
+
 /**
- * Longer fades for the choreography than for flicking between clips by hand.
- * The brief is that he reads as one persistent character, and the two places
- * that would betray that are walk→crouch and crouch→stand, so those get the
- * most time to blend.
+ * Blend lengths per phase.
+ *
+ * The moments that would give away clip-swapping are the ones where the whole
+ * body changes what it is doing — walk into crouch, crouch back to standing —
+ * so those get the longest. Arriving at a standing job blends walk straight
+ * into the work pose, which is a smaller change and wants less time or he
+ * appears to hesitate.
  */
-const SEQUENCE_FADE: Partial<Record<SequencePhase, number>> = {
+const PHASE_FADE: Record<TourPhase, number> = {
+  IDLE: 0.45,
   TRAVEL: 0.3,
-  APPROACH: 0.25,
-  TURN_TO: 0.35,
+  APPROACH: 0.28,
+  TURN_TO: 0.32,
   WORK_IN: 0.4,
-  WORK: 0.6,
-  WORK_OUT: 0.35,
-  COMPLETE: 0.45,
-  TURN_AWAY: 0.3,
-  TRAVEL_AWAY: 0.3,
-  DONE: 0.5,
+  WORK: 0.5,
+  WORK_OUT: 0.38,
+  COMPLETE: 0.42,
 };
 
 const LOOP_MODE: Record<LoopStyle, THREE.AnimationActionLoopStyles> = {
@@ -133,23 +111,20 @@ export default function FixterModel({
   isPlaying,
   timeScale,
   stopToken,
-  travel,
-  movementMode,
-  travelSpeed,
-  sequence,
+  tour,
+  spread,
   toolOffset,
   onReady,
-  onTravelEnd,
-  onSequenceState,
+  onTourState,
 }: FixterModelProps) {
   const groupRef = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(FIXTER_GLB);
-  const bvhs = useLoader(BVHLoader, BVH_FILES);
+  const bvhs = useLoader(BVHLoader, MOTION_FILES);
 
   /*
-   * One clone for display. SkeletonUtils.clone is the skinned-mesh-aware copy:
-   * a plain .clone() leaves the meshes bound to the source bones and the
-   * character collapses. Exactly one of these ever exists.
+   * One clone, for the one character that ever exists. SkeletonUtils.clone is
+   * the skinned-mesh-aware copy; a plain .clone() leaves the meshes bound to
+   * the source bones and the character collapses.
    */
   const model = useMemo(() => {
     const copy = cloneSkeleton(scene);
@@ -168,33 +143,25 @@ export default function FixterModel({
   }, [model]);
 
   /*
-   * Retarget every source take once, then cut the choreography out of the
-   * results. Cutting AFTER retargeting matters: all segments taken from one
-   * take then share a single ground correction, so crouching and standing
-   * cannot disagree about where the floor is.
+   * Retarget each take once, then cut every clip out of the results.
    *
-   * Only the windows the sequence needs are retargeted — the repair take came
-   * back 50 seconds long and the choreography uses the first 12.5.
+   * Cutting after retargeting matters: all clips from one take share a single
+   * ground correction, so a crouch and the stand-up taken from it cannot
+   * disagree about where the floor is. The takes arrive pre-trimmed to the
+   * seconds actually used, so there is no wasted work here either.
    */
-  const { clips: meshyClips, loopStyles } = useMemo(() => {
-    const out: THREE.AnimationClip[] = [];
-    const loops = new Map<string, LoopStyle>();
-    const fullByFile = new Map<string, THREE.AnimationClip>();
+  const { clips: motionClips, loopStyles } = useMemo(() => {
+    const retargeted = new Map<string, THREE.AnimationClip>();
 
-    BVH_FILES.forEach((file, index) => {
+    MOTION_FILES.forEach((file, index) => {
       const bvh = bvhs[index];
       if (!bvh) return;
       try {
-        const window = SOURCE_WINDOWS[file];
-        const source = window
-          ? subclipByTime(bvh.clip, "window", window[0], window[1])
-          : bvh.clip;
-
         const probe = cloneSkeleton(scene);
         const { clip, report } = retargetClipRestCompensated(
           probe,
           bvh.skeleton.bones[0],
-          source,
+          bvh.clip,
           {
             names: MESHY_BVH_TO_FIXTER,
             hips: FIXTER_HIPS_BONE,
@@ -202,83 +169,57 @@ export default function FixterModel({
             clipName: file,
           }
         );
-        if (!clip) return;
-        fullByFile.set(file, clip);
-
-        const motion = MESHY_MOTIONS.find((m) => m.file === file);
-        if (motion) {
-          clip.name = motion.clipName;
-          out.push(clip);
-          loops.set(motion.clipName, "repeat");
-          publishRetargetReport({ ...report, clipName: motion.clipName });
-        } else {
-          publishRetargetReport(report);
+        if (clip) {
+          retargeted.set(file, clip);
+          publishRetargetReport({ ...report, clipName: file.split("/").pop() ?? file });
         }
       } catch (error) {
         console.error(`[Fixter Lab] retarget failed for ${file}:`, error);
       }
     });
 
-    for (const spec of Object.values(SEQUENCE_CLIPS)) {
-      const full = fullByFile.get(spec.file);
+    const out: THREE.AnimationClip[] = [];
+    const loops = new Map<string, LoopStyle>();
+    for (const spec of allClipSpecs()) {
+      const full = retargeted.get(spec.file);
       if (!full) continue;
       const cut = subclipByTime(full, spec.name, spec.start, spec.end);
       out.push(spec.reverse ? reverseClip(cut, spec.name) : cut);
       loops.set(spec.name, spec.loop);
     }
-
     return { clips: out, loopStyles: loops };
   }, [scene, bvhs]);
 
   const clips = useMemo(
-    () => [...animations, ...meshyClips],
-    [animations, meshyClips]
+    () => [...animations, ...motionClips],
+    [animations, motionClips]
   );
 
   const { actions, mixer, names } = useAnimations(clips, groupRef);
   const roles = useMemo(() => resolveClipRoles(names), [names]);
 
   /**
-   * How long the one-shot beats last, read from the real clips.
+   * Stops are resolved from the clips, not from `actions`.
    *
-   * Each hands over one fade-length EARLY. A LoopOnce action that actually
-   * reaches its end disables itself and drops out of the mix instantly, so
-   * starting the blend before the clip runs out is both correct animation
-   * practice and what keeps the crouch from popping as it hands off to the
-   * work loop.
+   * drei fills one `actions` object in place as clips register, so a memo keyed
+   * on it computes once against an empty map and never re-runs — which silently
+   * ran the crouch on a fallback duration once already.
    */
-  const phaseDurations = useMemo(() => {
-    /*
-     * Read from `clips`, not from `actions`.
-     *
-     * drei hands back one `actions` object and fills it in as clips register,
-     * so a memo keyed on it computes once against an empty map and never runs
-     * again — which silently ran the crouch on the 1.8s fallback instead of its
-     * real 4.0s clip. The clips array is replaced when it changes, so it is the
-     * honest dependency.
-     */
-    const durationOf = (name: string) =>
-      clips.find((clip) => clip.name === name)?.duration;
-    const inDuration = durationOf(SEQUENCE_CLIPS.workIn.name) ?? 1.8;
-    const outDuration = durationOf(SEQUENCE_CLIPS.workOut.name) ?? 1.8;
-    return {
-      workIn: Math.max(0.25, inDuration - (SEQUENCE_FADE.WORK ?? 0.45)),
-      workOut: Math.max(0.25, outDuration - (SEQUENCE_FADE.COMPLETE ?? 0.45)),
-    };
-  }, [clips]);
+  const stops: TourStop[] = useMemo(() => {
+    const seconds = (name: string) =>
+      clips.find((clip) => clip.name === name)?.duration ?? 0;
+    return buildTour(JOBS, spread, seconds);
+  }, [clips, spread]);
 
-  const travelRef = useRef<TravelRuntime | null>(null);
-  const travelTokenRef = useRef(-1);
-  const seqRef = useRef<SequenceRuntime | null>(null);
-  const seqTokenRef = useRef(-1);
+  const tourRef = useRef<TourRuntime | null>(null);
+  const tokenRef = useRef(-1);
   const currentActionRef = useRef<THREE.AnimationAction | null>(null);
-  const telemetryClockRef = useRef(0);
-  const frameCountRef = useRef(0);
-  const endReportedRef = useRef(false);
-  const lastEmittedRef = useRef<SequenceState | null>(null);
+  const telemetryClock = useRef(0);
+  const frames = useRef(0);
+  const lastEmitted = useRef<TourState | null>(null);
 
-  const [travelPhase, setTravelPhase] = useState<TravelPhase>("IDLE");
-  const [seqPhase, setSeqPhase] = useState<SequencePhase>("IDLE");
+  const [phase, setPhase] = useState<TourPhase>("IDLE");
+  const [stopIndex, setStopIndex] = useState(0);
   const [toolVisible, setToolVisible] = useState(false);
 
   useEffect(() => {
@@ -301,32 +242,31 @@ export default function FixterModel({
     mixer.update(0);
   }, [stopToken, mixer]);
 
-  /** Which clip the current situation asks for. Sequence outranks everything. */
+  /** The clip the current situation asks for. The tour outranks the selector. */
   const desiredClip = useMemo(() => {
-    if (sequence) {
-      const role = clipRoleForPhase(seqPhase);
-      if (role === "walk") return roles.walkInPlace;
-      return SEQUENCE_CLIPS[role]?.name ?? roles.rest;
-    }
-    if (travel && isMoving(travelPhase)) {
-      return movementMode === "animated" ? roles.walkInPlace : roles.rootMotion;
-    }
-    if (travel) return roles.rest ?? manualClip;
-    return manualClip;
-  }, [sequence, seqPhase, travel, travelPhase, movementMode, roles, manualClip]);
+    if (!tour) return manualClip;
+    const stop = stops[stopIndex % Math.max(1, stops.length)];
+    if (!stop) return roles.rest;
+    const role = clipRoleForPhase(phase);
+    if (role === "walk") return roles.walkInPlace;
+    if (role === "idle") return "Idle";
+    const spec: ClipSpec | undefined =
+      role === "work" ? stop.motion.clip
+      : role === "workIn" ? stop.motion.enter
+      : stop.motion.exit;
+    return spec?.name ?? "Idle";
+  }, [tour, stops, stopIndex, phase, roles, manualClip]);
 
   const applyClip = useCallback(
     (clipName: string | null, fade: number) => {
       const next = clipName ? (actions[clipName] ?? null) : null;
       const current = currentActionRef.current;
       if (next === current) return;
-
       if (current) current.fadeOut(fade);
       if (next) {
-        const style = loopStyles.get(clipName!) ?? "repeat";
         next
           .reset()
-          .setLoop(LOOP_MODE[style], Infinity)
+          .setLoop(LOOP_MODE[loopStyles.get(clipName!) ?? "repeat"], Infinity)
           .setEffectiveTimeScale(timeScaleRef.current)
           .setEffectiveWeight(1)
           .fadeIn(fade)
@@ -337,150 +277,104 @@ export default function FixterModel({
     [actions, loopStyles]
   );
 
-  /*
-   * The blend length is chosen per phase, not globally: the two moments that
-   * would betray this as clip-swapping rather than one character are
-   * walk -> crouch and crouch -> stand, so those get the longest fades.
-   */
   useEffect(() => {
-    const fade = sequence ? (SEQUENCE_FADE[seqPhase] ?? 0.3) : CROSSFADE;
-    applyClip(desiredClip, fade);
-  }, [desiredClip, applyClip, sequence, seqPhase]);
+    applyClip(desiredClip, tour ? PHASE_FADE[phase] : MANUAL_FADE);
+  }, [desiredClip, applyClip, tour, phase]);
 
   useEffect(() => {
     const action = currentActionRef.current;
     if (!action) return;
-    action.paused = sequence ? sequence.paused : travel ? false : !isPlaying;
-  }, [isPlaying, travel, sequence, desiredClip]);
+    action.paused = tour ? tour.paused : !isPlaying;
+  }, [isPlaying, tour, desiredClip]);
+
+  const currentStop = stops[stopIndex % Math.max(1, stops.length)];
+  const toolKind = currentStop?.job.tool ?? null;
+  const aim = currentStop?.motion.toolAimDeg ?? [0, 0, 0];
 
   useFrame((state, delta) => {
     const group = groupRef.current;
     if (!group) return;
     const dt = Math.min(delta, 0.1);
 
-    /* ---------------- sequence ---------------- */
-    if (sequence) {
-      if (seqTokenRef.current !== sequence.token) {
-        seqTokenRef.current = sequence.token;
-        seqRef.current = createSequenceRuntime(sequence.job);
-        lastEmittedRef.current = null;
+    if (tour && stops.length) {
+      if (tokenRef.current !== tour.token) {
+        tokenRef.current = tour.token;
+        tourRef.current = createTourRuntime(stops);
+        lastEmitted.current = null;
+        resetObjectFix();
       }
-      const runtime = seqRef.current!;
-      if (!sequence.paused) {
-        stepSequence(runtime, sequence.job, phaseDurations, dt);
-      }
+      const runtime = tourRef.current!;
+      if (!tour.paused) stepTour(runtime, stops, dt);
 
       group.position.copy(runtime.position);
       group.rotation.set(0, runtime.yaw, 0);
       group.scale.setScalar(scale);
 
-      if (runtime.phase !== seqPhase) setSeqPhase(runtime.phase);
+      if (runtime.phase !== phase) setPhase(runtime.phase);
+      if (runtime.stopIndex !== stopIndex) setStopIndex(runtime.stopIndex);
       if (runtime.toolEquipped !== toolVisible) setToolVisible(runtime.toolEquipped);
+      setFixterPose(runtime.position, runtime.yaw);
 
       /*
-       * Reported on change, not every frame.
-       *
-       * This callback lands in React state in the control panel; at sixty
-       * calls a second it would re-render the whole panel continuously and the
-       * readout would become the reason the frame rate dropped. Work progress
-       * is quantised to 5% because the only thing downstream of it is the
-       * outlet, which eases toward its target on its own.
+       * Reported on change, not every frame: this lands in React state in the
+       * control panel, and sixty updates a second would make the readout the
+       * reason the frame rate dropped.
        */
-      const last = lastEmittedRef.current;
+      const stop = stops[runtime.stopIndex % stops.length];
       const bucket = Math.round(runtime.workProgress * 20) / 20;
+      const last = lastEmitted.current;
       if (
         !last ||
         last.phase !== runtime.phase ||
-        last.toolEquipped !== runtime.toolEquipped ||
-        last.objectFixed !== runtime.objectFixed ||
-        last.done !== runtime.done ||
-        last.workProgress !== bucket
+        last.jobId !== stop.job.id ||
+        last.workProgress !== bucket ||
+        last.jobsDone !== runtime.tick
       ) {
-        const emitted: SequenceState = {
+        const emitted: TourState = {
           phase: runtime.phase,
+          jobId: stop.job.id,
+          jobLabel: stop.job.label,
+          clip: currentActionRef.current?.getClip().name ?? "-",
+          tool: runtime.toolEquipped ? (stop.job.tool ?? "-") : "stowed",
           workProgress: bucket,
-          objectFixed: runtime.objectFixed,
-          toolEquipped: runtime.toolEquipped,
-          done: runtime.done,
+          jobsDone: runtime.tick,
+          laps: runtime.laps,
         };
-        lastEmittedRef.current = emitted;
-        onSequenceState(emitted);
+        lastEmitted.current = emitted;
+        onTourState(emitted);
       }
     } else {
-      if (seqTokenRef.current !== -1) {
-        seqTokenRef.current = -1;
-        seqRef.current = null;
-        setSeqPhase("IDLE");
+      if (tokenRef.current !== -1) {
+        tokenRef.current = -1;
+        tourRef.current = null;
+        setPhase("IDLE");
         setToolVisible(false);
       }
-
-      /* ---------------- manual travel ---------------- */
-      if (travel && travelTokenRef.current !== travel.token) {
-        travelTokenRef.current = travel.token;
-        endReportedRef.current = false;
-        const started = createTravelRuntime(travel.start);
-        started.phase = "TRAVEL";
-        travelRef.current = started;
-      } else if (!travel && travelTokenRef.current !== -1) {
-        travelTokenRef.current = -1;
-        travelRef.current = null;
-      }
-
-      const runtime = travelRef.current;
-      const translateInCode = movementMode !== "rootMotion";
-
-      if (runtime && runtime.phase !== "IDLE" && travel) {
-        stepTravel(
-          runtime,
-          travel.anchors,
-          { speed: travelSpeed, translateInCode, loop: travel.loop },
-          dt
-        );
-        if (translateInCode) group.position.copy(runtime.position);
-        else group.position.set(travel.start[0], travel.start[1], travel.start[2]);
-        group.rotation.set(
-          THREE.MathUtils.degToRad(rotationDeg[0]),
-          runtime.yaw,
-          THREE.MathUtils.degToRad(rotationDeg[2])
-        );
-        if (runtime.finished && !endReportedRef.current) {
-          endReportedRef.current = true;
-          onTravelEnd(
-            [group.position.x, group.position.y, group.position.z],
-            THREE.MathUtils.radToDeg(runtime.yaw)
-          );
-        }
-      } else {
-        group.position.set(position[0], position[1], position[2]);
-        group.rotation.set(
-          THREE.MathUtils.degToRad(rotationDeg[0]),
-          THREE.MathUtils.degToRad(rotationDeg[1]),
-          THREE.MathUtils.degToRad(rotationDeg[2])
-        );
-      }
+      group.position.set(position[0], position[1], position[2]);
+      group.rotation.set(
+        THREE.MathUtils.degToRad(rotationDeg[0]),
+        THREE.MathUtils.degToRad(rotationDeg[1]),
+        THREE.MathUtils.degToRad(rotationDeg[2])
+      );
       group.scale.setScalar(scale);
-
-      const nextPhase = travel && runtime ? runtime.phase : "IDLE";
-      if (nextPhase !== travelPhase) setTravelPhase(nextPhase);
     }
 
-    /* ---------------- telemetry ---------------- */
-    frameCountRef.current += 1;
-    telemetryClockRef.current += delta;
-    if (telemetryClockRef.current >= TELEMETRY_INTERVAL) {
+    frames.current += 1;
+    telemetryClock.current += delta;
+    if (telemetryClock.current >= TELEMETRY_INTERVAL) {
       const info = state.gl.info;
       publishTelemetry({
-        fps: frameCountRef.current / telemetryClockRef.current,
+        fps: frames.current / telemetryClock.current,
         drawCalls: info.render.calls,
         triangles: info.render.triangles,
         geometries: info.memory.geometries,
         textures: info.memory.textures,
-        phase: sequence ? "TRAVEL" : (travelRef.current?.phase ?? "IDLE"),
+        phase: tourRef.current?.phase ?? "IDLE",
         clip: currentActionRef.current?.getClip().name ?? "-",
         position: [group.position.x, group.position.y, group.position.z],
       });
-      frameCountRef.current = 0;
-      telemetryClockRef.current = 0;
+      frames.current = 0;
+      telemetryClock.current = 0;
     }
   });
 
@@ -489,19 +383,22 @@ export default function FixterModel({
       <primitive object={model} />
       {handBone &&
         toolVisible &&
+        toolKind &&
         createPortal(
           <group
             position={toolOffset.position}
             rotation={[
-              THREE.MathUtils.degToRad(toolOffset.rotationDeg[0]),
-              THREE.MathUtils.degToRad(toolOffset.rotationDeg[1]),
-              THREE.MathUtils.degToRad(toolOffset.rotationDeg[2]),
+              THREE.MathUtils.degToRad(aim[0] + toolOffset.rotationDeg[0]),
+              THREE.MathUtils.degToRad(aim[1] + toolOffset.rotationDeg[1]),
+              THREE.MathUtils.degToRad(aim[2] + toolOffset.rotationDeg[2]),
             ]}
           >
-            <Screwdriver scale={toolOffset.scale} />
+            <HandTool kind={toolKind} scale={TOOL_SCALE * toolOffset.scale} />
           </group>,
           handBone
         )}
     </group>
   );
 }
+
+export { WORK_MOTIONS };

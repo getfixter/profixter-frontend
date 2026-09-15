@@ -1,59 +1,59 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { getRoleLandingPath, isAdminUser } from "@/lib/auth-routing";
+import { resolveClipRoles } from "@/app/components/lab/lab-config";
 import {
-  MEASURED_WALK_SPEED,
-  MOVEMENT_MODES,
-  POINT_A,
-  POINT_B,
-  MESHY_CLIP_NAMES,
-  MESHY_MOTIONS,
-  resolveClipRoles,
-  type MovementMode,
-} from "@/app/components/lab/lab-config";
-import type {
-  SequenceCommand,
-  SequenceState,
-  ToolOffset,
-  TravelCommand,
-} from "@/app/components/lab/FixterModel";
-import {
-  DEFAULT_TOOL_OFFSET,
-  OUTLET_REPAIR_JOB,
+  JOBS,
+  LAYOUTS,
   SEQUENCE_CLIP_NAMES,
+  type CameraPreset,
+  type LayoutId,
 } from "@/app/components/lab/lab-jobs";
 import { PHASE_LABELS } from "@/app/components/lab/lab-choreography";
+import type {
+  TourCommand,
+  TourState,
+  ToolOffset,
+} from "@/app/components/lab/FixterModel";
 import TelemetryReadout from "@/app/components/lab/TelemetryReadout";
 import RetargetDiagnostics from "@/app/components/lab/RetargetDiagnostics";
 import LabErrorBoundary from "@/app/components/lab/LabErrorBoundary";
 
 /*
- * The scene is the only thing that pulls three, R3F and drei, and it is loaded
- * lazily with ssr:false. That is not optional: WebGL has no server runtime, and
- * keeping the import behind dynamic() is what stops the 3D stack from landing
- * in any chunk the rest of Admin touches.
+ * The scene is the only thing that pulls three, R3F and drei, and it loads
+ * lazily with ssr:false. Not optional: WebGL has no server runtime, and the
+ * dynamic boundary is what keeps the 3D stack out of every other chunk.
  */
-const FixterScene = dynamic(
-  () => import("@/app/components/lab/FixterScene"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-full w-full items-center justify-center bg-white text-[13px] font-semibold text-slate-400">
-        Preparing renderer...
-      </div>
-    ),
-  }
-);
+const FixterScene = dynamic(() => import("@/app/components/lab/FixterScene"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center bg-white text-[13px] font-semibold text-slate-400">
+      Preparing renderer...
+    </div>
+  ),
+});
 
 type Vec3 = [number, number, number];
 
 const DEFAULT_POSITION: Vec3 = [0, 0, 0];
 const DEFAULT_ROTATION: Vec3 = [0, 0, 0];
+const DEFAULT_TOOL_OFFSET: ToolOffset = {
+  position: [0.012, 0.055, 0.005],
+  rotationDeg: [0, 0, 0],
+  scale: 1,
+};
 const AXES = ["X", "Y", "Z"] as const;
 
 function Section({
@@ -77,41 +77,22 @@ function Section({
 }
 
 function Slider({
-  label,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-  disabled,
-  suffix,
+  label, value, min, max, step, onChange, disabled, suffix,
 }: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (value: number) => void;
-  disabled?: boolean;
-  suffix?: string;
+  label: string; value: number; min: number; max: number; step: number;
+  onChange: (value: number) => void; disabled?: boolean; suffix?: string;
 }) {
   return (
     <label className={`block ${disabled ? "opacity-40" : ""}`}>
       <span className="flex items-center justify-between text-[12px] font-semibold text-slate-600">
         {label}
         <span className="font-mono tabular-nums text-slate-900">
-          {value.toFixed(2)}
-          {suffix}
+          {value.toFixed(2)}{suffix}
         </span>
       </span>
       <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        disabled={disabled}
-        onChange={(event) => onChange(Number(event.target.value))}
+        type="range" min={min} max={max} step={step} value={value} disabled={disabled}
+        onChange={(e) => onChange(Number(e.target.value))}
         className="mt-1.5 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-[#306EEC] disabled:cursor-not-allowed"
       />
     </label>
@@ -119,14 +100,9 @@ function Slider({
 }
 
 function Button({
-  children,
-  onClick,
-  disabled,
-  tone = "default",
+  children, onClick, disabled, tone = "default",
 }: {
-  children: React.ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
+  children: React.ReactNode; onClick: () => void; disabled?: boolean;
   tone?: "default" | "primary" | "danger";
 }) {
   const tones = {
@@ -136,9 +112,7 @@ function Button({
   };
   return (
     <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
+      type="button" onClick={onClick} disabled={disabled}
       className={`min-h-[38px] flex-1 rounded-lg border px-3 text-[13px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${tones[tone]}`}
     >
       {children}
@@ -146,25 +120,48 @@ function Button({
   );
 }
 
-function Toggle({
-  label,
-  checked,
-  onChange,
+function Pills<T extends string>({
+  options, value, onChange,
 }: {
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
+  options: { id: T; label: string }[]; value: T; onChange: (id: T) => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between text-[13px] font-semibold text-slate-700">
-      {label}
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-        className="h-4 w-4 accent-[#306EEC]"
-      />
-    </label>
+    <div className="flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+      {options.map((option) => (
+        <button
+          key={option.id} type="button" onClick={() => onChange(option.id)}
+          className={`min-h-[34px] flex-1 rounded-md px-2 text-[13px] font-semibold transition ${
+            value === option.id ? "bg-white text-[#306EEC] shadow-sm" : "text-slate-500"
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * A media query as derived state.
+ *
+ * useSyncExternalStore rather than an effect that mirrors the query into
+ * useState: the browser already holds this value, so copying it into React
+ * state means a render with the wrong answer followed by a corrective one, and
+ * it needs a server snapshot to hydrate cleanly. This is what the hook is for.
+ */
+function useMediaQuery(query: string, serverValue = false) {
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      const mq = window.matchMedia(query);
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    [query]
+  );
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(query).matches,
+    () => serverValue
   );
 }
 
@@ -181,32 +178,29 @@ export default function LabClient() {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState<Vec3>(DEFAULT_POSITION);
   const [rotationDeg, setRotationDeg] = useState<Vec3>(DEFAULT_ROTATION);
-
-  const [movementMode, setMovementMode] = useState<MovementMode>("animated");
-  const [travelSpeed, setTravelSpeed] = useState(MEASURED_WALK_SPEED);
-  const [travel, setTravel] = useState<TravelCommand | null>(null);
-  const travelTokenRef = useRef(0);
-
-  const [orbitEnabled, setOrbitEnabled] = useState(true);
-  const [showMarkers, setShowMarkers] = useState(true);
-  const [resetToken, setResetToken] = useState(0);
-  const [sequenceViewToken, setSequenceViewToken] = useState(0);
-
-  const [sequence, setSequence] = useState<SequenceCommand | null>(null);
-  const [sequenceState, setSequenceState] = useState<SequenceState | null>(null);
   const [toolOffset, setToolOffset] = useState<ToolOffset>(DEFAULT_TOOL_OFFSET);
-  const sequenceTokenRef = useRef(0);
+
+  const [tour, setTour] = useState<TourCommand | null>(null);
+  const [tourState, setTourState] = useState<TourState | null>(null);
+  const tourToken = useRef(0);
+
+  const [layoutOverride, setLayoutOverride] = useState<LayoutId | null>(null);
+  const [cameraOverride, setCameraOverride] = useState<CameraPreset | null>(null);
+  const [orbitEnabled, setOrbitEnabled] = useState(true);
+  const [resetToken, setResetToken] = useState(0);
+  const [showObjects, setShowObjects] = useState(true);
+
+  /* Staging follows the viewport unless the reviewer has picked a preset. */
+  const narrow = useMediaQuery("(max-width: 860px)");
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const layout: LayoutId = layoutOverride ?? (narrow ? "mobile" : "desktop");
+  const cameraPreset: CameraPreset = cameraOverride ?? LAYOUTS[layout].camera;
+  const spread = LAYOUTS[layout].spread;
 
   const roles = useMemo(() => resolveClipRoles(clipNames), [clipNames]);
-  const isTraveling = travel !== null;
-  const isSequencing = sequence !== null;
-  // The choreography owns the character while it runs; hand controls stand down.
-  const manualLocked = isTraveling || isSequencing;
   const isLoaded = clipNames.length > 0;
-  const meshyClipCount = clipNames.filter((n) => MESHY_CLIP_NAMES.has(n)).length;
-  const activeMotion = MESHY_MOTIONS.find((m) => m.clipName === activeClip);
+  const touring = tour !== null;
 
-  /* Admin only. Employees have a workspace; they have no business in here. */
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -216,92 +210,42 @@ export default function LabClient() {
     if (!isAdminUser(user)) router.replace(getRoleLandingPath(user));
   }, [user, authLoading, router]);
 
-  const handleReady = useCallback((names: string[]) => {
-    setClipNames(names);
-    // Open on the neutral pose rather than a walk cycle: the first thing to
-    // look at is the character standing still.
-    setActiveClip(
-      (current) => current ?? resolveClipRoles(names).rest ?? names[0] ?? null
-    );
+  const startTour = useCallback(() => {
+    tourToken.current += 1;
+    setTourState(null);
+    setTour({ token: tourToken.current, paused: false });
   }, []);
 
-  const handleTravelEnd = useCallback(
-    (finalPosition: Vec3, yawDeg: number) => {
-      setPosition(finalPosition);
-      setRotationDeg((current) => [current[0], yawDeg, current[2]]);
-      setTravel(null);
-      // restpose is a frozen 2-frame pose, not a real idle. It is what the GLB
-      // has, and it beats leaving him mid-stride.
-      setActiveClip((current) => roles.rest ?? current);
-      setIsPlaying(true);
+  const autoStarted = useRef(false);
+  const handleReady = useCallback(
+    (names: string[]) => {
+      setClipNames(names);
+      setActiveClip(
+        (current) => current ?? resolveClipRoles(names).rest ?? names[0] ?? null
+      );
+      /*
+       * Start on its own the moment the clips exist. The point of this page is
+       * to watch the thing, not to press a button first. The reduced-motion
+       * preference is read here rather than mirrored into state, because this
+       * is the only moment it is consulted.
+       */
+      if (!autoStarted.current) {
+        autoStarted.current = true;
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          startTour();
+        }
+      }
     },
-    [roles]
+    [startTour]
   );
 
-  const startTravel = useCallback((from: Vec3, to: Vec3, loop: boolean) => {
-    travelTokenRef.current += 1;
-    setPosition(from);
-    setTravel({
-      token: travelTokenRef.current,
-      anchors: loop
-        ? [
-            { id: "B", position: to },
-            { id: "A", position: from },
-          ]
-        : [{ id: "B", position: to }],
-      start: from,
-      loop,
-    });
-  }, []);
-
-  const handleSequenceState = useCallback((state: SequenceState) => {
-    setSequenceState(state);
-  }, []);
-
-  const playSequence = useCallback(() => {
-    sequenceTokenRef.current += 1;
-    setTravel(null);
-    setSequenceState(null);
-    setSequence({
-      token: sequenceTokenRef.current,
-      job: OUTLET_REPAIR_JOB,
-      paused: false,
-    });
-    // Frame the route rather than leaving the user on the inspection camera.
-    setSequenceViewToken((t) => t + 1);
-  }, []);
-
-  const toggleSequencePause = useCallback(() => {
-    setSequence((current) =>
-      current ? { ...current, paused: !current.paused } : current
-    );
-  }, []);
-
-  const resetSequence = useCallback(() => {
-    setSequence(null);
-    setSequenceState(null);
-    setPosition(DEFAULT_POSITION);
-    setRotationDeg(DEFAULT_ROTATION);
-  }, []);
-
-  const stopEverything = useCallback(() => {
-    setTravel(null);
-    setSequence(null);
-    setIsPlaying(false);
-    setStopToken((token) => token + 1);
-  }, []);
-
   const setAxis = (
-    setter: React.Dispatch<React.SetStateAction<Vec3>>,
-    axis: number,
-    value: number
-  ) => {
-    setter((current) => {
-      const next: Vec3 = [...current];
-      next[axis] = value;
-      return next;
-    });
-  };
+    setter: React.Dispatch<React.SetStateAction<Vec3>>, axis: number, value: number
+  ) => setter((current) => {
+    const next: Vec3 = [...current];
+    next[axis] = value;
+    return next;
+  });
 
   if (authLoading) {
     return (
@@ -310,7 +254,6 @@ export default function LabClient() {
       </div>
     );
   }
-
   if (!user || !isAdminUser(user)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
@@ -328,21 +271,13 @@ export default function LabClient() {
             Experimental
           </span>
         </div>
-        <Link
-          href="/admin"
-          className="text-[13px] font-semibold text-slate-500 hover:text-slate-900"
-        >
+        <Link href="/admin" className="text-[13px] font-semibold text-slate-500 hover:text-slate-900">
           Back to Admin
         </Link>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <div className="relative h-[48dvh] flex-shrink-0 bg-white lg:h-auto lg:min-h-0 lg:flex-1">
-          {/*
-            No WebGL capability probe: if the context cannot be created, three
-            throws on construction and the boundary below reports it. One code
-            path, and it also catches loader failures the probe never would.
-          */}
+        <div className="relative h-[52dvh] flex-shrink-0 bg-white lg:h-auto lg:min-h-0 lg:flex-1">
           <LabErrorBoundary>
             <FixterScene
               position={position}
@@ -352,30 +287,33 @@ export default function LabClient() {
               isPlaying={isPlaying}
               timeScale={timeScale}
               stopToken={stopToken}
-              travel={travel}
-              movementMode={movementMode}
-              travelSpeed={travelSpeed}
-              onReady={handleReady}
-              onTravelEnd={handleTravelEnd}
-              orbitEnabled={orbitEnabled}
-              showMarkers={showMarkers}
-              pointA={POINT_A}
-              pointB={POINT_B}
-              resetToken={resetToken}
-              sequence={sequence}
+              tour={tour}
               toolOffset={toolOffset}
-              onSequenceState={handleSequenceState}
-              sequenceViewToken={sequenceViewToken}
-              outletAlignment={
-                sequenceState?.objectFixed ? 1 : (sequenceState?.workProgress ?? 0)
-              }
+              onReady={handleReady}
+              onTourState={setTourState}
+              orbitEnabled={orbitEnabled}
+              cameraPreset={cameraPreset}
+              resetToken={resetToken}
+              spread={spread}
+              showObjects={showObjects}
             />
           </LabErrorBoundary>
 
           {!isLoaded && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <p className="text-[13px] font-semibold text-slate-400">
-                Loading character (6 MB)...
+                Loading the Fixter...
+              </p>
+            </div>
+          )}
+
+          {/* A quiet caption over the canvas, so the job reads without the panel */}
+          {touring && tourState && (
+            <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg bg-white/85 px-3 py-2 backdrop-blur-sm">
+              <p className="text-[13px] font-bold text-slate-900">{tourState.jobLabel}</p>
+              <p className="text-[11px] font-semibold text-slate-500">
+                {PHASE_LABELS[tourState.phase]}
+                {tourState.tool !== "stowed" && ` · ${tourState.tool}`}
               </p>
             </div>
           )}
@@ -383,362 +321,225 @@ export default function LabClient() {
 
         <aside className="min-h-0 flex-1 overflow-y-auto border-t border-slate-200 bg-white lg:w-[360px] lg:flex-none lg:border-l lg:border-t-0">
           <Section
-            title="Job sequence"
-            hint="The whole choreography, start to finish. Three.js owns position, facing, timing and the tool; Meshy supplies the body motion."
+            title="The tour"
+            hint={`${JOBS.length} jobs on a continuous loop. Three.js owns position, facing, timing, tools and object state; Meshy supplies the body motion.`}
           >
+            {reducedMotion && !touring && (
+              <p className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-[12px] leading-snug text-slate-600">
+                Your system asks for reduced motion, so the tour has not started
+                on its own. Press play if you want to watch it anyway.
+              </p>
+            )}
+
             <button
               type="button"
-              onClick={playSequence}
+              onClick={startTour}
               disabled={!isLoaded}
               className="min-h-[46px] w-full rounded-lg bg-[#0B1628] px-3 text-[14px] font-bold text-white transition hover:bg-[#16243c] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              ▶ Play Outlet Repair Sequence
+              ▶ {touring ? "Restart" : "Play"} Fixter Tour
             </button>
 
             <div className="flex gap-2">
-              <Button onClick={toggleSequencePause} disabled={!sequence}>
-                {sequence?.paused ? "Resume" : "Pause"}
+              <Button
+                onClick={() => setTour((c) => (c ? { ...c, paused: !c.paused } : c))}
+                disabled={!touring}
+              >
+                {tour?.paused ? "Resume" : "Pause"}
               </Button>
-              <Button onClick={resetSequence} disabled={!sequence} tone="danger">
-                Reset
+              <Button onClick={() => setTour(null)} disabled={!touring} tone="danger">
+                Stop
               </Button>
             </div>
 
-            {sequence && sequenceState && (
+            {touring && tourState && (
               <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
                 <p className="text-[13px] font-bold text-slate-800">
-                  {PHASE_LABELS[sequenceState.phase]}
+                  {tourState.jobLabel}
                 </p>
                 <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
-                  <dt className="text-slate-500">State</dt>
-                  <dd className="text-right font-mono font-semibold text-slate-800">
-                    {sequenceState.phase}
-                  </dd>
+                  <dt className="text-slate-500">Phase</dt>
+                  <dd className="text-right font-mono font-semibold text-slate-800">{tourState.phase}</dd>
+                  <dt className="text-slate-500">Clip</dt>
+                  <dd className="truncate text-right font-mono font-semibold text-slate-800">{tourState.clip}</dd>
                   <dt className="text-slate-500">Tool</dt>
+                  <dd className="text-right font-mono font-semibold text-slate-800">{tourState.tool}</dd>
+                  <dt className="text-slate-500">Jobs done</dt>
                   <dd className="text-right font-mono font-semibold text-slate-800">
-                    {sequenceState.toolEquipped ? "screwdriver" : "stowed"}
-                  </dd>
-                  <dt className="text-slate-500">Outlet</dt>
-                  <dd className="text-right font-mono font-semibold text-slate-800">
-                    {sequenceState.objectFixed ? "repaired" : "loose"}
+                    {tourState.jobsDone} · lap {tourState.laps + 1}
                   </dd>
                 </dl>
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
                   <div
                     className="h-full rounded-full bg-[#0EA96D] transition-[width] duration-300"
-                    style={{ width: `${Math.round(sequenceState.workProgress * 100)}%` }}
+                    style={{ width: `${Math.round(tourState.workProgress * 100)}%` }}
                   />
                 </div>
               </div>
             )}
 
-            <details className="rounded-lg border border-slate-200 p-2.5">
-              <summary className="cursor-pointer text-[12px] font-semibold text-slate-600">
-                Tool attachment offsets
-              </summary>
-              <div className="mt-2.5 space-y-2">
-                {AXES.map((axis, index) => (
-                  <Slider
-                    key={`tool-pos-${axis}`}
-                    label={`Tool position ${axis}`}
-                    value={toolOffset.position[index]}
-                    min={-0.15}
-                    max={0.15}
-                    step={0.002}
-                    onChange={(value) =>
-                      setToolOffset((current) => {
-                        const next: Vec3 = [...current.position];
-                        next[index] = value;
-                        return { ...current, position: next };
-                      })
-                    }
-                  />
-                ))}
-                {AXES.map((axis, index) => (
-                  <Slider
-                    key={`tool-rot-${axis}`}
-                    label={`Tool rotation ${axis}`}
-                    value={toolOffset.rotationDeg[index]}
-                    min={-180}
-                    max={180}
-                    step={1}
-                    suffix="°"
-                    onChange={(value) =>
-                      setToolOffset((current) => {
-                        const next: Vec3 = [...current.rotationDeg];
-                        next[index] = value;
-                        return { ...current, rotationDeg: next };
-                      })
-                    }
-                  />
-                ))}
-                <Slider
-                  label="Tool scale"
-                  value={toolOffset.scale}
-                  min={0.3}
-                  max={2.5}
-                  step={0.05}
-                  suffix="x"
-                  onChange={(value) =>
-                    setToolOffset((current) => ({ ...current, scale: value }))
-                  }
-                />
-                <Button onClick={() => setToolOffset(DEFAULT_TOOL_OFFSET)}>
-                  Reset tool offsets
-                </Button>
-              </div>
-            </details>
-          </Section>
-
-          <Section
-            title="Animation"
-            hint={
-              isSequencing
-                ? "The job sequence owns the clip while it runs."
-                : isTraveling
-                ? "The travel controller owns the clip while he is moving."
-                : meshyClipCount
-                  ? `${clipNames.length - meshyClipCount} clips from the GLB, plus ${meshyClipCount} retargeted from Meshy BVH.`
-                  : `${clipNames.length} clips found in the GLB.`
-            }
-          >
-            <div className="grid grid-cols-2 gap-2">
-              {clipNames.map((name) => {
-                /*
-                 * The retargeted Meshy clip is marked and given the full row.
-                 * It did not come out of the GLB, and while it is an experiment
-                 * it should be impossible to confuse with the clips that did.
-                 */
-                const isExperimental = MESHY_CLIP_NAMES.has(name);
-                const isSequenceClip = SEQUENCE_CLIP_NAMES.has(name);
+            <ol className="space-y-1 text-[12px]">
+              {JOBS.map((entry, index) => {
+                const current = tourState?.jobId === entry.id;
                 return (
-                  <button
-                    key={name}
-                    type="button"
-                    disabled={manualLocked}
-                    onClick={() => {
-                      setActiveClip(name);
-                      setIsPlaying(true);
-                    }}
-                    className={`min-h-[38px] rounded-lg border px-2 text-[13px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                      isExperimental || isSequenceClip ? "col-span-2" : ""
-                    } ${
-                      activeClip === name
-                        ? isExperimental
-                          ? "border-amber-500 bg-amber-500 text-white"
-                          : "border-[#306EEC] bg-[#306EEC] text-white"
-                        : isExperimental
-                          ? "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
-                          : isSequenceClip
-                            ? "border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100"
-                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  <li
+                    key={entry.id}
+                    className={`flex items-center justify-between rounded-md px-2 py-1 ${
+                      current ? "bg-[#306EEC]/10 font-semibold text-[#1d4ed8]" : "text-slate-500"
                     }`}
                   >
-                    {isExperimental ? `⚗ ${name}` : name}
-                  </button>
+                    <span>{index + 1}. {entry.label}</span>
+                    <span className="font-mono text-[10px] uppercase">
+                      {entry.tool ?? "hands"}
+                    </span>
+                  </li>
                 );
               })}
-              {!isLoaded && (
-                <p className="col-span-2 text-[12px] text-slate-400">
-                  Waiting for the GLB...
-                </p>
-              )}
-            </div>
+            </ol>
+          </Section>
 
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setIsPlaying((playing) => !playing)}
-                disabled={manualLocked || !activeClip}
-                tone={isPlaying ? "default" : "primary"}
-              >
-                {isPlaying ? "Pause" : "Play"}
-              </Button>
-              <Button onClick={stopEverything} disabled={!isLoaded} tone="danger">
-                Stop
-              </Button>
+          <Section title="Staging" hint="How the scene is composed and framed.">
+            <div className="space-y-1.5">
+              <p className="text-[12px] font-semibold text-slate-600">Layout</p>
+              <Pills
+                options={[
+                  { id: "desktop" as LayoutId, label: "Desktop" },
+                  { id: "mobile" as LayoutId, label: "Mobile" },
+                ]}
+                value={layout}
+                onChange={(id) => {
+                  setLayoutOverride(id);
+                  setCameraOverride(null);
+                }}
+              />
             </div>
-
+            <div className="space-y-1.5">
+              <p className="text-[12px] font-semibold text-slate-600">Camera</p>
+              <Pills
+                options={[
+                  { id: "page" as CameraPreset, label: "Page view" },
+                  { id: "follow" as CameraPreset, label: "Follow" },
+                ]}
+                value={cameraPreset}
+                onChange={setCameraOverride}
+              />
+            </div>
             <Slider
-              label="Animation speed"
-              value={timeScale}
-              min={0}
-              max={2.5}
-              step={0.05}
-              onChange={setTimeScale}
-              suffix="x"
+              label="Fixter scale" value={scale} min={0.4} max={1.6} step={0.05}
+              onChange={setScale} suffix="x"
             />
+            <div className="flex gap-2">
+              <Button onClick={() => setResetToken((t) => t + 1)}>Reset camera</Button>
+              <Button onClick={() => setShowObjects((v) => !v)}>
+                {showObjects ? "Hide objects" : "Show objects"}
+              </Button>
+            </div>
+          </Section>
 
-            {activeMotion && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-[11px] leading-snug text-amber-900">
-                <p>{activeMotion.note}</p>
-                <p className="mt-1.5">
-                  Retargeted at load from a Meshy Text-to-Motion BVH with
-                  rest-pose compensation, so the two rigs&apos; different bone
-                  axes and rest poses are accounted for rather than ignored. Hip
-                  translation is transferred and ground-corrected; the character
-                  still stands wherever the position sliders put him.
-                  Deliberately not wired into the travel sequence yet.
-                </p>
-                <p className="mt-1.5 font-mono text-[10px] text-amber-700">
-                  task {activeMotion.taskId}
-                </p>
+          <details className="border-b border-slate-200">
+            <summary className="cursor-pointer px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Diagnostics
+            </summary>
+
+            <Section title="Clips" hint={`${clipNames.length} clips loaded. Stop the tour to drive them by hand.`}>
+              <div className="grid grid-cols-2 gap-2">
+                {clipNames.map((name) => {
+                  const derived = SEQUENCE_CLIP_NAMES.has(name);
+                  return (
+                    <button
+                      key={name} type="button" disabled={touring}
+                      onClick={() => { setActiveClip(name); setIsPlaying(true); }}
+                      className={`min-h-[36px] rounded-lg border px-2 text-[12px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                        activeClip === name
+                          ? "border-[#306EEC] bg-[#306EEC] text-white"
+                          : derived
+                            ? "border-indigo-200 bg-indigo-50 text-indigo-800"
+                            : "border-slate-200 bg-white text-slate-700"
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  );
+                })}
               </div>
-            )}
-          </Section>
+              <div className="flex gap-2">
+                <Button onClick={() => setIsPlaying((p) => !p)} disabled={touring || !activeClip}>
+                  {isPlaying ? "Pause" : "Play"}
+                </Button>
+                <Button onClick={() => { setIsPlaying(false); setStopToken((t) => t + 1); }} disabled={touring} tone="danger">
+                  Stop
+                </Button>
+              </div>
+              <Slider label="Animation speed" value={timeScale} min={0} max={2.5} step={0.05} onChange={setTimeScale} suffix="x" />
+              <p className="text-[11px] text-slate-400">
+                Roles resolved — walk: {roles.walkInPlace ?? "none"} · rest: {roles.rest ?? "none"}
+              </p>
+            </Section>
 
-          <Section
-            title="A to B movement test"
-            hint="Walking animates the body; the app moves him through the world. Those are two different things, and this is where you can see it."
-          >
-            <div className="space-y-2">
-              {MOVEMENT_MODES.map((mode) => (
-                <label
-                  key={mode.id}
-                  className={`flex cursor-pointer gap-2.5 rounded-lg border p-2.5 transition ${
-                    movementMode === mode.id
-                      ? "border-[#306EEC] bg-blue-50/60"
-                      : "border-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="movement-mode"
-                    checked={movementMode === mode.id}
-                    onChange={() => setMovementMode(mode.id)}
-                    className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 accent-[#306EEC]"
-                  />
-                  <span>
-                    <span className="block text-[13px] font-semibold text-slate-800">
-                      {mode.label}
-                    </span>
-                    <span className="mt-0.5 block text-[11px] leading-snug text-slate-500">
-                      {mode.detail}
-                    </span>
-                  </span>
-                </label>
+            <Section title="Manual transform" hint="Only applies while the tour is stopped.">
+              {AXES.map((axis, index) => (
+                <Slider
+                  key={`p${axis}`} label={`Position ${axis}`} value={position[index]}
+                  min={-5} max={5} step={0.05} disabled={touring}
+                  onChange={(v) => setAxis(setPosition, index, v)}
+                />
               ))}
-            </div>
+              {AXES.map((axis, index) => (
+                <Slider
+                  key={`r${axis}`} label={`Rotation ${axis}`} value={rotationDeg[index]}
+                  min={-180} max={180} step={1} suffix="°" disabled={touring}
+                  onChange={(v) => setAxis(setRotationDeg, index, v)}
+                />
+              ))}
+              <Button onClick={() => { setPosition(DEFAULT_POSITION); setRotationDeg(DEFAULT_ROTATION); }} disabled={touring}>
+                Reset transform
+              </Button>
+            </Section>
 
-            <Slider
-              label="Travel speed"
-              value={travelSpeed}
-              min={0.1}
-              max={3}
-              step={0.025}
-              onChange={setTravelSpeed}
-              suffix=" u/s"
-              disabled={movementMode === "rootMotion"}
-            />
-            <p className="-mt-1 text-[11px] text-slate-400">
-              {MEASURED_WALK_SPEED} u/s is measured from the baked root motion
-              in walking_2 — the speed the feet were built for.
-            </p>
-
-            <div className="flex gap-2">
-              <Button
-                onClick={() => startTravel(POINT_A, POINT_B, false)}
-                disabled={!isLoaded || isSequencing}
-                tone="primary"
-              >
-                A to B
-              </Button>
-              <Button
-                onClick={() => startTravel(POINT_B, POINT_A, false)}
-                disabled={!isLoaded || isSequencing}
-              >
-                B to A
-              </Button>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => startTravel(POINT_A, POINT_B, true)}
-                disabled={!isLoaded || isSequencing}
-              >
-                Loop A to B
-              </Button>
-              <Button
-                onClick={() => setTravel(null)}
-                disabled={!isTraveling}
-                tone="danger"
-              >
-                Stop travel
-              </Button>
-            </div>
-          </Section>
-
-          <Section title="Character">
-            <Slider
-              label="Scale"
-              value={scale}
-              min={0.1}
-              max={3}
-              step={0.05}
-              onChange={setScale}
-              suffix="x"
-            />
-            {AXES.map((axis, index) => (
+            <Section title="Tool offsets" hint="Added on top of each motion's measured aim.">
+              {AXES.map((axis, index) => (
+                <Slider
+                  key={`tp${axis}`} label={`Tool position ${axis}`} value={toolOffset.position[index]}
+                  min={-0.15} max={0.15} step={0.002}
+                  onChange={(v) => setToolOffset((c) => {
+                    const next: Vec3 = [...c.position]; next[index] = v;
+                    return { ...c, position: next };
+                  })}
+                />
+              ))}
+              {AXES.map((axis, index) => (
+                <Slider
+                  key={`tr${axis}`} label={`Tool rotation ${axis}`} value={toolOffset.rotationDeg[index]}
+                  min={-180} max={180} step={1} suffix="°"
+                  onChange={(v) => setToolOffset((c) => {
+                    const next: Vec3 = [...c.rotationDeg]; next[index] = v;
+                    return { ...c, rotationDeg: next };
+                  })}
+                />
+              ))}
               <Slider
-                key={`pos-${axis}`}
-                label={`Position ${axis}`}
-                value={position[index]}
-                min={-5}
-                max={5}
-                step={0.05}
-                onChange={(value) => setAxis(setPosition, index, value)}
-                disabled={manualLocked}
+                label="Tool scale" value={toolOffset.scale} min={0.4} max={2.5} step={0.05} suffix="x"
+                onChange={(v) => setToolOffset((c) => ({ ...c, scale: v }))}
               />
-            ))}
-            {AXES.map((axis, index) => (
-              <Slider
-                key={`rot-${axis}`}
-                label={`Rotation ${axis}`}
-                value={rotationDeg[index]}
-                min={-180}
-                max={180}
-                step={1}
-                onChange={(value) => setAxis(setRotationDeg, index, value)}
-                disabled={manualLocked && axis === "Y"}
-                suffix="°"
-              />
-            ))}
-            <Button
-              onClick={() => {
-                setPosition(DEFAULT_POSITION);
-                setRotationDeg(DEFAULT_ROTATION);
-                setScale(1);
-              }}
-              disabled={manualLocked}
-            >
-              Reset transform
-            </Button>
-          </Section>
+              <Button onClick={() => setToolOffset(DEFAULT_TOOL_OFFSET)}>Reset tool offsets</Button>
+              <label className="flex cursor-pointer items-center justify-between pt-1 text-[13px] font-semibold text-slate-700">
+                Orbit controls
+                <input
+                  type="checkbox" checked={orbitEnabled}
+                  onChange={(e) => setOrbitEnabled(e.target.checked)}
+                  className="h-4 w-4 accent-[#306EEC]"
+                />
+              </label>
+            </Section>
 
-          <Section title="View">
-            <Toggle
-              label="Orbit controls"
-              checked={orbitEnabled}
-              onChange={setOrbitEnabled}
-            />
-            <Toggle
-              label="Show A / B markers"
-              checked={showMarkers}
-              onChange={setShowMarkers}
-            />
-            <Button onClick={() => setResetToken((token) => token + 1)}>
-              Reset camera
-            </Button>
-          </Section>
+            <Section title="Retarget" hint="Numeric proof of the BVH → Fixter mapping.">
+              <RetargetDiagnostics />
+            </Section>
 
-          <Section
-            title="Retarget diagnostics"
-            hint="Numeric proof of the BVH → Fixter bone mapping."
-          >
-            <RetargetDiagnostics />
-          </Section>
-
-          <Section title="Render">
-            <TelemetryReadout />
-          </Section>
+            <Section title="Render">
+              <TelemetryReadout />
+            </Section>
+          </details>
         </aside>
       </div>
     </div>

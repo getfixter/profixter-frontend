@@ -1,4 +1,3 @@
-import type { TravelPhase } from "./lab-travel";
 import type { RetargetReport } from "./lab-retarget";
 
 /**
@@ -17,7 +16,7 @@ export type Telemetry = {
   triangles: number;
   geometries: number;
   textures: number;
-  phase: TravelPhase;
+  phase: string;
   clip: string;
   position: [number, number, number];
 };

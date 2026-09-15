@@ -1,37 +1,42 @@
-import type { JobDefinition } from "./lab-choreography";
+import type { ObjectKind } from "./lab-objects";
+import type { ToolKind } from "./lab-tools";
 
 /**
- * Job library. One entry per thing the Fixter knows how to go and do.
+ * The job library — the data the whole experience is assembled from.
  *
- * Only the outlet exists so far, deliberately — the point of this stage is to
- * prove one complete job end to end. The shelf, picture frame, dresser, faucet
- * and light are meant to arrive as further entries in this array, not as
- * further code.
+ * A job says what the object is, where it floats, which body motion the Fixter
+ * uses on it, which tool he brings and how long it takes. The runner in
+ * lab-choreography knows nothing about outlets or faucets; adding a seventh job
+ * is an entry in this file.
  */
 
-/** Source motions the sequence is cut from. */
-export const REPAIR_ARC_BVH = "/3d/motion/outlet-repair-arc.bvh";
-export const SQUAT_WORK_BVH = "/3d/motion/outlet-squat-upright.bvh";
-export const IDLE_BVH = "/3d/motion/idle-natural.bvh";
+/* ------------------------------------------------------------------ assets */
+
+export const CLIP_ENTER_CROUCH = "/3d/motion/fx-crouch-enter.bvh";
+export const CLIP_WORK_LOW = "/3d/motion/fx-work-low.bvh";
+export const CLIP_WORK_MID = "/3d/motion/fx-work-mid.bvh";
+export const CLIP_WORK_HIGH = "/3d/motion/fx-work-high.bvh";
+export const CLIP_IDLE = "/3d/motion/fx-idle.bvh";
+
+/**
+ * Every BVH the Lab loads, already trimmed to the seconds actually used.
+ *
+ * Text-to-Motion returns ~40s takes whatever duration is requested, and the
+ * choreography plays four to eight seconds of each. The full takes live in
+ * assets/masters/motions/ where they are version-controlled but never served;
+ * these five are the web build, 2.0 MB in total instead of 12.
+ */
+export const MOTION_FILES = [
+  CLIP_IDLE,
+  CLIP_ENTER_CROUCH,
+  CLIP_WORK_LOW,
+  CLIP_WORK_MID,
+  CLIP_WORK_HIGH,
+];
 
 export type LoopStyle = "once" | "repeat" | "pingpong";
 
-/**
- * How much of each source take is worth retargeting.
- *
- * The repair arc came back 50 seconds long and the choreography uses the first
- * 12.5, so retargeting the rest would be several thousand wasted frames of
- * load-time work. Windowing here rather than per-segment also keeps every cut
- * from one take sharing a single ground correction, which is what stops the
- * crouch and the stand-up from disagreeing about floor height.
- */
-export const SOURCE_WINDOWS: Record<string, [number, number]> = {
-  [REPAIR_ARC_BVH]: [0, 12.5],
-  [SQUAT_WORK_BVH]: [0, 13.5],
-  [IDLE_BVH]: [0, 16],
-};
-
-export type SequenceClipSpec = {
+export type ClipSpec = {
   name: string;
   file: string;
   start: number;
@@ -40,127 +45,305 @@ export type SequenceClipSpec = {
   loop: LoopStyle;
 };
 
+/* ------------------------------------------------------------ work motions */
+
 /**
- * The clips the choreography plays, cut from the two generated takes.
+ * A posture the Fixter can work in.
  *
- * Boundaries come from profiling the retargeted motion on the real skeleton,
- * not from watching it:
+ * `handOffset` is where his right hand actually sits, relative to his own
+ * origin, averaged across the work window and measured on the real skeleton
+ * after retargeting. It is the load-bearing number in the whole system: it
+ * decides where he stands, which way he faces, and how high the object floats.
+ * Nothing here is eyeballed.
  *
- * The descent comes from one take and the work from another, because no single
- * generation produced both. Four were made and profiled on the real skeleton:
- *
- *   outlet-repair-arc      stands then squats, but works folded right over
- *                          (head only 0.25 above the hips) - good descent,
- *                          unusable working posture
- *   outlet-kneel           kneels well, but the hand stays at the lap
- *   outlet-kneel-arc       full stand-kneel-stand, hand still at the lap;
- *                          a hand that never leaves the body cannot be put
- *                          against a wall at all
- *   outlet-squat-upright   at t=9.5..13.0 the head sits 0.35 above the hips AND
- *                          the hand reaches forward to z 0.26 - the only take
- *                          that is upright and reaching at the same time
- *
- * So: descent and rise from the arc (0.0 .. 4.0, which ends at hips 0.404),
- * work from the upright squat (which sits at hips 0.406 - near enough that the
- * blend has almost no height to cover). The take never stands back up, so the
- * exit is the entry reversed.
- *
- * WORK and IDLE ping-pong rather than repeat. A generated take does not return
- * to its own first pose, so LoopRepeat would pop on every cycle; ping-pong is
- * seamless by construction and, for a repetitive wrist motion or a breathing
- * idle, reads identically.
+ * `enter`/`exit` are only for postures the body cannot simply blend into. The
+ * standing motions have none — he walks up and starts working. The crouch has
+ * both, because dropping to a squat is a movement in its own right and the
+ * exit is that movement reversed.
  */
-export const SEQUENCE_CLIPS: Record<string, SequenceClipSpec> = {
-  idle: {
-    name: "Seq · Idle",
-    file: IDLE_BVH,
-    start: 0.5,
-    end: 15.5,
-    loop: "pingpong",
+export type WorkMotion = {
+  id: string;
+  clip: ClipSpec;
+  handOffset: [number, number, number];
+  /**
+   * Hand-local rotation that aims the tool's +Y at the object.
+   *
+   * Solved, not eyeballed: take the hand's orientation across the work window,
+   * take the direction from the hand to where the object sits in body space,
+   * and average the rotation that puts the tool on that line. The hand moves
+   * while he works, so this is the best single answer rather than an exact one
+   * — which is correct, because a tool that stayed perfectly aimed through a
+   * wrist motion would look stranger than one that does not.
+   */
+  toolAimDeg: [number, number, number];
+  enter?: ClipSpec;
+  exit?: ClipSpec;
+};
+
+export const WORK_MOTIONS: Record<string, WorkMotion> = {
+  /** Squatting at something near the floor. */
+  low: {
+    id: "low",
+    clip: { name: "Work · Low", file: CLIP_WORK_LOW, start: 0.5, end: 4.0, loop: "pingpong" },
+    handOffset: [-0.151, 0.572, 0.225],
+    toolAimDeg: [-29, 6, -22],
+    enter: { name: "Crouch · In", file: CLIP_ENTER_CROUCH, start: 0.0, end: 4.0, loop: "once" },
+    exit: { name: "Crouch · Out", file: CLIP_ENTER_CROUCH, start: 0.0, end: 4.0, reverse: true, loop: "once" },
   },
-  workIn: {
-    name: "Seq · Crouch In",
-    file: REPAIR_ARC_BVH,
-    start: 0.0,
-    end: 4.0,
-    loop: "once",
+  /** Standing, working at chest height. */
+  mid: {
+    id: "mid",
+    clip: { name: "Work · Mid", file: CLIP_WORK_MID, start: 0.6, end: 2.4, loop: "pingpong" },
+    handOffset: [-0.083, 1.102, 0.133],
+    toolAimDeg: [-6, -5, 82],
   },
-  work: {
-    name: "Seq · Outlet Work",
-    file: SQUAT_WORK_BVH,
-    start: 9.5,
-    end: 13.0,
-    loop: "pingpong",
+  /** Standing, reaching out and slightly up. */
+  reach: {
+    id: "reach",
+    clip: { name: "Work · Reach", file: CLIP_WORK_MID, start: 2.6, end: 5.0, loop: "pingpong" },
+    handOffset: [-0.044, 1.208, 0.224],
+    toolAimDeg: [59, 13, 24],
   },
-  workOut: {
-    name: "Seq · Stand Up",
-    file: REPAIR_ARC_BVH,
-    start: 0.0,
-    end: 4.0,
-    reverse: true,
-    loop: "once",
+  /** Standing, both hands up above head height. */
+  high: {
+    id: "high",
+    clip: { name: "Work · High", file: CLIP_WORK_HIGH, start: 0.6, end: 7.6, loop: "pingpong" },
+    handOffset: [-0.188, 1.313, 0.292],
+    toolAimDeg: [-14, -8, 83],
   },
 };
 
-export const SEQUENCE_CLIP_NAMES = new Set(
-  Object.values(SEQUENCE_CLIPS).map((c) => c.name)
-);
+export const IDLE_CLIP: ClipSpec = {
+  name: "Idle",
+  file: CLIP_IDLE,
+  start: 0.3,
+  end: 7.7,
+  loop: "pingpong",
+};
+
+/** Every clip the mixer needs, derived so nothing can drift out of sync. */
+export function allClipSpecs(): ClipSpec[] {
+  const out: ClipSpec[] = [IDLE_CLIP];
+  for (const motion of Object.values(WORK_MOTIONS)) {
+    out.push(motion.clip);
+    if (motion.enter) out.push(motion.enter);
+    if (motion.exit) out.push(motion.exit);
+  }
+  // de-duplicate by name: several motions may share an enter clip
+  const seen = new Set<string>();
+  return out.filter((c) => (seen.has(c.name) ? false : (seen.add(c.name), true)));
+}
+
+export const SEQUENCE_CLIP_NAMES = new Set(allClipSpecs().map((c) => c.name));
+
+/* -------------------------------------------------------------------- jobs */
+
+export type JobDefinition = {
+  id: string;
+  label: string;
+  object: ObjectKind;
+  /** Where the object floats. Y is dictated by the work motion's hand height. */
+  anchor: [number, number, number];
+  workMotion: keyof typeof WORK_MOTIONS;
+  tool: ToolKind | null;
+  /** How far short of the object the hand stops, leaving the tool room. */
+  toolGap: number;
+  workSeconds: number;
+  /**
+   * Which side he works from, as a direction in XZ.
+   *
+   * Left unset, he arrives from wherever the previous job was, which is natural
+   * but hands the camera whatever angle the ring happens to produce — and on a
+   * fixed frame that means watching his back half the time while his own body
+   * hides the thing he is fixing. Setting it points him broadly toward the
+   * viewer, so the object sits between him and the camera and the work is
+   * actually visible. Varied slightly per job so six stops do not all read as
+   * the same pose.
+   */
+  approachFrom?: [number, number];
+  /**
+   * Which way the object itself faces, in degrees about Y. 0 faces the viewer.
+   *
+   * Deliberately NOT derived from where the character stands. Turning each
+   * object to face whoever is working on it is the physically honest answer and
+   * it looks wrong: the camera then sees the back of every faceplate, frame and
+   * cabinet door. Objects face out, the character works from the side, and the
+   * small per-job variation stops six props reading as a shop display.
+   */
+  objectYawDeg?: number;
+  /**
+   * Shifts the DRAWN object relative to the anchor his hand reaches for.
+   *
+   * Without it every prop is centred exactly on his hand, which puts a picture
+   * frame across his face and a shelf through his chest. Offsetting lets the
+   * hand land on an edge — the corner of the frame, one end of the shelf —
+   * which is where someone would actually take hold of it, and keeps the
+   * character's face visible. Pushed away from whichever side he works from.
+   */
+  objectOffset?: [number, number, number];
+};
 
 /**
- * Where a held tool sits relative to the hand bone.
+ * Six jobs, ordered so the tour zig-zags rather than marching along one line,
+ * and so the working height changes every time: low, high, mid, high, reach,
+ * mid. Two jobs share a posture only where the objects and tools differ enough
+ * that it does not read as a repeat.
  *
- * The right hand bone's local +Y runs wrist-to-fingertips, and a screwdriver
- * driven into a wall sits roughly along the forearm, so the shaft is modelled
- * along +Y and only needs a small offset into the palm. Exposed as sliders in
- * the Lab because this is exactly the kind of number that wants an eye on it.
+ * Anchor Y is not chosen by taste — it is the work motion's hand height, so the
+ * object is placed exactly where the hand goes rather than the hand being asked
+ * to find the object.
  */
-export const DEFAULT_TOOL_OFFSET = {
-  position: [0.012, 0.055, 0.005] as [number, number, number],
-  /*
-   * Not eyeballed. Solved: take the hand's world orientation through the work
-   * window, take the direction from the hand to the outlet, and find the
-   * hand-local rotation that puts the tool's +Y on that direction. Averaged
-   * over the window, it comes out here.
-   */
-  rotationDeg: [-31, 5, -17] as [number, number, number],
-  /*
-   * 1.6 rather than life-size. The Fixter is stylised — large head, short
-   * limbs — and a physically-scaled 16 cm screwdriver disappears in his fist at
-   * any sane camera distance. Scaled to read at the same visual weight the rest
-   * of him has.
-   */
-  scale: 1.3,
+export const JOBS: JobDefinition[] = [
+  {
+    id: "outlet",
+    label: "Loose wall outlet",
+    object: "outlet",
+    anchor: [-2.0, 0.57, 0.7],
+    workMotion: "low",
+    tool: "screwdriver",
+    toolGap: 0.16,
+    workSeconds: 5.5,
+    approachFrom: [0.85, 0.5],
+    objectYawDeg: 0,
+    objectOffset: [0.06, 0.03, 0],
+  },
+  {
+    id: "lamp",
+    label: "Crooked pendant light",
+    object: "lamp",
+    anchor: [-0.7, 1.31, -1.3],
+    workMotion: "high",
+    tool: "screwdriver",
+    toolGap: 0.14,
+    workSeconds: 6,
+    approachFrom: [-0.85, 0.5],
+    objectYawDeg: 8,
+    objectOffset: [-0.14, 0.1, 0],
+  },
+  {
+    id: "faucet",
+    label: "Dripping faucet",
+    object: "faucet",
+    anchor: [0.7, 1.1, 0.9],
+    workMotion: "mid",
+    tool: "wrench",
+    toolGap: 0.15,
+    workSeconds: 5.5,
+    approachFrom: [0.8, 0.6],
+    objectYawDeg: -6,
+    objectOffset: [0.1, -0.06, 0],
+  },
+  {
+    id: "frame",
+    label: "Crooked picture frame",
+    object: "frame",
+    anchor: [1.9, 1.31, -0.5],
+    workMotion: "high",
+    tool: null,
+    toolGap: 0.06,
+    workSeconds: 4.5,
+    approachFrom: [-0.8, 0.6],
+    objectYawDeg: 5,
+    objectOffset: [-0.16, 0.18, 0],
+  },
+  {
+    id: "shelf",
+    label: "Drooping shelf",
+    object: "shelf",
+    anchor: [2.2, 1.21, 0.8],
+    workMotion: "reach",
+    tool: "drill",
+    toolGap: 0.16,
+    workSeconds: 6,
+    approachFrom: [0.85, 0.5],
+    objectYawDeg: -9,
+    objectOffset: [0.3, -0.03, 0],
+  },
+  {
+    id: "cabinet",
+    label: "Loose cabinet handle",
+    object: "cabinet",
+    anchor: [0.8, 1.1, -1.9],
+    workMotion: "mid",
+    tool: "screwdriver",
+    toolGap: 0.15,
+    workSeconds: 5,
+    approachFrom: [-0.8, 0.6],
+    objectYawDeg: 7,
+    objectOffset: [-0.15, -0.06, 0],
+  },
+];
+
+/* ------------------------------------------------------------------ layout */
+
+/**
+ * Composition presets.
+ *
+ * Mobile is not the desktop scene shrunk — a narrow viewport cannot carry a
+ * 6.4-unit spread and still show a 1.7-unit character, so the anchors are
+ * drawn in toward the middle and the camera follows him instead of framing
+ * everything at once. Same jobs, same order, tighter staging.
+ */
+export type LayoutId = "desktop" | "mobile";
+
+export const LAYOUTS: Record<LayoutId, { spread: number; camera: CameraPreset }> = {
+  desktop: { spread: 1, camera: "page" },
+  mobile: { spread: 0.74, camera: "follow" },
+};
+
+export type CameraPreset = "page" | "follow";
+
+/** Anchor for a job under a layout: XZ is drawn in, height is untouched. */
+export function layoutAnchor(
+  job: JobDefinition,
+  spread: number
+): [number, number, number] {
+  return [job.anchor[0] * spread, job.anchor[1], job.anchor[2] * spread];
+}
+
+/**
+ * Framing that shows the whole composition.
+ *
+ * Chosen from the geometry, not by nudging: the props span about 4.6 units
+ * across, and the Fixter has to read at roughly a third of frame height or
+ * there is nothing to judge — which puts the visible height near 4.8 units and
+ * the camera about 7 back at this field of view. Sitting further out turns the
+ * whole thing into specks on a white field, which is what the first attempt
+ * did.
+ */
+export const PAGE_CAMERA = {
+  position: [1.3, 2.65, 7.3] as [number, number, number],
+  target: [0.15, 0.88, -0.3] as [number, number, number],
+};
+
+/**
+ * Props are drawn at 1.5x true scale.
+ *
+ * A real 12 cm outlet next to a 1.7 m man is four pixels on a phone. The page
+ * is stylised anyway, and scaling every prop by the same factor keeps them
+ * honest relative to each other while letting each one actually read. The
+ * anchor — where his hand goes — is unaffected; only the object drawn around
+ * it grows.
+ */
+export const OBJECT_SCALE = 1.45;
+
+/** How the following camera sits relative to the Fixter. */
+/**
+ * How the following camera sits relative to the Fixter.
+ *
+ * Far enough back that the object he is working on fits in frame beside him —
+ * the first attempt sat close enough that a shelf crossed his face and the tool
+ * was behind it. Offset to one side rather than straight behind, so the work
+ * reads in three-quarter rather than as the back of a head.
+ */
+export const FOLLOW_CAMERA = {
+  offset: [2.0, 1.55, 4.5] as [number, number, number],
+  lookHeight: 0.85,
+  /** Seconds-ish lag. Low is floaty, high is jerky. */
+  stiffness: 1.4,
 };
 
 export const TOOL_ATTACH_BONE = "RightHand";
 
-/**
- * The outlet repair.
- *
- * `anchor.y` and `handOffset` are not taste — they are measured.
- * Averaged over the work window, the right hand sits at local
- * (x -0.143, y 0.573, z +0.256) relative to the character's origin, so the
- * outlet goes at y 0.57, and the standing distance and facing are both derived
- * from that offset (see workPosition) so the hand lands on the plate. toolGap
- * holds him 0.16 short of it, which is the room the screwdriver spans.
- */
-export const OUTLET_REPAIR_JOB: JobDefinition = {
-  id: "outlet-repair",
-  label: "Outlet repair",
-  anchor: [1.5, 0.57, 0],
-  handOffset: [-0.143, 0.573, 0.256],
-  toolGap: 0.16,
-  start: [-2.0, 0, 0],
-  exit: [-2.2, 0, -1.3],
-  workSeconds: 7,
-  completeSeconds: 1.1,
-  tool: "screwdriver",
-};
-
-export const JOBS: JobDefinition[] = [OUTLET_REPAIR_JOB];
-
-/** Camera framing that shows the whole route, the crouch and the hand. */
-export const SEQUENCE_CAMERA = {
-  position: [3.3, 1.45, 3.7] as [number, number, number],
-  target: [0.55, 0.5, 0] as [number, number, number],
-};
+/** Base tool scale. The Fixter is stylised; a life-size tool disappears. */
+export const TOOL_SCALE = 1.3;

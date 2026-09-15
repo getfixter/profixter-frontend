@@ -1,28 +1,26 @@
 import * as THREE from "three";
+import {
+  WORK_MOTIONS,
+  layoutAnchor,
+  type JobDefinition,
+  type WorkMotion,
+} from "./lab-jobs";
+import { setObjectFix } from "./lab-object-state";
 
 /**
- * Job choreography.
+ * The tour: one Fixter, a ring of jobs, forever.
  *
- * A job is DATA — where the object floats, where the character stands to reach
- * it, which clips play, which tool is held, how long the work takes. This file
- * is the runner that walks that data through its phases. Adding the shelf,
- * picture-frame, dresser, faucet and light jobs should mean writing five more
- * JobDefinitions, not five more state machines.
+ * The runner knows nothing about outlets or faucets. It walks a list of stops,
+ * and each stop carries everything about itself — where to stand, which way to
+ * face, which posture to work in, how long it takes. Adding a job is data.
  *
- * Nothing here schedules anything. There are no timers: every transition is a
- * function of accumulated time and measured distance, evaluated once per frame,
- * so the sequence can be paused, scrubbed or restarted without a pile of
- * pending callbacks to unwind.
- *
- * The phase spine is the one the Lab already used —
- *
- *     IDLE → TRAVEL → APPROACH → WORK → COMPLETE → TRAVEL → IDLE
- *
- * with WORK opened up into the three beats a body actually needs (get down,
- * work, get up) and the two turns named, because facing is choreography too.
+ * Nothing is scheduled. There are no timers and no callbacks: every transition
+ * is a function of accumulated time and measured distance, evaluated once per
+ * frame, so the whole thing can be paused, scrubbed or restarted without any
+ * pending state to unwind.
  */
 
-export type SequencePhase =
+export type TourPhase =
   | "IDLE"
   | "TRAVEL"
   | "APPROACH"
@@ -30,139 +28,138 @@ export type SequencePhase =
   | "WORK_IN"
   | "WORK"
   | "WORK_OUT"
-  | "COMPLETE"
-  | "TURN_AWAY"
-  | "TRAVEL_AWAY"
-  | "DONE";
+  | "COMPLETE";
 
-/** Which of the character's clips each phase asks for. */
 export type PhaseClipRole = "idle" | "walk" | "workIn" | "work" | "workOut";
 
-export type JobDefinition = {
-  id: string;
-  label: string;
-  /** Where the object floats, in world space. */
-  anchor: [number, number, number];
-  /**
-   * Where the working hand sits relative to the character's origin, in his own
-   * frame, averaged over the work clip. Measured, not guessed — this is what
-   * decides both where he stands and which way he faces.
-   */
-  handOffset: [number, number, number];
-  /**
-   * How far short of the anchor the hand stops, leaving the tool room to span
-   * the gap. Zero would put his wrist inside the outlet.
-   */
-  toolGap: number;
-  /** Where the character starts, and where he walks off to afterwards. */
-  start: [number, number, number];
-  exit: [number, number, number];
-  /** Seconds spent in the WORK loop, excluding getting down and back up. */
-  workSeconds: number;
-  /** Beat held after the work finishes, before turning away. */
-  completeSeconds: number;
-  tool: string | null;
+/** A job resolved into everything the runner needs, computed once. */
+export type TourStop = {
+  job: JobDefinition;
+  motion: WorkMotion;
+  anchor: THREE.Vector3;
+  /** Where he stands so his working hand reaches the anchor. */
+  mark: THREE.Vector3;
+  /** The yaw that swings that hand onto the anchor. */
+  workYaw: number;
+  enterSeconds: number;
+  exitSeconds: number;
 };
 
-export type SequenceRuntime = {
-  phase: SequencePhase;
+export type TourRuntime = {
+  stopIndex: number;
+  /** Monotonic count of completed jobs, used to age the repairs. */
+  tick: number;
+  phase: TourPhase;
   phaseElapsed: number;
   position: THREE.Vector3;
   yaw: number;
-  /** 0..1 across the WORK phase. Drives the object's completion state. */
   workProgress: number;
-  /** True once the object has been repaired, and stays true. */
-  objectFixed: boolean;
-  /** True while the tool should be in hand. */
   toolEquipped: boolean;
-  done: boolean;
+  /** jobId -> the tick at which it was last repaired. */
+  fixedTick: Record<string, number>;
+  laps: number;
 };
 
 export const WALK_SPEED = 0.875;
-const APPROACH_RADIUS = 0.75;
-const APPROACH_SPEED_FACTOR = 0.4;
+const APPROACH_RADIUS = 0.8;
+const APPROACH_SPEED_FACTOR = 0.42;
 const ARRIVE_EPSILON = 0.015;
-/** Radians per second. Fast enough not to dawdle, slow enough to read as a turn. */
-const TURN_RATE = 3.2;
-const TURN_EPSILON = 0.03;
+const TURN_RATE = 2.8;
+const TURN_EPSILON = 0.035;
+const OPENING_IDLE = 1.4;
+const COMPLETE_BEAT = 1.15;
+
+/* ------------------------------------------------------------------ geometry */
+
+export function workReach(motion: WorkMotion) {
+  return Math.hypot(motion.handOffset[0], motion.handOffset[2]);
+}
 
 /**
- * Where the character stands, and which way he faces, so the WORKING HAND —
- * not his sternum — arrives at the anchor.
+ * Resolve the job list into stops.
  *
- * The obvious version of this is wrong, and was: back off along the approach
- * axis, step sideways by the hand's lateral offset, then turn to face the
- * anchor. Turning to face the anchor rotates the body about its own origin, so
- * it throws the sideways step straight back out again and the hand ends up off
- * to one side no matter what offset you choose.
- *
- * Solved properly instead. With the hand at (hx, ·, hz) in body space, its
- * horizontal reach is r = |(hx, hz)|, so standing anywhere at distance r from
- * the anchor admits a yaw that puts the hand exactly on it:
+ * Standing distance and facing are solved together rather than chosen. With the
+ * hand at (hx, ·, hz) in body space its horizontal reach is r = |(hx, hz)|, so
+ * standing at r + toolGap from the object admits exactly one yaw that puts the
+ * hand on it:
  *
  *     yaw = bearing(mark -> anchor) − atan2(hx, hz)
  *
- * Standing at r + toolGap instead leaves the hand that much short, which is the
- * room the screwdriver needs.
+ * The naive alternative — stand back, step sideways, then face the object —
+ * cannot work, because facing the object rotates the body about its own origin
+ * and undoes the sideways step.
+ *
+ * Which side he approaches from is taken from the previous job, so he arrives
+ * facing the way he was already walking instead of looping around the object.
  */
-export function workReach(job: JobDefinition): number {
-  return Math.hypot(job.handOffset[0], job.handOffset[2]);
+export function buildTour(
+  jobs: JobDefinition[],
+  spread: number,
+  clipSeconds: (name: string) => number
+): TourStop[] {
+  const anchors = jobs.map((job) => new THREE.Vector3(...layoutAnchor(job, spread)));
+
+  return jobs.map((job, index) => {
+    const motion = WORK_MOTIONS[job.workMotion];
+    const anchor = anchors[index];
+    const previous = anchors[(index - 1 + anchors.length) % anchors.length];
+
+    /* An art-directed side if the job names one, otherwise from the last job. */
+    const approach = job.approachFrom
+      ? new THREE.Vector3(job.approachFrom[0], 0, job.approachFrom[1])
+      : new THREE.Vector3(anchor.x - previous.x, 0, anchor.z - previous.z);
+    if (approach.lengthSq() < 1e-8) approach.set(0, 0, 1);
+    approach.normalize();
+
+    const distance = workReach(motion) + job.toolGap;
+    const mark = new THREE.Vector3(anchor.x, 0, anchor.z).addScaledVector(approach, -distance);
+    const bearing = Math.atan2(anchor.x - mark.x, anchor.z - mark.z);
+    const workYaw = bearing - Math.atan2(motion.handOffset[0], motion.handOffset[2]);
+
+    return {
+      job,
+      motion,
+      anchor,
+      mark,
+      workYaw,
+      enterSeconds: motion.enter ? clipSeconds(motion.enter.name) : 0,
+      exitSeconds: motion.exit ? clipSeconds(motion.exit.name) : 0,
+    };
+  });
 }
 
-export function workPosition(job: JobDefinition): THREE.Vector3 {
-  const [ax, , az] = job.anchor;
-  const approach = new THREE.Vector3(ax, 0, az).sub(
-    new THREE.Vector3(job.start[0], 0, job.start[2])
-  );
-  if (approach.lengthSq() < 1e-8) approach.set(0, 0, 1);
-  approach.y = 0;
-  approach.normalize();
+/* ------------------------------------------------------------------- runner */
 
-  return new THREE.Vector3(ax, 0, az).addScaledVector(
-    approach,
-    -(workReach(job) + job.toolGap)
-  );
-}
-
-/** The yaw that swings the working hand onto the anchor from `from`. */
-export function workYaw(job: JobDefinition, from: THREE.Vector3): number {
-  const anchor = new THREE.Vector3(job.anchor[0], 0, job.anchor[2]);
-  const bearing = Math.atan2(anchor.x - from.x, anchor.z - from.z);
-  return bearing - Math.atan2(job.handOffset[0], job.handOffset[2]);
-}
-
-/** Yaw that points the character's +Z forward at `target`. */
-export function yawTowards(from: THREE.Vector3, target: THREE.Vector3): number {
-  return Math.atan2(target.x - from.x, target.z - from.z);
-}
-
-/** Shortest signed angular distance from `a` to `b`. */
-function angleDelta(a: number, b: number): number {
-  let d = (b - a) % (Math.PI * 2);
-  if (d > Math.PI) d -= Math.PI * 2;
-  if (d < -Math.PI) d += Math.PI * 2;
-  return d;
-}
-
-export function createSequenceRuntime(job: JobDefinition): SequenceRuntime {
-  const start = new THREE.Vector3(...job.start);
+export function createTourRuntime(stops: TourStop[]): TourRuntime {
+  const first = stops[0];
+  /*
+   * Begin where the loop ends, not at an invented starting point.
+   *
+   * The tour is a ring, so the honest opening is the leg from the last job to
+   * the first — he is already somewhere he has been working. It also puts him
+   * inside the composition on frame one, which an arbitrary offset behind the
+   * first job did not.
+   */
+  const start = stops.length
+    ? stops[stops.length - 1].mark.clone()
+    : new THREE.Vector3();
   return {
+    stopIndex: 0,
+    tick: 0,
     phase: "IDLE",
     phaseElapsed: 0,
     position: start,
-    yaw: yawTowards(start, new THREE.Vector3(...job.anchor)),
+    yaw: first ? Math.atan2(first.mark.x - start.x, first.mark.z - start.z) : 0,
     workProgress: 0,
-    objectFixed: false,
     toolEquipped: false,
-    done: false,
+    fixedTick: {},
+    laps: 0,
   };
 }
 
-/** Which clip role a phase wants. Pure lookup, used by the renderer too. */
-export function clipRoleForPhase(phase: SequencePhase): PhaseClipRole {
+export function clipRoleForPhase(phase: TourPhase): PhaseClipRole {
   switch (phase) {
     case "TRAVEL":
-    case "TRAVEL_AWAY":
     case "APPROACH":
       return "walk";
     case "WORK_IN":
@@ -176,167 +173,142 @@ export function clipRoleForPhase(phase: SequencePhase): PhaseClipRole {
   }
 }
 
-function setPhase(runtime: SequenceRuntime, phase: SequencePhase) {
+function setPhase(runtime: TourRuntime, phase: TourPhase) {
   runtime.phase = phase;
   runtime.phaseElapsed = 0;
 }
 
-/** Rotate toward `targetYaw` at a fixed rate. Returns true once aligned. */
-function turnToward(runtime: SequenceRuntime, targetYaw: number, dt: number) {
-  const delta = angleDelta(runtime.yaw, targetYaw);
+function angleDelta(a: number, b: number) {
+  let d = (b - a) % (Math.PI * 2);
+  if (d > Math.PI) d -= Math.PI * 2;
+  if (d < -Math.PI) d += Math.PI * 2;
+  return d;
+}
+
+function turnToward(runtime: TourRuntime, target: number, dt: number) {
+  const delta = angleDelta(runtime.yaw, target);
   if (Math.abs(delta) <= TURN_EPSILON) {
-    runtime.yaw = targetYaw;
+    runtime.yaw = target;
     return true;
   }
   runtime.yaw += Math.sign(delta) * Math.min(Math.abs(delta), TURN_RATE * dt);
   return false;
 }
 
-/**
- * Walk toward a target. Returns true on arrival.
- *
- * `slow` is the APPROACH easing — the same translation the Lab already proved,
- * just eased, so the character settles onto his mark instead of stopping dead.
- */
+const _dir = new THREE.Vector3();
+
 function walkToward(
-  runtime: SequenceRuntime,
+  runtime: TourRuntime,
   target: THREE.Vector3,
   dt: number,
-  speed: number,
   slow: boolean
 ) {
-  const direction = target.clone().sub(runtime.position);
-  direction.y = 0;
-  const distance = direction.length();
+  _dir.set(target.x - runtime.position.x, 0, target.z - runtime.position.z);
+  const distance = _dir.length();
+  if (distance > 1e-4) runtime.yaw = Math.atan2(_dir.x, _dir.z);
 
-  if (distance > 1e-4) {
-    runtime.yaw = Math.atan2(direction.x, direction.z);
-  }
-
-  const step = speed * (slow ? APPROACH_SPEED_FACTOR : 1) * dt;
+  const step = WALK_SPEED * (slow ? APPROACH_SPEED_FACTOR : 1) * dt;
   if (distance <= Math.max(step, ARRIVE_EPSILON)) {
     runtime.position.set(target.x, runtime.position.y, target.z);
     return true;
   }
-  runtime.position.addScaledVector(direction.divideScalar(distance), step);
+  runtime.position.addScaledVector(_dir.divideScalar(distance), step);
   return false;
 }
 
-export type PhaseDurations = {
-  /** Length of the crouch-down clip, so WORK_IN ends when the body has settled. */
-  workIn: number;
-  /** Length of the stand-up clip. */
-  workOut: number;
-};
-
 /**
- * Advance the sequence by `dt` seconds.
+ * Advance the tour, and write each object's repaired-ness into `objectState`.
  *
- * `durations` comes from the actual retargeted clips rather than being guessed,
- * so the character is never cut off mid-crouch by a hardcoded timeout.
+ * The loop has no reset. A repair ages out only once the Fixter is most of a
+ * lap away from it — by the time he walks back round, the object has quietly
+ * returned to needing him, and the moment it does is always happening somewhere
+ * he is not. Nothing ever snaps back on camera, and the world never blinks.
  */
-export function stepSequence(
-  runtime: SequenceRuntime,
-  job: JobDefinition,
-  durations: PhaseDurations,
-  dt: number
-) {
-  if (runtime.phase === "DONE") return;
+export function stepTour(runtime: TourRuntime, stops: TourStop[], dt: number) {
+  if (!stops.length) return;
   runtime.phaseElapsed += dt;
-
-  const mark = workPosition(job);
+  const stop = stops[runtime.stopIndex % stops.length];
 
   switch (runtime.phase) {
-    case "IDLE": {
-      // A beat of standing before setting off, so the start reads as a
-      // character deciding to move rather than a clip beginning.
-      if (runtime.phaseElapsed >= 1.2) setPhase(runtime, "TRAVEL");
-      return;
-    }
+    case "IDLE":
+      if (runtime.phaseElapsed >= OPENING_IDLE) setPhase(runtime, "TRAVEL");
+      break;
 
-    case "TRAVEL": {
-      const distance = runtime.position.distanceTo(mark);
-      if (distance <= APPROACH_RADIUS) {
+    case "TRAVEL":
+      if (runtime.position.distanceTo(stop.mark) <= APPROACH_RADIUS) {
         setPhase(runtime, "APPROACH");
-        return;
+      } else {
+        walkToward(runtime, stop.mark, dt, false);
       }
-      walkToward(runtime, mark, dt, WALK_SPEED, false);
-      return;
-    }
+      break;
 
-    case "APPROACH": {
-      if (walkToward(runtime, mark, dt, WALK_SPEED, true)) {
-        setPhase(runtime, "TURN_TO");
+    case "APPROACH":
+      if (walkToward(runtime, stop.mark, dt, true)) setPhase(runtime, "TURN_TO");
+      break;
+
+    case "TURN_TO":
+      if (turnToward(runtime, stop.workYaw, dt)) {
+        runtime.toolEquipped = stop.job.tool !== null;
+        setPhase(runtime, stop.enterSeconds > 0 ? "WORK_IN" : "WORK");
       }
-      return;
-    }
+      break;
 
-    case "TURN_TO": {
-      // Face so the HAND lands on the object, not so the chest points at it.
-      if (turnToward(runtime, workYaw(job, runtime.position), dt)) {
-        setPhase(runtime, "WORK_IN");
-      }
-      return;
-    }
-
-    case "WORK_IN": {
-      runtime.toolEquipped = true;
-      if (runtime.phaseElapsed >= durations.workIn) setPhase(runtime, "WORK");
-      return;
-    }
+    case "WORK_IN":
+      if (runtime.phaseElapsed >= stop.enterSeconds) setPhase(runtime, "WORK");
+      break;
 
     case "WORK": {
-      runtime.workProgress = Math.min(1, runtime.phaseElapsed / job.workSeconds);
+      runtime.workProgress = Math.min(1, runtime.phaseElapsed / stop.job.workSeconds);
       if (runtime.workProgress >= 1) {
-        runtime.objectFixed = true;
-        setPhase(runtime, "WORK_OUT");
+        runtime.fixedTick[stop.job.id] = runtime.tick;
+        setPhase(runtime, stop.exitSeconds > 0 ? "WORK_OUT" : "COMPLETE");
       }
-      return;
+      break;
     }
 
-    case "WORK_OUT": {
-      if (runtime.phaseElapsed >= durations.workOut) {
+    case "WORK_OUT":
+      if (runtime.phaseElapsed >= stop.exitSeconds) {
         runtime.toolEquipped = false;
         setPhase(runtime, "COMPLETE");
       }
-      return;
-    }
+      break;
 
-    case "COMPLETE": {
-      if (runtime.phaseElapsed >= job.completeSeconds) setPhase(runtime, "TURN_AWAY");
-      return;
-    }
-
-    case "TURN_AWAY": {
-      const exit = new THREE.Vector3(...job.exit);
-      if (turnToward(runtime, yawTowards(runtime.position, exit), dt)) {
-        setPhase(runtime, "TRAVEL_AWAY");
+    case "COMPLETE":
+      runtime.toolEquipped = false;
+      if (runtime.phaseElapsed >= COMPLETE_BEAT) {
+        runtime.tick += 1;
+        const next = runtime.stopIndex + 1;
+        if (next >= stops.length) runtime.laps += 1;
+        runtime.stopIndex = next % stops.length;
+        runtime.workProgress = 0;
+        setPhase(runtime, "TRAVEL");
       }
-      return;
-    }
+      break;
+  }
 
-    case "TRAVEL_AWAY": {
-      const exit = new THREE.Vector3(...job.exit);
-      if (walkToward(runtime, exit, dt, WALK_SPEED, false)) {
-        setPhase(runtime, "DONE");
-        runtime.done = true;
-      }
-      return;
-    }
+  /* ---- object states ---- */
+  const staysFixedFor = Math.max(1, stops.length - 2);
+  for (const s of stops) {
+    const fixedAt = runtime.fixedTick[s.job.id];
+    const settled =
+      fixedAt === undefined || runtime.tick - fixedAt >= staysFixedFor ? 0 : 1;
+    // the one he is on right now follows his progress rather than snapping
+    setObjectFix(
+      s.job.id,
+      s === stop && runtime.phase === "WORK"
+        ? Math.max(settled, runtime.workProgress)
+        : settled
+    );
   }
 }
 
-/** Human-readable phase label for the Lab readout. */
-export const PHASE_LABELS: Record<SequencePhase, string> = {
-  IDLE: "Idle — waiting",
-  TRAVEL: "Travel — walking to the outlet",
-  APPROACH: "Approach — settling onto the mark",
-  TURN_TO: "Turn — facing the outlet",
-  WORK_IN: "Work in — crouching down",
-  WORK: "Work — repairing the outlet",
-  WORK_OUT: "Work out — standing up",
-  COMPLETE: "Complete — job done",
-  TURN_AWAY: "Turn — facing the exit",
-  TRAVEL_AWAY: "Travel — walking away",
-  DONE: "Done — idle",
+export const PHASE_LABELS: Record<TourPhase, string> = {
+  IDLE: "Idle",
+  TRAVEL: "Walking over",
+  APPROACH: "Arriving",
+  TURN_TO: "Turning to the job",
+  WORK_IN: "Getting into position",
+  WORK: "Working",
+  WORK_OUT: "Standing back up",
+  COMPLETE: "Job done",
 };
