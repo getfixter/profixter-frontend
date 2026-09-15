@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Component,
   Suspense,
   useCallback,
   useEffect,
@@ -34,6 +35,8 @@ import {
 } from "./lab-object-state";
 import { planeProjection, type PlaneProjection } from "./lab-projection";
 import type { LayoutId } from "./lab-stage";
+import { addDiagError, setDiag } from "./lab-diagnostics";
+import { getFixterPose } from "./lab-pose";
 
 /**
  * The 3D layer of the homepage experiment.
@@ -121,13 +124,24 @@ export default function HomepageScene({
          * the page. Caught by a hit test, not by looking at it.
          */
         style={{ pointerEvents: "none" }}
+        onCreated={(state) => {
+          const gl = state.gl.getContext();
+          setDiag({
+            canvas:
+              `mounted ${state.size.width}x${state.size.height} ` +
+              `buf ${state.gl.domElement.width}x${state.gl.domElement.height}` +
+              (gl ? "" : " (NO GL)"),
+          });
+        }}
         /* No <color attach="background">: the page has to show through. */
       >
         <ambientLight intensity={0.78} />
         <hemisphereLight args={["#ffffff", "#dfe4ec", 0.6]} />
         <directionalLight position={[-4, 6, 8]} intensity={1.35} />
         <directionalLight position={[5, 2, 4]} intensity={0.45} />
-        <PageContents layout={layout} scale={scale} modelProps={modelProps} />
+        <SceneGuard>
+          <PageContents layout={layout} scale={scale} modelProps={modelProps} />
+        </SceneGuard>
       </Canvas>
     </div>
   );
@@ -243,6 +257,7 @@ function PageContents({
   return (
     <ScrollLayer projection={projection}>
       <RowLatchKeeper />
+      <DiagReporter projection={projection} stops={stops.length} version={anchorVersion} />
       {stops.map((stop) => (
         <FixableObject
           key={stop.job.id}
@@ -268,6 +283,74 @@ function PageContents({
       </Suspense>
     </ScrollLayer>
   );
+}
+
+/**
+ * Reports what the scene is doing to the diagnostics panel outside it.
+ *
+ * Inside the canvas because that is the only place these values exist, throttled
+ * because the panel is DOM.
+ */
+function DiagReporter({
+  projection,
+  stops,
+  version,
+}: {
+  projection: PlaneProjection;
+  stops: number;
+  version: number;
+}) {
+  const clock = useRef(0);
+
+  useFrame((_, delta) => {
+    clock.current += delta;
+    if (clock.current < 0.5) return;
+    clock.current = 0;
+
+    const pose = getFixterPose();
+    const px = projection.pixelAt(pose.x, pose.y);
+    const top = window.scrollY;
+    const bottom = top + window.innerHeight;
+    const onScreen = px.y >= top - 200 && px.y <= bottom + 200;
+
+    setDiag({
+      anchors: `${version} measurements`,
+      stops: `${stops} placed`,
+      fixter:
+        `page ${Math.round(px.x)},${Math.round(px.y)} · scroll ${Math.round(top)} · ` +
+        (onScreen ? "ON SCREEN" : "off screen"),
+    });
+  });
+
+  return null;
+}
+
+/**
+ * Catches anything the R3F tree throws.
+ *
+ * The DOM error boundary around the Canvas does not reliably see these, and
+ * even when it does it renders its message at the bottom of a three-thousand
+ * pixel page where nobody will ever find it. This one renders nothing and just
+ * says what happened, somewhere visible.
+ */
+class SceneGuard extends Component<
+  { children: React.ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: Error) {
+    addDiagError("scene: " + error.message);
+    setDiag({ canvas: "mounted, scene threw" });
+  }
+
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
 }
 
 /**

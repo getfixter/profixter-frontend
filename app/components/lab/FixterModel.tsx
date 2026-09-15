@@ -38,6 +38,7 @@ import { AimedHandTool } from "./lab-tools";
 import { createContactShadow } from "./lab-materials";
 import { resetObjectFix } from "./lab-object-state";
 import { setFixterPose } from "./lab-pose";
+import { setDiag } from "./lab-diagnostics";
 
 useGLTF.preload(FIXTER_GLB);
 
@@ -247,6 +248,7 @@ export default function FixterModel({
   const tokenRef = useRef(-1);
   const currentActionRef = useRef<THREE.AnimationAction | null>(null);
   const telemetryClock = useRef(0);
+  const diagClock = useRef(0);
   const frames = useRef(0);
   const lastEmitted = useRef<TourState | null>(null);
 
@@ -258,7 +260,11 @@ export default function FixterModel({
 
   useEffect(() => {
     onReady(names);
-  }, [names, onReady]);
+    setDiag({
+      model: `loaded · ${names.length} clips`,
+      motions: `loaded · ${bvhs.length} files`,
+    });
+  }, [names, onReady, bvhs.length]);
 
   const timeScaleRef = useRef(timeScale);
   useEffect(() => {
@@ -396,6 +402,11 @@ export default function FixterModel({
        */
       const stop = stops[runtime.stopIndex % stops.length];
       const bucket = Math.round(runtime.workProgress * 20) / 20;
+      diagClock.current += dt;
+      if (diagClock.current > 0.5) {
+        diagClock.current = 0;
+        setDiag({ tour: `${runtime.phase} · ${stop.job.label} · lap ${runtime.laps + 1}` });
+      }
       const last = lastEmitted.current;
       if (
         !last ||
