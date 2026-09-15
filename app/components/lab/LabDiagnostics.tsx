@@ -35,6 +35,7 @@ export default function LabDiagnostics() {
     ["WEBGL", d.webgl, !/NO CONTEXT|THREW/i.test(d.webgl)],
     ["GPU", d.renderer, true],
     ["GLB HEAD", d.glbHead, /^200/.test(d.glbHead)],
+    ["LAYER", d.layer, /PINNED$|PINNED ·/.test(d.layer) || /· PINNED/.test(d.layer)],
     ["CANVAS", d.canvas, d.canvas !== "not mounted"],
     ["MODEL", d.model, /loaded/i.test(d.model)],
     ["MOTIONS", d.motions, /loaded/i.test(d.motions)],
