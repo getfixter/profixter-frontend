@@ -31,6 +31,8 @@ import TelemetryReadout, {
 } from "@/app/components/lab/TelemetryReadout";
 import RetargetDiagnostics from "@/app/components/lab/RetargetDiagnostics";
 import LabErrorBoundary from "@/app/components/lab/LabErrorBoundary";
+import LabDiagnostics from "@/app/components/lab/LabDiagnostics";
+import { addDiagError, setDiag } from "@/app/components/lab/lab-diagnostics";
 
 /*
  * The scene is the only thing that pulls three, R3F and drei, and it loads
@@ -46,9 +48,25 @@ const FixterScene = dynamic(() => import("@/app/components/lab/FixterScene"), {
   ),
 });
 
-/* The homepage experiment loads the same way, and only when it is asked for. */
+/*
+ * The homepage experiment loads the same way, and only when it is asked for.
+ *
+ * The import is reported either way. A chunk that fails to arrive renders null
+ * and says nothing, which is one of the several ways this can show a webpage
+ * with no character on it.
+ */
 const HomepageScene = dynamic(
-  () => import("@/app/components/lab/HomepageScene"),
+  () =>
+    import("@/app/components/lab/HomepageScene")
+      .then((mod) => {
+        setDiag({ chunk: "loaded" });
+        return mod;
+      })
+      .catch((error) => {
+        setDiag({ chunk: "FAILED: " + String(error).slice(0, 120) });
+        addDiagError("chunk: " + String(error));
+        throw error;
+      }),
   { ssr: false, loading: () => null }
 );
 const LabHomepage = dynamic(() => import("@/app/components/lab/LabHomepage"), {
@@ -301,9 +319,10 @@ export default function LabClient() {
   if (mode === "homepage") {
     return (
       <div className="relative min-h-screen bg-white">
+        <LabDiagnostics />
         <LabHomepage />
 
-        <LabErrorBoundary>
+        <LabErrorBoundary fixed>
           <HomepageScene
             position={position}
             rotationDeg={rotationDeg}
