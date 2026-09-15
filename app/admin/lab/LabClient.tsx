@@ -12,7 +12,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
-import { getRoleLandingPath, isAdminUser } from "@/lib/auth-routing";
+import { isAdminUser } from "@/lib/auth-routing";
 import { resolveClipRoles } from "@/app/components/lab/lab-config";
 import { JOBS, SEQUENCE_CLIP_NAMES } from "@/app/components/lab/lab-jobs";
 import type { LayoutId } from "@/app/components/lab/lab-stage";
@@ -232,6 +232,8 @@ export default function LabClient() {
    * a mode with no way out is a trap.
    */
   const [preview, setPreview] = useState(false);
+  /* Bumped by the START button, so a failed scene can be thrown away and retried. */
+  const [sceneKey, setSceneKey] = useState(0);
   const [layoutOverride, setLayoutOverride] = useState<LayoutId | null>(null);
   const [orbitEnabled, setOrbitEnabled] = useState(false);
   const [resetToken, setResetToken] = useState(0);
@@ -245,16 +247,33 @@ export default function LabClient() {
     layoutOverride ?? (phone ? "mobile" : narrow ? "tablet" : "desktop");
 
   const roles = useMemo(() => resolveClipRoles(clipNames), [clipNames]);
+
   const isLoaded = clipNames.length > 0;
   const touring = tour !== null;
 
+  /*
+   * One line, in words, for the only question that matters on a phone: is the
+   * thing running. Everything else lives in the collapsed panel below it.
+   */
+  const sceneStatus = !isLoaded
+    ? "loading the model and motions…"
+    : tourState
+      ? `running — ${tourState.jobLabel}`
+      : "loaded, waiting to start";
+
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      router.replace("/signin");
-      return;
-    }
-    if (!isAdminUser(user)) router.replace(getRoleLandingPath(user));
+    /*
+     * Deliberately no redirect.
+     *
+     * This used to bounce a non-admin to their landing page, which meant that
+     * on a device where the session resolved differently the Lab looked exactly
+     * like "the normal website" — because it WAS the normal website, and
+     * nothing on screen said so. A route that cannot show you what you came for
+     * should say why, not quietly take you somewhere else.
+     */
+    void authLoading;
+    void user;
+    void router;
   }, [user, authLoading, router]);
 
   const startTour = useCallback(() => {
@@ -276,11 +295,17 @@ export default function LabClient() {
        * preference is read here rather than mirrored into state, because this
        * is the only moment it is consulted.
        */
+      /*
+       * Starts itself either way.
+       *
+       * Reduced motion used to suppress this, which is right for a customer and
+       * wrong for a private test surface: a phone with Reduce Motion on showed
+       * a page with nothing happening on it and no way to tell that from a
+       * failure. The Lab starts; the START button below re-starts it.
+       */
       if (!autoStarted.current) {
         autoStarted.current = true;
-        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-          startTour();
-        }
+        startTour();
       }
     },
     [startTour]
@@ -303,8 +328,25 @@ export default function LabClient() {
   }
   if (!user || !isAdminUser(user)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="text-sm font-bold text-slate-500">Access Denied</p>
+      <div className="min-h-screen bg-white px-5 py-8">
+        <div className="mx-auto max-w-[560px] rounded-xl border-2 border-rose-300 bg-rose-50 p-5">
+          <p className="text-[17px] font-bold text-rose-900">
+            The Lab needs an admin session on this device.
+          </p>
+          <p className="mt-2 text-[14px] leading-relaxed text-rose-800">
+            {user
+              ? `This browser is signed in as ${user.email || "a user"}${
+                  user.role ? ` (role: ${user.role})` : ""
+                }, which is not an admin. The 3D experiment is only built for admins.`
+              : "This browser is not signed in at all, so the 3D experiment has nothing to authorise."}
+          </p>
+          <Link
+            href="/signin"
+            className="mt-4 inline-flex min-h-[44px] items-center rounded-lg bg-[#0B1628] px-4 text-[14px] font-semibold text-white"
+          >
+            {user ? "Sign in as admin" : "Sign in"}
+          </Link>
+        </div>
       </div>
     );
   }
@@ -319,10 +361,35 @@ export default function LabClient() {
   if (mode === "homepage") {
     return (
       <div className="relative min-h-screen bg-white">
+        {/*
+          Plain HTML, always rendered, never behind a condition.
+
+          The 3D layer has several ways to fail silently and one of them had the
+          page looking untouched. This strip is the floor: if it is on screen
+          the Lab is running, and pressing the button throws the scene away and
+          builds a new one whatever state the old one got into.
+        */}
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => {
+              setPreview(false);
+              setSceneKey((k) => k + 1);
+              startTour();
+            }}
+            className="min-h-[52px] w-full rounded-xl bg-[#306EEC] px-4 text-[16px] font-bold text-white shadow-[0_10px_24px_-10px_rgba(48,110,236,0.7)] active:scale-[0.99]"
+          >
+            ▶ START 3D FIXTER
+          </button>
+          <p className="mt-2 text-center font-mono text-[12px] text-slate-600">
+            3D: {sceneStatus}
+          </p>
+        </div>
+
         <LabDiagnostics />
         <LabHomepage />
 
-        <LabErrorBoundary fixed>
+        <LabErrorBoundary fixed key={sceneKey}>
           <HomepageScene
             position={position}
             rotationDeg={rotationDeg}

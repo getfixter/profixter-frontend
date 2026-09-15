@@ -20,7 +20,8 @@ import {
  * Temporary. It comes out once we know what the device is doing.
  */
 export default function LabDiagnostics() {
-  const [open, setOpen] = useState(true);
+  /* Collapsed. It is for me, not for whoever is holding the phone. */
+  const [open, setOpen] = useState(false);
 
   useSyncExternalStore(subscribeDiag, getDiagVersion, () => 0);
 
@@ -49,7 +50,7 @@ export default function LabDiagnostics() {
   ];
 
   return (
-    <div className="fixed left-0 right-0 top-0 z-[90] border-b-2 border-amber-400 bg-[#0B1628]/95 font-mono text-[10px] leading-[1.45] text-white backdrop-blur">
+    <div className="relative z-[90] border-b border-slate-700 bg-[#0B1628] font-mono text-[10px] leading-[1.45] text-white">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

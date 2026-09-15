@@ -20,7 +20,7 @@
  * value we just shipped, the phone is not running what we just shipped and
  * nothing else on the panel means anything.
  */
-export const DIAG_BUILD = "diag-4";
+export const DIAG_BUILD = "diag-5";
 
 export type DiagState = {
   /* independent probes, run by the panel */
