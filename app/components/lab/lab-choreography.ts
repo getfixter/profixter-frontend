@@ -582,7 +582,19 @@ export function stepTour(
       const farAway =
         runtime.position.distanceTo(s.mark) >= policy.safeDistance;
 
-      if ((held >= policy.minStops && (offScreen || farAway)) || untilDue <= 1) {
+      /*
+       * The fallback, for a page where nothing is ever off screen — a desktop
+       * where the whole tour fits in one viewport, say. It fires on the far
+       * side of the ring rather than next door, which is the furthest from the
+       * object he ever gets, and `untilDue <= 1` is only the backstop that
+       * guarantees a job is broken again before he walks back to it.
+       */
+      const farStop = Math.max(1, Math.round(count / 2));
+      if (
+        (held >= policy.minStops && (offScreen || farAway)) ||
+        untilDue === farStop ||
+        untilDue <= 1
+      ) {
         delete runtime.fixedTick[s.job.id];
       }
     }
