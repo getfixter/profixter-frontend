@@ -134,7 +134,7 @@ export const PAGE_JOBS: PageJob[] = [
     },
     align: {
       desktop: { x: 0.62, y: 0 },
-      tablet: { x: 0.41, y: 0 },
+      tablet: { x: 0.24, y: 0 },
       mobile: { x: 0.62, y: 0 },
     },
     nudgePx: { desktop: [0, -15], tablet: [0, -15], mobile: [0, 0] },
@@ -157,7 +157,7 @@ export const PAGE_JOBS: PageJob[] = [
     },
     align: {
       desktop: { x: 0.81, y: 0 },
-      tablet: { x: 0.57, y: 0 },
+      tablet: { x: 0.34, y: 0 },
       mobile: { x: 0.74, y: 0 },
     },
     nudgePx: { desktop: [0, -15], tablet: [0, -15], mobile: [0, 0] },
