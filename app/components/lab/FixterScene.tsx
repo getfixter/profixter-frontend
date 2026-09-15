@@ -1,150 +1,120 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import FixterModel, { type FixterModelProps } from "./FixterModel";
-import OutletObject from "./OutletObject";
-import { workPosition, yawTowards } from "./lab-choreography";
-import { SEQUENCE_CAMERA } from "./lab-jobs";
-
-const CAMERA_HOME: [number, number, number] = [3.4, 2.0, 5.4];
-const CAMERA_TARGET: [number, number, number] = [0, 0.85, 0];
+import FixableObject from "./lab-objects";
+import { buildTour } from "./lab-choreography";
+import { getFixterPose } from "./lab-pose";
+import {
+  FOLLOW_CAMERA,
+  JOBS,
+  OBJECT_SCALE,
+  PAGE_CAMERA,
+  type CameraPreset,
+} from "./lab-jobs";
 
 type FixterSceneProps = FixterModelProps & {
   orbitEnabled: boolean;
-  showMarkers: boolean;
-  pointA: [number, number, number];
-  pointB: [number, number, number];
+  cameraPreset: CameraPreset;
   resetToken: number;
-  /** Bumped to frame the choreography rather than the inspection view. */
-  sequenceViewToken: number;
-  outletAlignment: number;
+  showObjects: boolean;
 };
 
 /**
- * Moves the camera to a named framing.
+ * The camera.
  *
- * Lives inside the Canvas because that is the only place the camera and the
- * controls object exist; `makeDefault` on OrbitControls is what puts the
- * controls on R3F state for this to find and re-target.
+ * Two behaviours, because the same scene has two jobs to do. "Page" is a fixed
+ * wide framing: it is the honest preview of the eventual homepage, where the
+ * viewport is the frame and the Fixter is a small figure living in the margins.
+ * "Follow" trails him at a readable distance, which is the only way to judge
+ * hands, tools and footing on a phone.
+ *
+ * The follow is deliberately lazy — it eases toward where he is rather than
+ * tracking him rigidly, so walking reads as the character moving through a
+ * scene rather than the scene sliding under a pinned character.
  */
 function CameraRig({
+  preset,
   resetToken,
-  sequenceViewToken,
 }: {
+  preset: CameraPreset;
   resetToken: number;
-  sequenceViewToken: number;
 }) {
   const camera = useThree((state) => state.camera);
   const controls = useThree((state) => state.controls) as
-    | { target: THREE.Vector3; update: () => void }
+    | { target: THREE.Vector3; update: () => void; enabled: boolean }
     | null;
-  const first = useRef(true);
-  const seqFirst = useRef(true);
 
-  const moveTo = (
-    position: [number, number, number],
-    target: [number, number, number]
-  ) => {
-    camera.position.set(...position);
+  const wanted = useRef(new THREE.Vector3());
+  const look = useRef(new THREE.Vector3());
+  const seeded = useRef(false);
+
+  useEffect(() => {
+    camera.position.set(...PAGE_CAMERA.position);
     if (controls) {
-      controls.target.set(...target);
+      controls.target.set(...PAGE_CAMERA.target);
       controls.update();
     }
-    camera.lookAt(new THREE.Vector3(...target));
-  };
+    seeded.current = false;
+  }, [resetToken, preset, camera, controls]);
 
-  useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
-    moveTo(CAMERA_HOME, CAMERA_TARGET);
-    // moveTo closes over camera/controls, both stable for the canvas lifetime.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resetToken, camera, controls]);
+  useFrame((_, delta) => {
+    if (preset !== "follow") return;
+    const dt = Math.min(delta, 0.1);
 
-  useEffect(() => {
-    if (seqFirst.current) {
-      seqFirst.current = false;
-      return;
+    const pose = getFixterPose();
+    wanted.current.set(
+      pose.x + FOLLOW_CAMERA.offset[0],
+      FOLLOW_CAMERA.offset[1],
+      pose.z + FOLLOW_CAMERA.offset[2]
+    );
+    look.current.set(pose.x, FOLLOW_CAMERA.lookHeight, pose.z);
+
+    if (!seeded.current) {
+      // Jump into place on the first frame; easing in from the page framing
+      // would read as a swoop nobody asked for.
+      camera.position.copy(wanted.current);
+      seeded.current = true;
+    } else {
+      const k = 1 - Math.exp(-FOLLOW_CAMERA.stiffness * dt);
+      camera.position.lerp(wanted.current, k);
     }
-    moveTo(SEQUENCE_CAMERA.position, SEQUENCE_CAMERA.target);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sequenceViewToken, camera, controls]);
+
+    if (controls) {
+      controls.target.lerp(look.current, 1 - Math.exp(-FOLLOW_CAMERA.stiffness * dt));
+      controls.update();
+    } else {
+      camera.lookAt(look.current);
+    }
+  });
 
   return null;
 }
 
-/** Flat rings marking the manual A/B travel anchors, plus the route. */
-function TravelMarkers({
-  pointA,
-  pointB,
-}: {
-  pointA: [number, number, number];
-  pointB: [number, number, number];
-}) {
-  const geometry = useMemo(
-    () =>
-      new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(pointA[0], 0.002, pointA[2]),
-        new THREE.Vector3(pointB[0], 0.002, pointB[2]),
-      ]),
-    [pointA, pointB]
-  );
-  useEffect(() => () => geometry.dispose(), [geometry]);
-
-  return (
-    <group>
-      {[
-        { at: pointA, color: "#306EEC" },
-        { at: pointB, color: "#0EA96D" },
-      ].map(({ at, color }, index) => (
-        <mesh
-          key={index}
-          position={[at[0], 0.001, at[2]]}
-          rotation={[-Math.PI / 2, 0, 0]}
-        >
-          <ringGeometry args={[0.26, 0.32, 48]} />
-          <meshBasicMaterial color={color} transparent opacity={0.85} />
-        </mesh>
-      ))}
-      <line>
-        <primitive object={geometry} attach="geometry" />
-        <lineBasicMaterial color="#C7D2E5" transparent opacity={0.9} />
-      </line>
-    </group>
-  );
-}
-
 export default function FixterScene({
   orbitEnabled,
-  showMarkers,
-  pointA,
-  pointB,
+  cameraPreset,
   resetToken,
-  sequenceViewToken,
-  outletAlignment,
+  showObjects,
   ...modelProps
 }: FixterSceneProps) {
-  const job = modelProps.sequence?.job;
-
-  /* The outlet faces back down the approach axis, at whoever is working on it. */
-  const outletYaw = useMemo(() => {
-    if (!job) return 0;
-    const anchor = new THREE.Vector3(...job.anchor);
-    const mark = workPosition(job);
-    return yawTowards(anchor, new THREE.Vector3(mark.x, anchor.y, mark.z));
-  }, [job]);
+  const spread = modelProps.spread;
+  /*
+   * Object placement uses the same solver the character does, so the thing he
+   * walks up to and the thing on screen can never disagree. Clip durations are
+   * irrelevant to anchors and marks, hence the zero.
+   */
+  const stops = useMemo(() => buildTour(JOBS, spread, () => 0), [spread]);
 
   return (
     <Canvas
       /* `flat` disables ACES tone mapping — with it on, #ffffff renders grey. */
       flat
       dpr={[1, 2]}
-      camera={{ position: CAMERA_HOME, fov: 40, near: 0.1, far: 100 }}
+      camera={{ position: PAGE_CAMERA.position, fov: 38, near: 0.1, far: 120 }}
       gl={{ antialias: true, powerPreference: "high-performance" }}
       shadows={false}
     >
@@ -152,37 +122,43 @@ export default function FixterScene({
 
       {/*
        * Lights only, no environment map: drei's <Environment> fetches an HDRI
-       * from a CDN at runtime, a network dependency this page has no reason to
-       * take on.
+       * from a CDN at runtime, a dependency a marketing page should not take.
        */}
-      <ambientLight intensity={0.85} />
-      <hemisphereLight args={["#ffffff", "#d8dee9", 0.6]} />
-      <directionalLight position={[4, 8, 6]} intensity={1.5} />
-      <directionalLight position={[-5, 3, -4]} intensity={0.55} />
+      <ambientLight intensity={0.82} />
+      <hemisphereLight args={["#ffffff", "#dfe4ec", 0.62]} />
+      <directionalLight position={[4, 8, 6]} intensity={1.45} />
+      <directionalLight position={[-5, 3, -4]} intensity={0.5} />
 
-      {showMarkers && !job && <TravelMarkers pointA={pointA} pointB={pointB} />}
-
-      {job && (
-        <OutletObject
-          position={job.anchor}
-          faceYaw={outletYaw}
-          alignment={outletAlignment}
-        />
-      )}
+      {showObjects &&
+        stops.map((stop) => (
+          <FixableObject
+            scale={OBJECT_SCALE}
+            key={stop.job.id}
+            kind={stop.job.object}
+            id={stop.job.id}
+            position={[
+              stop.anchor.x + (stop.job.objectOffset?.[0] ?? 0),
+              stop.anchor.y + (stop.job.objectOffset?.[1] ?? 0),
+              stop.anchor.z + (stop.job.objectOffset?.[2] ?? 0),
+            ]}
+            /* Authored, so props face the viewer rather than the worker. */
+            faceYaw={THREE.MathUtils.degToRad(stop.job.objectYawDeg ?? 0)}
+          />
+        ))}
 
       <Suspense fallback={null}>
         <FixterModel {...modelProps} />
       </Suspense>
 
-      <CameraRig resetToken={resetToken} sequenceViewToken={sequenceViewToken} />
+      <CameraRig preset={cameraPreset} resetToken={resetToken} />
       <OrbitControls
         makeDefault
-        enabled={orbitEnabled}
-        target={CAMERA_TARGET}
+        enabled={orbitEnabled && cameraPreset !== "follow"}
+        target={PAGE_CAMERA.target}
         enablePan
-        minDistance={0.6}
-        maxDistance={20}
-        maxPolarAngle={Math.PI / 1.9}
+        minDistance={0.8}
+        maxDistance={30}
+        maxPolarAngle={Math.PI / 1.85}
       />
     </Canvas>
   );
