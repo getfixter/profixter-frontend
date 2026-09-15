@@ -37,6 +37,7 @@ export default function LabDiagnostics() {
     ["GLB HEAD", d.glbHead, /^200/.test(d.glbHead)],
     ["LAYER", d.layer, /PINNED$|PINNED ·/.test(d.layer) || /· PINNED/.test(d.layer)],
     ["CANVAS", d.canvas, d.canvas !== "not mounted"],
+    ["ASSETS", d.assets, /100%/.test(d.assets) && !/ERRORS/.test(d.assets)],
     ["MODEL", d.model, /loaded/i.test(d.model)],
     ["MOTIONS", d.motions, /loaded/i.test(d.motions)],
     ["ANCHORS", d.anchors, !/^0\b|…/.test(d.anchors)],
