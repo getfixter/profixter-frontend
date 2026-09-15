@@ -36,9 +36,21 @@ export type FixableProps = { id: string };
 
 const DEG = THREE.MathUtils.degToRad;
 
-/** Critically-damped-ish approach; frame-rate independent. */
-function ease(current: number, target: number, dt: number, rate = 4.5) {
-  return current + (target - current) * (1 - Math.exp(-rate * Math.min(dt, 0.1)));
+/**
+ * Critically-damped-ish approach; frame-rate independent.
+ *
+ * Deliberately asymmetric. Mending is the payoff and wants to be seen, so it
+ * happens in about a second. Coming undone again is housekeeping the loop needs
+ * and nobody should notice, so it takes the better part of ten — slow enough
+ * that a handle drooping or a lamp dimming reads as nothing at all unless you
+ * are staring straight at it.
+ */
+const REPAIR_RATE = 4.5;
+const DECAY_RATE = 0.3;
+
+function ease(current: number, target: number, dt: number, rate?: number) {
+  const r = rate ?? (target >= current ? REPAIR_RATE : DECAY_RATE);
+  return current + (target - current) * (1 - Math.exp(-r * Math.min(dt, 0.1)));
 }
 
 /* ------------------------------------------------------------------ outlet */

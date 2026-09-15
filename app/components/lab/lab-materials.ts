@@ -54,3 +54,37 @@ export function createLampMaterial() {
 export function disposeMaterial(material: THREE.Material | null) {
   material?.dispose();
 }
+
+/**
+ * A soft contact shadow, as a texture.
+ *
+ * The one thing that decides whether a 3D figure looks placed on a page or
+ * pasted over it. Drawn rather than rendered: a real shadow needs a light, a
+ * surface and a shadow map, and the surface here is a webpage.
+ *
+ * It lives in the page plane, not on a notional floor — under a camera this
+ * close to head-on a horizontal ellipse would be edge-on and invisible. So it
+ * is a squashed vertical ellipse under his boots, which is what a soft shadow
+ * looks like from the front anyway.
+ */
+export function createContactShadow(): THREE.Texture {
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const g = ctx.createRadialGradient(
+      size / 2, size / 2, 0,
+      size / 2, size / 2, size / 2
+    );
+    g.addColorStop(0, "rgba(11,22,40,0.55)");
+    g.addColorStop(0.45, "rgba(11,22,40,0.28)");
+    g.addColorStop(1, "rgba(11,22,40,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}

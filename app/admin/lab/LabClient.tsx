@@ -206,6 +206,12 @@ export default function LabClient() {
    * stage stays one click away for comparison.
    */
   const [mode, setMode] = useState<LabMode>("homepage");
+  /*
+   * Preview hides every control so the experiment can be judged as a website
+   * rather than as a website with a panel on it. One small handle stays, because
+   * a mode with no way out is a trap.
+   */
+  const [preview, setPreview] = useState(false);
   const [layoutOverride, setLayoutOverride] = useState<LayoutId | null>(null);
   const [orbitEnabled, setOrbitEnabled] = useState(false);
   const [resetToken, setResetToken] = useState(0);
@@ -313,10 +319,20 @@ export default function LabClient() {
         </LabErrorBoundary>
 
         {/*
-          The only chrome. Above the canvas and the only thing on top of the
-          page that accepts a click, so everything the mock page renders stays
-          as clickable as it would be in production.
+          The only chrome, and in Preview not even that. Above the canvas and
+          the only thing on top of the page that accepts a click, so everything
+          the mock page renders stays as clickable as it would be in production.
         */}
+        {preview ? (
+          <button
+            type="button"
+            onClick={() => setPreview(false)}
+            aria-label="Show Lab controls"
+            className="fixed bottom-3 right-3 z-[60] flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/60 text-[15px] leading-none text-slate-400 shadow-sm backdrop-blur transition hover:bg-white hover:text-slate-900"
+          >
+            &#9881;
+          </button>
+        ) : (
         <div className="fixed bottom-2 right-2 z-[60] w-[150px] space-y-1.5 rounded-xl border border-slate-200 bg-white/90 p-2 shadow-lg backdrop-blur sm:bottom-3 sm:right-3 sm:w-[228px] sm:space-y-2 sm:p-2.5">
           <div className="hidden items-center justify-between sm:flex">
             <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
@@ -353,14 +369,19 @@ export default function LabClient() {
           </div>
 
           <div className="flex gap-2">
-            <Button onClick={startTour} disabled={!isLoaded} tone="primary">
-              Restart
+            <Button onClick={() => setPreview(true)} tone="primary">
+              Preview
             </Button>
             <Button
               onClick={() => setTour((c) => (c ? { ...c, paused: !c.paused } : c))}
               disabled={!touring}
             >
               {tour?.paused ? "Play" : "Pause"}
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={startTour} disabled={!isLoaded}>
+              Restart
             </Button>
           </div>
 
@@ -378,6 +399,7 @@ export default function LabClient() {
             )}
           </p>
         </div>
+        )}
       </div>
     );
   }

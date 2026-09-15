@@ -1,5 +1,7 @@
 import * as THREE from "three";
+import { TOOL_REACH } from "./lab-tools";
 import {
+  TOOL_SCALE,
   WORK_MOTIONS,
   type JobDefinition,
   type StageJob,
@@ -39,6 +41,8 @@ export type TourStop = {
   motion: WorkMotion;
   /** Where the prop is drawn, including its small forward offset. */
   object: THREE.Vector3;
+  /** The point being repaired — what the tool aims at. */
+  workPoint: THREE.Vector3;
   /** Where he stands so his working hand lands on the object. Always z = 0. */
   mark: THREE.Vector3;
   workYaw: number;
@@ -65,6 +69,8 @@ export type TourRuntime = {
   /** Lean, about the camera axis. This is what sells diagonal travel. */
   lean: number;
   workProgress: number;
+  /** Stride rate as a fraction of full walking pace, so the feet match. */
+  gait: number;
   toolEquipped: boolean;
   fixedTick: Record<string, number>;
   laps: number;
@@ -102,6 +108,12 @@ const LEAN_MAX = THREE.MathUtils.degToRad(17);
 
 /** How far the travel path bows off the straight line, as a fraction. */
 const PATH_BOW = 0.13;
+
+/** How far the prop sits in front of his hand. Layering, not distance. */
+const PROP_DEPTH = 0.1;
+
+/** Stand-off for a job done bare-handed, where there is no tool to span it. */
+const BARE_HAND_GAP = 0.09;
 
 /* ------------------------------------------------------------------ stops */
 
@@ -156,7 +168,9 @@ export function buildTour(
       .applyAxisAngle(up, yaw);
 
     /*
-     * Where his hand must arrive. This is the job's real position on the page.
+     * The anchor is where the REPAIR happens — the screw, the handle, the
+     * bracket — not where his hand goes. That distinction is the whole of the
+     * tool fix.
      *
      * A resolver that returns null means the element it belongs to is not on
      * the page right now — hidden at this breakpoint, or not yet measured — so
@@ -170,31 +184,63 @@ export function buildTour(
     const offset = job.objectOffset ?? [0, 0];
 
     /*
-     * The prop is DRAWN offset from that anchor, so his hand lands on an edge
-     * of it rather than in its middle — otherwise a picture frame hangs across
-     * his face and a shelf runs through his chest. The offset moves only the
+     * His hand stands off from the work by the length of the tool, IN THE
+     * SCREEN PLANE.
+     *
+     * The gap used to be in z — the prop floated toward the viewer and the tool
+     * was supposed to span the difference. On a flat stage that is worth
+     * nothing: a screwdriver pointing at the camera is a dot, and the tool
+     * instead ended up aimed at the prop's drawn centre, which put it through
+     * his own hip. Standing the hand off within the plane is what makes the
+     * tool read as being used on something.
+     */
+    const toolLength = job.tool
+      ? TOOL_REACH[job.tool] * TOOL_SCALE * characterScale
+      : BARE_HAND_GAP * characterScale;
+    const approach = THREE.MathUtils.degToRad(job.toolApproachDeg ?? 0);
+    const handTarget = new THREE.Vector3(
+      anchor.x + Math.cos(approach) * toolLength,
+      anchor.y + Math.sin(approach) * toolLength,
+      0
+    );
+
+    /*
+     * The prop is DRAWN offset from the anchor, so the work lands on an edge of
+     * it rather than in its middle — otherwise a picture frame hangs across his
+     * face and a shelf runs through his chest. The offset moves only the
      * drawing; the anchor, and therefore where he stands, does not move.
      *
-     * Depth is used here and nowhere else: the prop floats as far in front of
-     * the stage plane as his hand reaches, plus the length the tool spans.
+     * Depth is used here and nowhere else, and only a little: enough to keep
+     * the prop in front of him and off his own surfaces.
      */
     const object = new THREE.Vector3(
       anchor.x + offset[0],
       anchor.y + offset[1],
-      hand.z + job.toolGap
+      hand.z + PROP_DEPTH
+    );
+
+    /* What the tool points at: the work itself, at the prop's depth. */
+    const workPoint = new THREE.Vector3(
+      anchor.x,
+      anchor.y,
+      hand.z + PROP_DEPTH
     );
 
     /*
-     * Where to stand is a subtraction rather than a construction now that the
-     * world is flat: put his hand on the anchor and the mark falls out. He
-     * never leaves z = 0.
+     * Where to stand is a subtraction now that the world is flat: put his hand
+     * on the hand target and the mark falls out. He never leaves z = 0.
      */
-    const mark = new THREE.Vector3(anchor.x - hand.x, anchor.y - hand.y, 0);
+    const mark = new THREE.Vector3(
+      handTarget.x - hand.x,
+      handTarget.y - hand.y,
+      0
+    );
 
     stops.push({
       job,
       motion,
       object,
+      workPoint,
       mark,
       workYaw: yaw,
       enterSeconds: motion.enter ? clipSeconds(motion.enter.name) : 0,
@@ -217,6 +263,7 @@ export function createTourRuntime(stops: TourStop[]): TourRuntime {
     tick: 0,
     phase: "IDLE",
     phaseElapsed: 0,
+    gait: 1,
     position: start,
     yaw: 0,
     lean: 0,
@@ -319,7 +366,48 @@ function travelPose(direction: THREE.Vector2) {
   return { yaw, lean };
 }
 
-export function stepTour(runtime: TourRuntime, stops: TourStop[], dt: number) {
+/**
+ * When a repair is allowed to come undone again.
+ *
+ * The loop has no reset — nothing is ever put back while anyone is looking —
+ * and the way to keep that promise is not to count stops. Counting worked on a
+ * six-job ring and broke the moment a phone dropped to four, where "two stops
+ * later" is a row an inch below his boots.
+ *
+ * So the question is asked directly: can the viewer see this happen? An object
+ * ages when it has been mended long enough to have registered AND either it is
+ * off the screen entirely or he is a long way from it. The last clause is the
+ * guarantee rather than the aesthetic: whatever else is true, a job has to be
+ * broken again before he walks back to it, or he would arrive to repair
+ * something that is already fine.
+ */
+export type AgePolicy = {
+  /** Stops a repair holds before it may age at all, however far away he is. */
+  minStops: number;
+  /** World distance beyond which a change is unlikely to be noticed. */
+  safeDistance: number;
+  /**
+   * Whether this repair is currently on screen anywhere.
+   *
+   * The job as well as the point, because a repair can show in two places at
+   * once: the prop itself, and a checklist row somewhere else on the page that
+   * ticks when it is done. Un-ticking that row is just as visible as the prop
+   * springing apart, and the first version of this only watched the prop.
+   */
+  isVisible?: (job: JobDefinition, point: THREE.Vector3) => boolean;
+};
+
+export const DEFAULT_AGE_POLICY: AgePolicy = {
+  minStops: 2,
+  safeDistance: 2.6,
+};
+
+export function stepTour(
+  runtime: TourRuntime,
+  stops: TourStop[],
+  dt: number,
+  policy: AgePolicy = DEFAULT_AGE_POLICY
+) {
   if (!stops.length) return;
   runtime.phaseElapsed += dt;
   const stop = stops[runtime.stopIndex % stops.length];
@@ -333,7 +421,14 @@ export function stepTour(runtime: TourRuntime, stops: TourStop[], dt: number) {
       );
       runtime.t = 0;
     }
-    const speed = WALK_SPEED * (slow ? APPROACH_SPEED_FACTOR : 1);
+    const factor = slow ? APPROACH_SPEED_FACTOR : 1;
+    const speed = WALK_SPEED * factor;
+    /*
+     * The walk is an in-place clip and the code does the moving, so the two
+     * have to be told the same speed or the feet skate. They did: he slowed to
+     * 45% for the last stretch into every job while his legs kept sprinting.
+     */
+    runtime.gait = factor;
     runtime.t = Math.min(1, runtime.t + (speed * dt) / runtime.path.length);
     const { point, direction } = pathAt(runtime.path, runtime.t);
     runtime.position.set(point.x, point.y, 0);
@@ -410,16 +505,28 @@ export function stepTour(runtime: TourRuntime, stops: TourStop[], dt: number) {
       break;
   }
 
-  /*
-   * Object states. The loop has no reset: a repair ages out only once he is
-   * most of a lap away, so by the time he walks back the object needs him
-   * again, and the moment it changed always happened somewhere he was not.
-   */
-  const staysFixedFor = Math.max(1, stops.length - 2);
-  for (const s of stops) {
+  /* Object states, under the policy above. */
+  const count = stops.length;
+  for (let i = 0; i < count; i++) {
+    const s = stops[i];
     const fixedAt = runtime.fixedTick[s.job.id];
-    const settled =
-      fixedAt === undefined || runtime.tick - fixedAt >= staysFixedFor ? 0 : 1;
+
+    if (fixedAt !== undefined && s !== stop) {
+      const held = runtime.tick - fixedAt;
+      /* How many stops until he is back here. Zero would mean he is here. */
+      const untilDue = (i - runtime.stopIndex + count) % count;
+      const offScreen = policy.isVisible
+        ? !policy.isVisible(s.job, s.object)
+        : false;
+      const farAway =
+        runtime.position.distanceTo(s.mark) >= policy.safeDistance;
+
+      if ((held >= policy.minStops && (offScreen || farAway)) || untilDue <= 1) {
+        delete runtime.fixedTick[s.job.id];
+      }
+    }
+
+    const settled = runtime.fixedTick[s.job.id] !== undefined ? 1 : 0;
     setObjectFix(
       s.job.id,
       s === stop && runtime.phase === "WORK"

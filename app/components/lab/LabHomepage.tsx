@@ -4,7 +4,7 @@ import { useCallback, useSyncExternalStore } from "react";
 import { registerAnchor } from "./lab-page-anchors";
 import {
   getSettledVersion,
-  isObjectSettled,
+  isObjectLatched,
   subscribeObjectSettled,
 } from "./lab-object-state";
 import { ROW_JOBS } from "./lab-page-jobs";
@@ -121,7 +121,7 @@ function ListRow({
           nothing, and it is the difference between a character living here and
           a character in the way.
         */}
-        <span className="flex items-center gap-3 border-b border-[#EDEDF0] py-2.5 pr-[92px] text-[15px] leading-[1.35] text-[#1D1D1F] sm:py-3 sm:text-[17px] lg:pr-0 lg:text-[18px]">
+        <span className="flex items-center gap-3 border-b border-[#EDEDF0] py-2.5 pr-[92px] text-[15px] leading-[1.35] text-[#1D1D1F] sm:py-3 sm:text-[17px] lg:py-[18px] lg:pr-0 lg:text-[18px]">
         <span
           aria-hidden="true"
           className={`flex h-[19px] w-[19px] flex-none items-center justify-center rounded-[6px] border-[1.5px] transition-colors duration-500 ${
@@ -401,7 +401,7 @@ export default function LabHomepage() {
                 anchorId={item.anchorId}
                 done={
                   item.anchorId
-                    ? isObjectSettled(ROW_JOBS[item.anchorId] ?? "")
+                    ? isObjectLatched(ROW_JOBS[item.anchorId] ?? "")
                     : false
                 }
               />

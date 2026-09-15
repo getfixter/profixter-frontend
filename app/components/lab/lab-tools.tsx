@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { M } from "./lab-materials";
 
@@ -131,3 +133,117 @@ export const TOOL_REACH: Record<ToolKind, number> = {
 
 /** Every tool's working end runs along +Y; see the note in Drill. */
 export const TOOL_AXIS = new THREE.Vector3(0, 1, 0);
+
+/* ------------------------------------------------------- aiming the tool */
+
+const _handQ = new THREE.Quaternion();
+const _gripW = new THREE.Vector3();
+const _dir = new THREE.Vector3();
+const _aim = new THREE.Quaternion();
+const _swing = new THREE.Quaternion();
+
+/**
+ * How far the tool may swing away from the posture's own aim.
+ *
+ * A wrist has limits, and without one of these a target that drifts behind the
+ * hand would spin the screwdriver right round. Eighty degrees is generous
+ * enough never to bind during normal work and tight enough that a bad frame
+ * cannot produce a pose no arm could hold.
+ */
+const MAX_SWING = THREE.MathUtils.degToRad(80);
+
+/** Slerp rate. Slow enough to never read as snapping, fast enough to keep up. */
+const TRACK_RATE = 7;
+
+/**
+ * A tool held in the hand that keeps pointing at what he is working on.
+ *
+ * The fixed per-posture aim it replaces was an average, and an average is
+ * exactly wrong for an overhead motion: the hand travels a long way through the
+ * work window, so a rotation that looked right in the middle had the
+ * screwdriver beside his ear at both ends. This asks the only question that
+ * actually matters each frame — where is the tip relative to the thing — and
+ * answers it in the hand's own space, so the tool stays gripped while the point
+ * follows the job.
+ *
+ * Damped, clamped, and seeded from the posture's aim on the first frame, so it
+ * eases in rather than snapping to attention the moment he arrives.
+ */
+export function AimedHandTool({
+  kind,
+  scale = 1,
+  position,
+  restRotationDeg,
+  getTarget,
+  tracking,
+}: {
+  kind: ToolKind;
+  scale?: number;
+  position: [number, number, number];
+  restRotationDeg: [number, number, number];
+  /** Where the tip should point, in world space. Null to hold the rest aim. */
+  getTarget: () => THREE.Vector3 | null;
+  tracking: boolean;
+}) {
+  const ref = useRef<THREE.Group>(null);
+  const seeded = useRef(false);
+
+  const rest = useMemo(
+    () =>
+      new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(
+          THREE.MathUtils.degToRad(restRotationDeg[0]),
+          THREE.MathUtils.degToRad(restRotationDeg[1]),
+          THREE.MathUtils.degToRad(restRotationDeg[2])
+        )
+      ),
+    [restRotationDeg]
+  );
+
+  useFrame((_, delta) => {
+    const group = ref.current;
+    if (!group) return;
+
+    let wanted = rest;
+    const target = tracking ? getTarget() : null;
+
+    if (target && group.parent) {
+      group.parent.getWorldQuaternion(_handQ);
+      group.getWorldPosition(_gripW);
+      _dir.copy(target).sub(_gripW);
+
+      if (_dir.lengthSq() > 1e-8) {
+        /* The direction the tip must take, expressed in the hand's own frame. */
+        _dir.normalize().applyQuaternion(_handQ.invert());
+        _aim.setFromUnitVectors(TOOL_AXIS, _dir);
+
+        const swing = _aim.angleTo(rest);
+        if (swing > MAX_SWING) {
+          _swing.copy(rest).slerp(_aim, MAX_SWING / swing);
+          wanted = _swing;
+        } else {
+          wanted = _aim;
+        }
+      }
+    }
+
+    if (!seeded.current) {
+      group.quaternion.copy(rest);
+      seeded.current = true;
+    }
+    group.quaternion.slerp(
+      wanted,
+      1 - Math.exp(-TRACK_RATE * Math.min(delta, 0.1))
+    );
+  });
+
+  const Tool = TOOLS[kind];
+  if (!Tool) return null;
+  return (
+    <group ref={ref} position={position}>
+      <group scale={scale}>
+        <Tool />
+      </group>
+    </group>
+  );
+}

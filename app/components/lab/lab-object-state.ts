@@ -23,6 +23,19 @@ const fixedness: Record<string, number> = {};
 const SETTLED_AT = 0.55;
 
 const settled: Record<string, boolean> = {};
+
+/**
+ * Whether a checklist row is showing this repair as done.
+ *
+ * Separate from `settled`, and it latches. A prop has to break again for the
+ * loop to have anything to do, but a row un-ticking itself under the reader's
+ * eye is a different kind of event: the page appears to undo its own progress.
+ * So the row goes on when the repair finishes and comes off only once the scene
+ * confirms nobody is looking at it. On a page the reader never scrolls, the
+ * list simply stays done, which is the nicer answer anyway.
+ */
+const latched: Record<string, boolean> = {};
+
 const listeners = new Set<() => void>();
 let settledVersion = 0;
 
@@ -36,6 +49,7 @@ export function setObjectFix(id: string, value: number) {
   const isSettled = value >= SETTLED_AT;
   if (settled[id] !== isSettled) {
     settled[id] = isSettled;
+    if (isSettled) latched[id] = true;
     publishSettled();
   }
 }
@@ -46,6 +60,17 @@ export function getObjectFix(id: string) {
 
 export function isObjectSettled(id: string) {
   return settled[id] ?? false;
+}
+
+export function isObjectLatched(id: string) {
+  return latched[id] ?? false;
+}
+
+/** Called by the scene once this repair is off screen and undone again. */
+export function releaseLatch(id: string) {
+  if (!latched[id]) return;
+  latched[id] = false;
+  publishSettled();
 }
 
 /** Changes only when some object crosses the line, so DOM can subscribe. */
@@ -64,5 +89,6 @@ export function subscribeObjectSettled(listener: () => void) {
 export function resetObjectFix() {
   for (const key of Object.keys(fixedness)) delete fixedness[key];
   for (const key of Object.keys(settled)) delete settled[key];
+  for (const key of Object.keys(latched)) delete latched[key];
   publishSettled();
 }
