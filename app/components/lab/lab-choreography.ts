@@ -109,6 +109,28 @@ const LEAN_MAX = THREE.MathUtils.degToRad(17);
 /** How far the travel path bows off the straight line, as a fraction. */
 const PATH_BOW = 0.13;
 
+/**
+ * Extra bow for a steep leg.
+ *
+ * A straight climb up the page is the one direction where none of the travel
+ * cues fire: the yaw follows sideways motion and the lean is a product of both
+ * axes, so a purely vertical leg leaves him facing the camera, upright, rising.
+ * That reads as being winched rather than walking. Bowing a steep leg gives it
+ * a lateral component, which turns him, tips him, and makes the climb look like
+ * a decision.
+ */
+const STEEP_BOW = 1.35;
+
+/**
+ * How much a long leg hurries.
+ *
+ * A trek across two sections at strolling pace leaves the top of the page empty
+ * for eight seconds. He picks his feet up a little — and because the stride
+ * rate follows the speed, the walk picks up with him.
+ */
+const HURRY_FROM = 2.4;
+const HURRY_MAX = 1.5;
+
 /** How far the prop sits in front of his hand. Layering, not distance. */
 const PROP_DEPTH = 0.1;
 
@@ -324,11 +346,31 @@ const approach = (current: number, target: number, dt: number, rate: number) =>
  * stations. A slight bow, alternating side as the tour goes round, makes the
  * same route feel like someone wandering a page.
  */
-function makePath(from: THREE.Vector3, to: THREE.Vector3, side: number): Path {
+/**
+ * How far outside his own jobs he may stray while walking between them.
+ *
+ * The lane is not authored, it is derived: whatever span of the page his marks
+ * already occupy, plus a little. On a desktop that is most of the width and
+ * constrains nothing. On a phone the jobs all live in the margin the checklist
+ * leaves free, so this is what stops a bowed climb from carrying him across the
+ * copy — which is exactly what it did the first time the bow was widened.
+ */
+const LANE_PAD = 0.3;
+
+function makePath(
+  from: THREE.Vector3,
+  to: THREE.Vector3,
+  side: number,
+  laneMin: number,
+  laneMax: number
+): Path {
   const a = new THREE.Vector2(from.x, from.y);
   const b = new THREE.Vector2(to.x, to.y);
   const span = b.clone().sub(a);
   const length = Math.max(span.length(), 1e-4);
+  /* Steepness, 0 for a level walk and 1 for a straight climb. */
+  const steep = Math.abs(span.y) / length;
+  const bow = PATH_BOW * (1 + STEEP_BOW * steep * steep);
   const control = a
     .clone()
     .add(b)
@@ -336,8 +378,13 @@ function makePath(from: THREE.Vector3, to: THREE.Vector3, side: number): Path {
     .add(
       new THREE.Vector2(-span.y, span.x)
         .normalize()
-        .multiplyScalar(length * PATH_BOW * side)
+        .multiplyScalar(length * bow * side)
     );
+  /*
+   * A quadratic Bezier lies inside the hull of its three points, so clamping
+   * the control point is enough to keep the whole curve in the lane.
+   */
+  control.x = THREE.MathUtils.clamp(control.x, laneMin, laneMax);
   return { from: a, to: b, control, length };
 }
 
@@ -412,16 +459,30 @@ export function stepTour(
   runtime.phaseElapsed += dt;
   const stop = stops[runtime.stopIndex % stops.length];
 
+  let laneMin = Infinity;
+  let laneMax = -Infinity;
+  for (const s of stops) {
+    if (s.mark.x < laneMin) laneMin = s.mark.x;
+    if (s.mark.x > laneMax) laneMax = s.mark.x;
+  }
+  laneMin -= LANE_PAD;
+  laneMax += LANE_PAD;
+
   const travel = (slow: boolean) => {
     if (!runtime.path) {
       runtime.path = makePath(
         runtime.position,
         stop.mark,
-        runtime.stopIndex % 2 === 0 ? 1 : -1
+        runtime.stopIndex % 2 === 0 ? 1 : -1,
+        laneMin,
+        laneMax
       );
       runtime.t = 0;
     }
-    const factor = slow ? APPROACH_SPEED_FACTOR : 1;
+    const hurry = slow
+      ? 1
+      : THREE.MathUtils.clamp(runtime.path.length / HURRY_FROM, 1, HURRY_MAX);
+    const factor = (slow ? APPROACH_SPEED_FACTOR : 1) * hurry;
     const speed = WALK_SPEED * factor;
     /*
      * The walk is an in-place clip and the code does the moving, so the two

@@ -26,7 +26,9 @@ import type {
   TourState,
   ToolOffset,
 } from "@/app/components/lab/FixterModel";
-import TelemetryReadout from "@/app/components/lab/TelemetryReadout";
+import TelemetryReadout, {
+  TelemetryLine,
+} from "@/app/components/lab/TelemetryReadout";
 import RetargetDiagnostics from "@/app/components/lab/RetargetDiagnostics";
 import LabErrorBoundary from "@/app/components/lab/LabErrorBoundary";
 
@@ -398,6 +400,9 @@ export default function LabClient() {
               `${PAGE_JOBS.length} jobs anchored to page elements`
             )}
           </p>
+          <div className="hidden sm:block">
+            <TelemetryLine />
+          </div>
         </div>
         )}
       </div>
