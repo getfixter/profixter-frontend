@@ -51,3 +51,23 @@ export default function TelemetryReadout() {
     </dl>
   );
 }
+
+/**
+ * The same numbers, on one line.
+ *
+ * For the homepage experiment, where the full panel would be a second website
+ * on top of the first. Subscribes directly for the same reason the panel does.
+ */
+export function TelemetryLine() {
+  const [telemetry, setTelemetry] = useState<Telemetry>(EMPTY_TELEMETRY);
+
+  useEffect(() => subscribeTelemetry(setTelemetry), []);
+
+  if (!telemetry.drawCalls) return null;
+  return (
+    <p className="font-mono text-[10px] tabular-nums text-slate-400">
+      {Math.round(telemetry.fps)} fps · {telemetry.drawCalls} draws ·{" "}
+      {Math.round(telemetry.triangles / 1000)}k tris · {telemetry.textures} tex
+    </p>
+  );
+}
