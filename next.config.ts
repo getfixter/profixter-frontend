@@ -28,6 +28,19 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        /*
+         * Never let a phone hold on to a version of the Lab that no longer
+         * exists. The served HTML is a placeholder either way, so a stale shell
+         * and a broken experiment look identical — and nobody should have to
+         * clear a cache to tell them apart.
+         */
+        source: "/admin/lab",
+        headers: [
+          { key: "Cache-Control", value: "no-store, must-revalidate" },
+          { key: "Pragma", value: "no-cache" },
+        ],
+      },
+      {
         source: "/3d/:path*",
         headers: [
           {
