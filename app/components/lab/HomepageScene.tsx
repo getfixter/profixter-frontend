@@ -412,11 +412,11 @@ function RowLatchKeeper() {
 /**
  * Everything the page owns, slid by exactly as much as the page has slid.
  *
- * Read from window.scrollY each frame rather than from a scroll event, so the
- * offset is applied in the same frame the browser paints the page at its new
- * position. A scroll listener runs at a different moment and lets the character
- * lag a few pixels behind the text he is standing on — which is precisely the
- * "floating in a fixed viewport" feeling this is built to avoid.
+ * Measured each frame rather than read from a scroll event, so the offset is
+ * applied in the same frame the browser paints the page at its new position. A
+ * scroll listener runs at a different moment and lets the character lag a few
+ * pixels behind the text he is standing on — which is precisely the "floating
+ * in a fixed viewport" feeling this is built to avoid.
  */
 function ScrollLayer({
   projection,
@@ -426,14 +426,30 @@ function ScrollLayer({
   children: React.ReactNode;
 }) {
   const ref = useRef<THREE.Group>(null);
+  const canvas = useThree((state) => state.gl.domElement);
 
   useFrame(() => {
     const group = ref.current;
     if (!group) return;
-    const scrolled = window.scrollY;
+
+    /*
+     * How far the page has slid UNDER the canvas — which is not the same thing
+     * as how far the page has scrolled, and assuming it was is a bug waiting
+     * for a device that disagrees.
+     *
+     * The canvas is pinned with `position: fixed`, and on every engine that
+     * honours that against the viewport its top stays at zero and this reduces
+     * to scrollY. Some mobile engines resolve fixed against the document
+     * instead when an ancestor has `overflow-x: hidden` — as this site's html
+     * element does — and then the canvas scrolls away with the page. Measuring
+     * where the canvas actually is covers both: if it moved with the document,
+     * its top is -scrollY, the two cancel, and nothing needs compensating.
+     */
+    const slid = window.scrollY + canvas.getBoundingClientRect().top;
+
     group.position.set(
-      -scrolled * projection.perPixelDown.x,
-      -scrolled * projection.perPixelDown.y,
+      -slid * projection.perPixelDown.x,
+      -slid * projection.perPixelDown.y,
       0
     );
   });
