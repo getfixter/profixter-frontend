@@ -1,27 +1,27 @@
 import * as THREE from "three";
-import { TOOL_REACH } from "./lab-tools";
 import {
   TOOL_SCALE,
   WORK_MOTIONS,
   type JobDefinition,
-  type StageJob,
   type WorkMotion,
 } from "./lab-jobs";
-import { setObjectFix } from "./lab-object-state";
-import { stageToWorld, type LayoutId } from "./lab-stage";
+import { TOOL_REACH } from "./lab-tools";
+import { resetObjectFix, setObjectFix } from "./lab-object-state";
 
 /**
- * The tour: one Fixter, a ring of jobs, forever — across a page, not around a
- * room.
+ * The tour: one Fixter, a list of small repairs, forever — on the visible
+ * screen, not in the document.
  *
- * Travel happens entirely on the stage plane. Left, right, up, down and every
+ * The change that matters: he is no longer anchored to the page. Where a job
+ * happens is decided when he sets off for it, from whatever space the screen
+ * has free at that moment. The document is still consulted, but only to say
+ * where NOT to go. That is what makes this work on any page rather than on one
+ * particular homepage, and what lets him carry on while somebody scrolls.
+ *
+ * Travel is still entirely in the plane. Left, right, up, down and every
  * diagonal between them; z never changes. Depth is used for exactly two things,
- * both local: how far in front of him an object floats so his tool can reach
- * it, and the thickness of the objects themselves.
- *
- * The runner knows nothing about outlets or faucets. It walks a list of stops,
- * each carrying where to stand, which way to face, which posture to work in and
- * how long it takes. Adding a job is data.
+ * both local: how far in front of him a prop sits, and the thickness of the
+ * props themselves.
  */
 
 export type TourPhase =
@@ -32,23 +32,39 @@ export type TourPhase =
   | "WORK_IN"
   | "WORK"
   | "WORK_OUT"
-  | "COMPLETE";
+  | "ADMIRE"
+  | "REST";
 
 export type PhaseClipRole = "idle" | "walk" | "workIn" | "work" | "workOut";
 
-export type TourStop = {
+/** A job, with its motion and clip lengths resolved. Carries no position. */
+export type Stop = {
   job: JobDefinition;
   motion: WorkMotion;
-  /** Where the prop is drawn, including its small forward offset. */
-  object: THREE.Vector3;
-  /** The point being repaired — what the tool aims at. */
-  workPoint: THREE.Vector3;
-  /** Where he stands so his working hand lands on the object. Always z = 0. */
-  mark: THREE.Vector3;
-  workYaw: number;
   enterSeconds: number;
   exitSeconds: number;
 };
+
+/** Where a job ended up, once he decided to go and do it. */
+export type Placement = {
+  /** The repair itself — the screw, the handle, the bracket. */
+  anchor: THREE.Vector3;
+  /** Where the prop is drawn, offset so the work lands on an edge of it. */
+  object: THREE.Vector3;
+  /** What the tool points at. */
+  workPoint: THREE.Vector3;
+  /** Where he stands so his working hand arrives on the anchor. */
+  mark: THREE.Vector3;
+  workYaw: number;
+};
+
+/**
+ * Asked for a place to do this job, in world units on the stage plane.
+ *
+ * Returning null means "nowhere sensible right now" — the runner waits rather
+ * than standing on a headline.
+ */
+export type Placer = (job: JobDefinition) => THREE.Vector3 | null;
 
 type Path = {
   from: THREE.Vector2;
@@ -62,20 +78,24 @@ export type TourRuntime = {
   tick: number;
   phase: TourPhase;
   phaseElapsed: number;
-  /** Always on the stage plane: x across, y up, z pinned to 0. */
   position: THREE.Vector3;
-  /** Facing, about the character's own up axis. */
   yaw: number;
-  /** Lean, about the camera axis. This is what sells diagonal travel. */
   lean: number;
   workProgress: number;
-  /** Stride rate as a fraction of full walking pace, so the feet match. */
   gait: number;
   toolEquipped: boolean;
-  fixedTick: Record<string, number>;
   laps: number;
   path: Path | null;
   t: number;
+  /** The current job's geometry, or null before he has chosen one. */
+  placed: Placement | null;
+  /** Which prop to draw, and how faded in it is. One at a time. */
+  propJobId: string | null;
+  propFade: number;
+  /** How long this rest should last. Varied, so the pacing is not metronomic. */
+  restFor: number;
+  /** Set when the screen changed under him and his spot is no longer free. */
+  displaced: boolean;
 };
 
 export const WALK_SPEED = 1.05;
@@ -83,8 +103,12 @@ const APPROACH_FROM = 0.86;
 const APPROACH_SPEED_FACTOR = 0.45;
 const TURN_RATE = 3.0;
 const TURN_EPSILON = 0.035;
-const OPENING_IDLE = 1.2;
-const COMPLETE_BEAT = 1.0;
+const OPENING_IDLE = 0.9;
+const ADMIRE_SECONDS = 1.5;
+
+/** How long he stands about between jobs. Contrast is what gets noticed. */
+const REST_MIN = 0.6;
+const REST_MAX = 2.6;
 
 /**
  * How far he turns toward the direction of travel.
@@ -98,11 +122,11 @@ const FACE_MAX = THREE.MathUtils.degToRad(70);
 /**
  * Lean, in radians, at a full forty-five degree diagonal.
  *
- * This is the answer to travelling up and down a page without looking like a
- * man climbing an invisible wall. He tips into the direction he is going, the
- * way anyone leans into a slope — and because dirX * dirY is zero for level
- * walking and zero for straight up, the cue appears exactly on the diagonals
- * where it is needed and nowhere else.
+ * The answer to travelling up and down a screen without looking like a man
+ * climbing an invisible wall. He tips into the direction he is going, the way
+ * anyone leans into a slope — and because dirX * dirY is zero for level walking
+ * and zero for straight up, the cue appears exactly on the diagonals where it
+ * is needed and nowhere else.
  */
 const LEAN_MAX = THREE.MathUtils.degToRad(17);
 
@@ -112,189 +136,121 @@ const PATH_BOW = 0.13;
 /**
  * Extra bow for a steep leg.
  *
- * A straight climb up the page is the one direction where none of the travel
- * cues fire: the yaw follows sideways motion and the lean is a product of both
- * axes, so a purely vertical leg leaves him facing the camera, upright, rising.
- * That reads as being winched rather than walking. Bowing a steep leg gives it
- * a lateral component, which turns him, tips him, and makes the climb look like
- * a decision.
+ * A straight climb is the one direction where none of the travel cues fire: the
+ * yaw follows sideways motion and the lean is a product of both axes, so a
+ * purely vertical leg leaves him facing the camera, upright, rising. That reads
+ * as being winched rather than walking. Bowing a steep leg gives it a lateral
+ * component, which turns him, tips him, and makes the climb look like a
+ * decision.
  */
 const STEEP_BOW = 1.35;
 
-/**
- * How much a long leg hurries.
- *
- * A trek across two sections at strolling pace leaves the top of the page empty
- * for eight seconds. He picks his feet up a little — and because the stride
- * rate follows the speed, the walk picks up with him.
- */
+/** How much a long leg hurries, so a trek does not drag. */
 const HURRY_FROM = 2.4;
 const HURRY_MAX = 1.5;
 
-/** How far the prop sits in front of his hand. Layering, not distance. */
+/** How far in front of him a prop sits. Layering, not distance. */
 const PROP_DEPTH = 0.1;
 
 /** Stand-off for a job done bare-handed, where there is no tool to span it. */
 const BARE_HAND_GAP = 0.09;
 
+/** How quickly a prop fades in when he sets off, and out when he leaves. */
+const PROP_FADE_RATE = 2.6;
+
 /* ------------------------------------------------------------------ stops */
 
-/**
- * Where a job's hand-target sits in the world.
- *
- * On the empty stage that is a normalised stage coordinate. On the mock
- * homepage it is wherever a particular DOM element happens to be. Everything
- * after the anchor — the stand mark, the facing, the prop's small forward
- * offset — is identical, which is the whole reason this is a parameter rather
- * than a second copy of the solver.
- */
-export type AnchorResolver = (job: JobDefinition) => THREE.Vector3 | null;
-
-export function buildTour(
-  jobs: StageJob[],
-  layout: LayoutId,
-  aspect: number,
-  characterScale: number,
+export function buildStops(
+  jobs: JobDefinition[],
   clipSeconds: (name: string) => number
-): TourStop[];
-export function buildTour(
-  jobs: JobDefinition[],
-  layout: LayoutId,
-  aspect: number,
-  characterScale: number,
-  clipSeconds: (name: string) => number,
-  anchorFor: AnchorResolver
-): TourStop[];
-export function buildTour(
-  jobs: JobDefinition[],
-  layout: LayoutId,
-  aspect: number,
-  characterScale: number,
-  clipSeconds: (name: string) => number,
-  anchorFor?: AnchorResolver
-): TourStop[] {
-  const up = new THREE.Vector3(0, 1, 0);
-
-  const stops: TourStop[] = [];
-  for (const job of jobs) {
+): Stop[] {
+  return jobs.map((job) => {
     const motion = WORK_MOTIONS[job.workMotion];
-    const yaw = THREE.MathUtils.degToRad(job.workYawDeg ?? 0);
+    return {
+      job,
+      motion,
+      enterSeconds: motion.enter ? clipSeconds(motion.enter.name) : 0,
+      exitSeconds: motion.exit ? clipSeconds(motion.exit.name) : 0,
+    };
+  });
+}
 
-    /*
-     * The hand offset was measured on the character at full size, so it has to
-     * be scaled with him. Skip this and shrinking the Fixter silently moves his
-     * hand without moving the mark, and he reaches past everything he owns.
-     */
-    const hand = new THREE.Vector3(...motion.handOffset)
-      .multiplyScalar(characterScale)
-      .applyAxisAngle(up, yaw);
+const _up = new THREE.Vector3(0, 1, 0);
 
-    /*
-     * The anchor is where the REPAIR happens — the screw, the handle, the
-     * bracket — not where his hand goes. That distinction is the whole of the
-     * tool fix.
-     *
-     * A resolver that returns null means the element it belongs to is not on
-     * the page right now — hidden at this breakpoint, or not yet measured — so
-     * the job is skipped rather than placed at the origin, where he would walk
-     * to the middle of the screen and work on nothing.
-     */
-    const anchor = anchorFor
-      ? anchorFor(job)
-      : stageToWorld((job as StageJob).placement[layout], layout, aspect);
-    if (!anchor) continue;
-    const offset = job.objectOffset ?? [0, 0];
+/**
+ * Turn "the repair is here" into everything else: where the prop is drawn,
+ * where the tool points, and where he has to stand for his hand to arrive.
+ */
+export function placeStop(
+  stop: Stop,
+  anchor: THREE.Vector3,
+  characterScale: number
+): Placement {
+  const { job, motion } = stop;
+  const workYaw = THREE.MathUtils.degToRad(job.workYawDeg ?? 0);
 
-    /*
-     * His hand stands off from the work by the length of the tool, IN THE
-     * SCREEN PLANE.
-     *
-     * The gap used to be in z — the prop floated toward the viewer and the tool
-     * was supposed to span the difference. On a flat stage that is worth
-     * nothing: a screwdriver pointing at the camera is a dot, and the tool
-     * instead ended up aimed at the prop's drawn centre, which put it through
-     * his own hip. Standing the hand off within the plane is what makes the
-     * tool read as being used on something.
-     */
-    const toolLength = job.tool
-      ? TOOL_REACH[job.tool] * TOOL_SCALE * characterScale
-      : BARE_HAND_GAP * characterScale;
-    const approach = THREE.MathUtils.degToRad(job.toolApproachDeg ?? 0);
-    const handTarget = new THREE.Vector3(
-      anchor.x + Math.cos(approach) * toolLength,
-      anchor.y + Math.sin(approach) * toolLength,
-      0
-    );
+  /*
+   * The hand offset was measured on the character at full size, so it has to be
+   * scaled with him. Skip this and shrinking the Fixter silently moves his hand
+   * without moving the mark, and he reaches past everything he owns.
+   */
+  const hand = new THREE.Vector3(...motion.handOffset)
+    .multiplyScalar(characterScale)
+    .applyAxisAngle(_up, workYaw);
 
-    /*
-     * The prop is DRAWN offset from the anchor, so the work lands on an edge of
-     * it rather than in its middle — otherwise a picture frame hangs across his
-     * face and a shelf runs through his chest. The offset moves only the
-     * drawing; the anchor, and therefore where he stands, does not move.
-     *
-     * Depth is used here and nowhere else, and only a little: enough to keep
-     * the prop in front of him and off his own surfaces.
-     */
-    const object = new THREE.Vector3(
+  /*
+   * His hand stands off from the work by the length of the tool, IN THE SCREEN
+   * PLANE. A gap in z would be worth nothing here: a screwdriver pointing at
+   * the camera is a dot.
+   */
+  const toolLength = job.tool
+    ? TOOL_REACH[job.tool] * TOOL_SCALE * characterScale
+    : BARE_HAND_GAP * characterScale;
+  const approach = THREE.MathUtils.degToRad(job.toolApproachDeg ?? 0);
+  const handTarget = new THREE.Vector3(
+    anchor.x + Math.cos(approach) * toolLength,
+    anchor.y + Math.sin(approach) * toolLength,
+    0
+  );
+
+  const offset = job.objectOffset ?? [0, 0];
+
+  return {
+    anchor: anchor.clone(),
+    object: new THREE.Vector3(
       anchor.x + offset[0],
       anchor.y + offset[1],
       hand.z + PROP_DEPTH
-    );
-
-    /* What the tool points at: the work itself, at the prop's depth. */
-    const workPoint = new THREE.Vector3(
-      anchor.x,
-      anchor.y,
-      hand.z + PROP_DEPTH
-    );
-
-    /*
-     * Where to stand is a subtraction now that the world is flat: put his hand
-     * on the hand target and the mark falls out. He never leaves z = 0.
-     */
-    const mark = new THREE.Vector3(
-      handTarget.x - hand.x,
-      handTarget.y - hand.y,
-      0
-    );
-
-    stops.push({
-      job,
-      motion,
-      object,
-      workPoint,
-      mark,
-      workYaw: yaw,
-      enterSeconds: motion.enter ? clipSeconds(motion.enter.name) : 0,
-      exitSeconds: motion.exit ? clipSeconds(motion.exit.name) : 0,
-    });
-  }
-
-  return stops;
+    ),
+    workPoint: new THREE.Vector3(anchor.x, anchor.y, hand.z + PROP_DEPTH),
+    mark: new THREE.Vector3(handTarget.x - hand.x, handTarget.y - hand.y, 0),
+    workYaw,
+  };
 }
 
 /* ----------------------------------------------------------------- runner */
 
-export function createTourRuntime(stops: TourStop[]): TourRuntime {
-  /* Begin where the loop ends: the honest opening is the ring's last leg. */
-  const start = stops.length
-    ? stops[stops.length - 1].mark.clone()
-    : new THREE.Vector3();
+export function createTourRuntime(): TourRuntime {
+  resetObjectFix();
   return {
     stopIndex: 0,
     tick: 0,
     phase: "IDLE",
     phaseElapsed: 0,
     gait: 1,
-    position: start,
+    position: new THREE.Vector3(),
     yaw: 0,
     lean: 0,
     workProgress: 0,
     toolEquipped: false,
-    fixedTick: {},
     laps: 0,
     path: null,
     t: 0,
+    placed: null,
+    propJobId: null,
+    propFade: 0,
+    restFor: REST_MIN,
+    displaced: false,
   };
 }
 
@@ -328,64 +284,107 @@ function angleDelta(a: number, b: number) {
 
 function turnToward(runtime: TourRuntime, target: number, dt: number) {
   const delta = angleDelta(runtime.yaw, target);
-  if (Math.abs(delta) <= TURN_EPSILON) {
-    runtime.yaw = target;
-    return true;
-  }
-  runtime.yaw += Math.sign(delta) * Math.min(Math.abs(delta), TURN_RATE * dt);
-  return false;
+  const step = Math.sign(delta) * Math.min(Math.abs(delta), TURN_RATE * dt);
+  runtime.yaw += step;
+  return Math.abs(angleDelta(runtime.yaw, target)) < TURN_EPSILON;
 }
 
-const approach = (current: number, target: number, dt: number, rate: number) =>
-  current + (target - current) * (1 - Math.exp(-rate * Math.min(dt, 0.1)));
+function approachValue(
+  current: number,
+  target: number,
+  dt: number,
+  rate: number
+) {
+  return current + (target - current) * (1 - Math.exp(-rate * Math.min(dt, 0.1)));
+}
 
-/**
- * A gently bowed path between two points on the stage.
- *
- * Straight lines between six anchors read as a machine indexing between
- * stations. A slight bow, alternating side as the tour goes round, makes the
- * same route feel like someone wandering a page.
- */
-/**
- * How far outside his own jobs he may stray while walking between them.
- *
- * The lane is not authored, it is derived: whatever span of the page his marks
- * already occupy, plus a little. On a desktop that is most of the width and
- * constrains nothing. On a phone the jobs all live in the margin the checklist
- * leaves free, so this is what stops a bowed climb from carrying him across the
- * copy — which is exactly what it did the first time the bow was widened.
- */
-const LANE_PAD = 0.3;
+export type Bounds = { minX: number; maxX: number; minY: number; maxY: number };
 
-function makePath(
-  from: THREE.Vector3,
-  to: THREE.Vector3,
-  side: number,
-  laneMin: number,
-  laneMax: number
-): Path {
-  const a = new THREE.Vector2(from.x, from.y);
-  const b = new THREE.Vector2(to.x, to.y);
+function curve(a: THREE.Vector2, b: THREE.Vector2, side: number, bounds: Bounds) {
   const span = b.clone().sub(a);
   const length = Math.max(span.length(), 1e-4);
-  /* Steepness, 0 for a level walk and 1 for a straight climb. */
   const steep = Math.abs(span.y) / length;
-  const bow = PATH_BOW * (1 + STEEP_BOW * steep * steep);
+  const bow = PATH_BOW * (1 + STEEP_BOW * steep * steep) * side;
   const control = a
     .clone()
     .add(b)
     .multiplyScalar(0.5)
     .add(
-      new THREE.Vector2(-span.y, span.x)
-        .normalize()
-        .multiplyScalar(length * bow * side)
+      new THREE.Vector2(-span.y, span.x).normalize().multiplyScalar(length * bow)
     );
   /*
    * A quadratic Bezier lies inside the hull of its three points, so clamping
-   * the control point is enough to keep the whole curve in the lane.
+   * the control point keeps the whole curve on screen. Without it a bowed climb
+   * swings him off the side of the viewport on the way up.
    */
-  control.x = THREE.MathUtils.clamp(control.x, laneMin, laneMax);
+  control.x = THREE.MathUtils.clamp(control.x, bounds.minX, bounds.maxX);
+  control.y = THREE.MathUtils.clamp(control.y, bounds.minY, bounds.maxY);
   return { from: a, to: b, control, length };
+}
+
+const _sample = new THREE.Vector2();
+
+/**
+ * How much of this route runs over something worth reading.
+ *
+ * Safe areas decide where he stops; without this they say nothing at all about
+ * how he gets there, and he walked straight across a booking form on the way to
+ * a perfectly chosen spot. Sampling the curve and counting the crossings costs
+ * a dozen point tests once per leg.
+ */
+function routeCost(path: Path, busy: (x: number, y: number) => boolean) {
+  let cost = 0;
+  const STEPS = 12;
+  for (let i = 1; i < STEPS; i++) {
+    const t = i / STEPS;
+    const u = 1 - t;
+    _sample.set(
+      u * u * path.from.x + 2 * u * t * path.control.x + t * t * path.to.x,
+      u * u * path.from.y + 2 * u * t * path.control.y + t * t * path.to.y
+    );
+    if (busy(_sample.x, _sample.y)) cost++;
+  }
+  return cost;
+}
+
+/**
+ * Pick the way round.
+ *
+ * Three candidates — bow left, bow right, straight — scored on how much content
+ * each crosses, with a mild preference for the bow, because a curved leg reads
+ * as a walk and a straight one reads as a slide.
+ */
+function makePath(
+  from: THREE.Vector3,
+  to: THREE.Vector3,
+  preferredSide: number,
+  bounds: Bounds,
+  busy?: (x: number, y: number) => boolean
+): Path {
+  const a = new THREE.Vector2(from.x, from.y);
+  const b = new THREE.Vector2(to.x, to.y);
+
+  const candidates = [
+    { path: curve(a, b, preferredSide, bounds), penalty: 0 },
+    { path: curve(a, b, -preferredSide, bounds), penalty: 0.4 },
+    { path: curve(a, b, preferredSide * 2.2, bounds), penalty: 0.8 },
+    { path: curve(a, b, -preferredSide * 2.2, bounds), penalty: 1.0 },
+    { path: curve(a, b, 0, bounds), penalty: 1.4 },
+  ];
+
+  if (!busy) return candidates[0].path;
+
+  let best = candidates[0].path;
+  let bestCost = Infinity;
+  for (const candidate of candidates) {
+    const cost = routeCost(candidate.path, busy) + candidate.penalty;
+    if (cost < bestCost) {
+      bestCost = cost;
+      best = candidate.path;
+    }
+    if (bestCost <= candidate.penalty) break;
+  }
+  return best;
 }
 
 const _p = new THREE.Vector2();
@@ -405,77 +404,76 @@ function pathAt(path: Path, t: number) {
   return { point: _p, direction: _d };
 }
 
-/** Facing and lean for a given travel direction on the stage. */
+/** Facing and lean for a given travel direction on the screen. */
 function travelPose(direction: THREE.Vector2) {
   const yaw = FACE_MAX * THREE.MathUtils.clamp(direction.x / 0.62, -1, 1);
-  // Zero when level, zero when straight up, strongest on the diagonals.
+  /* Zero when level, zero when straight up, strongest on the diagonals. */
   const lean = -LEAN_MAX * direction.x * direction.y * 2;
   return { yaw, lean };
 }
 
-/**
- * When a repair is allowed to come undone again.
- *
- * The loop has no reset — nothing is ever put back while anyone is looking —
- * and the way to keep that promise is not to count stops. Counting worked on a
- * six-job ring and broke the moment a phone dropped to four, where "two stops
- * later" is a row an inch below his boots.
- *
- * So the question is asked directly: can the viewer see this happen? An object
- * ages when it has been mended long enough to have registered AND either it is
- * off the screen entirely or he is a long way from it. The last clause is the
- * guarantee rather than the aesthetic: whatever else is true, a job has to be
- * broken again before he walks back to it, or he would arrive to repair
- * something that is already fine.
- */
-export type AgePolicy = {
-  /** Stops a repair holds before it may age at all, however far away he is. */
-  minStops: number;
-  /** World distance beyond which a change is unlikely to be noticed. */
-  safeDistance: number;
-  /**
-   * Whether this repair is currently on screen anywhere.
-   *
-   * The job as well as the point, because a repair can show in two places at
-   * once: the prop itself, and a checklist row somewhere else on the page that
-   * ticks when it is done. Un-ticking that row is just as visible as the prop
-   * springing apart, and the first version of this only watched the prop.
-   */
-  isVisible?: (job: JobDefinition, point: THREE.Vector3) => boolean;
-};
-
-export const DEFAULT_AGE_POLICY: AgePolicy = {
-  minStops: 2,
-  safeDistance: 2.6,
+export type StepOptions = {
+  /** Where to do the next job. Called once, when he sets off for it. */
+  place: Placer;
+  characterScale: number;
+  /** The world rectangle he is allowed to walk in. */
+  bounds: Bounds;
+  /** Scroll or resize made his current spot unusable. */
+  displaced?: boolean;
+  /** Is this world point on the plane currently under page content? */
+  busyAt?: (x: number, y: number) => boolean;
 };
 
 export function stepTour(
   runtime: TourRuntime,
-  stops: TourStop[],
+  stops: Stop[],
   dt: number,
-  policy: AgePolicy = DEFAULT_AGE_POLICY
+  options: StepOptions
 ) {
   if (!stops.length) return;
   runtime.phaseElapsed += dt;
+
   const stop = stops[runtime.stopIndex % stops.length];
 
-  let laneMin = Infinity;
-  let laneMax = -Infinity;
-  for (const s of stops) {
-    if (s.mark.x < laneMin) laneMin = s.mark.x;
-    if (s.mark.x > laneMax) laneMax = s.mark.x;
-  }
-  laneMin -= LANE_PAD;
-  laneMax += LANE_PAD;
+  /* Prop fade follows the phase: present from setting off until he walks away. */
+  const wantProp =
+    runtime.placed !== null &&
+    runtime.phase !== "REST" &&
+    runtime.phase !== "IDLE";
+  runtime.propFade = approachValue(
+    runtime.propFade,
+    wantProp ? 1 : 0,
+    dt,
+    PROP_FADE_RATE
+  );
+  if (!wantProp && runtime.propFade < 0.02) runtime.propJobId = null;
+
+  /** Choose somewhere for a job and start walking there. */
+  const departFor = (index: number): boolean => {
+    const next = stops[index % stops.length];
+    const anchor = options.place(next.job);
+    if (!anchor) return false;
+    runtime.stopIndex = index % stops.length;
+    runtime.placed = placeStop(next, anchor, options.characterScale);
+    runtime.propJobId = next.job.id;
+    setObjectFix(next.job.id, 0);
+    runtime.path = null;
+    runtime.t = 0;
+    runtime.displaced = false;
+    setPhase(runtime, "TRAVEL");
+    return true;
+  };
 
   const travel = (slow: boolean) => {
+    const placed = runtime.placed;
+    if (!placed) return true;
     if (!runtime.path) {
       runtime.path = makePath(
         runtime.position,
-        stop.mark,
+        placed.mark,
         runtime.stopIndex % 2 === 0 ? 1 : -1,
-        laneMin,
-        laneMax
+        options.bounds,
+        options.busyAt
       );
       runtime.t = 0;
     }
@@ -483,27 +481,45 @@ export function stepTour(
       ? 1
       : THREE.MathUtils.clamp(runtime.path.length / HURRY_FROM, 1, HURRY_MAX);
     const factor = (slow ? APPROACH_SPEED_FACTOR : 1) * hurry;
-    const speed = WALK_SPEED * factor;
     /*
      * The walk is an in-place clip and the code does the moving, so the two
-     * have to be told the same speed or the feet skate. They did: he slowed to
-     * 45% for the last stretch into every job while his legs kept sprinting.
+     * have to be told the same speed or the feet skate.
      */
     runtime.gait = factor;
-    runtime.t = Math.min(1, runtime.t + (speed * dt) / runtime.path.length);
+    runtime.t = Math.min(
+      1,
+      runtime.t + (WALK_SPEED * factor * dt) / runtime.path.length
+    );
     const { point, direction } = pathAt(runtime.path, runtime.t);
     runtime.position.set(point.x, point.y, 0);
 
     const pose = travelPose(direction);
-    runtime.yaw = approach(runtime.yaw, pose.yaw, dt, 6);
-    runtime.lean = approach(runtime.lean, pose.lean, dt, 5);
+    runtime.yaw = approachValue(runtime.yaw, pose.yaw, dt, 6);
+    runtime.lean = approachValue(runtime.lean, pose.lean, dt, 5);
     return runtime.t >= 1;
   };
 
   switch (runtime.phase) {
     case "IDLE":
-      runtime.lean = approach(runtime.lean, 0, dt, 5);
-      if (runtime.phaseElapsed >= OPENING_IDLE) setPhase(runtime, "TRAVEL");
+      runtime.lean = approachValue(runtime.lean, 0, dt, 5);
+      if (runtime.phaseElapsed >= OPENING_IDLE) {
+        if (!departFor(runtime.stopIndex)) {
+          runtime.restFor = 0.7;
+          setPhase(runtime, "REST");
+        }
+      }
+      break;
+
+    case "REST":
+      runtime.lean = approachValue(runtime.lean, 0, dt, 5);
+      runtime.yaw = approachValue(runtime.yaw, 0, dt, 3);
+      if (runtime.phaseElapsed >= runtime.restFor) {
+        if (!departFor(runtime.stopIndex + 1)) {
+          /* Nowhere free right now — wait and ask again rather than barge on. */
+          runtime.restFor = 0.8;
+          setPhase(runtime, "REST");
+        }
+      }
       break;
 
     case "TRAVEL":
@@ -519,9 +535,9 @@ export function stepTour(
       break;
 
     case "TURN_TO":
-      runtime.lean = approach(runtime.lean, 0, dt, 6);
+      runtime.lean = approachValue(runtime.lean, 0, dt, 6);
       if (
-        turnToward(runtime, stop.workYaw, dt) &&
+        turnToward(runtime, runtime.placed?.workYaw ?? 0, dt) &&
         Math.abs(runtime.lean) < 0.02
       ) {
         runtime.lean = 0;
@@ -539,83 +555,65 @@ export function stepTour(
         1,
         runtime.phaseElapsed / stop.job.workSeconds
       );
+      setObjectFix(stop.job.id, runtime.workProgress);
       if (runtime.workProgress >= 1) {
-        runtime.fixedTick[stop.job.id] = runtime.tick;
-        setPhase(runtime, stop.exitSeconds > 0 ? "WORK_OUT" : "COMPLETE");
+        setPhase(runtime, stop.exitSeconds > 0 ? "WORK_OUT" : "ADMIRE");
       }
       break;
 
     case "WORK_OUT":
       if (runtime.phaseElapsed >= stop.exitSeconds) {
         runtime.toolEquipped = false;
-        setPhase(runtime, "COMPLETE");
+        setPhase(runtime, "ADMIRE");
       }
       break;
 
-    case "COMPLETE":
+    /*
+     * A beat to look at the finished thing.
+     *
+     * Without it the payoff is invisible: the repair completes on the last
+     * frame of the work loop and he is already walking away. Standing still for
+     * a second and a half, facing what he just did, is the difference between a
+     * character performing tasks and a character pleased with himself.
+     */
+    case "ADMIRE":
       runtime.toolEquipped = false;
-      if (runtime.phaseElapsed >= COMPLETE_BEAT) {
+      runtime.lean = approachValue(runtime.lean, 0, dt, 5);
+      if (runtime.phaseElapsed >= ADMIRE_SECONDS) {
         runtime.tick += 1;
-        const next = runtime.stopIndex + 1;
-        if (next >= stops.length) runtime.laps += 1;
-        runtime.stopIndex = next % stops.length;
+        if ((runtime.stopIndex + 1) % stops.length === 0) runtime.laps += 1;
         runtime.workProgress = 0;
-        runtime.path = null;
-        setPhase(runtime, "TRAVEL");
+        runtime.placed = null;
+        runtime.restFor = REST_MIN + Math.random() * (REST_MAX - REST_MIN);
+        setPhase(runtime, "REST");
       }
       break;
   }
 
-  /* Object states, under the policy above. */
-  const count = stops.length;
-  for (let i = 0; i < count; i++) {
-    const s = stops[i];
-    const fixedAt = runtime.fixedTick[s.job.id];
-
-    if (fixedAt !== undefined && s !== stop) {
-      const held = runtime.tick - fixedAt;
-      /* How many stops until he is back here. Zero would mean he is here. */
-      const untilDue = (i - runtime.stopIndex + count) % count;
-      const offScreen = policy.isVisible
-        ? !policy.isVisible(s.job, s.object)
-        : false;
-      const farAway =
-        runtime.position.distanceTo(s.mark) >= policy.safeDistance;
-
-      /*
-       * The fallback, for a page where nothing is ever off screen — a desktop
-       * where the whole tour fits in one viewport, say. It fires on the far
-       * side of the ring rather than next door, which is the furthest from the
-       * object he ever gets, and `untilDue <= 1` is only the backstop that
-       * guarantees a job is broken again before he walks back to it.
-       */
-      const farStop = Math.max(1, Math.round(count / 2));
-      if (
-        (held >= policy.minStops && (offScreen || farAway)) ||
-        untilDue === farStop ||
-        untilDue <= 1
-      ) {
-        delete runtime.fixedTick[s.job.id];
-      }
+  /*
+   * Displacement: the screen moved and where he is standing is now under
+   * something worth reading.
+   *
+   * He finishes what he is doing first — being dragged off a job mid-repair
+   * reads as a glitch, and the repair is the point. Between jobs he simply
+   * leaves early, which looks like him noticing and moving on.
+   */
+  if (options.displaced && !runtime.displaced) {
+    runtime.displaced = true;
+    if (runtime.phase === "REST" || runtime.phase === "IDLE") {
+      runtime.restFor = 0;
     }
-
-    const settled = runtime.fixedTick[s.job.id] !== undefined ? 1 : 0;
-    setObjectFix(
-      s.job.id,
-      s === stop && runtime.phase === "WORK"
-        ? Math.max(settled, runtime.workProgress)
-        : settled
-    );
   }
 }
 
 export const PHASE_LABELS: Record<TourPhase, string> = {
-  IDLE: "Idle",
+  IDLE: "Getting started",
   TRAVEL: "Travelling",
   APPROACH: "Arriving",
   TURN_TO: "Turning to the job",
   WORK_IN: "Getting into position",
   WORK: "Working",
   WORK_OUT: "Standing back up",
-  COMPLETE: "Job done",
+  ADMIRE: "Admiring the work",
+  REST: "Between jobs",
 };

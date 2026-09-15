@@ -8,7 +8,6 @@ import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.j
 import { BVHLoader } from "three/examples/jsm/loaders/BVHLoader.js";
 import { FIXTER_GLB, resolveClipRoles } from "./lab-config";
 import {
-  JOBS,
   MOTION_FILES,
   TOOL_ATTACH_BONE,
   TOOL_SCALE,
@@ -18,25 +17,24 @@ import {
   type JobDefinition,
   type LoopStyle,
 } from "./lab-jobs";
-import type { LayoutId } from "./lab-stage";
 import { retargetClipRestCompensated } from "./lab-retarget";
 import { FIXTER_HIPS_BONE, MESHY_BVH_TO_FIXTER } from "./meshy-bone-map";
 import { reverseClip, subclipByTime } from "./lab-clip-utils";
 import { publishRetargetReport, publishTelemetry } from "./lab-telemetry";
 import {
-  buildTour,
+  buildStops,
   clipRoleForPhase,
-  type AgePolicy,
-  type AnchorResolver,
   createTourRuntime,
   stepTour,
+  type Bounds,
+  type Placer,
+  type Stop,
   type TourPhase,
   type TourRuntime,
-  type TourStop,
 } from "./lab-choreography";
 import { AimedHandTool } from "./lab-tools";
 import { createContactShadow } from "./lab-materials";
-import { resetObjectFix } from "./lab-object-state";
+import FixableObject from "./lab-objects";
 import { setFixterPose } from "./lab-pose";
 import { setDiag } from "./lab-diagnostics";
 
@@ -73,22 +71,23 @@ export type FixterModelProps = {
   timeScale: number;
   stopToken: number;
   tour: TourCommand | null;
-  /** Which stage arrangement to walk, and the live viewport shape. */
-  layout: LayoutId;
-  aspect: number;
+  /** The repairs he works through, in order. */
+  jobs: JobDefinition[];
   /**
-   * Where the jobs are, when they are not on the empty stage.
+   * Where to do the next one.
    *
-   * Both are supplied together by the homepage experiment: the job list it
-   * wants, and the function that asks the DOM where each one lives. Left out,
-   * he walks the stage exactly as before. `anchorVersion` exists so a reflow
-   * can invalidate the tour without changing the identity of the resolver.
+   * Asked once, when he sets off — not stored per job, because on a screen that
+   * scrolls the answer is only true for the moment it was given.
    */
-  jobs?: JobDefinition[];
-  anchorFor?: AnchorResolver;
-  anchorVersion?: number;
-  /** When a finished repair may quietly come undone again. */
-  agePolicy?: AgePolicy;
+  place: Placer;
+  /** The world rectangle he may walk in. */
+  bounds: Bounds;
+  /** True when the screen moved and his current spot is no longer free. */
+  displaced?: boolean;
+  /** Is this world point under page content? Used to route around it. */
+  busyAt?: (x: number, y: number) => boolean;
+  /** Scale for the props he carries with him. */
+  objectScale: number;
   toolOffset: ToolOffset;
   onReady: (clipNames: string[]) => void;
   onTourState: (state: TourState) => void;
@@ -117,7 +116,8 @@ const PHASE_FADE: Record<TourPhase, number> = {
   WORK_IN: 0.4,
   WORK: 0.5,
   WORK_OUT: 0.38,
-  COMPLETE: 0.42,
+  ADMIRE: 0.42,
+  REST: 0.45,
 };
 
 const LOOP_MODE: Record<LoopStyle, THREE.AnimationActionLoopStyles> = {
@@ -135,12 +135,12 @@ export default function FixterModel({
   timeScale,
   stopToken,
   tour,
-  layout,
-  aspect,
   jobs,
-  anchorFor,
-  anchorVersion = 0,
-  agePolicy,
+  place,
+  bounds,
+  displaced,
+  busyAt,
+  objectScale,
   toolOffset,
   onReady,
   onTourState,
@@ -232,17 +232,16 @@ export default function FixterModel({
    * drei fills one `actions` object in place as clips register, so a memo keyed
    * on it computes once against an empty map and never re-runs — which silently
    * ran the crouch on a fallback duration once already.
+   *
+   * They carry no position now. Where a job happens is decided when he sets off
+   * for it, because on a screen somebody is scrolling, any earlier answer has
+   * already expired.
    */
-  const stops: TourStop[] = useMemo(() => {
+  const stops: Stop[] = useMemo(() => {
     const seconds = (name: string) =>
       clips.find((clip) => clip.name === name)?.duration ?? 0;
-    /* anchorVersion is a dependency, not an argument: a reflow moves the marks
-       without changing the resolver that reads them. */
-    void anchorVersion;
-    return anchorFor
-      ? buildTour(jobs ?? [], layout, aspect, scale, seconds, anchorFor)
-      : buildTour(JOBS, layout, aspect, scale, seconds);
-  }, [clips, layout, aspect, scale, jobs, anchorFor, anchorVersion]);
+    return buildStops(jobs, seconds);
+  }, [clips, jobs]);
 
   const tourRef = useRef<TourRuntime | null>(null);
   const tokenRef = useRef(-1);
@@ -254,6 +253,8 @@ export default function FixterModel({
 
   const [phase, setPhase] = useState<TourPhase>("IDLE");
   const [stopIndex, setStopIndex] = useState(0);
+  const [propJobId, setPropJobId] = useState<string | null>(null);
+  const propRef = useRef<THREE.Group>(null);
   /* Mirrored so the tool's aim callback can read it without being rebuilt. */
   const stopIndexRef = useRef(0);
   const [toolVisible, setToolVisible] = useState(false);
@@ -332,6 +333,34 @@ export default function FixterModel({
   const aim = currentStop?.motion.toolAimDeg ?? [0, 0, 0];
 
   /*
+   * Live values the frame loop needs but must not re-subscribe to.
+   *
+   * The placer closes over the current safe-area reading and changes whenever
+   * the page reflows; putting it in the dependency list of the render loop
+   * would rebuild the loop mid-walk.
+   */
+  const propJob = propJobId ? jobs.find((j) => j.id === propJobId) : undefined;
+  const propKind = propJob?.object ?? null;
+  const propRotation = propJob?.objectRotationDeg ?? ([0, 0, 0] as [number, number, number]);
+
+  const placeRef = useRef(place);
+  const boundsRef = useRef(bounds);
+  const displacedRef = useRef(displaced);
+  const busyRef = useRef(busyAt);
+  useEffect(() => {
+    busyRef.current = busyAt;
+  }, [busyAt]);
+  useEffect(() => {
+    placeRef.current = place;
+  }, [place]);
+  useEffect(() => {
+    boundsRef.current = bounds;
+  }, [bounds]);
+  useEffect(() => {
+    displacedRef.current = displaced;
+  }, [displaced]);
+
+  /*
    * Where the tool should point, in world space.
    *
    * The WORK point, not the prop's drawn centre: the prop is deliberately
@@ -345,10 +374,10 @@ export default function FixterModel({
    */
   const toolTarget = useCallback((): THREE.Vector3 | null => {
     const parent = groupRef.current?.parent;
-    const stop = stops[stopIndexRef.current % Math.max(1, stops.length)];
-    if (!parent || !stop) return null;
-    return parent.localToWorld(_toolTarget.copy(stop.workPoint));
-  }, [stops]);
+    const placed = tourRef.current?.placed;
+    if (!parent || !placed) return null;
+    return parent.localToWorld(_toolTarget.copy(placed.workPoint));
+  }, []);
 
   useFrame((state, delta) => {
     const group = groupRef.current;
@@ -358,12 +387,37 @@ export default function FixterModel({
     if (tour && stops.length) {
       if (tokenRef.current !== tour.token) {
         tokenRef.current = tour.token;
-        tourRef.current = createTourRuntime(stops);
+        tourRef.current = createTourRuntime();
         lastEmitted.current = null;
-        resetObjectFix();
       }
       const runtime = tourRef.current!;
-      if (!tour.paused) stepTour(runtime, stops, dt, agePolicy);
+      if (!tour.paused) {
+        stepTour(runtime, stops, dt, {
+          place: placeRef.current,
+          characterScale: scale,
+          bounds: boundsRef.current,
+          displaced: displacedRef.current,
+          busyAt: busyRef.current,
+        });
+      }
+
+      /*
+       * The prop he is currently dealing with, carried with him rather than
+       * scattered across the page.
+       *
+       * One at a time is a composition decision as much as a performance one:
+       * six floating objects at once reads as a diagram, one reads as the thing
+       * he noticed. It scales in as he sets off and out as he leaves, so the
+       * screen is never cluttered with finished work.
+       */
+      const prop = propRef.current;
+      if (prop) {
+        if (runtime.placed) prop.position.copy(runtime.placed.object);
+        const f = runtime.propFade;
+        prop.scale.setScalar(objectScale * (0.55 + 0.45 * f) * (f > 0.01 ? 1 : 0));
+        prop.visible = f > 0.01;
+      }
+      if (runtime.propJobId !== propJobId) setPropJobId(runtime.propJobId);
 
       group.position.copy(runtime.position);
       /*
@@ -466,6 +520,17 @@ export default function FixterModel({
   return (
     <>
       <ContactShadow follow={groupRef} scale={scale} />
+      <group ref={propRef} visible={false}>
+        {propJobId && propKind && (
+          <FixableObject
+            kind={propKind}
+            id={propJobId}
+            scale={1}
+            position={[0, 0, 0]}
+            rotationDeg={propRotation}
+          />
+        )}
+      </group>
       <group ref={groupRef}>
         <primitive object={model} />
       {handBone &&

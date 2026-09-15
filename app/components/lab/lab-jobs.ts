@@ -199,6 +199,14 @@ export type JobDefinition = {
    * anchor, and the tool points at something real.
    */
   objectOffset?: [number, number];
+  /**
+   * How much screen this job wants, relative to the character alone.
+   *
+   * A wall outlet is smaller than he is; a shelf board is twice his width. The
+   * placement system has to know before it picks a spot, or the wide ones land
+   * beautifully beside a paragraph and then overlap it.
+   */
+  footprint?: { w: number; h: number };
 };
 
 /**

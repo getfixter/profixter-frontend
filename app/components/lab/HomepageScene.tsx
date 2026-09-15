@@ -13,64 +13,61 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useProgress } from "@react-three/drei";
 import * as THREE from "three";
 import FixterModel, { type FixterModelProps } from "./FixterModel";
-import FixableObject from "./lab-objects";
-import { buildTour, type AgePolicy } from "./lab-choreography";
+import type { Bounds, Placer } from "./lab-choreography";
 import type { JobDefinition } from "./lab-jobs";
 import {
-  JOB_ROWS,
   PAGE_CAMERA_TILT,
   PAGE_JOBS,
   PAGE_OBJECT_SCALE,
   PAGE_UNIT_PX,
-  type PageJob,
 } from "./lab-page-jobs";
 import {
-  getAnchorBox,
-  getAnchorVersion,
-  measureAnchors,
-} from "./lab-page-anchors";
-import {
-  isObjectLatched,
-  isObjectSettled,
-  releaseLatch,
-} from "./lab-object-state";
+  findSpot,
+  isBusy,
+  measureSafeAreas,
+  safeAreaCount,
+  setSafeAreaRoot,
+} from "./lab-safe-areas";
 import { planeProjection, type PlaneProjection } from "./lab-projection";
 import type { LayoutId } from "./lab-stage";
 import { addDiagError, setDiag } from "./lab-diagnostics";
 import { getFixterPose } from "./lab-pose";
 
 /**
- * The 3D layer of the homepage experiment.
+ * The Fixter layer.
  *
- * A transparent canvas pinned over the viewport, holding a character and a
- * handful of props that belong to the webpage underneath it. The page is
- * ordinary DOM and stays ordinary DOM — nothing here renders text, and the
- * whole overlay is pointer-transparent, so every button on the page is still a
- * button.
+ * A transparent canvas pinned over the viewport, with a character who lives in
+ * it rather than in the document. He is not anchored to anything on the page:
+ * every job is placed in whatever space the screen has free when he sets off
+ * for it, and when the page scrolls he stays where he is and carries on.
  *
- * Three facts make the alignment work:
+ * The document still has a say, but only a negative one — "not here" — which is
+ * what makes this a site-level system instead of something wired into one
+ * particular homepage. It would work on the membership page tomorrow.
  *
- *   1. The camera is orthographic, so a world unit is a fixed number of CSS
- *      pixels — PAGE_UNIT_PX — at every position on the page.
- *   2. Anchors are measured in page space, which does not change when the
- *      document scrolls.
- *   3. Scrolling is therefore a single translation of the whole 3D layer, not
- *      a re-measurement of anything.
- *
- * That third point is the experiment. He is attached to the page rather than
- * to the window because his coordinates are page coordinates, and the only
- * thing scroll does is slide the layer the page slid.
+ * Nothing renders text, nothing takes a pointer event, and the page underneath
+ * stays an ordinary webpage.
  */
-
-/** How far outside the viewport still counts as "he might see it". */
-const VISIBLE_MARGIN = 140;
 
 type HomepageSceneProps = Omit<
   FixterModelProps,
-  "aspect" | "jobs" | "anchorFor" | "anchorVersion" | "scale"
+  | "aspect"
+  | "jobs"
+  | "place"
+  | "bounds"
+  | "objectScale"
+  | "displaced"
+  | "scale"
 > & {
   layout: LayoutId;
   scale: number;
+};
+
+/** Keep clear of the browser's own edges and of any fixed site chrome. */
+const EDGE_INSET: Record<LayoutId, { top: number; right: number; bottom: number; left: number }> = {
+  desktop: { top: 24, right: 28, bottom: 28, left: 28 },
+  tablet: { top: 20, right: 22, bottom: 24, left: 22 },
+  mobile: { top: 14, right: 12, bottom: 18, left: 12 },
 };
 
 /**
@@ -105,13 +102,11 @@ export default function HomepageScene({
   ...modelProps
 }: HomepageSceneProps) {
   return (
-    /*
-     * Above the page and completely pointer-transparent. Above, because every
-     * section of the page has an opaque background and anything behind them
-     * would simply be invisible. Pointer-transparent, because a full-viewport
-     * overlay that ate clicks would break the website it is meant to decorate.
-     */
-    <div data-fx-layer="1" className="pointer-events-none fixed inset-0 z-40">
+    <div
+      data-fx-layer="1"
+      data-fx-chrome=""
+      className="pointer-events-none fixed inset-0 z-40"
+    >
       <LoadReporter />
       <Canvas
         flat
@@ -119,37 +114,28 @@ export default function HomepageScene({
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         shadows={false}
         orthographic
-        /*
-         * Set on the Canvas as well as the wrapper, and not only for tidiness:
-         * R3F gives its own container `pointer-events: auto`, which overrides
-         * the wrapper and puts an invisible sheet of glass over every button on
-         * the page. Caught by a hit test, not by looking at it.
-         */
         style={{ pointerEvents: "none" }}
         onCreated={(state) => {
-          const gl = state.gl.getContext();
           setDiag({
             canvas:
               `mounted ${state.size.width}x${state.size.height} ` +
-              `buf ${state.gl.domElement.width}x${state.gl.domElement.height}` +
-              (gl ? "" : " (NO GL)"),
+              `buf ${state.gl.domElement.width}x${state.gl.domElement.height}`,
           });
         }}
-        /* No <color attach="background">: the page has to show through. */
       >
         <ambientLight intensity={0.78} />
         <hemisphereLight args={["#ffffff", "#dfe4ec", 0.6]} />
         <directionalLight position={[-4, 6, 8]} intensity={1.35} />
         <directionalLight position={[5, 2, 4]} intensity={0.45} />
         <SceneGuard>
-          <PageContents layout={layout} scale={scale} modelProps={modelProps} />
+          <SceneContents layout={layout} scale={scale} modelProps={modelProps} />
         </SceneGuard>
       </Canvas>
     </div>
   );
 }
 
-function PageContents({
+function SceneContents({
   layout,
   scale,
   modelProps,
@@ -158,13 +144,19 @@ function PageContents({
   scale: number;
   modelProps: Omit<
     FixterModelProps,
-    "aspect" | "layout" | "jobs" | "anchorFor" | "anchorVersion" | "scale"
+    | "aspect"
+    | "layout"
+    | "jobs"
+    | "place"
+    | "bounds"
+    | "objectScale"
+    | "displaced"
+    | "scale"
   >;
 }) {
   const size = useThree((state) => state.size);
   const camera = useThree((state) => state.camera);
 
-  /* The renderer's camera, set from the same function the maths uses. */
   useEffect(() => {
     configureCamera(
       camera as THREE.OrthographicCamera,
@@ -180,119 +172,228 @@ function PageContents({
     return planeProjection(probe, size.width, size.height);
   }, [layout, size.width, size.height]);
 
+  const { version, displaced } = useSafeAreas(layout, size.width, size.height);
+
   /*
-   * Re-measure whenever the page could have reflowed.
+   * How much room he needs, in viewport pixels.
    *
-   * Not on scroll: a page-space rect is scroll-invariant, and re-reading it
-   * sixty times a second during a scroll would let sub-pixel rounding shiver
-   * the character against the text he is standing beside.
+   * His own silhouette plus the prop he will be holding, with enough margin
+   * that "free" means genuinely free rather than technically unoccupied.
    */
-  const anchorVersion = useAnchorVersion(layout, size.width, size.height);
-
-  const anchorFor = useCallback(
-    (job: JobDefinition): THREE.Vector3 | null => {
-      const page = job as PageJob;
-      const id = page.anchor[layout];
-      if (!id) return null;
-      const box = getAnchorBox(id);
-      if (!box) return null;
-
-      const align = page.align[layout];
-      const nudge = page.nudgePx?.[layout] ?? [0, 0];
-      const pageX = box.x + (align.x * box.width) / 2 + nudge[0];
-      const pageY = box.y + (align.y * box.height) / 2 + nudge[1];
-
-      /*
-       * Page coordinates go straight into the viewport-to-world map. That is
-       * correct rather than a shortcut: the map is affine, so feeding it a
-       * page coordinate yields the world position the element occupies when
-       * the document is scrolled to the top, and the scroll offset below
-       * carries it from there.
-       */
-      const world = projection.worldAt(pageX, pageY);
-      return new THREE.Vector3(world.x, world.y, 0);
-    },
-    [layout, projection]
+  const unit = PAGE_UNIT_PX[layout];
+  const need = useMemo(
+    () => ({
+      w: Math.round(1.05 * scale * unit),
+      h: Math.round(1.95 * scale * unit),
+    }),
+    [scale, unit]
   );
 
-  const stops = useMemo(() => {
-    void anchorVersion;
-    return buildTour(PAGE_JOBS, layout, 1, scale, () => 0, anchorFor);
-  }, [layout, scale, anchorFor, anchorVersion]);
+  const inset = EDGE_INSET[layout];
 
-  /*
-   * On a page, "can this be seen" has a real answer, so give the ageing policy
-   * the real one rather than a distance standing in for it. A job scrolled out
-   * of the viewport can break again with nobody any the wiser, however close it
-   * happens to be to him in world units — and on a phone, where the whole tour
-   * fits in a couple of screens, that is the only rule that behaves.
+  /**
+   * Where the next repair happens.
    *
-   * The margin widens the band that counts as visible, so the test errs toward
-   * "he might see this" rather than the other way.
+   * Asked once, at the moment he sets off. Everything about the answer — which
+   * content is on screen, how much space is left, where he currently is — is
+   * true only for that moment, which is exactly why it is not cached.
    */
-  const agePolicy: AgePolicy = useMemo(
-    () => ({
-      minStops: 1,
+  const place: Placer = useCallback(
+    (job: JobDefinition) => {
+      void version;
+      const pose = getFixterPose();
+      const here = projection.pixelAt(pose.x, pose.y);
+      const extra = job.footprint ?? { w: 1, h: 1 };
+      const spot = findSpot({
+        viewport: { w: size.width, h: size.height },
+        need: {
+          w: Math.round(need.w * extra.w),
+          h: Math.round(need.h * extra.h),
+        },
+        inset,
+        awayFrom: { x: here.x, y: here.y },
+      });
+      if (!spot) return null;
       /*
-       * Distance is not the test on a page, visibility is — and an earlier
-       * version that used both let a row un-tick a screen-and-a-half from him
-       * while it was still in plain sight. On a document the only honest
-       * question is whether it can be seen.
+       * Keep the prop on screen too.
+       *
+       * The spot is chosen for HIM; the prop sits a tool's length away plus its
+       * own offset, which is enough to hang a pendant light off the right edge
+       * of the viewport. Clamping the anchor rather than the mark keeps the
+       * repair — and therefore the thing worth looking at — inside the frame.
        */
-      safeDistance: Number.POSITIVE_INFINITY,
-      isVisible: (job, point) => {
-        const top = window.scrollY - VISIBLE_MARGIN;
-        const bottom = window.scrollY + window.innerHeight + VISIBLE_MARGIN;
-        const onPage = (pageY: number) => pageY >= top && pageY <= bottom;
+      const padX = need.w * extra.w * 0.6 + 24;
+      const padY = need.h * extra.h * 0.62;
+      const x = THREE.MathUtils.clamp(
+        spot.x,
+        inset.left + padX,
+        size.width - inset.right - padX
+      );
+      const y = THREE.MathUtils.clamp(
+        spot.y,
+        inset.top + padY,
+        size.height - inset.bottom - padY
+      );
+      const world = projection.worldAt(x, y);
+      return new THREE.Vector3(world.x, world.y, 0);
+    },
+    [projection, size.width, size.height, need, inset, version]
+  );
 
-        if (onPage(projection.pixelAt(point.x, point.y).y)) return true;
-
-        /* The checklist row is the same repair, somewhere else on the page. */
-        const rowId = JOB_ROWS[job.id];
-        const box = rowId ? getAnchorBox(rowId) : undefined;
-        return box ? onPage(box.y) : false;
-      },
-    }),
+  /** Is this world point under something the reader is using? */
+  const busyAt = useCallback(
+    (x: number, y: number) => {
+      const px = projection.pixelAt(x, y);
+      return isBusy(px.x, px.y, 10);
+    },
     [projection]
   );
 
-  return (
-    <ScrollLayer projection={projection}>
-      <RowLatchKeeper />
-      <DiagReporter projection={projection} stops={stops.length} version={anchorVersion} />
-      {stops.map((stop) => (
-        <FixableObject
-          key={stop.job.id}
-          kind={stop.job.object}
-          id={stop.job.id}
-          scale={PAGE_OBJECT_SCALE}
-          position={[stop.object.x, stop.object.y, stop.object.z]}
-          rotationDeg={stop.job.objectRotationDeg ?? [0, 0, 0]}
-        />
-      ))}
+  const bounds: Bounds = useMemo(() => {
+    const a = projection.worldAt(inset.left, inset.top);
+    const b = projection.worldAt(size.width - inset.right, size.height - inset.bottom);
+    return {
+      minX: Math.min(a.x, b.x),
+      maxX: Math.max(a.x, b.x),
+      minY: Math.min(a.y, b.y),
+      maxY: Math.max(a.y, b.y),
+    };
+  }, [projection, size.width, size.height, inset]);
 
+  return (
+    <>
+      <DiagReporter projection={projection} version={version} />
       <Suspense fallback={null}>
         <FixterModel
           {...modelProps}
           scale={scale}
-          layout={layout}
-          aspect={size.width / Math.max(size.height, 1)}
           jobs={PAGE_JOBS}
-          anchorFor={anchorFor}
-          anchorVersion={anchorVersion}
-          agePolicy={agePolicy}
+          place={place}
+          bounds={bounds}
+          displaced={displaced}
+          busyAt={busyAt}
+          objectScale={PAGE_OBJECT_SCALE}
         />
       </Suspense>
-    </ScrollLayer>
+    </>
   );
 }
 
 /**
- * How much of the 7.7 MB has actually arrived.
+ * Keeps the map of where the page is busy, and notices when he is standing on
+ * something he should not be.
  *
- * Outside the Canvas on purpose: if the renderer never starts, this still
- * answers, and "still downloading" and "failed" look identical without it.
+ * Measured on reflow, never on scroll: a page rect only moves when the page
+ * changes, and scrolling is then a subtraction. Displacement is checked after
+ * the scrolling stops, because reacting to every scroll frame would have him
+ * skittering around the screen while somebody is trying to read.
  */
+function useSafeAreas(layout: LayoutId, width: number, height: number) {
+  const [version, setVersion] = useState(0);
+  const [displaced, setDisplaced] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    const remeasure = () => {
+      if (!alive) return;
+      measureSafeAreas();
+      setVersion((v) => v + 1);
+    };
+
+    const frame = window.requestAnimationFrame(remeasure);
+    const timers = [200, 600, 1400, 2600].map((ms) =>
+      window.setTimeout(remeasure, ms)
+    );
+    if (document.fonts) void document.fonts.ready.then(remeasure);
+
+    window.addEventListener("resize", remeasure);
+    const observer = new ResizeObserver(remeasure);
+    observer.observe(document.body);
+
+    /* After the scroll settles, is he now under something? */
+    let settle = 0;
+    const onScroll = () => {
+      window.clearTimeout(settle);
+      settle = window.setTimeout(() => {
+        if (!alive) return;
+        const pose = getFixterPose();
+        setDisplaced(busyAt(pose));
+      }, 360);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      alive = false;
+      window.cancelAnimationFrame(frame);
+      timers.forEach(window.clearTimeout);
+      window.clearTimeout(settle);
+      window.removeEventListener("resize", remeasure);
+      window.removeEventListener("scroll", onScroll);
+      observer.disconnect();
+    };
+  }, [layout, width, height]);
+
+  /* Clear the flag once he has acted on it. */
+  useEffect(() => {
+    if (!displaced) return;
+    const id = window.setTimeout(() => setDisplaced(false), 1200);
+    return () => window.clearTimeout(id);
+  }, [displaced]);
+
+  return { version, displaced };
+}
+
+/** Set by the scene each frame so the scroll handler can ask where he is. */
+let poseToPixel: ((x: number, y: number) => { x: number; y: number }) | null = null;
+
+function busyAt(pose: { x: number; y: number }) {
+  if (!poseToPixel) return false;
+  const p = poseToPixel(pose.x, pose.y);
+  return isBusy(p.x, p.y, 18);
+}
+
+/**
+ * Reports what the scene is doing to the diagnostics panel outside it, and
+ * publishes the projection the scroll handler needs.
+ */
+function DiagReporter({
+  projection,
+  version,
+}: {
+  projection: PlaneProjection;
+  version: number;
+}) {
+  const clock = useRef(0);
+
+  useEffect(() => {
+    poseToPixel = (x, y) => {
+      const v = projection.pixelAt(x, y);
+      return { x: v.x, y: v.y };
+    };
+    return () => {
+      poseToPixel = null;
+    };
+  }, [projection]);
+
+  useFrame((_, delta) => {
+    clock.current += delta;
+    if (clock.current < 0.5) return;
+    clock.current = 0;
+    const pose = getFixterPose();
+    const px = projection.pixelAt(pose.x, pose.y);
+    setDiag({
+      anchors: `${safeAreaCount()} content rects · v${version}`,
+      stops: `${PAGE_JOBS.length} jobs`,
+      fixter:
+        `screen ${Math.round(px.x)},${Math.round(px.y)} · ` +
+        (px.y > -60 && px.y < window.innerHeight + 60 ? "ON SCREEN" : "off screen"),
+    });
+  });
+
+  return null;
+}
+
+/** How much of the payload has arrived. Outside the Canvas so it still answers. */
 function LoadReporter() {
   const { active, progress, loaded, total, errors } = useProgress();
   useEffect(() => {
@@ -308,52 +409,10 @@ function LoadReporter() {
 }
 
 /**
- * Reports what the scene is doing to the diagnostics panel outside it.
- *
- * Inside the canvas because that is the only place these values exist, throttled
- * because the panel is DOM.
- */
-function DiagReporter({
-  projection,
-  stops,
-  version,
-}: {
-  projection: PlaneProjection;
-  stops: number;
-  version: number;
-}) {
-  const clock = useRef(0);
-
-  useFrame((_, delta) => {
-    clock.current += delta;
-    if (clock.current < 0.5) return;
-    clock.current = 0;
-
-    const pose = getFixterPose();
-    const px = projection.pixelAt(pose.x, pose.y);
-    const top = window.scrollY;
-    const bottom = top + window.innerHeight;
-    const onScreen = px.y >= top - 200 && px.y <= bottom + 200;
-
-    setDiag({
-      anchors: `${version} measurements`,
-      stops: `${stops} placed`,
-      fixter:
-        `page ${Math.round(px.x)},${Math.round(px.y)} · scroll ${Math.round(top)} · ` +
-        (onScreen ? "ON SCREEN" : "off screen"),
-    });
-  });
-
-  return null;
-}
-
-/**
  * Catches anything the R3F tree throws.
  *
- * The DOM error boundary around the Canvas does not reliably see these, and
- * even when it does it renders its message at the bottom of a three-thousand
- * pixel page where nobody will ever find it. This one renders nothing and just
- * says what happened, somewhere visible.
+ * The DOM error boundary around the Canvas does not reliably see these, and a
+ * silent 3D layer looks exactly like a page with nothing on it.
  */
 class SceneGuard extends Component<
   { children: React.ReactNode },
@@ -375,133 +434,4 @@ class SceneGuard extends Component<
   }
 }
 
-/**
- * Lets a checklist row go back to un-ticked, but only out of sight.
- *
- * The prop has to break again — the loop needs something to do next time round
- * — but a row un-ticking under the reader's eye reads as the page undoing its
- * own progress, which is worse than a list that simply stays done. So the row
- * latches on, and comes off only once its own rect is off screen and the repair
- * behind it has actually decayed.
- *
- * Polled a few times a second rather than every frame: this reads layout, and
- * nothing here changes faster than that.
- */
-function RowLatchKeeper() {
-  const clock = useRef(0);
-
-  useFrame((_, delta) => {
-    clock.current += delta;
-    if (clock.current < 0.25) return;
-    clock.current = 0;
-
-    const top = window.scrollY - VISIBLE_MARGIN;
-    const bottom = window.scrollY + window.innerHeight + VISIBLE_MARGIN;
-
-    for (const [jobId, rowId] of Object.entries(JOB_ROWS)) {
-      if (!isObjectLatched(jobId) || isObjectSettled(jobId)) continue;
-      const box = getAnchorBox(rowId);
-      if (!box) continue;
-      if (box.y < top || box.y > bottom) releaseLatch(jobId);
-    }
-  });
-
-  return null;
-}
-
-/**
- * Everything the page owns, slid by exactly as much as the page has slid.
- *
- * Measured each frame rather than read from a scroll event, so the offset is
- * applied in the same frame the browser paints the page at its new position. A
- * scroll listener runs at a different moment and lets the character lag a few
- * pixels behind the text he is standing on — which is precisely the "floating
- * in a fixed viewport" feeling this is built to avoid.
- */
-function ScrollLayer({
-  projection,
-  children,
-}: {
-  projection: PlaneProjection;
-  children: React.ReactNode;
-}) {
-  const ref = useRef<THREE.Group>(null);
-  const canvas = useThree((state) => state.gl.domElement);
-
-  useFrame(() => {
-    const group = ref.current;
-    if (!group) return;
-
-    /*
-     * How far the page has slid UNDER the canvas — which is not the same thing
-     * as how far the page has scrolled, and assuming it was is a bug waiting
-     * for a device that disagrees.
-     *
-     * The canvas is pinned with `position: fixed`, and on every engine that
-     * honours that against the viewport its top stays at zero and this reduces
-     * to scrollY. Some mobile engines resolve fixed against the document
-     * instead when an ancestor has `overflow-x: hidden` — as this site's html
-     * element does — and then the canvas scrolls away with the page. Measuring
-     * where the canvas actually is covers both: if it moved with the document,
-     * its top is -scrollY, the two cancel, and nothing needs compensating.
-     */
-    const slid = window.scrollY + canvas.getBoundingClientRect().top;
-
-    group.position.set(
-      -slid * projection.perPixelDown.x,
-      -slid * projection.perPixelDown.y,
-      0
-    );
-  });
-
-  return <group ref={ref}>{children}</group>;
-}
-
-/**
- * The anchor measurement version.
- *
- * Measurement is driven from here rather than from the page component so that
- * it happens after the scene exists: placing a job needs both the element and
- * the camera, and the element is always the one that is ready first.
- *
- * Every pass is scheduled — a frame, a timer, an event — never run inline. Two
- * reasons: measuring during an effect body reads layout the browser has not
- * finished, and it would set state synchronously during the commit, which the
- * compiler's rules rightly forbid.
- */
-function useAnchorVersion(layout: LayoutId, width: number, height: number) {
-  const [version, setVersion] = useState(0);
-
-  useEffect(() => {
-    let alive = true;
-    const remeasure = () => {
-      if (!alive) return;
-      if (measureAnchors()) setVersion(getAnchorVersion());
-    };
-
-    /*
-     * Several passes over the first couple of seconds. Web fonts land late and
-     * change the height of every headline on the page; one measurement at
-     * mount would peg every job to where its element used to be.
-     */
-    const frame = window.requestAnimationFrame(remeasure);
-    const timers = [120, 400, 900, 1800].map((ms) =>
-      window.setTimeout(remeasure, ms)
-    );
-    if (document.fonts) void document.fonts.ready.then(remeasure);
-
-    window.addEventListener("resize", remeasure);
-    const observer = new ResizeObserver(remeasure);
-    observer.observe(document.body);
-
-    return () => {
-      alive = false;
-      window.cancelAnimationFrame(frame);
-      timers.forEach(window.clearTimeout);
-      window.removeEventListener("resize", remeasure);
-      observer.disconnect();
-    };
-  }, [layout, width, height]);
-
-  return version;
-}
+export { setSafeAreaRoot };

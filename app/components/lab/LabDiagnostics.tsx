@@ -50,7 +50,7 @@ export default function LabDiagnostics() {
   ];
 
   return (
-    <div className="relative z-[90] border-b border-slate-700 bg-[#0B1628] font-mono text-[10px] leading-[1.45] text-white">
+    <div data-fx-chrome="" className="relative z-[90] border-b border-slate-700 bg-[#0B1628] font-mono text-[10px] leading-[1.45] text-white">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
