@@ -55,11 +55,19 @@ export const PAGE_UNIT_PX: Record<LayoutId, number> = {
   mobile: 104,
 };
 
-/** He is slightly smaller on a page than on the stage; the page is busier. */
+/**
+ * How big he is, per layout.
+ *
+ * Smaller than he was. At full size he read as a figure standing in front of
+ * the website; at around a hundred and twenty pixels he reads as someone living
+ * on it, which is the difference between an overlay and a character. A phone
+ * keeps him proportionally larger because everything there is closer to the eye
+ * and a smaller one would simply be lost.
+ */
 export const PAGE_CHARACTER_SCALE: Record<LayoutId, number> = {
-  desktop: 0.74,
-  tablet: 0.72,
-  mobile: 0.68,
+  desktop: 0.58,
+  tablet: 0.62,
+  mobile: 0.66,
 };
 
 /** Props are details on a page, not stage furniture. */

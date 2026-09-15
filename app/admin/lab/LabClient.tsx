@@ -369,7 +369,7 @@ export default function LabClient() {
           the Lab is running, and pressing the button throws the scene away and
           builds a new one whatever state the old one got into.
         */}
-        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+        <div data-fx-chrome="" className="border-b border-slate-200 bg-slate-50 px-4 py-3">
           <button
             type="button"
             onClick={() => {
@@ -416,12 +416,12 @@ export default function LabClient() {
             type="button"
             onClick={() => setPreview(false)}
             aria-label="Show Lab controls"
-            className="fixed bottom-3 right-3 z-[60] flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/60 text-[15px] leading-none text-slate-400 shadow-sm backdrop-blur transition hover:bg-white hover:text-slate-900"
+            data-fx-chrome="" className="fixed bottom-3 right-3 z-[60] flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/60 text-[15px] leading-none text-slate-400 shadow-sm backdrop-blur transition hover:bg-white hover:text-slate-900"
           >
             &#9881;
           </button>
         ) : (
-        <div className="fixed bottom-2 right-2 z-[60] w-[150px] space-y-1.5 rounded-xl border border-slate-200 bg-white/90 p-2 shadow-lg backdrop-blur sm:bottom-3 sm:right-3 sm:w-[228px] sm:space-y-2 sm:p-2.5">
+        <div data-fx-chrome="" className="fixed bottom-2 right-2 z-[60] w-[150px] space-y-1.5 rounded-xl border border-slate-200 bg-white/90 p-2 shadow-lg backdrop-blur sm:bottom-3 sm:right-3 sm:w-[228px] sm:space-y-2 sm:p-2.5">
           <div className="hidden items-center justify-between sm:flex">
             <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
               Fixter Lab

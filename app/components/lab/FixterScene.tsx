@@ -5,12 +5,15 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, OrthographicCamera } from "@react-three/drei";
 import * as THREE from "three";
 import FixterModel, { type FixterModelProps } from "./FixterModel";
-import FixableObject from "./lab-objects";
-import { buildTour } from "./lab-choreography";
-import { CAMERA_TILT, JOBS, OBJECT_SCALE } from "./lab-jobs";
-import { STAGE, type LayoutId } from "./lab-stage";
+import type { Bounds, Placer } from "./lab-choreography";
+import { CAMERA_TILT, JOBS, OBJECT_SCALE, type StageJob } from "./lab-jobs";
+import { STAGE, stageExtent, stageToWorld, type LayoutId } from "./lab-stage";
+import * as THREE2 from "three";
 
-type FixterSceneProps = Omit<FixterModelProps, "aspect"> & {
+type FixterSceneProps = Omit<
+  FixterModelProps,
+  "aspect" | "jobs" | "place" | "bounds" | "objectScale"
+> & {
   layout: LayoutId;
   orbitEnabled: boolean;
   resetToken: number;
@@ -113,34 +116,49 @@ function StageContents({
 }: {
   layout: LayoutId;
   showObjects: boolean;
-  modelProps: Omit<FixterModelProps, "aspect" | "layout">;
+  modelProps: Omit<
+    FixterModelProps,
+    "aspect" | "layout" | "jobs" | "place" | "bounds" | "objectScale"
+  >;
 }) {
   const size = useThree((state) => state.size);
   const aspect = size.width / Math.max(size.height, 1);
 
-  /* The same solver the character uses, so props and marks cannot disagree. */
-  const stops = useMemo(
-    () => buildTour(JOBS, layout, aspect, modelProps.scale, () => 0),
-    [layout, aspect, modelProps.scale]
+  /*
+   * The stage's placer: the same runner the page uses, answering from a fixed
+   * arrangement instead of from free space. One choreography, two worlds.
+   */
+  const place: Placer = useMemo(
+    () => (job) => {
+      const placement = (job as StageJob).placement?.[layout];
+      if (!placement) return null;
+      return stageToWorld(placement, layout, aspect);
+    },
+    [layout, aspect]
   );
 
-  return (
-    <>
-      {showObjects &&
-        stops.map((stop) => (
-          <FixableObject
-            key={stop.job.id}
-            kind={stop.job.object}
-            id={stop.job.id}
-            scale={OBJECT_SCALE}
-            position={[stop.object.x, stop.object.y, stop.object.z]}
-            rotationDeg={stop.job.objectRotationDeg ?? [0, 0, 0]}
-          />
-        ))}
+  const bounds: Bounds = useMemo(() => {
+    const { halfWidth, halfHeight } = stageExtent(layout, aspect);
+    return {
+      minX: -halfWidth,
+      maxX: halfWidth,
+      minY: -halfHeight,
+      maxY: halfHeight,
+    };
+  }, [layout, aspect]);
 
-      <Suspense fallback={null}>
-        <FixterModel {...modelProps} layout={layout} aspect={aspect} />
-      </Suspense>
-    </>
+  void showObjects;
+  void THREE2;
+
+  return (
+    <Suspense fallback={null}>
+      <FixterModel
+        {...modelProps}
+        jobs={JOBS}
+        place={place}
+        bounds={bounds}
+        objectScale={OBJECT_SCALE}
+      />
+    </Suspense>
   );
 }

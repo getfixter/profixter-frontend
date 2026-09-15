@@ -43,6 +43,7 @@ export default function FixterLabPage() {
       */}
       <div
         id="lab-build-marker"
+        data-fx-chrome=""
         style={{
           position: "relative",
           zIndex: 100,
