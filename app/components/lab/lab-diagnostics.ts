@@ -20,7 +20,7 @@
  * value we just shipped, the phone is not running what we just shipped and
  * nothing else on the panel means anything.
  */
-export const DIAG_BUILD = "diag-1";
+export const DIAG_BUILD = "diag-2";
 
 export type DiagState = {
   /* independent probes, run by the panel */
@@ -30,6 +30,7 @@ export type DiagState = {
   viewport: string;
   chunk: string;
   glbHead: string;
+  layer: string;
 
   /* milestones, reported by the scene */
   canvas: string;
@@ -51,6 +52,7 @@ const state: DiagState = {
   viewport: "…",
   chunk: "…",
   glbHead: "…",
+  layer: "…",
   canvas: "not mounted",
   model: "…",
   motions: "…",
@@ -159,6 +161,36 @@ export function runDiagProbes(glbUrl: string) {
   fetch(glbUrl, { method: "HEAD" })
     .then((r) => setDiag({ glbHead: `${r.status} ${r.headers.get("content-length") ?? "?"}b` }))
     .catch((e) => setDiag({ glbHead: "FETCH FAILED " + String(e).slice(0, 60) }));
+
+  /*
+   * Is the overlay actually fixed to the viewport?
+   *
+   * The scene assumes it is: the canvas is pinned with `position: fixed` and
+   * the 3D layer inside it compensates for scroll itself. If the browser
+   * resolves that fixed against the document instead — which some mobile
+   * engines do when an ancestor has `overflow-x: hidden`, as this site's html
+   * element does — the two compensations stack and the character leaves the
+   * screen almost immediately. That failure is invisible on a desktop and
+   * invisible in an emulator, so measure it on the device.
+   */
+  const measureLayer = () => {
+    const el = document.querySelector("[data-fx-layer]");
+    if (!el) {
+      setDiag({ layer: "no layer element" });
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    const pinned = Math.abs(r.top) < 2;
+    setDiag({
+      layer:
+        `top ${Math.round(r.top)} · ${Math.round(r.width)}x${Math.round(r.height)} · ` +
+        `scroll ${Math.round(window.scrollY)} · ` +
+        (pinned ? "PINNED" : "NOT PINNED — fixed is broken here"),
+    });
+  };
+  measureLayer();
+  window.addEventListener("scroll", measureLayer, { passive: true });
+  window.setTimeout(measureLayer, 1500);
 
   /* Anything that escapes React entirely. */
   window.addEventListener("error", (e) =>

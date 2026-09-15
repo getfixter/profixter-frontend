@@ -110,7 +110,7 @@ export default function HomepageScene({
      * would simply be invisible. Pointer-transparent, because a full-viewport
      * overlay that ate clicks would break the website it is meant to decorate.
      */
-    <div className="pointer-events-none fixed inset-0 z-40">
+    <div data-fx-layer="1" className="pointer-events-none fixed inset-0 z-40">
       <Canvas
         flat
         dpr={[1, 2]}
