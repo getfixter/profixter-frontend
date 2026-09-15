@@ -17,6 +17,7 @@ import { REGIONS } from "./lab-stage";
 export const CLIP_ENTER_CROUCH = "/3d/motion/fx-crouch-enter.bvh";
 export const CLIP_WORK_LOW = "/3d/motion/fx-work-low.bvh";
 export const CLIP_WORK_MID = "/3d/motion/fx-work-mid.bvh";
+export const CLIP_WORK_REACH = "/3d/motion/fx-work-reach.bvh";
 export const CLIP_WORK_HIGH = "/3d/motion/fx-work-high.bvh";
 export const CLIP_IDLE = "/3d/motion/fx-idle.bvh";
 
@@ -33,6 +34,7 @@ export const MOTION_FILES = [
   CLIP_ENTER_CROUCH,
   CLIP_WORK_LOW,
   CLIP_WORK_MID,
+  CLIP_WORK_REACH,
   CLIP_WORK_HIGH,
 ];
 
@@ -92,26 +94,50 @@ export const WORK_MOTIONS: Record<string, WorkMotion> = {
     enter: { name: "Crouch · In", file: CLIP_ENTER_CROUCH, start: 0.0, end: 4.0, loop: "once" },
     exit: { name: "Crouch · Out", file: CLIP_ENTER_CROUCH, start: 0.0, end: 4.0, reverse: true, loop: "once" },
   },
-  /** Standing, working at chest height. */
+  /**
+   * Standing, working at chest height with the arms out in front.
+   *
+   * Also replaced. The take this used to come from kept the hands 0.17 from the
+   * head for its whole length — fists under the chin, not hands on a cabinet.
+   */
   mid: {
     id: "mid",
-    clip: { name: "Work · Mid", file: CLIP_WORK_MID, start: 0.6, end: 2.4, loop: "pingpong" },
-    handOffset: [-0.083, 1.102, 0.133],
-    toolAimDeg: [-6, -5, 82],
+    clip: { name: "Work · Mid", file: CLIP_WORK_MID, start: 0.15, end: 1.6, loop: "pingpong" },
+    handOffset: [-0.019, 1.022, 0.163],
+    toolAimDeg: [0, 0, 0],
   },
-  /** Standing, reaching out and slightly up. */
+  /**
+   * Standing, arms up — a second window of the same overhead take.
+   *
+   * Different frames rather than a different clip, because the take's other
+   * passes at the fixture are the only material that keeps the hands properly
+   * clear of the head. Two poses that both read as working beats one that reads
+   * as working and one that reads as peek-a-boo.
+   */
   reach: {
     id: "reach",
-    clip: { name: "Work · Reach", file: CLIP_WORK_MID, start: 2.6, end: 5.0, loop: "pingpong" },
-    handOffset: [-0.044, 1.208, 0.224],
-    toolAimDeg: [59, 13, 24],
+    clip: { name: "Work · Reach", file: CLIP_WORK_REACH, start: 0.3, end: 2.0, loop: "pingpong" },
+    handOffset: [-0.223, 1.536, 0.045],
+    toolAimDeg: [0, 0, 0],
   },
-  /** Standing, both hands up above head height. */
+  /**
+   * Standing, both arms straight up overhead.
+   *
+   * Replaced wholesale. The previous take never got the working hand further
+   * than 0.32 units from the head across its entire length, which is why it
+   * read as shielding his eyes rather than reaching up to a fixture — and no
+   * window in it escaped that. This one holds the hand at 1.53 and 0.38 clear
+   * of the head, which is the difference between a man squinting and a man
+   * working above his hat.
+   *
+   * The aim below is only the seed and the fallback; AimedHandTool solves the
+   * real orientation every frame against the job itself.
+   */
   high: {
     id: "high",
-    clip: { name: "Work · High", file: CLIP_WORK_HIGH, start: 0.6, end: 7.6, loop: "pingpong" },
-    handOffset: [-0.188, 1.313, 0.292],
-    toolAimDeg: [-14, -8, 83],
+    clip: { name: "Work · High", file: CLIP_WORK_HIGH, start: 0.7, end: 2.6, loop: "pingpong" },
+    handOffset: [-0.233, 1.533, 0.061],
+    toolAimDeg: [0, 0, 0],
   },
 };
 
@@ -147,11 +173,14 @@ export type JobDefinition = {
   workMotion: keyof typeof WORK_MOTIONS;
   tool: ToolKind | null;
   /**
-   * How far in FRONT of his hand the object floats, toward the viewer. This is
-   * the only depth a job has, and it exists so the tool spans the gap instead
-   * of his wrist ending up inside the object.
+   * Which way his hand sits from the work, on screen, in degrees.
+   *
+   * 0 puts the hand to the right of the repair and the tool pointing left at
+   * it; -90 puts the hand below and the tool pointing up, which is what
+   * reaching into a ceiling fixture looks like. The distance is the tool's own
+   * length, so this is the only thing a job has to say about it.
    */
-  toolGap: number;
+  toolApproachDeg?: number;
   workSeconds: number;
   /**
    * A few degrees off dead-on while working, so six jobs are not six identical
@@ -161,7 +190,14 @@ export type JobDefinition = {
   workYawDeg?: number;
   /** Tilts the prop so it shows more than one face and reads as a solid. */
   objectRotationDeg?: [number, number, number];
-  /** Shifts the drawn prop on the stage plane so his hand lands on an edge. */
+  /**
+   * Where the prop is drawn relative to the repair.
+   *
+   * Read off each prop's own geometry rather than eyeballed: it is minus the
+   * position of the thing being fixed — the handle, the loose bracket, the
+   * shade's rim — so drawing the prop here puts that feature exactly on the
+   * anchor, and the tool points at something real.
+   */
   objectOffset?: [number, number];
 };
 
@@ -205,11 +241,11 @@ export const JOBS: StageJob[] = [
     },
     workMotion: "low",
     tool: "screwdriver",
-    toolGap: 0.16,
+    toolApproachDeg: -25,
     workSeconds: 5.5,
     workYawDeg: -8,
     objectRotationDeg: [-6, 24, 0],
-    objectOffset: [0.13, 0.04],
+    objectOffset: [0, 0],
   },
   {
     id: "lamp",
@@ -222,11 +258,11 @@ export const JOBS: StageJob[] = [
     },
     workMotion: "high",
     tool: "screwdriver",
-    toolGap: 0.14,
+    toolApproachDeg: -78,
     workSeconds: 6,
     workYawDeg: 10,
     objectRotationDeg: [0, 18, 0],
-    objectOffset: [-0.3, 0.26],
+    objectOffset: [0, 0.275],
   },
   {
     id: "cabinet",
@@ -239,11 +275,11 @@ export const JOBS: StageJob[] = [
     },
     workMotion: "mid",
     tool: "screwdriver",
-    toolGap: 0.15,
+    toolApproachDeg: 15,
     workSeconds: 5,
     workYawDeg: 12,
     objectRotationDeg: [-5, 28, 0],
-    objectOffset: [-0.3, -0.05],
+    objectOffset: [-0.141, -0.064],
   },
   {
     id: "faucet",
@@ -256,11 +292,11 @@ export const JOBS: StageJob[] = [
     },
     workMotion: "mid",
     tool: "wrench",
-    toolGap: 0.15,
+    toolApproachDeg: -35,
     workSeconds: 5.5,
     workYawDeg: -12,
     objectRotationDeg: [0, 26, 0],
-    objectOffset: [0.24, -0.07],
+    objectOffset: [0, -0.09],
   },
   {
     id: "frame",
@@ -273,11 +309,11 @@ export const JOBS: StageJob[] = [
     },
     workMotion: "high",
     tool: null,
-    toolGap: 0.06,
+    toolApproachDeg: -60,
     workSeconds: 4.5,
     workYawDeg: -6,
     objectRotationDeg: [-8, 22, 0],
-    objectOffset: [-0.32, 0.26],
+    objectOffset: [-0.192, 0.147],
   },
   {
     id: "shelf",
@@ -290,11 +326,11 @@ export const JOBS: StageJob[] = [
     },
     workMotion: "reach",
     tool: "drill",
-    toolGap: 0.16,
+    toolApproachDeg: -40,
     workSeconds: 6,
     workYawDeg: 8,
     objectRotationDeg: [6, 24, 0],
-    objectOffset: [0.4, 0.0],
+    objectOffset: [-0.229, 0.019],
   },
 ];
 
@@ -302,7 +338,15 @@ export const JOBS: StageJob[] = [
 export const OBJECT_SCALE = 1.7;
 
 export const TOOL_ATTACH_BONE = "RightHand";
-export const TOOL_SCALE = 1.3;
+/**
+ * Tools, drawn larger than life.
+ *
+ * At true scale a screwdriver is about an eighth of a person's height, which on
+ * a page is twenty pixels of grey behind a hand. Oversizing it is the only way
+ * the detail reads at all — and the stand-off distance is derived from this, so
+ * the geometry follows rather than fighting it.
+ */
+export const TOOL_SCALE = 1.75;
 
 /**
  * The camera looks very slightly down and across rather than dead-on.

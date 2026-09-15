@@ -12,9 +12,10 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import FixterModel, { type FixterModelProps } from "./FixterModel";
 import FixableObject from "./lab-objects";
-import { buildTour } from "./lab-choreography";
+import { buildTour, type AgePolicy } from "./lab-choreography";
 import type { JobDefinition } from "./lab-jobs";
 import {
+  JOB_ROWS,
   PAGE_CAMERA_TILT,
   PAGE_JOBS,
   PAGE_OBJECT_SCALE,
@@ -26,6 +27,11 @@ import {
   getAnchorVersion,
   measureAnchors,
 } from "./lab-page-anchors";
+import {
+  isObjectLatched,
+  isObjectSettled,
+  releaseLatch,
+} from "./lab-object-state";
 import { planeProjection, type PlaneProjection } from "./lab-projection";
 import type { LayoutId } from "./lab-stage";
 
@@ -51,6 +57,9 @@ import type { LayoutId } from "./lab-stage";
  * to the window because his coordinates are page coordinates, and the only
  * thing scroll does is slide the layer the page slid.
  */
+
+/** How far outside the viewport still counts as "he might see it". */
+const VISIBLE_MARGIN = 140;
 
 type HomepageSceneProps = Omit<
   FixterModelProps,
@@ -195,8 +204,45 @@ function PageContents({
     return buildTour(PAGE_JOBS, layout, 1, scale, () => 0, anchorFor);
   }, [layout, scale, anchorFor, anchorVersion]);
 
+  /*
+   * On a page, "can this be seen" has a real answer, so give the ageing policy
+   * the real one rather than a distance standing in for it. A job scrolled out
+   * of the viewport can break again with nobody any the wiser, however close it
+   * happens to be to him in world units — and on a phone, where the whole tour
+   * fits in a couple of screens, that is the only rule that behaves.
+   *
+   * The margin widens the band that counts as visible, so the test errs toward
+   * "he might see this" rather than the other way.
+   */
+  const agePolicy: AgePolicy = useMemo(
+    () => ({
+      minStops: 1,
+      /*
+       * Distance is not the test on a page, visibility is — and an earlier
+       * version that used both let a row un-tick a screen-and-a-half from him
+       * while it was still in plain sight. On a document the only honest
+       * question is whether it can be seen.
+       */
+      safeDistance: Number.POSITIVE_INFINITY,
+      isVisible: (job, point) => {
+        const top = window.scrollY - VISIBLE_MARGIN;
+        const bottom = window.scrollY + window.innerHeight + VISIBLE_MARGIN;
+        const onPage = (pageY: number) => pageY >= top && pageY <= bottom;
+
+        if (onPage(projection.pixelAt(point.x, point.y).y)) return true;
+
+        /* The checklist row is the same repair, somewhere else on the page. */
+        const rowId = JOB_ROWS[job.id];
+        const box = rowId ? getAnchorBox(rowId) : undefined;
+        return box ? onPage(box.y) : false;
+      },
+    }),
+    [projection]
+  );
+
   return (
     <ScrollLayer projection={projection}>
+      <RowLatchKeeper />
       {stops.map((stop) => (
         <FixableObject
           key={stop.job.id}
@@ -217,10 +263,45 @@ function PageContents({
           jobs={PAGE_JOBS}
           anchorFor={anchorFor}
           anchorVersion={anchorVersion}
+          agePolicy={agePolicy}
         />
       </Suspense>
     </ScrollLayer>
   );
+}
+
+/**
+ * Lets a checklist row go back to un-ticked, but only out of sight.
+ *
+ * The prop has to break again — the loop needs something to do next time round
+ * — but a row un-ticking under the reader's eye reads as the page undoing its
+ * own progress, which is worse than a list that simply stays done. So the row
+ * latches on, and comes off only once its own rect is off screen and the repair
+ * behind it has actually decayed.
+ *
+ * Polled a few times a second rather than every frame: this reads layout, and
+ * nothing here changes faster than that.
+ */
+function RowLatchKeeper() {
+  const clock = useRef(0);
+
+  useFrame((_, delta) => {
+    clock.current += delta;
+    if (clock.current < 0.25) return;
+    clock.current = 0;
+
+    const top = window.scrollY - VISIBLE_MARGIN;
+    const bottom = window.scrollY + window.innerHeight + VISIBLE_MARGIN;
+
+    for (const [jobId, rowId] of Object.entries(JOB_ROWS)) {
+      if (!isObjectLatched(jobId) || isObjectSettled(jobId)) continue;
+      const box = getAnchorBox(rowId);
+      if (!box) continue;
+      if (box.y < top || box.y > bottom) releaseLatch(jobId);
+    }
+  });
+
+  return null;
 }
 
 /**

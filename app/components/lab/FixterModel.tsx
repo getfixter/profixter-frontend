@@ -26,6 +26,7 @@ import { publishRetargetReport, publishTelemetry } from "./lab-telemetry";
 import {
   buildTour,
   clipRoleForPhase,
+  type AgePolicy,
   type AnchorResolver,
   createTourRuntime,
   stepTour,
@@ -33,7 +34,8 @@ import {
   type TourRuntime,
   type TourStop,
 } from "./lab-choreography";
-import HandTool from "./lab-tools";
+import { AimedHandTool } from "./lab-tools";
+import { createContactShadow } from "./lab-materials";
 import { resetObjectFix } from "./lab-object-state";
 import { setFixterPose } from "./lab-pose";
 
@@ -84,10 +86,15 @@ export type FixterModelProps = {
   jobs?: JobDefinition[];
   anchorFor?: AnchorResolver;
   anchorVersion?: number;
+  /** When a finished repair may quietly come undone again. */
+  agePolicy?: AgePolicy;
   toolOffset: ToolOffset;
   onReady: (clipNames: string[]) => void;
   onTourState: (state: TourState) => void;
 };
+
+/* Scratch, so aiming the tool allocates nothing per frame. */
+const _toolTarget = new THREE.Vector3();
 
 const TELEMETRY_INTERVAL = 0.25;
 const MANUAL_FADE = 0.2;
@@ -132,6 +139,7 @@ export default function FixterModel({
   jobs,
   anchorFor,
   anchorVersion = 0,
+  agePolicy,
   toolOffset,
   onReady,
   onTourState,
@@ -244,6 +252,8 @@ export default function FixterModel({
 
   const [phase, setPhase] = useState<TourPhase>("IDLE");
   const [stopIndex, setStopIndex] = useState(0);
+  /* Mirrored so the tool's aim callback can read it without being rebuilt. */
+  const stopIndexRef = useRef(0);
   const [toolVisible, setToolVisible] = useState(false);
 
   useEffect(() => {
@@ -315,6 +325,25 @@ export default function FixterModel({
   const toolKind = currentStop?.job.tool ?? null;
   const aim = currentStop?.motion.toolAimDeg ?? [0, 0, 0];
 
+  /*
+   * Where the tool should point, in world space.
+   *
+   * The WORK point, not the prop's drawn centre: the prop is deliberately
+   * offset so its body misses his face, and aiming at the middle of it put the
+   * screwdriver through his own hip.
+   *
+   * The prop and the character share a parent — the stage, or the page's scroll
+   * layer — so the job's position becomes a world point through that parent's
+   * matrix. Read live rather than captured, because on the page that parent
+   * moves every time the document scrolls.
+   */
+  const toolTarget = useCallback((): THREE.Vector3 | null => {
+    const parent = groupRef.current?.parent;
+    const stop = stops[stopIndexRef.current % Math.max(1, stops.length)];
+    if (!parent || !stop) return null;
+    return parent.localToWorld(_toolTarget.copy(stop.workPoint));
+  }, [stops]);
+
   useFrame((state, delta) => {
     const group = groupRef.current;
     if (!group) return;
@@ -328,7 +357,7 @@ export default function FixterModel({
         resetObjectFix();
       }
       const runtime = tourRef.current!;
-      if (!tour.paused) stepTour(runtime, stops, dt);
+      if (!tour.paused) stepTour(runtime, stops, dt, agePolicy);
 
       group.position.copy(runtime.position);
       /*
@@ -342,7 +371,21 @@ export default function FixterModel({
       group.scale.setScalar(scale);
 
       if (runtime.phase !== phase) setPhase(runtime.phase);
+      stopIndexRef.current = runtime.stopIndex;
       if (runtime.stopIndex !== stopIndex) setStopIndex(runtime.stopIndex);
+
+      /*
+       * Stride rate follows travel speed. The walk is in place and the code
+       * does the moving, so if the two disagree the feet skate — which they did
+       * through every slow approach into a job.
+       */
+      const action = currentActionRef.current;
+      if (action) {
+        const walking = clipRoleForPhase(runtime.phase) === "walk";
+        action.setEffectiveTimeScale(
+          timeScaleRef.current * (walking ? runtime.gait : 1)
+        );
+      }
       if (runtime.toolEquipped !== toolVisible) setToolVisible(runtime.toolEquipped);
       setFixterPose(runtime.position, runtime.yaw);
 
@@ -410,25 +453,73 @@ export default function FixterModel({
   });
 
   return (
-    <group ref={groupRef}>
-      <primitive object={model} />
+    <>
+      <ContactShadow follow={groupRef} scale={scale} />
+      <group ref={groupRef}>
+        <primitive object={model} />
       {handBone &&
         toolVisible &&
         toolKind &&
         createPortal(
-          <group
+          <AimedHandTool
+            kind={toolKind}
+            scale={TOOL_SCALE * toolOffset.scale}
             position={toolOffset.position}
-            rotation={[
-              THREE.MathUtils.degToRad(aim[0] + toolOffset.rotationDeg[0]),
-              THREE.MathUtils.degToRad(aim[1] + toolOffset.rotationDeg[1]),
-              THREE.MathUtils.degToRad(aim[2] + toolOffset.rotationDeg[2]),
+            restRotationDeg={[
+              aim[0] + toolOffset.rotationDeg[0],
+              aim[1] + toolOffset.rotationDeg[1],
+              aim[2] + toolOffset.rotationDeg[2],
             ]}
-          >
-            <HandTool kind={toolKind} scale={TOOL_SCALE * toolOffset.scale} />
-          </group>,
+            getTarget={toolTarget}
+            tracking
+          />,
           handBone
         )}
-    </group>
+      </group>
+    </>
+  );
+}
+
+/**
+ * The shadow he stands on.
+ *
+ * A sibling rather than a child, so his lean and his turn do not tip it: a
+ * shadow on a page stays flat on the page whatever the thing above it is doing.
+ * It reads his position each frame from the same ref the character uses, which
+ * is a frame behind nothing and costs one matrix.
+ */
+function ContactShadow({
+  follow,
+  scale,
+}: {
+  follow: React.RefObject<THREE.Group | null>;
+  scale: number;
+}) {
+  const ref = useRef<THREE.Mesh>(null);
+  const texture = useMemo(() => createContactShadow(), []);
+  useEffect(() => () => texture.dispose(), [texture]);
+
+  useFrame(() => {
+    const mesh = ref.current;
+    const target = follow.current;
+    if (!mesh || !target) return;
+    mesh.position.set(
+      target.position.x,
+      target.position.y + 0.02 * scale,
+      target.position.z - 0.06
+    );
+  });
+
+  return (
+    <mesh ref={ref} scale={[0.62 * scale, 0.17 * scale, 1]} renderOrder={-1}>
+      <planeGeometry args={[1, 1]} />
+      <meshBasicMaterial
+        map={texture}
+        transparent
+        depthWrite={false}
+        opacity={0.5}
+      />
+    </mesh>
   );
 }
 

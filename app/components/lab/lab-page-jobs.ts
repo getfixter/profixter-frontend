@@ -92,11 +92,11 @@ export const PAGE_JOBS: PageJob[] = [
     nudgePx: { desktop: [0, 186], tablet: [0, 52], mobile: [0, 106] },
     workMotion: "low",
     tool: "screwdriver",
-    toolGap: 0.16,
+    toolApproachDeg: -25,
     workSeconds: 5,
     workYawDeg: -8,
     objectRotationDeg: [-6, 24, 0],
-    objectOffset: [0.13, 0.04],
+    objectOffset: [0, 0],
   },
   {
     id: "lamp",
@@ -117,11 +117,11 @@ export const PAGE_JOBS: PageJob[] = [
     nudgePx: { desktop: [0, 73], tablet: [0, 63], mobile: [0, 0] },
     workMotion: "high",
     tool: "screwdriver",
-    toolGap: 0.14,
+    toolApproachDeg: -78,
     workSeconds: 5.5,
     workYawDeg: 10,
     objectRotationDeg: [0, 18, 0],
-    objectOffset: [-0.3, 0.26],
+    objectOffset: [0, 0.275],
   },
   {
     id: "shelf",
@@ -140,11 +140,11 @@ export const PAGE_JOBS: PageJob[] = [
     nudgePx: { desktop: [0, -15], tablet: [0, -15], mobile: [0, 0] },
     workMotion: "reach",
     tool: "drill",
-    toolGap: 0.16,
+    toolApproachDeg: -40,
     workSeconds: 5.5,
     workYawDeg: 8,
     objectRotationDeg: [6, 24, 0],
-    objectOffset: [0.4, 0.0],
+    objectOffset: [-0.229, 0.019],
   },
   {
     id: "cabinet",
@@ -163,11 +163,11 @@ export const PAGE_JOBS: PageJob[] = [
     nudgePx: { desktop: [0, -15], tablet: [0, -15], mobile: [0, 0] },
     workMotion: "mid",
     tool: "screwdriver",
-    toolGap: 0.15,
+    toolApproachDeg: 15,
     workSeconds: 5,
     workYawDeg: 12,
     objectRotationDeg: [-5, 28, 0],
-    objectOffset: [-0.3, -0.05],
+    objectOffset: [-0.141, -0.064],
   },
   {
     id: "frame",
@@ -191,11 +191,11 @@ export const PAGE_JOBS: PageJob[] = [
     nudgePx: { desktop: [0, -12], tablet: [0, -6], mobile: [0, 0] },
     workMotion: "high",
     tool: null,
-    toolGap: 0.06,
+    toolApproachDeg: -60,
     workSeconds: 4.5,
     workYawDeg: -6,
     objectRotationDeg: [-8, 22, 0],
-    objectOffset: [-0.32, 0.26],
+    objectOffset: [-0.192, 0.147],
   },
 ];
 
@@ -205,3 +205,8 @@ export const ROW_JOBS: Record<string, string> = {
   "row-cabinet": "cabinet",
   "row-lamp": "lamp",
 };
+
+/** The same thing the other way round, for asking "is this repair on screen". */
+export const JOB_ROWS: Record<string, string> = Object.fromEntries(
+  Object.entries(ROW_JOBS).map(([row, job]) => [job, row])
+);

@@ -21,6 +21,8 @@ import * as THREE from "three";
 export type PlaneProjection = {
   /** The world point on z = 0 that lands on this viewport pixel. */
   worldAt: (cssX: number, cssY: number) => THREE.Vector2;
+  /** The viewport pixel a world point on z = 0 lands on. The inverse. */
+  pixelAt: (worldX: number, worldY: number) => THREE.Vector2;
   /**
    * World travel per viewport pixel of downward scroll.
    *
@@ -71,8 +73,17 @@ export function planeProjection(
     );
   };
 
+  const pixelAt = (worldX: number, worldY: number) => {
+    const nx = a * worldX + b * worldY + o.x;
+    const ny = c * worldX + d * worldY + o.y;
+    return new THREE.Vector2(
+      ((nx + 1) / 2) * width,
+      ((1 - ny) / 2) * height
+    );
+  };
+
   /* One pixel further down the viewport, expressed in world units. */
   const perPixelDown = worldAt(0, 1).sub(worldAt(0, 0));
 
-  return { worldAt, perPixelDown };
+  return { worldAt, pixelAt, perPixelDown };
 }
