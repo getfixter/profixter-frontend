@@ -89,7 +89,7 @@ export const PAGE_JOBS: PageJob[] = [
       tablet: { x: 0.72, y: 0 },
       mobile: { x: 0.6, y: 0 },
     },
-    nudgePx: { desktop: [0, 186], tablet: [0, 52], mobile: [0, 86] },
+    nudgePx: { desktop: [0, 186], tablet: [0, 52], mobile: [0, 106] },
     workMotion: "low",
     tool: "screwdriver",
     toolGap: 0.16,
