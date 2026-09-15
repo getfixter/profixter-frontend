@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useProgress } from "@react-three/drei";
 import * as THREE from "three";
 import FixterModel, { type FixterModelProps } from "./FixterModel";
 import FixableObject from "./lab-objects";
@@ -111,6 +112,7 @@ export default function HomepageScene({
      * overlay that ate clicks would break the website it is meant to decorate.
      */
     <div data-fx-layer="1" className="pointer-events-none fixed inset-0 z-40">
+      <LoadReporter />
       <Canvas
         flat
         dpr={[1, 2]}
@@ -283,6 +285,26 @@ function PageContents({
       </Suspense>
     </ScrollLayer>
   );
+}
+
+/**
+ * How much of the 7.7 MB has actually arrived.
+ *
+ * Outside the Canvas on purpose: if the renderer never starts, this still
+ * answers, and "still downloading" and "failed" look identical without it.
+ */
+function LoadReporter() {
+  const { active, progress, loaded, total, errors } = useProgress();
+  useEffect(() => {
+    setDiag({
+      assets:
+        `${Math.round(progress)}% · ${loaded}/${total} files · ` +
+        (active ? "downloading" : "idle") +
+        (errors.length ? ` · ERRORS ${errors.length}` : ""),
+    });
+    for (const e of errors) addDiagError("asset: " + e);
+  }, [active, progress, loaded, total, errors]);
+  return null;
 }
 
 /**

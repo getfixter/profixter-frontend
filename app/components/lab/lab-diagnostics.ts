@@ -20,7 +20,7 @@
  * value we just shipped, the phone is not running what we just shipped and
  * nothing else on the panel means anything.
  */
-export const DIAG_BUILD = "diag-2";
+export const DIAG_BUILD = "diag-3";
 
 export type DiagState = {
   /* independent probes, run by the panel */
@@ -31,6 +31,7 @@ export type DiagState = {
   chunk: string;
   glbHead: string;
   layer: string;
+  assets: string;
 
   /* milestones, reported by the scene */
   canvas: string;
@@ -53,6 +54,7 @@ const state: DiagState = {
   chunk: "…",
   glbHead: "…",
   layer: "…",
+  assets: "…",
   canvas: "not mounted",
   model: "…",
   motions: "…",
