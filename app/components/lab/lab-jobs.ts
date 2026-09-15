@@ -319,10 +319,13 @@ export const JOBS: StageJob[] = [
     id: "shelf",
     label: "Drooping shelf",
     object: "shelf",
+    /* Lower than it was: the anchor now means the repair rather than his hand,
+       which moved every stage mark up by a tool's length and left him standing
+       on this shelf while he worked the lamp above it. */
     placement: {
-      desktop: { x: 0.76, y: 0.04 },
-      tablet: { x: 0.7, y: 0.02 },
-      mobile: { x: 0.58, y: -0.04 },
+      desktop: { x: 0.76, y: -0.14 },
+      tablet: { x: 0.7, y: -0.16 },
+      mobile: { x: 0.58, y: -0.2 },
     },
     workMotion: "reach",
     tool: "drill",
