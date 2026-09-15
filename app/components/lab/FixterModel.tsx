@@ -17,6 +17,7 @@ import {
   type ClipSpec,
   type LoopStyle,
 } from "./lab-jobs";
+import type { LayoutId } from "./lab-stage";
 import { retargetClipRestCompensated } from "./lab-retarget";
 import { FIXTER_HIPS_BONE, MESHY_BVH_TO_FIXTER } from "./meshy-bone-map";
 import { reverseClip, subclipByTime } from "./lab-clip-utils";
@@ -67,8 +68,9 @@ export type FixterModelProps = {
   timeScale: number;
   stopToken: number;
   tour: TourCommand | null;
-  /** Layout compression: 1 desktop, smaller draws the anchors inward. */
-  spread: number;
+  /** Which stage arrangement to walk, and the live viewport shape. */
+  layout: LayoutId;
+  aspect: number;
   toolOffset: ToolOffset;
   onReady: (clipNames: string[]) => void;
   onTourState: (state: TourState) => void;
@@ -112,7 +114,8 @@ export default function FixterModel({
   timeScale,
   stopToken,
   tour,
-  spread,
+  layout,
+  aspect,
   toolOffset,
   onReady,
   onTourState,
@@ -208,8 +211,8 @@ export default function FixterModel({
   const stops: TourStop[] = useMemo(() => {
     const seconds = (name: string) =>
       clips.find((clip) => clip.name === name)?.duration ?? 0;
-    return buildTour(JOBS, spread, seconds);
-  }, [clips, spread]);
+    return buildTour(JOBS, layout, aspect, scale, seconds);
+  }, [clips, layout, aspect, scale]);
 
   const tourRef = useRef<TourRuntime | null>(null);
   const tokenRef = useRef(-1);
@@ -307,7 +310,14 @@ export default function FixterModel({
       if (!tour.paused) stepTour(runtime, stops, dt);
 
       group.position.copy(runtime.position);
-      group.rotation.set(0, runtime.yaw, 0);
+      /*
+       * Yaw turns him toward where he is going; lean tips him into it, about
+       * the camera axis so the tilt is actually visible on a flat stage. YXZ
+       * order matters: the lean has to be applied in screen space, after the
+       * turn, or turning would swing the lean out of the plane with it.
+       */
+      group.rotation.order = "YXZ";
+      group.rotation.set(0, runtime.yaw, runtime.lean);
       group.scale.setScalar(scale);
 
       if (runtime.phase !== phase) setPhase(runtime.phase);

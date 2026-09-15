@@ -14,13 +14,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { getRoleLandingPath, isAdminUser } from "@/lib/auth-routing";
 import { resolveClipRoles } from "@/app/components/lab/lab-config";
-import {
-  JOBS,
-  LAYOUTS,
-  SEQUENCE_CLIP_NAMES,
-  type CameraPreset,
-  type LayoutId,
-} from "@/app/components/lab/lab-jobs";
+import { JOBS, SEQUENCE_CLIP_NAMES } from "@/app/components/lab/lab-jobs";
+import type { LayoutId } from "@/app/components/lab/lab-stage";
 import { PHASE_LABELS } from "@/app/components/lab/lab-choreography";
 import type {
   TourCommand,
@@ -175,7 +170,7 @@ export default function LabClient() {
   const [timeScale, setTimeScale] = useState(1);
   const [stopToken, setStopToken] = useState(0);
 
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(0.78);
   const [position, setPosition] = useState<Vec3>(DEFAULT_POSITION);
   const [rotationDeg, setRotationDeg] = useState<Vec3>(DEFAULT_ROTATION);
   const [toolOffset, setToolOffset] = useState<ToolOffset>(DEFAULT_TOOL_OFFSET);
@@ -185,17 +180,16 @@ export default function LabClient() {
   const tourToken = useRef(0);
 
   const [layoutOverride, setLayoutOverride] = useState<LayoutId | null>(null);
-  const [cameraOverride, setCameraOverride] = useState<CameraPreset | null>(null);
-  const [orbitEnabled, setOrbitEnabled] = useState(true);
+  const [orbitEnabled, setOrbitEnabled] = useState(false);
   const [resetToken, setResetToken] = useState(0);
   const [showObjects, setShowObjects] = useState(true);
 
-  /* Staging follows the viewport unless the reviewer has picked a preset. */
-  const narrow = useMediaQuery("(max-width: 860px)");
+  /* Staging follows the viewport's shape unless the reviewer picks a preset. */
+  const phone = useMediaQuery("(max-width: 759px)");
+  const narrow = useMediaQuery("(max-width: 1179px)");
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
-  const layout: LayoutId = layoutOverride ?? (narrow ? "mobile" : "desktop");
-  const cameraPreset: CameraPreset = cameraOverride ?? LAYOUTS[layout].camera;
-  const spread = LAYOUTS[layout].spread;
+  const layout: LayoutId =
+    layoutOverride ?? (phone ? "mobile" : narrow ? "tablet" : "desktop");
 
   const roles = useMemo(() => resolveClipRoles(clipNames), [clipNames]);
   const isLoaded = clipNames.length > 0;
@@ -277,7 +271,7 @@ export default function LabClient() {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <div className="relative h-[52dvh] flex-shrink-0 bg-white lg:h-auto lg:min-h-0 lg:flex-1">
+        <div className="relative h-[62dvh] flex-shrink-0 bg-white lg:h-auto lg:min-h-0 lg:flex-1">
           <LabErrorBoundary>
             <FixterScene
               position={position}
@@ -292,9 +286,8 @@ export default function LabClient() {
               onReady={handleReady}
               onTourState={setTourState}
               orbitEnabled={orbitEnabled}
-              cameraPreset={cameraPreset}
+              layout={layout}
               resetToken={resetToken}
-              spread={spread}
               showObjects={showObjects}
             />
           </LabErrorBoundary>
@@ -400,40 +393,43 @@ export default function LabClient() {
 
           <Section title="Staging" hint="How the scene is composed and framed.">
             <div className="space-y-1.5">
-              <p className="text-[12px] font-semibold text-slate-600">Layout</p>
+              <p className="text-[12px] font-semibold text-slate-600">
+                Stage layout
+              </p>
               <Pills
                 options={[
                   { id: "desktop" as LayoutId, label: "Desktop" },
+                  { id: "tablet" as LayoutId, label: "Tablet" },
                   { id: "mobile" as LayoutId, label: "Mobile" },
                 ]}
                 value={layout}
-                onChange={(id) => {
-                  setLayoutOverride(id);
-                  setCameraOverride(null);
-                }}
+                onChange={setLayoutOverride}
               />
-            </div>
-            <div className="space-y-1.5">
-              <p className="text-[12px] font-semibold text-slate-600">Camera</p>
-              <Pills
-                options={[
-                  { id: "page" as CameraPreset, label: "Page view" },
-                  { id: "follow" as CameraPreset, label: "Follow" },
-                ]}
-                value={cameraPreset}
-                onChange={setCameraOverride}
-              />
+              <p className="text-[11px] leading-snug text-slate-400">
+                Each job holds its own spot per layout, in stage coordinates
+                (-1 to +1 across and up). The camera is orthographic, so a stage
+                coordinate is a screen coordinate.
+              </p>
             </div>
             <Slider
               label="Fixter scale" value={scale} min={0.4} max={1.6} step={0.05}
               onChange={setScale} suffix="x"
             />
             <div className="flex gap-2">
-              <Button onClick={() => setResetToken((t) => t + 1)}>Reset camera</Button>
+              <Button onClick={() => setResetToken((t) => t + 1)}>Reset view</Button>
               <Button onClick={() => setShowObjects((v) => !v)}>
                 {showObjects ? "Hide objects" : "Show objects"}
               </Button>
             </div>
+            <label className="flex cursor-pointer items-center justify-between text-[13px] font-semibold text-slate-700">
+              Orbit to inspect (breaks the flat stage)
+              <input
+                type="checkbox"
+                checked={orbitEnabled}
+                onChange={(e) => setOrbitEnabled(e.target.checked)}
+                className="h-4 w-4 accent-[#306EEC]"
+              />
+            </label>
           </Section>
 
           <details className="border-b border-slate-200">
@@ -522,14 +518,6 @@ export default function LabClient() {
                 onChange={(v) => setToolOffset((c) => ({ ...c, scale: v }))}
               />
               <Button onClick={() => setToolOffset(DEFAULT_TOOL_OFFSET)}>Reset tool offsets</Button>
-              <label className="flex cursor-pointer items-center justify-between pt-1 text-[13px] font-semibold text-slate-700">
-                Orbit controls
-                <input
-                  type="checkbox" checked={orbitEnabled}
-                  onChange={(e) => setOrbitEnabled(e.target.checked)}
-                  className="h-4 w-4 accent-[#306EEC]"
-                />
-              </label>
             </Section>
 
             <Section title="Retarget" hint="Numeric proof of the BVH → Fixter mapping.">
