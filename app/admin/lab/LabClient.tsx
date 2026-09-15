@@ -17,6 +17,10 @@ import { resolveClipRoles } from "@/app/components/lab/lab-config";
 import { JOBS, SEQUENCE_CLIP_NAMES } from "@/app/components/lab/lab-jobs";
 import type { LayoutId } from "@/app/components/lab/lab-stage";
 import { PHASE_LABELS } from "@/app/components/lab/lab-choreography";
+import {
+  PAGE_CHARACTER_SCALE,
+  PAGE_JOBS,
+} from "@/app/components/lab/lab-page-jobs";
 import type {
   TourCommand,
   TourState,
@@ -39,6 +43,23 @@ const FixterScene = dynamic(() => import("@/app/components/lab/FixterScene"), {
     </div>
   ),
 });
+
+/* The homepage experiment loads the same way, and only when it is asked for. */
+const HomepageScene = dynamic(
+  () => import("@/app/components/lab/HomepageScene"),
+  { ssr: false, loading: () => null }
+);
+const LabHomepage = dynamic(() => import("@/app/components/lab/LabHomepage"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex min-h-screen items-center justify-center text-[13px] font-semibold text-slate-400">
+      Building the page...
+    </div>
+  ),
+});
+
+/** Which experiment the Lab is showing. */
+type LabMode = "homepage" | "stage";
 
 type Vec3 = [number, number, number];
 
@@ -179,6 +200,12 @@ export default function LabClient() {
   const [tourState, setTourState] = useState<TourState | null>(null);
   const tourToken = useRef(0);
 
+  /*
+   * Homepage first. The question this phase exists to answer is whether he
+   * belongs inside the website, so that is what the Lab opens on; the empty
+   * stage stays one click away for comparison.
+   */
+  const [mode, setMode] = useState<LabMode>("homepage");
   const [layoutOverride, setLayoutOverride] = useState<LayoutId | null>(null);
   const [orbitEnabled, setOrbitEnabled] = useState(false);
   const [resetToken, setResetToken] = useState(0);
@@ -256,6 +283,105 @@ export default function LabClient() {
     );
   }
 
+  /*
+   * The homepage experiment.
+   *
+   * A normal, document-scrolling page — not a pane inside the Lab shell — so
+   * that `position: fixed` on the canvas means what it means on a real website
+   * and the scroll being tested is the browser's own.
+   */
+  if (mode === "homepage") {
+    return (
+      <div className="relative min-h-screen bg-white">
+        <LabHomepage />
+
+        <LabErrorBoundary>
+          <HomepageScene
+            position={position}
+            rotationDeg={rotationDeg}
+            scale={PAGE_CHARACTER_SCALE[layout]}
+            manualClip={activeClip}
+            isPlaying={isPlaying}
+            timeScale={timeScale}
+            stopToken={stopToken}
+            tour={tour}
+            toolOffset={toolOffset}
+            onReady={handleReady}
+            onTourState={setTourState}
+            layout={layout}
+          />
+        </LabErrorBoundary>
+
+        {/*
+          The only chrome. Above the canvas and the only thing on top of the
+          page that accepts a click, so everything the mock page renders stays
+          as clickable as it would be in production.
+        */}
+        <div className="fixed bottom-2 right-2 z-[60] w-[150px] space-y-1.5 rounded-xl border border-slate-200 bg-white/90 p-2 shadow-lg backdrop-blur sm:bottom-3 sm:right-3 sm:w-[228px] sm:space-y-2 sm:p-2.5">
+          <div className="hidden items-center justify-between sm:flex">
+            <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+              Fixter Lab
+            </span>
+            <Link
+              href="/admin"
+              className="text-[11px] font-semibold text-slate-400 hover:text-slate-900"
+            >
+              Admin
+            </Link>
+          </div>
+
+          <Pills
+            options={[
+              { id: "homepage" as LabMode, label: "Homepage" },
+              { id: "stage" as LabMode, label: "Stage" },
+            ]}
+            value={mode}
+            onChange={setMode}
+          />
+          {/* Hidden on a phone: the viewport has already chosen, and three
+              more pills at 150px wide simply overflow. */}
+          <div className="hidden sm:block">
+            <Pills
+              options={[
+                { id: "desktop" as LayoutId, label: "Desktop" },
+                { id: "tablet" as LayoutId, label: "Tablet" },
+                { id: "mobile" as LayoutId, label: "Mobile" },
+              ]}
+              value={layout}
+              onChange={setLayoutOverride}
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <Button onClick={startTour} disabled={!isLoaded} tone="primary">
+              Restart
+            </Button>
+            <Button
+              onClick={() => setTour((c) => (c ? { ...c, paused: !c.paused } : c))}
+              disabled={!touring}
+            >
+              {tour?.paused ? "Play" : "Pause"}
+            </Button>
+          </div>
+
+          <p className="text-[11px] leading-snug text-slate-500">
+            {tourState ? (
+              <>
+                <span className="font-semibold text-slate-900">
+                  {tourState.jobLabel}
+                </span>
+                {" · "}
+                {PHASE_LABELS[tourState.phase]}
+              </>
+            ) : (
+              `${PAGE_JOBS.length} jobs anchored to page elements`
+            )}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-[100dvh] flex-col bg-slate-50">
       <header className="flex flex-shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
@@ -265,9 +391,21 @@ export default function LabClient() {
             Experimental
           </span>
         </div>
-        <Link href="/admin" className="text-[13px] font-semibold text-slate-500 hover:text-slate-900">
-          Back to Admin
-        </Link>
+        <div className="flex items-center gap-3">
+          <div className="w-[190px]">
+            <Pills
+              options={[
+                { id: "homepage" as LabMode, label: "Homepage" },
+                { id: "stage" as LabMode, label: "Stage" },
+              ]}
+              value={mode}
+              onChange={setMode}
+            />
+          </div>
+          <Link href="/admin" className="text-[13px] font-semibold text-slate-500 hover:text-slate-900">
+            Back to Admin
+          </Link>
+        </div>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
