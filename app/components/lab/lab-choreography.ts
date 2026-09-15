@@ -1,5 +1,10 @@
 import * as THREE from "three";
-import { WORK_MOTIONS, type JobDefinition, type WorkMotion } from "./lab-jobs";
+import {
+  WORK_MOTIONS,
+  type JobDefinition,
+  type StageJob,
+  type WorkMotion,
+} from "./lab-jobs";
 import { setObjectFix } from "./lab-object-state";
 import { stageToWorld, type LayoutId } from "./lab-stage";
 
@@ -100,16 +105,44 @@ const PATH_BOW = 0.13;
 
 /* ------------------------------------------------------------------ stops */
 
+/**
+ * Where a job's hand-target sits in the world.
+ *
+ * On the empty stage that is a normalised stage coordinate. On the mock
+ * homepage it is wherever a particular DOM element happens to be. Everything
+ * after the anchor — the stand mark, the facing, the prop's small forward
+ * offset — is identical, which is the whole reason this is a parameter rather
+ * than a second copy of the solver.
+ */
+export type AnchorResolver = (job: JobDefinition) => THREE.Vector3 | null;
+
+export function buildTour(
+  jobs: StageJob[],
+  layout: LayoutId,
+  aspect: number,
+  characterScale: number,
+  clipSeconds: (name: string) => number
+): TourStop[];
 export function buildTour(
   jobs: JobDefinition[],
   layout: LayoutId,
   aspect: number,
   characterScale: number,
-  clipSeconds: (name: string) => number
+  clipSeconds: (name: string) => number,
+  anchorFor: AnchorResolver
+): TourStop[];
+export function buildTour(
+  jobs: JobDefinition[],
+  layout: LayoutId,
+  aspect: number,
+  characterScale: number,
+  clipSeconds: (name: string) => number,
+  anchorFor?: AnchorResolver
 ): TourStop[] {
   const up = new THREE.Vector3(0, 1, 0);
 
-  return jobs.map((job) => {
+  const stops: TourStop[] = [];
+  for (const job of jobs) {
     const motion = WORK_MOTIONS[job.workMotion];
     const yaw = THREE.MathUtils.degToRad(job.workYawDeg ?? 0);
 
@@ -122,8 +155,18 @@ export function buildTour(
       .multiplyScalar(characterScale)
       .applyAxisAngle(up, yaw);
 
-    /* Where his hand must arrive. This is the job's real position on the page. */
-    const anchor = stageToWorld(job.placement[layout], layout, aspect);
+    /*
+     * Where his hand must arrive. This is the job's real position on the page.
+     *
+     * A resolver that returns null means the element it belongs to is not on
+     * the page right now — hidden at this breakpoint, or not yet measured — so
+     * the job is skipped rather than placed at the origin, where he would walk
+     * to the middle of the screen and work on nothing.
+     */
+    const anchor = anchorFor
+      ? anchorFor(job)
+      : stageToWorld((job as StageJob).placement[layout], layout, aspect);
+    if (!anchor) continue;
     const offset = job.objectOffset ?? [0, 0];
 
     /*
@@ -148,7 +191,7 @@ export function buildTour(
      */
     const mark = new THREE.Vector3(anchor.x - hand.x, anchor.y - hand.y, 0);
 
-    return {
+    stops.push({
       job,
       motion,
       object,
@@ -156,8 +199,10 @@ export function buildTour(
       workYaw: yaw,
       enterSeconds: motion.enter ? clipSeconds(motion.enter.name) : 0,
       exitSeconds: motion.exit ? clipSeconds(motion.exit.name) : 0,
-    };
-  });
+    });
+  }
+
+  return stops;
 }
 
 /* ----------------------------------------------------------------- runner */

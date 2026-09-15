@@ -15,6 +15,7 @@ import {
   WORK_MOTIONS,
   allClipSpecs,
   type ClipSpec,
+  type JobDefinition,
   type LoopStyle,
 } from "./lab-jobs";
 import type { LayoutId } from "./lab-stage";
@@ -25,6 +26,7 @@ import { publishRetargetReport, publishTelemetry } from "./lab-telemetry";
 import {
   buildTour,
   clipRoleForPhase,
+  type AnchorResolver,
   createTourRuntime,
   stepTour,
   type TourPhase,
@@ -71,6 +73,17 @@ export type FixterModelProps = {
   /** Which stage arrangement to walk, and the live viewport shape. */
   layout: LayoutId;
   aspect: number;
+  /**
+   * Where the jobs are, when they are not on the empty stage.
+   *
+   * Both are supplied together by the homepage experiment: the job list it
+   * wants, and the function that asks the DOM where each one lives. Left out,
+   * he walks the stage exactly as before. `anchorVersion` exists so a reflow
+   * can invalidate the tour without changing the identity of the resolver.
+   */
+  jobs?: JobDefinition[];
+  anchorFor?: AnchorResolver;
+  anchorVersion?: number;
   toolOffset: ToolOffset;
   onReady: (clipNames: string[]) => void;
   onTourState: (state: TourState) => void;
@@ -116,6 +129,9 @@ export default function FixterModel({
   tour,
   layout,
   aspect,
+  jobs,
+  anchorFor,
+  anchorVersion = 0,
   toolOffset,
   onReady,
   onTourState,
@@ -211,8 +227,13 @@ export default function FixterModel({
   const stops: TourStop[] = useMemo(() => {
     const seconds = (name: string) =>
       clips.find((clip) => clip.name === name)?.duration ?? 0;
-    return buildTour(JOBS, layout, aspect, scale, seconds);
-  }, [clips, layout, aspect, scale]);
+    /* anchorVersion is a dependency, not an argument: a reflow moves the marks
+       without changing the resolver that reads them. */
+    void anchorVersion;
+    return anchorFor
+      ? buildTour(jobs ?? [], layout, aspect, scale, seconds, anchorFor)
+      : buildTour(JOBS, layout, aspect, scale, seconds);
+  }, [clips, layout, aspect, scale, jobs, anchorFor, anchorVersion]);
 
   const tourRef = useRef<TourRuntime | null>(null);
   const tokenRef = useRef(-1);

@@ -12,15 +12,57 @@
 
 const fixedness: Record<string, number> = {};
 
+/**
+ * Past this, the thing counts as mended.
+ *
+ * The homepage experiment lets ordinary DOM react to a repair — a checklist row
+ * ticks itself when its job is done — and DOM is not free to update sixty times
+ * a second. So alongside the continuous value there is a boolean, and listeners
+ * hear only about the crossing: twice per job rather than once per frame.
+ */
+const SETTLED_AT = 0.55;
+
+const settled: Record<string, boolean> = {};
+const listeners = new Set<() => void>();
+let settledVersion = 0;
+
+function publishSettled() {
+  settledVersion += 1;
+  for (const listener of listeners) listener();
+}
+
 export function setObjectFix(id: string, value: number) {
   fixedness[id] = value;
+  const isSettled = value >= SETTLED_AT;
+  if (settled[id] !== isSettled) {
+    settled[id] = isSettled;
+    publishSettled();
+  }
 }
 
 export function getObjectFix(id: string) {
   return fixedness[id] ?? 0;
 }
 
+export function isObjectSettled(id: string) {
+  return settled[id] ?? false;
+}
+
+/** Changes only when some object crosses the line, so DOM can subscribe. */
+export function getSettledVersion() {
+  return settledVersion;
+}
+
+export function subscribeObjectSettled(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 /** Called when a tour restarts, so nothing starts the loop already mended. */
 export function resetObjectFix() {
   for (const key of Object.keys(fixedness)) delete fixedness[key];
+  for (const key of Object.keys(settled)) delete settled[key];
+  publishSettled();
 }

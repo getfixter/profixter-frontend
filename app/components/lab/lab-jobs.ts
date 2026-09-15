@@ -144,13 +144,6 @@ export type JobDefinition = {
   id: string;
   label: string;
   object: ObjectKind;
-  /**
-   * Where the job sits on the page, per layout, in normalised stage
-   * coordinates. Not world units, and never a depth: a phone is a tall stage
-   * with its own arrangement rather than a narrow desktop, so each job names
-   * its own spot on each.
-   */
-  placement: Record<LayoutId, StagePoint>;
   workMotion: keyof typeof WORK_MOTIONS;
   tool: ToolKind | null;
   /**
@@ -173,6 +166,19 @@ export type JobDefinition = {
 };
 
 /**
+ * A job on the empty stage, which names its own spot per layout in normalised
+ * stage coordinates. Not world units, and never a depth: a phone is a tall
+ * stage with its own arrangement rather than a narrow desktop.
+ *
+ * Split out from JobDefinition because the homepage experiment answers the same
+ * question a different way — it asks a DOM element where it is — and everything
+ * downstream of the anchor is identical.
+ */
+export type StageJob = JobDefinition & {
+  placement: Record<LayoutId, StagePoint>;
+};
+
+/**
  * Six jobs, placed around the page rather than around a floor.
  *
  * The order is chosen for the travel between them: four of the six legs are
@@ -187,7 +193,7 @@ export type JobDefinition = {
  *   frame    upper-left   ↘   shelf    mid-right
  *   shelf    mid-right    ↙   outlet   lower-left
  */
-export const JOBS: JobDefinition[] = [
+export const JOBS: StageJob[] = [
   {
     id: "outlet",
     label: "Loose wall outlet",
