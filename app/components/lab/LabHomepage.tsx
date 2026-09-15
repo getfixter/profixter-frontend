@@ -331,7 +331,7 @@ export default function LabHomepage() {
               the character had nowhere to stand that was not on top of a
               sentence. The page gives him a strip of its own.
             */
-            className="relative mx-auto grid max-w-[1120px] gap-8 px-5 pb-28 pt-12 sm:px-6 sm:pb-16 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10 lg:pb-24 lg:pt-20">
+            className="relative mx-auto grid max-w-[1120px] gap-8 px-5 pb-32 pt-12 sm:px-6 sm:pb-16 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10 lg:pb-24 lg:pt-20">
           <div>
             <Eyebrow tone="light" anchorId="hero-eyebrow">
               Handyman membership · Long Island
