@@ -291,6 +291,15 @@ export type JobDefinition = {
    * retargeted. Defaults to a sensible verb for the tool if left out.
    */
   action?: ToolAction;
+  /**
+   * How hard this one is, 0 to 1.
+   *
+   * Drives how long he spends on it, how much of himself he puts into it, and
+   * which ending it gets. A switch plate and a shelf bracket should not take
+   * the same amount of time or the same amount of body, and a loop where every
+   * stop costs the same has no rhythm to it.
+   */
+  effort?: number;
   objectOffset?: [number, number];
   /**
    * How much screen this job wants, relative to the character alone.
