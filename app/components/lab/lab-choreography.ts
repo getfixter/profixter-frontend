@@ -98,6 +98,15 @@ export type TourRuntime = {
   displaced: boolean;
   /** A beat clip to play instead of idling, or null for the usual pause. */
   beat: string | null;
+  /**
+   * How present he is, 0 to 1.
+   *
+   * Not a fade for its own sake. When the page has nowhere for him to stand he
+   * has to be somewhere, and "frozen in the last place that worked" is the one
+   * answer that looks broken. Stepping away and coming back when the reader
+   * scrolls somewhere roomier is the behaviour that reads as tact.
+   */
+  presence: number;
 };
 
 export const WALK_SPEED = 1.05;
@@ -122,6 +131,9 @@ const OPENING_AT = 0.55;
  * every thirty seconds is the behaviour of a mascot, not a person.
  */
 const BROW_CHANCE = 0.28;
+
+/** How fast he arrives and leaves when the page runs out of room. */
+const PRESENCE_RATE = 3.2;
 const WAVE_AT_LAP = 0;
 
 const ADMIRE_SECONDS = 1.5;
@@ -308,6 +320,7 @@ export function createTourRuntime(): TourRuntime {
     restFor: REST_MIN,
     displaced: false,
     beat: null,
+    presence: 1,
   };
 }
 
@@ -510,6 +523,21 @@ export function stepTour(
   runtime.phaseElapsed += dt * urgency;
 
   const stop = stops[runtime.stopIndex % stops.length];
+
+  /*
+   * Present when he has somewhere to be, away when he does not.
+   *
+   * Resting with no placement is the "nowhere free" state: the search refused
+   * every spot on the page and he is waiting for the view to change.
+   */
+  const wantPresence: number =
+    runtime.phase === "REST" && !runtime.placed ? 0 : 1;
+  runtime.presence = approachValue(
+    runtime.presence,
+    wantPresence,
+    dt,
+    PRESENCE_RATE
+  );
 
   /* Prop fade follows the phase: present from setting off until he walks away. */
   const wantProp =
