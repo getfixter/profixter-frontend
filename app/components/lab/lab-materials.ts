@@ -31,6 +31,15 @@ export const M = {
   woodDark: std({ color: "#a87c4e", roughness: 0.74, metalness: 0.0 }),
   /** Profixter blue, used once per object as an accent so nothing shouts. */
   accent: std({ color: "#306EEC", roughness: 0.45, metalness: 0.1 }),
+  /**
+   * Brass, for door hardware.
+   *
+   * A hinge in the same grey as every bracket and screw is a grey block at a
+   * hundred pixels, and a grey block is not a recognisable household object.
+   * Brass is what door hardware actually is, and it is the one colour on the
+   * page that says "door" on its own.
+   */
+  brass: std({ color: "#c9a227", roughness: 0.34, metalness: 0.78 }),
   /** Tool handle red. */
   toolGrip: std({ color: "#c8362f", roughness: 0.45, metalness: 0.05 }),
 };

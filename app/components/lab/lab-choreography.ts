@@ -213,8 +213,14 @@ export function buildStops(
     return {
       job,
       motion,
-      enterSeconds: motion.enter ? clipSeconds(motion.enter.name) : 0,
-      exitSeconds: motion.exit ? clipSeconds(motion.exit.name) : 0,
+      /* Divided by the speed it is played at, or he stands up before the
+         phase that is meant to contain the standing up has finished. */
+      enterSeconds: motion.enter
+        ? clipSeconds(motion.enter.name) / (motion.enter.speed ?? 1)
+        : 0,
+      exitSeconds: motion.exit
+        ? clipSeconds(motion.exit.name) / (motion.exit.speed ?? 1)
+        : 0,
     };
   });
 }
