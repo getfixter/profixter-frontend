@@ -13,7 +13,14 @@ import type { LayoutId } from "./lab-stage";
  * The order is the running order. The lamp leads because the curtain goes up
  * mid-repair, and a light coming on against a dark hero is the most legible
  * before-and-after in the set: you understand it without reading anything.
- * After that it is arranged so no two neighbours share a tool or a posture. Watching him crouch, then stand, then reach overhead is
+ * After that it is arranged so no two neighbours share a tool or a posture.
+ *
+ * The postures are spread as evenly as the jobs honestly allow: six of eleven
+ * used to be the standing chest-height one, which is most of why the loop read
+ * as the same animation with different props attached. A base cabinet and a
+ * basin tap are both things you get down to, and moving them to the crouch also
+ * buys their transitions — he lowers himself and stands back up, which is a
+ * second of real movement the standing jobs do not have. Watching him crouch, then stand, then reach overhead is
  * most of what stops the loop reading as "walk, screwdriver, walk, screwdriver".
  */
 
@@ -80,7 +87,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     id: "cabinet",
     label: "Loose cabinet handle",
     object: "cabinet",
-    workMotion: "mid",
+    workMotion: "low",
     tool: "screwdriver",
     toolApproachDeg: 15,
     workSeconds: 4.5,
@@ -167,7 +174,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     id: "faucet",
     label: "Dripping faucet",
     object: "faucet",
-    workMotion: "mid",
+    workMotion: "low",
     tool: "wrench",
     toolApproachDeg: -35,
     workSeconds: 4.6,
