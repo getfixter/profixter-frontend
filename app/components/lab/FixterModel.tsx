@@ -39,6 +39,7 @@ import {
   approachValue,
   buildStops,
   clipRoleForPhase,
+  pathHeading,
   createTourRuntime,
   stepTour,
   type Bounds,
@@ -148,6 +149,7 @@ const MANUAL_FADE = 0.2;
 const PHASE_FADE: Record<TourPhase, number> = {
   IDLE: 0.45,
   NOTICE: 0.34,
+  INSPECT: 0.3,
   TRAVEL: 0.3,
   APPROACH: 0.28,
   TURN_TO: 0.32,
@@ -414,12 +416,16 @@ export default function FixterModel({
   const [propJobId, setPropJobId] = useState<string | null>(null);
   /** The repair already on the page that he has not walked to yet. */
   const [nextJobId, setNextJobId] = useState<string | null>(null);
+  /** The repair he has just walked away from, still fading out. */
+  const [goneJobId, setGoneJobId] = useState<string | null>(null);
   const [finishClip, setFinishClip] = useState<string | null>(null);
   const lookRef = useRef(0);
   const presenceRef = useRef(1);
   const propRef = useRef<THREE.Group>(null);
   const nextPropRef = useRef<THREE.Group>(null);
   const nextScaleRef = useRef(1);
+  const gonePropRef = useRef<THREE.Group>(null);
+  const goneScaleRef = useRef(1);
   const effectRef = useRef<THREE.Group>(null);
   /* Mirrored so the tool's aim callback can read it without being rebuilt. */
   const stopIndexRef = useRef(0);
@@ -581,6 +587,10 @@ export default function FixterModel({
       : propJob?.category === "plumbing"
         ? "plumbing"
         : "settle";
+  const goneJob = goneJobId ? jobs.find((j) => j.id === goneJobId) : undefined;
+  const goneKind = goneJob?.object ?? null;
+  const goneRotation =
+    goneJob?.objectRotationDeg ?? ([0, 0, 0] as [number, number, number]);
   const nextJob = nextJobId ? jobs.find((j) => j.id === nextJobId) : undefined;
   const nextKind = nextJob?.object ?? null;
   const nextRotation =
@@ -597,6 +607,10 @@ export default function FixterModel({
   useEffect(() => {
     nextScaleRef.current = nextPropScale;
   }, [nextPropScale]);
+  const gonePropScale = goneJob?.propScale ?? 1;
+  useEffect(() => {
+    goneScaleRef.current = gonePropScale;
+  }, [gonePropScale]);
   const perchRef = useRef(perch);
   useEffect(() => {
     perchRef.current = perch;
@@ -721,6 +735,16 @@ export default function FixterModel({
         );
         prop.visible = f > 0.01;
       }
+      const leaving = gonePropRef.current;
+      if (leaving) {
+        const g = runtime.goneFade;
+        if (runtime.gonePlaced) leaving.position.copy(runtime.gonePlaced.object);
+        leaving.scale.setScalar(
+          objectScale * goneScaleRef.current * (0.94 + 0.06 * g) * (g > 0.01 ? 1 : 0)
+        );
+        leaving.visible = g > 0.01;
+      }
+      if (runtime.goneJobId !== goneJobId) setGoneJobId(runtime.goneJobId);
       const staged = nextPropRef.current;
       if (staged) {
         const n = runtime.nextFade;
@@ -764,6 +788,8 @@ export default function FixterModel({
         w.__fxTour = {
           ...t,
           livePhase: runtime.phase,
+          shape: runtime.plan.shape,
+          discovered: runtime.discovered,
           liveJob: stops[runtime.stopIndex % stops.length]?.job.id ?? null,
           prop: runtime.propJobId,
           presence: Math.round(runtime.presence * 100) / 100,
@@ -1233,7 +1259,9 @@ export default function FixterModel({
       } else if (
         headBone &&
         runtime.placed &&
+        runtime.discovered &&
         (runtime.phase === "NOTICE" ||
+          runtime.phase === "INSPECT" ||
           runtime.phase === "TRAVEL" ||
           runtime.phase === "APPROACH")
       ) {
@@ -1291,6 +1319,27 @@ export default function FixterModel({
                 : 0.42),
           46
         );
+      } else if (headBone && runtime.placed && !runtime.discovered) {
+        /*
+         * Walking, but not yet looking at anything in particular.
+         *
+         * On the discover-in-motion shape he sets off before his attention has
+         * settled on the next repair, so aiming his head at it from the first
+         * stride would give the whole thing away — he would be staring at the
+         * thing he has supposedly not noticed. He looks along his own path
+         * instead, and the moment of discovery is the head coming round.
+         */
+        const ahead = runtime.path
+          ? pathHeading(runtime.path, runtime.t)
+          : null;
+        lookRef.current = approachValue(lookRef.current, 1, dt, 4);
+        _lookAt.set(
+          runtime.position.x + (ahead ? ahead.x : 0) * 2,
+          runtime.position.y + (ahead ? ahead.y : 0) * 2 + 0.5 * scale,
+          1.2 * scale
+        );
+        group.parent?.localToWorld(_lookAt);
+        aimHead(headBone, _lookAt, lookRef.current * 0.42, 40);
       } else if (headBone && runtime.placed) {
         const looking =
           runtime.phase === "WORK" ||
@@ -1574,6 +1623,18 @@ export default function FixterModel({
         turns to look there is something there to look at rather than something
         arriving because he looked.
       */}
+      {/* The repair he has just finished, easing out behind him. */}
+      <group ref={gonePropRef} visible={false}>
+        {goneJobId && goneKind && (
+          <FixableObject
+            kind={goneKind}
+            id={goneJobId}
+            scale={1}
+            position={[0, 0, 0]}
+            rotationDeg={goneRotation}
+          />
+        )}
+      </group>
       <group ref={nextPropRef} visible={false}>
         {nextJobId && nextKind && (
           <FixableObject

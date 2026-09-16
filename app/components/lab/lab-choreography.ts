@@ -13,6 +13,12 @@ import {
   type ScheduleMemory,
 } from "./lab-schedule";
 import { shapeOf } from "./lab-pace";
+import {
+  OPENING_PLAN,
+  PIVOT_RANGE,
+  planTransition,
+  type TransitionPlan,
+} from "./lab-transition";
 import { TOOL_REACH } from "./lab-tools";
 import { resetObjectFix, setObjectFix } from "./lab-object-state";
 
@@ -44,6 +50,8 @@ export type TourPhase =
    * loop.
    */
   | "NOTICE"
+  /** A beat of looking it over on arrival, before the tool comes out. */
+  | "INSPECT"
   | "TRAVEL"
   | "APPROACH"
   | "TURN_TO"
@@ -136,6 +144,26 @@ export type TourRuntime = {
    * heavy repair and gone by the time he arrives.
    */
   weariness: number;
+  /** The shape of the journey into the job he is currently doing. */
+  plan: TransitionPlan;
+  /** Recent journey shapes, so the same one does not come up twice running. */
+  planRecent: string[];
+  /** True once his attention has landed on the target during a walk. */
+  discovered: boolean;
+  /**
+   * The repair he has just finished, still on screen and fading.
+   *
+   * Removing the rest beat removed the gap that used to cover this: the old
+   * prop was hidden while he stood about, and the new one appeared afterwards.
+   * With the transitions flowing straight through — and especially on a pivot,
+   * where he never walks away from it — the finished thing was being swapped
+   * for the next one in plain sight, a foot from his hands. It needs its own
+   * slot to fade out in, which is the mirror of the one the next job eases in
+   * through.
+   */
+  goneJobId: string | null;
+  gonePlaced: Placement | null;
+  goneFade: number;
   /** How long this rest should last. Varied, so the pacing is not metronomic. */
   restFor: number;
   /** Set when the screen changed under him and his spot is no longer free. */
@@ -401,6 +429,12 @@ export function createTourRuntime(): TourRuntime {
     nextJobId: null,
     nextFade: 0,
     weariness: 1,
+    plan: OPENING_PLAN,
+    planRecent: [],
+    discovered: true,
+    goneJobId: null,
+    gonePlaced: null,
+    goneFade: 0,
     restFor: REST_MIN,
     displaced: false,
     presence: 1,
@@ -568,6 +602,15 @@ function pathAt(path: Path, t: number) {
   );
   if (_d.lengthSq() > 1e-8) _d.normalize();
   return { point: _p, direction: _d };
+}
+
+/**
+ * Which way he is heading right now, for anything that needs to look along the
+ * path rather than at the destination.
+ */
+export function pathHeading(path: Path, t: number): { x: number; y: number } {
+  const { direction } = pathAt(path, t);
+  return { x: direction.x, y: direction.y };
 }
 
 /** Facing and lean for a given travel direction on the screen. */
@@ -765,6 +808,13 @@ export function stepTour(
   );
   if (!runtime.nextPlaced && runtime.nextFade < 0.02) runtime.nextJobId = null;
 
+  /* The finished repair eases out on its own clock, unhurried. */
+  runtime.goneFade = approachValue(runtime.goneFade, 0, dt, 1.5);
+  if (runtime.goneFade < 0.02) {
+    runtime.goneJobId = null;
+    runtime.gonePlaced = null;
+  }
+
   /**
    * Find a home for a job without committing to it.
    *
@@ -869,9 +919,81 @@ export function stepTour(
     runtime.path = null;
     runtime.t = 0;
     runtime.displaced = false;
-    /* Look at it before walking to it. */
-    setPhase(runtime, "NOTICE");
+    /*
+     * Enter the job the way the plan says, instead of always the same way.
+     *
+     * This single line was most of the seven-beat skeleton: every job in the
+     * loop began with a notice beat because departing hard-coded one.
+     */
+    if (runtime.plan.entry === "pivot") {
+      /* It is already within reach — no walk, just turn into it. */
+      setPhase(runtime, "TURN_TO");
+    } else if (runtime.plan.entry === "straight") {
+      runtime.discovered = runtime.plan.discoverAt === null;
+      setPhase(runtime, "TRAVEL");
+    } else {
+      runtime.discovered = true;
+      setPhase(runtime, "NOTICE");
+    }
     return true;
+  };
+
+  /**
+   * Choose the journey into the next job, once we know where it is.
+   *
+   * Called the moment the repair completes rather than at the end of the ending
+   * beat, because whether there IS an ending beat is one of the things it
+   * decides.
+   */
+  const planNext = (): void => {
+    if (runtime.tick === 0) {
+      runtime.plan = OPENING_PLAN;
+      return;
+    }
+    const target = runtime.nextPlaced;
+    const distance = target
+      ? runtime.position.distanceTo(target.mark)
+      : PIVOT_RANGE * 4;
+    const next =
+      runtime.nextIndex !== null
+        ? stops[runtime.nextIndex % stops.length]
+        : null;
+    runtime.plan = planTransition({
+      distance,
+      cameFrom: stop.job.effort ?? 0.5,
+      goingTo: next?.job.effort ?? 0.5,
+      recent: runtime.planRecent,
+      roll: Math.random,
+    });
+    runtime.planRecent.push(runtime.plan.shape);
+    if (runtime.planRecent.length > 4) runtime.planRecent.shift();
+  };
+
+  /**
+   * Leave the job he has just finished.
+   *
+   * The only route out, whether or not there was an ending beat. REST is not on
+   * this path any more: it is reached only when there is nowhere to put the
+   * next repair, which is a real condition rather than a beat, and the viewer
+   * should never experience it as a man waiting for a cycle.
+   */
+  const leaveForNext = (): void => {
+    runtime.workProgress = 0;
+    /* Hand the finished repair to the fading slot before letting go of it. */
+    if (runtime.propJobId && runtime.placed) {
+      runtime.goneJobId = runtime.propJobId;
+      runtime.gonePlaced = runtime.placed;
+      runtime.goneFade = Math.max(runtime.goneFade, runtime.propFade);
+    }
+    runtime.placed = null;
+    stageNext();
+    const target =
+      runtime.nextIndex ?? pickNext(stops, runtime.schedule, Math.random());
+    if (!departFor(target)) {
+      /* Nowhere free this instant. Ask again shortly rather than barge on. */
+      runtime.restFor = 0.5;
+      setPhase(runtime, "REST");
+    }
   };
 
   const travel = (slow: boolean) => {
@@ -940,6 +1062,32 @@ export function stepTour(
       1,
       runtime.t + (WALK_SPEED * factor * dt) / runtime.path.length
     );
+    /*
+     * Discovery in motion.
+     *
+     * He sets off across the room without having settled on the next repair,
+     * and part way over his attention lands on it: the head comes round first
+     * (that is handled where the head is aimed), and then the path bends toward
+     * it from wherever he has got to. Rebuilding the route from his CURRENT
+     * position rather than the original start is what makes it a change of mind
+     * instead of a jump.
+     */
+    if (
+      !runtime.discovered &&
+      runtime.plan.discoverAt !== null &&
+      runtime.t >= runtime.plan.discoverAt
+    ) {
+      runtime.discovered = true;
+      runtime.path = makePath(
+        runtime.position,
+        placed.mark,
+        runtime.stopIndex % 2 === 0 ? -1 : 1,
+        options.bounds,
+        options.busyAt
+      );
+      runtime.t = 0;
+    }
+
     const { point, direction } = pathAt(runtime.path, runtime.t);
     runtime.position.set(point.x, point.y, 0);
 
@@ -1114,12 +1262,54 @@ export function stepTour(
       break;
 
     case "TURN_TO":
+      /*
+       * A pivot still has to put him in the right place.
+       *
+       * Skipping the walk skipped the only thing that moved him, so on a pivot
+       * he turned on the spot and then worked from wherever he happened to be
+       * standing — up to two thirds of his own height short of the repair, with
+       * the solver quietly clamping his arm. Measured: every pivot travelled
+       * exactly zero pixels.
+       *
+       * A pivot is not "no movement", it is "no journey": he shifts his weight
+       * across and squares up. Easing the last stride in here keeps it a single
+       * beat while putting his hand where it belongs.
+       */
+      if (runtime.plan.entry === "pivot" && runtime.placed) {
+        runtime.position.lerp(runtime.placed.mark, 1 - Math.exp(-6 * dt));
+      }
       runtime.lean = approachValue(runtime.lean, 0, dt, 6);
+      const pivotArrived =
+        runtime.plan.entry !== "pivot" ||
+        !runtime.placed ||
+        runtime.position.distanceTo(runtime.placed.mark) < 0.06;
       if (
         turnToward(runtime, runtime.placed?.workYaw ?? 0, dt) &&
-        Math.abs(runtime.lean) < 0.02
+        Math.abs(runtime.lean) < 0.02 &&
+        pivotArrived
       ) {
         runtime.lean = 0;
+        if (runtime.plan.inspect > 0) {
+          setPhase(runtime, "INSPECT");
+        } else {
+          runtime.toolEquipped = stop.job.tool !== null;
+          setPhase(runtime, stop.enterSeconds > 0 ? "WORK_IN" : "WORK");
+        }
+      }
+      break;
+
+    case "INSPECT":
+      /*
+       * A moment looking at it before the tool comes out.
+       *
+       * Deliberately empty of gesture: he is stopped, facing the work, hands
+       * still down, and the head look-at is already pointing him at it. The
+       * value is the PAUSE — a beat of considering something is what a person
+       * does before starting, and it is the only place in the loop where
+       * stillness means something rather than being dead air.
+       */
+      runtime.lean = approachValue(runtime.lean, 0, dt, 5);
+      if (runtime.phaseElapsed >= runtime.plan.inspect) {
         runtime.toolEquipped = stop.job.tool !== null;
         setPhase(runtime, stop.enterSeconds > 0 ? "WORK_IN" : "WORK");
       }
@@ -1137,8 +1327,23 @@ export function stepTour(
       );
       setObjectFix(stop.job.id, repairCurve(runtime.workProgress));
       if (runtime.workProgress >= 1) {
+        /*
+         * Line the next one up, and choose the journey, BEFORE deciding whether
+         * there is an ending beat — because whether there is one is part of
+         * what the journey plan decides.
+         */
+        stageNext();
+        planNext();
         if (stop.exitSeconds <= 0) chooseFinish(runtime, stop);
-        setPhase(runtime, stop.exitSeconds > 0 ? "WORK_OUT" : "ADMIRE");
+        if (stop.exitSeconds > 0) {
+          setPhase(runtime, "WORK_OUT");
+        } else if (runtime.plan.admire > 0) {
+          setPhase(runtime, "ADMIRE");
+        } else {
+          runtime.tick += 1;
+          runtime.weariness = 1 - 0.22 * (stop.job.effort ?? 0.5);
+          leaveForNext();
+        }
       }
       break;
 
@@ -1146,7 +1351,13 @@ export function stepTour(
       if (runtime.phaseElapsed >= stop.exitSeconds) {
         runtime.toolEquipped = false;
         chooseFinish(runtime, stop);
-        setPhase(runtime, "ADMIRE");
+        if (runtime.plan.admire > 0) {
+          setPhase(runtime, "ADMIRE");
+        } else {
+          runtime.tick += 1;
+          runtime.weariness = 1 - 0.22 * (stop.job.effort ?? 0.5);
+          leaveForNext();
+        }
       }
       break;
 
@@ -1162,33 +1373,21 @@ export function stepTour(
       runtime.toolEquipped = false;
       const finishSpan = Math.max(
         0.2,
-        FINISH_SECONDS[runtime.finish] * shapeOf(stop.job).finishScale
+        FINISH_SECONDS[runtime.finish] *
+          shapeOf(stop.job).finishScale *
+          runtime.plan.admire
       );
       runtime.finishAt = Math.min(1, runtime.phaseElapsed / finishSpan);
       runtime.lean = approachValue(runtime.lean, 0, dt, 5);
       /* Put the next problem on the page while he is still pleased with this
          one. Half a beat in, so it is not simultaneous with the repair snap. */
-      if (runtime.phaseElapsed > finishSpan * 0.35) {
-        stageNext();
-      }
       if (runtime.phaseElapsed >= finishSpan) {
         /* A shelf bracket costs him something a light switch does not. */
         runtime.weariness = 1 - 0.22 * (stop.job.effort ?? 0.5);
         runtime.tick += 1;
         if ((runtime.stopIndex + 1) % stops.length === 0) runtime.laps += 1;
-        runtime.workProgress = 0;
-        runtime.placed = null;
-        /*
-         * How long he stands about is a property of what he has just done.
-         *
-         * A fixed random pause between every job is the loudest bar of the
-         * metronome: it made every cycle the same length whatever happened
-         * inside it. After a light switch he is barely stopped; after a shelf
-         * bracket he takes a moment.
-         */
-        const [restLo, restHi] = shapeOf(stop.job).restAfter;
-        runtime.restFor = restLo + Math.random() * (restHi - restLo);
-        setPhase(runtime, "REST");
+        /* Straight out of the ending beat and on to the next one. */
+        leaveForNext();
       }
       break;
   }
@@ -1212,6 +1411,7 @@ export function stepTour(
 export const PHASE_LABELS: Record<TourPhase, string> = {
   IDLE: "Getting started",
   NOTICE: "Noticing the next one",
+  INSPECT: "Looking it over",
   TRAVEL: "Travelling",
   APPROACH: "Arriving",
   TURN_TO: "Turning to the job",
