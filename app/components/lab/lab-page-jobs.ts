@@ -28,6 +28,16 @@ export const PAGE_JOBS: JobDefinition[] = [
   {
     effort: 0.7,
     category: "electrical",
+    /*
+     * Stated, because this is the opening.
+     *
+     * Its effort would make it a heavy job, and heavy jobs are deliberately
+     * slower at both ends — which is right everywhere except here. The pendant
+     * is the first thing a cold visitor ever sees and the light coming on is
+     * the whole pitch; stretching it by a fifth pushed the payoff from under
+     * three seconds to exactly three. Marketing beats simulation.
+     */
+    pace: "steady",
     id: "lamp",
     label: "Crooked pendant light",
     object: "lamp",
