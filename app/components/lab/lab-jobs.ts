@@ -2,6 +2,7 @@ import type { ObjectKind } from "./lab-objects";
 import type { ToolKind } from "./lab-tools";
 import type { ToolAction } from "./lab-action";
 import type { LayoutId, StagePoint } from "./lab-stage";
+import type { JobCategory } from "./lab-schedule";
 import { REGIONS } from "./lab-stage";
 
 /**
@@ -470,6 +471,15 @@ export type JobDefinition = {
    * that take two.
    */
   hands?: 1 | 2;
+  /**
+   * What trade it belongs to.
+   *
+   * Never displayed and not meant to be noticed one repair at a time. The
+   * scheduler uses it to avoid running three electrical jobs together, which is
+   * the difference between a loop that leaves an impression of "they do all the
+   * little stuff" and one that leaves an impression of an electrician.
+   */
+  category?: JobCategory;
   /**
    * How hard this one is, 0 to 1.
    *
