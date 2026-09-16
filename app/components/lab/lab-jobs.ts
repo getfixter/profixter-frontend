@@ -301,6 +301,17 @@ export type JobDefinition = {
    */
   action?: ToolAction;
   /**
+   * How many hands this one actually takes.
+   *
+   * The verb is a bad guide to it. A shove is two-handed when it is a cabinet
+   * door being aligned and one-handed when it is a picture being nudged level
+   * or a test button being pressed, and getting it wrong is expensive: the
+   * spare hand ends up held out in front of his chest, palm down, touching
+   * nothing, for the whole length of the job. Defaults to two for the verbs
+   * that take two.
+   */
+  hands?: 1 | 2;
+  /**
    * How hard this one is, 0 to 1.
    *
    * Drives how long he spends on it, how much of himself he puts into it, and
@@ -486,6 +497,16 @@ export const TOOL_ATTACH_BONE = "RightHand";
  * tool looked like it was passing THROUGH him rather than being held. Just
  * under half way up is the middle of the palm, which is where a hand closes.
  */
+/**
+ * How strongly the arms are pulled to his sides when nothing else has them.
+ *
+ * Not one: the clips carry the shoulders, the breathing and the small
+ * asymmetries that make him look alive, and overriding them completely trades
+ * one stiff pose for another. This takes most of the forward reach out and
+ * leaves the rest.
+ */
+export const REST_ARM = 0.82;
+
 export const TOOL_PALM = 0.42;
 
 /**
@@ -527,6 +548,13 @@ export const DEFAULT_ACTION: Record<string, ToolAction> = {
   drill: "spin",
   hammer: "tap",
 };
+
+/** Two hands on the job, or one and a spare? */
+export function handsFor(job: JobDefinition): 1 | 2 {
+  if (job.hands) return job.hands;
+  const action = actionFor(job);
+  return action === "spin" || action === "press" || action === "sweep" ? 2 : 1;
+}
 
 export function actionFor(job: JobDefinition): ToolAction {
   if (job.action) return job.action;

@@ -15,10 +15,12 @@ import {
   MOTION_FILES,
   TOOL_ATTACH_BONE,
   TOOL_PALM,
+  REST_ARM,
   TOOL_ROLL_DEG,
   TOOL_SCALE,
   WORK_MOTIONS,
   actionFor,
+  handsFor,
   allClipSpecs,
   type ClipSpec,
   type JobDefinition,
@@ -219,6 +221,8 @@ export default function FixterModel({
   const armRight = useMemo(() => readArmChain(model, "Right"), [model]);
   const armLeft = useMemo(() => readArmChain(model, "Left"), [model]);
   const ikWeight = useRef(0);
+  /** How much of the working arm is holding a tool on the way over. */
+  const carryWeight = useRef(0);
 
   /** Wrist to fingertip, so the tool can be held in the palm rather than the
       wrist. Read off the rig so a re-export with different proportions works. */
@@ -462,6 +466,11 @@ export default function FixterModel({
   useEffect(() => {
     toolActionRef.current = toolAction;
   }, [toolAction]);
+  const jobHands = currentStop ? handsFor(currentStop.job) : 2;
+  const handsRef = useRef<1 | 2>(2);
+  useEffect(() => {
+    handsRef.current = jobHands;
+  }, [jobHands]);
   const aim = currentStop?.motion.toolAimDeg ?? [0, 0, 0];
 
   /*
@@ -686,10 +695,23 @@ export default function FixterModel({
         dt,
         working ? 11 : 5
       );
+      /*
+       * How much of each arm the work has taken, so the rest can be filled in.
+       *
+       * Whatever the repair does not claim falls back to the clip, and the
+       * clips' own arms are the weakest thing in the whole character: every
+       * retargeted take holds them forward with the palms down and the fingers
+       * splayed, which at any size reads as a man sleepwalking. It is in the
+       * frame for most of the loop — every pause, every approach, and the spare
+       * arm of every one-handed job — so it is worth more than any new verb.
+       */
+      let claimRight = 0;
+      let claimLeft = 0;
       if (ikWeight.current > 0.004 && runtime.placed && armRight) {
         const motion = stops[runtime.stopIndex % stops.length]?.motion;
         /* Overhead is a different shape of help; the plan needs to know. */
         const overhead = motion?.overhead === true;
+        const crouching = motion?.id === "low";
 
         /*
          * The body first, then the arms.
@@ -712,7 +734,7 @@ export default function FixterModel({
             bodyRig,
             bodyPose(toolActionRef.current, workTime(), {
               overhead,
-              crouched: motion?.id === "low",
+              crouched: crouching,
               effort: stops[runtime.stopIndex % stops.length]?.job.effort ?? 0.5,
             }),
             scale,
@@ -773,6 +795,7 @@ export default function FixterModel({
           solveArm(armRight, _handW, _poleR, ikWeight.current);
           _handAim.copy(_workW);
           orientHand(armRight, _handAim, ikWeight.current * 0.85, TOOL_ROLL_DEG);
+          claimRight = ikWeight.current;
         }
 
         if (process.env.NODE_ENV !== "production") {
@@ -813,6 +836,7 @@ export default function FixterModel({
             _handW.set(beatPose.work[0], beatPose.work[1], beatPose.work[2]);
             group.localToWorld(_handW);
             solveArm(armRight, _handW, _poleR, ikWeight.current * beatPose.weight);
+            claimRight = ikWeight.current * beatPose.weight;
           }
           if (armLeft && beatPose.off) {
             _offW.set(beatPose.off[0], beatPose.off[1], beatPose.off[2]);
@@ -822,14 +846,162 @@ export default function FixterModel({
             _poleL.y -= 0.6 * scale;
             _poleL.z -= 0.25 * scale;
             solveArm(armLeft, _offW, _poleL, ikWeight.current * beatPose.weight);
+            claimLeft = ikWeight.current * beatPose.weight;
           }
         } else if (armLeft && plan.offWeight > 0.01) {
+          /*
+           * Crouched and working one-handed, the spare hand goes on his knee.
+           *
+           * Every off-hand target used to be expressed relative to the WORK,
+           * which is right when both hands are on the job — two hands on a
+           * drill, two hands shoving a cabinet door — and badly wrong when only
+           * one of them is. On the crouched jobs it left the left arm hanging
+           * out in front of him, palm down and fingers splayed, reaching for
+           * something that was not there: at any size above a thumbnail it read
+           * as a dead limb, and it was in almost every frame of the two longest
+           * jobs.
+           *
+           * A man crouched over a socket braces on his own knee. It is what the
+           * pose is FOR — it is where the weight goes — and it costs one bone
+           * lookup, because the rig already knows where his knee is.
+           */
+          const oneHanded = handsRef.current === 1;
+          const knee = crouching && oneHanded ? bodyRig?.shins[1] : null;
+          /*
+           * Standing and one-handed, it goes to his belt.
+           *
+           * The off-hand target is expressed relative to the WORK, which is
+           * right for the jobs that genuinely take two — two hands on a drill,
+           * two shoving a cabinet door — and produced a floating karate chop
+           * for the ones that do not: an arm held out in front of his chest,
+           * palm down, a foot below the thing he was actually working on,
+           * touching nothing.
+           *
+           * Nobody holds a spare hand there. Crouched, it goes on the knee;
+           * standing, it goes to the belt — which is where a tradesman's spare
+           * hand lives, and which reads as a stance rather than an accident.
+           */
+          const belt = !crouching && oneHanded;
+          if (knee) {
+            knee.getWorldPosition(_offW);
+            _offW.y += 0.13 * scale;
+            _offW.z += 0.09 * scale;
+          } else if (belt) {
+            _offW.set(0.215, 0.93, 0.035);
+            group.localToWorld(_offW);
+          }
+          const own = knee || belt;
           armLeft.upper.getWorldPosition(_poleL);
-          _poleL.x += (0.55 + plan.elbow) * scale;
-          _poleL.y -= (0.5 + plan.elbow * 0.4) * scale;
-          _poleL.z -= 0.25 * scale;
-          solveArm(armLeft, _offW, _poleL, ikWeight.current * plan.offWeight);
-          orientHand(armLeft, _workW, ikWeight.current * plan.offWeight * 0.7);
+          _poleL.x += (own ? 0.72 : 0.55 + plan.elbow) * scale;
+          _poleL.y -= (own ? 0.72 : 0.5 + plan.elbow * 0.4) * scale;
+          _poleL.z -= (own ? 0.5 : 0.25) * scale;
+          claimLeft = ikWeight.current * (own ? 0.9 : plan.offWeight);
+          solveArm(armLeft, _offW, _poleL, claimLeft);
+          if (own) {
+            /* Fingers down onto the knee or the belt, not out at the work. */
+            _handAim.copy(_offW);
+            _handAim.y -= 0.34 * scale;
+            orientHand(armLeft, _handAim, ikWeight.current * 0.8);
+          } else {
+            /* Rolled the other way from the tool hand, for the same reason:
+               fingers that cannot close look thinner edge-on than palm-on. */
+            orientHand(
+              armLeft,
+              _workW,
+              ikWeight.current * plan.offWeight * 0.7,
+              -TOOL_ROLL_DEG
+            );
+          }
+        }
+      }
+
+      /*
+       * A tool is carried, not swung.
+       *
+       * He picks the drill up before he sets off on the heavy jobs, which was
+       * the right call and looked wrong: the walk clip swings both arms through
+       * the same arc, so a cordless drill went round like an empty hand and
+       * read as a man waving a lump of plastic. Anyone carrying something heavy
+       * holds that arm still and lets the other one do the swinging.
+       *
+       * So the working arm is taken down to his hip and held there for the
+       * journey — never quite rigid, a little of the walk still coming through
+       * — and handed straight back the moment there is real work to solve.
+       */
+      const carrying =
+        runtime.toolEquipped &&
+        (runtime.phase === "NOTICE" ||
+          runtime.phase === "TRAVEL" ||
+          runtime.phase === "APPROACH");
+      carryWeight.current = approachValue(
+        carryWeight.current,
+        carrying ? 1 : 0,
+        dt,
+        5
+      );
+      if (carryWeight.current > 0.01 && armRight && ikWeight.current < 0.06) {
+        const bob = Math.sin(state.clock.elapsedTime * 6.4 * runtime.gait);
+        _handW.set(-0.25, 0.79 + bob * 0.012, 0.11 + bob * 0.015);
+        group.localToWorld(_handW);
+        armRight.upper.getWorldPosition(_poleR);
+        _poleR.x -= 0.85 * scale;
+        _poleR.y -= 0.75 * scale;
+        _poleR.z -= 0.3 * scale;
+        const carryW = carryWeight.current * 0.7;
+        solveArm(armRight, _handW, _poleR, carryW);
+        claimRight = Math.max(claimRight, carryW);
+      }
+
+      /*
+       * Everything the job has not claimed, put at his sides.
+       *
+       * Not a pose so much as a correction: the arms are solved to hang where
+       * arms hang, with the fingers turned down instead of presented to camera.
+       * It runs at whatever weight is left over, so it never fights the work —
+       * a hand on a socket is claimed at full and gets none of this, the spare
+       * hand of a one-handed job gets all of it, and the handover either way is
+       * the same ramp the work already uses.
+       *
+       * Held off while he is walking, because the walk take is one of the four
+       * that came with the rig and its arms actually swing.
+       */
+      const walkingNow =
+        runtime.phase === "TRAVEL" || runtime.phase === "APPROACH";
+      const restArms = walkingNow ? 0 : 1;
+      if (restArms > 0 && armRight) {
+        const breath = state.clock.elapsedTime;
+        /* Never quite still, never symmetrical: both are what make a model. */
+        const sway = Math.sin(breath * 0.85) * 0.009;
+        const drift = Math.sin(breath * 0.61 + 1.3) * 0.013;
+        /* Only fill an arm the work has left alone. Layering this on top of a
+           half-claimed arm averages two poses into a third that is neither,
+           which is how the spare hand ended up mid-air in the first place. */
+        const spare = (claim: number) => Math.max(0, 1 - claim * 4) * REST_ARM;
+        const fillR = spare(claimRight);
+        if (fillR > 0.01) {
+          _handW.set(-0.243, 0.795 + sway, 0.02 + drift);
+          group.localToWorld(_handW);
+          armRight.upper.getWorldPosition(_poleR);
+          _poleR.x -= 0.62 * scale;
+          _poleR.y -= 0.85 * scale;
+          _poleR.z -= 0.34 * scale;
+          solveArm(armRight, _handW, _poleR, fillR);
+          _handAim.copy(_handW);
+          _handAim.y -= 0.4 * scale;
+          orientHand(armRight, _handAim, fillR * 0.9);
+        }
+        const fillL = spare(claimLeft);
+        if (armLeft && fillL > 0.01) {
+          _offW.set(0.238, 0.785 - sway, 0.014 - drift);
+          group.localToWorld(_offW);
+          armLeft.upper.getWorldPosition(_poleL);
+          _poleL.x += 0.62 * scale;
+          _poleL.y -= 0.85 * scale;
+          _poleL.z -= 0.34 * scale;
+          solveArm(armLeft, _offW, _poleL, fillL);
+          _handAim.copy(_offW);
+          _handAim.y -= 0.4 * scale;
+          orientHand(armLeft, _handAim, fillL * 0.9);
         }
       }
 
@@ -884,7 +1056,22 @@ export default function FixterModel({
         aimHead(
           headBone,
           _lookAt,
-          lookRef.current * (runtime.phase === "NOTICE" ? 0.85 : 0.5),
+          /*
+           * Look, walk, look again.
+           *
+           * Full attention while he notices it, then the head releases into the
+           * walk — nobody stares at a doorway for the whole distance to it —
+           * and then it comes back as he closes the last stretch. That last
+           * look is the one that makes an arrival an arrival rather than a
+           * stop: he has seen where he is going before he gets there, and a
+           * visitor has seen him see it.
+           */
+          lookRef.current *
+            (runtime.phase === "NOTICE"
+              ? 0.85
+              : runtime.phase === "APPROACH"
+                ? 0.8
+                : 0.42),
           46
         );
       } else if (headBone && runtime.placed) {
@@ -915,13 +1102,25 @@ export default function FixterModel({
              the camera is above him, so there is further to lift. */
           const crouchedNow =
             stops[runtime.stopIndex % stops.length]?.motion.id === "low";
-          _lookAt.y += (crouchedNow ? 0.62 : 0.34) * scale;
-          _lookAt.z += (crouchedNow ? 0.85 : 0.6) * scale;
+          _lookAt.y += (crouchedNow ? 0.78 : 0.34) * scale;
+          _lookAt.z += (crouchedNow ? 1.05 : 0.6) * scale;
           group.parent?.localToWorld(_lookAt);
+          /*
+           * Crouched, the cap still won.
+           *
+           * The cheat was there and the head was still pointing at the floor,
+           * because the limit is the clamp rather than the target: the take
+           * folds him over further than the default fifty-two degrees can undo,
+           * so the correction ran out before his face came back. A crouch is
+           * the one pose that needs the whole range, and it is also the pose
+           * where a person really does crane their neck up.
+           */
           aimHead(
             headBone,
             _lookAt,
-            lookRef.current * (runtime.phase === "ADMIRE" ? 0.95 : 0.72)
+            lookRef.current *
+              (runtime.phase === "ADMIRE" ? 0.95 : crouchedNow ? 0.92 : 0.72),
+            crouchedNow ? 74 : 52
           );
         }
       }
@@ -988,7 +1187,39 @@ export default function FixterModel({
         if (process.env.NODE_ENV !== "production") {
           const w = window as unknown as Record<string, unknown>;
           const t = (w.__fxTour ?? {}) as Record<string, unknown>;
-          w.__fxTour = { ...t, phase: emitted.phase, job: emitted.jobId };
+          w.__fxTour = {
+            ...t,
+            phase: emitted.phase,
+            job: emitted.jobId,
+            /* Published here, at the end of the frame, because the arms are
+               claimed in stages and reading them halfway through reports the
+               left one as untouched no matter what it is doing. */
+            claims: `R=${claimRight.toFixed(2)} L=${claimLeft.toFixed(2)}`,
+          };
+          /* Lab only: what the mixer is actually blending, and how much of it.
+             Anything short of 1 is a fraction of the bind pose on screen. */
+          let sum = 0;
+          const live: string[] = [];
+          for (const name of names) {
+            const a = actions[name];
+            /* isScheduled, not isRunning: a clamped one-shot is paused on its
+               last frame and still contributes its full weight to the blend,
+               and an action that was never played is still `enabled`. Only the
+               mixer's active list says what is really being blended. */
+            if (!a || !a.isScheduled()) continue;
+            const wt = a.getEffectiveWeight();
+            if (wt <= 0.001) continue;
+            sum += wt;
+            live.push(`${name}=${wt.toFixed(2)}`);
+          }
+          w.__fxBlend = { sum: +sum.toFixed(3), live };
+          w.__fxClips = clips.map((c) => ({
+            name: c.name,
+            dur: +c.duration.toFixed(2),
+            tracks: c.tracks.length,
+            arm: c.tracks.filter((t) => /Arm|Hand|Shoulder/.test(t.name)).length,
+            bones: [...new Set(c.tracks.map((t) => t.name.split(".")[0]))].length,
+          }));
         }
       }
     } else {

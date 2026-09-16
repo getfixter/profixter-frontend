@@ -269,14 +269,30 @@ export function bodyPose(
       headPitchDeg: -10 - Math.abs(pose.headPitchDeg) * 0.4,
     };
   } else if (ctx.crouched) {
-    /* Down at the floor he is already folded; the torso only needs to turn to
-       face the work, and the knees are the clip's business, not ours. */
+    /*
+     * Down at the floor the knees belong to the clip — but nothing else does.
+     *
+     * This used to cut the lean to a bit over half and the hips to well under,
+     * on the reasoning that a man already folded over cannot fold much further.
+     * That reasoning is sound and the result was three jobs that looked like
+     * one: a socket, a cabinet door and a tap all crouched at the same angle
+     * with the same torso, distinguishable only by the prop in front of them.
+     * Covering the props left nothing to tell them apart, which is the test
+     * this whole layer exists to pass.
+     *
+     * A squat is not a pose that cannot move. It is a pose that moves
+     * differently: the spine still turns, the weight still travels across the
+     * feet, and because he is folded already, a twist shows MORE than it does
+     * standing rather than less. So the lean comes back nearly whole, the hips
+     * come back, and the twist is pushed past where it sits standing up.
+     */
     pose = {
       ...pose,
-      leanDeg: pose.leanDeg * 0.55,
+      leanDeg: pose.leanDeg * 0.9,
       kneeDeg: 0,
-      hipsDrop: pose.hipsDrop * 0.6,
-      twistDeg: pose.twistDeg * 1.25,
+      hipsDrop: pose.hipsDrop * 0.85,
+      hipsShift: pose.hipsShift * 1.45,
+      twistDeg: pose.twistDeg * 1.55,
       headPitchDeg: pose.headPitchDeg + 5,
     };
   }
