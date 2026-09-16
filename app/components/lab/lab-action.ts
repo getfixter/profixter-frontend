@@ -273,7 +273,9 @@ export function handPlan(
    */
   return {
     ...plan,
-    off: [0.42, -0.9, -0.04],
+    /* Reachable: a target below his own hip is not, and the arm just clamps
+       there with an open palm across his chest looking like a shrug. */
+    off: [0.44, -0.46, 0.0],
     /*
      * Committed, not blended. At half weight the arm sits between where the
      * clip put it (up, by his face) and where it belongs (down), which is the

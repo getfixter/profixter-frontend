@@ -101,6 +101,22 @@ export type TourRuntime = {
   /** A beat clip to play instead of idling, or null for the usual pause. */
   beat: string | null;
   /**
+   * How tucked-away he is, 0 to 1.
+   *
+   * Vanishing whenever a page has no room for a repair was the right instinct
+   * and too blunt an answer: on a pricing page, which is almost entirely cards
+   * with a button in each, he was gone about two thirds of the time — and the
+   * whole point of him is that somebody notices him. So instead of leaving he
+   * gets small, steps into whatever narrow gap the page does have, and waits
+   * there until there is room to work again. A man waiting with a toolbelt is
+   * still a man waiting with a toolbelt.
+   */
+  smallness: number;
+  /** Where he is waiting, while there is nowhere to work. */
+  perch: THREE.Vector3 | null;
+  /** How long that choice has stood. The page moves; the perch must too. */
+  perchAge: number;
+  /**
    * How present he is, 0 to 1.
    *
    * Not a fade for its own sake. When the page has nowhere for him to stand he
@@ -324,6 +340,9 @@ export function createTourRuntime(): TourRuntime {
     displaced: false,
     beat: null,
     presence: 1,
+    smallness: 0,
+    perch: null,
+    perchAge: 0,
   };
 }
 
@@ -498,6 +517,13 @@ export type StepOptions = {
   displaced?: boolean;
   /** How unwelcome this world point is, 0 to 3. */
   busyAt?: (x: number, y: number) => number;
+  /**
+   * Somewhere small and harmless to wait, when there is nowhere to work.
+   *
+   * A much easier question than "where can he do a repair": no prop, no tool
+   * clearance, and asked at a fraction of his own size.
+   */
+  perch?: () => THREE.Vector3 | null;
 };
 
 export function stepTour(
@@ -534,8 +560,47 @@ export function stepTour(
    * Resting with no placement is the "nowhere free" state: the search refused
    * every spot on the page and he is waiting for the view to change.
    */
-  const wantPresence: number =
-    runtime.phase === "REST" && !runtime.placed ? 0 : 1;
+  /*
+   * Waiting small beats not being there.
+   *
+   * He only actually leaves if even a perch is impossible, which on a real page
+   * is rare — there is nearly always a gutter, a margin or a gap between
+   * sections that a smaller man fits into.
+   */
+  const stranded = runtime.phase === "REST" && !runtime.placed;
+  runtime.perchAge += dt;
+  /*
+   * Ask again every couple of seconds.
+   *
+   * A perch chosen once is a perch chosen for the page as it was: scroll, or
+   * switch what is underneath him, and he is left standing in the middle of a
+   * paragraph that arrived after he sat down. Re-asking is cheap — it is the
+   * same search the placer does, at a fraction of the size — and it is what
+   * makes waiting look like a decision rather than a stall.
+   */
+  if (stranded && options.perch && (!runtime.perch || runtime.perchAge > 2.4)) {
+    const next = options.perch();
+    if (next) {
+      runtime.perch = next;
+      runtime.perchAge = 0;
+    } else if (runtime.perchAge > 2.4) {
+      runtime.perch = null;
+      runtime.perchAge = 0;
+    }
+  }
+  if (!stranded && runtime.perch) runtime.perch = null;
+  runtime.smallness = approachValue(
+    runtime.smallness,
+    stranded && runtime.perch ? 1 : 0,
+    dt,
+    2.4
+  );
+  if (stranded && runtime.perch) {
+    /* Amble over rather than teleport; it is a pause, not a cut. */
+    runtime.position.lerp(runtime.perch, 1 - Math.exp(-2.2 * dt));
+    runtime.yaw = approachValue(runtime.yaw, 0, dt, 3);
+  }
+  const wantPresence: number = stranded && !runtime.perch ? 0 : 1;
   runtime.presence = approachValue(
     runtime.presence,
     wantPresence,
