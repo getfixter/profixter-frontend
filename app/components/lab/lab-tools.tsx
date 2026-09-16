@@ -126,6 +126,31 @@ function Hammer() {
   );
 }
 
+/**
+ * Fingers, drawn on the tool instead of on the hand.
+ *
+ * The rig has no finger bones, so the hand cannot close. What it can do is pass
+ * behind these: four small bands across the handle where a fist would be, in
+ * the same dark rubber as a grip. At a hundred pixels of character they read as
+ * knuckles wrapped round the tool, which is the whole job. Up close they are
+ * obviously bands, and nobody is going to be up close.
+ */
+function Grip({ length = 0.055 }: { length?: number }) {
+  return (
+    <group position={[0, length * 0.5, 0]}>
+      {[-0.018, -0.006, 0.006, 0.018].map((y) => (
+        <mesh key={y} material={M.dark} position={[0, y, 0.004]} rotation={[0, 0, Math.PI / 2]}>
+          <capsuleGeometry args={[0.0075, 0.022, 3, 7]} />
+        </mesh>
+      ))}
+      {/* the thumb, across the others */}
+      <mesh material={M.dark} position={[0.006, -0.004, -0.008]} rotation={[0.5, 0, 0.5]}>
+        <capsuleGeometry args={[0.0075, 0.026, 3, 7]} />
+      </mesh>
+    </group>
+  );
+}
+
 const TOOLS: Record<ToolKind, () => React.JSX.Element> = {
   screwdriver: Screwdriver,
   wrench: Wrench,
@@ -299,6 +324,7 @@ export function AimedHandTool({
       <group ref={act}>
         <group scale={scale}>
           <Tool />
+          <Grip />
         </group>
       </group>
     </group>

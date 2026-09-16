@@ -177,7 +177,8 @@ export function solveArm(
 export function orientHand(
   chain: ArmChain,
   aimAt: THREE.Vector3,
-  weight: number
+  weight: number,
+  rollDeg = 0
 ) {
   if (weight <= 0.001) return;
   chain.hand.getWorldPosition(_rootW);
@@ -186,10 +187,27 @@ export function orientHand(
   _dir.normalize();
   chain.hand.parent?.getWorldQuaternion(_parentQ);
   _wanted.setFromUnitVectors(_up, _dir);
+  /*
+   * And a roll about the hand's own axis.
+   *
+   * This rig has no finger bones — twenty-eight bones, and the hand is one of
+   * them — so the fingers are modelled open and splayed and cannot be closed.
+   * Presenting that palm face-on to the camera puts an obvious gap between the
+   * hand and whatever it is supposed to be holding. Rolled, the same fingers
+   * are seen edge-on: thin, overlapping the handle, and the gap is gone. It is
+   * a cheat, and at the size anyone will actually see this it is a better one
+   * than an anatomically correct hand we cannot build.
+   */
+  if (rollDeg !== 0) {
+    _roll.setFromAxisAngle(_up, THREE.MathUtils.degToRad(rollDeg));
+    _wanted.multiply(_roll);
+  }
   _local.copy(_parentQ).invert().multiply(_wanted);
   chain.hand.quaternion.slerp(_local, weight);
   chain.hand.updateMatrixWorld(true);
 }
+
+const _roll = new THREE.Quaternion();
 
 const _headQ = new THREE.Quaternion();
 const _fwd = new THREE.Vector3();

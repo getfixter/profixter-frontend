@@ -477,6 +477,25 @@ export const JOBS: StageJob[] = [
 export const OBJECT_SCALE = 1.7;
 
 export const TOOL_ATTACH_BONE = "RightHand";
+
+/**
+ * How far up the hand the tool is held, as a fraction of its length.
+ *
+ * It used to be zero, which is the wrist: the handle sat inside his forearm and
+ * the shaft ran the length of an open palm and out past the fingertips, so the
+ * tool looked like it was passing THROUGH him rather than being held. Just
+ * under half way up is the middle of the palm, which is where a hand closes.
+ */
+export const TOOL_PALM = 0.42;
+
+/**
+ * How far the hand rolls about its own axis when holding something.
+ *
+ * Turns a splayed open palm edge-on to the camera. See the note in orientHand:
+ * with no finger bones this is the difference between a tool being held and a
+ * tool being near a hand.
+ */
+export const TOOL_ROLL_DEG = 64;
 /**
  * Tools, drawn larger than life.
  *

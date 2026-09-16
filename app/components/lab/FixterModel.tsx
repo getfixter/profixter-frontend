@@ -14,6 +14,8 @@ import { FIXTER_GLB, resolveClipRoles } from "./lab-config";
 import {
   MOTION_FILES,
   TOOL_ATTACH_BONE,
+  TOOL_PALM,
+  TOOL_ROLL_DEG,
   TOOL_SCALE,
   WORK_MOTIONS,
   actionFor,
@@ -215,6 +217,16 @@ export default function FixterModel({
   const armRight = useMemo(() => readArmChain(model, "Right"), [model]);
   const armLeft = useMemo(() => readArmChain(model, "Left"), [model]);
   const ikWeight = useRef(0);
+
+  /** Wrist to fingertip, so the tool can be held in the palm rather than the
+      wrist. Read off the rig so a re-export with different proportions works. */
+  const handLength = useMemo(() => {
+    let len = 0.2;
+    model.traverse((child) => {
+      if (child.name === "RightHand_End") len = child.position.length();
+    });
+    return len;
+  }, [model]);
 
   const handBone = useMemo(() => {
     let found: THREE.Object3D | null = null;
@@ -754,7 +766,7 @@ export default function FixterModel({
         if (!beatOwnsArms) {
           solveArm(armRight, _handW, _poleR, ikWeight.current);
           _handAim.copy(_workW);
-          orientHand(armRight, _handAim, ikWeight.current * 0.85);
+          orientHand(armRight, _handAim, ikWeight.current * 0.85, TOOL_ROLL_DEG);
         }
 
         if (process.env.NODE_ENV !== "production") {
@@ -762,6 +774,13 @@ export default function FixterModel({
           const w = window as unknown as Record<string, unknown>;
           const t = (w.__fxTour ?? {}) as Record<string, unknown>;
           armRight.hand.getWorldPosition(_probe);
+          const parentInv = group.parent;
+          const local = _probe.clone();
+          if (parentInv) parentInv.worldToLocal(local);
+          (window as unknown as Record<string, unknown>).__fxHandWorld = {
+            x: local.x,
+            y: local.y,
+          };
           w.__fxTour = {
             ...t,
             ik: `w=${ikWeight.current.toFixed(2)} miss=${_probe.distanceTo(_handW).toFixed(3)}`,
@@ -1012,7 +1031,11 @@ export default function FixterModel({
           <AimedHandTool
             kind={toolKind}
             scale={TOOL_SCALE * toolOffset.scale}
-            position={toolOffset.position}
+            position={[
+              toolOffset.position[0],
+              toolOffset.position[1] + handLength * TOOL_PALM,
+              toolOffset.position[2],
+            ]}
             restRotationDeg={[
               aim[0] + toolOffset.rotationDeg[0],
               aim[1] + toolOffset.rotationDeg[1],

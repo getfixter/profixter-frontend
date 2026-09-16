@@ -547,6 +547,12 @@ function DiagReporter({
       w.__fxTour = { ...t, x: Math.round(px.x), y: Math.round(px.y) };
       w.__fxBodyW = bodyW;
       w.__fxBodyH = bodyH;
+      /* Lab only: the working hand in screen pixels, for zooming in on it. */
+      const hand = (w.__fxHandWorld ?? null) as { x: number; y: number } | null;
+      if (hand) {
+        const hp = projection.pixelAt(hand.x, hand.y);
+        w.__fxHandPx = { x: Math.round(hp.x), y: Math.round(hp.y) };
+      }
     }
   });
 
