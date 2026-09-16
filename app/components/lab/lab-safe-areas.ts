@@ -33,6 +33,16 @@ export type PageRect = {
    * are stored in viewport coordinates and used as-is.
    */
   fixed: boolean;
+  /**
+   * How much it costs to stand on this, 1 to 3.
+   *
+   * Not everything on a page is equally unwelcome to cover. A line of body copy
+   * is a shame; a headline is the thing the page is for, and a button is what
+   * somebody is reaching for, so those two share the top of the scale. He was standing on "There is always something"
+   * because one heading row inside his block scored the same as one line of a
+   * paragraph and came in under the limit.
+   */
+  weight: number;
 };
 
 /**
@@ -148,7 +158,8 @@ export function measureSafeAreas(): number {
     r: DOMRect,
     isFixed: boolean,
     interactive: boolean,
-    element: HTMLElement
+    element: HTMLElement,
+    weight = 1
   ) => {
     const area = r.width * r.height;
     if (area < MIN_AREA) return;
@@ -160,6 +171,7 @@ export function measureSafeAreas(): number {
       h: r.height,
       fixed: isFixed,
       interactive,
+      weight: interactive ? 3 : weight,
     };
     next.push(rect);
     if (isFixed) nextPinned.push({ element, rect });
@@ -201,18 +213,25 @@ export function measureSafeAreas(): number {
 
     const isFixedEl = isPinned(element);
     const interactive = INTERACTIVE.has(element.tagName);
+    /* A heading, or anything set noticeably larger than body copy. */
+    const big =
+      /^H[1-4]$/.test(element.tagName) ||
+      parseFloat(getComputedStyle(element).fontSize || "0") >= 22;
+    /* A headline is not worth less than a button here. Standing on either is
+       the difference between a character on a page and a thing in the way. */
+    const weight = big ? 3 : 1;
 
     if (text && !always) {
       /* The lines themselves, so the empty half of a column stays empty. */
       range.selectNodeContents(element);
       const lines = range.getClientRects();
       if (lines.length) {
-        for (const line of lines) push(line as DOMRect, isFixedEl, interactive, element);
+        for (const line of lines) push(line as DOMRect, isFixedEl, interactive, element, weight);
         continue;
       }
     }
 
-    push(element.getBoundingClientRect(), isFixedEl, interactive, element);
+    push(element.getBoundingClientRect(), isFixedEl, interactive, element, weight);
   }
 
   rects = next;
@@ -385,7 +404,7 @@ export function findSpot(options: {
      * thing somebody is reaching for.
      */
     const grow = r.interactive ? 12 : 2;
-    const weight = r.interactive ? 3 : 1;
+    const weight = r.weight;
     const c0 = Math.max(0, Math.floor((r.x - grow - left) / cellW));
     const c1 = Math.min(COLS - 1, Math.floor((r.x + r.w + grow - left) / cellW));
     const r0 = Math.max(0, Math.floor((vy - grow - top) / cellH));
