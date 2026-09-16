@@ -42,7 +42,8 @@ export type ObjectKind =
   | "doorknob"
   | "towelbar"
   | "detector"
-  | "hinge";
+  | "hinge"
+  | "showerhead";
 
 export type FixableProps = { id: string };
 
@@ -490,9 +491,16 @@ function Lamp({ id }: FixableProps) {
 
   return (
     <group>
-      {/* Ceiling, so the rose is screwed to something. */}
-      <Surface kind="ceiling" size={[0.66, 0.30]} position={[0, 0.27, 0]} z={-0.06} />
-      <Contact size={[0.16, 0.1]} position={[0, 0.2, -0.03]} />
+      {/*
+        No ceiling patch here, and that is a decision rather than an omission.
+        A pendant already says "ceiling" with its cord — the flex runs up and
+        out of frame, which is exactly how a hanging light reads. Adding a
+        surface behind it put a pale grey band in the middle of the hero with a
+        gap between it and the rose: a floating box, which is the one thing this
+        whole feature exists to avoid. The contact shadow stays; it is the part
+        that was doing useful work.
+      */}
+      <Contact size={[0.13, 0.08]} position={[0, 0.2, -0.02]} />
       <mesh material={M.shell} position={[0, 0.2, 0]}>
         <cylinderGeometry args={[0.035, 0.035, 0.012, 14]} />
       </mesh>
@@ -711,8 +719,10 @@ function SmokeDetector({ id }: FixableProps) {
     <group>
       {/* Ceiling. A disc alone could be anything; a disc against a flat pale
           plane that stops above it is mounted on something. */}
-      <Surface kind="ceiling" size={[0.54, 0.34]} position={[0, 0.10, 0]} z={-0.05} />
-      <Contact size={[0.18, 0.12]} position={[0, 0.03, -0.028]} />
+      {/* Small and tight to the disc: a detector is flush against its ceiling,
+          so the surface has to start where the object does. */}
+      <Surface kind="ceiling" size={[0.28, 0.19]} position={[0, 0.035, 0]} z={-0.03} />
+      <Contact size={[0.16, 0.1]} position={[0, 0.03, -0.02]} />
       <mesh
         material={M.shell}
         position={[0, 0.03, -0.01]}
@@ -837,7 +847,69 @@ function DoorHinge({ id }: FixableProps) {
 
 /* ---------------------------------------------------------------- dispatcher */
 
+/* ------------------------------------------------------------- showerhead */
+
+/**
+ * A shower head drooping on its arm, dripping.
+ *
+ * Added for a measured reason rather than for the count. Plumbing had exactly
+ * one job in a library of ten, and a scheduler that rewards contrast picks the
+ * only job in a thin category far too often — the tap was turning up twice in
+ * every ten repairs while everything else turned up once. A second plumbing
+ * repair is the fix, and this is the one that shares the most with what already
+ * exists: the same tiles, the same wrench, the same drip, at a different height
+ * and in a different stance.
+ */
+function ShowerHead({ id }: FixableProps) {
+  const arm = useRef<THREE.Group>(null);
+  const drip = useRef<THREE.Mesh>(null);
+  const f = useRef(0);
+  const t = useRef(0);
+
+  useFrame((_, dt) => {
+    f.current = ease(f.current, getObjectFix(id), dt);
+    const broken = 1 - f.current;
+    /* Drooping, then squared up: the whole payoff in one angle. */
+    if (arm.current) arm.current.rotation.z = -DEG(26) * broken;
+    if (drip.current) {
+      t.current += dt * 0.85;
+      if (t.current > 1) t.current = 0;
+      drip.current.position.y = -0.1 - t.current * 0.2;
+      const size = (1 - t.current * 0.6) * broken;
+      drip.current.scale.setScalar(Math.max(0.001, size));
+    }
+  });
+
+  return (
+    <group>
+      <Surface kind="tile" size={[0.66, 0.6]} position={[0.04, -0.04, 0]} z={-0.05} />
+      <Contact size={[0.13, 0.12]} position={[-0.16, 0.02, -0.02]} />
+      {/* the wall fitting the arm screws into */}
+      <mesh material={M.metal} position={[-0.16, 0.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.022, 0.026, 0.02, 12]} />
+      </mesh>
+      <group ref={arm} position={[-0.16, 0.02, 0]}>
+        <mesh material={M.metal} position={[0.085, -0.01, 0.01]} rotation={[0, 0, -0.32]}>
+          <cylinderGeometry args={[0.011, 0.011, 0.18, 10]} />
+        </mesh>
+        <group position={[0.165, -0.04, 0.02]} rotation={[0, 0, -0.9]}>
+          <mesh material={M.metal}>
+            <cylinderGeometry args={[0.055, 0.028, 0.045, 16]} />
+          </mesh>
+          <mesh material={M.hardware} position={[0, -0.024, 0]}>
+            <cylinderGeometry args={[0.052, 0.052, 0.006, 16]} />
+          </mesh>
+        </group>
+        <mesh ref={drip} material={M.accent} position={[0.165, -0.1, 0.02]}>
+          <sphereGeometry args={[0.009, 8, 8]} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
 const REGISTRY: Record<string, (props: FixableProps) => React.JSX.Element> = {
+  showerhead: ShowerHead,
   outlet: Outlet,
   frame: PictureFrame,
   shelf: Shelf,

@@ -6,6 +6,12 @@ import {
   type JobDefinition,
   type WorkMotion,
 } from "./lab-jobs";
+import {
+  emptyMemory,
+  pickNext,
+  remember,
+  type ScheduleMemory,
+} from "./lab-schedule";
 import { TOOL_REACH } from "./lab-tools";
 import { resetObjectFix, setObjectFix } from "./lab-object-state";
 
@@ -90,6 +96,8 @@ type Path = {
 
 export type TourRuntime = {
   stopIndex: number;
+  /** What he has done lately, so the next choice can contrast with it. */
+  schedule: ScheduleMemory;
   tick: number;
   phase: TourPhase;
   phaseElapsed: number;
@@ -107,6 +115,26 @@ export type TourRuntime = {
   /** Which prop to draw, and how faded in it is. One at a time. */
   propJobId: string | null;
   propFade: number;
+  /**
+   * The NEXT repair, chosen and placed before he has finished this one.
+   *
+   * The old loop picked the next job at the instant he set off, which meant the
+   * broken thing appeared on screen at exactly the moment he turned to look at
+   * it — a spawn, and unmistakably one. Deciding a few seconds early lets the
+   * thing arrive while a viewer is still watching him finish, which is the one
+   * moment nobody is looking at that piece of empty page.
+   */
+  nextIndex: number | null;
+  nextPlaced: Placement | null;
+  nextJobId: string | null;
+  nextFade: number;
+  /**
+   * How much the last job took out of him, 1 fresh to about 0.8 spent.
+   *
+   * Decays back to 1 as he walks, so the effect is on the first strides after a
+   * heavy repair and gone by the time he arrives.
+   */
+  weariness: number;
   /** How long this rest should last. Varied, so the pacing is not metronomic. */
   restFor: number;
   /** Set when the screen changed under him and his spot is no longer free. */
@@ -213,6 +241,15 @@ const BARE_HAND_GAP = 0.09;
 
 /** How quickly a prop fades in when he sets off, and out when he leaves. */
 const PROP_FADE_RATE = 2.6;
+/**
+ * How fast a repair that nobody has walked to yet eases in.
+ *
+ * Deliberately slower than the working prop's fade. A thing that arrives in
+ * under a second has announced itself whatever else is on screen; at this rate
+ * it takes about two, spent while a viewer is watching him finish something
+ * else, and by the time anyone looks over it has simply always been there.
+ */
+const STAGE_FADE_RATE = 1.15;
 
 /* ------------------------------------------------------------------ stops */
 
@@ -333,6 +370,7 @@ export function createTourRuntime(): TourRuntime {
   resetObjectFix();
   return {
     stopIndex: 0,
+    schedule: emptyMemory(),
     tick: 0,
     phase: "IDLE",
     phaseElapsed: 0,
@@ -348,6 +386,11 @@ export function createTourRuntime(): TourRuntime {
     placed: null,
     propJobId: null,
     propFade: 0,
+    nextIndex: null,
+    nextPlaced: null,
+    nextJobId: null,
+    nextFade: 0,
+    weariness: 1,
     restFor: REST_MIN,
     displaced: false,
     presence: 1,
@@ -582,9 +625,23 @@ function chooseFinish(runtime: TourRuntime, stop: Stop) {
  * Kept short. This is anticipation, not a performance — the moment it reads as
  * a pause rather than a glance it costs more than it buys.
  */
-function noticeSeconds(stop: Stop): number {
-  return 0.34 + 0.5 * (stop.job.effort ?? 0.5);
+/**
+ * How long he spends noticing, before he sets off.
+ *
+ * Longer for heavy work, because sizing up a shelf bracket takes a moment more
+ * than glancing at a light switch — and much shorter when the next job is a
+ * couple of steps away, because nobody stops to consider something they could
+ * reach by leaning. A short hop that gets the full noticing beat reads as a man
+ * being careful about nothing.
+ */
+function noticeSeconds(stop: Stop, distance: number): number {
+  const base = 0.34 + 0.5 * (stop.job.effort ?? 0.5);
+  const near = THREE.MathUtils.clamp(distance / SHORT_HOP, 0.35, 1);
+  return base * near;
 }
+
+/** Below this, a journey is a reposition rather than a walk. */
+const SHORT_HOP = 2.4;
 
 export function stepTour(
   runtime: TourRuntime,
@@ -681,21 +738,88 @@ export function stepTour(
   );
   if (!wantProp && runtime.propFade < 0.02) runtime.propJobId = null;
 
-  /** Choose somewhere for a job and start walking there. */
-  const departFor = (index: number): boolean => {
+  /*
+   * The staged repair eases in on its own clock, slower than the one he is
+   * working on. Slow is the whole point: anything that arrives quickly enough
+   * to notice has announced itself.
+   */
+  runtime.nextFade = approachValue(
+    runtime.nextFade,
+    runtime.nextPlaced ? 1 : 0,
+    dt,
+    STAGE_FADE_RATE
+  );
+  if (!runtime.nextPlaced && runtime.nextFade < 0.02) runtime.nextJobId = null;
+
+  /**
+   * Find a home for a job without committing to it.
+   *
+   * Split out of departFor so the next repair can be put on screen well before
+   * he goes anywhere near it.
+   */
+  const placeFor = (index: number): Placement | null => {
     const next = stops[index % stops.length];
     const anchor = options.place(next.job);
-    if (!anchor) return false;
+    if (!anchor) return null;
     const placed = placeStop(
       next,
       anchor,
       options.characterScale,
       options.objectScale
     );
-    if (options.standable && !options.standable(placed.mark)) return false;
+    if (options.standable && !options.standable(placed.mark)) return null;
+    return placed;
+  };
+
+  /**
+   * Line the next repair up while he is still finishing this one.
+   *
+   * Called during the ending beat. By the time he straightens up and looks
+   * round, the next broken thing has been sitting there for a couple of seconds
+   * — so what a viewer sees is a man noticing something, rather than something
+   * appearing because a man is about to notice it.
+   */
+  const stageNext = () => {
+    if (runtime.nextIndex !== null) return;
+    const index = pickNext(stops, runtime.schedule, Math.random());
+    const placed = placeFor(index);
+    if (!placed) return;
+    runtime.nextIndex = index;
+    runtime.nextPlaced = placed;
+    runtime.nextJobId = stops[index % stops.length].job.id;
+    runtime.nextFade = 0;
+    setObjectFix(stops[index % stops.length].job.id, 0);
+  };
+
+  /** Choose somewhere for a job and start walking there. */
+  const departFor = (index: number): boolean => {
+    const next = stops[index % stops.length];
+    /*
+     * Use the spot already staged for this job if there is one. Re-placing here
+     * would move the thing a viewer has been looking at for two seconds, which
+     * is a worse spawn than the one this exists to prevent.
+     */
+    const staged =
+      runtime.nextIndex === index % stops.length ? runtime.nextPlaced : null;
+    const placed = staged ?? placeFor(index);
+    if (!placed) return false;
     runtime.stopIndex = index % stops.length;
+    remember(runtime.schedule, next);
     runtime.placed = placed;
     runtime.propJobId = next.job.id;
+    /* Whatever the staged prop had already faded up to, keep. */
+    runtime.propFade = staged ? Math.max(runtime.propFade, runtime.nextFade) : runtime.propFade;
+    /*
+     * Release the staged slot but leave the object drawn.
+     *
+     * React mounts the working prop a frame or two after the runtime switches
+     * to it, so clearing this outright leaves a gap where the thing a viewer
+     * has been looking at vanishes and reappears. The two are identical and in
+     * exactly the same place, so letting the staged one fade out underneath the
+     * working one costs nothing and is seamless.
+     */
+    runtime.nextIndex = null;
+    runtime.nextPlaced = null;
     setObjectFix(next.job.id, 0);
     runtime.path = null;
     runtime.t = 0;
@@ -743,7 +867,24 @@ export function stepTour(
       : THREE.MathUtils.clamp(runtime.path.length / HURRY_FROM, 1, HURRY_MAX) *
         crossing *
         purpose;
-    const factor = (slow ? APPROACH_SPEED_FACTOR : 1) * hurry;
+    /*
+     * He accelerates.
+     *
+     * The walk used to reach full speed on its first frame, which is the kind
+     * of thing nobody names and everybody feels: a man does not go from
+     * standing still to walking pace instantly, and a character who does reads
+     * as being moved rather than as moving. Half a second of ramp is enough.
+     *
+     * And he leaves a heavy job slowly. After a shelf bracket the first stride
+     * is reluctant and the walk gathers; after a light switch he is away at
+     * once. It costs one number and it is the only place in the loop where the
+     * job he has just finished affects what he does next.
+     */
+    runtime.weariness = approachValue(runtime.weariness, 1, dt, 0.75);
+    const setOff = THREE.MathUtils.clamp(runtime.phaseElapsed / 0.55, 0, 1);
+    const ramp = 0.42 + 0.58 * (setOff * setOff * (3 - 2 * setOff));
+    const factor =
+      (slow ? APPROACH_SPEED_FACTOR : ramp * runtime.weariness) * hurry;
     /*
      * The walk is an in-place clip and the code does the moving, so the two
      * have to be told the same speed or the feet skate.
@@ -758,7 +899,14 @@ export function stepTour(
 
     const pose = travelPose(direction);
     runtime.yaw = approachValue(runtime.yaw, pose.yaw, dt, 6);
-    runtime.lean = approachValue(runtime.lean, pose.lean, dt, 5);
+    /* Lean with the speed: leaning into a hurry and upright at a stroll is most
+       of what separates one walk from another at this size. */
+    runtime.lean = approachValue(
+      runtime.lean,
+      pose.lean * (0.72 + 0.5 * Math.min(1.4, factor)),
+      dt,
+      5
+    );
     return runtime.t >= 1;
   };
 
@@ -797,7 +945,18 @@ export function stepTour(
       runtime.lean = approachValue(runtime.lean, 0, dt, 5);
       runtime.yaw = approachValue(runtime.yaw, 0, dt, 3);
       if (runtime.phaseElapsed >= runtime.restFor) {
-        if (!departFor(runtime.stopIndex + 1)) {
+        /*
+         * Chosen, not advanced.
+         *
+         * The opening is still authored — the first repair is index zero and
+         * always will be, because the first three seconds are a marketing beat
+         * rather than a simulation. From the second job on, the scheduler picks
+         * whatever contrasts most with what he has just done.
+         */
+        stageNext();
+        const target =
+          runtime.nextIndex ?? pickNext(stops, runtime.schedule, Math.random());
+        if (!departFor(target)) {
           /* Nowhere free right now — wait and ask again rather than barge on. */
           runtime.restFor = 0.8;
           setPhase(runtime, "REST");
@@ -837,7 +996,10 @@ export function stepTour(
       if ((stop.job.effort ?? 0.5) >= 0.6 && stop.job.tool) {
         runtime.toolEquipped = true;
       }
-      if (runtime.phaseElapsed >= noticeSeconds(stop)) {
+      const noticeSpan = runtime.placed
+        ? runtime.position.distanceTo(runtime.placed.mark)
+        : SHORT_HOP;
+      if (runtime.phaseElapsed >= noticeSeconds(stop, noticeSpan)) {
         setPhase(runtime, "TRAVEL");
       }
       break;
@@ -906,7 +1068,14 @@ export function stepTour(
         runtime.phaseElapsed / Math.max(0.2, FINISH_SECONDS[runtime.finish])
       );
       runtime.lean = approachValue(runtime.lean, 0, dt, 5);
+      /* Put the next problem on the page while he is still pleased with this
+         one. Half a beat in, so it is not simultaneous with the repair snap. */
+      if (runtime.phaseElapsed > FINISH_SECONDS[runtime.finish] * 0.35) {
+        stageNext();
+      }
       if (runtime.phaseElapsed >= FINISH_SECONDS[runtime.finish]) {
+        /* A shelf bracket costs him something a light switch does not. */
+        runtime.weariness = 1 - 0.22 * (stop.job.effort ?? 0.5);
         runtime.tick += 1;
         if ((runtime.stopIndex + 1) % stops.length === 0) runtime.laps += 1;
         runtime.workProgress = 0;

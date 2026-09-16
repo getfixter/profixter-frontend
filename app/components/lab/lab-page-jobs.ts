@@ -27,6 +27,7 @@ import type { LayoutId } from "./lab-stage";
 export const PAGE_JOBS: JobDefinition[] = [
   {
     effort: 0.7,
+    category: "electrical",
     id: "lamp",
     label: "Crooked pendant light",
     object: "lamp",
@@ -42,6 +43,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   },
   {
     effort: 0.45,
+    category: "electrical",
     id: "outlet",
     label: "Loose wall outlet",
     object: "outlet",
@@ -58,6 +60,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   },
   {
     effort: 0.65,
+    category: "mounting",
     id: "towelbar",
     label: "Sagging towel bar",
     object: "towelbar",
@@ -75,6 +78,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   {
     effort: 0.15,
     hands: 1,
+    category: "mounting",
     id: "frame",
     label: "Crooked picture frame",
     object: "frame",
@@ -90,6 +94,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   },
   {
     effort: 0.3,
+    category: "cabinet",
     id: "cabinet",
     label: "Cabinet door out of line",
     object: "cabinet",
@@ -106,6 +111,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   {
     effort: 0.5,
     hands: 1,
+    category: "electrical",
     id: "detector",
     label: "Smoke detector hanging loose",
     object: "detector",
@@ -121,6 +127,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   },
   {
     effort: 0.2,
+    category: "electrical",
     id: "switch",
     label: "Crooked light switch",
     object: "switch",
@@ -137,6 +144,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   },
   {
     effort: 0.85,
+    category: "mounting",
     id: "shelf",
     label: "Drooping shelf",
     object: "shelf",
@@ -153,6 +161,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   },
   {
     effort: 0.65,
+    category: "cabinet",
     id: "hinge",
     label: "Door hinge working loose",
     object: "hinge",
@@ -169,6 +178,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   },
   {
     effort: 0.6,
+    category: "plumbing",
     id: "faucet",
     label: "Dripping faucet",
     object: "faucet",
@@ -180,6 +190,22 @@ export const PAGE_JOBS: JobDefinition[] = [
     objectRotationDeg: [0, 26, 0],
     objectOffset: [0.0, -0.045],
     propScale: 0.66,
+    footprint: { w: 1.4, h: 1.35 },
+  },
+  {
+    effort: 0.5,
+    category: "plumbing",
+    id: "showerhead",
+    label: "Shower head drooping",
+    object: "showerhead",
+    workMotion: "reach",
+    tool: "wrench",
+    toolApproachDeg: 22,
+    workSeconds: 4.0,
+    workYawDeg: 10,
+    objectRotationDeg: [0, 18, 0],
+    objectOffset: [-0.1, 0.0],
+    propScale: 0.6,
     footprint: { w: 1.4, h: 1.35 },
   },
 ];

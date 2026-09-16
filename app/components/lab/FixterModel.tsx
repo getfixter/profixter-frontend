@@ -405,10 +405,14 @@ export default function FixterModel({
   const [phase, setPhase] = useState<TourPhase>("IDLE");
   const [stopIndex, setStopIndex] = useState(0);
   const [propJobId, setPropJobId] = useState<string | null>(null);
+  /** The repair already on the page that he has not walked to yet. */
+  const [nextJobId, setNextJobId] = useState<string | null>(null);
   const [finishClip, setFinishClip] = useState<string | null>(null);
   const lookRef = useRef(0);
   const presenceRef = useRef(1);
   const propRef = useRef<THREE.Group>(null);
+  const nextPropRef = useRef<THREE.Group>(null);
+  const nextScaleRef = useRef(1);
   const effectRef = useRef<THREE.Group>(null);
   /* Mirrored so the tool's aim callback can read it without being rebuilt. */
   const stopIndexRef = useRef(0);
@@ -563,6 +567,10 @@ export default function FixterModel({
   const propScale = propJob?.propScale ?? 1;
   const working = phase === "WORK";
   const propRotation = propJob?.objectRotationDeg ?? ([0, 0, 0] as [number, number, number]);
+  const nextJob = nextJobId ? jobs.find((j) => j.id === nextJobId) : undefined;
+  const nextKind = nextJob?.object ?? null;
+  const nextRotation =
+    nextJob?.objectRotationDeg ?? ([0, 0, 0] as [number, number, number]);
 
   const placeRef = useRef(place);
   const boundsRef = useRef(bounds);
@@ -571,6 +579,10 @@ export default function FixterModel({
   useEffect(() => {
     propScaleRef.current = propScale;
   }, [propScale]);
+  const nextPropScale = nextJob?.propScale ?? 1;
+  useEffect(() => {
+    nextScaleRef.current = nextPropScale;
+  }, [nextPropScale]);
   const perchRef = useRef(perch);
   useEffect(() => {
     perchRef.current = perch;
@@ -683,11 +695,28 @@ export default function FixterModel({
       if (prop) {
         if (runtime.placed) prop.position.copy(runtime.placed.object);
         const f = runtime.propFade;
+        /*
+         * Barely any scale.
+         *
+         * It used to come in from just over half size, which is a pop — the one
+         * unmistakable tell that an object was spawned rather than noticed. A
+         * few per cent reads as settling; anything more reads as arriving.
+         */
         prop.scale.setScalar(
-          objectScale * propScaleRef.current * (0.55 + 0.45 * f) * (f > 0.01 ? 1 : 0)
+          objectScale * propScaleRef.current * (0.94 + 0.06 * f) * (f > 0.01 ? 1 : 0)
         );
         prop.visible = f > 0.01;
       }
+      const staged = nextPropRef.current;
+      if (staged) {
+        const n = runtime.nextFade;
+        if (runtime.nextPlaced) staged.position.copy(runtime.nextPlaced.object);
+        staged.scale.setScalar(
+          objectScale * nextScaleRef.current * (0.94 + 0.06 * n) * (n > 0.01 ? 1 : 0)
+        );
+        staged.visible = n > 0.01;
+      }
+      if (runtime.nextJobId !== nextJobId) setNextJobId(runtime.nextJobId);
       const fx = effectRef.current;
       if (fx) {
         if (runtime.placed) fx.position.copy(runtime.placed.workPoint);
@@ -1476,6 +1505,23 @@ export default function FixterModel({
             scale={1}
             position={[0, 0, 0]}
             rotationDeg={propRotation}
+          />
+        )}
+      </group>
+      {/*
+        The next repair, already on the page.
+        It eases in while he is still finishing the last one, so by the time he
+        turns to look there is something there to look at rather than something
+        arriving because he looked.
+      */}
+      <group ref={nextPropRef} visible={false}>
+        {nextJobId && nextKind && (
+          <FixableObject
+            kind={nextKind}
+            id={nextJobId}
+            scale={1}
+            position={[0, 0, 0]}
+            rotationDeg={nextRotation}
           />
         )}
       </group>
