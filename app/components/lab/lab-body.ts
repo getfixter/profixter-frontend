@@ -124,7 +124,15 @@ export function bodyPose(
   const hz = HZ[action];
   if (!hz) return STILL;
   const p = (t * hz) % 1;
-  const e = 0.65 + 0.35 * ctx.effort;
+  /*
+   * Effort scales the whole performance, and the range is deliberately wide.
+   *
+   * At a narrow range every job moved him two or three degrees and the
+   * difference between a hammer and a screwdriver was something you could
+   * measure rather than something you could see. A heavy job now moves half
+   * again as much as a light one.
+   */
+  const e = 0.8 + 0.62 * ctx.effort;
 
   let pose: BodyPose;
 
@@ -140,7 +148,7 @@ export function bodyPose(
       if (p < 0.5) {
         const u = ease(p / 0.5);
         pose = {
-          leanDeg: -5 * u, twistDeg: -9 * u, sideDeg: -2 * u,
+          leanDeg: -8 * u, twistDeg: -13 * u, sideDeg: -3 * u,
           hipsDrop: 0, hipsShift: -0.02 * u, hipsTurnDeg: -4 * u,
           shoulderLiftDeg: 13 * u, kneeDeg: 1 * u, headPitchDeg: 2 * u,
         };
@@ -148,14 +156,14 @@ export function bodyPose(
         const u = (p - 0.5) / 0.12;
         const s = u * u;
         pose = {
-          leanDeg: -5 + 13 * s, twistDeg: -9 + 15 * s, sideDeg: -2 + 5 * s,
+          leanDeg: -8 + 20 * s, twistDeg: -13 + 22 * s, sideDeg: -3 + 7 * s,
           hipsDrop: 0.022 * s, hipsShift: -0.02 + 0.045 * s, hipsTurnDeg: -4 + 7 * s,
           shoulderLiftDeg: 13 - 19 * s, kneeDeg: 2 + 9 * s, headPitchDeg: 2 + 4 * s,
         };
       } else {
         const u = 1 - (p - 0.62) / 0.38;
         pose = {
-          leanDeg: 8 * u, twistDeg: 6 * u, sideDeg: 3 * u,
+          leanDeg: 12 * u, twistDeg: 9 * u, sideDeg: 4 * u,
           hipsDrop: 0.022 * u, hipsShift: 0.025 * u, hipsTurnDeg: 3 * u,
           shoulderLiftDeg: -6 * u, kneeDeg: 10 * u, headPitchDeg: 6 * u,
         };
@@ -168,7 +176,7 @@ export function bodyPose(
       const lean = 0.5 + 0.5 * Math.sin(p * Math.PI * 2);
       const buzz = Math.sin(p * Math.PI * 24);
       pose = {
-        leanDeg: 6 + 5 * lean + buzz * 0.6,
+        leanDeg: 8 + 7 * lean + buzz * 0.8,
         twistDeg: 5 + 2 * lean,
         sideDeg: 1.5,
         hipsDrop: 0.012 + buzz * 0.0016,
@@ -190,7 +198,7 @@ export function bodyPose(
       if (p < 0.78) {
         const u = (p / 0.78) ** 1.6;
         pose = {
-          leanDeg: 4 + 7 * u, twistDeg: 12 * u, sideDeg: 4 * u,
+          leanDeg: 5 + 10 * u, twistDeg: 17 * u, sideDeg: 5 * u,
           hipsDrop: 0.018 * u, hipsShift: 0.035 * u, hipsTurnDeg: 6 * u,
           shoulderLiftDeg: 5 * u, kneeDeg: 7 + 7 * u, headPitchDeg: 4 + 2 * u,
         };
@@ -198,7 +206,7 @@ export function bodyPose(
         const u = 1 - (p - 0.78) / 0.22;
         const s = u * u;
         pose = {
-          leanDeg: 4 + 7 * s, twistDeg: 12 * s, sideDeg: 4 * s,
+          leanDeg: 5 + 10 * s, twistDeg: 17 * s, sideDeg: 5 * s,
           hipsDrop: 0.018 * s, hipsShift: 0.035 * s, hipsTurnDeg: 6 * s,
           shoulderLiftDeg: 5 * s, kneeDeg: 7 + 7 * s, headPitchDeg: 4 + 2 * s,
         };
@@ -226,7 +234,7 @@ export function bodyPose(
       const u = p < 0.45 ? p / 0.45 : 1 - (p - 0.45) / 0.55;
       const s = ease(u);
       pose = {
-        leanDeg: 4 + 11 * s, twistDeg: 2 * s, sideDeg: 0.5,
+        leanDeg: 5 + 15 * s, twistDeg: 3 * s, sideDeg: 0.5,
         hipsDrop: 0.02 * s, hipsShift: 0.012 * s, hipsTurnDeg: 1,
         shoulderLiftDeg: 4 * s, kneeDeg: 4 + 13 * s, headPitchDeg: 5 + 2 * s,
       };
