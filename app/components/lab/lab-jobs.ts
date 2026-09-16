@@ -103,12 +103,49 @@ export type WorkMotion = {
   exit?: ClipSpec;
 };
 
+/**
+ * WHERE THE HAND GOES — authored, not measured.
+ *
+ * These used to be read off the retargeted clips: whatever the take happened to
+ * be doing with its hand became the definition of where that posture works. It
+ * is why the overhead job put the repair at eye level and he appeared to shield
+ * his face from it, and why the chest-height one worked at the point where its
+ * arms happened to be clasped.
+ *
+ * The arms are solved now, so the clip no longer gets a vote. A hand reaching
+ * overhead goes ABOVE the head — 1.88 on a character 1.72 tall — because that
+ * is where a person puts it, and the solver will deliver it. The clip keeps the
+ * job it was always good at, which is the stance underneath.
+ *
+ * Negative x is his right side, which is the hand the tool is in.
+ *
+ * Sized against the skeleton, and against what it can actually reach.
+ *
+ * This character is not shaped like a person. His hips sit at 0.82, his chest
+ * at 1.15, his head fills everything from 1.32 to the top — and his whole arm,
+ * shoulder joint to fingertips, is 0.39. From a shoulder at 1.16 that is a
+ * maximum reach of about 1.53, which is BELOW the top of his own head at 1.72.
+ *
+ * He physically cannot work above his head, and no amount of animation was ever
+ * going to hide it. Asking him to put a hand at 1.97 just left the solver
+ * clamping and the man reaching at thin air a foot below the lamp.
+ *
+ * So overhead here means high and OUT: 1.50 and well over to his tool side,
+ * which is inside his reach, keeps his face clear, and reads as a man working
+ * on something above him. Everything else is pulled in to match — the standing
+ * reach was 0.46 from the shoulder on an arm 0.39 long, which is why the drill
+ * never quite arrived where the towel bar was.
+ *
+ * Pulled in a further few centimetres beyond that, because a hand parked at the
+ * very limit of the arm has nowhere left to go: the whole point is that it moves
+ * while he works, and an arm already straight cannot wind up, push, or haul.
+ */
 export const WORK_MOTIONS: Record<string, WorkMotion> = {
   /** Squatting at something near the floor. */
   low: {
     id: "low",
     clip: { name: "Work · Low", file: CLIP_WORK_LOW, start: 0.5, end: 4.0, loop: "pingpong" },
-    handOffset: [-0.151, 0.572, 0.225],
+    handOffset: [-0.20, 0.57, 0.24],
     toolAimDeg: [-29, 6, -22],
     enter: { name: "Crouch · In", file: CLIP_ENTER_CROUCH, start: 0.0, end: 4.0, loop: "once" },
     exit: { name: "Crouch · Out", file: CLIP_ENTER_CROUCH, start: 0.0, end: 4.0, reverse: true, loop: "once" },
@@ -122,7 +159,7 @@ export const WORK_MOTIONS: Record<string, WorkMotion> = {
   mid: {
     id: "mid",
     clip: { name: "Work · Mid", file: CLIP_WORK_MID, start: 0.15, end: 1.6, loop: "pingpong" },
-    handOffset: [-0.019, 1.022, 0.163],
+    handOffset: [-0.26, 1.00, 0.20],
     toolAimDeg: [0, 0, 0],
   },
   /**
@@ -136,7 +173,7 @@ export const WORK_MOTIONS: Record<string, WorkMotion> = {
   reach: {
     id: "reach",
     clip: { name: "Work · Reach", file: CLIP_WORK_REACH, start: 0.3, end: 2.0, loop: "pingpong" },
-    handOffset: [-0.223, 1.536, 0.045],
+    handOffset: [-0.30, 1.30, 0.14],
     toolAimDeg: [0, 0, 0],
   },
   /**
@@ -155,7 +192,7 @@ export const WORK_MOTIONS: Record<string, WorkMotion> = {
   high: {
     id: "high",
     clip: { name: "Work · High", file: CLIP_WORK_HIGH, start: 0.7, end: 2.6, loop: "pingpong" },
-    handOffset: [-0.233, 1.533, 0.061],
+    handOffset: [-0.28, 1.44, 0.10],
     toolAimDeg: [0, 0, 0],
   },
 };

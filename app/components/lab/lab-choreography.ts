@@ -47,6 +47,8 @@ export type Stop = {
 
 /** Where a job ended up, once he decided to go and do it. */
 export type Placement = {
+  /** Where the working hand belongs: the work, minus a tool length. */
+  handAt: THREE.Vector3;
   /** The repair itself — the screw, the handle, the bracket. */
   anchor: THREE.Vector3;
   /** Where the prop is drawn, offset so the work lands on an edge of it. */
@@ -284,6 +286,7 @@ export function placeStop(
   const offset = [raw[0] * propScale, raw[1] * propScale];
 
   return {
+    handAt: new THREE.Vector3(handTarget.x, handTarget.y, hand.z + PROP_DEPTH * 0.4),
     anchor: anchor.clone(),
     object: new THREE.Vector3(
       anchor.x + offset[0],

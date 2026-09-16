@@ -197,3 +197,192 @@ export function bodyAccent(action: ToolAction, t: number, scale: number): BodyAc
       return STILL;
   }
 }
+
+/* ------------------------------------------------------------ hand plans */
+
+export type HandPlan = {
+  /**
+   * Toward the work, in the screen plane. Positive presses in.
+   *
+   * Not a z offset. The camera is very nearly head on, so depth projects to
+   * almost nothing: a drill pushed a tenth of a unit INTO the wall moves about
+   * one pixel and reads as a man holding a drill perfectly still. Everything
+   * that is supposed to be seen has to happen across the screen, so the plan is
+   * expressed along the tool's own approach and turned into x and y by the
+   * caller, who knows which way the tool is pointing.
+   */
+  push: number;
+  /** Across the approach, in the screen plane: a hammer's lift, a wrench's arc. */
+  lift: number;
+  /** Actual depth. Small, and only ever for keeping hands off the body. */
+  depth: number;
+  /**
+   * Off hand, as an offset from the WORK POINT. Every action names one.
+   *
+   * Positive x is his LEFT, which is the side the off hand lives on. Signing
+   * these the other way had the left arm reaching across his own chest to the
+   * tool, which looks like a man hugging himself.
+   */
+  off: [number, number, number];
+  /** How far the working elbow swings away from the body, 0 to 1. */
+  elbow: number;
+  /** How much of the off arm to take over: two-handed work wants all of it. */
+  offWeight: number;
+};
+
+const REST_PLAN: HandPlan = {
+  push: 0,
+  lift: 0,
+  depth: 0,
+  off: [0.3, -0.45, 0.04],
+  elbow: 0.5,
+  offWeight: 0,
+};
+
+/**
+ * Where the hands go, through the cycle, for each kind of work.
+ *
+ * This is the half the clips could not supply. A retargeted take gives a decent
+ * stance and then does whatever it was doing with its arms — which for the
+ * chest-height one is clasping them in front of the drill. Driving the hands
+ * instead means the arm carries the verb: the hammer winds up through the
+ * shoulder, the drill is genuinely held in two hands, the wrench hauls round
+ * and resets on a rhythm nothing like the screwdriver's.
+ *
+ * Amplitudes are in world units at character scale 1. They have to be big
+ * enough to SEE — the character is drawn about two hundred pixels tall, so a
+ * hand that travels three hundredths of a unit travels three pixels — and
+ * small enough that the arm, which is only 0.39 long, can still get there.
+ */
+export function handPlan(
+  action: ToolAction,
+  t: number,
+  overhead = false
+): HandPlan {
+  if (action === "none" || !HZ[action]) return REST_PLAN;
+  const p = actionPhase(action, t);
+  const plan = planFor(action, p);
+  if (!overhead) return plan;
+  /*
+   * Overhead is the one case where helping with the other hand is wrong.
+   *
+   * Both hands at a ceiling fixture puts them in front of his own face, which
+   * is the exact posture this whole exercise started out trying to kill. A
+   * person reaching up steadies themselves with the other arm out and down, so
+   * that is where it goes — and it reads as effort rather than as hiding.
+   */
+  return {
+    ...plan,
+    off: [0.42, -0.9, -0.04],
+    /*
+     * Committed, not blended. At half weight the arm sits between where the
+     * clip put it (up, by his face) and where it belongs (down), which is the
+     * worst of both and still reads as hiding.
+     */
+    offWeight: 0.88,
+    elbow: plan.elbow * 0.6,
+  };
+}
+
+function planFor(action: ToolAction, p: number): HandPlan {
+  switch (action) {
+    case "tap": {
+      /*
+       * A hammer is a lift and a stop. The hand travels most of the distance,
+       * because an arm that stays still while a hammer rotates in the wrist is
+       * a man tapping a nail with a spoon.
+       */
+      const off: [number, number, number] = [0.27, -0.1, 0.06];
+      if (p < 0.5) {
+        const u = p / 0.5;
+        const e = u * u * (3 - 2 * u);
+        return { push: -0.15 * e, lift: 0.13 * e, depth: 0.02 * e, off, elbow: 0.75 - 0.3 * e, offWeight: 0.5 };
+      }
+      if (p < 0.62) {
+        const u = (p - 0.5) / 0.12;
+        const e = u * u;
+        return { push: -0.15 + 0.2 * e, lift: 0.13 - 0.17 * e, depth: 0.02 - 0.02 * e, off, elbow: 0.45 + 0.3 * e, offWeight: 0.5 };
+      }
+      const u = 1 - (p - 0.62) / 0.38;
+      return { push: 0.05 * u, lift: -0.04 * u, depth: 0, off, elbow: 0.75 - 0.1 * u, offWeight: 0.5 };
+    }
+
+    case "spin": {
+      /* Two hands, leaning the drill in and easing off, with a real buzz. */
+      const lean = 0.5 + 0.5 * Math.sin(p * Math.PI * 2);
+      const buzz = Math.sin(p * Math.PI * 24) * 0.011;
+      return {
+        push: 0.13 * lean,
+        lift: buzz,
+        depth: 0.01,
+        off: [0.24, -0.08, 0.1],
+        elbow: 0.55,
+        offWeight: 0.95,
+      };
+    }
+
+    case "ratchet": {
+      /*
+       * A wrench swings the hand round the work and snaps back fast. That arc,
+       * and the suddenness of the reset, is the whole difference from a
+       * screwdriver — which turns on the spot and never travels.
+       */
+      const swing = p < 0.78 ? (p / 0.78) ** 2 : (1 - (p - 0.78) / 0.22) ** 2;
+      return {
+        push: 0.02 + 0.04 * swing,
+        lift: -0.11 + 0.26 * swing,
+        depth: 0.01,
+        off: [0.26, -0.12, 0.08],
+        elbow: 0.85 - swing * 0.25,
+        offWeight: 0.7,
+      };
+    }
+
+    case "turn": {
+      /*
+       * Small and close in: a screwdriver is wrist work. The tool supplies the
+       * roll, the hand supplies a press and a slight rock, which together read
+       * as effort without the arm wandering.
+       */
+      const press = p < 0.45 ? p / 0.45 : p < 0.62 ? 1 : 1 - (p - 0.62) / 0.38;
+      const e = press * press * (3 - 2 * press);
+      return {
+        push: 0.075 * e,
+        lift: Math.sin(p * Math.PI * 2) * 0.045,
+        depth: 0.01,
+        off: [0.28, -0.13, 0.07],
+        elbow: 0.6,
+        offWeight: 0.6,
+      };
+    }
+
+    case "press": {
+      /* Both palms on the thing, seating it: one long shove, then a check. */
+      const u = p < 0.45 ? p / 0.45 : 1 - (p - 0.45) / 0.55;
+      const e = u * u * (3 - 2 * u);
+      return {
+        push: 0.17 * e,
+        lift: 0.02,
+        depth: 0.01,
+        off: [0.25, 0.0, 0.02],
+        elbow: 0.7,
+        offWeight: 0.95,
+      };
+    }
+
+    case "sweep": {
+      const u = Math.sin(p * Math.PI * 2);
+      return {
+        push: 0.04,
+        lift: u * 0.19,
+        depth: 0.01,
+        off: [0.29, -0.14, 0.06],
+        elbow: 0.6,
+        offWeight: 0.5,
+      };
+    }
+
+    default:
+      return REST_PLAN;
+  }
+}

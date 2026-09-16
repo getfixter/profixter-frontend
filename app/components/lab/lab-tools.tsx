@@ -278,13 +278,17 @@ export function AimedHandTool({
      */
     const inner = act.current;
     if (inner) {
+      /*
+       * Only the roll.
+       *
+       * Swinging, pushing and sliding used to live here because the arm could
+       * not do them. The arm can now — it is solved to a hand target that moves
+       * with the action — so leaving them on the tool as well would double every
+       * motion. What stays is the one thing a hand genuinely cannot do: spin a
+       * drill bit, or turn a screwdriver about its own length.
+       */
       const pose = actionPose(action, getWorkTime ? getWorkTime() : 0);
-      inner.rotation.set(
-        THREE.MathUtils.degToRad(pose.swingDeg),
-        THREE.MathUtils.degToRad(pose.rollDeg),
-        0
-      );
-      inner.position.set(pose.slide, pose.push, 0);
+      inner.rotation.set(0, THREE.MathUtils.degToRad(pose.rollDeg), 0);
     }
   });
 
