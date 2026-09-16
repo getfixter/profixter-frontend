@@ -183,7 +183,21 @@ export function orientHand(
   if (weight <= 0.001) return;
   chain.hand.getWorldPosition(_rootW);
   _dir.subVectors(aimAt, _rootW);
-  if (_dir.lengthSq() < 1e-8) return;
+  /*
+   * Refuse to aim at something the hand is almost standing on.
+   *
+   * The direction is normalised, so as the target approaches the hand the
+   * vector gets shorter and its direction gets noisier, until a movement of a
+   * millimetre swings it right round — the hand snaps and the wrist flips. The
+   * old guard only caught an exact zero, which never happens.
+   *
+   * Since the aim is now a weighted blend of several candidates, the average
+   * genuinely can land on the hand — a resting aim just below it and a work aim
+   * out in front average to somewhere in between. Below this distance the last
+   * good orientation is kept, which is both stable and correct: a hand that has
+   * nowhere particular to point should not be pointing anywhere new.
+   */
+  if (_dir.lengthSq() < 0.0064) return;
   _dir.normalize();
   chain.hand.parent?.getWorldQuaternion(_parentQ);
   _wanted.setFromUnitVectors(_up, _dir);
