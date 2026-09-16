@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { bodyAccent, handPlan, type ToolAction } from "./lab-action";
-import { readArmChain, solveArm, orientHand } from "./lab-ik";
+import { handPlan, type ToolAction } from "./lab-action";
+import { readArmChain, solveArm, orientHand, aimHead } from "./lab-ik";
+import { readBodyRig, bodyPose, applyBodyPose } from "./lab-body";
 import { createPortal, useFrame, useLoader } from "@react-three/fiber";
 import { useAnimations, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -101,7 +102,6 @@ export type FixterModelProps = {
 
 /* Scratch, so aiming the tool allocates nothing per frame. */
 const _toolTarget = new THREE.Vector3();
-const ZERO_ACCENT = { bob: 0, rollDeg: 0, leanDeg: 0 };
 /* Scratch for the arm solve; allocated once. */
 const _handAim = new THREE.Vector3();
 const _workW = new THREE.Vector3();
@@ -110,12 +110,8 @@ const _offW = new THREE.Vector3();
 const _poleR = new THREE.Vector3();
 const _poleL = new THREE.Vector3();
 const _probe = new THREE.Vector3();
-/* Scratch for the head look-at; allocated once, never per frame. */
-const _headAt = new THREE.Vector3();
+/* Scratch for the head look-at and the arm solve; allocated once. */
 const _lookAt = new THREE.Vector3();
-const _lookDir = new THREE.Vector3();
-const _lookQ = new THREE.Quaternion();
-const _lookEuler = new THREE.Euler();
 
 const TELEMETRY_INTERVAL = 0.25;
 const MANUAL_FADE = 0.2;
@@ -212,6 +208,7 @@ export default function FixterModel({
    * skipped and the clips drive the arms exactly as they did before. A missing
    * bone should cost a feature, not the page.
    */
+  const bodyRig = useMemo(() => readBodyRig(model), [model]);
   const armRight = useMemo(() => readArmChain(model, "Right"), [model]);
   const armLeft = useMemo(() => readArmChain(model, "Left"), [model]);
   const ikWeight = useRef(0);
@@ -591,22 +588,14 @@ export default function FixterModel({
        */
       group.rotation.order = "YXZ";
       /*
-       * The action reaches the shoulders.
+       * The character as a whole only turns and leans into travel now.
        *
-       * Added on top of the clip rather than replacing it: the retargeted take
-       * supplies a working posture and this supplies the verb, which is the
-       * only division of labour that survived two rounds of Text-to-Motion.
+       * The effort used to be a tilt on the entire figure, which is a puppet
+       * being rocked rather than a person working. It lives in the spine, the
+       * pelvis and the knees now — see applyBodyPose — so applying it here as
+       * well would count it twice.
        */
-      const accent =
-        runtime.phase === "WORK"
-          ? bodyAccent(toolActionRef.current, workTime(), scale)
-          : ZERO_ACCENT;
-      group.rotation.set(
-        THREE.MathUtils.degToRad(accent.leanDeg),
-        runtime.yaw,
-        runtime.lean + THREE.MathUtils.degToRad(accent.rollDeg)
-      );
-      group.position.y += accent.bob;
+      group.rotation.set(0, runtime.yaw, runtime.lean);
       /*
        * Presence rides on the scale, the same treatment the props already get.
        * Cheap, needs no material work on a skinned mesh, and reads as stepping
@@ -662,10 +651,31 @@ export default function FixterModel({
         working ? 11 : 5
       );
       if (ikWeight.current > 0.004 && runtime.placed && armRight) {
-        group.updateMatrixWorld(true);
         const motion = stops[runtime.stopIndex % stops.length]?.motion;
         /* Overhead is a different shape of help; the plan needs to know. */
         const overhead = motion?.overhead === true;
+
+        /*
+         * The body first, then the arms.
+         *
+         * Where the shoulder ends up decides what the arm has to do to reach
+         * the work, so the spine, pelvis and knees are posed before the solve
+         * rather than after it. Doing it the other way round means solving to a
+         * shoulder that is about to move.
+         */
+        if (bodyRig) {
+          applyBodyPose(
+            bodyRig,
+            bodyPose(toolActionRef.current, workTime(), {
+              overhead,
+              crouched: motion?.id === "low",
+              effort: stops[runtime.stopIndex % stops.length]?.job.effort ?? 0.5,
+            }),
+            scale,
+            ikWeight.current
+          );
+        }
+        group.updateMatrixWorld(true);
         const plan = handPlan(toolActionRef.current, workTime(), overhead);
         const parent = group.parent;
         const placed = runtime.placed;
@@ -725,6 +735,8 @@ export default function FixterModel({
           w.__fxTour = {
             ...t,
             ik: `w=${ikWeight.current.toFixed(2)} miss=${_probe.distanceTo(_handW).toFixed(3)}`,
+            spineX: bodyRig ? +THREE.MathUtils.radToDeg(bodyRig.spine[0].rotation.x).toFixed(1) : null,
+            neckX: bodyRig?.neck ? +THREE.MathUtils.radToDeg(bodyRig.neck.rotation.x).toFixed(1) : null,
             hy: +_probe.y.toFixed(4),
             hx: +_probe.x.toFixed(4),
           };
@@ -739,36 +751,51 @@ export default function FixterModel({
         }
       }
 
-      if (headBone) {
-        const wantLook =
-          runtime.phase === "ADMIRE" || runtime.phase === "WORK_OUT";
+      /*
+       * He looks at what he is doing, and then at what he has done.
+       *
+       * Running while he works as well as afterwards, because the clips bend
+       * him over far enough that his cap fills the frame and the face — the
+       * whole appeal of the character — disappears. A head aimed at the work
+       * sits level over a cabinet and tips back under a ceiling fixture, which
+       * is both more legible and more like a person.
+       */
+      if (headBone && runtime.placed) {
+        const looking =
+          runtime.phase === "WORK" ||
+          runtime.phase === "WORK_IN" ||
+          runtime.phase === "WORK_OUT" ||
+          runtime.phase === "ADMIRE";
         lookRef.current = approachValue(
           lookRef.current,
-          wantLook ? 1 : 0,
+          looking ? 1 : 0,
           dt,
-          3.4
+          4.2
         );
-        if (lookRef.current > 0.002 && runtime.placed) {
-          headBone.getWorldPosition(_headAt);
-          /* workPoint is in the parent's space, the same space he stands in. */
-          _lookAt.copy(runtime.placed.workPoint);
-          group.parent?.localToWorld(_lookAt);
-          _lookDir.subVectors(_lookAt, _headAt).normalize();
+        if (lookRef.current > 0.004) {
           /*
-           * Clamped hard. A head that can reach the target exactly will snap
-           * round to something behind him on a bad frame, and an owl is worse
-           * than an inattentive handyman.
+           * Aimed a little above the work, and a little toward the viewer.
+           *
+           * Looking exactly at what his hands are doing is correct and looks
+           * terrible: on every crouched job it points the top of his cap at the
+           * camera and the face — which is the entire appeal of the character —
+           * disappears. Animators cheat this for the same reason. The intent
+           * still reads as "he is watching his own hands"; the audience just
+           * gets to see him doing it.
            */
-          const yawTo = THREE.MathUtils.clamp(
-            Math.atan2(_lookDir.x, _lookDir.z) - runtime.yaw,
-            -0.7,
-            0.7
+          _lookAt.copy(runtime.placed.workPoint);
+          /* Crouched needs more of the cheat: he is folded over the work and
+             the camera is above him, so there is further to lift. */
+          const crouchedNow =
+            stops[runtime.stopIndex % stops.length]?.motion.id === "low";
+          _lookAt.y += (crouchedNow ? 0.62 : 0.34) * scale;
+          _lookAt.z += (crouchedNow ? 0.85 : 0.6) * scale;
+          group.parent?.localToWorld(_lookAt);
+          aimHead(
+            headBone,
+            _lookAt,
+            lookRef.current * (runtime.phase === "ADMIRE" ? 0.95 : 0.72)
           );
-          const pitchTo = THREE.MathUtils.clamp(Math.asin(_lookDir.y), -0.5, 0.75);
-          _lookQ.setFromEuler(
-            _lookEuler.set(-pitchTo * lookRef.current, yawTo * lookRef.current, 0, "YXZ")
-          );
-          headBone.quaternion.multiply(_lookQ);
         }
       }
 

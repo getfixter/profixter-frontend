@@ -190,3 +190,51 @@ export function orientHand(
   chain.hand.quaternion.slerp(_local, weight);
   chain.hand.updateMatrixWorld(true);
 }
+
+const _headQ = new THREE.Quaternion();
+const _fwd = new THREE.Vector3();
+const _want = new THREE.Vector3();
+const _delta = new THREE.Quaternion();
+const _forward = new THREE.Vector3(0, 0, 1);
+
+/**
+ * Turn the head to face something, whatever the clip had it doing.
+ *
+ * The old version rotated the head BY the angle from its position to the
+ * target, which quietly does nothing when the clip already has his chin on his
+ * chest: the target is level with him, so the correction is zero and he carries
+ * on staring at the floor with his cap filling the frame. That is most of why
+ * the crouched jobs hid his face.
+ *
+ * This measures where the head is actually pointing and rotates it the rest of
+ * the way, which is what a look-at is. Clamped, because a character who can
+ * reach the target exactly will occasionally reach it the long way round.
+ */
+export function aimHead(
+  head: THREE.Object3D,
+  target: THREE.Vector3,
+  weight: number,
+  maxDeg = 52
+) {
+  if (weight <= 0.002) return;
+  head.getWorldPosition(_rootW);
+  head.getWorldQuaternion(_headQ);
+  _fwd.copy(_forward).applyQuaternion(_headQ).normalize();
+  _want.subVectors(target, _rootW);
+  if (_want.lengthSq() < 1e-8) return;
+  _want.normalize();
+
+  _delta.setFromUnitVectors(_fwd, _want);
+  const angle = 2 * Math.acos(THREE.MathUtils.clamp(Math.abs(_delta.w), -1, 1));
+  const cap = THREE.MathUtils.degToRad(maxDeg);
+  const use = angle > cap ? cap / angle : 1;
+  if (use < 1) _delta.slerp(_identity, 1 - use);
+
+  head.parent?.getWorldQuaternion(_parentQ);
+  _wanted.copy(_delta).multiply(_headQ);
+  _local.copy(_parentQ).invert().multiply(_wanted);
+  head.quaternion.slerp(_local, weight);
+  head.updateMatrixWorld(true);
+}
+
+const _identity = new THREE.Quaternion();
