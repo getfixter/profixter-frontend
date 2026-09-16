@@ -489,6 +489,18 @@ export type JobDefinition = {
    */
   pace?: JobPace;
   /**
+   * The household surface behind this repair.
+   *
+   * Added after watching a minute of the deployed build: three different jobs
+   * ran back to back and the whole stretch read as ONE scene, because all three
+   * happened to be backed by the same tiled wall. The context fragment turns
+   * out to be a louder visual signal than the prop in front of it — a tap, a
+   * rail and a shower head are three objects, but "tiles" is one place. The
+   * scheduler has to treat the backdrop as a thing to vary, like the stance and
+   * the trade.
+   */
+  surface?: "tile" | "plaster" | "ceiling" | "wood" | "none";
+  /**
    * How hard this one is, 0 to 1.
    *
    * Drives how long he spends on it, how much of himself he puts into it, and

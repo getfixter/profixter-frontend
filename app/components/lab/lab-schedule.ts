@@ -47,11 +47,13 @@ export type ScheduleMemory = {
   categories: (JobCategory | undefined)[];
   efforts: number[];
   paces: JobPace[];
+  surfaces: (string | undefined)[];
 };
 
 export function emptyMemory(): ScheduleMemory {
   return {
     jobs: [], stances: [], tools: [], categories: [], efforts: [], paces: [],
+    surfaces: [],
   };
 }
 
@@ -68,6 +70,7 @@ export function remember(memory: ScheduleMemory, stop: Stop) {
   push(memory.categories, stop.job.category);
   push(memory.efforts, stop.job.effort ?? 0.5);
   push(memory.paces, paceOf(stop.job));
+  push(memory.surfaces, stop.job.surface);
 }
 
 const last = <T>(list: T[]): T | undefined => list[list.length - 1];
@@ -100,6 +103,16 @@ function score(stop: Stop, memory: ScheduleMemory): number {
   if (previousEffort !== undefined) {
     value += Math.min(1.2, Math.abs(effort - previousEffort) / EFFORT_CONTRAST);
   }
+
+  /*
+   * The backdrop counts as much as the object.
+   *
+   * Three jobs in a row against the same tiled wall read as one scene however
+   * different the taps and rails in front of it were. Weighted close to the
+   * trade, because on screen it is doing more work than the trade is.
+   */
+  if (last(memory.surfaces) !== stop.job.surface) value += 1.8;
+  if (!inLastN(memory.surfaces, stop.job.surface, 3)) value += 0.9;
 
   /*
    * Rhythm is a dimension of contrast like any other.
@@ -181,7 +194,7 @@ export function pickNext(
   const scored = pool
     .map((entry) => ({
       ...entry,
-      value: score(entry.stop, memory) + (Math.random() - 0.5) * 1.0,
+      value: score(entry.stop, memory) + (Math.random() - 0.5) * 1.4,
     }))
     .sort((a, b) => b.value - a.value);
 

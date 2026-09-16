@@ -38,6 +38,7 @@ export const PAGE_JOBS: JobDefinition[] = [
      * three seconds to exactly three. Marketing beats simulation.
      */
     pace: "steady",
+    surface: "none",
     id: "lamp",
     label: "Crooked pendant light",
     object: "lamp",
@@ -54,6 +55,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   {
     effort: 0.45,
     category: "electrical",
+    surface: "plaster",
     id: "outlet",
     label: "Loose wall outlet",
     object: "outlet",
@@ -71,6 +73,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   {
     effort: 0.65,
     category: "mounting",
+    surface: "tile",
     id: "towelbar",
     label: "Sagging towel bar",
     object: "towelbar",
@@ -89,6 +92,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     effort: 0.15,
     hands: 1,
     category: "mounting",
+    surface: "plaster",
     id: "frame",
     label: "Crooked picture frame",
     object: "frame",
@@ -105,6 +109,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   {
     effort: 0.3,
     category: "cabinet",
+    surface: "wood",
     id: "cabinet",
     label: "Cabinet door out of line",
     object: "cabinet",
@@ -122,6 +127,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     effort: 0.5,
     hands: 1,
     category: "electrical",
+    surface: "ceiling",
     id: "detector",
     label: "Smoke detector hanging loose",
     object: "detector",
@@ -138,6 +144,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   {
     effort: 0.2,
     category: "electrical",
+    surface: "plaster",
     id: "switch",
     label: "Crooked light switch",
     object: "switch",
@@ -155,6 +162,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   {
     effort: 0.85,
     category: "mounting",
+    surface: "plaster",
     id: "shelf",
     label: "Drooping shelf",
     object: "shelf",
@@ -172,6 +180,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   {
     effort: 0.65,
     category: "cabinet",
+    surface: "wood",
     id: "hinge",
     label: "Door hinge working loose",
     object: "hinge",
@@ -189,6 +198,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   {
     effort: 0.6,
     category: "plumbing",
+    surface: "tile",
     id: "faucet",
     label: "Dripping faucet",
     object: "faucet",
@@ -205,6 +215,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   {
     effort: 0.5,
     category: "plumbing",
+    surface: "tile",
     id: "showerhead",
     label: "Shower head drooping",
     object: "showerhead",
