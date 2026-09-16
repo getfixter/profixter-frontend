@@ -80,7 +80,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     workYawDeg: -6,
     objectRotationDeg: [-8, 22, 0],
     objectOffset: [-0.113, 0.086],
-    propScale: 0.95,
+    propScale: 0.6,
     footprint: { w: 1.25, h: 1.15 },
   },
   {

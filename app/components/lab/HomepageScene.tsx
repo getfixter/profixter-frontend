@@ -242,7 +242,15 @@ function SceneContents({
         const t = (w.__fxTour ?? {}) as Record<string, unknown>;
         w.__fxTour = { ...t, crowding: spot ? +spot.crowding.toFixed(2) : null };
       }
+      if (process.env.NODE_ENV !== "production") {
+        const w = window as unknown as Record<string, number>;
+        w.__fxTries = (w.__fxTries ?? 0) + 1;
+      }
       if (!spot) {
+        if (process.env.NODE_ENV !== "production") {
+          const w = window as unknown as Record<string, number>;
+          w.__fxNoSpot = (w.__fxNoSpot ?? 0) + 1;
+        }
         forgetSpots();
         return null;
       }
@@ -285,11 +293,25 @@ function SceneContents({
       if (process.env.NODE_ENV !== "production") {
         const w = window as unknown as Record<string, unknown>;
         const t = (w.__fxTour ?? {}) as Record<string, unknown>;
-        w.__fxTour = { ...t, under: `${under.worst}/${under.covered.toFixed(2)}` };
+        w.__fxTour = { ...t, under: `heavy=${under.heavy.toFixed(3)} cov=${under.covered.toFixed(2)}` };
       }
-      /* Never a heading or a control; only a sliver of body copy. */
-      if (under.worst >= 2 || under.covered > 0.16) {
+      /*
+       * A nick of a heading is allowed; standing on one is not.
+       *
+       * A tenth of his silhouette is a shoulder crossing the tail of a word.
+       * Standing in front of a headline is thirty per cent and up, and stays
+       * refused. The stricter number read as principled and behaved as
+       * paralysis: on a phone every candidate clipped the one headline by five
+       * to eight per cent, all of them were refused, and he stopped working
+       * entirely — which is a worse answer to "do not cover the copy" than a
+       * shoulder over one word.
+       */
+      if (under.heavy > 0.09 || under.covered > 0.2) {
         /* Nowhere this time. Drop the memory so the retry has the whole page. */
+        if (process.env.NODE_ENV !== "production") {
+          const w = window as unknown as Record<string, number>;
+          w.__fxRejected = (w.__fxRejected ?? 0) + 1;
+        }
         forgetSpots();
         return null;
       }
@@ -300,6 +322,41 @@ function SceneContents({
     },
     [projection, size.width, size.height, bodyW, bodyH, scale, unit, inset, version]
   );
+
+  /**
+   * Somewhere small to stand and wait, when no repair fits.
+   *
+   * Asked with a much smaller body and no headroom for a prop, because he is
+   * not going to work here — he is going to wait here. A gutter, a margin, the
+   * gap between two sections: the sort of place a person steps into to be out
+   * of the way, which is exactly the intent.
+   */
+  const perch: () => THREE.Vector3 | null = useCallback(() => {
+    void version;
+    const small = 0.62;
+    const spot = findSpot({
+      viewport: { w: size.width, h: size.height },
+      need: {
+        w: Math.round(bodyW * small),
+        above: Math.round(bodyH * small * 0.92),
+        below: Math.round(bodyH * small * 0.1),
+      },
+      inset,
+      awayFrom: null,
+      wander: 0,
+    });
+    if (!spot) return null;
+    const feetY = spot.y + bodyH * small * 0.08;
+    const under = whatIsUnder({
+      x: spot.x - (bodyW * small) / 2,
+      y: feetY - bodyH * small,
+      w: bodyW * small,
+      h: bodyH * small,
+    });
+    if (under.heavy > 0.06 || under.covered > 0.14) return null;
+    const world = projection.worldAt(spot.x, spot.y);
+    return new THREE.Vector3(world.x, world.y, 0);
+  }, [projection, size.width, size.height, bodyW, bodyH, inset, version]);
 
   /** Is this world point under something the reader is using? */
   const busyAt = useCallback(
@@ -333,6 +390,7 @@ function SceneContents({
           bounds={bounds}
           displaced={displaced}
           busyAt={busyAt}
+          perch={perch}
           objectScale={PAGE_OBJECT_SCALE * scale}
         />
       </Suspense>

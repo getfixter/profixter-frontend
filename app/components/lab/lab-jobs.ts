@@ -89,6 +89,16 @@ export type WorkMotion = {
   clip: ClipSpec;
   handOffset: [number, number, number];
   /**
+   * Is he working above himself?
+   *
+   * Stated rather than inferred from the hand height. It was inferred, against
+   * a threshold that made sense for one set of numbers, and the moment those
+   * numbers were re-authored the overhead jobs quietly stopped counting as
+   * overhead — which put both hands back in front of his face, the exact
+   * posture all of this exists to prevent.
+   */
+  overhead?: boolean;
+  /**
    * Hand-local rotation that aims the tool's +Y at the object.
    *
    * Solved, not eyeballed: take the hand's orientation across the work window,
@@ -171,9 +181,10 @@ export const WORK_MOTIONS: Record<string, WorkMotion> = {
    * as working and one that reads as peek-a-boo.
    */
   reach: {
+    overhead: true,
     id: "reach",
     clip: { name: "Work · Reach", file: CLIP_WORK_REACH, start: 0.3, end: 2.0, loop: "pingpong" },
-    handOffset: [-0.30, 1.30, 0.14],
+    handOffset: [-0.32, 1.24, 0.17],
     toolAimDeg: [0, 0, 0],
   },
   /**
@@ -190,9 +201,10 @@ export const WORK_MOTIONS: Record<string, WorkMotion> = {
    * real orientation every frame against the job itself.
    */
   high: {
+    overhead: true,
     id: "high",
     clip: { name: "Work · High", file: CLIP_WORK_HIGH, start: 0.7, end: 2.6, loop: "pingpong" },
-    handOffset: [-0.28, 1.44, 0.10],
+    handOffset: [-0.33, 1.38, 0.15],
     toolAimDeg: [0, 0, 0],
   },
 };

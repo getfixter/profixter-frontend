@@ -91,6 +91,7 @@ export type FixterModelProps = {
   displaced?: boolean;
   /** Is this world point under page content? Used to route around it. */
   busyAt?: (x: number, y: number) => number;
+  perch?: () => THREE.Vector3 | null;
   /** Scale for the props he carries with him. */
   objectScale: number;
   toolOffset: ToolOffset;
@@ -160,6 +161,7 @@ export default function FixterModel({
   bounds,
   displaced,
   busyAt,
+  perch,
   objectScale,
   toolOffset,
   onReady,
@@ -465,6 +467,10 @@ export default function FixterModel({
   useEffect(() => {
     propScaleRef.current = propScale;
   }, [propScale]);
+  const perchRef = useRef(perch);
+  useEffect(() => {
+    perchRef.current = perch;
+  }, [perch]);
   const busyRef = useRef(busyAt);
   useEffect(() => {
     busyRef.current = busyAt;
@@ -531,6 +537,7 @@ export default function FixterModel({
           bounds: boundsRef.current,
           displaced: displacedRef.current,
           busyAt: busyRef.current,
+          perch: perchRef.current,
         });
       }
 
@@ -607,7 +614,11 @@ export default function FixterModel({
        */
       const present = runtime.presence;
       presenceRef.current = present;
-      group.scale.setScalar(scale * (0.72 + 0.28 * present) * (present > 0.02 ? 1 : 0));
+      /* Smaller while he waits out a page with no room to work on. */
+      const small = 1 - 0.34 * runtime.smallness;
+      group.scale.setScalar(
+        scale * small * (0.72 + 0.28 * present) * (present > 0.02 ? 1 : 0)
+      );
       group.visible = present > 0.02;
 
       /*
@@ -654,7 +665,7 @@ export default function FixterModel({
         group.updateMatrixWorld(true);
         const motion = stops[runtime.stopIndex % stops.length]?.motion;
         /* Overhead is a different shape of help; the plan needs to know. */
-        const overhead = (motion?.handOffset[1] ?? 0) > 1.6;
+        const overhead = motion?.overhead === true;
         const plan = handPlan(toolActionRef.current, workTime(), overhead);
         const parent = group.parent;
         const placed = runtime.placed;
@@ -694,8 +705,13 @@ export default function FixterModel({
         armRight.upper.getWorldPosition(_poleR);
         /* Elbows point away from the body: his right is -x, his left is +x.
            Signed the other way, each elbow was hauled across his own chest. */
-        _poleR.x -= (0.55 + plan.elbow) * scale;
-        _poleR.y -= (0.5 + plan.elbow * 0.4) * scale;
+        /*
+         * Reaching up, the elbow has to go WIDE or the forearm crosses his own
+         * face — which is the posture this whole exercise exists to kill.
+         */
+        const wide = overhead ? 1.5 : 0.55 + plan.elbow;
+        _poleR.x -= wide * scale;
+        _poleR.y -= (overhead ? 0.9 : 0.5 + plan.elbow * 0.4) * scale;
         _poleR.z -= 0.25 * scale;
         solveArm(armRight, _handW, _poleR, ikWeight.current);
         _handAim.copy(_workW);

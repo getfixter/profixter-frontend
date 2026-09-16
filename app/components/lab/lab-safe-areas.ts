@@ -686,16 +686,22 @@ export function findSpot(options: {
  * headline ends up under his head and still comes in under the limit.
  *
  * This asks the direct question instead, about his real silhouette in real
- * pixels, and reports the worst thing it touches and how much of him is on
- * something. The caller can then refuse outright to cover a heading or a
- * control while tolerating a clipped corner of a paragraph.
+ * pixels: how much of him is over anything, and how much of him is over
+ * something that matters — a heading, a button, a photograph.
+ *
+ * Reported as areas rather than as a verdict, because "touches a heading at
+ * all" turned out to be unusable: on a phone it rejected every spot on the page
+ * over a two-pixel clip of one corner, and left him standing about doing nothing
+ * for minutes. A shoulder crossing the tail of a headline is not the same thing
+ * as standing in front of it, and the numbers should be able to say so.
  */
 export function whatIsUnder(box: {
   x: number; y: number; w: number; h: number;
-}): { worst: number; covered: number } {
+}): { worst: number; heavy: number; covered: number } {
   const scrollY = typeof window === "undefined" ? 0 : window.scrollY;
   const area = Math.max(1, box.w * box.h);
   let worst = 0;
+  let heavy = 0;
   let covered = 0;
   for (const r of rects) {
     const ry = r.fixed ? r.y : r.y - scrollY;
@@ -706,9 +712,10 @@ export function whatIsUnder(box: {
     /* A glancing corner of something is not "standing on" it. */
     if (share < 0.012) continue;
     if (r.weight > worst) worst = r.weight;
+    if (r.weight >= 2) heavy += share;
     covered += share;
   }
-  return { worst, covered: Math.min(1, covered) };
+  return { worst, heavy: Math.min(1, heavy), covered: Math.min(1, covered) };
 }
 
 /** Is this viewport point currently sitting on top of something? */
