@@ -72,6 +72,24 @@ export type Stop = {
 };
 
 /** Where a job ended up, once he decided to go and do it. */
+/** One place in the house where something needs doing, or recently did. */
+export type Station = {
+  key: number;
+  jobId: string;
+  index: number;
+  placed: Placement;
+  /** 0 to 1, so arriving and leaving are always eased. */
+  fade: number;
+  /** True once he has finished it; it stays on screen, mended. */
+  done: boolean;
+  /** Seconds since it was finished, for choosing what to recycle. */
+  age: number;
+  /** How many times he has mended this one. */
+  visits: number;
+  /** Counts up while it is being retired. */
+  retiring: boolean;
+};
+
 export type Placement = {
   /** Where the working hand belongs: the work, minus a tool length. */
   handAt: THREE.Vector3;
@@ -164,6 +182,23 @@ export type TourRuntime = {
   goneJobId: string | null;
   gonePlaced: Placement | null;
   goneFade: number;
+  /**
+   * The household, as a persistent set of places rather than one prop at a time.
+   *
+   * The world used to be rebuilt around whichever job the scheduler had picked:
+   * a sink existed while he was at the sink and then stopped existing. Three
+   * slots — leaving, current, arriving — and everything else simply was not
+   * there, which is why the furniture appeared to be spawned for each repair.
+   *
+   * These are STATIONS. Each holds a repair, keeps its place, and stays on
+   * screen whether or not he is anywhere near it, so the page has a lamp over
+   * there and a cabinet over there the way a room does. A station is only ever
+   * recycled when its repair is long finished, he is nowhere near it, and a new
+   * job genuinely needs somewhere to go.
+   */
+  stations: Station[];
+  stationKey: number;
+  stationCheck: number;
   /** How long this rest should last. Varied, so the pacing is not metronomic. */
   restFor: number;
   /** Set when the screen changed under him and his spot is no longer free. */
@@ -229,8 +264,8 @@ const OPENING_AT = 0.63;
 /** How fast he arrives and leaves when the page runs out of room. */
 const PRESENCE_RATE = 3.2;
 
+/** The one place a neutral wait still exists: nowhere to put the next job. */
 const REST_MIN = 0.6;
-const REST_MAX = 2.6;
 
 /**
  * How far he turns toward the direction of travel.
@@ -435,6 +470,9 @@ export function createTourRuntime(): TourRuntime {
     goneJobId: null,
     gonePlaced: null,
     goneFade: 0,
+    stations: [],
+    stationKey: 1,
+    stationCheck: 0,
     restFor: REST_MIN,
     displaced: false,
     presence: 1,
@@ -654,6 +692,15 @@ export type StepOptions = {
     propAt?: THREE.Vector3,
     propSpan?: number
   ) => boolean;
+  /**
+   * How many repairs may stand in the world at once.
+   *
+   * Fewer on a phone, where there is far less room to put them without
+   * covering something.
+   */
+  maxStations?: number;
+  /** How far apart two stations must stand, in world units. */
+  stationGap?: number;
 };
 
 /**
@@ -699,6 +746,15 @@ function noticeSeconds(stop: Stop, distance: number): number {
 
 /** Below this, a journey is a reposition rather than a walk. */
 const SHORT_HOP = 2.4;
+
+/**
+ * How far apart two things in the house have to stand.
+ *
+ * Generous, because a repair is not just its prop: most of them carry a piece
+ * of wall or tile that is two or three times the size of the object on it, and
+ * two of those touching reads as one incoherent object rather than two things.
+ */
+const STATION_GAP = 2.1;
 
 export function stepTour(
   runtime: TourRuntime,
@@ -815,6 +871,26 @@ export function stepTour(
     runtime.gonePlaced = null;
   }
 
+  /*
+   * The stations simply exist.
+   *
+   * Everything fades toward present unless it is being retired, and retiring
+   * only ever happens to a station he has finished with and walked away from.
+   * Nothing disappears because a job ended.
+   */
+  for (const station of runtime.stations) {
+    station.fade = approachValue(
+      station.fade,
+      station.retiring ? 0 : 1,
+      dt,
+      station.retiring ? 0.9 : 1.3
+    );
+    if (station.done) station.age += dt;
+  }
+  runtime.stations = runtime.stations.filter(
+    (station) => !station.retiring || station.fade > 0.02
+  );
+
   /**
    * Find a home for a job without committing to it.
    *
@@ -823,14 +899,81 @@ export function stepTour(
    */
   const placeFor = (index: number): Placement | null => {
     const next = stops[index % stops.length];
-    const anchor = options.place(next.job);
-    if (!anchor) return null;
-    const placed = placeStop(
-      next,
-      anchor,
-      options.characterScale,
-      options.objectScale
-    );
+    /*
+     * Keep the house tidy.
+     *
+     * The spot finder knows about the page's content and about where HE is; it
+     * knows nothing about the rest of the household, because until now there
+     * was no rest of the household. Left alone it piled a sink, a towel rail
+     * and a cabinet into the same corner. Asking a few times and taking the
+     * first answer that clears the other stations costs nothing — the finder
+     * remembers what it has already offered, so each ask is a different spot.
+     */
+    let placed: Placement | null = null;
+    let noAnchor = 0;
+    let crowdedOut = 0;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const anchor = options.place(next.job);
+      if (!anchor) {
+        noAnchor += 1;
+        continue;
+      }
+      const candidate = placeStop(
+        next,
+        anchor,
+        options.characterScale,
+        options.objectScale
+      );
+      /*
+       * The gap has to be a share of the room, not a constant.
+       *
+       * Two world units is generous on a desktop hero and most of the width of
+       * a phone — at 390 pixels it rejected everywhere, `placeFor` returned
+       * nothing every time, and he stood in the hero for eighteen seconds with
+       * nowhere the system would let him go. That is the rest beat coming back
+       * through the side door.
+       */
+      /*
+       * Ask generously first, then settle.
+       *
+       * A flat requirement means that on a busy page every candidate is refused
+       * and nothing gets placed — and "nothing gets placed" is the rest beat
+       * coming back, because he ends up with nowhere to be sent. Relaxing the
+       * spacing across attempts keeps a tidy house when there is room for one
+       * and still always finds him somewhere to work.
+       */
+      const relax = [1, 1, 0.78, 0.78, 0.5, 0.3][attempt] ?? 0.3;
+      const gap = (options.stationGap ?? STATION_GAP) * relax;
+      const crowded = runtime.stations.some(
+        (station) =>
+          !station.retiring &&
+          (station.placed.object.distanceTo(candidate.object) < gap ||
+            station.placed.mark.distanceTo(candidate.mark) < gap * 0.8)
+      );
+      if (!crowded) {
+        placed = candidate;
+        break;
+      }
+      crowdedOut += 1;
+      /*
+       * No fallback to a crowded spot.
+       *
+       * Taking the least-bad answer piled a picture, a socket, a door and a
+       * towel rail into the same two hundred pixels. If the house is genuinely
+       * full, the right answer is to not add anything this time — he has plenty
+       * to be getting on with, and a station will free up shortly.
+       */
+    }
+    if (process.env.NODE_ENV !== "production") {
+      const w = window as unknown as Record<string, unknown>;
+      const tally = (w.__fxPlace ?? { ok: 0, noAnchor: 0, crowded: 0, unstandable: 0 }) as Record<string, number>;
+      if (!placed) {
+        if (noAnchor >= crowdedOut) tally.noAnchor += 1;
+        else tally.crowded += 1;
+      }
+      w.__fxPlace = tally;
+    }
+    if (!placed) return null;
     if (
       options.standable &&
       !options.standable(
@@ -839,10 +982,52 @@ export function stepTour(
         next.job.footprint?.w ?? 1
       )
     ) {
+      if (process.env.NODE_ENV !== "production") {
+        const w = window as unknown as Record<string, unknown>;
+        const tally = (w.__fxPlace ?? { ok: 0, noAnchor: 0, crowded: 0, unstandable: 0 }) as Record<string, number>;
+        tally.unstandable += 1;
+        w.__fxPlace = tally;
+      }
       return null;
+    }
+    if (process.env.NODE_ENV !== "production") {
+      const w = window as unknown as Record<string, unknown>;
+      const tally = (w.__fxPlace ?? { ok: 0, noAnchor: 0, crowded: 0, unstandable: 0 }) as Record<string, number>;
+      tally.ok += 1;
+      w.__fxPlace = tally;
     }
     return placed;
   };
+
+  /*
+   * Stations are anchored to the VIEWPORT, and the page scrolls underneath.
+   *
+   * That is the right model for a character who lives on the screen, and it
+   * means a station that was standing in clear space is standing on a paragraph
+   * a moment later through no fault of its own. Nothing was re-checking them:
+   * only the repair he was walking to was ever validated, so the rest of the
+   * household quietly drifted over the copy.
+   *
+   * Re-asked a few times a second. A station that has ended up over content is
+   * retired — it fades, and its repair is free to reappear somewhere sensible —
+   * unless he is working at it, because pulling the floor from under him mid-job
+   * would be worse than the overlap.
+   */
+  runtime.stationCheck += dt;
+  if (runtime.stationCheck > 0.45 && options.standable) {
+    runtime.stationCheck = 0;
+    for (const station of runtime.stations) {
+      if (station.retiring) continue;
+      if (station.jobId === runtime.propJobId) continue;
+      const job = stops[station.index % stops.length]?.job;
+      const ok = options.standable(
+        station.placed.mark,
+        station.placed.object,
+        job?.footprint?.w ?? 1
+      );
+      if (!ok) station.retiring = true;
+    }
+  }
 
   /**
    * Line the next repair up while he is still finishing this one.
@@ -854,14 +1039,128 @@ export function stepTour(
    */
   const stageNext = () => {
     if (runtime.nextIndex !== null) return;
+
+    /* Send him to a station by index, whatever its current state. */
+    const goTo = (station: Station): void => {
+      station.done = false;
+      station.retiring = false;
+      station.age = 0;
+      station.visits += 1;
+      runtime.nextIndex = station.index;
+      runtime.nextPlaced = station.placed;
+      runtime.nextJobId = station.jobId;
+      runtime.nextFade = station.fade;
+      setObjectFix(station.jobId, 0);
+    };
+
     const index = pickNext(stops, runtime.schedule, Math.random());
+    const job = stops[index % stops.length].job;
+
+    /*
+     * If this repair is already standing somewhere, go to it.
+     *
+     * A station that is still on screen and not yet mended IS the job; walking
+     * to it beats inventing a second copy elsewhere.
+     */
+    const standing = runtime.stations.find(
+      (s) => s.jobId === job.id && !s.done && !s.retiring
+    );
+    if (standing) {
+      runtime.nextIndex = index;
+      runtime.nextPlaced = standing.placed;
+      runtime.nextJobId = job.id;
+      runtime.nextFade = standing.fade;
+      return;
+    }
+
+    const limit = options.maxStations ?? 4;
+    /*
+     * Retire anything he has already been back to.
+     *
+     * A world that never turns over is its own kind of loop: with three fixed
+     * places he cycled picture, door, socket, picture, door, socket forever —
+     * more repetitive than having no persistence at all. A station earns its
+     * place for a couple of repairs and then makes way, so the house is stable
+     * moment to moment and slowly changes over a visit.
+     */
+    const stale = runtime.stations.find(
+      (s) =>
+        !s.retiring &&
+        s.done &&
+        s.visits >= 1 &&
+        runtime.position.distanceTo(s.placed.mark) > 1.8
+    );
+    if (stale) stale.retiring = true;
+    const live = runtime.stations.filter((s) => !s.retiring);
+
+    /* Room for another? Try to put this one somewhere sensible. */
+    if (live.length < limit) {
+      const placed = placeFor(index);
+      if (placed) {
+        runtime.stations.push({
+          key: runtime.stationKey++,
+          jobId: job.id,
+          index: index % stops.length,
+          placed,
+          fade: 0,
+          done: false,
+          age: 0,
+          visits: 0,
+          retiring: false,
+        });
+        runtime.nextIndex = index;
+        runtime.nextPlaced = placed;
+        runtime.nextJobId = job.id;
+        runtime.nextFade = 0;
+        setObjectFix(job.id, 0);
+        return;
+      }
+    }
+
+    /*
+     * The house is full, or there is nowhere new worth putting anything.
+     *
+     * This is the normal case on a busy page, and it is the whole point of a
+     * persistent world: he does not need a new place to exist, he needs
+     * somewhere to go. Requiring a fresh placement every time is what put him
+     * back to standing still for forty per cent of a run — the rest beat
+     * returning through the placement system rather than the state machine.
+     *
+     * So: anything still broken, else the thing he mended longest ago, which
+     * has had time to work loose again. There is always something.
+     */
+    const broken = runtime.stations.filter((s) => !s.done && !s.retiring);
+    if (broken.length) {
+      goTo(broken[Math.floor(Math.random() * broken.length)]);
+      return;
+    }
+    const mended = runtime.stations
+      .filter((s) => !s.retiring)
+      .sort((a, b) => b.age - a.age);
+    if (mended.length) {
+      goTo(mended[0]);
+      return;
+    }
+
+    /* Nothing exists yet at all — try once more for anywhere. */
     const placed = placeFor(index);
     if (!placed) return;
+    runtime.stations.push({
+      key: runtime.stationKey++,
+      jobId: job.id,
+      index: index % stops.length,
+      placed,
+      fade: 0,
+      done: false,
+      age: 0,
+      visits: 0,
+      retiring: false,
+    });
     runtime.nextIndex = index;
     runtime.nextPlaced = placed;
-    runtime.nextJobId = stops[index % stops.length].job.id;
+    runtime.nextJobId = job.id;
     runtime.nextFade = 0;
-    setObjectFix(stops[index % stops.length].job.id, 0);
+    setObjectFix(job.id, 0);
   };
 
   /** Choose somewhere for a job and start walking there. */
@@ -979,6 +1278,13 @@ export function stepTour(
    */
   const leaveForNext = (): void => {
     runtime.workProgress = 0;
+    /* The station stays; it is simply mended now. */
+    const here = runtime.stations.find((s) => s.jobId === runtime.propJobId);
+    if (here) {
+      here.done = true;
+      here.age = 0;
+      here.visits += 1;
+    }
     /* Hand the finished repair to the fading slot before letting go of it. */
     if (runtime.propJobId && runtime.placed) {
       runtime.goneJobId = runtime.propJobId;
