@@ -39,6 +39,40 @@ export const CLIP_BEAT_BROW = "/3d/motion/fx-beat-brow.bvh";
 export const CLIP_IDLE = "/3d/motion/fx-idle.bvh";
 
 /**
+ * The stance batch — bodies rather than jobs.
+ *
+ * Every earlier round asked the model for repairs, led with "a handyman", and
+ * got back a man gesturing near his own face. This one asked for nothing it has
+ * not been shown: a person hinging forward at the hips, planting their feet and
+ * pushing, getting down on one knee. Six takes, and measurement rather than eye
+ * picked the survivors.
+ *
+ * What we owned before, measured in leg lengths: standing, hips at 1.59 and the
+ * torso within fifteen degrees of vertical — and that ONE pose is the idle, both
+ * beats, and three of the four work clips — plus a single deep squat at 0.49.
+ * Two silhouettes carrying ten jobs.
+ */
+export const CLIP_WORK_HINGE = "/3d/motion/fx-work-hinge.bvh";
+export const CLIP_WORK_BRACE = "/3d/motion/fx-work-brace.bvh";
+export const CLIP_WORK_SQUAT = "/3d/motion/fx-work-squat.bvh";
+
+/**
+ * The kneel, which generation would not give us.
+ *
+ * Asked twice in plain language — "lowers themselves down onto one knee", "kneels
+ * down on one knee to tie a shoelace" — Text-to-Motion returned a squat and a
+ * man sitting back on his heels. It does not appear to know the asymmetry.
+ *
+ * Meshy's preset library does: it is a catalogue of authored takes rather than
+ * generated ones, and it applies to a character Meshy has rigged. So our own
+ * GLB went back through rigging and "Kneeling Reload" came back on our own
+ * skeleton — one knee down, one foot planted, torso upright. Delivered as a
+ * rigged and textured character; everything but the keyframes is stripped out
+ * here, which is nine and a half megabytes down to a hundred kilobytes.
+ */
+export const CLIP_KNEEL_GLB = "/3d/motion/fx-kneel.glb";
+
+/**
  * Every BVH the Lab loads, already trimmed to the seconds actually used.
  *
  * Text-to-Motion returns ~40s takes whatever duration is requested, and the
@@ -55,6 +89,9 @@ export const MOTION_FILES = [
   CLIP_WORK_HIGH,
   CLIP_BEAT_WAVE,
   CLIP_BEAT_BROW,
+  CLIP_WORK_HINGE,
+  CLIP_WORK_BRACE,
+  CLIP_WORK_SQUAT,
 ];
 
 export type LoopStyle = "once" | "repeat" | "pingpong";
@@ -107,6 +144,41 @@ export type WorkMotion = {
    * posture all of this exists to prevent.
    */
   overhead?: boolean;
+  /**
+   * Is he down at floor level?
+   *
+   * Drives the spare hand onto his knee, the extra range on the head lift, and
+   * the crouched half of the body layer. Stated rather than derived from the
+   * motion's name, for the same reason `overhead` is: there are three low
+   * stances now, and a check against one id silently excludes the other two.
+   */
+  crouched?: boolean;
+  /**
+   * The silhouette's own size, relative to standing.
+   *
+   * The placer reserved a fixed standing rectangle for every posture, which was
+   * true while every posture WAS standing. It is not any more: a kneel is a bit
+   * over two-thirds of his standing height, and a stance that leans is wider
+   * than one that does not. Both directions cost something real — reserving too
+   * much turns down places he would have fitted, reserving too little puts him
+   * on a line of text.
+   *
+   * Measured off the bones in the pose rather than guessed.
+   */
+  boxH?: number;
+  boxW?: number;
+  /**
+   * How far the head is allowed to be turned back toward the camera.
+   *
+   * The default fifty-two degrees is right for a stance that is already upright
+   * and nowhere near enough for one that is not: the crouch needed the full
+   * range before his face came back, and the two leaning stances have the same
+   * problem for the same reason. Stated per stance, because it is a property of
+   * how far the take folds him over, and because the alternative — deriving it
+   * from a flag that also moves his spare hand onto his knee — couples two
+   * things that are not the same thing.
+   */
+  headMaxDeg?: number;
   /**
    * Hand-local rotation that aims the tool's +Y at the object.
    *
@@ -163,6 +235,9 @@ export const WORK_MOTIONS: Record<string, WorkMotion> = {
   /** Squatting at something near the floor. */
   low: {
     id: "low",
+    crouched: true,
+    boxH: 0.78,
+    headMaxDeg: 74,
     clip: { name: "Work · Low", file: CLIP_WORK_LOW, start: 0.5, end: 4.0, loop: "pingpong" },
     handOffset: [-0.20, 0.57, 0.24],
     toolAimDeg: [-29, 6, -22],
@@ -209,6 +284,77 @@ export const WORK_MOTIONS: Record<string, WorkMotion> = {
    * The aim below is only the seed and the fallback; AimedHandTool solves the
    * real orientation every frame against the job itself.
    */
+  /**
+   * Squatting with the back straight and the head up.
+   *
+   * The same height as `low` and a different man: our crouch take folds him
+   * over his own knees, which buries the face behind the cap — the single thing
+   * the character cannot afford to lose. This one sits at the same hip height
+   * with the torso within a few degrees of vertical, so the face is simply
+   * there, with no look-at cheat spent on recovering it.
+   */
+  squat: {
+    id: "squat",
+    crouched: true,
+    boxH: 0.76,
+    headMaxDeg: 70,
+    clip: { name: "Work · Squat", file: CLIP_WORK_SQUAT, start: 0.5, end: 4.4, loop: "pingpong" },
+    handOffset: [-0.21, 0.54, 0.26],
+    toolAimDeg: [-24, 4, -18],
+    enter: { name: "Crouch · In", file: CLIP_ENTER_CROUCH, start: 0.0, end: 4.0, speed: 3.4, loop: "once" },
+    exit: { name: "Crouch · Out", file: CLIP_ENTER_CROUCH, start: 0.0, end: 4.0, reverse: true, speed: 3.0, loop: "once" },
+  },
+  /**
+   * Down on one knee, the lowest thing he does.
+   *
+   * Hips at a fifth of a leg length off the floor with one knee actually on it,
+   * which is a silhouette nothing else in the library comes near — the squat
+   * bottoms out more than twice as high.
+   */
+  kneel: {
+    id: "kneel",
+    crouched: true,
+    boxH: 0.72,
+    headMaxDeg: 72,
+    boxW: 1.08,
+    clip: { name: "Work · Kneel", file: CLIP_KNEEL_GLB, start: 0.6, end: 2.4, loop: "pingpong" },
+    handOffset: [-0.20, 0.40, 0.27],
+    toolAimDeg: [-20, 4, -16],
+    enter: { name: "Crouch · In", file: CLIP_ENTER_CROUCH, start: 0.0, end: 4.0, speed: 3.4, loop: "once" },
+    exit: { name: "Crouch · Out", file: CLIP_ENTER_CROUCH, start: 0.0, end: 4.0, reverse: true, speed: 3.0, loop: "once" },
+  },
+  /**
+   * Standing, legs straight, hinged forward from the hips.
+   *
+   * Nothing we owned exceeded sixteen degrees of torso pitch; this runs between
+   * twenty-five and fifty, which is a different shape rather than a different
+   * arm. Windowed on the way down rather than at the bottom: the take holds at
+   * seventy-five, and seventy-five degrees on a character with a head this size
+   * is a man inspecting his own boots.
+   */
+  hinge: {
+    id: "hinge",
+    boxW: 1.26,
+    headMaxDeg: 70,
+    clip: { name: "Work · Hinge", file: CLIP_WORK_HINGE, start: 0.40, end: 0.90, loop: "pingpong" },
+    handOffset: [-0.24, 0.74, 0.30],
+    toolAimDeg: [-14, 2, -10],
+  },
+  /**
+   * Feet apart and staggered, weight settled, leaning into it.
+   *
+   * The stance for work that takes force rather than precision. Its value is
+   * the footprint: a stagger of most of a leg length, where everything else we
+   * own stands with its feet together.
+   */
+  brace: {
+    id: "brace",
+    boxW: 1.24,
+    headMaxDeg: 68,
+    clip: { name: "Work · Brace", file: CLIP_WORK_BRACE, start: 1.4, end: 2.4, loop: "pingpong" },
+    handOffset: [-0.28, 0.88, 0.26],
+    toolAimDeg: [-8, 0, -6],
+  },
   high: {
     overhead: true,
     id: "high",
@@ -238,8 +384,21 @@ export const BEAT_CLIPS: ClipSpec[] = [
   { name: "Beat · Brow", file: CLIP_BEAT_BROW, start: 0.2, end: 2.2, loop: "once" },
 ];
 
+/**
+ * The new stances, loaded so they can be driven by hand in the Stage before any
+ * job is allowed to depend on them. Assigning first and looking afterwards is
+ * how the chest-height take came to hold its fists under its own chin for a
+ * fortnight.
+ */
+export const STANCE_CLIPS: ClipSpec[] = [
+  { name: "Stance · Hinge", file: CLIP_WORK_HINGE, start: 0.40, end: 0.90, loop: "pingpong" },
+  { name: "Stance · Brace", file: CLIP_WORK_BRACE, start: 1.4, end: 2.4, loop: "pingpong" },
+  { name: "Stance · Kneel", file: CLIP_KNEEL_GLB, start: 0.6, end: 2.4, loop: "pingpong" },
+  { name: "Stance · Squat", file: CLIP_WORK_SQUAT, start: 0.5, end: 4.4, loop: "pingpong" },
+];
+
 export function allClipSpecs(): ClipSpec[] {
-  const out: ClipSpec[] = [IDLE_CLIP, ...BEAT_CLIPS];
+  const out: ClipSpec[] = [IDLE_CLIP, ...BEAT_CLIPS, ...STANCE_CLIPS];
   for (const motion of Object.values(WORK_MOTIONS)) {
     out.push(motion.clip);
     if (motion.enter) out.push(motion.enter);

@@ -59,3 +59,26 @@ export const MESHY_BVH_TO_FIXTER: BoneMap = {
 
 /** The target bone that carries root translation. */
 export const FIXTER_HIPS_BONE = "Hips";
+
+/**
+ * Fixter <- Meshy re-rig of Fixter: the same names on both sides.
+ *
+ * The preset animation library only applies to a character Meshy has rigged, so
+ * our own GLB went back through rigging and came out with the same twenty-four
+ * working joints under the same names — it is the same rig family the character
+ * was built in. Nothing is renamed and nothing is a trap here; the four leaf
+ * tips our model has and this one does not carry no animation anyway.
+ *
+ * It still goes through the rest-pose-compensated retarget rather than being
+ * played directly, because "same names" is not "same bind pose", and the
+ * compensation is the identity map when they do agree.
+ */
+export const MESHY_RIG_TO_FIXTER: BoneMap = Object.fromEntries(
+  [
+    "Hips", "Spine02", "Spine01", "Spine", "neck", "Head",
+    "LeftShoulder", "LeftArm", "LeftForeArm", "LeftHand",
+    "RightShoulder", "RightArm", "RightForeArm", "RightHand",
+    "LeftUpLeg", "LeftLeg", "LeftFoot", "LeftToeBase",
+    "RightUpLeg", "RightLeg", "RightFoot", "RightToeBase",
+  ].map((name) => [name, name])
+);

@@ -13,6 +13,7 @@ import { BVHLoader } from "three/examples/jsm/loaders/BVHLoader.js";
 import { FIXTER_GLB, resolveClipRoles } from "./lab-config";
 import {
   MOTION_FILES,
+  CLIP_KNEEL_GLB,
   TOOL_ATTACH_BONE,
   TOOL_PALM,
   REST_ARM,
@@ -27,7 +28,11 @@ import {
   type LoopStyle,
 } from "./lab-jobs";
 import { retargetClipRestCompensated } from "./lab-retarget";
-import { FIXTER_HIPS_BONE, MESHY_BVH_TO_FIXTER } from "./meshy-bone-map";
+import {
+  FIXTER_HIPS_BONE,
+  MESHY_BVH_TO_FIXTER,
+  MESHY_RIG_TO_FIXTER,
+} from "./meshy-bone-map";
 import { reverseClip, subclipByTime } from "./lab-clip-utils";
 import { publishRetargetReport, publishTelemetry } from "./lab-telemetry";
 import {
@@ -117,6 +122,8 @@ const _offW = new THREE.Vector3();
 const _poleR = new THREE.Vector3();
 const _poleL = new THREE.Vector3();
 const _probe = new THREE.Vector3();
+const _faceQ = new THREE.Quaternion();
+const _faceV = new THREE.Vector3();
 /* Scratch for the head look-at and the arm solve; allocated once. */
 const _lookAt = new THREE.Vector3();
 
@@ -175,6 +182,8 @@ export default function FixterModel({
   const groupRef = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(FIXTER_GLB);
   const bvhs = useLoader(BVHLoader, MOTION_FILES);
+  /* The one take that came from the preset library rather than generation. */
+  const kneelGltf = useGLTF(CLIP_KNEEL_GLB);
 
   /*
    * One clone, for the one character that ever exists. SkeletonUtils.clone is
@@ -218,11 +227,32 @@ export default function FixterModel({
    * bone should cost a feature, not the page.
    */
   const bodyRig = useMemo(() => readBodyRig(model), [model]);
+  /*
+   * The bones that can end up touching the floor.
+   *
+   * Feet and toes for everything that stands or squats, and the shins because a
+   * kneel rests on a knee — which is the shin's own origin on this rig.
+   */
+  const groundBones = useMemo(() => {
+    const want = new Set([
+      "LeftFoot", "RightFoot",
+      "LeftToeBase", "RightToeBase",
+      "LeftToe_end", "RightToe_end",
+      "LeftLeg", "RightLeg",
+    ]);
+    const out: THREE.Object3D[] = [];
+    model.traverse((node) => {
+      if (want.has(node.name)) out.push(node);
+    });
+    return out;
+  }, [model]);
   const armRight = useMemo(() => readArmChain(model, "Right"), [model]);
   const armLeft = useMemo(() => readArmChain(model, "Left"), [model]);
   const ikWeight = useRef(0);
   /** How much of the working arm is holding a tool on the way over. */
   const carryWeight = useRef(0);
+  /** How far he has to drop for his lowest bone to reach the floor. */
+  const groundFix = useRef(0);
 
   /** Wrist to fingertip, so the tool can be held in the palm rather than the
       wrist. Read off the rig so a re-export with different proportions works. */
@@ -278,6 +308,51 @@ export default function FixterModel({
       }
     });
 
+    /*
+     * The preset kneel, through the same door as everything else.
+     *
+     * It arrives on a Meshy re-rig of our own character, so the bone names
+     * already match and a direct play would very nearly work. It still goes
+     * through the rest-compensated retarget, because "very nearly" is how the
+     * arms ended up behind his head the first time: the transfer is the
+     * identity map when two rest poses agree, and the correct correction when
+     * they do not.
+     */
+    const kneelClip = kneelGltf?.animations?.[0];
+    const kneelRoot = kneelGltf?.scene?.getObjectByName("Hips");
+    if (process.env.NODE_ENV !== "production") {
+      const names: string[] = [];
+      kneelGltf?.scene?.traverse((n) => names.push(n.name || "(unnamed)"));
+      console.log(
+        "[kneel] anims=", kneelGltf?.animations?.length,
+        "clip=", kneelClip?.name,
+        "root=", kneelRoot?.name,
+        "nodes=", names.slice(0, 12).join(",")
+      );
+    }
+    if (kneelClip && kneelRoot) {
+      try {
+        const probe = cloneSkeleton(scene);
+        const { clip, report } = retargetClipRestCompensated(
+          probe,
+          kneelRoot,
+          kneelClip,
+          {
+            names: MESHY_RIG_TO_FIXTER,
+            hips: FIXTER_HIPS_BONE,
+            rootTranslation: "hips",
+            clipName: CLIP_KNEEL_GLB,
+          }
+        );
+        if (clip) {
+          retargeted.set(CLIP_KNEEL_GLB, clip);
+          publishRetargetReport({ ...report, clipName: "fx-kneel.glb" });
+        }
+      } catch (error) {
+        console.error("[Fixter Lab] retarget failed for the kneel:", error);
+      }
+    }
+
     const out: THREE.AnimationClip[] = [];
     const loops = new Map<string, LoopStyle>();
     const speeds = new Map<string, number>();
@@ -290,7 +365,7 @@ export default function FixterModel({
       if (spec.speed) speeds.set(spec.name, spec.speed);
     }
     return { clips: out, loopStyles: loops, clipSpeeds: speeds };
-  }, [scene, bvhs]);
+  }, [scene, bvhs, kneelGltf]);
 
   const clips = useMemo(
     () => [...animations, ...motionClips],
@@ -731,7 +806,7 @@ export default function FixterModel({
         const motion = stops[runtime.stopIndex % stops.length]?.motion;
         /* Overhead is a different shape of help; the plan needs to know. */
         const overhead = motion?.overhead === true;
-        const crouching = motion?.id === "low";
+        const crouching = motion?.crouched === true;
 
         /*
          * The body first, then the arms.
@@ -762,6 +837,38 @@ export default function FixterModel({
           );
         }
         group.updateMatrixWorld(true);
+
+        /*
+         * Put whatever is lowest on the floor.
+         *
+         * The retarget transfers the source's hip translation, which is correct
+         * for a character with the source's proportions and wrong for ours: the
+         * standing takes land within a couple of hundredths of the ground, and
+         * both new low stances hovered a third of a unit above it — a fifth of
+         * his own height, with a shadow underneath and nothing touching it.
+         *
+         * This is not a foot IK system and does not need to be. Nothing here
+         * walks while it works; the feet are planted for the whole of a job. So
+         * the correction is one number: find the lowest bone, and drop him by
+         * however far it is from his own origin. A squat lands on its toes, a
+         * kneel lands on its knee, and standing is left alone because standing
+         * was already right.
+         *
+         * Smoothed, because the measurement changes as he settles into a pose
+         * and a hard correction would read as the floor moving.
+         */
+        let lowest = Infinity;
+        for (const bone of groundBones) {
+          bone.getWorldPosition(_probe);
+          group.worldToLocal(_probe);
+          if (_probe.y < lowest) lowest = _probe.y;
+        }
+        if (lowest < Infinity) {
+          groundFix.current = approachValue(groundFix.current, lowest, dt, 6);
+          group.position.y -= groundFix.current * scale;
+          group.updateMatrixWorld(true);
+        }
+
         const plan = handPlan(toolActionRef.current, workTime(), overhead);
 
         const parent = group.parent;
@@ -1120,10 +1227,20 @@ export default function FixterModel({
           _lookAt.copy(runtime.placed.workPoint);
           /* Crouched needs more of the cheat: he is folded over the work and
              the camera is above him, so there is further to lift. */
-          const crouchedNow =
-            stops[runtime.stopIndex % stops.length]?.motion.id === "low";
-          _lookAt.y += (crouchedNow ? 0.78 : 0.34) * scale;
-          _lookAt.z += (crouchedNow ? 1.05 : 0.6) * scale;
+          const motionNow = stops[runtime.stopIndex % stops.length]?.motion;
+          const crouchedNow = motionNow?.crouched === true;
+          /*
+           * The cheat is about how far he is folded, not about his height.
+           *
+           * It was keyed to crouching, which covered the squat and missed the
+           * two stances that stand up straight and then bend over — and those
+           * bury the face exactly as thoroughly. A stance that needs most of
+           * the head's range to recover the face needs the bigger target too;
+           * they are two halves of the same correction.
+           */
+          const folded = crouchedNow || (motionNow?.headMaxDeg ?? 52) > 60;
+          _lookAt.y += (folded ? 0.78 : 0.34) * scale;
+          _lookAt.z += (folded ? 1.05 : 0.6) * scale;
           group.parent?.localToWorld(_lookAt);
           /*
            * Crouched, the cap still won.
@@ -1139,8 +1256,8 @@ export default function FixterModel({
             headBone,
             _lookAt,
             lookRef.current *
-              (runtime.phase === "ADMIRE" ? 0.95 : crouchedNow ? 0.92 : 0.72),
-            crouchedNow ? 74 : 52
+              (runtime.phase === "ADMIRE" ? 0.95 : folded ? 0.92 : 0.72),
+            motionNow?.headMaxDeg ?? 52
           );
         }
       }
@@ -1233,6 +1350,42 @@ export default function FixterModel({
             live.push(`${name}=${wt.toFixed(2)}`);
           }
           w.__fxBlend = { sum: +sum.toFixed(3), live };
+          /* Lab only: how far the lowest bone sits from his own origin, which
+             is where the floor is. Negative means he is through it. */
+          if (bodyRig) {
+            let lowest = Infinity;
+            let which = "";
+            let top = -Infinity, left = Infinity, right = -Infinity;
+            model.traverse((n) => {
+              if (!(n as THREE.Bone).isBone) return;
+              n.getWorldPosition(_probe);
+              group.worldToLocal(_probe);
+              if (_probe.y < lowest) { lowest = _probe.y; which = n.name; }
+              if (_probe.y > top) top = _probe.y;
+              if (_probe.x < left) left = _probe.x;
+              if (_probe.x > right) right = _probe.x;
+            });
+            /* How much of his face is pointed at the camera: the head's own
+               forward against the view axis. 1 is straight at you, 0 is the
+               top of the cap. */
+            if (headBone) {
+              headBone.getWorldQuaternion(_faceQ);
+              _faceV.set(0, 0, 1).applyQuaternion(_faceQ);
+              w.__fxFace = +_faceV.z.toFixed(2);
+            }
+            w.__fxBox = {
+              h: +(top - lowest).toFixed(2),
+              w: +(right - left).toFixed(2),
+            };
+            /* Local Y is invariant to moving the group, so the correction
+               itself has to be reported next to it or the probe reads the
+               same number before and after the fix. */
+            w.__fxFloor = {
+              lowest: +lowest.toFixed(3),
+              bone: which,
+              fix: +groundFix.current.toFixed(3),
+            };
+          }
           w.__fxClips = clips.map((c) => ({
             name: c.name,
             dur: +c.duration.toFixed(2),
