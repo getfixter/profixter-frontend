@@ -697,12 +697,15 @@ export function findSpot(options: {
  */
 export function whatIsUnder(box: {
   x: number; y: number; w: number; h: number;
-}): { worst: number; heavy: number; covered: number } {
+}): { worst: number; heavy: number; covered: number; controls: number } {
   const scrollY = typeof window === "undefined" ? 0 : window.scrollY;
   const area = Math.max(1, box.w * box.h);
   let worst = 0;
   let heavy = 0;
   let covered = 0;
+  /* Buttons and cards, kept separate from text: a shoulder over a word is a
+     compromise, and a shoulder over a "Book visit" button is a lost booking. */
+  let controls = 0;
   for (const r of rects) {
     const ry = r.fixed ? r.y : r.y - scrollY;
     const ox = Math.min(box.x + box.w, r.x + r.w) - Math.max(box.x, r.x);
@@ -713,9 +716,15 @@ export function whatIsUnder(box: {
     if (share < 0.012) continue;
     if (r.weight > worst) worst = r.weight;
     if (r.weight >= 2) heavy += share;
+    if (r.interactive) controls += share;
     covered += share;
   }
-  return { worst, heavy: Math.min(1, heavy), covered: Math.min(1, covered) };
+  return {
+    worst,
+    heavy: Math.min(1, heavy),
+    covered: Math.min(1, covered),
+    controls: Math.min(1, controls),
+  };
 }
 
 /** Is this viewport point currently sitting on top of something? */

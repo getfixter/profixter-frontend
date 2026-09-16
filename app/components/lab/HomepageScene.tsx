@@ -302,7 +302,7 @@ function SceneContents({
        * entirely — which is a worse answer to "do not cover the copy" than a
        * shoulder over one word.
        */
-      if (under.heavy > 0.09 || under.covered > 0.2) {
+      if (under.controls > 0.05 || under.heavy > 0.09 || under.covered > 0.2) {
         /* Nowhere this time. Drop the memory so the retry has the whole page. */
         forgetSpots();
         return null;
@@ -359,7 +359,31 @@ function SceneContents({
    * moved him onto a pricing card while the estimate reported a clear stage.
    */
   const standable = useCallback(
-    (feet: THREE.Vector3) => {
+    (feet: THREE.Vector3, propAt?: THREE.Vector3, propSpan?: number) => {
+      /*
+       * The prop's finished position, checked where it actually lands.
+       *
+       * Estimating this from his feet does not work: the thing he is fixing
+       * sits a tool's length away, offset by the job, and turned by the work
+       * yaw — so a box centred on him misses it entirely on exactly the jobs
+       * whose props are biggest. The lesson from the last time this went wrong
+       * is the same one: validate the FINISHED placement, not the candidate.
+       *
+       * Controls get their own budget, far tighter than text. A shoulder over a
+       * word is a compromise; a cabinet door over a plan card and its Book
+       * button is a lost booking.
+       */
+      if (propAt) {
+        const pp = projection.pixelAt(propAt.x, propAt.y);
+        const span = (propSpan ?? 1) * bodyW;
+        const propUnder = whatIsUnder({
+          x: pp.x - span / 2,
+          y: pp.y - span / 2,
+          w: span,
+          h: span,
+        });
+        if (propUnder.controls > 0.05 || propUnder.heavy > 0.12) return false;
+      }
       const px = projection.pixelAt(feet.x, feet.y);
       const under = whatIsUnder({
         x: px.x - bodyW / 2,
@@ -375,7 +399,19 @@ function SceneContents({
           under: `heavy=${under.heavy.toFixed(3)} cov=${under.covered.toFixed(2)}`,
         };
       }
-      return under.heavy <= 0.09 && under.covered <= 0.2;
+      /*
+       * Text and controls get different budgets.
+       *
+       * The ninth-of-a-silhouette rule was written for headings, where a
+       * shoulder over the tail of a word is a fair trade against him never
+       * working at all. A button is not a heading: a ninth of a "Choose Home"
+       * card is still a man standing in front of the thing the page exists to
+       * get clicked. So controls are held to a twentieth, and the looser rule
+       * goes on carrying everything else.
+       */
+      return (
+        under.controls <= 0.05 && under.heavy <= 0.09 && under.covered <= 0.2
+      );
     },
     [projection, bodyW, bodyH]
   );
