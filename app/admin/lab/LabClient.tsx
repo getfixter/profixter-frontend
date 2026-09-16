@@ -69,6 +69,14 @@ const HomepageScene = dynamic(
       }),
   { ssr: false, loading: () => null }
 );
+const LabArticlePage = dynamic(
+  () => import("@/app/components/lab/LabPages").then((m) => m.LabArticlePage),
+  { ssr: false, loading: () => null }
+);
+const LabPricingPage = dynamic(
+  () => import("@/app/components/lab/LabPages").then((m) => m.LabPricingPage),
+  { ssr: false, loading: () => null }
+);
 const LabHomepage = dynamic(() => import("@/app/components/lab/LabHomepage"), {
   ssr: false,
   loading: () => (
@@ -80,6 +88,17 @@ const LabHomepage = dynamic(() => import("@/app/components/lab/LabHomepage"), {
 
 /** Which experiment the Lab is showing. */
 type LabMode = "homepage" | "stage";
+
+/**
+ * Which mock page the character is standing on.
+ *
+ * The point of the third and fourth is that they are shaped nothing like the
+ * first: a narrow column of dense prose, and a grid of cards with a button in
+ * every one. If he behaves sensibly on all three without anything being tuned
+ * per page, the "not here" map is doing real work rather than fitting one
+ * layout it was developed against.
+ */
+type LabPage = "homepage" | "article" | "pricing";
 
 type Vec3 = [number, number, number];
 
@@ -226,6 +245,7 @@ export default function LabClient() {
    * stage stays one click away for comparison.
    */
   const [mode, setMode] = useState<LabMode>("homepage");
+  const [page, setPage] = useState<LabPage>("homepage");
   /*
    * Preview hides every control so the experiment can be judged as a website
    * rather than as a website with a panel on it. One small handle stays, because
@@ -393,7 +413,13 @@ export default function LabClient() {
         )}
 
         {!preview && <LabDiagnostics />}
-        <LabHomepage />
+        {page === "homepage" ? (
+          <LabHomepage />
+        ) : page === "article" ? (
+          <LabArticlePage />
+        ) : (
+          <LabPricingPage />
+        )}
 
         <LabErrorBoundary fixed key={sceneKey}>
           <HomepageScene
@@ -448,6 +474,17 @@ export default function LabClient() {
             value={mode}
             onChange={setMode}
           />
+          {mode === "homepage" && (
+            <Pills
+              options={[
+                { id: "homepage" as LabPage, label: "Home" },
+                { id: "article" as LabPage, label: "Article" },
+                { id: "pricing" as LabPage, label: "Pricing" },
+              ]}
+              value={page}
+              onChange={setPage}
+            />
+          )}
           {/* Hidden on a phone: the viewport has already chosen, and three
               more pills at 150px wide simply overflow. */}
           <div className="hidden sm:block">

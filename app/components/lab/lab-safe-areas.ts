@@ -172,6 +172,27 @@ export function measureSafeAreas(): number {
 
     noteBand(element, element.getBoundingClientRect(), isPinned(element));
 
+    /*
+     * A card with a button in it is one thing, not several.
+     *
+     * Scanning for text and controls finds a pricing card as a scatter of
+     * short lines with generous space between them, and that space scores as
+     * free — so he stands in the middle of the Basic plan looking like part of
+     * the offer. Anything that wraps a control is treated as a single object
+     * the reader is about to use, and gets the same berth a button does.
+     */
+    if (!element.hasAttribute("data-fx-layer")) {
+      const card = element.getBoundingClientRect();
+      const area = card.width * card.height;
+      if (
+        area > 8000 &&
+        area < viewportArea * MAX_VIEWPORT_SHARE &&
+        element.querySelector("button, a, input, select, textarea")
+      ) {
+        push(card, isPinned(element), true, element);
+      }
+    }
+
     const always =
       ALWAYS_CONTENT.has(element.tagName) ||
       element.hasAttribute("data-fx-avoid");
@@ -259,6 +280,15 @@ export function bandCount() {
 /* ------------------------------------------------------------ free space */
 
 export type Spot = {
+  /**
+   * How much of him would be standing on something, 0 to 1.
+   *
+   * The caller decides what to do about it. Some pages — a phone showing a
+   * single narrow column of body copy — genuinely have nowhere for a character
+   * to be, and the honest answer there is not to find the least-bad paragraph
+   * to stand on but to not be there at all.
+   */
+  crowding: number;
   /** Viewport pixels, top-left origin. */
   x: number;
   y: number;
@@ -411,8 +441,9 @@ export function findSpot(options: {
     const needC = attempt.c;
     const needR = attempt.r;
     let bestScore = -Infinity;
-    const shortlist: { x: number; y: number; clearance: number; score: number }[] =
-      [];
+    const shortlist: {
+      x: number; y: number; clearance: number; score: number; busyWeight: number;
+    }[] = [];
 
     for (let row = 0; row + needR <= ROWS; row++) {
       for (let col = 0; col + needC <= COLS; col++) {
@@ -575,7 +606,7 @@ export function findSpot(options: {
         /* Every candidate, so the pool below is filtered on the final best
            score rather than on whatever the best happened to be at the time. */
         if (score > bestScore) bestScore = score;
-        shortlist.push({ x, y, clearance, score });
+        shortlist.push({ x, y, clearance, score, busyWeight });
       }
     }
 
@@ -592,7 +623,13 @@ export function findSpot(options: {
     if (shortlist.length) {
       const pool = shortlist.filter((c) => c.score >= bestScore - 0.45);
       const pick = pool[Math.floor(Math.random() * pool.length)] ?? pool[0];
-      return { x: pick.x, y: pick.y, clearance: pick.clearance };
+      return {
+        x: pick.x,
+        y: pick.y,
+        clearance: pick.clearance,
+        /* 1.0 means every cell of him is on body copy; 3 means on controls. */
+        crowding: Math.min(1, pick.busyWeight / Math.max(1, needC * needR)),
+      };
     }
   }
 

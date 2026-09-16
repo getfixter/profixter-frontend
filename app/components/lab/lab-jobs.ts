@@ -177,7 +177,7 @@ export const IDLE_CLIP: ClipSpec = {
  */
 export const BEAT_CLIPS: ClipSpec[] = [
   { name: "Beat · Wave", file: CLIP_BEAT_WAVE, start: 0.2, end: 2.2, loop: "once" },
-  { name: "Beat · Brow", file: CLIP_BEAT_BROW, start: 1.0, end: 3.0, loop: "once" },
+  { name: "Beat · Brow", file: CLIP_BEAT_BROW, start: 0.2, end: 2.2, loop: "once" },
 ];
 
 export function allClipSpecs(): ClipSpec[] {

@@ -27,7 +27,7 @@ export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
 /** Bumped on every deploy of this route. Rendered on the server, in the HTML. */
-export const LAB_BUILD = "lab-7";
+export const LAB_BUILD = "lab-8";
 
 export default function FixterLabPage() {
   return (

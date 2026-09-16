@@ -542,6 +542,7 @@ export default function FixterModel({
           liveJob: stops[runtime.stopIndex % stops.length]?.job.id ?? null,
           prop: runtime.propJobId,
           beat: runtime.beat,
+          presence: Math.round(runtime.presence * 100) / 100,
           clip: currentActionRef.current?.getClip().name ?? null,
           fade: Math.round(runtime.propFade * 100) / 100,
         };
@@ -572,7 +573,14 @@ export default function FixterModel({
         runtime.lean + THREE.MathUtils.degToRad(accent.rollDeg)
       );
       group.position.y += accent.bob;
-      group.scale.setScalar(scale);
+      /*
+       * Presence rides on the scale, the same treatment the props already get.
+       * Cheap, needs no material work on a skinned mesh, and reads as stepping
+       * out of shot rather than as a bug.
+       */
+      const present = runtime.presence;
+      group.scale.setScalar(scale * (0.72 + 0.28 * present) * (present > 0.02 ? 1 : 0));
+      group.visible = present > 0.02;
 
       /*
        * He looks at his own work.

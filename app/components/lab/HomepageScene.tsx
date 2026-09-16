@@ -225,7 +225,22 @@ function SceneContents({
          */
         wander: 0.45 + Math.random() * 0.95,
       });
-      if (!spot) return null;
+      /*
+       * Some pages have no room, and that is an answer.
+       *
+       * A phone showing a single narrow measure of body copy has no free block
+       * anywhere: the search will still return its least-bad guess, and taking
+       * it means standing on somebody's paragraph for five seconds. Refusing
+       * instead sends him away until the reader scrolls somewhere with space,
+       * which is both better manners and a more interesting behaviour — he
+       * turns up where there is room for him.
+       */
+      if (process.env.NODE_ENV !== "production") {
+        const w = window as unknown as Record<string, unknown>;
+        const t = (w.__fxTour ?? {}) as Record<string, unknown>;
+        w.__fxTour = { ...t, crowding: spot ? +spot.crowding.toFixed(2) : null };
+      }
+      if (!spot || spot.crowding > 0.22) return null;
       /*
        * Keep the prop on screen too.
        *
