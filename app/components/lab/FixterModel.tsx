@@ -94,6 +94,7 @@ export type FixterModelProps = {
   /** Is this world point under page content? Used to route around it. */
   busyAt?: (x: number, y: number) => number;
   perch?: () => THREE.Vector3 | null;
+  standable?: (feet: THREE.Vector3) => boolean;
   /** Scale for the props he carries with him. */
   objectScale: number;
   toolOffset: ToolOffset;
@@ -159,6 +160,7 @@ export default function FixterModel({
   displaced,
   busyAt,
   perch,
+  standable,
   objectScale,
   toolOffset,
   onReady,
@@ -473,6 +475,10 @@ export default function FixterModel({
   useEffect(() => {
     perchRef.current = perch;
   }, [perch]);
+  const standableRef = useRef(standable);
+  useEffect(() => {
+    standableRef.current = standable;
+  }, [standable]);
   const busyRef = useRef(busyAt);
   useEffect(() => {
     busyRef.current = busyAt;
@@ -540,6 +546,7 @@ export default function FixterModel({
           displaced: displacedRef.current,
           busyAt: busyRef.current,
           perch: perchRef.current,
+          standable: standableRef.current,
         });
       }
 
@@ -816,7 +823,27 @@ export default function FixterModel({
        * sits level over a cabinet and tips back under a ceiling fixture, which
        * is both more legible and more like a person.
        */
-      if (headBone && runtime.placed) {
+      /*
+       * While he waits, he has a look around.
+       *
+       * A character standing perfectly still in a gap for thirty seconds reads
+       * as a sprite somebody forgot to remove. A head that drifts — left, back,
+       * off toward wherever he is going next — costs one sine wave and is the
+       * difference between waiting and being switched off. Slow on purpose: the
+       * waiting must never be more interesting than the repairs.
+       */
+      if (headBone && runtime.perch && runtime.smallness > 0.4) {
+        const drift = state.clock.elapsedTime * 0.28;
+        _lookAt.set(
+          Math.sin(drift) * 1.4,
+          0.9 + Math.sin(drift * 0.7) * 0.25,
+          2.2
+        );
+        _lookAt.multiplyScalar(scale).add(group.position);
+        group.parent?.localToWorld(_lookAt);
+        lookRef.current = approachValue(lookRef.current, 1, dt, 2.2);
+        aimHead(headBone, _lookAt, lookRef.current * 0.55, 40);
+      } else if (headBone && runtime.placed) {
         const looking =
           runtime.phase === "WORK" ||
           runtime.phase === "WORK_IN" ||

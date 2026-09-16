@@ -531,6 +531,16 @@ export type StepOptions = {
    * clearance, and asked at a fraction of his own size.
    */
   perch?: () => THREE.Vector3 | null;
+  /**
+   * Is this a decent place to actually stand?
+   *
+   * Asked with the finished placement rather than the candidate anchor, because
+   * between the two he moves: the tool stands his hand off from the work, the
+   * work yaw turns the offset, and the result is a body a good few centimetres
+   * from where the anchor implied. Checking the estimate said the stage was
+   * clear while he stood on a pricing card.
+   */
+  standable?: (feet: THREE.Vector3) => boolean;
 };
 
 /**
@@ -650,8 +660,15 @@ export function stepTour(
     const next = stops[index % stops.length];
     const anchor = options.place(next.job);
     if (!anchor) return false;
+    const placed = placeStop(
+      next,
+      anchor,
+      options.characterScale,
+      options.objectScale
+    );
+    if (options.standable && !options.standable(placed.mark)) return false;
     runtime.stopIndex = index % stops.length;
-    runtime.placed = placeStop(next, anchor, options.characterScale, options.objectScale);
+    runtime.placed = placed;
     runtime.propJobId = next.job.id;
     setObjectFix(next.job.id, 0);
     runtime.path = null;
