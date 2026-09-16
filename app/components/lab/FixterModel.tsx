@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { bodyAccent, type ToolAction } from "./lab-action";
+import { bodyAccent, handPlan, type ToolAction } from "./lab-action";
+import { readArmChain, solveArm, orientHand } from "./lab-ik";
 import { createPortal, useFrame, useLoader } from "@react-three/fiber";
 import { useAnimations, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -100,6 +101,14 @@ export type FixterModelProps = {
 /* Scratch, so aiming the tool allocates nothing per frame. */
 const _toolTarget = new THREE.Vector3();
 const ZERO_ACCENT = { bob: 0, rollDeg: 0, leanDeg: 0 };
+/* Scratch for the arm solve; allocated once. */
+const _handAim = new THREE.Vector3();
+const _workW = new THREE.Vector3();
+const _handW = new THREE.Vector3();
+const _offW = new THREE.Vector3();
+const _poleR = new THREE.Vector3();
+const _poleL = new THREE.Vector3();
+const _probe = new THREE.Vector3();
 /* Scratch for the head look-at; allocated once, never per frame. */
 const _headAt = new THREE.Vector3();
 const _lookAt = new THREE.Vector3();
@@ -187,6 +196,23 @@ export default function FixterModel({
     });
     return found as THREE.Object3D | null;
   }, [model]);
+
+  /* Lab only: lets the watcher measure the rig without guessing at it. */
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    (window as unknown as Record<string, unknown>).__fxRig = model;
+  }, [model]);
+
+  /**
+   * The two arms, as solvable chains.
+   *
+   * Null if the rig is not what we expect, in which case everything below is
+   * skipped and the clips drive the arms exactly as they did before. A missing
+   * bone should cost a feature, not the page.
+   */
+  const armRight = useMemo(() => readArmChain(model, "Right"), [model]);
+  const armLeft = useMemo(() => readArmChain(model, "Left"), [model]);
+  const ikWeight = useRef(0);
 
   const handBone = useMemo(() => {
     let found: THREE.Object3D | null = null;
@@ -597,6 +623,106 @@ export default function FixterModel({
        * blended in and out rather than switched, so the clip still owns the
        * pose and this is only a bias on top of it.
        */
+      /*
+       * The arms, solved to the work.
+       *
+       * Runs after the mixer has written the clip, so the take supplies the
+       * stance — crouched, standing, reaching — and the arms are driven to
+       * where the repair actually is. This is the part the four clips could
+       * never do: it is why the hammer winds up through the shoulder and why
+       * the drill is held in two hands instead of being hidden behind them.
+       */
+      const working =
+        runtime.phase === "WORK" ||
+        runtime.phase === "WORK_IN" ||
+        runtime.phase === "WORK_OUT";
+      /*
+       * In fast, out slower.
+       *
+       * At a symmetrical rate the first second of every job was spent half way
+       * between the clip's arms and the solved ones, which is the one blend
+       * that looks like neither. Arriving takes a third of a second; handing the
+       * arms back as he stands up can afford to be gentle.
+       */
+      ikWeight.current = approachValue(
+        ikWeight.current,
+        working && runtime.placed ? 1 : 0,
+        dt,
+        working ? 11 : 5
+      );
+      if (ikWeight.current > 0.004 && runtime.placed && armRight) {
+        group.updateMatrixWorld(true);
+        const motion = stops[runtime.stopIndex % stops.length]?.motion;
+        /* Overhead is a different shape of help; the plan needs to know. */
+        const overhead = (motion?.handOffset[1] ?? 0) > 1.6;
+        const plan = handPlan(toolActionRef.current, workTime(), overhead);
+        const parent = group.parent;
+        const placed = runtime.placed;
+
+        _workW.copy(placed.workPoint);
+        /*
+         * Turn the plan into x and y using the direction the tool points.
+         *
+         * "Push" means toward the work along the approach, "lift" means across
+         * it — both in the screen plane, which is the only place motion is
+         * visible under a camera this close to head on.
+         */
+        const approach = THREE.MathUtils.degToRad(
+          stops[runtime.stopIndex % stops.length]?.job.toolApproachDeg ?? 0
+        );
+        const ca = Math.cos(approach);
+        const sa = Math.sin(approach);
+        _handW.copy(placed.handAt);
+        _handW.x += (plan.push * ca - plan.lift * sa) * scale;
+        _handW.y += (plan.push * sa + plan.lift * ca) * scale;
+        _handW.z += plan.depth * scale;
+        _offW.copy(placed.workPoint);
+        _offW.x += plan.off[0] * scale;
+        _offW.y += plan.off[1] * scale;
+        _offW.z += plan.off[2] * scale;
+        if (parent) {
+          parent.localToWorld(_workW);
+          parent.localToWorld(_handW);
+          parent.localToWorld(_offW);
+        }
+
+        /*
+         * Elbows out and down, away from the ribs. Derived from where the hand
+         * is rather than fixed, so reaching overhead swings the elbow outward
+         * instead of leaving it pinned behind him.
+         */
+        armRight.upper.getWorldPosition(_poleR);
+        /* Elbows point away from the body: his right is -x, his left is +x.
+           Signed the other way, each elbow was hauled across his own chest. */
+        _poleR.x -= (0.55 + plan.elbow) * scale;
+        _poleR.y -= (0.5 + plan.elbow * 0.4) * scale;
+        _poleR.z -= 0.25 * scale;
+        solveArm(armRight, _handW, _poleR, ikWeight.current);
+        _handAim.copy(_workW);
+        orientHand(armRight, _handAim, ikWeight.current * 0.85);
+
+        if (process.env.NODE_ENV !== "production") {
+          /* Lab only: how far the solver missed, for the watcher. */
+          const w = window as unknown as Record<string, unknown>;
+          const t = (w.__fxTour ?? {}) as Record<string, unknown>;
+          armRight.hand.getWorldPosition(_probe);
+          w.__fxTour = {
+            ...t,
+            ik: `w=${ikWeight.current.toFixed(2)} miss=${_probe.distanceTo(_handW).toFixed(3)}`,
+            hy: +_probe.y.toFixed(4),
+            hx: +_probe.x.toFixed(4),
+          };
+        }
+        if (armLeft && plan.offWeight > 0.01) {
+          armLeft.upper.getWorldPosition(_poleL);
+          _poleL.x += (0.55 + plan.elbow) * scale;
+          _poleL.y -= (0.5 + plan.elbow * 0.4) * scale;
+          _poleL.z -= 0.25 * scale;
+          solveArm(armLeft, _offW, _poleL, ikWeight.current * plan.offWeight);
+          orientHand(armLeft, _workW, ikWeight.current * plan.offWeight * 0.7);
+        }
+      }
+
       if (headBone) {
         const wantLook =
           runtime.phase === "ADMIRE" || runtime.phase === "WORK_OUT";
