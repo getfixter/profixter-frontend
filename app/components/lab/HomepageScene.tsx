@@ -23,7 +23,7 @@ import {
 } from "./lab-page-jobs";
 import {
   findSpot,
-  isBusy,
+  busyWeightAt,
   forgetSpots,
   rememberSpot,
   whatIsUnder,
@@ -305,7 +305,7 @@ function SceneContents({
   const busyAt = useCallback(
     (x: number, y: number) => {
       const px = projection.pixelAt(x, y);
-      return isBusy(px.x, px.y, 10);
+      return busyWeightAt(px.x, px.y, 10);
     },
     [projection]
   );
@@ -420,7 +420,7 @@ let poseToPixel: ((x: number, y: number) => { x: number; y: number }) | null = n
 function busyAt(pose: { x: number; y: number }) {
   if (!poseToPixel) return false;
   const p = poseToPixel(pose.x, pose.y);
-  return isBusy(p.x, p.y, 18);
+  return busyWeightAt(p.x, p.y, 18) > 0;
 }
 
 /**
