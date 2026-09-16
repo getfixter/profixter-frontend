@@ -74,6 +74,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   },
   {
     effort: 0.15,
+    hands: 1,
     id: "frame",
     label: "Crooked picture frame",
     object: "frame",
@@ -104,6 +105,7 @@ export const PAGE_JOBS: JobDefinition[] = [
   },
   {
     effort: 0.5,
+    hands: 1,
     id: "detector",
     label: "Smoke detector hanging loose",
     object: "detector",
