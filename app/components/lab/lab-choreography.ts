@@ -1044,13 +1044,43 @@ export function stepTour(
       }
       const dx = target.mark.x - runtime.position.x;
       const dy = target.mark.y - runtime.position.y;
+      /*
+       * The head goes first, and the body catches up.
+       *
+       * This beat is the one that has to say "he has seen something", and at
+       * sixty pixels a body slowly rotating says nothing at all. What reads is
+       * the SPLIT: the head snapping round while the shoulders are still facing
+       * the old job, held for a moment, and then the body coming after it. That
+       * lag is the entire difference between noticing something and turning
+       * around.
+       *
+       * Done here rather than with a motion take, and that is a deliberate
+       * rejection: a generated notice turns one fixed direction, and the whole
+       * value of this beat is that it points at wherever the next repair
+       * actually is.
+       */
       runtime.yaw = approachValue(
         runtime.yaw,
-        Math.atan2(dx, Math.abs(dy) + 0.4) * 0.45,
+        /*
+         * Most of the way round, not half.
+         *
+         * This was damped to under half the angle to the next job, which on a
+         * beat lasting well under a second meant the body barely moved and the
+         * whole "he has seen something" read as him standing still facing the
+         * camera. Turning most of the way is what makes it a decision.
+         */
+        Math.atan2(dx, Math.abs(dy) + 0.4) * 0.82,
         dt,
-        5
+        /* Slower than the head, and slower still for the first third. */
+        runtime.phaseElapsed < 0.22 ? 1.1 : 4.2
       );
-      runtime.lean = approachValue(runtime.lean, 0, dt, 5);
+      /* A small lean after it, as if the feet are about to follow. */
+      runtime.lean = approachValue(
+        runtime.lean,
+        THREE.MathUtils.clamp(dx, -1, 1) * 0.055,
+        dt,
+        4
+      );
       /*
        * Heavier jobs get the tool out before he sets off.
        *
