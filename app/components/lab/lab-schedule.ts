@@ -163,8 +163,26 @@ export function pickNext(
     .filter(({ stop }) => !recent.includes(stop.job.id));
   const pool = allowed.length ? allowed : stops.map((stop, index) => ({ stop, index }));
 
+  /*
+   * A little noise on every score, before ranking.
+   *
+   * Without it the top of the list is almost deterministic for a given
+   * predecessor: two cold visits both went lamp, then cabinet — the ten seconds
+   * that matter most, identical. The obvious fix is to widen the band of
+   * candidates that count as contenders, and that was measurably wrong: at a
+   * band wide enough to vary the second job, same-trade adjacencies went from
+   * six in nine hundred to twenty-one, and crouch-after-crouch from two to
+   * nine. It was admitting genuinely worse choices to buy variety.
+   *
+   * Jitter does the opposite. It reshuffles candidates that are already within
+   * noise of each other and cannot promote one that is properly worse, so the
+   * order varies at the top while every adjacency rule holds.
+   */
   const scored = pool
-    .map((entry) => ({ ...entry, value: score(entry.stop, memory) }))
+    .map((entry) => ({
+      ...entry,
+      value: score(entry.stop, memory) + (Math.random() - 0.5) * 1.2,
+    }))
     .sort((a, b) => b.value - a.value);
 
   /*
