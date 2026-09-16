@@ -24,7 +24,9 @@ import {
 import {
   findSpot,
   isBusy,
+  forgetSpots,
   rememberSpot,
+  whatIsUnder,
   measureSafeAreas,
   safeAreaCount,
   setSafeAreaRoot,
@@ -240,7 +242,10 @@ function SceneContents({
         const t = (w.__fxTour ?? {}) as Record<string, unknown>;
         w.__fxTour = { ...t, crowding: spot ? +spot.crowding.toFixed(2) : null };
       }
-      if (!spot || spot.crowding > 0.22) return null;
+      if (!spot) {
+        forgetSpots();
+        return null;
+      }
       /*
        * Keep the prop on screen too.
        *
@@ -262,6 +267,33 @@ function SceneContents({
         inset.top + padTop,
         size.height - inset.bottom - padBottom
       );
+      /*
+       * Check him where he will actually stand, after the clamp.
+       *
+       * The clamp exists to keep the prop on screen and it moves him to do it,
+       * so validating the spot before it ran was validating somewhere he was
+       * not going to be. That is how he ended up crouched over "There is
+       * always something" on a phone while the check reported a clear stage.
+       */
+      const feetY = y + handY;
+      const under = whatIsUnder({
+        x: x - bodyW / 2,
+        y: feetY - bodyH,
+        w: bodyW,
+        h: bodyH,
+      });
+      if (process.env.NODE_ENV !== "production") {
+        const w = window as unknown as Record<string, unknown>;
+        const t = (w.__fxTour ?? {}) as Record<string, unknown>;
+        w.__fxTour = { ...t, under: `${under.worst}/${under.covered.toFixed(2)}` };
+      }
+      /* Never a heading or a control; only a sliver of body copy. */
+      if (under.worst >= 2 || under.covered > 0.16) {
+        /* Nowhere this time. Drop the memory so the retry has the whole page. */
+        forgetSpots();
+        return null;
+      }
+
       rememberSpot(x, y);
       const world = projection.worldAt(x, y);
       return new THREE.Vector3(world.x, world.y, 0);

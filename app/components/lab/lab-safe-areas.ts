@@ -196,10 +196,19 @@ export function measureSafeAreas(): number {
     if (!element.hasAttribute("data-fx-layer")) {
       const card = element.getBoundingClientRect();
       const area = card.width * card.height;
+      /*
+       * One control, not three.
+       *
+       * Counting any container with a button in it made the whole pricing grid
+       * a single off-limits slab — a third of the viewport he could never stand
+       * in, and the cards inside it were never marked at all. A card has one
+       * call to action; a grid of cards has one per card. Counting them is the
+       * cheapest thing that tells the two apart.
+       */
       if (
         area > 8000 &&
         area < viewportArea * MAX_VIEWPORT_SHARE &&
-        element.querySelector("button, a, input, select, textarea")
+        element.querySelectorAll("button, a, input, select, textarea").length === 1
       ) {
         push(card, isPinned(element), true, element);
       }
@@ -286,6 +295,19 @@ let bands: { y: number; fixed: boolean }[] = [];
  * into a tour of them.
  */
 const recent: { x: number; y: number }[] = [];
+
+/**
+ * Forget where he has been.
+ *
+ * Called when a search comes back with nowhere to go. On a roomy page the
+ * memory adds variety; on a phone, where there may only be two or three places
+ * he can legitimately stand, it can rule out all of them at once and leave him
+ * off the page for a minute at a time. A repeated spot is a much smaller sin
+ * than an absent character.
+ */
+export function forgetSpots() {
+  recent.length = 0;
+}
 
 export function rememberSpot(x: number, y: number) {
   recent.push({ x, y });
@@ -653,6 +675,40 @@ export function findSpot(options: {
   }
 
   return null;
+}
+
+/**
+ * What would he actually be standing on, if he stood here?
+ *
+ * The grid crowding figure is a good scoring signal and a poor guarantee: it
+ * measures the block reserved for the search, which is deliberately larger and
+ * differently shaped than the character, and it averages. Averaging is how a
+ * headline ends up under his head and still comes in under the limit.
+ *
+ * This asks the direct question instead, about his real silhouette in real
+ * pixels, and reports the worst thing it touches and how much of him is on
+ * something. The caller can then refuse outright to cover a heading or a
+ * control while tolerating a clipped corner of a paragraph.
+ */
+export function whatIsUnder(box: {
+  x: number; y: number; w: number; h: number;
+}): { worst: number; covered: number } {
+  const scrollY = typeof window === "undefined" ? 0 : window.scrollY;
+  const area = Math.max(1, box.w * box.h);
+  let worst = 0;
+  let covered = 0;
+  for (const r of rects) {
+    const ry = r.fixed ? r.y : r.y - scrollY;
+    const ox = Math.min(box.x + box.w, r.x + r.w) - Math.max(box.x, r.x);
+    const oy = Math.min(box.y + box.h, ry + r.h) - Math.max(box.y, ry);
+    if (ox <= 0 || oy <= 0) continue;
+    const share = (ox * oy) / area;
+    /* A glancing corner of something is not "standing on" it. */
+    if (share < 0.012) continue;
+    if (r.weight > worst) worst = r.weight;
+    covered += share;
+  }
+  return { worst, covered: Math.min(1, covered) };
 }
 
 /** Is this viewport point currently sitting on top of something? */
