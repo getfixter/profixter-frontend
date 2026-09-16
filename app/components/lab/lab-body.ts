@@ -332,3 +332,23 @@ export function applyBodyPose(
   if (rig.neck) rig.neck.rotateX(DEG(pose.headPitchDeg) * w);
   void scale;
 }
+
+/**
+ * The parts of a finish beat that are not arms.
+ *
+ * Straightening up, the nod, and shifting his weight back to take a look. The
+ * step back lives on the pelvis rather than on his position so his feet stay
+ * planted and only his weight moves, which is what looking at your own work
+ * actually looks like.
+ */
+export function applyFinishPose(
+  rig: BodyRig,
+  liftDeg: number,
+  nodDeg: number,
+  backStep: number
+) {
+  rig.hips.position.z = rig.hipsRest.z - backStep * 0.5;
+  const n = rig.spine.length || 1;
+  for (const bone of rig.spine) bone.rotateX(DEG(-liftDeg / n));
+  if (rig.neck) rig.neck.rotateX(DEG(nodDeg));
+}

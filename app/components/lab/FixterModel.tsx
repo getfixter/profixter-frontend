@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { handPlan, type ToolAction } from "./lab-action";
 import { readArmChain, solveArm, orientHand, aimHead } from "./lab-ik";
-import { readBodyRig, bodyPose, applyBodyPose } from "./lab-body";
+import { readBodyRig, bodyPose, applyBodyPose, applyFinishPose } from "./lab-body";
+import { finishPose, FINISH_CLIP } from "./lab-finish";
 import { createPortal, useFrame, useLoader } from "@react-three/fiber";
 import { useAnimations, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -305,7 +306,7 @@ export default function FixterModel({
   const [phase, setPhase] = useState<TourPhase>("IDLE");
   const [stopIndex, setStopIndex] = useState(0);
   const [propJobId, setPropJobId] = useState<string | null>(null);
-  const [beat, setBeat] = useState<string | null>(null);
+  const [finishClip, setFinishClip] = useState<string | null>(null);
   const lookRef = useRef(0);
   const presenceRef = useRef(1);
   const propRef = useRef<THREE.Group>(null);
@@ -345,14 +346,16 @@ export default function FixterModel({
     if (!stop) return roles.rest;
     const role = clipRoleForPhase(phase);
     if (role === "walk") return roles.walkInPlace;
-    /* A pause is usually just a pause; occasionally it is a moment. */
-    if (role === "idle") return phase === "REST" && beat ? beat : "Idle";
+    /* A pause is a pause; the moment belongs to the end of the repair. */
+    if (role === "idle") {
+      return phase === "ADMIRE" && finishClip ? finishClip : "Idle";
+    }
     const spec: ClipSpec | undefined =
       role === "work" ? stop.motion.clip
       : role === "workIn" ? stop.motion.enter
       : stop.motion.exit;
     return spec?.name ?? "Idle";
-  }, [tour, stops, stopIndex, phase, roles, manualClip, beat]);
+  }, [tour, stops, stopIndex, phase, roles, manualClip, finishClip]);
 
   const applyClip = useCallback(
     (clipName: string | null, fade: number) => {
@@ -562,7 +565,9 @@ export default function FixterModel({
         fx.visible = runtime.propFade > 0.4;
       }
       if (runtime.propJobId !== propJobId) setPropJobId(runtime.propJobId);
-      if (runtime.beat !== beat) setBeat(runtime.beat);
+      const wantFinishClip =
+        runtime.phase === "ADMIRE" ? FINISH_CLIP[runtime.finish] ?? null : null;
+      if (wantFinishClip !== finishClip) setFinishClip(wantFinishClip);
       if (process.env.NODE_ENV !== "production") {
         /* Ground truth for the Lab's watcher: phase and prop from one frame. */
         const w = window as unknown as Record<string, unknown>;
@@ -572,7 +577,6 @@ export default function FixterModel({
           livePhase: runtime.phase,
           liveJob: stops[runtime.stopIndex % stops.length]?.job.id ?? null,
           prop: runtime.propJobId,
-          beat: runtime.beat,
           presence: Math.round(runtime.presence * 100) / 100,
           clip: currentActionRef.current?.getClip().name ?? null,
           fade: Math.round(runtime.propFade * 100) / 100,
@@ -632,10 +636,15 @@ export default function FixterModel({
        * never do: it is why the hammer winds up through the shoulder and why
        * the drill is held in two hands instead of being hidden behind them.
        */
+      const finishing = runtime.phase === "ADMIRE";
+      const beatPose = finishing
+        ? finishPose(runtime.finish, runtime.finishAt)
+        : null;
       const working =
         runtime.phase === "WORK" ||
         runtime.phase === "WORK_IN" ||
-        runtime.phase === "WORK_OUT";
+        runtime.phase === "WORK_OUT" ||
+        (finishing && (beatPose?.weight ?? 0) > 0.02);
       /*
        * In fast, out slower.
        *
@@ -663,7 +672,15 @@ export default function FixterModel({
          * rather than after it. Doing it the other way round means solving to a
          * shoulder that is about to move.
          */
-        if (bodyRig) {
+        if (bodyRig && beatPose) {
+          applyFinishPose(
+            bodyRig,
+            beatPose.liftDeg,
+            beatPose.nodDeg,
+            beatPose.backStep
+          );
+        }
+        if (bodyRig && !beatPose) {
           applyBodyPose(
             bodyRig,
             bodyPose(toolActionRef.current, workTime(), {
@@ -677,6 +694,7 @@ export default function FixterModel({
         }
         group.updateMatrixWorld(true);
         const plan = handPlan(toolActionRef.current, workTime(), overhead);
+
         const parent = group.parent;
         const placed = runtime.placed;
 
@@ -723,9 +741,12 @@ export default function FixterModel({
         _poleR.x -= wide * scale;
         _poleR.y -= (overhead ? 0.9 : 0.5 + plan.elbow * 0.4) * scale;
         _poleR.z -= 0.25 * scale;
-        solveArm(armRight, _handW, _poleR, ikWeight.current);
-        _handAim.copy(_workW);
-        orientHand(armRight, _handAim, ikWeight.current * 0.85);
+        const beatOwnsArms = !!beatPose && beatPose.weight > 0.02;
+        if (!beatOwnsArms) {
+          solveArm(armRight, _handW, _poleR, ikWeight.current);
+          _handAim.copy(_workW);
+          orientHand(armRight, _handAim, ikWeight.current * 0.85);
+        }
 
         if (process.env.NODE_ENV !== "production") {
           /* Lab only: how far the solver missed, for the watcher. */
@@ -737,11 +758,44 @@ export default function FixterModel({
             ik: `w=${ikWeight.current.toFixed(2)} miss=${_probe.distanceTo(_handW).toFixed(3)}`,
             spineX: bodyRig ? +THREE.MathUtils.radToDeg(bodyRig.spine[0].rotation.x).toFixed(1) : null,
             neckX: bodyRig?.neck ? +THREE.MathUtils.radToDeg(bodyRig.neck.rotation.x).toFixed(1) : null,
+            finish: runtime.finish,
+            finishAt: +runtime.finishAt.toFixed(2),
             hy: +_probe.y.toFixed(4),
             hx: +_probe.x.toFixed(4),
           };
         }
-        if (armLeft && plan.offWeight > 0.01) {
+        /*
+         * During the ending, the hands stop being about the repair.
+         *
+         * Their targets are given in HIS frame rather than the work's — hands
+         * to the belt, a hand reaching back out to test the thing he just
+         * fixed — because what a man does once it is done is about him, not
+         * about the object. Solved after the work targets so it wins.
+         */
+        if (beatOwnsArms && beatPose) {
+          if (beatPose.work) {
+            _handW.set(
+              beatPose.work[0] * scale,
+              beatPose.work[1] * scale,
+              beatPose.work[2] * scale
+            );
+            group.localToWorld(_handW);
+            solveArm(armRight, _handW, _poleR, ikWeight.current * beatPose.weight);
+          }
+          if (armLeft && beatPose.off) {
+            _offW.set(
+              beatPose.off[0] * scale,
+              beatPose.off[1] * scale,
+              beatPose.off[2] * scale
+            );
+            group.localToWorld(_offW);
+            armLeft.upper.getWorldPosition(_poleL);
+            _poleL.x += 1.1 * scale;
+            _poleL.y -= 0.6 * scale;
+            _poleL.z -= 0.25 * scale;
+            solveArm(armLeft, _offW, _poleL, ikWeight.current * beatPose.weight);
+          }
+        } else if (armLeft && plan.offWeight > 0.01) {
           armLeft.upper.getWorldPosition(_poleL);
           _poleL.x += (0.55 + plan.elbow) * scale;
           _poleL.y -= (0.5 + plan.elbow * 0.4) * scale;
