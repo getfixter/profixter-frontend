@@ -45,6 +45,7 @@ import { createContactShadow } from "./lab-materials";
 import FixableObject from "./lab-objects";
 import WorkEffect from "./lab-effects";
 import { setFixterPose } from "./lab-pose";
+import { setObjectNudge } from "./lab-object-state";
 import { addDiagError, setDiag } from "./lab-diagnostics";
 
 useGLTF.preload(FIXTER_GLB);
@@ -131,6 +132,7 @@ const MANUAL_FADE = 0.2;
  */
 const PHASE_FADE: Record<TourPhase, number> = {
   IDLE: 0.45,
+  NOTICE: 0.34,
   TRAVEL: 0.3,
   APPROACH: 0.28,
   TURN_TO: 0.32,
@@ -661,6 +663,10 @@ export default function FixterModel({
       const beatPose = finishing
         ? finishPose(runtime.finish, runtime.finishAt)
         : null;
+      /* The object's half of the test: it gives, and then it holds. */
+      if (runtime.propJobId) {
+        setObjectNudge(runtime.propJobId, beatPose?.nudge ?? 0);
+      }
       const working =
         runtime.phase === "WORK" ||
         runtime.phase === "WORK_IN" ||
@@ -802,20 +808,14 @@ export default function FixterModel({
          */
         if (beatOwnsArms && beatPose) {
           if (beatPose.work) {
-            _handW.set(
-              beatPose.work[0] * scale,
-              beatPose.work[1] * scale,
-              beatPose.work[2] * scale
-            );
+            /* In his own units: localToWorld already applies his scale, and
+               pre-multiplying by it as well put every beat target short. */
+            _handW.set(beatPose.work[0], beatPose.work[1], beatPose.work[2]);
             group.localToWorld(_handW);
             solveArm(armRight, _handW, _poleR, ikWeight.current * beatPose.weight);
           }
           if (armLeft && beatPose.off) {
-            _offW.set(
-              beatPose.off[0] * scale,
-              beatPose.off[1] * scale,
-              beatPose.off[2] * scale
-            );
+            _offW.set(beatPose.off[0], beatPose.off[1], beatPose.off[2]);
             group.localToWorld(_offW);
             armLeft.upper.getWorldPosition(_poleL);
             _poleL.x += 1.1 * scale;
@@ -862,6 +862,31 @@ export default function FixterModel({
         group.parent?.localToWorld(_lookAt);
         lookRef.current = approachValue(lookRef.current, 1, dt, 2.2);
         aimHead(headBone, _lookAt, lookRef.current * 0.55, 40);
+      } else if (
+        headBone &&
+        runtime.placed &&
+        (runtime.phase === "NOTICE" ||
+          runtime.phase === "TRAVEL" ||
+          runtime.phase === "APPROACH")
+      ) {
+        /*
+         * The head leads the walk.
+         *
+         * He looks where he is going before his feet get there, which is what
+         * makes travel read as purpose rather than as transport. Stronger while
+         * he is noticing, easing off once he is actually on his way.
+         */
+        lookRef.current = approachValue(lookRef.current, 1, dt, 5);
+        _lookAt.copy(runtime.placed.workPoint);
+        _lookAt.y += 0.3 * scale;
+        _lookAt.z += 0.7 * scale;
+        group.parent?.localToWorld(_lookAt);
+        aimHead(
+          headBone,
+          _lookAt,
+          lookRef.current * (runtime.phase === "NOTICE" ? 0.85 : 0.5),
+          46
+        );
       } else if (headBone && runtime.placed) {
         const looking =
           runtime.phase === "WORK" ||
