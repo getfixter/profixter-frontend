@@ -230,7 +230,7 @@ export default function FixterModel({
    * disagree about where the floor is. The takes arrive pre-trimmed to the
    * seconds actually used, so there is no wasted work here either.
    */
-  const { clips: motionClips, loopStyles } = useMemo(() => {
+  const { clips: motionClips, loopStyles, clipSpeeds } = useMemo(() => {
     const retargeted = new Map<string, THREE.AnimationClip>();
 
     MOTION_FILES.forEach((file, index) => {
@@ -260,14 +260,16 @@ export default function FixterModel({
 
     const out: THREE.AnimationClip[] = [];
     const loops = new Map<string, LoopStyle>();
+    const speeds = new Map<string, number>();
     for (const spec of allClipSpecs()) {
       const full = retargeted.get(spec.file);
       if (!full) continue;
       const cut = subclipByTime(full, spec.name, spec.start, spec.end);
       out.push(spec.reverse ? reverseClip(cut, spec.name) : cut);
       loops.set(spec.name, spec.loop);
+      if (spec.speed) speeds.set(spec.name, spec.speed);
     }
-    return { clips: out, loopStyles: loops };
+    return { clips: out, loopStyles: loops, clipSpeeds: speeds };
   }, [scene, bvhs]);
 
   const clips = useMemo(
@@ -398,14 +400,14 @@ export default function FixterModel({
         next
           .reset()
           .setLoop(LOOP_MODE[style], Infinity)
-          .setEffectiveTimeScale(timeScaleRef.current)
+          .setEffectiveTimeScale(timeScaleRef.current * (clipSpeeds.get(clipName!) ?? 1))
           .setEffectiveWeight(1)
           .fadeIn(fade)
           .play();
       }
       currentActionRef.current = next;
     },
-    [actions, loopStyles]
+    [actions, loopStyles, clipSpeeds]
   );
 
   /*

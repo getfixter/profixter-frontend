@@ -65,6 +65,15 @@ export type ClipSpec = {
   start: number;
   end: number;
   reverse?: boolean;
+  /**
+   * Played faster than it was captured.
+   *
+   * The squat take is four and a half seconds of lowering yourself, which is
+   * how long it takes to sit down carefully in a chair and about four times how
+   * long it takes a tradesman to drop to one knee. Two of those on every
+   * crouched job was nine seconds of a twenty-second repair spent in transit.
+   */
+  speed?: number;
   loop: LoopStyle;
 };
 
@@ -157,8 +166,8 @@ export const WORK_MOTIONS: Record<string, WorkMotion> = {
     clip: { name: "Work · Low", file: CLIP_WORK_LOW, start: 0.5, end: 4.0, loop: "pingpong" },
     handOffset: [-0.20, 0.57, 0.24],
     toolAimDeg: [-29, 6, -22],
-    enter: { name: "Crouch · In", file: CLIP_ENTER_CROUCH, start: 0.0, end: 4.0, loop: "once" },
-    exit: { name: "Crouch · Out", file: CLIP_ENTER_CROUCH, start: 0.0, end: 4.0, reverse: true, loop: "once" },
+    enter: { name: "Crouch · In", file: CLIP_ENTER_CROUCH, start: 0.0, end: 4.0, speed: 3.4, loop: "once" },
+    exit: { name: "Crouch · Out", file: CLIP_ENTER_CROUCH, start: 0.0, end: 4.0, reverse: true, speed: 3.0, loop: "once" },
   },
   /**
    * Standing, working at chest height with the arms out in front.

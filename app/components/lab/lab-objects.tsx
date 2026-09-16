@@ -271,42 +271,58 @@ function Faucet({ id }: FixableProps) {
 
 function Cabinet({ id }: FixableProps) {
   const door = useRef<THREE.Group>(null);
-  const handle = useRef<THREE.Group>(null);
   const f = useRef(0);
 
   useFrame((_, dt) => {
     f.current = ease(f.current, getObjectFix(id), dt);
     const broken = 1 - f.current;
-    if (door.current) door.current.rotation.y = -DEG(15) * broken;
-    // the handle hangs off one screw until it is put back
-    if (handle.current) {
-      handle.current.rotation.z = DEG(74) * broken;
-      handle.current.position.y = -0.012 * broken;
+    /*
+     * The whole story is the door.
+     *
+     * It used to be a loose handle hanging off one screw, which at a hundred
+     * pixels is a grey speck on a brown rectangle — and a brown rectangle could
+     * be a picture, a panel or a door. A door standing open and then closing
+     * flush into its carcass is legible from across the room, and it is a thing
+     * everyone has in their kitchen.
+     */
+    if (door.current) {
+      door.current.rotation.y = -DEG(26) * broken;
+      door.current.position.z = 0.02 * broken;
     }
   });
 
-  const W = 0.32;
-  const H = 0.42;
+  const W = 0.3;
+  const H = 0.4;
 
   return (
     <group>
+      {/* the carcass, so the door is fitted INTO something */}
+      <mesh material={M.dark} position={[0, 0, -0.045]}>
+        <boxGeometry args={[W + 0.03, H + 0.03, 0.07]} />
+      </mesh>
+      <mesh material={M.woodDark} position={[0, 0, -0.012]}>
+        <boxGeometry args={[W - 0.01, H - 0.01, 0.01]} />
+      </mesh>
+
+      {/* hinged at the left edge */}
       <group ref={door} position={[-W / 2, 0, 0]}>
         <group position={[W / 2, 0, 0]}>
-          <mesh material={M.shell}>
+          <mesh material={M.wood}>
             <boxGeometry args={[W, H, 0.022]} />
           </mesh>
-          {/* inset panel, so it reads as a cabinet door and not a box */}
           <mesh material={M.woodDark} position={[0, 0, 0.012]}>
-            <boxGeometry args={[W - 0.06, H - 0.06, 0.004]} />
+            <boxGeometry args={[W - 0.07, H - 0.07, 0.004]} />
           </mesh>
-          <group ref={handle} position={[W / 2 - 0.05, 0.05, 0.018]}>
-            <mesh material={M.hardware} position={[0, -0.045, 0]}>
-              <boxGeometry args={[0.012, 0.09, 0.012]} />
-            </mesh>
-            <mesh material={M.hardware}>
-              <cylinderGeometry args={[0.008, 0.008, 0.014, 10]} />
-            </mesh>
-          </group>
+          {/* a handle big enough to see: the thing that says "door" */}
+          <mesh material={M.brass} position={[W / 2 - 0.035, 0, 0.026]}>
+            <boxGeometry args={[0.016, 0.13, 0.016]} />
+          </mesh>
+          <mesh material={M.brass} position={[W / 2 - 0.035, 0.062, 0.014]}>
+            <boxGeometry args={[0.014, 0.014, 0.026]} />
+          </mesh>
+          <mesh material={M.brass} position={[W / 2 - 0.035, -0.062, 0.014]}>
+            <boxGeometry args={[0.014, 0.014, 0.026]} />
+          </mesh>
         </group>
       </group>
     </group>
@@ -644,7 +660,7 @@ function DoorHinge({ id }: FixableProps) {
   return (
     <group>
       {/* the leaf screwed to the frame, which stays put */}
-      <mesh material={M.metal} position={[-0.035, 0, 0]}>
+      <mesh material={M.brass} position={[-0.035, 0, 0]}>
         <boxGeometry args={[0.062, H, 0.009]} />
       </mesh>
       <mesh material={M.hardware} position={[-0.05, 0.045, 0.006]} rotation={[Math.PI / 2, 0, 0]}>
@@ -654,14 +670,17 @@ function DoorHinge({ id }: FixableProps) {
         <cylinderGeometry args={[0.007, 0.007, 0.005, 10]} />
       </mesh>
 
-      {/* the barrel the pin drops through */}
-      <mesh material={M.metal}>
-        <cylinderGeometry args={[0.019, 0.019, H, 14]} />
-      </mesh>
+      {/* the barrel, in knuckles — the detail that says "hinge" and not
+          "grey rectangle" at a hundred pixels */}
+      {[-0.058, 0, 0.058].map((y) => (
+        <mesh key={y} material={M.brass} position={[0, y, 0]}>
+          <cylinderGeometry args={[0.023, 0.023, 0.046, 14]} />
+        </mesh>
+      ))}
 
       {/* the leaf on the door, which is the half that has let go */}
       <group ref={leaf}>
-        <mesh material={M.metal} position={[0.035, 0, 0]}>
+        <mesh material={M.brass} position={[0.035, 0, 0]}>
           <boxGeometry args={[0.062, H, 0.009]} />
         </mesh>
         <mesh material={M.hardware} position={[0.05, 0.045, 0.006]} rotation={[Math.PI / 2, 0, 0]}>
