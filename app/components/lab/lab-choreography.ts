@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { FINISH_SECONDS, pickFinish, type FinishBeat } from "./lab-finish";
 import {
   TOOL_SCALE,
   WORK_MOTIONS,
@@ -100,8 +101,6 @@ export type TourRuntime = {
   restFor: number;
   /** Set when the screen changed under him and his spot is no longer free. */
   displaced: boolean;
-  /** A beat clip to play instead of idling, or null for the usual pause. */
-  beat: string | null;
   /**
    * How tucked-away he is, 0 to 1.
    *
@@ -118,6 +117,10 @@ export type TourRuntime = {
   perch: THREE.Vector3 | null;
   /** How long that choice has stood. The page moves; the perch must too. */
   perchAge: number;
+  /** The ending this repair is getting. Chosen as the work finishes. */
+  finish: FinishBeat;
+  /** 0 to 1 across that ending, for whoever is drawing it. */
+  finishAt: number;
   /**
    * How present he is, 0 to 1.
    *
@@ -142,23 +145,12 @@ const TURN_EPSILON = 0.035;
  * broken, however briefly, or the fix means nothing.
  */
 const OPENING_AT = 0.55;
-/**
- * How often he does something human between jobs.
- *
- * Rare on purpose. A character who wipes his forehead after every repair is not
- * tired, he is a loop; the beat only means anything if most pauses are just
- * pauses. The wave is rarer still — once he has said hello, saying it again
- * every thirty seconds is the behaviour of a mascot, not a person.
- */
-const BROW_CHANCE = 0.28;
 
-/** How fast he arrives and leaves when the page runs out of room. */
-const PRESENCE_RATE = 3.2;
-const WAVE_AT_LAP = 0;
-
-const ADMIRE_SECONDS = 1.5;
 
 /** How long he stands about between jobs. Contrast is what gets noticed. */
+/** How fast he arrives and leaves when the page runs out of room. */
+const PRESENCE_RATE = 3.2;
+
 const REST_MIN = 0.6;
 const REST_MAX = 2.6;
 
@@ -340,11 +332,12 @@ export function createTourRuntime(): TourRuntime {
     propFade: 0,
     restFor: REST_MIN,
     displaced: false,
-    beat: null,
     presence: 1,
     smallness: 0,
     perch: null,
     perchAge: 0,
+    finish: "nod",
+    finishAt: 0,
   };
 }
 
@@ -534,6 +527,23 @@ export type StepOptions = {
   perch?: () => THREE.Vector3 | null;
 };
 
+/**
+ * Pick the ending, once, as the work finishes.
+ *
+ * Here rather than at the start of ADMIRE so it is chosen exactly once: the
+ * phase handler runs every frame, and a beat that re-rolled sixty times a
+ * second would be a flicker rather than a reaction.
+ */
+function chooseFinish(runtime: TourRuntime, stop: Stop) {
+  runtime.finishAt = 0;
+  runtime.finish = pickFinish(
+    stop.job.effort ?? 0.5,
+    stop.job.tool,
+    runtime.tick === 0 && runtime.laps === 0,
+    Math.random()
+  );
+}
+
 export function stepTour(
   runtime: TourRuntime,
   stops: Stop[],
@@ -641,7 +651,6 @@ export function stepTour(
     runtime.path = null;
     runtime.t = 0;
     runtime.displaced = false;
-    runtime.beat = null;
     setPhase(runtime, "TRAVEL");
     return true;
   };
@@ -772,6 +781,7 @@ export function stepTour(
       );
       setObjectFix(stop.job.id, repairCurve(runtime.workProgress));
       if (runtime.workProgress >= 1) {
+        if (stop.exitSeconds <= 0) chooseFinish(runtime, stop);
         setPhase(runtime, stop.exitSeconds > 0 ? "WORK_OUT" : "ADMIRE");
       }
       break;
@@ -779,6 +789,7 @@ export function stepTour(
     case "WORK_OUT":
       if (runtime.phaseElapsed >= stop.exitSeconds) {
         runtime.toolEquipped = false;
+        chooseFinish(runtime, stop);
         setPhase(runtime, "ADMIRE");
       }
       break;
@@ -793,28 +804,17 @@ export function stepTour(
      */
     case "ADMIRE":
       runtime.toolEquipped = false;
+      runtime.finishAt = Math.min(
+        1,
+        runtime.phaseElapsed / Math.max(0.2, FINISH_SECONDS[runtime.finish])
+      );
       runtime.lean = approachValue(runtime.lean, 0, dt, 5);
-      if (runtime.phaseElapsed >= ADMIRE_SECONDS) {
+      if (runtime.phaseElapsed >= FINISH_SECONDS[runtime.finish]) {
         runtime.tick += 1;
         if ((runtime.stopIndex + 1) % stops.length === 0) runtime.laps += 1;
         runtime.workProgress = 0;
-        /*
-         * Pick the beat now, while we still know what he has just been doing.
-         * Hard work earns the forehead; the wave belongs to the first pause of
-         * a visit, when somebody has plausibly only just arrived.
-         */
-        const heavy = stop.job.tool === "drill" || stop.job.tool === "hammer";
-        runtime.beat =
-          runtime.tick === 1 && runtime.laps === WAVE_AT_LAP
-            ? "Beat · Wave"
-            : heavy && Math.random() < BROW_CHANCE
-              ? "Beat · Brow"
-              : null;
         runtime.placed = null;
-        /* A beat needs room to play; a plain pause can be short. */
-        runtime.restFor = runtime.beat
-          ? 2.1
-          : REST_MIN + Math.random() * (REST_MAX - REST_MIN);
+        runtime.restFor = REST_MIN + Math.random() * (REST_MAX - REST_MIN);
         setPhase(runtime, "REST");
       }
       break;
