@@ -242,15 +242,7 @@ function SceneContents({
         const t = (w.__fxTour ?? {}) as Record<string, unknown>;
         w.__fxTour = { ...t, crowding: spot ? +spot.crowding.toFixed(2) : null };
       }
-      if (process.env.NODE_ENV !== "production") {
-        const w = window as unknown as Record<string, number>;
-        w.__fxTries = (w.__fxTries ?? 0) + 1;
-      }
       if (!spot) {
-        if (process.env.NODE_ENV !== "production") {
-          const w = window as unknown as Record<string, number>;
-          w.__fxNoSpot = (w.__fxNoSpot ?? 0) + 1;
-        }
         forgetSpots();
         return null;
       }
@@ -308,10 +300,6 @@ function SceneContents({
        */
       if (under.heavy > 0.09 || under.covered > 0.2) {
         /* Nowhere this time. Drop the memory so the retry has the whole page. */
-        if (process.env.NODE_ENV !== "production") {
-          const w = window as unknown as Record<string, number>;
-          w.__fxRejected = (w.__fxRejected ?? 0) + 1;
-        }
         forgetSpots();
         return null;
       }
