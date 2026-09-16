@@ -38,7 +38,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     objectRotationDeg: [0, 18, 0],
     objectOffset: [0.0, 0.172],
     propScale: 0.63,
-    footprint: { w: 1, h: 1.3 },
+    footprint: { w: 1.25, h: 1.45 },
   },
   {
     effort: 0.45,
@@ -53,7 +53,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     objectRotationDeg: [-6, 24, 0],
     objectOffset: [0.0, 0.0],
     propScale: 0.62,
-    footprint: { w: 1, h: 1.05 },
+    footprint: { w: 1.35, h: 1.3 },
     effect: "spark",
   },
   {
@@ -69,7 +69,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     objectRotationDeg: [0, 16, 0],
     objectOffset: [-0.26, 0.0],
     propScale: 0.47,
-    footprint: { w: 1.5, h: 1 },
+    footprint: { w: 1.7, h: 1.3 },
     effect: "dust",
   },
   {
@@ -86,7 +86,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     objectRotationDeg: [-8, 22, 0],
     objectOffset: [-0.113, 0.086],
     propScale: 0.6,
-    footprint: { w: 1.25, h: 1.15 },
+    footprint: { w: 1.5, h: 1.4 },
   },
   {
     effort: 0.3,
@@ -101,7 +101,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     objectRotationDeg: [-5, 28, 0],
     objectOffset: [-0.098, -0.044],
     propScale: 0.41,
-    footprint: { w: 1.15, h: 1.1 },
+    footprint: { w: 1.2, h: 1.15 },
   },
   {
     effort: 0.5,
@@ -117,7 +117,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     objectRotationDeg: [0, 14, 0],
     objectOffset: [0.0, 0.03],
     propScale: 0.52,
-    footprint: { w: 1, h: 1.2 },
+    footprint: { w: 1.4, h: 1.4 },
   },
   {
     effort: 0.2,
@@ -132,7 +132,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     objectRotationDeg: [-4, 22, 0],
     objectOffset: [0.0, 0.0],
     propScale: 0.62,
-    footprint: { w: 1, h: 1 },
+    footprint: { w: 1.35, h: 1.3 },
     effect: "spark",
   },
   {
@@ -148,7 +148,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     objectRotationDeg: [6, 24, 0],
     objectOffset: [-0.185, 0.015],
     propScale: 0.66,
-    footprint: { w: 1.6, h: 1.15 },
+    footprint: { w: 1.75, h: 1.35 },
     effect: "dust",
   },
   {
@@ -164,7 +164,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     objectRotationDeg: [0, 20, 0],
     objectOffset: [-0.06, 0.02],
     propScale: 0.63,
-    footprint: { w: 1.05, h: 1.1 },
+    footprint: { w: 1.45, h: 1.35 },
     effect: "impact",
   },
   {
@@ -180,7 +180,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     objectRotationDeg: [0, 26, 0],
     objectOffset: [0.0, -0.045],
     propScale: 0.66,
-    footprint: { w: 1.05, h: 1.1 },
+    footprint: { w: 1.4, h: 1.35 },
   },
 ];
 

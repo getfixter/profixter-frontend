@@ -129,3 +129,222 @@ export function createGlowTexture(): THREE.Texture {
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 }
+
+/* ------------------------------------------------------- household context */
+
+/**
+ * The surface a repair is attached to, as a soft-edged fragment.
+ *
+ * Every prop until now floated unsupported, which was a deliberate choice and
+ * became the loudest remaining problem: a towel rail alone in space is a metal
+ * rod, and a tap with no basin under it is a piece of chrome. The brain needs
+ * about one more object than we were giving it.
+ *
+ * The constraint that shapes all of this is that the page underneath is BOTH a
+ * near-black hero and a white article, often within one scroll. A wall drawn as
+ * a rectangle is a bright card on one and invisible on the other. So these are
+ * drawn with the alpha falling away to nothing at the edges: there is no border
+ * anywhere for the eye to catch, and what remains is a suggestion of surface
+ * exactly where the object meets it, which works on either ground.
+ *
+ * One canvas each, generated once and shared. They are the whole cost of this
+ * feature — no extra geometry beyond a quad per repair.
+ */
+export type PatchKind = "plaster" | "tile" | "ceiling" | "woodPanel";
+
+const patchCache = new Map<PatchKind, THREE.Texture>();
+
+function softEdge(ctx: CanvasRenderingContext2D, size: number) {
+  /*
+   * Feather a RECTANGLE, not a disc, by REMOVING the edges.
+   *
+   * Two things were wrong with the first attempt. It faded radially, which on
+   * the dark half of the page turned every wall into a glowing oval behind the
+   * object — a spotlight, not a surface; the shape does the work here, and a
+   * soft-edged rectangle reads as a piece of wall while a soft oval reads as
+   * light whatever is painted on it.
+   *
+   * And it built the mask with `destination-in`, four strips in sequence. That
+   * operator applies to the WHOLE canvas every time it is used, so each strip
+   * erased everything the previous one had kept and the texture came out
+   * essentially blank — which is why nothing appeared at any size, at any
+   * brightness, lit or unlit.
+   *
+   * `destination-out` accumulates: each pass removes a little more and nothing
+   * is ever restored, which is what a feather actually is.
+   */
+  const feather = size * 0.16;
+  ctx.globalCompositeOperation = "destination-out";
+  const edges: [number, number, number, number, number, number, number, number][] = [
+    /* x, y, w, h, and the gradient from (gx0,gy0) opaque to (gx1,gy1) clear. */
+    [0, 0, size, feather, 0, 0, 0, feather],
+    [0, size - feather, size, feather, 0, size, 0, size - feather],
+    [0, 0, feather, size, 0, 0, feather, 0],
+    [size - feather, 0, feather, size, size, 0, size - feather, 0],
+  ];
+  for (const [x, y, w, h, gx0, gy0, gx1, gy1] of edges) {
+    const g = ctx.createLinearGradient(gx0, gy0, gx1, gy1);
+    g.addColorStop(0, "rgba(0,0,0,1)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, w, h);
+  }
+  ctx.globalCompositeOperation = "source-over";
+}
+
+export function createPatchTexture(kind: PatchKind): THREE.Texture {
+  const cached = patchCache.get(kind);
+  if (cached) return cached;
+
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    if (kind === "tile") {
+      /* Four tiles and a grout cross: the least that says "bathroom". */
+      ctx.fillStyle = "#dfe7ec";
+      ctx.fillRect(0, 0, size, size);
+      ctx.strokeStyle = "rgba(128,146,158,0.95)";
+      ctx.lineWidth = size * 0.028;
+      /* Three lines each way: nine tiles, which reads as tiling. One cross
+         reads as a plus sign drawn on a white card. */
+      for (const t of [0.25, 0.5, 0.75]) {
+        ctx.beginPath();
+        ctx.moveTo(size * t, 0); ctx.lineTo(size * t, size);
+        ctx.moveTo(0, size * t); ctx.lineTo(size, size * t);
+        ctx.stroke();
+      }
+      /* A highlight along the top of each tile: glazed, rather than paper. */
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+          ctx.fillRect(size * (0.045 + i * 0.25), size * (0.045 + j * 0.25), size * 0.09, size * 0.022);
+        }
+      }
+    } else if (kind === "woodPanel") {
+      ctx.fillStyle = "#c39468";
+      ctx.fillRect(0, 0, size, size);
+      ctx.strokeStyle = "rgba(140,98,60,0.4)";
+      ctx.lineWidth = size * 0.008;
+      for (let i = 0; i < 7; i++) {
+        const y = size * (0.08 + i * 0.14);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.bezierCurveTo(size * 0.35, y - size * 0.02, size * 0.65, y + size * 0.02, size, y);
+        ctx.stroke();
+      }
+    } else {
+      /* Plaster and ceiling: flat, faintly mottled, no pattern to pick out. */
+      ctx.fillStyle = kind === "ceiling" ? "#e9ebef" : "#e3ded7";
+      ctx.fillRect(0, 0, size, size);
+      ctx.fillStyle = "rgba(0,0,0,0.014)";
+      for (let i = 0; i < 70; i++) {
+        const r = size * (0.012 + Math.random() * 0.03);
+        ctx.beginPath();
+        ctx.arc(Math.random() * size, Math.random() * size, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    /*
+     * A little light from above.
+     *
+     * A perfectly even panel reads as a grey smudge however well it is shaped.
+     * One soft top-to-bottom gradient is the difference between a patch of
+     * colour and a plane with a light source somewhere above it, which is what
+     * the eye is looking for when it decides whether something is a wall.
+     */
+    const lit = ctx.createLinearGradient(0, 0, 0, size);
+    lit.addColorStop(0, "rgba(255,255,255,0.20)");
+    lit.addColorStop(0.55, "rgba(255,255,255,0.0)");
+    lit.addColorStop(1, "rgba(0,0,0,0.13)");
+    ctx.fillStyle = lit;
+    ctx.fillRect(0, 0, size, size);
+
+    softEdge(ctx, size);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  patchCache.set(kind, texture);
+  return texture;
+}
+
+const patchMaterialCache = new Map<PatchKind, THREE.Material>();
+
+/** One shared material per surface kind. */
+export function patchMaterial(kind: PatchKind): THREE.Material {
+  const cached = patchMaterialCache.get(kind);
+  if (cached) return cached;
+  /*
+   * Unlit, deliberately.
+   *
+   * A lit backdrop is at the mercy of where the scene's lights happen to be,
+   * and these fragments sit behind objects that move all over a page whose own
+   * background runs from near-black to white. Lit, the same wall came out
+   * bright behind an outlet and invisible behind a towel rail. Unlit, its value
+   * is exactly what the canvas painted, which is the only way to tune something
+   * that has to read against both ends of the page at once.
+   */
+  /*
+   * Translucent, which is what makes one wall work on two pages.
+   *
+   * Unlit means the colour on screen is exactly the colour in the canvas, and
+   * there is no single colour that works: a wall bright enough to read over the
+   * near-black hero is a glowing panel, and a wall dark enough to read over the
+   * white article is a grey card. Letting the page show through solves it —
+   * over the hero the same patch settles to a dark blue-grey and over the
+   * article to a warm off-white, while the contrast WITHIN it, which is what
+   * carries the grout lines and the mottling, survives either way.
+   */
+  const material = new THREE.MeshBasicMaterial({
+    map: createPatchTexture(kind),
+    transparent: true,
+    opacity: kind === "tile" ? 0.62 : 0.5,
+    /* It is a backdrop: it must never z-fight with what is mounted on it. */
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  patchMaterialCache.set(kind, material);
+  return material;
+}
+
+/**
+ * The dark smudge where a mounted object meets its surface.
+ *
+ * Contact is most of what makes something look attached rather than laid on
+ * top, and at this size a soft ellipse under the object does more for that than
+ * any amount of modelled bracket.
+ */
+let contactTexture: THREE.Texture | null = null;
+export function createContactTexture(): THREE.Texture {
+  if (contactTexture) return contactTexture;
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    g.addColorStop(0, "rgba(40,46,58,0.5)");
+    g.addColorStop(0.5, "rgba(40,46,58,0.2)");
+    g.addColorStop(1, "rgba(40,46,58,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+  }
+  contactTexture = new THREE.CanvasTexture(canvas);
+  return contactTexture;
+}
+
+let contactMat: THREE.Material | null = null;
+export function contactMaterial(): THREE.Material {
+  if (!contactMat) {
+    contactMat = new THREE.MeshBasicMaterial({
+      map: createContactTexture(),
+      transparent: true,
+      depthWrite: false,
+    });
+  }
+  return contactMat;
+}

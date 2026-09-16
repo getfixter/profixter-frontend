@@ -123,6 +123,8 @@ const _poleR = new THREE.Vector3();
 const _poleL = new THREE.Vector3();
 const _probe = new THREE.Vector3();
 const _faceQ = new THREE.Quaternion();
+const _propBox = new THREE.Box3();
+const _propSize = new THREE.Vector3();
 const _faceV = new THREE.Vector3();
 /* Scratch for the head look-at and the arm solve; allocated once. */
 const _lookAt = new THREE.Vector3();
@@ -1373,7 +1375,40 @@ export default function FixterModel({
               _faceV.set(0, 0, 1).applyQuaternion(_faceQ);
               w.__fxFace = +_faceV.z.toFixed(2);
             }
-            w.__fxBox = {
+            /* Lab only: what the renderer is actually doing, so "context" cannot
+             quietly become eleven miniature rooms. */
+          const info = state.gl.info;
+          w.__fxCost = {
+            calls: info.render.calls,
+            tris: info.render.triangles,
+            geometries: info.memory.geometries,
+            textures: info.memory.textures,
+            programs: info.programs ? info.programs.length : 0,
+          };
+          /*
+           * Lab only: the prop's own footprint on screen.
+           *
+           * Every check until now measured HIS box against the page's text,
+           * which was reasonable while the props were a faceplate or a rod.
+           * They are a sink and a door now — two to three times the size — and
+           * nothing was watching whether the thing he is fixing covers the
+           * website.
+           */
+          const propGroup = propRef.current;
+          if (propGroup && propGroup.visible) {
+            _propBox.setFromObject(propGroup);
+            if (!_propBox.isEmpty()) {
+              _propBox.getCenter(_probe);
+              _propBox.getSize(_propSize);
+              w.__fxProp = {
+                x: +_probe.x.toFixed(3),
+                y: +_probe.y.toFixed(3),
+                w: +_propSize.x.toFixed(3),
+                h: +_propSize.y.toFixed(3),
+              };
+            }
+          }
+          w.__fxBox = {
               h: +(top - lowest).toFixed(2),
               w: +(right - left).toFixed(2),
             };

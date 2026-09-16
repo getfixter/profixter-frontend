@@ -552,6 +552,20 @@ function DiagReporter({
       w.__fxBodyW = bodyW;
       w.__fxBodyH = bodyH;
       /* Lab only: the working hand in screen pixels, for zooming in on it. */
+      /* The prop's world box, in viewport pixels, for the coverage check. */
+      const prop = (w.__fxProp ?? null) as
+        | { x: number; y: number; w: number; h: number }
+        | null;
+      if (prop) {
+        const a = projection.pixelAt(prop.x - prop.w / 2, prop.y + prop.h / 2);
+        const b = projection.pixelAt(prop.x + prop.w / 2, prop.y - prop.h / 2);
+        w.__fxPropPx = {
+          x: Math.round(Math.min(a.x, b.x)),
+          y: Math.round(Math.min(a.y, b.y)),
+          w: Math.round(Math.abs(b.x - a.x)),
+          h: Math.round(Math.abs(b.y - a.y)),
+        };
+      }
       const hand = (w.__fxHandWorld ?? null) as { x: number; y: number } | null;
       if (hand) {
         const hp = projection.pixelAt(hand.x, hand.y);
