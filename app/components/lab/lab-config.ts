@@ -19,6 +19,16 @@
 export const FIXTER_GLB = "/3d/fixter-animated.glb";
 
 /**
+ * Bumped on every deploy of the Lab route.
+ *
+ * Here rather than in the page so the server-rendered marker and the
+ * diagnostics panel cannot drift apart — they did, and a page reading
+ * "BUILD lab-13" above a bar reading "diag-5" is exactly the kind of thing
+ * that makes you doubt what you are looking at.
+ */
+export const LAB_BUILD = "lab-14";
+
+/**
  * Metres per second, measured from the GLB rather than guessed.
  *
  * The "walking_2" clip carries baked root motion: its Hips travel 1.1089 units
