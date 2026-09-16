@@ -282,6 +282,7 @@ export default function FixterModel({
   const [propJobId, setPropJobId] = useState<string | null>(null);
   const [beat, setBeat] = useState<string | null>(null);
   const lookRef = useRef(0);
+  const presenceRef = useRef(1);
   const propRef = useRef<THREE.Group>(null);
   const effectRef = useRef<THREE.Group>(null);
   /* Mirrored so the tool's aim callback can read it without being rebuilt. */
@@ -579,6 +580,7 @@ export default function FixterModel({
        * out of shot rather than as a bug.
        */
       const present = runtime.presence;
+      presenceRef.current = present;
       group.scale.setScalar(scale * (0.72 + 0.28 * present) * (present > 0.02 ? 1 : 0));
       group.visible = present > 0.02;
 
@@ -730,7 +732,7 @@ export default function FixterModel({
 
   return (
     <>
-      <ContactShadow follow={groupRef} scale={scale} />
+      <ContactShadow follow={groupRef} scale={scale} presence={presenceRef} />
       <group ref={propRef} visible={false}>
         {propJobId && propKind && (
           <FixableObject
@@ -787,9 +789,12 @@ export default function FixterModel({
 function ContactShadow({
   follow,
   scale,
+  presence,
 }: {
   follow: React.RefObject<THREE.Group | null>;
   scale: number;
+  /** Reads the same presence the character does, so it leaves when he does. */
+  presence: React.RefObject<number>;
 }) {
   const ref = useRef<THREE.Mesh>(null);
   const texture = useMemo(() => createContactShadow(), []);
@@ -804,6 +809,17 @@ function ContactShadow({
       target.position.y + 0.02 * scale,
       target.position.z - 0.06
     );
+    /*
+     * A shadow with nobody casting it.
+     *
+     * On a page with no room for him he fades out and this stayed behind — a
+     * grey smudge sitting under the pricing table, which is exactly the kind of
+     * detail that makes the whole thing read as a widget rather than a person.
+     */
+    const here = presence.current ?? 1;
+    mesh.visible = here > 0.02;
+    (mesh.material as THREE.MeshBasicMaterial).opacity = 0.5 * here;
+    mesh.scale.set(0.62 * scale * (0.7 + 0.3 * here), 0.17 * scale * (0.7 + 0.3 * here), 1);
   });
 
   return (
