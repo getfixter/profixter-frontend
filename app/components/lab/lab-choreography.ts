@@ -596,7 +596,11 @@ export type StepOptions = {
    * from where the anchor implied. Checking the estimate said the stage was
    * clear while he stood on a pricing card.
    */
-  standable?: (feet: THREE.Vector3) => boolean;
+  standable?: (
+    feet: THREE.Vector3,
+    propAt?: THREE.Vector3,
+    propSpan?: number
+  ) => boolean;
 };
 
 /**
@@ -767,7 +771,16 @@ export function stepTour(
       options.characterScale,
       options.objectScale
     );
-    if (options.standable && !options.standable(placed.mark)) return null;
+    if (
+      options.standable &&
+      !options.standable(
+        placed.mark,
+        placed.object,
+        next.job.footprint?.w ?? 1
+      )
+    ) {
+      return null;
+    }
     return placed;
   };
 
@@ -799,8 +812,30 @@ export function stepTour(
      * would move the thing a viewer has been looking at for two seconds, which
      * is a worse spawn than the one this exists to prevent.
      */
-    const staged =
+    const stagedRaw =
       runtime.nextIndex === index % stops.length ? runtime.nextPlaced : null;
+    /*
+     * Re-check the staged spot before committing to it.
+     *
+     * It was chosen several seconds ago, and the page it was chosen against may
+     * not have been the page that is there now: measurement is rebuilt when the
+     * layout changes, and a placement validated while only part of the page had
+     * been measured is validated against a page with holes in it. That is how a
+     * cabinet door came to be sitting on a pricing card that the check had
+     * reported as empty space.
+     *
+     * Cheap, and it turns a stale decision into a fresh one at exactly the
+     * moment it starts to matter.
+     */
+    const stillClear =
+      stagedRaw !== null &&
+      (!options.standable ||
+        options.standable(
+          stagedRaw.mark,
+          stagedRaw.object,
+          next.job.footprint?.w ?? 1
+        ));
+    const staged = stillClear ? stagedRaw : null;
     const placed = staged ?? placeFor(index);
     if (!placed) return false;
     runtime.stopIndex = index % stops.length;
