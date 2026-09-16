@@ -22,6 +22,7 @@ import { FIXTER_HIPS_BONE, MESHY_BVH_TO_FIXTER } from "./meshy-bone-map";
 import { reverseClip, subclipByTime } from "./lab-clip-utils";
 import { publishRetargetReport, publishTelemetry } from "./lab-telemetry";
 import {
+  approachValue,
   buildStops,
   clipRoleForPhase,
   createTourRuntime,
@@ -35,8 +36,9 @@ import {
 import { AimedHandTool } from "./lab-tools";
 import { createContactShadow } from "./lab-materials";
 import FixableObject from "./lab-objects";
+import WorkEffect from "./lab-effects";
 import { setFixterPose } from "./lab-pose";
-import { setDiag } from "./lab-diagnostics";
+import { addDiagError, setDiag } from "./lab-diagnostics";
 
 useGLTF.preload(FIXTER_GLB);
 
@@ -95,6 +97,12 @@ export type FixterModelProps = {
 
 /* Scratch, so aiming the tool allocates nothing per frame. */
 const _toolTarget = new THREE.Vector3();
+/* Scratch for the head look-at; allocated once, never per frame. */
+const _headAt = new THREE.Vector3();
+const _lookAt = new THREE.Vector3();
+const _lookDir = new THREE.Vector3();
+const _lookQ = new THREE.Quaternion();
+const _lookEuler = new THREE.Euler();
 
 const TELEMETRY_INTERVAL = 0.25;
 const MANUAL_FADE = 0.2;
@@ -161,6 +169,21 @@ export default function FixterModel({
     });
     return copy;
   }, [scene]);
+
+  /**
+   * The head, for looking at things.
+   *
+   * Optional by design: if a future rig names it something else the character
+   * simply keeps his head still, which is what he did before and is not a
+   * failure worth breaking a page over.
+   */
+  const headBone = useMemo(() => {
+    let found: THREE.Object3D | null = null;
+    model.traverse((child) => {
+      if (!found && child.name === "Head") found = child;
+    });
+    return found as THREE.Object3D | null;
+  }, [model]);
 
   const handBone = useMemo(() => {
     let found: THREE.Object3D | null = null;
@@ -254,7 +277,9 @@ export default function FixterModel({
   const [phase, setPhase] = useState<TourPhase>("IDLE");
   const [stopIndex, setStopIndex] = useState(0);
   const [propJobId, setPropJobId] = useState<string | null>(null);
+  const lookRef = useRef(0);
   const propRef = useRef<THREE.Group>(null);
+  const effectRef = useRef<THREE.Group>(null);
   /* Mirrored so the tool's aim callback can read it without being rebuilt. */
   const stopIndexRef = useRef(0);
   const [toolVisible, setToolVisible] = useState(false);
@@ -303,11 +328,42 @@ export default function FixterModel({
       const next = clipName ? (actions[clipName] ?? null) : null;
       const current = currentActionRef.current;
       if (next === current) return;
-      if (current) current.fadeOut(fade);
+      /*
+       * Never fade out into nothing.
+       *
+       * A clip name that is not in the mixer used to fade the current action to
+       * zero and put nothing in its place, which drops the rig to its bind pose
+       * — the character stands in the middle of the hero with his arms straight
+       * out like a scarecrow. Holding the previous clip is wrong too, but it is
+       * wrong in a way nobody notices, and it cannot happen silently.
+       */
+      if (clipName && !next) {
+        addDiagError(`clip missing: ${clipName}`);
+        return;
+      }
+      if (current) {
+        /*
+         * Snap to full before fading out.
+         *
+         * three blends whatever weight is missing against the rig's bind pose,
+         * so two actions that do not add up to one put a fraction of a T-pose
+         * on screen. They stop adding up the moment a fade is interrupted by
+         * another fade — and phases here are routinely shorter than the
+         * quarter-second they cross-fade over, because TURN_TO can finish on
+         * the first frame if he is already facing the right way.
+         *
+         * Forcing the outgoing action to full weight first costs a small pop in
+         * that case, on a clip that was already being replaced. The alternative
+         * is a man standing in the hero with his arms straight out.
+         */
+        current.setEffectiveWeight(1);
+        current.fadeOut(fade);
+      }
       if (next) {
+        const style = loopStyles.get(clipName!) ?? "repeat";
         next
           .reset()
-          .setLoop(LOOP_MODE[loopStyles.get(clipName!) ?? "repeat"], Infinity)
+          .setLoop(LOOP_MODE[style], Infinity)
           .setEffectiveTimeScale(timeScaleRef.current)
           .setEffectiveWeight(1)
           .fadeIn(fade)
@@ -317,6 +373,25 @@ export default function FixterModel({
     },
     [actions, loopStyles]
   );
+
+  /*
+   * A one-shot has to hold its last frame.
+   *
+   * Without this, three deactivates a LoopOnce action the instant it finishes
+   * and the rig falls back to its bind pose — so "Crouch · In" would run, reach
+   * the crouch, and drop the character into a T-pose in the middle of the hero
+   * until the work clip picked him up. It is the enter and exit poses that need
+   * it, and they are exactly the clips whose whole purpose is to arrive
+   * somewhere and stay there.
+   *
+   * Set once per action rather than on every transition: it is a property of
+   * the clip, not of the crossfade.
+   */
+  useEffect(() => {
+    for (const [name, action] of Object.entries(actions)) {
+      if (action) action.clampWhenFinished = loopStyles.get(name) === "once";
+    }
+  }, [actions, loopStyles]);
 
   useEffect(() => {
     applyClip(desiredClip, tour ? PHASE_FADE[phase] : MANUAL_FADE);
@@ -341,11 +416,18 @@ export default function FixterModel({
    */
   const propJob = propJobId ? jobs.find((j) => j.id === propJobId) : undefined;
   const propKind = propJob?.object ?? null;
+  const propEffect = propJob?.effect ?? null;
+  const propScale = propJob?.propScale ?? 1;
+  const working = phase === "WORK";
   const propRotation = propJob?.objectRotationDeg ?? ([0, 0, 0] as [number, number, number]);
 
   const placeRef = useRef(place);
   const boundsRef = useRef(bounds);
   const displacedRef = useRef(displaced);
+  const propScaleRef = useRef(1);
+  useEffect(() => {
+    propScaleRef.current = propScale;
+  }, [propScale]);
   const busyRef = useRef(busyAt);
   useEffect(() => {
     busyRef.current = busyAt;
@@ -395,6 +477,7 @@ export default function FixterModel({
         stepTour(runtime, stops, dt, {
           place: placeRef.current,
           characterScale: scale,
+          objectScale,
           bounds: boundsRef.current,
           displaced: displacedRef.current,
           busyAt: busyRef.current,
@@ -414,10 +497,29 @@ export default function FixterModel({
       if (prop) {
         if (runtime.placed) prop.position.copy(runtime.placed.object);
         const f = runtime.propFade;
-        prop.scale.setScalar(objectScale * (0.55 + 0.45 * f) * (f > 0.01 ? 1 : 0));
+        prop.scale.setScalar(
+          objectScale * propScaleRef.current * (0.55 + 0.45 * f) * (f > 0.01 ? 1 : 0)
+        );
         prop.visible = f > 0.01;
       }
+      const fx = effectRef.current;
+      if (fx) {
+        if (runtime.placed) fx.position.copy(runtime.placed.workPoint);
+        fx.visible = runtime.propFade > 0.4;
+      }
       if (runtime.propJobId !== propJobId) setPropJobId(runtime.propJobId);
+      if (process.env.NODE_ENV !== "production") {
+        /* Ground truth for the Lab's watcher: phase and prop from one frame. */
+        const w = window as unknown as Record<string, unknown>;
+        const t = (w.__fxTour ?? {}) as Record<string, unknown>;
+        w.__fxTour = {
+          ...t,
+          livePhase: runtime.phase,
+          liveJob: stops[runtime.stopIndex % stops.length]?.job.id ?? null,
+          prop: runtime.propJobId,
+          fade: Math.round(runtime.propFade * 100) / 100,
+        };
+      }
 
       group.position.copy(runtime.position);
       /*
@@ -429,6 +531,52 @@ export default function FixterModel({
       group.rotation.order = "YXZ";
       group.rotation.set(0, runtime.yaw, runtime.lean);
       group.scale.setScalar(scale);
+
+      /*
+       * He looks at his own work.
+       *
+       * The pause after a repair was the weakest second in the loop: the thing
+       * he had just straightened was hanging there fixed and he was staring
+       * past the reader, which read less as satisfaction than as a man waiting
+       * for a bus. A head that turns costs one quaternion and does most of the
+       * work that a bespoke animation would have done.
+       *
+       * Applied after the mixer has written the clip's own rotation, and
+       * blended in and out rather than switched, so the clip still owns the
+       * pose and this is only a bias on top of it.
+       */
+      if (headBone) {
+        const wantLook =
+          runtime.phase === "ADMIRE" || runtime.phase === "WORK_OUT";
+        lookRef.current = approachValue(
+          lookRef.current,
+          wantLook ? 1 : 0,
+          dt,
+          3.4
+        );
+        if (lookRef.current > 0.002 && runtime.placed) {
+          headBone.getWorldPosition(_headAt);
+          /* workPoint is in the parent's space, the same space he stands in. */
+          _lookAt.copy(runtime.placed.workPoint);
+          group.parent?.localToWorld(_lookAt);
+          _lookDir.subVectors(_lookAt, _headAt).normalize();
+          /*
+           * Clamped hard. A head that can reach the target exactly will snap
+           * round to something behind him on a bad frame, and an owl is worse
+           * than an inattentive handyman.
+           */
+          const yawTo = THREE.MathUtils.clamp(
+            Math.atan2(_lookDir.x, _lookDir.z) - runtime.yaw,
+            -0.7,
+            0.7
+          );
+          const pitchTo = THREE.MathUtils.clamp(Math.asin(_lookDir.y), -0.5, 0.75);
+          _lookQ.setFromEuler(
+            _lookEuler.set(-pitchTo * lookRef.current, yawTo * lookRef.current, 0, "YXZ")
+          );
+          headBone.quaternion.multiply(_lookQ);
+        }
+      }
 
       if (runtime.phase !== phase) setPhase(runtime.phase);
       stopIndexRef.current = runtime.stopIndex;
@@ -481,6 +629,19 @@ export default function FixterModel({
         };
         lastEmitted.current = emitted;
         onTourState(emitted);
+        /*
+         * A window onto the tour, for the Lab's automated watching only.
+         *
+         * Judging a composition means screenshotting it and knowing what he was
+         * doing at the shutter; without this the frames are unlabelled and I am
+         * back to guessing. Costs one property write per phase change and goes
+         * when the Lab does.
+         */
+        if (process.env.NODE_ENV !== "production") {
+          const w = window as unknown as Record<string, unknown>;
+          const t = (w.__fxTour ?? {}) as Record<string, unknown>;
+          w.__fxTour = { ...t, phase: emitted.phase, job: emitted.jobId };
+        }
       }
     } else {
       if (tokenRef.current !== -1) {
@@ -530,6 +691,13 @@ export default function FixterModel({
             rotationDeg={propRotation}
           />
         )}
+      </group>
+      {/*
+        The flourish, parked on the work itself rather than on the prop, so a
+        spark comes off the screw and not off the middle of the faceplate.
+      */}
+      <group ref={effectRef} visible={false}>
+        <WorkEffect kind={propEffect} active={working} />
       </group>
       <group ref={groupRef}>
         <primitive object={model} />

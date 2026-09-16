@@ -27,7 +27,7 @@ export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
 /** Bumped on every deploy of this route. Rendered on the server, in the HTML. */
-export const LAB_BUILD = "diag-5";
+export const LAB_BUILD = "lab-6";
 
 export default function FixterLabPage() {
   return (
@@ -40,6 +40,11 @@ export default function FixterLabPage() {
         below it is worth looking at and the problem is upstream of the
         experiment entirely. Everything else here renders on the client, which
         is exactly why the previous markers were invisible when it mattered.
+
+        It was a billboard while the page was invisible on a phone. That is
+        settled, and a billboard now costs fifty pixels off the top of the very
+        composition it exists to reveal, so it has become a strip. Still server
+        HTML, still first, still impossible to confuse with the real site.
       */}
       <div
         id="lab-build-marker"
@@ -48,16 +53,16 @@ export default function FixterLabPage() {
           position: "relative",
           zIndex: 100,
           background: "#0B1628",
-          borderBottom: "4px solid #FFB300",
+          borderBottom: "3px solid #FFB300",
           color: "#ffffff",
-          padding: "14px 16px",
+          padding: "5px 12px",
           fontFamily:
             "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
-          fontSize: "15px",
+          fontSize: "11px",
           fontWeight: 700,
-          letterSpacing: "0.02em",
+          letterSpacing: "0.06em",
           textAlign: "center",
-          lineHeight: 1.35,
+          lineHeight: 1.4,
         }}
       >
         <span style={{ color: "#FFB300" }}>3D FIXTER LAB</span>

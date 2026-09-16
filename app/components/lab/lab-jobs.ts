@@ -198,6 +198,12 @@ export type JobDefinition = {
    * shade's rim — so drawing the prop here puts that feature exactly on the
    * anchor, and the tool points at something real.
    */
+  /**
+   * Where the prop sits relative to his hand, in the PROP's own units.
+   *
+   * Prop units, not world units, so that it keeps meaning the same thing when
+   * props are resized: "half a towel bar to the left" stays half a towel bar.
+   */
   objectOffset?: [number, number];
   /**
    * How much screen this job wants, relative to the character alone.
@@ -207,6 +213,23 @@ export type JobDefinition = {
    * beautifully beside a paragraph and then overlap it.
    */
   footprint?: { w: number; h: number };
+  /**
+   * A small flourish while he works.
+   *
+   * Deliberately a short enum rather than a callback: the point of these is to
+   * make a repair more readable, and a job that could do anything would quickly
+   * be doing too much.
+   */
+  effect?: "dust" | "spark" | "impact";
+  /**
+   * Size relative to the shared prop scale.
+   *
+   * A wall switch and a shelf board are not the same size in real life and must
+   * not be the same size here either, but they DO both have to be legible at a
+   * hundred and thirty pixels of character. This is the reconciliation: real
+   * proportions, nudged until each one reads.
+   */
+  propScale?: number;
 };
 
 /**

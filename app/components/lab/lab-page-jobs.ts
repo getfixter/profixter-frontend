@@ -2,52 +2,187 @@ import type { JobDefinition } from "./lab-jobs";
 import type { LayoutId } from "./lab-stage";
 
 /**
- * The jobs, when the stage is a webpage.
+ * The repair library.
  *
- * Every one belongs to something on the page rather than to a coordinate: the
- * booking card, the primary call to action, a row of the checklist, the
- * membership headline. The page says where those things are; this file says
- * which corner of which one a job sits in, and the rest of the choreography is
- * the same code the empty stage runs.
+ * Eleven small household problems, chosen so that each one is legible at about
+ * a hundred pixels and unmistakably different from the others. A job is pure
+ * data: what the thing is, which posture he works in, which tool he brings, how
+ * he approaches it and how long it takes. Nothing here says where — that is
+ * decided on the screen, at the moment he sets off.
  *
- * Five, not six. Fewer and better placed reads as a character living somewhere;
- * six evenly spread reads as a demo with props scattered over a screenshot. The
- * sixth — the faucet — stays in the library and returns the moment there is a
- * page element that genuinely wants it.
+ * The order is the running order, and it is arranged so no two neighbours share
+ * a tool or a posture. Watching him crouch, then stand, then reach overhead is
+ * most of what stops the loop reading as "walk, screwdriver, walk, screwdriver".
  */
 
-export type Align = { x: number; y: number };
-
-export type PageJob = JobDefinition & {
-  /**
-   * The element this job belongs to, per layout.
-   *
-   * Per layout because the page is not the same page at every width: the
-   * booking card does not exist on a phone, and a job that hung off it would
-   * have nothing to hang from. `null` means this job simply is not part of the
-   * composition at that size, which is a real answer rather than a failure.
-   */
-  anchor: Record<LayoutId, string | null>;
-  /**
-   * Where inside that element his hand lands, in units of half the element's
-   * box: {x: 1, y: 0} is the middle of its right edge, {x: 0, y: -1} the middle
-   * of its top edge. Values outside -1..1 sit outside the element, which is
-   * usually what you want — a job belongs *beside* a headline, not on top of
-   * the words.
-   */
-  align: Record<LayoutId, Align>;
-  /** Final adjustment in CSS pixels, for when the box edge is not the point. */
-  nudgePx?: Partial<Record<LayoutId, [number, number]>>;
-};
+export const PAGE_JOBS: JobDefinition[] = [
+  {
+    id: "outlet",
+    label: "Loose wall outlet",
+    object: "outlet",
+    workMotion: "low",
+    tool: "screwdriver",
+    toolApproachDeg: -25,
+    workSeconds: 4.5,
+    workYawDeg: -8,
+    objectRotationDeg: [-6, 24, 0],
+    objectOffset: [0.0, 0.0],
+    propScale: 0.62,
+    footprint: { w: 1, h: 1.05 },
+    effect: "spark",
+  },
+  {
+    id: "lamp",
+    label: "Crooked pendant light",
+    object: "lamp",
+    workMotion: "high",
+    tool: "screwdriver",
+    toolApproachDeg: -78,
+    workSeconds: 5,
+    workYawDeg: 10,
+    objectRotationDeg: [0, 18, 0],
+    objectOffset: [0.0, 0.172],
+    propScale: 0.63,
+    footprint: { w: 1, h: 1.3 },
+  },
+  {
+    id: "towelbar",
+    label: "Sagging towel bar",
+    object: "towelbar",
+    workMotion: "mid",
+    tool: "drill",
+    toolApproachDeg: 8,
+    workSeconds: 4.5,
+    workYawDeg: 10,
+    objectRotationDeg: [0, 16, 0],
+    objectOffset: [-0.26, 0.0],
+    propScale: 0.47,
+    footprint: { w: 1.5, h: 1 },
+    effect: "dust",
+  },
+  {
+    id: "frame",
+    label: "Crooked picture frame",
+    object: "frame",
+    workMotion: "high",
+    tool: null,
+    toolApproachDeg: -60,
+    workSeconds: 3.8,
+    workYawDeg: -6,
+    objectRotationDeg: [-8, 22, 0],
+    objectOffset: [-0.113, 0.086],
+    propScale: 0.95,
+    footprint: { w: 1.25, h: 1.15 },
+  },
+  {
+    id: "cabinet",
+    label: "Loose cabinet handle",
+    object: "cabinet",
+    workMotion: "mid",
+    tool: "screwdriver",
+    toolApproachDeg: 15,
+    workSeconds: 4.5,
+    workYawDeg: 12,
+    objectRotationDeg: [-5, 28, 0],
+    objectOffset: [-0.098, -0.044],
+    propScale: 0.41,
+    footprint: { w: 1.15, h: 1.1 },
+  },
+  {
+    id: "detector",
+    label: "Smoke detector hanging loose",
+    object: "detector",
+    workMotion: "high",
+    tool: null,
+    toolApproachDeg: -72,
+    workSeconds: 4.2,
+    workYawDeg: 6,
+    objectRotationDeg: [0, 14, 0],
+    objectOffset: [0.0, 0.03],
+    propScale: 0.52,
+    footprint: { w: 1, h: 1.2 },
+  },
+  {
+    id: "switch",
+    label: "Crooked light switch",
+    object: "switch",
+    workMotion: "mid",
+    tool: "screwdriver",
+    toolApproachDeg: -20,
+    workSeconds: 4,
+    workYawDeg: -10,
+    objectRotationDeg: [-4, 22, 0],
+    objectOffset: [0.0, 0.0],
+    propScale: 0.62,
+    footprint: { w: 1, h: 1 },
+    effect: "spark",
+  },
+  {
+    id: "shelf",
+    label: "Drooping shelf",
+    object: "shelf",
+    workMotion: "reach",
+    tool: "drill",
+    toolApproachDeg: -40,
+    workSeconds: 5,
+    workYawDeg: 8,
+    objectRotationDeg: [6, 24, 0],
+    objectOffset: [-0.185, 0.015],
+    propScale: 0.66,
+    footprint: { w: 1.6, h: 1.15 },
+    effect: "dust",
+  },
+  {
+    id: "doorknob",
+    label: "Loose doorknob",
+    object: "doorknob",
+    workMotion: "mid",
+    tool: "screwdriver",
+    toolApproachDeg: 24,
+    workSeconds: 4,
+    workYawDeg: 14,
+    objectRotationDeg: [0, 18, 0],
+    objectOffset: [-0.038, 0.0],
+    propScale: 0.6,
+    footprint: { w: 1.05, h: 1 },
+  },
+  {
+    id: "baseboard",
+    label: "Baseboard sprung off the wall",
+    object: "baseboard",
+    workMotion: "low",
+    tool: "hammer",
+    toolApproachDeg: -18,
+    workSeconds: 4.4,
+    workYawDeg: -12,
+    objectRotationDeg: [0, 14, 0],
+    objectOffset: [0.125, 0.0],
+    propScale: 0.3,
+    footprint: { w: 1.45, h: 1 },
+    effect: "impact",
+  },
+  {
+    id: "faucet",
+    label: "Dripping faucet",
+    object: "faucet",
+    workMotion: "mid",
+    tool: "wrench",
+    toolApproachDeg: -35,
+    workSeconds: 4.6,
+    workYawDeg: -12,
+    objectRotationDeg: [0, 26, 0],
+    objectOffset: [0.0, -0.045],
+    propScale: 0.66,
+    footprint: { w: 1.05, h: 1.1 },
+  },
+];
 
 /**
  * Pixels per world unit on the page.
  *
- * This replaces the stage's "fit N world units into the canvas height". On a
- * webpage the canvas is the whole viewport and the question is not how much
- * world to show but how big the character should be next to 17px body text.
- * These are chosen so he stands a little under half the height of the hero
- * headline block — present, clearly a person, not a mascot filling the screen.
+ * This is the thing that decides how big he is next to 17px body text. Chosen
+ * so he stands about a hundred and twenty pixels tall: present, clearly a
+ * person, not a mascot filling the screen.
  */
 export const PAGE_UNIT_PX: Record<LayoutId, number> = {
   desktop: 132,
@@ -58,156 +193,60 @@ export const PAGE_UNIT_PX: Record<LayoutId, number> = {
 /**
  * How big he is, per layout.
  *
- * Smaller than he was. At full size he read as a figure standing in front of
- * the website; at around a hundred and twenty pixels he reads as someone living
- * on it, which is the difference between an overlay and a character. A phone
- * keeps him proportionally larger because everything there is closer to the eye
- * and a smaller one would simply be lost.
+ * About two hundred pixels on a desktop, which is a person you notice on the
+ * way past. He was at a hundred and thirty, chosen so he would read as living
+ * on the page rather than standing in front of it — and he did, but he also
+ * read as a detail, and a detail cannot be the reason anybody remembers the
+ * site. Two hundred is still nowhere near mascot: it is about a third of the
+ * height of the hero headline block he stands beside.
+ *
+ * A phone gets LESS, which is the opposite of what it needed when he was small.
+ * A phone hero is a single dense column: the free gaps are wide and short, and
+ * a character who needs two hundred pixels of clear height can only ever be
+ * placed straddling the seam between two sections, cut in half by it. At this
+ * size he fits inside a band, which matters more on a small screen than being
+ * large does.
  */
 export const PAGE_CHARACTER_SCALE: Record<LayoutId, number> = {
-  desktop: 0.58,
-  tablet: 0.62,
-  mobile: 0.66,
+  desktop: 0.86,
+  tablet: 0.84,
+  mobile: 0.58,
 };
 
-/** Props are details on a page, not stage furniture. */
-export const PAGE_OBJECT_SCALE = 1.28;
+/**
+ * Props are details on a page, not stage furniture — but they still have to be
+ * recognisable. Each job scales from here; see propScale for the outliers.
+ *
+ * Multiplied by the character scale at the point of use, because a smoke
+ * detector is only the right size in relation to the man reaching up to it.
+ *
+ * Every propScale below is derived from that relation rather than guessed: a
+ * target height as a fraction of his 1.72, divided by the mesh's own extent.
+ * Small things are exaggerated more than big ones — a real doorknob beside him
+ * would be six pixels — but the ordering is honest, which is what stops the
+ * set reading as clip art. Before this the smoke detector was a third of his
+ * height and hid his face.
+ * The number is what it is so that the whole set looks the same as it did when
+ * this was a fixed 2.0 against a 0.58 character.
+ */
+export const PAGE_OBJECT_SCALE = 3.45;
 
 /**
  * The page camera.
  *
  * The same shallow tilt as the stage — enough to catch a second face on every
- * box — but pushed further out, because the page scene is many viewport heights
- * tall and a near camera would clip the far ends of it.
+ * box — but pushed further out, because the scene is a whole viewport tall and
+ * a near camera would clip the far ends of it.
  */
 export const PAGE_CAMERA_TILT = { x: 1.0, y: 1.2, z: 24 };
 
-export const PAGE_JOBS: PageJob[] = [
-  {
-    id: "outlet",
-    label: "Loose wall outlet",
-    object: "outlet",
-    anchor: {
-      desktop: "hero-cta",
-      tablet: "hero-cta",
-      mobile: "hero-cta",
-    },
-    align: {
-      desktop: { x: -0.81, y: 0 },
-      tablet: { x: 0.72, y: 0 },
-      mobile: { x: 0.6, y: 0 },
-    },
-    nudgePx: { desktop: [0, 186], tablet: [0, 52], mobile: [0, 106] },
-    workMotion: "low",
-    tool: "screwdriver",
-    toolApproachDeg: -25,
-    workSeconds: 5,
-    workYawDeg: -8,
-    objectRotationDeg: [-6, 24, 0],
-    objectOffset: [0, 0],
-  },
-  {
-    id: "lamp",
-    label: "Crooked pendant light",
-    object: "lamp",
-    anchor: {
-      desktop: "hero-card",
-      tablet: "hero-eyebrow",
-      /* No room beside a phone hero, so on mobile the pendant belongs to the
-         checklist row that names it instead. */
-      mobile: "row-lamp",
-    },
-    align: {
-      desktop: { x: -1.85, y: 0 },
-      tablet: { x: 0.69, y: 0 },
-      mobile: { x: 0.73, y: 0 },
-    },
-    nudgePx: { desktop: [0, 73], tablet: [0, 63], mobile: [0, 0] },
-    workMotion: "high",
-    tool: "screwdriver",
-    toolApproachDeg: -78,
-    workSeconds: 5.5,
-    workYawDeg: 10,
-    objectRotationDeg: [0, 18, 0],
-    objectOffset: [0, 0.275],
-  },
-  {
-    id: "shelf",
-    label: "Drooping shelf",
-    object: "shelf",
-    anchor: {
-      desktop: "row-shelf",
-      tablet: "row-shelf",
-      mobile: "row-shelf",
-    },
-    align: {
-      desktop: { x: 0.62, y: 0 },
-      tablet: { x: 0.24, y: 0 },
-      mobile: { x: 0.62, y: 0 },
-    },
-    nudgePx: { desktop: [0, -15], tablet: [0, -15], mobile: [0, 0] },
-    workMotion: "reach",
-    tool: "drill",
-    toolApproachDeg: -40,
-    workSeconds: 5.5,
-    workYawDeg: 8,
-    objectRotationDeg: [6, 24, 0],
-    objectOffset: [-0.229, 0.019],
-  },
-  {
-    id: "cabinet",
-    label: "Loose cabinet handle",
-    object: "cabinet",
-    anchor: {
-      desktop: "row-cabinet",
-      tablet: "row-cabinet",
-      mobile: "row-cabinet",
-    },
-    align: {
-      desktop: { x: 0.81, y: 0 },
-      tablet: { x: 0.34, y: 0 },
-      mobile: { x: 0.74, y: 0 },
-    },
-    nudgePx: { desktop: [0, -15], tablet: [0, -15], mobile: [0, 0] },
-    workMotion: "mid",
-    tool: "screwdriver",
-    toolApproachDeg: 15,
-    workSeconds: 5,
-    workYawDeg: 12,
-    objectRotationDeg: [-5, 28, 0],
-    objectOffset: [-0.141, -0.064],
-  },
-  {
-    id: "frame",
-    label: "Crooked picture frame",
-    object: "frame",
-    /*
-     * Dropped on a phone. The membership band is a long way below the list
-     * there, and a fifth stop would send him off-screen for a third of the
-     * loop. Four jobs on a phone is the composition, not a degraded one.
-     */
-    anchor: {
-      desktop: "membership-heading",
-      tablet: "membership-heading",
-      mobile: null,
-    },
-    align: {
-      desktop: { x: 2.6, y: 0 },
-      tablet: { x: 2.28, y: 0 },
-      mobile: { x: 0, y: 0 },
-    },
-    nudgePx: { desktop: [0, -12], tablet: [0, -6], mobile: [0, 0] },
-    workMotion: "high",
-    tool: null,
-    toolApproachDeg: -60,
-    workSeconds: 4.5,
-    workYawDeg: -6,
-    objectRotationDeg: [-8, 22, 0],
-    objectOffset: [-0.192, 0.147],
-  },
-];
-
-/** Which checklist rows tick themselves when their job is finished. */
+/**
+ * Which checklist rows tick themselves when their job is finished.
+ *
+ * The page's one piece of special knowledge, and entirely optional: a site that
+ * has no such list loses nothing but this flourish. It is the homepage offering
+ * a contextual opportunity, not the system depending on one.
+ */
 export const ROW_JOBS: Record<string, string> = {
   "row-shelf": "shelf",
   "row-cabinet": "cabinet",

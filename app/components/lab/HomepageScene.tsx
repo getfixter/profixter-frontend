@@ -14,7 +14,7 @@ import { useProgress } from "@react-three/drei";
 import * as THREE from "three";
 import FixterModel, { type FixterModelProps } from "./FixterModel";
 import type { Bounds, Placer } from "./lab-choreography";
-import type { JobDefinition } from "./lab-jobs";
+import { WORK_MOTIONS, type JobDefinition } from "./lab-jobs";
 import {
   PAGE_CAMERA_TILT,
   PAGE_JOBS,
@@ -24,6 +24,7 @@ import {
 import {
   findSpot,
   isBusy,
+  rememberSpot,
   measureSafeAreas,
   safeAreaCount,
   setSafeAreaRoot,
@@ -181,13 +182,9 @@ function SceneContents({
    * that "free" means genuinely free rather than technically unoccupied.
    */
   const unit = PAGE_UNIT_PX[layout];
-  const need = useMemo(
-    () => ({
-      w: Math.round(1.05 * scale * unit),
-      h: Math.round(1.95 * scale * unit),
-    }),
-    [scale, unit]
-  );
+  /** His silhouette in viewport pixels: how wide, and how tall he stands. */
+  const bodyH = 1.72 * scale * unit;
+  const bodyW = 0.8 * scale * unit;
 
   const inset = EDGE_INSET[layout];
 
@@ -204,14 +201,29 @@ function SceneContents({
       const pose = getFixterPose();
       const here = projection.pixelAt(pose.x, pose.y);
       const extra = job.footprint ?? { w: 1, h: 1 };
+      /*
+       * Where he sits relative to the repair depends on the posture: crouching
+       * at an outlet he is just below it, reaching for a ceiling fixture he is
+       * a whole body below it. The hand offset already knows this.
+       */
+      const handY = WORK_MOTIONS[job.workMotion].handOffset[1] * scale * unit;
       const spot = findSpot({
         viewport: { w: size.width, h: size.height },
         need: {
-          w: Math.round(need.w * extra.w),
-          h: Math.round(need.h * extra.h),
+          w: Math.round(bodyW * extra.w),
+          above: Math.round(Math.max(bodyH - handY, 0) + bodyH * 0.3 * extra.h),
+          below: Math.round(handY + bodyH * 0.12),
         },
         inset,
         awayFrom: { x: here.x, y: here.y },
+        /*
+         * Not always the furthest corner.
+         *
+         * Always maximising distance turns the loop into a metronome of long
+         * diagonals. Varying it gives the pacing somewhere to breathe: a couple
+         * of jobs close together, then a proper journey across the screen.
+         */
+        wander: 0.45 + Math.random() * 0.95,
       });
       if (!spot) return null;
       /*
@@ -222,8 +234,9 @@ function SceneContents({
        * of the viewport. Clamping the anchor rather than the mark keeps the
        * repair — and therefore the thing worth looking at — inside the frame.
        */
-      const padX = need.w * extra.w * 0.6 + 24;
-      const padY = need.h * extra.h * 0.62;
+      const padX = bodyW * extra.w * 0.7 + 20;
+      const padTop = Math.max(bodyH - handY, 0) + bodyH * 0.25;
+      const padBottom = handY + bodyH * 0.15;
       const x = THREE.MathUtils.clamp(
         spot.x,
         inset.left + padX,
@@ -231,13 +244,14 @@ function SceneContents({
       );
       const y = THREE.MathUtils.clamp(
         spot.y,
-        inset.top + padY,
-        size.height - inset.bottom - padY
+        inset.top + padTop,
+        size.height - inset.bottom - padBottom
       );
+      rememberSpot(x, y);
       const world = projection.worldAt(x, y);
       return new THREE.Vector3(world.x, world.y, 0);
     },
-    [projection, size.width, size.height, need, inset, version]
+    [projection, size.width, size.height, bodyW, bodyH, scale, unit, inset, version]
   );
 
   /** Is this world point under something the reader is using? */
@@ -262,7 +276,7 @@ function SceneContents({
 
   return (
     <>
-      <DiagReporter projection={projection} version={version} />
+      <DiagReporter projection={projection} version={version} bodyW={bodyW} bodyH={bodyH} />
       <Suspense fallback={null}>
         <FixterModel
           {...modelProps}
@@ -272,7 +286,7 @@ function SceneContents({
           bounds={bounds}
           displaced={displaced}
           busyAt={busyAt}
-          objectScale={PAGE_OBJECT_SCALE}
+          objectScale={PAGE_OBJECT_SCALE * scale}
         />
       </Suspense>
     </>
@@ -317,7 +331,17 @@ function useSafeAreas(layout: LayoutId, width: number, height: number) {
       settle = window.setTimeout(() => {
         if (!alive) return;
         const pose = getFixterPose();
-        setDisplaced(busyAt(pose));
+        const now = busyAt(pose);
+        if (process.env.NODE_ENV !== "production") {
+          const w = window as unknown as Record<string, unknown>;
+          const t = (w.__fxTour ?? {}) as Record<string, unknown>;
+          w.__fxTour = {
+            ...t,
+            displaced: now,
+            displacedAt: now ? Math.round(window.scrollY) : null,
+          };
+        }
+        setDisplaced(now);
       }, 360);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -359,9 +383,13 @@ function busyAt(pose: { x: number; y: number }) {
 function DiagReporter({
   projection,
   version,
+  bodyW,
+  bodyH,
 }: {
   projection: PlaneProjection;
   version: number;
+  bodyW: number;
+  bodyH: number;
 }) {
   const clock = useRef(0);
 
@@ -388,6 +416,14 @@ function DiagReporter({
         `screen ${Math.round(px.x)},${Math.round(px.y)} · ` +
         (px.y > -60 && px.y < window.innerHeight + 60 ? "ON SCREEN" : "off screen"),
     });
+    /* Where he is, for the Lab's automated watching. Dev only. */
+    if (process.env.NODE_ENV !== "production") {
+      const w = window as unknown as Record<string, unknown>;
+      const t = (w.__fxTour ?? {}) as Record<string, unknown>;
+      w.__fxTour = { ...t, x: Math.round(px.x), y: Math.round(px.y) };
+      w.__fxBodyW = bodyW;
+      w.__fxBodyH = bodyH;
+    }
   });
 
   return null;

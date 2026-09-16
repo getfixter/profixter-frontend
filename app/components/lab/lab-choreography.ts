@@ -184,7 +184,8 @@ const _up = new THREE.Vector3(0, 1, 0);
 export function placeStop(
   stop: Stop,
   anchor: THREE.Vector3,
-  characterScale: number
+  characterScale: number,
+  objectScale: number
 ): Placement {
   const { job, motion } = stop;
   const workYaw = THREE.MathUtils.degToRad(job.workYawDeg ?? 0);
@@ -213,7 +214,19 @@ export function placeStop(
     0
   );
 
-  const offset = job.objectOffset ?? [0, 0];
+  /*
+   * The prop's offset is measured in the prop's own units.
+   *
+   * It exists to line the repaired part of a thing up with his hand — the loose
+   * end of a towel bar, the corner of a picture frame — so it is a statement
+   * about the object's geometry, not about the world. Holding it in world units
+   * meant it stopped agreeing with the mesh the moment props changed size, and
+   * a bar whose loose bracket should have sat under his hand ran clean through
+   * his chest and out the other side instead.
+   */
+  const raw = job.objectOffset ?? [0, 0];
+  const propScale = objectScale * (job.propScale ?? 1);
+  const offset = [raw[0] * propScale, raw[1] * propScale];
 
   return {
     anchor: anchor.clone(),
@@ -289,7 +302,7 @@ function turnToward(runtime: TourRuntime, target: number, dt: number) {
   return Math.abs(angleDelta(runtime.yaw, target)) < TURN_EPSILON;
 }
 
-function approachValue(
+export function approachValue(
   current: number,
   target: number,
   dt: number,
@@ -416,6 +429,8 @@ export type StepOptions = {
   /** Where to do the next job. Called once, when he sets off for it. */
   place: Placer;
   characterScale: number;
+  /** Layout prop scale, so a prop's offset scales with the prop. */
+  objectScale: number;
   /** The world rectangle he is allowed to walk in. */
   bounds: Bounds;
   /** Scroll or resize made his current spot unusable. */
@@ -431,7 +446,24 @@ export function stepTour(
   options: StepOptions
 ) {
   if (!stops.length) return;
-  runtime.phaseElapsed += dt;
+  /*
+   * When he is in the way, everything he is doing happens faster.
+   *
+   * He used to simply note the displacement and carry on at full length, which
+   * could leave him standing over a headline for the six seconds of a repair
+   * and its admiring pause. Abandoning the job mid-repair is worse — that reads
+   * as a glitch — so instead he wraps up: the same beats, at nearly three times
+   * the pace, and then he is gone. The animation itself keeps its own speed, so
+   * what you see is a man finishing quickly rather than a video scrubbing.
+   *
+   * Latched on the runtime rather than read from the flag, because the flag is
+   * a scroll-settle observation that clears itself after a second or so. He
+   * needs to stay in a hurry until he has actually got out of the way, which is
+   * when the next job clears it.
+   */
+  const inTheWay = options.displaced || runtime.displaced;
+  const urgency = inTheWay ? 2.8 : 1;
+  runtime.phaseElapsed += dt * urgency;
 
   const stop = stops[runtime.stopIndex % stops.length];
 
@@ -454,7 +486,7 @@ export function stepTour(
     const anchor = options.place(next.job);
     if (!anchor) return false;
     runtime.stopIndex = index % stops.length;
-    runtime.placed = placeStop(next, anchor, options.characterScale);
+    runtime.placed = placeStop(next, anchor, options.characterScale, options.objectScale);
     runtime.propJobId = next.job.id;
     setObjectFix(next.job.id, 0);
     runtime.path = null;
