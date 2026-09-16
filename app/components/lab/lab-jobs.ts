@@ -3,6 +3,7 @@ import type { ToolKind } from "./lab-tools";
 import type { ToolAction } from "./lab-action";
 import type { LayoutId, StagePoint } from "./lab-stage";
 import type { JobCategory } from "./lab-schedule";
+import type { JobPace } from "./lab-pace";
 import { REGIONS } from "./lab-stage";
 
 /**
@@ -480,6 +481,13 @@ export type JobDefinition = {
    * little stuff" and one that leaves an impression of an electrician.
    */
   category?: JobCategory;
+  /**
+   * The shape of the job, not just its length.
+   *
+   * Derived from effort when absent, and worth stating by hand when a repair
+   * reads faster or slower than its effort suggests.
+   */
+  pace?: JobPace;
   /**
    * How hard this one is, 0 to 1.
    *

@@ -50,7 +50,7 @@ import {
 import { AimedHandTool } from "./lab-tools";
 import { createContactShadow } from "./lab-materials";
 import FixableObject from "./lab-objects";
-import WorkEffect from "./lab-effects";
+import WorkEffect, { PayoffBurst, type PayoffFlavour } from "./lab-effects";
 import { setFixterPose } from "./lab-pose";
 import { setObjectNudge } from "./lab-object-state";
 import { addDiagError, setDiag } from "./lab-diagnostics";
@@ -259,6 +259,9 @@ export default function FixterModel({
   const carryWeight = useRef(0);
   /** How far he has to drop for his lowest bone to reach the floor. */
   const groundFix = useRef(0);
+  /** When the current repair snapped, on the frame clock. 0 = not yet. */
+  const payoffAt = useRef(0);
+  const payoffSeen = useRef<string | null>(null);
 
   /** Wrist to fingertip, so the tool can be held in the palm rather than the
       wrist. Read off the rig so a re-export with different proportions works. */
@@ -571,6 +574,13 @@ export default function FixterModel({
   const propScale = propJob?.propScale ?? 1;
   const working = phase === "WORK";
   const propRotation = propJob?.objectRotationDeg ?? ([0, 0, 0] as [number, number, number]);
+  /* Which trade the payoff beat should look like. */
+  const payoffFlavour: PayoffFlavour =
+    propJob?.category === "electrical"
+      ? "electrical"
+      : propJob?.category === "plumbing"
+        ? "plumbing"
+        : "settle";
   const nextJob = nextJobId ? jobs.find((j) => j.id === nextJobId) : undefined;
   const nextKind = nextJob?.object ?? null;
   const nextRotation =
@@ -721,6 +731,23 @@ export default function FixterModel({
         staged.visible = n > 0.01;
       }
       if (runtime.nextJobId !== nextJobId) setNextJobId(runtime.nextJobId);
+      /*
+       * The instant the repair lands.
+       *
+       * repairCurve holds the damage and then snaps at 0.72 of the way through
+       * the work, so that crossing is the moment — not the end of the phase,
+       * which is nearly a second later and by then nobody is looking for it.
+       */
+      if (
+        runtime.propJobId &&
+        runtime.workProgress >= 0.72 &&
+        payoffSeen.current !== runtime.propJobId
+      ) {
+        payoffSeen.current = runtime.propJobId;
+        payoffAt.current = state.clock.elapsedTime;
+      }
+      if (!runtime.propJobId) payoffSeen.current = null;
+
       const fx = effectRef.current;
       if (fx) {
         if (runtime.placed) fx.position.copy(runtime.placed.workPoint);
@@ -979,6 +1006,13 @@ export default function FixterModel({
             neckX: bodyRig?.neck ? +THREE.MathUtils.radToDeg(bodyRig.neck.rotation.x).toFixed(1) : null,
             finish: runtime.finish,
             finishAt: +runtime.finishAt.toFixed(2),
+            progress: +runtime.workProgress.toFixed(3),
+            /* Seconds since the repair snapped. The fire TIME stays set for the
+               rest of the job, so a probe that waits for it non-zero catches a
+               frame long after the beat has finished — which it did, twice. */
+            payoffAge: payoffAt.current
+              ? +(state.clock.elapsedTime - payoffAt.current).toFixed(2)
+              : -1,
             hy: +_probe.y.toFixed(4),
             hx: +_probe.x.toFixed(4),
           };
@@ -1535,6 +1569,7 @@ export default function FixterModel({
       */}
       <group ref={effectRef} visible={false}>
         <WorkEffect kind={propEffect} active={working} action={toolAction} getWorkTime={workTime} />
+        <PayoffBurst flavour={payoffFlavour} getFiredAt={() => payoffAt.current} />
       </group>
       <group ref={groupRef}>
         <primitive object={model} />

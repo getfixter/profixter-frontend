@@ -12,6 +12,7 @@ import {
   remember,
   type ScheduleMemory,
 } from "./lab-schedule";
+import { shapeOf } from "./lab-pace";
 import { TOOL_REACH } from "./lab-tools";
 import { resetObjectFix, setObjectFix } from "./lab-object-state";
 
@@ -650,7 +651,7 @@ function chooseFinish(runtime: TourRuntime, stop: Stop) {
 function noticeSeconds(stop: Stop, distance: number): number {
   const base = 0.34 + 0.5 * (stop.job.effort ?? 0.5);
   const near = THREE.MathUtils.clamp(distance / SHORT_HOP, 0.35, 1);
-  return base * near;
+  return base * near * shapeOf(stop.job).noticeScale;
 }
 
 /** Below this, a journey is a reposition rather than a walk. */
@@ -905,7 +906,8 @@ export function stepTour(
      * shelf bracket. Small — a third either side — because the difference has
      * to read as attitude and not as a speed change.
      */
-    const purpose = 0.84 + 0.42 * (stop.job.effort ?? 0.5);
+    const purpose =
+      (0.84 + 0.42 * (stop.job.effort ?? 0.5)) * shapeOf(stop.job).travelScale;
     const hurry = slow
       ? purpose
       : THREE.MathUtils.clamp(runtime.path.length / HURRY_FROM, 1, HURRY_MAX) *
@@ -978,7 +980,8 @@ export function stepTour(
         runtime.path = null;
         setPhase(runtime, "WORK");
         /* Drop him in with the repair most of the way through. */
-        runtime.phaseElapsed = stop.job.workSeconds * OPENING_AT;
+        runtime.phaseElapsed =
+          stop.job.workSeconds * shapeOf(stop.job).workScale * OPENING_AT;
       } else {
         runtime.restFor = 0.4;
         setPhase(runtime, "REST");
@@ -1099,7 +1102,8 @@ export function stepTour(
     case "WORK":
       runtime.workProgress = Math.min(
         1,
-        runtime.phaseElapsed / stop.job.workSeconds
+        runtime.phaseElapsed /
+          (stop.job.workSeconds * shapeOf(stop.job).workScale)
       );
       setObjectFix(stop.job.id, repairCurve(runtime.workProgress));
       if (runtime.workProgress >= 1) {
@@ -1126,24 +1130,34 @@ export function stepTour(
      */
     case "ADMIRE":
       runtime.toolEquipped = false;
-      runtime.finishAt = Math.min(
-        1,
-        runtime.phaseElapsed / Math.max(0.2, FINISH_SECONDS[runtime.finish])
+      const finishSpan = Math.max(
+        0.2,
+        FINISH_SECONDS[runtime.finish] * shapeOf(stop.job).finishScale
       );
+      runtime.finishAt = Math.min(1, runtime.phaseElapsed / finishSpan);
       runtime.lean = approachValue(runtime.lean, 0, dt, 5);
       /* Put the next problem on the page while he is still pleased with this
          one. Half a beat in, so it is not simultaneous with the repair snap. */
-      if (runtime.phaseElapsed > FINISH_SECONDS[runtime.finish] * 0.35) {
+      if (runtime.phaseElapsed > finishSpan * 0.35) {
         stageNext();
       }
-      if (runtime.phaseElapsed >= FINISH_SECONDS[runtime.finish]) {
+      if (runtime.phaseElapsed >= finishSpan) {
         /* A shelf bracket costs him something a light switch does not. */
         runtime.weariness = 1 - 0.22 * (stop.job.effort ?? 0.5);
         runtime.tick += 1;
         if ((runtime.stopIndex + 1) % stops.length === 0) runtime.laps += 1;
         runtime.workProgress = 0;
         runtime.placed = null;
-        runtime.restFor = REST_MIN + Math.random() * (REST_MAX - REST_MIN);
+        /*
+         * How long he stands about is a property of what he has just done.
+         *
+         * A fixed random pause between every job is the loudest bar of the
+         * metronome: it made every cycle the same length whatever happened
+         * inside it. After a light switch he is barely stopped; after a shelf
+         * bracket he takes a moment.
+         */
+        const [restLo, restHi] = shapeOf(stop.job).restAfter;
+        runtime.restFor = restLo + Math.random() * (restHi - restLo);
         setPhase(runtime, "REST");
       }
       break;

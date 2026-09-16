@@ -1,4 +1,5 @@
 import type { Stop } from "./lab-choreography";
+import { paceOf, type JobPace } from "./lab-pace";
 
 /**
  * Which repair he does next.
@@ -45,10 +46,13 @@ export type ScheduleMemory = {
   tools: (string | null)[];
   categories: (JobCategory | undefined)[];
   efforts: number[];
+  paces: JobPace[];
 };
 
 export function emptyMemory(): ScheduleMemory {
-  return { jobs: [], stances: [], tools: [], categories: [], efforts: [] };
+  return {
+    jobs: [], stances: [], tools: [], categories: [], efforts: [], paces: [],
+  };
 }
 
 const KEEP = 6;
@@ -63,6 +67,7 @@ export function remember(memory: ScheduleMemory, stop: Stop) {
   push(memory.tools, stop.job.tool ?? null);
   push(memory.categories, stop.job.category);
   push(memory.efforts, stop.job.effort ?? 0.5);
+  push(memory.paces, paceOf(stop.job));
 }
 
 const last = <T>(list: T[]): T | undefined => list[list.length - 1];
@@ -95,6 +100,18 @@ function score(stop: Stop, memory: ScheduleMemory): number {
   if (previousEffort !== undefined) {
     value += Math.min(1.2, Math.abs(effort - previousEffort) / EFFORT_CONTRAST);
   }
+
+  /*
+   * Rhythm is a dimension of contrast like any other.
+   *
+   * Three quick jobs in a row is a different kind of monotony from three
+   * crouches, and a harder one to name while watching — the eye sees variety
+   * and the clock does not. Alternating the SHAPE is what makes a heavy repair
+   * feel heavy: it has something to be heavy against.
+   */
+  const pace = paceOf(stop.job);
+  if (last(memory.paces) !== pace) value += 1.6;
+  if (!inLastN(memory.paces, pace, 3)) value += 0.7;
 
   /* Crouching twice running reads as the same repair even when it is not. */
   const wasCrouched = memory.stances.length
