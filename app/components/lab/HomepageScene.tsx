@@ -569,7 +569,16 @@ function DiagReporter({
 
   useFrame((_, delta) => {
     clock.current += delta;
-    if (clock.current < 0.5) return;
+    /*
+     * The diagnostics panel is happy at two updates a second; the automated
+     * watching is not. Every crop that follows him has been half a second
+     * behind, which is fine while he stands still and useless during the fast
+     * beats — notice, the snap, the moment he sets off — which are exactly the
+     * ones worth looking at. Dev publishes at eight a second so a crop lands on
+     * him; production keeps the cheap rate.
+     */
+    const period = process.env.NODE_ENV !== "production" ? 0.12 : 0.5;
+    if (clock.current < period) return;
     clock.current = 0;
     const pose = getFixterPose();
     const px = projection.pixelAt(pose.x, pose.y);

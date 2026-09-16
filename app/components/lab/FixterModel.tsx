@@ -1244,11 +1244,32 @@ export default function FixterModel({
          * makes travel read as purpose rather than as transport. Stronger while
          * he is noticing, easing off once he is actually on his way.
          */
-        lookRef.current = approachValue(lookRef.current, 1, dt, 5);
+        /* The head arrives almost at once while he is noticing, and settles
+           into the walk afterwards. */
+        lookRef.current = approachValue(
+          lookRef.current,
+          1,
+          dt,
+          runtime.phase === "NOTICE" ? 16 : 5
+        );
         _lookAt.copy(runtime.placed.workPoint);
         _lookAt.y += 0.3 * scale;
         _lookAt.z += 0.7 * scale;
         group.parent?.localToWorld(_lookAt);
+        if (process.env.NODE_ENV !== "production" && headBone) {
+          /* Head yaw against body yaw, every frame, because the lag between
+             the two IS the notice beat — and the publish that lived with the
+             other diagnostics only ran when the phase changed, so it read as a
+             frozen pair of numbers whatever the head was doing. */
+          headBone.getWorldQuaternion(_faceQ);
+          _faceV.set(0, 0, 1).applyQuaternion(_faceQ);
+          (window as unknown as Record<string, unknown>).__fxYaw = {
+            body: +THREE.MathUtils.radToDeg(runtime.yaw).toFixed(1),
+            head: +THREE.MathUtils.radToDeg(
+              Math.atan2(_faceV.x, _faceV.z)
+            ).toFixed(1),
+          };
+        }
         aimHead(
           headBone,
           _lookAt,
@@ -1441,6 +1462,7 @@ export default function FixterModel({
               headBone.getWorldQuaternion(_faceQ);
               _faceV.set(0, 0, 1).applyQuaternion(_faceQ);
               w.__fxFace = +_faceV.z.toFixed(2);
+
             }
             /* Lab only: what the renderer is actually doing, so "context" cannot
              quietly become eleven miniature rooms. */
