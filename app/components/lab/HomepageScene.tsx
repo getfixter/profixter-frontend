@@ -208,13 +208,17 @@ function SceneContents({
        * at an outlet he is just below it, reaching for a ceiling fixture he is
        * a whole body below it. The hand offset already knows this.
        */
-      const handY = WORK_MOTIONS[job.workMotion].handOffset[1] * scale * unit;
+      const motion = WORK_MOTIONS[job.workMotion];
+      const handY = motion.handOffset[1] * scale * unit;
+      /* The silhouette this posture actually has, not the standing one. */
+      const poseH = bodyH * (motion.boxH ?? 1);
+      const poseW = bodyW * (motion.boxW ?? 1);
       const spot = findSpot({
         viewport: { w: size.width, h: size.height },
         need: {
-          w: Math.round(bodyW * extra.w),
-          above: Math.round(Math.max(bodyH - handY, 0) + bodyH * 0.3 * extra.h),
-          below: Math.round(handY + bodyH * 0.12),
+          w: Math.round(poseW * extra.w),
+          above: Math.round(Math.max(poseH - handY, 0) + poseH * 0.3 * extra.h),
+          below: Math.round(handY + poseH * 0.12),
         },
         inset,
         awayFrom: { x: here.x, y: here.y },
@@ -254,9 +258,9 @@ function SceneContents({
        * of the viewport. Clamping the anchor rather than the mark keeps the
        * repair — and therefore the thing worth looking at — inside the frame.
        */
-      const padX = bodyW * extra.w * 0.7 + 20;
-      const padTop = Math.max(bodyH - handY, 0) + bodyH * 0.25;
-      const padBottom = handY + bodyH * 0.15;
+      const padX = poseW * extra.w * 0.7 + 20;
+      const padTop = Math.max(poseH - handY, 0) + poseH * 0.25;
+      const padBottom = handY + poseH * 0.15;
       const x = THREE.MathUtils.clamp(
         spot.x,
         inset.left + padX,

@@ -758,6 +758,20 @@ export default function FixableObject({
   const Component = REGISTRY[kind];
   if (!Component) return null;
   /*
+   * Lab only: draw the character without anything he is working on.
+   *
+   * The test that matters for stance variety is whether six repairs look like
+   * six physical situations with the props COVERED — with them visible a
+   * lamp and a cabinet look different no matter what the body is doing, which
+   * is exactly how a library of one standing pose survived this long.
+   */
+  if (
+    process.env.NODE_ENV !== "production" &&
+    (window as unknown as Record<string, unknown>).__fxHideProps
+  ) {
+    return null;
+  }
+  /*
    * Position, rotation and scale all go on the wrapper and the prop is drawn
    * at the origin. Scaling a group that also carries the position would scale
    * the position, drifting the object off the anchor his hand reaches for.
