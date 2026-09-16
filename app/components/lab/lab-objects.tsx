@@ -30,7 +30,12 @@ export type ObjectKind =
   | "shelf"
   | "faucet"
   | "cabinet"
-  | "lamp";
+  | "lamp"
+  | "switch"
+  | "doorknob"
+  | "towelbar"
+  | "detector"
+  | "baseboard";
 
 export type FixableProps = { id: string };
 
@@ -344,6 +349,275 @@ function Lamp({ id }: FixableProps) {
   );
 }
 
+/* ------------------------------------------------------- the newer repairs */
+
+/**
+ * A light switch.
+ *
+ * The clearest before-and-after in the whole library: the toggle is down and
+ * the plate is askew, then the toggle flips and the plate squares up. Reads at
+ * any size because the shape is universal.
+ */
+function LightSwitch({ id }: FixableProps) {
+  const plate = useRef<THREE.Group>(null);
+  const toggle = useRef<THREE.Mesh>(null);
+  const f = useRef(0);
+
+  useFrame((_, dt) => {
+    f.current = ease(f.current, getObjectFix(id), dt);
+    const broken = 1 - f.current;
+    if (plate.current) plate.current.rotation.z = DEG(11) * broken;
+    /* Down when broken, up when done. The flip IS the payoff. */
+    if (toggle.current) toggle.current.rotation.x = DEG(-22) + DEG(44) * f.current;
+  });
+
+  return (
+    <group ref={plate}>
+      <mesh material={M.shell}>
+        <boxGeometry args={[0.078, 0.122, 0.008]} />
+      </mesh>
+      <mesh material={M.dark} position={[0, 0, 0.004]}>
+        <boxGeometry args={[0.026, 0.05, 0.004]} />
+      </mesh>
+      <mesh ref={toggle} material={M.shell} position={[0, 0, 0.012]}>
+        <boxGeometry args={[0.018, 0.034, 0.014]} />
+      </mesh>
+      <mesh
+        material={M.hardware}
+        position={[0, 0.05, 0.006]}
+        rotation={[Math.PI / 2, 0, 0]}
+      >
+        <cylinderGeometry args={[0.005, 0.005, 0.004, 10]} />
+      </mesh>
+      <mesh
+        material={M.hardware}
+        position={[0, -0.05, 0.006]}
+        rotation={[Math.PI / 2, 0, 0]}
+      >
+        <cylinderGeometry args={[0.005, 0.005, 0.004, 10]} />
+      </mesh>
+    </group>
+  );
+}
+
+/**
+ * A doorknob that has worked loose.
+ *
+ * Broken, it hangs off its axis and sits proud of the plate; tightened, it
+ * squares up and pulls in. Small, round and instantly legible.
+ */
+function Doorknob({ id }: FixableProps) {
+  const knob = useRef<THREE.Group>(null);
+  const f = useRef(0);
+
+  useFrame((_, dt) => {
+    f.current = ease(f.current, getObjectFix(id), dt);
+    const broken = 1 - f.current;
+    if (knob.current) {
+      knob.current.rotation.z = DEG(-17) * broken;
+      knob.current.position.z = 0.03 + 0.016 * broken;
+      knob.current.position.y = -0.012 * broken;
+    }
+  });
+
+  return (
+    <group>
+      {/*
+        Discs face the camera.
+
+        A cylinder's axis is Y by default, which on a stage viewed head-on shows
+        a round thing edge-on as a thin bar. Everything plate-shaped in this
+        library has to be turned to face the viewer or it simply disappears.
+      */}
+      <mesh material={M.shell} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.058, 0.058, 0.01, 20]} />
+      </mesh>
+      <group ref={knob}>
+        <mesh material={M.metal} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.012, 0.016, 0.05, 14]} />
+        </mesh>
+        <mesh material={M.metal} position={[0, 0, 0.034]}>
+          <sphereGeometry args={[0.036, 16, 12]} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+/**
+ * A towel bar with one end out of the wall.
+ *
+ * The sag is the whole story: one bracket has let go and the rail hangs. Wide
+ * and horizontal, so it fills a gap between paragraphs nicely.
+ */
+function TowelBar({ id }: FixableProps) {
+  const rail = useRef<THREE.Group>(null);
+  const loose = useRef<THREE.Group>(null);
+  const f = useRef(0);
+
+  useFrame((_, dt) => {
+    f.current = ease(f.current, getObjectFix(id), dt);
+    const broken = 1 - f.current;
+    if (rail.current) rail.current.rotation.z = DEG(-13) * broken;
+    if (loose.current) {
+      loose.current.position.y = -0.03 * broken;
+      loose.current.rotation.z = DEG(24) * broken;
+    }
+  });
+
+  const W = 0.44;
+
+  return (
+    <group>
+      <group ref={rail}>
+        <mesh material={M.metal} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.011, 0.011, W, 12]} />
+        </mesh>
+        <mesh
+          material={M.shell}
+          position={[-W / 2, 0, -0.012]}
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+          <cylinderGeometry args={[0.026, 0.026, 0.026, 14]} />
+        </mesh>
+        <group ref={loose} position={[W / 2, 0, -0.012]}>
+          <mesh material={M.shell} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.026, 0.026, 0.026, 14]} />
+          </mesh>
+        </group>
+      </group>
+    </group>
+  );
+}
+
+/**
+ * A smoke detector hanging off its mount.
+ *
+ * Dangling by its wire when broken, flush and blinking when done. The blink is
+ * the only light in the library besides the pendant, and it is small enough to
+ * read as a detail rather than an effect.
+ */
+function SmokeDetector({ id }: FixableProps) {
+  const body = useRef<THREE.Group>(null);
+  const led = useRef<THREE.Mesh>(null);
+  const f = useRef(0);
+  const clock = useRef(0);
+  const material = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: "#2fbf6a",
+        emissive: new THREE.Color("#2fbf6a"),
+        emissiveIntensity: 0,
+        roughness: 0.4,
+      }),
+    []
+  );
+  useEffect(() => () => material.dispose(), [material]);
+
+  useFrame((_, dt) => {
+    f.current = ease(f.current, getObjectFix(id), dt);
+    const broken = 1 - f.current;
+    clock.current += dt;
+    if (body.current) {
+      body.current.rotation.z = DEG(-28) * broken;
+      body.current.position.y = -0.055 * broken;
+      body.current.position.x = 0.02 * broken;
+    }
+    /* A slow heartbeat once it is back on the ceiling. */
+    const lit = led.current?.material as THREE.MeshStandardMaterial | undefined;
+    if (lit) {
+      const beat = Math.max(0, Math.sin(clock.current * 2.2)) ** 8;
+      lit.emissiveIntensity = f.current * beat * 3;
+    }
+  });
+
+  return (
+    <group>
+      <mesh
+        material={M.shell}
+        position={[0, 0.03, -0.01]}
+        rotation={[Math.PI / 2, 0, 0]}
+      >
+        <cylinderGeometry args={[0.03, 0.03, 0.008, 14]} />
+      </mesh>
+      <mesh
+        material={M.dark}
+        position={[0, -0.005, -0.008]}
+        rotation={[0, 0, DEG(20)]}
+      >
+        <boxGeometry args={[0.004, 0.07, 0.004]} />
+      </mesh>
+      <group ref={body}>
+        <mesh material={M.shell} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.084, 0.078, 0.026, 22]} />
+        </mesh>
+        <mesh
+          material={M.dark}
+          position={[0, 0, 0.016]}
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+          <cylinderGeometry args={[0.03, 0.03, 0.004, 14]} />
+        </mesh>
+        <mesh ref={led} material={material} position={[0.042, -0.03, 0.014]}>
+          <sphereGeometry args={[0.009, 10, 8]} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+/**
+ * A length of baseboard that has come away from the wall.
+ *
+ * Replaces the picture hook, which was the right idea and the wrong object: a
+ * hook is four millimetres of bent metal and at a hundred and thirty pixels of
+ * character it was a grey speck. This is the same story — something tapped back
+ * into place with a hammer — on a shape wide enough to read.
+ */
+function Baseboard({ id }: FixableProps) {
+  const strip = useRef<THREE.Group>(null);
+  const proud = useRef<THREE.Group>(null);
+  const f = useRef(0);
+
+  useFrame((_, dt) => {
+    f.current = ease(f.current, getObjectFix(id), dt);
+    const broken = 1 - f.current;
+    /* One end has sprung off the wall and sits forward and low. */
+    if (strip.current) strip.current.rotation.z = DEG(-4) * broken;
+    if (proud.current) {
+      proud.current.position.z = 0.055 * broken;
+      proud.current.rotation.y = DEG(-19) * broken;
+    }
+  });
+
+  const W = 0.34;
+
+  return (
+    <group ref={strip}>
+      {/* the fixed half */}
+      <mesh material={M.shell} position={[-W / 2, 0, 0]}>
+        <boxGeometry args={[W, 0.085, 0.022]} />
+      </mesh>
+      <mesh material={M.shell} position={[-W / 2, 0.05, 0.006]}>
+        <boxGeometry args={[W, 0.018, 0.03]} />
+      </mesh>
+      {/* the half that has let go */}
+      <group ref={proud} position={[W / 2, 0, 0]}>
+        <mesh material={M.shell}>
+          <boxGeometry args={[W, 0.085, 0.022]} />
+        </mesh>
+        <mesh material={M.shell} position={[0, 0.05, 0.006]}>
+          <boxGeometry args={[W, 0.018, 0.03]} />
+        </mesh>
+        {/* the nail he is driving back */}
+        <mesh material={M.hardware} position={[W * 0.3, 0.012, 0.02]}>
+          <cylinderGeometry args={[0.005, 0.005, 0.02, 8]} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
 /* ---------------------------------------------------------------- dispatcher */
 
 const REGISTRY: Record<string, (props: FixableProps) => React.JSX.Element> = {
@@ -353,6 +627,11 @@ const REGISTRY: Record<string, (props: FixableProps) => React.JSX.Element> = {
   faucet: Faucet,
   cabinet: Cabinet,
   lamp: Lamp,
+  switch: LightSwitch,
+  doorknob: Doorknob,
+  towelbar: TowelBar,
+  detector: SmokeDetector,
+  baseboard: Baseboard,
 };
 
 export default function FixableObject({

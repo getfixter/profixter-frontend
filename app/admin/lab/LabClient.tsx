@@ -149,7 +149,7 @@ function Button({
   return (
     <button
       type="button" onClick={onClick} disabled={disabled}
-      className={`min-h-[38px] flex-1 rounded-lg border px-3 text-[13px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${tones[tone]}`}
+      className={`min-h-[38px] min-w-0 flex-1 rounded-lg border px-2 text-[12px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 sm:px-3 sm:text-[13px] ${tones[tone]}`}
     >
       {children}
     </button>
@@ -166,7 +166,7 @@ function Pills<T extends string>({
       {options.map((option) => (
         <button
           key={option.id} type="button" onClick={() => onChange(option.id)}
-          className={`min-h-[34px] flex-1 rounded-md px-2 text-[13px] font-semibold transition ${
+          className={`min-h-[34px] min-w-0 flex-1 rounded-md px-1.5 text-[12px] font-semibold transition sm:px-2 sm:text-[13px] ${
             value === option.id ? "bg-white text-[#306EEC] shadow-sm" : "text-slate-500"
           }`}
         >
@@ -362,31 +362,37 @@ export default function LabClient() {
     return (
       <div className="relative min-h-screen bg-white">
         {/*
-          Plain HTML, always rendered, never behind a condition.
+          The manual override, kept small.
 
           The 3D layer has several ways to fail silently and one of them had the
-          page looking untouched. This strip is the floor: if it is on screen
-          the Lab is running, and pressing the button throws the scene away and
-          builds a new one whatever state the old one got into.
+          page looking untouched, so there is always a button that throws the
+          scene away and builds a new one whatever state the old one got into.
+          It no longer needs to be a banner to do that. Preview hides it along
+          with every other control, because Preview means "show me the website".
         */}
-        <div data-fx-chrome="" className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-          <button
-            type="button"
-            onClick={() => {
-              setPreview(false);
-              setSceneKey((k) => k + 1);
-              startTour();
-            }}
-            className="min-h-[52px] w-full rounded-xl bg-[#306EEC] px-4 text-[16px] font-bold text-white shadow-[0_10px_24px_-10px_rgba(48,110,236,0.7)] active:scale-[0.99]"
+        {!preview && (
+          <div
+            data-fx-chrome=""
+            className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-1.5"
           >
-            ▶ START 3D FIXTER
-          </button>
-          <p className="mt-2 text-center font-mono text-[12px] text-slate-600">
-            3D: {sceneStatus}
-          </p>
-        </div>
+            <button
+              type="button"
+              onClick={() => {
+                setPreview(false);
+                setSceneKey((k) => k + 1);
+                startTour();
+              }}
+              className="min-h-[30px] shrink-0 rounded-lg bg-[#306EEC] px-3 text-[12px] font-bold text-white active:scale-[0.99]"
+            >
+              &#9654; START 3D
+            </button>
+            <p className="truncate font-mono text-[11px] text-slate-600">
+              {sceneStatus}
+            </p>
+          </div>
+        )}
 
-        <LabDiagnostics />
+        {!preview && <LabDiagnostics />}
         <LabHomepage />
 
         <LabErrorBoundary fixed key={sceneKey}>
@@ -421,7 +427,7 @@ export default function LabClient() {
             &#9881;
           </button>
         ) : (
-        <div data-fx-chrome="" className="fixed bottom-2 right-2 z-[60] w-[150px] space-y-1.5 rounded-xl border border-slate-200 bg-white/90 p-2 shadow-lg backdrop-blur sm:bottom-3 sm:right-3 sm:w-[228px] sm:space-y-2 sm:p-2.5">
+        <div data-fx-chrome="" className="fixed bottom-2 right-2 z-[60] w-[178px] space-y-1.5 rounded-xl border border-slate-200 bg-white/90 p-2 shadow-lg backdrop-blur sm:bottom-3 sm:right-3 sm:w-[228px] sm:space-y-2 sm:p-2.5">
           <div className="hidden items-center justify-between sm:flex">
             <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
               Fixter Lab

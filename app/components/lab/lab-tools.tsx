@@ -21,7 +21,7 @@ import { M } from "./lab-materials";
  * scale-accurate tool is a few pixels of grey and reads as nothing.
  */
 
-export type ToolKind = "screwdriver" | "wrench" | "drill";
+export type ToolKind = "screwdriver" | "wrench" | "drill" | "hammer";
 
 function Screwdriver() {
   return (
@@ -102,10 +102,34 @@ function Drill() {
   );
 }
 
+function Hammer() {
+  return (
+    <group>
+      {/* grip */}
+      <mesh material={M.toolGrip} position={[0, 0.042, 0]}>
+        <capsuleGeometry args={[0.015, 0.07, 4, 10]} />
+      </mesh>
+      {/* shaft */}
+      <mesh material={M.hardware} position={[0, 0.105, 0]}>
+        <cylinderGeometry args={[0.009, 0.011, 0.06, 10]} />
+      </mesh>
+      {/* head, across the shaft so the silhouette reads as a hammer at 20px */}
+      <mesh material={M.metal} position={[0, 0.142, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.018, 0.018, 0.055, 12]} />
+      </mesh>
+      {/* the claw, which is what stops it reading as a mallet */}
+      <mesh material={M.metal} position={[-0.036, 0.15, 0]} rotation={[0, 0, -0.5]}>
+        <boxGeometry args={[0.03, 0.014, 0.016]} />
+      </mesh>
+    </group>
+  );
+}
+
 const TOOLS: Record<ToolKind, () => React.JSX.Element> = {
   screwdriver: Screwdriver,
   wrench: Wrench,
   drill: Drill,
+  hammer: Hammer,
 };
 
 export default function HandTool({
@@ -129,6 +153,7 @@ export const TOOL_REACH: Record<ToolKind, number> = {
   screwdriver: 0.163,
   wrench: 0.17,
   drill: 0.135,
+  hammer: 0.17,
 };
 
 /** Every tool's working end runs along +Y; see the note in Drill. */
