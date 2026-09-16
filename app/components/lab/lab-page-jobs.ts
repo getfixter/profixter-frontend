@@ -147,18 +147,18 @@ export const PAGE_JOBS: JobDefinition[] = [
     footprint: { w: 1.05, h: 1 },
   },
   {
-    id: "baseboard",
-    label: "Baseboard sprung off the wall",
-    object: "baseboard",
-    workMotion: "low",
+    id: "hinge",
+    label: "Door hinge working loose",
+    object: "hinge",
+    workMotion: "mid",
     tool: "hammer",
-    toolApproachDeg: -18,
-    workSeconds: 4.4,
+    toolApproachDeg: -14,
+    workSeconds: 4.2,
     workYawDeg: -12,
-    objectRotationDeg: [0, 14, 0],
-    objectOffset: [0.125, 0.0],
-    propScale: 0.3,
-    footprint: { w: 1.45, h: 1 },
+    objectRotationDeg: [0, 20, 0],
+    objectOffset: [-0.06, 0.02],
+    propScale: 0.63,
+    footprint: { w: 1.05, h: 1.1 },
     effect: "impact",
   },
   {
@@ -251,6 +251,7 @@ export const ROW_JOBS: Record<string, string> = {
   "row-shelf": "shelf",
   "row-cabinet": "cabinet",
   "row-lamp": "lamp",
+  "row-door": "hinge",
 };
 
 /** The same thing the other way round, for asking "is this repair on screen". */
