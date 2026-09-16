@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef } from "react";
+import { actionPose, type ToolAction } from "./lab-action";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { M } from "./lab-materials";
@@ -201,6 +202,8 @@ export function AimedHandTool({
   restRotationDeg,
   getTarget,
   tracking,
+  action = "none",
+  getWorkTime,
 }: {
   kind: ToolKind;
   scale?: number;
@@ -209,8 +212,13 @@ export function AimedHandTool({
   /** Where the tip should point, in world space. Null to hold the rest aim. */
   getTarget: () => THREE.Vector3 | null;
   tracking: boolean;
+  /** What the tool is doing, as opposed to where it is pointing. */
+  action?: ToolAction;
+  /** Seconds he has been working, for the action's own clock. */
+  getWorkTime?: () => number;
 }) {
   const ref = useRef<THREE.Group>(null);
+  const act = useRef<THREE.Group>(null);
   const seeded = useRef(false);
 
   const rest = useMemo(
@@ -260,14 +268,34 @@ export function AimedHandTool({
       wanted,
       1 - Math.exp(-TRACK_RATE * Math.min(delta, 0.1))
     );
+
+    /*
+     * And now the action, inside the aim.
+     *
+     * Two nested groups on purpose: the outer one decides where the tip points
+     * and is smoothed, the inner one performs the verb and is not. Smoothing a
+     * hammer strike is the same as not having one.
+     */
+    const inner = act.current;
+    if (inner) {
+      const pose = actionPose(action, getWorkTime ? getWorkTime() : 0);
+      inner.rotation.set(
+        THREE.MathUtils.degToRad(pose.swingDeg),
+        THREE.MathUtils.degToRad(pose.rollDeg),
+        0
+      );
+      inner.position.set(pose.slide, pose.push, 0);
+    }
   });
 
   const Tool = TOOLS[kind];
   if (!Tool) return null;
   return (
     <group ref={ref} position={position}>
-      <group scale={scale}>
-        <Tool />
+      <group ref={act}>
+        <group scale={scale}>
+          <Tool />
+        </group>
       </group>
     </group>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { bodyAccent, type ToolAction } from "./lab-action";
 import { createPortal, useFrame, useLoader } from "@react-three/fiber";
 import { useAnimations, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -12,6 +13,7 @@ import {
   TOOL_ATTACH_BONE,
   TOOL_SCALE,
   WORK_MOTIONS,
+  actionFor,
   allClipSpecs,
   type ClipSpec,
   type JobDefinition,
@@ -97,6 +99,7 @@ export type FixterModelProps = {
 
 /* Scratch, so aiming the tool allocates nothing per frame. */
 const _toolTarget = new THREE.Vector3();
+const ZERO_ACCENT = { bob: 0, rollDeg: 0, leanDeg: 0 };
 /* Scratch for the head look-at; allocated once, never per frame. */
 const _headAt = new THREE.Vector3();
 const _lookAt = new THREE.Vector3();
@@ -277,6 +280,7 @@ export default function FixterModel({
   const [phase, setPhase] = useState<TourPhase>("IDLE");
   const [stopIndex, setStopIndex] = useState(0);
   const [propJobId, setPropJobId] = useState<string | null>(null);
+  const [beat, setBeat] = useState<string | null>(null);
   const lookRef = useRef(0);
   const propRef = useRef<THREE.Group>(null);
   const effectRef = useRef<THREE.Group>(null);
@@ -315,13 +319,14 @@ export default function FixterModel({
     if (!stop) return roles.rest;
     const role = clipRoleForPhase(phase);
     if (role === "walk") return roles.walkInPlace;
-    if (role === "idle") return "Idle";
+    /* A pause is usually just a pause; occasionally it is a moment. */
+    if (role === "idle") return phase === "REST" && beat ? beat : "Idle";
     const spec: ClipSpec | undefined =
       role === "work" ? stop.motion.clip
       : role === "workIn" ? stop.motion.enter
       : stop.motion.exit;
     return spec?.name ?? "Idle";
-  }, [tour, stops, stopIndex, phase, roles, manualClip]);
+  }, [tour, stops, stopIndex, phase, roles, manualClip, beat]);
 
   const applyClip = useCallback(
     (clipName: string | null, fade: number) => {
@@ -405,6 +410,11 @@ export default function FixterModel({
 
   const currentStop = stops[stopIndex % Math.max(1, stops.length)];
   const toolKind = currentStop?.job.tool ?? null;
+  const toolAction = currentStop ? actionFor(currentStop.job) : "none";
+  const toolActionRef = useRef<ToolAction>("none");
+  useEffect(() => {
+    toolActionRef.current = toolAction;
+  }, [toolAction]);
   const aim = currentStop?.motion.toolAimDeg ?? [0, 0, 0];
 
   /*
@@ -454,6 +464,19 @@ export default function FixterModel({
    * matrix. Read live rather than captured, because on the page that parent
    * moves every time the document scrolls.
    */
+  /** Seconds he has been working this job, for the tool's own rhythm. */
+  const workTime = useCallback(() => {
+    const runtime = tourRef.current;
+    if (!runtime) return 0;
+    const t = runtime.phase === "WORK" ? runtime.phaseElapsed : 0;
+    if (process.env.NODE_ENV !== "production") {
+      /* Lab only: lets the watcher photograph a hammer swing frame by frame. */
+      const slow = (window as unknown as Record<string, number>).__fxSlow;
+      if (slow) return t * slow;
+    }
+    return t;
+  }, []);
+
   const toolTarget = useCallback((): THREE.Vector3 | null => {
     const parent = groupRef.current?.parent;
     const placed = tourRef.current?.placed;
@@ -508,6 +531,7 @@ export default function FixterModel({
         fx.visible = runtime.propFade > 0.4;
       }
       if (runtime.propJobId !== propJobId) setPropJobId(runtime.propJobId);
+      if (runtime.beat !== beat) setBeat(runtime.beat);
       if (process.env.NODE_ENV !== "production") {
         /* Ground truth for the Lab's watcher: phase and prop from one frame. */
         const w = window as unknown as Record<string, unknown>;
@@ -517,6 +541,8 @@ export default function FixterModel({
           livePhase: runtime.phase,
           liveJob: stops[runtime.stopIndex % stops.length]?.job.id ?? null,
           prop: runtime.propJobId,
+          beat: runtime.beat,
+          clip: currentActionRef.current?.getClip().name ?? null,
           fade: Math.round(runtime.propFade * 100) / 100,
         };
       }
@@ -529,7 +555,23 @@ export default function FixterModel({
        * turn, or turning would swing the lean out of the plane with it.
        */
       group.rotation.order = "YXZ";
-      group.rotation.set(0, runtime.yaw, runtime.lean);
+      /*
+       * The action reaches the shoulders.
+       *
+       * Added on top of the clip rather than replacing it: the retargeted take
+       * supplies a working posture and this supplies the verb, which is the
+       * only division of labour that survived two rounds of Text-to-Motion.
+       */
+      const accent =
+        runtime.phase === "WORK"
+          ? bodyAccent(toolActionRef.current, workTime(), scale)
+          : ZERO_ACCENT;
+      group.rotation.set(
+        THREE.MathUtils.degToRad(accent.leanDeg),
+        runtime.yaw,
+        runtime.lean + THREE.MathUtils.degToRad(accent.rollDeg)
+      );
+      group.position.y += accent.bob;
       group.scale.setScalar(scale);
 
       /*
@@ -697,7 +739,7 @@ export default function FixterModel({
         spark comes off the screw and not off the middle of the faceplate.
       */}
       <group ref={effectRef} visible={false}>
-        <WorkEffect kind={propEffect} active={working} />
+        <WorkEffect kind={propEffect} active={working} action={toolAction} getWorkTime={workTime} />
       </group>
       <group ref={groupRef}>
         <primitive object={model} />
@@ -715,6 +757,8 @@ export default function FixterModel({
               aim[2] + toolOffset.rotationDeg[2],
             ]}
             getTarget={toolTarget}
+            action={toolAction}
+            getWorkTime={workTime}
             tracking
           />,
           handBone

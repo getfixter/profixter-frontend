@@ -1,5 +1,6 @@
 import type { ObjectKind } from "./lab-objects";
 import type { ToolKind } from "./lab-tools";
+import type { ToolAction } from "./lab-action";
 import type { LayoutId, StagePoint } from "./lab-stage";
 import { REGIONS } from "./lab-stage";
 
@@ -19,6 +20,22 @@ export const CLIP_WORK_LOW = "/3d/motion/fx-work-low.bvh";
 export const CLIP_WORK_MID = "/3d/motion/fx-work-mid.bvh";
 export const CLIP_WORK_REACH = "/3d/motion/fx-work-reach.bvh";
 export const CLIP_WORK_HIGH = "/3d/motion/fx-work-high.bvh";
+
+/**
+ * The two beats that survived.
+ *
+ * Twenty-four Text-to-Motion takes over two rounds produced exactly these: a
+ * wave and a wipe of the forehead. Everything else came back as a man
+ * gesturing vaguely near his own face, which is what the model does when it is
+ * asked for something it has never been shown — "caulking", "ratcheting". What
+ * it does know is what a person looks like waving, and being tired.
+ *
+ * That is not a bad trade. The work itself is better served by driving the tool
+ * in code, where a hammer can actually stop dead on the strike; these are the
+ * human moments in between, which is the half a motion model is good at.
+ */
+export const CLIP_BEAT_WAVE = "/3d/motion/fx-beat-wave.bvh";
+export const CLIP_BEAT_BROW = "/3d/motion/fx-beat-brow.bvh";
 export const CLIP_IDLE = "/3d/motion/fx-idle.bvh";
 
 /**
@@ -36,6 +53,8 @@ export const MOTION_FILES = [
   CLIP_WORK_MID,
   CLIP_WORK_REACH,
   CLIP_WORK_HIGH,
+  CLIP_BEAT_WAVE,
+  CLIP_BEAT_BROW,
 ];
 
 export type LoopStyle = "once" | "repeat" | "pingpong";
@@ -150,8 +169,19 @@ export const IDLE_CLIP: ClipSpec = {
 };
 
 /** Every clip the mixer needs, derived so nothing can drift out of sync. */
+/**
+ * A moment of being a person rather than a process.
+ *
+ * Played instead of the idle during the pause between jobs, and rarely: the
+ * whole value of a beat is that it is not the thing he always does.
+ */
+export const BEAT_CLIPS: ClipSpec[] = [
+  { name: "Beat · Wave", file: CLIP_BEAT_WAVE, start: 0.2, end: 2.2, loop: "once" },
+  { name: "Beat · Brow", file: CLIP_BEAT_BROW, start: 1.0, end: 3.0, loop: "once" },
+];
+
 export function allClipSpecs(): ClipSpec[] {
-  const out: ClipSpec[] = [IDLE_CLIP];
+  const out: ClipSpec[] = [IDLE_CLIP, ...BEAT_CLIPS];
   for (const motion of Object.values(WORK_MOTIONS)) {
     out.push(motion.clip);
     if (motion.enter) out.push(motion.enter);
@@ -204,6 +234,14 @@ export type JobDefinition = {
    * Prop units, not world units, so that it keeps meaning the same thing when
    * props are resized: "half a towel bar to the left" stays half a towel bar.
    */
+  /**
+   * What the tool does while he works.
+   *
+   * The single biggest lever on whether two jobs feel different, because it is
+   * the part of the performance that is actually authored rather than
+   * retargeted. Defaults to a sensible verb for the tool if left out.
+   */
+  action?: ToolAction;
   objectOffset?: [number, number];
   /**
    * How much screen this job wants, relative to the character alone.
@@ -395,3 +433,17 @@ export const CAMERA_TILT = { x: 1.15, y: 1.35, z: 12 };
 
 /** Region shortcuts, re-exported so jobs can be talked about by place. */
 export { REGIONS };
+
+/** What a tool does if a job does not say. */
+export const DEFAULT_ACTION: Record<string, ToolAction> = {
+  screwdriver: "turn",
+  wrench: "ratchet",
+  drill: "spin",
+  hammer: "tap",
+};
+
+export function actionFor(job: JobDefinition): ToolAction {
+  if (job.action) return job.action;
+  if (job.tool) return DEFAULT_ACTION[job.tool] ?? "none";
+  return "press";
+}

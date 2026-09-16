@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { M, createLampMaterial } from "./lab-materials";
+import { M, createGlowTexture, createLampMaterial } from "./lab-materials";
 import { getObjectFix } from "./lab-object-state";
 
 /**
@@ -50,7 +50,14 @@ const DEG = THREE.MathUtils.degToRad;
  * that a handle drooping or a lamp dimming reads as nothing at all unless you
  * are staring straight at it.
  */
-const REPAIR_RATE = 4.5;
+/*
+ * Fast enough to follow the snap.
+ *
+ * The shaping lives in repairCurve now; this only has to not blur it. At the
+ * old rate the overshoot was smoothed away into the same slow drift the curve
+ * exists to replace. Breaking again stays slow — that one should go unnoticed.
+ */
+const REPAIR_RATE = 15;
 const DECAY_RATE = 0.3;
 
 function ease(current: number, target: number, dt: number, rate?: number) {
@@ -311,14 +318,49 @@ function Cabinet({ id }: FixableProps) {
 function Lamp({ id }: FixableProps) {
   const swing = useRef<THREE.Group>(null);
   const shade = useRef<THREE.Mesh>(null);
+  const glow = useRef<THREE.Sprite>(null);
   const f = useRef(0);
   const material = useMemo(() => createLampMaterial(), []);
+  const glowMaterial = useMemo(
+    () =>
+      new THREE.SpriteMaterial({
+        map: createGlowTexture(),
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        depthTest: false,
+        transparent: true,
+        opacity: 0,
+      }),
+    []
+  );
   useEffect(() => () => material.dispose(), [material]);
+  useEffect(
+    () => () => {
+      glowMaterial.map?.dispose();
+      glowMaterial.dispose();
+    },
+    [glowMaterial]
+  );
 
   useFrame((_, dt) => {
     f.current = ease(f.current, getObjectFix(id), dt);
     const broken = 1 - f.current;
     if (swing.current) swing.current.rotation.z = DEG(12) * broken;
+    /*
+     * The bulb blooms as it seats, and keeps a slow breath afterwards.
+     *
+     * This is the loudest moment in the whole loop and it is deliberately the
+     * first thing a visitor sees, so it is worth more than an emissive nudge:
+     * against a dark hero a warm additive bloom is visible from the corner of
+     * the eye, which is the entire job of the opening.
+     */
+    if (glow.current) {
+      const breathe = 1 + Math.sin(performance.now() / 700) * 0.05;
+      const g = glow.current;
+      g.scale.setScalar(f.current * 0.95 * breathe);
+      (g.material as THREE.SpriteMaterial).opacity = f.current * 0.9;
+      g.visible = f.current > 0.02;
+    }
     /*
      * The payoff: it comes on. Reached through the mesh rather than the memo
      * so this is a mutation of the scene graph, which is what a frame loop is
@@ -344,6 +386,7 @@ function Lamp({ id }: FixableProps) {
         <mesh material={material} position={[0, -0.315, 0]}>
           <sphereGeometry args={[0.032, 12, 10]} />
         </mesh>
+        <sprite ref={glow} material={glowMaterial} position={[0, -0.3, 0.02]} visible={false} />
       </group>
     </group>
   );
