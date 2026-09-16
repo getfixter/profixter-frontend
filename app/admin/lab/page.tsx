@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LabClient from "./LabClient";
+import { LAB_BUILD } from "@/app/components/lab/lab-config";
 
 /**
  * Fixter Lab — an experimental, Admin-only 3D testing surface.
@@ -26,8 +27,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
-/** Bumped on every deploy of this route. Rendered on the server, in the HTML. */
-export const LAB_BUILD = "lab-13";
+/* Re-exported so anything that imported it from the route still works. */
+export { LAB_BUILD };
 
 export default function FixterLabPage() {
   return (
