@@ -73,7 +73,7 @@ export const PAGE_JOBS: JobDefinition[] = [
     id: "frame",
     label: "Crooked picture frame",
     object: "frame",
-    workMotion: "high",
+    workMotion: "reach",
     tool: null,
     toolApproachDeg: -60,
     workSeconds: 3.8,

@@ -73,6 +73,8 @@ type Path = {
   to: THREE.Vector2;
   control: THREE.Vector2;
   length: number;
+  /** How much content this route crosses. Decides how fast he takes it. */
+  cost?: number;
 };
 
 export type TourRuntime = {
@@ -392,7 +394,12 @@ export function approachValue(
 
 export type Bounds = { minX: number; maxX: number; minY: number; maxY: number };
 
-function curve(a: THREE.Vector2, b: THREE.Vector2, side: number, bounds: Bounds) {
+function curve(
+  a: THREE.Vector2,
+  b: THREE.Vector2,
+  side: number,
+  bounds: Bounds
+): Path {
   const span = b.clone().sub(a);
   const length = Math.max(span.length(), 1e-4);
   const steep = Math.abs(span.y) / length;
@@ -477,6 +484,7 @@ function makePath(
     }
     if (bestCost <= candidate.penalty) break;
   }
+  best.cost = bestCost;
   return best;
 }
 
@@ -651,9 +659,22 @@ export function stepTour(
       );
       runtime.t = 0;
     }
+    /*
+     * Cross quickly what cannot be walked around.
+     *
+     * On a three-hundred-and-ninety pixel page a full-width headline between
+     * two places he is allowed to stand has no way round it — the bow is
+     * perpendicular to the journey, and for a mostly vertical move that swings
+     * him sideways, which does not help. So the route cost, which already knows
+     * a headline costs three times a paragraph, also decides how fast he goes
+     * over it. Strolling through a headline reads as oblivious; getting across
+     * it reads as a man passing through.
+     */
+    const crossing = 1 + Math.min(1.3, (runtime.path.cost ?? 0) * 0.16);
     const hurry = slow
       ? 1
-      : THREE.MathUtils.clamp(runtime.path.length / HURRY_FROM, 1, HURRY_MAX);
+      : THREE.MathUtils.clamp(runtime.path.length / HURRY_FROM, 1, HURRY_MAX) *
+        crossing;
     const factor = (slow ? APPROACH_SPEED_FACTOR : 1) * hurry;
     /*
      * The walk is an in-place clip and the code does the moving, so the two
