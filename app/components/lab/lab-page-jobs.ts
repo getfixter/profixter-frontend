@@ -10,12 +10,28 @@ import type { LayoutId } from "./lab-stage";
  * he approaches it and how long it takes. Nothing here says where — that is
  * decided on the screen, at the moment he sets off.
  *
- * The order is the running order, and it is arranged so no two neighbours share
- * a tool or a posture. Watching him crouch, then stand, then reach overhead is
+ * The order is the running order. The lamp leads because the curtain goes up
+ * mid-repair, and a light coming on against a dark hero is the most legible
+ * before-and-after in the set: you understand it without reading anything.
+ * After that it is arranged so no two neighbours share a tool or a posture. Watching him crouch, then stand, then reach overhead is
  * most of what stops the loop reading as "walk, screwdriver, walk, screwdriver".
  */
 
 export const PAGE_JOBS: JobDefinition[] = [
+  {
+    id: "lamp",
+    label: "Crooked pendant light",
+    object: "lamp",
+    workMotion: "high",
+    tool: "screwdriver",
+    toolApproachDeg: -78,
+    workSeconds: 5,
+    workYawDeg: 10,
+    objectRotationDeg: [0, 18, 0],
+    objectOffset: [0.0, 0.172],
+    propScale: 0.63,
+    footprint: { w: 1, h: 1.3 },
+  },
   {
     id: "outlet",
     label: "Loose wall outlet",
@@ -30,20 +46,6 @@ export const PAGE_JOBS: JobDefinition[] = [
     propScale: 0.62,
     footprint: { w: 1, h: 1.05 },
     effect: "spark",
-  },
-  {
-    id: "lamp",
-    label: "Crooked pendant light",
-    object: "lamp",
-    workMotion: "high",
-    tool: "screwdriver",
-    toolApproachDeg: -78,
-    workSeconds: 5,
-    workYawDeg: 10,
-    objectRotationDeg: [0, 18, 0],
-    objectOffset: [0.0, 0.172],
-    propScale: 0.63,
-    footprint: { w: 1, h: 1.3 },
   },
   {
     id: "towelbar",

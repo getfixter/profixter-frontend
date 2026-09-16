@@ -88,3 +88,35 @@ export function createContactShadow(): THREE.Texture {
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 }
+
+/**
+ * The glow a light throws when it comes on.
+ *
+ * Additive, so it only ever brightens what is behind it — which on a dark hero
+ * is most of the payoff and on a white section is almost nothing, exactly as a
+ * real lamp behaves against a bright wall. Warm rather than white, because a
+ * white bloom on a blue page reads as a rendering artefact and a warm one reads
+ * as a bulb.
+ */
+export function createGlowTexture(): THREE.Texture {
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const g = ctx.createRadialGradient(
+      size / 2, size / 2, 0,
+      size / 2, size / 2, size / 2
+    );
+    g.addColorStop(0, "rgba(255,226,160,0.95)");
+    g.addColorStop(0.22, "rgba(255,206,120,0.5)");
+    g.addColorStop(0.55, "rgba(255,190,96,0.16)");
+    g.addColorStop(1, "rgba(255,180,90,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}

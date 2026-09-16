@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
+import { actionCycle, actionHit, actionPhase, type ToolAction } from "./lab-action";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -49,13 +50,19 @@ type Particle = {
 export default function WorkEffect({
   kind,
   active,
+  action = "none",
+  getWorkTime,
 }: {
   kind: EffectKind | null;
   active: boolean;
+  /** The tool's verb, so a spark lands on the strike and not near it. */
+  action?: ToolAction;
+  getWorkTime?: () => number;
 }) {
   const mesh = useRef<THREE.InstancedMesh>(null);
   const clock = useRef(0);
   const nextBurst = useRef(0.4);
+  const lastCycle = useRef(-1);
 
   /*
    * Held in a ref, not a memo.
@@ -101,6 +108,7 @@ export default function WorkEffect({
     }
     clock.current = 0;
     nextBurst.current = 0.4;
+    lastCycle.current = -1;
   }, [kind, active]);
 
   useFrame((_, delta) => {
@@ -112,9 +120,22 @@ export default function WorkEffect({
     if (!dummy.current) dummy.current = new THREE.Object3D();
     const d = dummy.current;
 
-    /* Fire a burst on a beat: drilling puffs often, a hammer lands slower. */
+    /*
+     * Fire on the tool's beat, not on a timer of its own.
+     *
+     * A spark that appears half a second after the screwdriver turns is not a
+     * spark, it is confetti. The tool already knows when it makes contact, so
+     * the particles ask it rather than guessing — and the two stay in step even
+     * when a job runs at a different speed.
+     */
+    const t = getWorkTime ? getWorkTime() : clock.current;
+    const cycle = action === "none" ? -1 : actionCycle(action, t);
+    const onBeat =
+      cycle >= 0 ? cycle !== lastCycle.current && actionHit(action, actionPhase(action, t))
+                 : clock.current >= nextBurst.current;
     const interval = kind === "dust" ? 0.55 : kind === "spark" ? 1.15 : 0.78;
-    if (active && clock.current >= nextBurst.current) {
+    if (active && onBeat) {
+      lastCycle.current = cycle;
       nextBurst.current = clock.current + interval;
       const n = kind === "spark" ? 3 : kind === "impact" ? 4 : 5;
       let spawned = 0;

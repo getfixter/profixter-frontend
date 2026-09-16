@@ -96,6 +96,8 @@ export type TourRuntime = {
   restFor: number;
   /** Set when the screen changed under him and his spot is no longer free. */
   displaced: boolean;
+  /** A beat clip to play instead of idling, or null for the usual pause. */
+  beat: string | null;
 };
 
 export const WALK_SPEED = 1.05;
@@ -103,7 +105,25 @@ const APPROACH_FROM = 0.86;
 const APPROACH_SPEED_FACTOR = 0.45;
 const TURN_RATE = 3.0;
 const TURN_EPSILON = 0.035;
-const OPENING_IDLE = 0.9;
+/**
+ * How far into the first repair the curtain goes up.
+ *
+ * Far enough that he is unmistakably working, close enough that the snap lands
+ * inside the first couple of seconds. Not 1.0: the visitor has to see the thing
+ * broken, however briefly, or the fix means nothing.
+ */
+const OPENING_AT = 0.55;
+/**
+ * How often he does something human between jobs.
+ *
+ * Rare on purpose. A character who wipes his forehead after every repair is not
+ * tired, he is a loop; the beat only means anything if most pauses are just
+ * pauses. The wave is rarer still — once he has said hello, saying it again
+ * every thirty seconds is the behaviour of a mascot, not a person.
+ */
+const BROW_CHANCE = 0.28;
+const WAVE_AT_LAP = 0;
+
 const ADMIRE_SECONDS = 1.5;
 
 /** How long he stands about between jobs. Contrast is what gets noticed. */
@@ -181,6 +201,29 @@ const _up = new THREE.Vector3(0, 1, 0);
  * Turn "the repair is here" into everything else: where the prop is drawn,
  * where the tool points, and where he has to stand for his hand to arrive.
  */
+/**
+ * How mended the thing looks, given how far through the repair he is.
+ *
+ * The repair used to be a four-second cross-fade from broken to fixed, which
+ * meant there was never a moment when it got fixed — the crooked lamp drifted
+ * level so gradually that the eye read it as drift, not as success. Nothing to
+ * notice, nothing to feel.
+ *
+ * So the damage now holds while he works, and then goes all at once with a
+ * small overshoot, the way something does when it finally seats. That snap is
+ * the payoff, and it is the only thing in the loop that has to land.
+ */
+export function repairCurve(t: number): number {
+  const HOLD = 0.72;
+  if (t < HOLD) return t * 0.06;
+  const u = Math.min(1, (t - HOLD) / (1 - HOLD));
+  /* Ease-out-back: reaches 1, tips just past it, settles. */
+  const c = 2.1;
+  const b = u - 1;
+  const eased = b * b * ((c + 1) * b + c) + 1;
+  return HOLD * 0.06 + (1 - HOLD * 0.06) * eased;
+}
+
 export function placeStop(
   stop: Stop,
   anchor: THREE.Vector3,
@@ -264,6 +307,7 @@ export function createTourRuntime(): TourRuntime {
     propFade: 0,
     restFor: REST_MIN,
     displaced: false,
+    beat: null,
   };
 }
 
@@ -492,6 +536,7 @@ export function stepTour(
     runtime.path = null;
     runtime.t = 0;
     runtime.displaced = false;
+    runtime.beat = null;
     setPhase(runtime, "TRAVEL");
     return true;
   };
@@ -533,12 +578,32 @@ export function stepTour(
 
   switch (runtime.phase) {
     case "IDLE":
-      runtime.lean = approachValue(runtime.lean, 0, dt, 5);
-      if (runtime.phaseElapsed >= OPENING_IDLE) {
-        if (!departFor(runtime.stopIndex)) {
-          runtime.restFor = 0.7;
-          setPhase(runtime, "REST");
-        }
+      /*
+       * There is no opening idle any more.
+       *
+       * He used to stand in the middle of the screen for a beat, then walk for
+       * four seconds, then crouch, and the first thing a visitor could actually
+       * understand arrived somewhere past fifteen seconds. Nobody waits that
+       * long for a decoration on a page they came to for something else.
+       *
+       * So the curtain goes up on a repair already in progress: he is at the
+       * job, tool out, working, and the thing he is working on is visibly
+       * broken. The payoff lands a second and a half later. Whatever else the
+       * loop does after that, it has already said what he is.
+       */
+      if (departFor(runtime.stopIndex)) {
+        const stop = stops[runtime.stopIndex % stops.length];
+        runtime.position.copy(runtime.placed!.mark);
+        runtime.yaw = runtime.placed!.workYaw;
+        runtime.toolEquipped = stop.job.tool !== null;
+        runtime.propFade = 1;
+        runtime.path = null;
+        setPhase(runtime, "WORK");
+        /* Drop him in with the repair most of the way through. */
+        runtime.phaseElapsed = stop.job.workSeconds * OPENING_AT;
+      } else {
+        runtime.restFor = 0.4;
+        setPhase(runtime, "REST");
       }
       break;
 
@@ -587,7 +652,7 @@ export function stepTour(
         1,
         runtime.phaseElapsed / stop.job.workSeconds
       );
-      setObjectFix(stop.job.id, runtime.workProgress);
+      setObjectFix(stop.job.id, repairCurve(runtime.workProgress));
       if (runtime.workProgress >= 1) {
         setPhase(runtime, stop.exitSeconds > 0 ? "WORK_OUT" : "ADMIRE");
       }
@@ -615,8 +680,23 @@ export function stepTour(
         runtime.tick += 1;
         if ((runtime.stopIndex + 1) % stops.length === 0) runtime.laps += 1;
         runtime.workProgress = 0;
+        /*
+         * Pick the beat now, while we still know what he has just been doing.
+         * Hard work earns the forehead; the wave belongs to the first pause of
+         * a visit, when somebody has plausibly only just arrived.
+         */
+        const heavy = stop.job.tool === "drill" || stop.job.tool === "hammer";
+        runtime.beat =
+          runtime.tick === 1 && runtime.laps === WAVE_AT_LAP
+            ? "Beat · Wave"
+            : heavy && Math.random() < BROW_CHANCE
+              ? "Beat · Brow"
+              : null;
         runtime.placed = null;
-        runtime.restFor = REST_MIN + Math.random() * (REST_MAX - REST_MIN);
+        /* A beat needs room to play; a plain pause can be short. */
+        runtime.restFor = runtime.beat
+          ? 2.1
+          : REST_MIN + Math.random() * (REST_MAX - REST_MIN);
         setPhase(runtime, "REST");
       }
       break;
