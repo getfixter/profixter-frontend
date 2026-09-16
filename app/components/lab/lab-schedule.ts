@@ -181,7 +181,7 @@ export function pickNext(
   const scored = pool
     .map((entry) => ({
       ...entry,
-      value: score(entry.stop, memory) + (Math.random() - 0.5) * 1.2,
+      value: score(entry.stop, memory) + (Math.random() - 0.5) * 1.0,
     }))
     .sort((a, b) => b.value - a.value);
 
