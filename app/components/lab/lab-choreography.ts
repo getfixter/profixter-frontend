@@ -402,7 +402,7 @@ const _sample = new THREE.Vector2();
  * a perfectly chosen spot. Sampling the curve and counting the crossings costs
  * a dozen point tests once per leg.
  */
-function routeCost(path: Path, busy: (x: number, y: number) => boolean) {
+function routeCost(path: Path, busy: (x: number, y: number) => number) {
   let cost = 0;
   const STEPS = 12;
   for (let i = 1; i < STEPS; i++) {
@@ -412,7 +412,8 @@ function routeCost(path: Path, busy: (x: number, y: number) => boolean) {
       u * u * path.from.x + 2 * u * t * path.control.x + t * t * path.to.x,
       u * u * path.from.y + 2 * u * t * path.control.y + t * t * path.to.y
     );
-    if (busy(_sample.x, _sample.y)) cost++;
+    /* A headline underfoot costs three times what a paragraph does. */
+    cost += busy(_sample.x, _sample.y);
   }
   return cost;
 }
@@ -429,7 +430,7 @@ function makePath(
   to: THREE.Vector3,
   preferredSide: number,
   bounds: Bounds,
-  busy?: (x: number, y: number) => boolean
+  busy?: (x: number, y: number) => number
 ): Path {
   const a = new THREE.Vector2(from.x, from.y);
   const b = new THREE.Vector2(to.x, to.y);
@@ -492,8 +493,8 @@ export type StepOptions = {
   bounds: Bounds;
   /** Scroll or resize made his current spot unusable. */
   displaced?: boolean;
-  /** Is this world point on the plane currently under page content? */
-  busyAt?: (x: number, y: number) => boolean;
+  /** How unwelcome this world point is, 0 to 3. */
+  busyAt?: (x: number, y: number) => number;
 };
 
 export function stepTour(

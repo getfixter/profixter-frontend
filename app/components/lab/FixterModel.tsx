@@ -89,7 +89,7 @@ export type FixterModelProps = {
   /** True when the screen moved and his current spot is no longer free. */
   displaced?: boolean;
   /** Is this world point under page content? Used to route around it. */
-  busyAt?: (x: number, y: number) => boolean;
+  busyAt?: (x: number, y: number) => number;
   /** Scale for the props he carries with him. */
   objectScale: number;
   toolOffset: ToolOffset;

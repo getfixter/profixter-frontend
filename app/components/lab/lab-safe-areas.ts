@@ -712,6 +712,33 @@ export function whatIsUnder(box: {
 }
 
 /** Is this viewport point currently sitting on top of something? */
+/**
+ * How unwelcome this point is, 0 to 3.
+ *
+ * The boolean version was enough for "is he standing on something" but not for
+ * choosing a way round: every route that crossed anything cost the same, so a
+ * path over a paragraph and a path over the headline were indistinguishable and
+ * he would take either. Walking across a headline is much more forgivable than
+ * standing on one, and much less forgivable than clipping a line of body copy.
+ */
+export function busyWeightAt(x: number, y: number, pad = 0): number {
+  const scrollY = typeof window === "undefined" ? 0 : window.scrollY;
+  let worst = 0;
+  for (const r of rects) {
+    const vy = r.fixed ? r.y : r.y - scrollY;
+    if (
+      x >= r.x - pad &&
+      x <= r.x + r.w + pad &&
+      y >= vy - pad &&
+      y <= vy + r.h + pad
+    ) {
+      if (r.weight > worst) worst = r.weight;
+      if (worst >= 3) return 3;
+    }
+  }
+  return worst;
+}
+
 export function isBusy(x: number, y: number, pad = 0): boolean {
   const scrollY = typeof window === "undefined" ? 0 : window.scrollY;
   for (const r of rects) {
