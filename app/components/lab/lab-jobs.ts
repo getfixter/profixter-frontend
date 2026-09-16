@@ -339,7 +339,15 @@ export const WORK_MOTIONS: Record<string, WorkMotion> = {
     boxW: 1.26,
     headMaxDeg: 70,
     clip: { name: "Work · Hinge", file: CLIP_WORK_HINGE, start: 0.40, end: 0.90, loop: "pingpong" },
-    handOffset: [-0.24, 0.74, 0.30],
+    /*
+     * Raised, after watching him work at the sink.
+     *
+     * At hip height the hinge stance folded him far enough that his head ended
+     * up inside the basin — he read as diving into it rather than working on
+     * the tap, which is above the rim and not below it. A tap is worked at
+     * roughly waist-to-chest height by somebody leaning in, not doubled over.
+     */
+    handOffset: [-0.24, 0.9, 0.3],
     toolAimDeg: [-14, 2, -10],
   },
   /**
