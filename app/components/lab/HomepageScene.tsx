@@ -346,6 +346,36 @@ function SceneContents({
     return new THREE.Vector3(world.x, world.y, 0);
   }, [projection, size.width, size.height, bodyW, bodyH, inset, version]);
 
+  /**
+   * Would he actually be standing on something, given where he ends up?
+   *
+   * The final word, asked with his real feet rather than with the anchor the
+   * search returned. Everything between the two — the tool standing his hand
+   * off from the work, the work yaw turning that offset — moves him, and it
+   * moved him onto a pricing card while the estimate reported a clear stage.
+   */
+  const standable = useCallback(
+    (feet: THREE.Vector3) => {
+      const px = projection.pixelAt(feet.x, feet.y);
+      const under = whatIsUnder({
+        x: px.x - bodyW / 2,
+        y: px.y - bodyH,
+        w: bodyW,
+        h: bodyH,
+      });
+      if (process.env.NODE_ENV !== "production") {
+        const w = window as unknown as Record<string, unknown>;
+        const t = (w.__fxTour ?? {}) as Record<string, unknown>;
+        w.__fxTour = {
+          ...t,
+          under: `heavy=${under.heavy.toFixed(3)} cov=${under.covered.toFixed(2)}`,
+        };
+      }
+      return under.heavy <= 0.09 && under.covered <= 0.2;
+    },
+    [projection, bodyW, bodyH]
+  );
+
   /** Is this world point under something the reader is using? */
   const busyAt = useCallback(
     (x: number, y: number) => {
@@ -379,6 +409,7 @@ function SceneContents({
           displaced={displaced}
           busyAt={busyAt}
           perch={perch}
+          standable={standable}
           objectScale={PAGE_OBJECT_SCALE * scale}
         />
       </Suspense>
