@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { actionCycle, actionHit, actionPhase, type ToolAction } from "./lab-action";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { createGlowTexture } from "./lab-materials";
 
 /**
  * The small flourishes that make a repair readable.
@@ -208,5 +209,95 @@ export default function WorkEffect({
     >
       <planeGeometry args={[1, 1]} />
     </instancedMesh>
+  );
+}
+
+/* ------------------------------------------------------------ the payoff */
+
+/**
+ * One beat, at the exact moment the thing is fixed.
+ *
+ * Everything else in this file happens WHILE he works — dust off a drill, a
+ * knock off a hammer — which punctuates the effort. Nothing punctuated the
+ * result: the prop snapped straight and that was it. On a repair that lasts
+ * four seconds and pays off in a quarter of one, that quarter-second is the
+ * whole point of watching, and it was the only moment on screen with nothing
+ * drawing the eye to it.
+ *
+ * Deliberately one thing: a ring that expands and fades, with a handful of
+ * motes for the trades where debris makes sense. A ring reads as "that seated"
+ * in any context and at any size, which is more than can be said for particles.
+ * The tint is the only part that varies, and it carries the trade — a spark
+ * blue-white for electrical, water-blue for plumbing, dust for the rest.
+ */
+export type PayoffFlavour = "electrical" | "plumbing" | "settle";
+
+/**
+ * The moment the repair lands — and only where it can actually be seen.
+ *
+ * Two versions went in the bin before this one. An expanding ring is a game
+ * HUD, whatever it is tinted; a burst of sparks off a socket says "fault",
+ * which is the opposite of the message and a poor advertisement for an
+ * electrician. Both were then beaten by a much duller problem: at the size this
+ * character actually is on a page — sixty to a hundred pixels — particles are
+ * one or two pixels and simply are not there. I shot both at real scale and
+ * could not find them.
+ *
+ * What does read at that size is LIGHT. The pendant is the strongest payoff in
+ * the whole library for exactly that reason: it is the only one that changes
+ * the brightness of a region rather than the position of an edge. So the
+ * electrical beat is a soft bloom at the work point, quick in and slower out —
+ * the socket coming back to life — which is both visible at sixty pixels and
+ * the correct thing to say about finishing electrical work.
+ *
+ * Everything else gets nothing, deliberately. A shelf snapping level and a drip
+ * stopping are already the payoff; a puff of dust nobody can see is decoration
+ * that costs draw calls.
+ */
+const BLOOM_SECONDS = 0.85;
+
+export function PayoffBurst({
+  flavour,
+  getFiredAt,
+}: {
+  flavour: PayoffFlavour;
+  /** When the repair last snapped, on the same clock as the frame loop. */
+  getFiredAt: () => number;
+}) {
+  const sprite = useRef<THREE.Sprite>(null);
+  const texture = useMemo(() => createGlowTexture(), []);
+  useEffect(() => () => texture.dispose(), [texture]);
+
+  useFrame((state) => {
+    const node = sprite.current;
+    if (!node) return;
+    if (flavour !== "electrical") {
+      node.visible = false;
+      return;
+    }
+    const firedAt = getFiredAt();
+    const t = firedAt > 0 ? state.clock.elapsedTime - firedAt : 99;
+    const u = t / BLOOM_SECONDS;
+    const live = u >= 0 && u <= 1;
+    node.visible = live;
+    if (!live) return;
+    /* Up in a fifth of the beat, down over the rest. */
+    const rise = Math.min(1, u / 0.2);
+    const fall = u < 0.2 ? 1 : 1 - (u - 0.2) / 0.8;
+    const strength = rise * fall * fall;
+    node.scale.setScalar(0.38 + 0.26 * rise);
+    (node.material as THREE.SpriteMaterial).opacity = strength;
+  });
+
+  return (
+    <sprite ref={sprite} visible={false} position={[0, 0, 0.05]}>
+      <spriteMaterial
+        map={texture}
+        transparent
+        opacity={0}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </sprite>
   );
 }

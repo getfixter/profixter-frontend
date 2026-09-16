@@ -326,16 +326,31 @@ function Faucet({ id }: FixableProps) {
 
   return (
     <group>
-      {/* The basin it is mounted in. A tap with nothing under it is a piece of
-          chrome; a tap with a rim and a bowl edge is a sink. */}
-      <Surface kind="tile" size={[0.62, 0.48]} position={[0, 0.12, 0]} z={-0.09} />
-      <mesh material={M.shell} position={[0, -0.035, 0.06]} rotation={[-0.42, 0, 0]}>
-        <boxGeometry args={[0.44, 0.17, 0.018]} />
+      {/*
+        The basin, rebuilt.
+        The first attempt was a thin slab tilted toward the camera, which from
+        almost head-on read as an ironing board with a tap behind it — flat, no
+        bowl, no depth. Under this camera a basin has to be built the way a
+        basin looks from the front: a bowl that tapers inward as it goes down, a
+        rim wider than the bowl so there is a visible lip, and a dark ellipse
+        inside the rim, which is the single thing that says "this is a hole that
+        water goes into" rather than "this is a white shape".
+      */}
+      <Surface kind="tile" size={[0.62, 0.5]} position={[0, 0.14, 0]} z={-0.11} />
+      <mesh material={M.shell} position={[0, -0.115, 0.055]}>
+        <cylinderGeometry args={[0.2, 0.135, 0.13, 26, 1, false]} />
       </mesh>
-      <mesh material={M.shell} position={[0, -0.028, 0.005]}>
-        <boxGeometry args={[0.44, 0.03, 0.14]} />
+      <mesh material={M.shell} position={[0, -0.05, 0.055]}>
+        <cylinderGeometry args={[0.215, 0.215, 0.018, 26]} />
       </mesh>
-      <Contact size={[0.2, 0.12]} position={[0, -0.02, 0.075]} rotation={[-1.1, 0, 0]} />
+      <mesh material={M.dark} position={[0, -0.046, 0.055]}>
+        <cylinderGeometry args={[0.178, 0.178, 0.006, 26]} />
+      </mesh>
+      {/* the plughole, small and dead centre: it finishes the read */}
+      <mesh material={M.hardware} position={[0, -0.042, 0.055]}>
+        <cylinderGeometry args={[0.022, 0.022, 0.006, 12]} />
+      </mesh>
+      <Contact size={[0.26, 0.14]} position={[0, -0.2, 0.05]} />
       {/* base */}
       <mesh material={M.metal} position={[0, -0.09, 0]}>
         <cylinderGeometry args={[0.035, 0.042, 0.02, 16]} />
