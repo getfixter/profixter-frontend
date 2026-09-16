@@ -184,7 +184,16 @@ const TURN_EPSILON = 0.035;
  * inside the first couple of seconds. Not 1.0: the visitor has to see the thing
  * broken, however briefly, or the fix means nothing.
  */
-const OPENING_AT = 0.55;
+/*
+ * Nudged later after the placement gate got stricter about controls.
+ *
+ * The first spot now occasionally fails and retries, which costs a fraction of
+ * a second before he is even on screen, and that fraction was coming out of the
+ * only budget that matters. Starting slightly deeper into the repair gives it
+ * back without touching the part that has to be true: the thing is still
+ * visibly broken when the curtain goes up.
+ */
+const OPENING_AT = 0.63;
 
 
 /** How long he stands about between jobs. Contrast is what gets noticed. */
@@ -988,6 +997,25 @@ export function stepTour(
          * rather than a simulation. From the second job on, the scheduler picks
          * whatever contrasts most with what he has just done.
          */
+        /*
+         * Until the first repair has actually happened, the opening is still
+         * the opening.
+         *
+         * If the very first placement fails — and it can, because the page is
+         * still settling and the booking card is a large control that the spot
+         * finder is now strict about — the retry used to fall through to the
+         * scheduler and pick something else. That quietly threw away the one
+         * authored moment in the whole loop: no lamp, no glow, and the first
+         * payoff arriving somewhere past six seconds. Marketing beats
+         * simulation here; keep asking for job zero until it lands.
+         */
+        if (runtime.tick === 0) {
+          if (!departFor(0)) {
+            runtime.restFor = 0.25;
+            setPhase(runtime, "REST");
+          }
+          break;
+        }
         stageNext();
         const target =
           runtime.nextIndex ?? pickNext(stops, runtime.schedule, Math.random());
