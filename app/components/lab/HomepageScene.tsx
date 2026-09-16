@@ -375,14 +375,45 @@ function SceneContents({
        */
       if (propAt) {
         const pp = projection.pixelAt(propAt.x, propAt.y);
-        const span = (propSpan ?? 1) * bodyW;
+        /*
+         * Measure the whole fragment, not the object.
+         *
+         * Most repairs carry a piece of wall, tile or door two to three times
+         * the size of the thing mounted on it, and it was the fragment that
+         * kept landing on the copy.
+         */
+        const span = (propSpan ?? 1) * bodyW * 1.25;
         const propUnder = whatIsUnder({
           x: pp.x - span / 2,
-          y: pp.y - span / 2,
+          y: pp.y - span * 0.55,
           w: span,
-          h: span,
+          h: span * 1.1,
         });
-        if (propUnder.controls > 0.05 || propUnder.heavy > 0.12) return false;
+        /*
+         * Props get almost no tolerance at all.
+         *
+         * The character is allowed to clip the tail of a word because the
+         * alternative is a handyman with nowhere to stand — he has to be
+         * SOMEWHERE. A cabinet door has no such claim: if it cannot sit in
+         * clear space it should not be there. Reusing his tolerance for props
+         * is what left a cabinet parked across "THE LIST" on a phone for the
+         * whole visit.
+         */
+        /*
+         * Strict about what matters, tolerant about what does not.
+         *
+         * My first attempt at this refused anything that touched anything, and
+         * on a page made mostly of content that means almost every spot is
+         * refused — eighty per cent of a ninety-second run was him standing
+         * still with nowhere the system would let him go, which is a far worse
+         * experience than the overlap it was trying to prevent.
+         *
+         * Buttons and headings are what a visitor is actually using or reading
+         * and get almost no tolerance. Body copy behind a half-transparent wall
+         * fragment is a compromise worth making, because the alternative is no
+         * handyman at all.
+         */
+        if (propUnder.controls > 0.02 || propUnder.heavy > 0.05) return false;
       }
       const px = projection.pixelAt(feet.x, feet.y);
       const under = whatIsUnder({
@@ -450,6 +481,10 @@ function SceneContents({
           busyAt={busyAt}
           perch={perch}
           standable={standable}
+          /* How much of the house can stand in view at once. A phone has far
+             less room to put anything without covering something. */
+          maxStations={size.width < 560 ? 2 : 3}
+          stationGap={size.width < 560 ? 0.95 : 1.5}
           objectScale={PAGE_OBJECT_SCALE * scale}
         />
       </Suspense>

@@ -110,6 +110,8 @@ export type FixterModelProps = {
     propAt?: THREE.Vector3,
     propSpan?: number
   ) => boolean;
+  maxStations?: number;
+  stationGap?: number;
   /** Scale for the props he carries with him. */
   objectScale: number;
   toolOffset: ToolOffset;
@@ -120,7 +122,6 @@ export type FixterModelProps = {
 /* Scratch, so aiming the tool allocates nothing per frame. */
 const _toolTarget = new THREE.Vector3();
 /* Scratch for the arm solve; allocated once. */
-const _handAim = new THREE.Vector3();
 const _workW = new THREE.Vector3();
 const _handW = new THREE.Vector3();
 const _offW = new THREE.Vector3();
@@ -129,6 +130,17 @@ const _poleL = new THREE.Vector3();
 const _probe = new THREE.Vector3();
 const _faceQ = new THREE.Quaternion();
 const _propBox = new THREE.Box3();
+const _jerkQ = new THREE.Quaternion();
+/* Blended arm targets, accumulated then averaged — see the arm section. */
+const _armR = new THREE.Vector3();
+const _armL = new THREE.Vector3();
+const _beatW = new THREE.Vector3();
+const _carryW = new THREE.Vector3();
+const _restW = new THREE.Vector3();
+const _workHold = new THREE.Vector3();
+const _aimR = new THREE.Vector3();
+const _aimL = new THREE.Vector3();
+const _tmpAim = new THREE.Vector3();
 const _propSize = new THREE.Vector3();
 const _faceV = new THREE.Vector3();
 /* Scratch for the head look-at and the arm solve; allocated once. */
@@ -182,6 +194,8 @@ export default function FixterModel({
   busyAt,
   perch,
   standable,
+  maxStations = 4,
+  stationGap = 2.1,
   objectScale,
   toolOffset,
   onReady,
@@ -241,6 +255,20 @@ export default function FixterModel({
    * Feet and toes for everything that stands or squats, and the shins because a
    * kneel rests on a knee — which is the shin's own origin on this rig.
    */
+  /** The bones more than one system writes to, for the jerk recorder. */
+  const jerkBones = useMemo(() => {
+    const want = new Set([
+      "Hips", "Spine", "Spine01", "Spine02", "neck", "Head",
+      "RightArm", "RightForeArm", "RightHand",
+      "LeftArm", "LeftForeArm", "LeftHand",
+    ]);
+    const out: THREE.Object3D[] = [];
+    model.traverse((node) => {
+      if (want.has(node.name)) out.push(node);
+    });
+    return out;
+  }, [model]);
+
   const groundBones = useMemo(() => {
     const want = new Set([
       "LeftFoot", "RightFoot",
@@ -261,6 +289,14 @@ export default function FixterModel({
   const carryWeight = useRef(0);
   /** How far he has to drop for his lowest bone to reach the floor. */
   const groundFix = useRef(0);
+  const jerkPrev = useRef(new Map<string, THREE.Quaternion>());
+  const jerkRate = useRef(new Map<string, number>());
+  const handPrev = useRef(new Map<string, THREE.Vector3>());
+  /** How much of the resting arm pose applies, eased against walking. */
+  const restEase = useRef(1);
+  const workHeld = useRef(false);
+  const poleWide = useRef(0.62);
+  const poleDrop = useRef(0.85);
   /** When the current repair snapped, on the frame clock. 0 = not yet. */
   const payoffAt = useRef(0);
   const payoffSeen = useRef<string | null>(null);
@@ -418,6 +454,17 @@ export default function FixterModel({
   const [nextJobId, setNextJobId] = useState<string | null>(null);
   /** The repair he has just walked away from, still fading out. */
   const [goneJobId, setGoneJobId] = useState<string | null>(null);
+  /**
+   * The persistent household, mirrored for rendering.
+   *
+   * Only the identities live in state; their positions and fades are written
+   * straight to the groups every frame, so a station moving or easing costs no
+   * React work at all.
+   */
+  const [stationList, setStationList] = useState<
+    { key: number; jobId: string }[]
+  >([]);
+  const stationRefs = useRef(new Map<number, THREE.Group>());
   const [finishClip, setFinishClip] = useState<string | null>(null);
   const lookRef = useRef(0);
   const presenceRef = useRef(1);
@@ -615,6 +662,14 @@ export default function FixterModel({
   useEffect(() => {
     perchRef.current = perch;
   }, [perch]);
+  const maxStationsRef = useRef(maxStations);
+  useEffect(() => {
+    maxStationsRef.current = maxStations;
+  }, [maxStations]);
+  const stationGapRef = useRef(stationGap);
+  useEffect(() => {
+    stationGapRef.current = stationGap;
+  }, [stationGap]);
   const standableRef = useRef(standable);
   useEffect(() => {
     standableRef.current = standable;
@@ -707,6 +762,9 @@ export default function FixterModel({
           busyAt: busyRef.current,
           perch: perchRef.current,
           standable: standableRef.current,
+          /* Fewer on a phone: less room to put anything without covering it. */
+          maxStations: maxStationsRef.current,
+          stationGap: stationGapRef.current,
         });
       }
 
@@ -734,6 +792,37 @@ export default function FixterModel({
           objectScale * propScaleRef.current * (0.94 + 0.06 * f) * (f > 0.01 ? 1 : 0)
         );
         prop.visible = f > 0.01;
+      }
+      /*
+       * Every station, every frame: where it is and how present it is.
+       *
+       * The character's own prop slot still drives the repair he is working on
+       * — the animated state, the nudges, the effects — and the station beneath
+       * it is hidden so the two do not z-fight. Everything else in the house
+       * simply stands there.
+       */
+      {
+        const working = runtime.propJobId;
+        for (const station of runtime.stations) {
+          const node = stationRefs.current.get(station.key);
+          if (!node) continue;
+          node.position.copy(station.placed.object);
+          const job = jobs.find((j) => j.id === station.jobId);
+          const f = station.fade;
+          const busy = station.jobId === working && runtime.propFade > 0.05;
+          node.scale.setScalar(
+            objectScale * (job?.propScale ?? 1) * (0.94 + 0.06 * f)
+          );
+          node.visible = f > 0.02 && !busy;
+        }
+        if (
+          runtime.stations.length !== stationList.length ||
+          runtime.stations.some((s, i) => stationList[i]?.key !== s.key)
+        ) {
+          setStationList(
+            runtime.stations.map((s) => ({ key: s.key, jobId: s.jobId }))
+          );
+        }
       }
       const leaving = gonePropRef.current;
       if (leaving) {
@@ -890,6 +979,39 @@ export default function FixterModel({
        */
       let claimRight = 0;
       let claimLeft = 0;
+      /* The blended arm targets and their total weight, accumulated across the
+         whole frame by every system that wants a say. */
+      _armR.set(0, 0, 0);
+      _armL.set(0, 0, 0);
+      let wR = 0;
+      let wL = 0;
+      /*
+       * Reset the aim state every frame.
+       *
+       * These were left holding whatever the last job set, so on any frame
+       * where the work branch did not run — every travel frame — the hand was
+       * being oriented at a world point belonging to a repair he had already
+       * left. That is a target teleport once per job, straight into the hand
+       * bone, and the left hand was the worst offender in the measurements.
+       */
+      /*
+       * Aims are accumulated exactly like positions.
+       *
+       * Blending the target POSITIONS removed most of the twitching, and then
+       * the remaining spikes moved into the hand bones — because the direction
+       * each hand pointed was still being SWITCHED between candidates rather
+       * than blended. A teleporting aim is the same fault as a teleporting
+       * target, one bone further down.
+       */
+      _aimR.set(0, 0, 0);
+      _aimL.set(0, 0, 0);
+      let aR = 0;
+      let aL = 0;
+      let rollR = 0;
+      let rollL = 0;
+
+      poleWide.current = 0.62;
+      poleDrop.current = 0.85;
       if (ikWeight.current > 0.004 && runtime.placed && armRight) {
         const motion = stops[runtime.stopIndex % stops.length]?.motion;
         /* Overhead is a different shape of help; the plan needs to know. */
@@ -979,6 +1101,31 @@ export default function FixterModel({
         _handW.x += (plan.push * ca - plan.lift * sa) * scale;
         _handW.y += (plan.push * sa + plan.lift * ca) * scale;
         _handW.z += plan.depth * scale;
+        /*
+         * Hold the working hand where it finished.
+         *
+         * `workTime()` returns the phase clock during WORK and zero outside it,
+         * so on the single frame the phase becomes WORK_OUT or ADMIRE the tool
+         * action jumps back to the start of its cycle — and the work target
+         * still carries nearly all the weight at that moment, because the
+         * ending beat ramps up from zero. The hand was being teleported across
+         * the whole stroke in one frame. It was the largest remaining spike in
+         * the measurements by a factor of four.
+         */
+        if (runtime.phase === "WORK" || runtime.phase === "WORK_IN") {
+          /* Stored in HIS frame, not the world's. The arm's weight takes about
+             four tenths of a second to fade after a job ends, and `placed`
+             switches to the next repair the instant he leaves — so a world-space
+             hold had him reaching back across the page at the job he had just
+             finished. In his own frame the held pose travels with him and
+             simply relaxes. */
+          _workHold.copy(_handW);
+          group.worldToLocal(_workHold);
+          workHeld.current = true;
+        } else if (workHeld.current) {
+          _handW.copy(_workHold);
+          group.localToWorld(_handW);
+        }
         _offW.copy(placed.workPoint);
         _offW.x += plan.off[0] * scale;
         _offW.y += plan.off[1] * scale;
@@ -1001,17 +1148,44 @@ export default function FixterModel({
          * Reaching up, the elbow has to go WIDE or the forearm crosses his own
          * face — which is the posture this whole exercise exists to kill.
          */
-        const wide = overhead ? 1.5 : 0.55 + plan.elbow;
-        _poleR.x -= wide * scale;
-        _poleR.y -= (overhead ? 0.9 : 0.5 + plan.elbow * 0.4) * scale;
-        _poleR.z -= 0.25 * scale;
-        const beatOwnsArms = !!beatPose && beatPose.weight > 0.02;
-        if (!beatOwnsArms) {
-          solveArm(armRight, _handW, _poleR, ikWeight.current);
-          _handAim.copy(_workW);
-          orientHand(armRight, _handAim, ikWeight.current * 0.85, TOOL_ROLL_DEG);
-          claimRight = ikWeight.current;
+        /*
+         * Keep the elbow rule, which the single solve would otherwise lose.
+         *
+         * Reaching up, the elbow has to go WIDE or the forearm crosses his own
+         * face — the posture this whole layer exists to prevent.
+         */
+        poleWide.current = overhead ? 1.5 : 0.55 + plan.elbow;
+        poleDrop.current = overhead ? 0.9 : 0.5 + plan.elbow * 0.4;
+        /*
+         * ONE target per arm, blended — never a switch between targets.
+         *
+         * This is where the twitching came from. The arms were solved up to
+         * three times a frame — work, then carry, then a resting fill — and
+         * each solve was behind a hard on/off gate: `beatPose.weight > 0.02`,
+         * `ikWeight < 0.06`, `max(0, 1 - claim * 4)`. Every gate switched which
+         * POSITION the arm was being slerped toward, and switching a target
+         * instantly changes the direction of the blend even when the weight
+         * ramps smoothly. Instrumented over 75 seconds: 322 spikes above 600
+         * degrees a second, 320 of them in arm bones, peaking at 16,000, with
+         * the head and spine clean.
+         *
+         * So every candidate contributes to a weighted average of POSITIONS,
+         * and the arm is solved once toward the result. The weights are all
+         * continuous, which makes the target continuous, which makes the motion
+         * continuous. Nothing is gated.
+         */
+        const beatShare = beatPose ? beatPose.weight : 0;
+        const wWork = ikWeight.current * (1 - beatShare);
+        if (wWork > 1e-4) {
+          _armR.addScaledVector(_handW, wWork);
+          wR += wWork;
         }
+        if (wWork > 1e-4) {
+          _aimR.addScaledVector(_workW, wWork);
+          aR += wWork;
+          rollR += TOOL_ROLL_DEG * wWork;
+        }
+        claimRight = ikWeight.current;
 
         if (process.env.NODE_ENV !== "production") {
           /* Lab only: how far the solver missed, for the watcher. */
@@ -1051,26 +1225,37 @@ export default function FixterModel({
          * fixed — because what a man does once it is done is about him, not
          * about the object. Solved after the work targets so it wins.
          */
-        if (beatOwnsArms && beatPose) {
+        const wBeat = ikWeight.current * beatShare;
+        if (beatPose && wBeat > 1e-4) {
           if (beatPose.work) {
             /* In his own units: localToWorld already applies his scale, and
                pre-multiplying by it as well put every beat target short. */
-            _handW.set(beatPose.work[0], beatPose.work[1], beatPose.work[2]);
-            group.localToWorld(_handW);
-            solveArm(armRight, _handW, _poleR, ikWeight.current * beatPose.weight);
-            claimRight = ikWeight.current * beatPose.weight;
+            _beatW.set(beatPose.work[0], beatPose.work[1], beatPose.work[2]);
+            group.localToWorld(_beatW);
+            _armR.addScaledVector(_beatW, wBeat);
+            wR += wBeat;
           }
           if (armLeft && beatPose.off) {
-            _offW.set(beatPose.off[0], beatPose.off[1], beatPose.off[2]);
-            group.localToWorld(_offW);
-            armLeft.upper.getWorldPosition(_poleL);
-            _poleL.x += 1.1 * scale;
-            _poleL.y -= 0.6 * scale;
-            _poleL.z -= 0.25 * scale;
-            solveArm(armLeft, _offW, _poleL, ikWeight.current * beatPose.weight);
-            claimLeft = ikWeight.current * beatPose.weight;
+            _beatW.set(beatPose.off[0], beatPose.off[1], beatPose.off[2]);
+            group.localToWorld(_beatW);
+            _armL.addScaledVector(_beatW, wBeat);
+            wL += wBeat;
+            /*
+             * Aim it too.
+             *
+             * When the ending beat takes the arm completely there is no resting
+             * share left, and the resting branch was the only thing setting the
+             * off hand's aim — so through every beat the left hand was being
+             * pointed at whatever world position the last job had left behind.
+             * Sixteen of the twenty-five remaining spikes were this one bone.
+             */
+            _tmpAim.copy(_beatW);
+            _tmpAim.y -= 0.34 * scale;
+            _aimL.addScaledVector(_tmpAim, wBeat);
+            aL += wBeat;
           }
-        } else if (armLeft && plan.offWeight > 0.01) {
+        }
+        if (armLeft && plan.offWeight > 0.01) {
           /*
            * Crouched and working one-handed, the spare hand goes on his knee.
            *
@@ -1117,22 +1302,23 @@ export default function FixterModel({
           _poleL.x += (own ? 0.72 : 0.55 + plan.elbow) * scale;
           _poleL.y -= (own ? 0.72 : 0.5 + plan.elbow * 0.4) * scale;
           _poleL.z -= (own ? 0.5 : 0.25) * scale;
+          const wOff =
+            ikWeight.current * (own ? 0.9 : plan.offWeight) * (1 - beatShare);
+          if (wOff > 1e-4) {
+            _armL.addScaledVector(_offW, wOff);
+            wL += wOff;
+          }
           claimLeft = ikWeight.current * (own ? 0.9 : plan.offWeight);
-          solveArm(armLeft, _offW, _poleL, claimLeft);
-          if (own) {
-            /* Fingers down onto the knee or the belt, not out at the work. */
-            _handAim.copy(_offW);
-            _handAim.y -= 0.34 * scale;
-            orientHand(armLeft, _handAim, ikWeight.current * 0.8);
-          } else {
-            /* Rolled the other way from the tool hand, for the same reason:
-               fingers that cannot close look thinner edge-on than palm-on. */
-            orientHand(
-              armLeft,
-              _workW,
-              ikWeight.current * plan.offWeight * 0.7,
-              -TOOL_ROLL_DEG
-            );
+          if (wOff > 1e-4) {
+            if (own) {
+              _tmpAim.copy(_offW);
+              _tmpAim.y -= 0.34 * scale;
+            } else {
+              _tmpAim.copy(_workW);
+              rollL += -TOOL_ROLL_DEG * wOff;
+            }
+            _aimL.addScaledVector(_tmpAim, wOff);
+            aL += wOff;
           }
         }
       }
@@ -1161,17 +1347,20 @@ export default function FixterModel({
         dt,
         5
       );
-      if (carryWeight.current > 0.01 && armRight && ikWeight.current < 0.06) {
+      /*
+       * Carrying fades against the work rather than switching behind a gate.
+       *
+       * It used to be `ikWeight < 0.06`, which flipped the arm between two
+       * unrelated targets on a single frame.
+       */
+      const wCarry =
+        carryWeight.current * 0.7 * Math.max(0, 1 - ikWeight.current * 3);
+      if (wCarry > 1e-4 && armRight) {
         const bob = Math.sin(state.clock.elapsedTime * 6.4 * runtime.gait);
-        _handW.set(-0.25, 0.79 + bob * 0.012, 0.11 + bob * 0.015);
-        group.localToWorld(_handW);
-        armRight.upper.getWorldPosition(_poleR);
-        _poleR.x -= 0.85 * scale;
-        _poleR.y -= 0.75 * scale;
-        _poleR.z -= 0.3 * scale;
-        const carryW = carryWeight.current * 0.7;
-        solveArm(armRight, _handW, _poleR, carryW);
-        claimRight = Math.max(claimRight, carryW);
+        _carryW.set(-0.25, 0.79 + bob * 0.012, 0.11 + bob * 0.015);
+        group.localToWorld(_carryW);
+        _armR.addScaledVector(_carryW, wCarry);
+        wR += wCarry;
       }
 
       /*
@@ -1187,43 +1376,79 @@ export default function FixterModel({
        * Held off while he is walking, because the walk take is one of the four
        * that came with the rig and its arms actually swing.
        */
-      const walkingNow =
+      /*
+       * Whatever is left over holds the arms at his sides.
+       *
+       * The share is one minus what the job has taken, so it arrives and leaves
+       * continuously — there is no cutoff, and no frame where the arm swaps
+       * from a work target to a resting one.
+       *
+       * Held off while he is walking, because the walk take is one of the four
+       * that came with the rig and its arms actually swing.
+       */
+      const walking =
         runtime.phase === "TRAVEL" || runtime.phase === "APPROACH";
-      const restArms = walkingNow ? 0 : 1;
-      if (restArms > 0 && armRight) {
+      const walkFade = approachValue(
+        restEase.current,
+        walking ? 0 : 1,
+        dt,
+        4.5
+      );
+      restEase.current = walkFade;
+      if (armRight) {
         const breath = state.clock.elapsedTime;
         /* Never quite still, never symmetrical: both are what make a model. */
         const sway = Math.sin(breath * 0.85) * 0.009;
         const drift = Math.sin(breath * 0.61 + 1.3) * 0.013;
-        /* Only fill an arm the work has left alone. Layering this on top of a
-           half-claimed arm averages two poses into a third that is neither,
-           which is how the spare hand ended up mid-air in the first place. */
-        const spare = (claim: number) => Math.max(0, 1 - claim * 4) * REST_ARM;
-        const fillR = spare(claimRight);
-        if (fillR > 0.01) {
-          _handW.set(-0.243, 0.795 + sway, 0.02 + drift);
-          group.localToWorld(_handW);
-          armRight.upper.getWorldPosition(_poleR);
-          _poleR.x -= 0.62 * scale;
-          _poleR.y -= 0.85 * scale;
-          _poleR.z -= 0.34 * scale;
-          solveArm(armRight, _handW, _poleR, fillR);
-          _handAim.copy(_handW);
-          _handAim.y -= 0.4 * scale;
-          orientHand(armRight, _handAim, fillR * 0.9);
+        const restR = Math.max(0, 1 - wR) * REST_ARM * walkFade;
+        if (restR > 1e-4) {
+          _restW.set(-0.243, 0.795 + sway, 0.02 + drift);
+          group.localToWorld(_restW);
+          _armR.addScaledVector(_restW, restR);
+          wR += restR;
+          _tmpAim.copy(_restW);
+          _tmpAim.y -= 0.4 * scale;
+          _aimR.addScaledVector(_tmpAim, restR);
+          aR += restR;
         }
-        const fillL = spare(claimLeft);
-        if (armLeft && fillL > 0.01) {
-          _offW.set(0.238, 0.785 - sway, 0.014 - drift);
-          group.localToWorld(_offW);
-          armLeft.upper.getWorldPosition(_poleL);
-          _poleL.x += 0.62 * scale;
-          _poleL.y -= 0.85 * scale;
-          _poleL.z -= 0.34 * scale;
-          solveArm(armLeft, _offW, _poleL, fillL);
-          _handAim.copy(_offW);
-          _handAim.y -= 0.4 * scale;
-          orientHand(armLeft, _handAim, fillL * 0.9);
+        const restL = Math.max(0, 1 - wL) * REST_ARM * walkFade;
+        if (armLeft && restL > 1e-4) {
+          _restW.set(0.238, 0.785 - sway, 0.014 - drift);
+          group.localToWorld(_restW);
+          _armL.addScaledVector(_restW, restL);
+          wL += restL;
+          _tmpAim.copy(_restW);
+          _tmpAim.y -= 0.4 * scale;
+          _aimL.addScaledVector(_tmpAim, restL);
+          aL += restL;
+        }
+      }
+
+      /*
+       * The single solve. One target, one weight, once per arm, per frame.
+       */
+      if (armRight && wR > 1e-3) {
+        _armR.multiplyScalar(1 / wR);
+        armRight.upper.getWorldPosition(_poleR);
+        _poleR.x -= poleWide.current * scale;
+        _poleR.y -= poleDrop.current * scale;
+        _poleR.z -= 0.3 * scale;
+        solveArm(armRight, _armR, _poleR, Math.min(1, wR));
+        if (aR > 1e-3) {
+          _aimR.multiplyScalar(1 / aR);
+          orientHand(armRight, _aimR, Math.min(1, wR) * 0.85, rollR / aR);
+        }
+      }
+      if (armLeft && wL > 1e-3) {
+        _armL.multiplyScalar(1 / wL);
+        armLeft.upper.getWorldPosition(_poleL);
+        _poleL.x += 0.7 * scale;
+        _poleL.y -= 0.7 * scale;
+        _poleL.z -= 0.3 * scale;
+        solveArm(armLeft, _armL, _poleL, Math.min(1, wL));
+        if (aL > 1e-3) {
+          _aimL.multiplyScalar(1 / aL);
+          orientHand(armLeft, _aimL, Math.min(1, wL) * 0.8, rollL / aL);
         }
       }
 
@@ -1401,6 +1626,79 @@ export default function FixterModel({
         }
       }
 
+      /*
+       * Per-frame jerk recorder (dev only).
+       *
+       * The twitching has to be traced to the frame it happens on and the bone
+       * it happens to, not guessed at. Several systems write the same bones —
+       * the mixer, the additive body layer, the two arm solvers and the head
+       * look-at — so this samples the FINAL world orientation after everything
+       * has run, and records how far each bone moved since the previous frame.
+       * A human movement is continuous; a fight between two writers is a spike.
+       */
+      if (process.env.NODE_ENV !== "production") {
+        const w = window as unknown as Record<string, unknown>;
+        const log = (w.__fxJerk ?? []) as unknown[];
+        const watch = jerkBones;
+        let worst = 0;
+        let worstName = "";
+        for (const bone of watch) {
+          bone.getWorldQuaternion(_jerkQ);
+          const prev = jerkPrev.current.get(bone.name);
+          if (prev) {
+            const dot = Math.min(1, Math.abs(prev.dot(_jerkQ)));
+            const deg = (2 * Math.acos(dot) * 180) / Math.PI;
+            /* Per second, so a slow frame is not mistaken for a jump. */
+            const rate = deg / Math.max(0.004, dt);
+            /*
+             * Rate CHANGE, not rate.
+             *
+             * A hammer strike is a genuinely fast rotation and should not be
+             * counted as a fault; what a fault looks like is the speed of a
+             * bone changing in a single frame. Measuring the rate alone
+             * flagged the tool actions along with the glitches.
+             */
+            const wasRate = jerkRate.current.get(bone.name) ?? rate;
+            const change = Math.abs(rate - wasRate);
+            jerkRate.current.set(bone.name, rate);
+            if (change > worst) {
+              worst = change;
+              worstName = bone.name;
+            }
+          }
+          jerkPrev.current.set(bone.name, _jerkQ.clone());
+        }
+        /*
+         * How far each hand jumped this frame, as a share of his own height.
+         *
+         * Degrees per second squared is the right thing to tune against but a
+         * poor thing to judge with. "The hand moved a fifth of his body in one
+         * frame" is a convulsion in anybody's language; two per cent is a man
+         * moving.
+         */
+        let jump = 0;
+        for (const hand of [armRight?.hand, armLeft?.hand]) {
+          if (!hand) continue;
+          hand.getWorldPosition(_probe);
+          const was = handPrev.current.get(hand.name);
+          if (was) jump = Math.max(jump, was.distanceTo(_probe) / (1.72 * scale));
+          handPrev.current.set(hand.name, _probe.clone());
+        }
+        if (worst > 0) {
+          log.push({
+            jump: +jump.toFixed(4),
+            dt: +dt.toFixed(3),
+            t: +state.clock.elapsedTime.toFixed(2),
+            deg: +worst.toFixed(0),
+            bone: worstName,
+            phase: runtime.phase,
+            shape: runtime.plan.shape,
+            ik: +ikWeight.current.toFixed(2),
+          });
+          if (log.length > 4000) log.shift();
+          w.__fxJerk = log;
+        }
+      }
       if (runtime.phase !== phase) setPhase(runtime.phase);
       stopIndexRef.current = runtime.stopIndex;
       if (runtime.stopIndex !== stopIndex) setStopIndex(runtime.stopIndex);
@@ -1623,6 +1921,37 @@ export default function FixterModel({
         turns to look there is something there to look at rather than something
         arriving because he looked.
       */}
+      {/*
+        The house. These persist across jobs — he walks between them rather than
+        the world being rebuilt around whichever repair is current.
+      */}
+      {stationList.map(({ key, jobId }) => {
+        const job = jobs.find((j) => j.id === jobId);
+        if (!job) return null;
+        return (
+          <group
+            key={key}
+            ref={(node) => {
+              if (node) stationRefs.current.set(key, node);
+              else stationRefs.current.delete(key);
+            }}
+            visible={false}
+            rotation={[
+              THREE.MathUtils.degToRad(job.objectRotationDeg?.[0] ?? 0),
+              THREE.MathUtils.degToRad(job.objectRotationDeg?.[1] ?? 0),
+              THREE.MathUtils.degToRad(job.objectRotationDeg?.[2] ?? 0),
+            ]}
+          >
+            <FixableObject
+              kind={job.object}
+              id={job.id}
+              scale={1}
+              position={[0, 0, 0]}
+              rotationDeg={[0, 0, 0]}
+            />
+          </group>
+        );
+      })}
       {/* The repair he has just finished, easing out behind him. */}
       <group ref={gonePropRef} visible={false}>
         {goneJobId && goneKind && (
