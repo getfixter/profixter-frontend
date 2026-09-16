@@ -50,29 +50,43 @@ export const FINISH_CLIP: Partial<Record<FinishBeat, string>> = {
  * says something: quick jobs get quick endings, and the beats that take time
  * are spent on the jobs that looked like they took effort.
  */
+/**
+ * What each kind of job is allowed to end with, best first.
+ *
+ * Random within a band was not enough: with four candidates and a fair coin,
+ * the same ending turns up twice running about a quarter of the time, and two
+ * identical nods in a row is exactly what makes a system visible.
+ */
+const BY_EFFORT: { at: number; beats: FinishBeat[] }[] = [
+  { at: 0.62, beats: ["brow", "stepBack", "hips", "stow", "nod"] },
+  { at: 0.38, beats: ["test", "hips", "stow", "nod", "stepBack"] },
+  { at: 0, beats: ["nod", "test", "stow", "hips"] },
+];
+
+/**
+ * Which ending this job has earned, given the last few.
+ *
+ * Matched to the job first — heavy work gets the beats that take time, precise
+ * work gets the ones that look like checking, quick work gets a glance and a
+ * nod — and then filtered against short-term memory so nothing repeats while a
+ * valid alternative exists. Never the same beat twice running, and preferably
+ * nothing seen in the last three.
+ */
 export function pickFinish(
   effort: number,
   tool: string | null,
   firstOfVisit: boolean,
-  roll: number
+  roll: number,
+  recent: FinishBeat[] = []
 ): FinishBeat {
   if (firstOfVisit) return "wave";
-  if (effort >= 0.62) {
-    /* Heavy: he has earned a breather, and half the time takes one. */
-    if (roll < 0.34) return "brow";
-    if (roll < 0.62) return "stepBack";
-    if (roll < 0.82) return "hips";
-    return tool ? "stow" : "nod";
-  }
-  if (effort >= 0.38) {
-    if (roll < 0.3) return "test";
-    if (roll < 0.55) return "hips";
-    if (roll < 0.78) return tool ? "stow" : "nod";
-    return "nod";
-  }
-  /* Quick: barely a pause. A glance, a nod, on with it. */
-  if (roll < 0.62) return "nod";
-  return "test";
+  const band = BY_EFFORT.find((b) => effort >= b.at) ?? BY_EFFORT[2];
+  const allowed = band.beats.filter((b) => b !== "stow" || tool);
+
+  const unseen = allowed.filter((b) => !recent.includes(b));
+  const notLast = allowed.filter((b) => b !== recent[recent.length - 1]);
+  const pool = unseen.length ? unseen : notLast.length ? notLast : allowed;
+  return pool[Math.floor(roll * pool.length) % pool.length];
 }
 
 export type FinishPose = {
@@ -94,11 +108,19 @@ export type FinishPose = {
   backStep: number;
   /** Is he still looking at the repair, or has he moved on? */
   lookAtWork: number;
+  /**
+   * How hard he is pressing on the thing, 0 to 1.
+   *
+   * Only the test beat produces this, and the prop turns it into whatever give
+   * means for it. Peaks when his hand is furthest out, which is when it would
+   * actually be touching.
+   */
+  nudge: number;
 };
 
 const NOTHING: FinishPose = {
   work: null, off: null, weight: 0, liftDeg: 0,
-  nodDeg: 0, backStep: 0, lookAtWork: 1,
+  nodDeg: 0, backStep: 0, lookAtWork: 1, nudge: 0,
 };
 
 const ease = (u: number) => u * u * (3 - 2 * u);
@@ -130,6 +152,7 @@ export function finishPose(beat: FinishBeat, u: number): FinishPose {
         nodDeg: Math.sin(u * Math.PI * 2) * 3 * a,
         backStep: 0,
         lookAtWork: 1,
+        nudge: 0,
       };
     }
 
@@ -149,20 +172,25 @@ export function finishPose(beat: FinishBeat, u: number): FinishPose {
         nodDeg: u > 0.6 ? Math.sin((u - 0.6) * Math.PI * 3) * 5 : 0,
         backStep: 0,
         lookAtWork: 1,
+        /* Contact, and the give that follows it. */
+        nudge: reach,
       };
     }
 
     case "stepBack": {
       /* Weight back, arms loose, taking the whole thing in. */
       const a = ease(Math.min(1, u * 1.6));
+      /* Asymmetric on purpose: two arms held identically is a mannequin, and
+         nobody stands back from their own work in a symmetrical pose. */
       return {
-        work: [-0.3, 0.9, 0.06],
-        off: [0.3, 0.9, 0.06],
-        weight: 0.55 * a,
+        work: [-0.27, 0.84, 0.05],
+        off: [0.2, 0.95, -0.03],
+        weight: 0.46 * a,
         liftDeg: 6 * a,
         nodDeg: u > 0.65 ? Math.sin((u - 0.65) * Math.PI * 2.6) * 6 : 0,
         backStep: 0.16 * a,
         lookAtWork: 1,
+        nudge: 0,
       };
     }
 
@@ -177,6 +205,7 @@ export function finishPose(beat: FinishBeat, u: number): FinishPose {
         nodDeg: 0,
         backStep: 0,
         lookAtWork: 1 - 0.5 * down,
+        nudge: 0,
       };
     }
 

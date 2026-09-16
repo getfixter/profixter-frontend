@@ -36,6 +36,25 @@ const settled: Record<string, boolean> = {};
  */
 const latched: Record<string, boolean> = {};
 
+/**
+ * A poke, separate from how mended the thing is.
+ *
+ * When he finishes a job he sometimes reaches back out and tests it, and until
+ * now the object ignored him — his hand arrived and nothing happened, which
+ * makes the gesture read as mime. This is the object's half of that
+ * conversation: a short pulse the prop turns into whatever "give" means for it.
+ * A door rocks on its catch, a shelf flexes, a rail takes a tug and holds.
+ */
+const nudged: Record<string, number> = {};
+
+export function setObjectNudge(id: string, value: number) {
+  nudged[id] = value;
+}
+
+export function getObjectNudge(id: string) {
+  return nudged[id] ?? 0;
+}
+
 const listeners = new Set<() => void>();
 let settledVersion = 0;
 
@@ -87,6 +106,7 @@ export function subscribeObjectSettled(listener: () => void) {
 
 /** Called when a tour restarts, so nothing starts the loop already mended. */
 export function resetObjectFix() {
+  for (const key of Object.keys(nudged)) delete nudged[key];
   for (const key of Object.keys(fixedness)) delete fixedness[key];
   for (const key of Object.keys(settled)) delete settled[key];
   for (const key of Object.keys(latched)) delete latched[key];

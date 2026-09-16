@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { M, createGlowTexture, createLampMaterial } from "./lab-materials";
-import { getObjectFix } from "./lab-object-state";
+import { getObjectFix, getObjectNudge } from "./lab-object-state";
 
 /**
  * The things the Fixter fixes.
@@ -74,8 +74,10 @@ function Outlet({ id }: FixableProps) {
 
   useFrame((_, dt) => {
     f.current = ease(f.current, getObjectFix(id), dt);
-    if (plate.current) plate.current.rotation.z = DEG(9) * (1 - f.current);
-    if (screw.current) screw.current.position.z = 0.004 + 0.005 * (1 - f.current);
+    /* Crooked enough to notice, and a screw standing visibly proud — the two
+       things that say "this is wrong" without anybody reading a label. */
+    if (plate.current) plate.current.rotation.z = DEG(15) * (1 - f.current);
+    if (screw.current) screw.current.position.z = 0.004 + 0.011 * (1 - f.current);
   });
 
   return (
@@ -113,7 +115,11 @@ function PictureFrame({ id }: FixableProps) {
 
   useFrame((_, dt) => {
     f.current = ease(f.current, getObjectFix(id), dt);
-    if (tilt.current) tilt.current.rotation.z = DEG(13) * (1 - f.current);
+    /* A fingertip check: it rocks a degree and settles back level. */
+    const give = getObjectNudge(id);
+    if (tilt.current) {
+      tilt.current.rotation.z = DEG(20) * (1 - f.current) + DEG(1.8) * give;
+    }
   });
 
   const W = 0.3;
@@ -174,8 +180,14 @@ function Shelf({ id }: FixableProps) {
   useFrame((_, dt) => {
     f.current = ease(f.current, getObjectFix(id), dt);
     const broken = 1 - f.current;
+    /* Pressed on, it flexes a degree and a half and springs back. That is the
+       difference between "it looks level" and "it is actually holding". */
+    const give = getObjectNudge(id);
     // the right end droops, and its bracket has slipped down and out
-    if (board.current) board.current.rotation.z = -DEG(7) * broken;
+    if (board.current) {
+      board.current.rotation.z = -DEG(13) * broken - DEG(1.6) * give;
+      board.current.position.y = -0.004 * give;
+    }
     if (loose.current) {
       loose.current.position.y = -0.055 * broken;
       loose.current.position.z = 0.03 * broken;
@@ -285,8 +297,10 @@ function Cabinet({ id }: FixableProps) {
      * flush into its carcass is legible from across the room, and it is a thing
      * everyone has in their kitchen.
      */
+    const give = getObjectNudge(id);
     if (door.current) {
-      door.current.rotation.y = -DEG(26) * broken;
+      /* Tested, it rocks a few degrees on its catch and comes back. */
+      door.current.rotation.y = -DEG(26) * broken - DEG(7) * give;
       door.current.position.z = 0.02 * broken;
     }
   });
@@ -361,7 +375,7 @@ function Lamp({ id }: FixableProps) {
   useFrame((_, dt) => {
     f.current = ease(f.current, getObjectFix(id), dt);
     const broken = 1 - f.current;
-    if (swing.current) swing.current.rotation.z = DEG(12) * broken;
+    if (swing.current) swing.current.rotation.z = DEG(17) * broken;
     /*
      * The bulb blooms as it seats, and keeps a slow breath afterwards.
      *
@@ -425,7 +439,7 @@ function LightSwitch({ id }: FixableProps) {
   useFrame((_, dt) => {
     f.current = ease(f.current, getObjectFix(id), dt);
     const broken = 1 - f.current;
-    if (plate.current) plate.current.rotation.z = DEG(11) * broken;
+    if (plate.current) plate.current.rotation.z = DEG(16) * broken;
     /* Down when broken, up when done. The flip IS the payoff. */
     if (toggle.current) toggle.current.rotation.x = DEG(-22) + DEG(44) * f.current;
   });
@@ -517,7 +531,12 @@ function TowelBar({ id }: FixableProps) {
   useFrame((_, dt) => {
     f.current = ease(f.current, getObjectFix(id), dt);
     const broken = 1 - f.current;
-    if (rail.current) rail.current.rotation.z = DEG(-13) * broken;
+    const give = getObjectNudge(id);
+    /* Tugged, the whole rail gives a millimetre or two and holds. */
+    if (rail.current) {
+      rail.current.rotation.z = DEG(-18) * broken - DEG(1.4) * give;
+      rail.current.position.y = -0.005 * give;
+    }
     if (loose.current) {
       loose.current.position.y = -0.03 * broken;
       loose.current.rotation.z = DEG(24) * broken;
@@ -648,11 +667,11 @@ function DoorHinge({ id }: FixableProps) {
     const broken = 1 - f.current;
     /* The door side droops away from the frame side. */
     if (leaf.current) {
-      leaf.current.rotation.z = DEG(-9) * broken;
+      leaf.current.rotation.z = DEG(-16) * broken;
       leaf.current.position.y = -0.012 * broken;
     }
     /* And the pin is standing proud until he knocks it back in. */
-    if (pin.current) pin.current.position.y = 0.075 + 0.055 * broken;
+    if (pin.current) pin.current.position.y = 0.075 + 0.085 * broken;
   });
 
   const H = 0.17;

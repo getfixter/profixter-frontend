@@ -27,6 +27,16 @@ import { resetObjectFix, setObjectFix } from "./lab-object-state";
 
 export type TourPhase =
   | "IDLE"
+  /**
+   * He has spotted the next one and is turning toward it.
+   *
+   * Travel used to begin the instant the previous job ended: he simply started
+   * walking, which is the behaviour of something being moved rather than
+   * somebody going somewhere. Half a second of noticing first is what makes the
+   * walk look like a decision, and it is the cheapest anticipation in the whole
+   * loop.
+   */
+  | "NOTICE"
   | "TRAVEL"
   | "APPROACH"
   | "TURN_TO"
@@ -121,6 +131,8 @@ export type TourRuntime = {
   finish: FinishBeat;
   /** 0 to 1 across that ending, for whoever is drawing it. */
   finishAt: number;
+  /** The last few endings, so they do not repeat. */
+  finishRecent: FinishBeat[];
   /**
    * How present he is, 0 to 1.
    *
@@ -344,6 +356,7 @@ export function createTourRuntime(): TourRuntime {
     perchAge: 0,
     finish: "nod",
     finishAt: 0,
+    finishRecent: [],
   };
 }
 
@@ -556,8 +569,21 @@ function chooseFinish(runtime: TourRuntime, stop: Stop) {
     stop.job.effort ?? 0.5,
     stop.job.tool,
     runtime.tick === 0 && runtime.laps === 0,
-    Math.random()
+    Math.random(),
+    runtime.finishRecent
   );
+  runtime.finishRecent.push(runtime.finish);
+  if (runtime.finishRecent.length > 3) runtime.finishRecent.shift();
+}
+
+/**
+ * How long he spends noticing, by what he is about to take on.
+ *
+ * Kept short. This is anticipation, not a performance — the moment it reads as
+ * a pause rather than a glance it costs more than it buys.
+ */
+function noticeSeconds(stop: Stop): number {
+  return 0.34 + 0.5 * (stop.job.effort ?? 0.5);
 }
 
 export function stepTour(
@@ -674,7 +700,8 @@ export function stepTour(
     runtime.path = null;
     runtime.t = 0;
     runtime.displaced = false;
-    setPhase(runtime, "TRAVEL");
+    /* Look at it before walking to it. */
+    setPhase(runtime, "NOTICE");
     return true;
   };
 
@@ -703,10 +730,19 @@ export function stepTour(
      * it reads as a man passing through.
      */
     const crossing = 1 + Math.min(1.3, (runtime.path.cost ?? 0) * 0.16);
+    /*
+     * He walks differently depending on what he is walking toward.
+     *
+     * An unhurried amble after a light switch, a purposeful one on the way to a
+     * shelf bracket. Small — a third either side — because the difference has
+     * to read as attitude and not as a speed change.
+     */
+    const purpose = 0.84 + 0.42 * (stop.job.effort ?? 0.5);
     const hurry = slow
-      ? 1
+      ? purpose
       : THREE.MathUtils.clamp(runtime.path.length / HURRY_FROM, 1, HURRY_MAX) *
-        crossing;
+        crossing *
+        purpose;
     const factor = (slow ? APPROACH_SPEED_FACTOR : 1) * hurry;
     /*
      * The walk is an in-place clip and the code does the moving, so the two
@@ -768,6 +804,44 @@ export function stepTour(
         }
       }
       break;
+
+    case "NOTICE": {
+      /*
+       * A beat of orientation: the head goes first, the shoulders follow, and
+       * only then does he set off. Longer when the next job is a heavy one,
+       * because sizing up a shelf bracket takes a moment more than glancing at
+       * a light switch.
+       */
+      const target = runtime.placed;
+      if (!target) {
+        setPhase(runtime, "TRAVEL");
+        break;
+      }
+      const dx = target.mark.x - runtime.position.x;
+      const dy = target.mark.y - runtime.position.y;
+      runtime.yaw = approachValue(
+        runtime.yaw,
+        Math.atan2(dx, Math.abs(dy) + 0.4) * 0.45,
+        dt,
+        5
+      );
+      runtime.lean = approachValue(runtime.lean, 0, dt, 5);
+      /*
+       * Heavier jobs get the tool out before he sets off.
+       *
+       * A man who picks up a drill and then walks somewhere is going to drill
+       * something; a man who walks empty-handed and produces one on arrival is
+       * a magic trick. Only for the jobs worth the gesture — most of the time
+       * his hands stay free, which is also what makes it mean anything.
+       */
+      if ((stop.job.effort ?? 0.5) >= 0.6 && stop.job.tool) {
+        runtime.toolEquipped = true;
+      }
+      if (runtime.phaseElapsed >= noticeSeconds(stop)) {
+        setPhase(runtime, "TRAVEL");
+      }
+      break;
+    }
 
     case "TRAVEL":
       travel(false);
@@ -861,6 +935,7 @@ export function stepTour(
 
 export const PHASE_LABELS: Record<TourPhase, string> = {
   IDLE: "Getting started",
+  NOTICE: "Noticing the next one",
   TRAVEL: "Travelling",
   APPROACH: "Arriving",
   TURN_TO: "Turning to the job",
