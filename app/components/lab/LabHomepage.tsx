@@ -245,7 +245,7 @@ function BookingCard() {
  * on "None of it is worth hunting down a contractor for."
  */
 const THE_LIST: { text: string; anchorId?: string }[] = [
-  { text: "A door that doesn't close right" },
+  { text: "A door that doesn't close right", anchorId: "row-door" },
   { text: "A cabinet handle working loose", anchorId: "row-cabinet" },
   { text: "Caulk around the tub gone grey" },
   { text: "A light fixture you meant to swap", anchorId: "row-lamp" },

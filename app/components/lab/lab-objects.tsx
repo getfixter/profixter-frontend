@@ -35,7 +35,7 @@ export type ObjectKind =
   | "doorknob"
   | "towelbar"
   | "detector"
-  | "baseboard";
+  | "hinge";
 
 export type FixableProps = { id: string };
 
@@ -567,53 +567,72 @@ function SmokeDetector({ id }: FixableProps) {
 }
 
 /**
- * A length of baseboard that has come away from the wall.
+ * A door hinge that has worked loose.
  *
- * Replaces the picture hook, which was the right idea and the wrong object: a
- * hook is four millimetres of bent metal and at a hundred and thirty pixels of
- * character it was a grey speck. This is the same story — something tapped back
- * into place with a hammer — on a shape wide enough to read.
+ * Replaces the baseboard, which was the right repair on the wrong shelf: a
+ * baseboard lives on the floor and every work posture here puts his hand at
+ * chest height, so it hung in mid-air at his collarbone looking like a ruler.
+ * A hinge is genuinely a chest-height job, it is genuinely a hammer job — you
+ * tap the pin back down — and the page's own checklist already opens with "A
+ * door that doesn't close right", which is exactly this.
+ *
+ * Broken, the pin has crept up out of the barrel and the door leaf sags off it.
+ * Fixed, the pin seats flush and the leaf squares up.
  */
-function Baseboard({ id }: FixableProps) {
-  const strip = useRef<THREE.Group>(null);
-  const proud = useRef<THREE.Group>(null);
+function DoorHinge({ id }: FixableProps) {
+  const leaf = useRef<THREE.Group>(null);
+  const pin = useRef<THREE.Mesh>(null);
   const f = useRef(0);
 
   useFrame((_, dt) => {
     f.current = ease(f.current, getObjectFix(id), dt);
     const broken = 1 - f.current;
-    /* One end has sprung off the wall and sits forward and low. */
-    if (strip.current) strip.current.rotation.z = DEG(-4) * broken;
-    if (proud.current) {
-      proud.current.position.z = 0.055 * broken;
-      proud.current.rotation.y = DEG(-19) * broken;
+    /* The door side droops away from the frame side. */
+    if (leaf.current) {
+      leaf.current.rotation.z = DEG(-9) * broken;
+      leaf.current.position.y = -0.012 * broken;
     }
+    /* And the pin is standing proud until he knocks it back in. */
+    if (pin.current) pin.current.position.y = 0.075 + 0.055 * broken;
   });
 
-  const W = 0.34;
+  const H = 0.17;
 
   return (
-    <group ref={strip}>
-      {/* the fixed half */}
-      <mesh material={M.shell} position={[-W / 2, 0, 0]}>
-        <boxGeometry args={[W, 0.085, 0.022]} />
+    <group>
+      {/* the leaf screwed to the frame, which stays put */}
+      <mesh material={M.metal} position={[-0.035, 0, 0]}>
+        <boxGeometry args={[0.062, H, 0.009]} />
       </mesh>
-      <mesh material={M.shell} position={[-W / 2, 0.05, 0.006]}>
-        <boxGeometry args={[W, 0.018, 0.03]} />
+      <mesh material={M.hardware} position={[-0.05, 0.045, 0.006]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.007, 0.007, 0.005, 10]} />
       </mesh>
-      {/* the half that has let go */}
-      <group ref={proud} position={[W / 2, 0, 0]}>
-        <mesh material={M.shell}>
-          <boxGeometry args={[W, 0.085, 0.022]} />
+      <mesh material={M.hardware} position={[-0.05, -0.045, 0.006]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.007, 0.007, 0.005, 10]} />
+      </mesh>
+
+      {/* the barrel the pin drops through */}
+      <mesh material={M.metal}>
+        <cylinderGeometry args={[0.019, 0.019, H, 14]} />
+      </mesh>
+
+      {/* the leaf on the door, which is the half that has let go */}
+      <group ref={leaf}>
+        <mesh material={M.metal} position={[0.035, 0, 0]}>
+          <boxGeometry args={[0.062, H, 0.009]} />
         </mesh>
-        <mesh material={M.shell} position={[0, 0.05, 0.006]}>
-          <boxGeometry args={[W, 0.018, 0.03]} />
+        <mesh material={M.hardware} position={[0.05, 0.045, 0.006]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.007, 0.007, 0.005, 10]} />
         </mesh>
-        {/* the nail he is driving back */}
-        <mesh material={M.hardware} position={[W * 0.3, 0.012, 0.02]}>
-          <cylinderGeometry args={[0.005, 0.005, 0.02, 8]} />
+        <mesh material={M.hardware} position={[0.05, -0.045, 0.006]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.007, 0.007, 0.005, 10]} />
         </mesh>
       </group>
+
+      {/* the pin he is tapping home */}
+      <mesh ref={pin} material={M.hardware}>
+        <cylinderGeometry args={[0.012, 0.012, 0.03, 12]} />
+      </mesh>
     </group>
   );
 }
@@ -631,7 +650,7 @@ const REGISTRY: Record<string, (props: FixableProps) => React.JSX.Element> = {
   doorknob: Doorknob,
   towelbar: TowelBar,
   detector: SmokeDetector,
-  baseboard: Baseboard,
+  hinge: DoorHinge,
 };
 
 export default function FixableObject({
