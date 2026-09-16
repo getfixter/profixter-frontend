@@ -878,6 +878,7 @@ export default function FixterModel({
           ...t,
           livePhase: runtime.phase,
           shape: runtime.plan.shape,
+          stations: runtime.stations.filter((st) => st.fade > 0.05).length,
           discovered: runtime.discovered,
           liveJob: stops[runtime.stopIndex % stops.length]?.job.id ?? null,
           prop: runtime.propJobId,
@@ -1693,6 +1694,7 @@ export default function FixterModel({
             bone: worstName,
             phase: runtime.phase,
             shape: runtime.plan.shape,
+          stations: runtime.stations.filter((st) => st.fade > 0.05).length,
             ik: +ikWeight.current.toFixed(2),
           });
           if (log.length > 4000) log.shift();
