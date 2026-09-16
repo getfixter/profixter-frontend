@@ -553,6 +553,26 @@ export default function FixterModel({
     if (!group) return;
     const dt = Math.min(delta, 0.1);
 
+    /*
+     * Nothing on screen until a clip is actually driving him.
+     *
+     * The clip is applied from an effect, and effects run after the first
+     * paint: for a frame or two after the model loads, the rig is in its bind
+     * pose and the bind pose of this character is a full T. On a cold load that
+     * lands about a second in — a dark scarecrow in the middle of the hero,
+     * inside the three seconds that matter most, on the one view where a
+     * visitor has no idea yet what they are looking at.
+     *
+     * He is not a character until something is animating him, so he does not
+     * appear until then. It costs a frame of nothing, which is invisible; the
+     * alternative is not.
+     */
+    if (!currentActionRef.current) {
+      group.visible = false;
+      return;
+    }
+    group.visible = true;
+
     if (tour && stops.length) {
       if (tokenRef.current !== tour.token) {
         tokenRef.current = tour.token;
