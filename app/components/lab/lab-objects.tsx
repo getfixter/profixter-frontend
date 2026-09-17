@@ -849,15 +849,30 @@ function Outlet({ id }: FixableProps) {
  */
 function PictureFrame({ id }: FixableProps) {
   const tilt = useRef<THREE.Group>(null);
-  const cordRight = useRef<THREE.Mesh>(null);
   const f = useRef(0);
   const settleAt = useRef(-1);
 
   const W = 0.3;
   const H = 0.23;
   const T = 0.016;
-  const HANG_X = -W / 2 + 0.03;
-  const HANG_Y = H / 2 + 0.055;
+  /*
+   * ONE NAIL, AND A WIRE THAT ACTUALLY REACHES IT.
+   *
+   * The old hanging was two loose bars near a hook that met nothing: the nail
+   * sat outside the wire and the frame appeared to hold itself up. It reads
+   * wrong the moment you look at it, and it reads wrong because it WAS wrong —
+   * the pivot was offset a tenth of a unit to the left of the wire's top end.
+   *
+   * This is the real arrangement instead: the nail is the pivot, both legs of
+   * the wire run from that exact point down to the frame's two top corners, and
+   * the whole assembly turns about the nail. Which is also how a picture
+   * actually goes crooked — the wire slides on the nail — so the approved
+   * broken pose comes out of honest geometry rather than in spite of it.
+   */
+  const DROP = 0.077;
+  const HANG_Y = H / 2 + DROP;
+  const LEG = Math.hypot(W / 2, DROP);
+  const LEG_TILT = Math.atan2(W / 2, -DROP);
 
   useFrame((state, dt) => {
     const now = state.clock.elapsedTime;
@@ -890,18 +905,17 @@ function PictureFrame({ id }: FixableProps) {
     const idle = working || target > 0.2 ? 0 : Math.sin(now * 1.6) * 0.5 + Math.sin(now * 0.93) * 0.3;
 
     if (tilt.current) {
+      /*
+       * Everything turns about the nail, including the wire.
+       *
+       * It used to drop down the wall as well, which was a second reading of
+       * "slipped" and the thing that pulled the wire off its own hook. The
+       * rotation is doing that job on its own.
+       */
       tilt.current.rotation.z =
         settleAt.current >= 0
           ? DEG(34) * off * Math.max(0, swing) + DEG(1.1) * swing
           : DEG(34) * off + DEG(1.3) * idle;
-      /* And it has slipped DOWN the wall, not only round. */
-      tilt.current.position.y = HANG_Y - 0.022 - 0.03 * Math.max(0, off);
-    }
-    /* The cord that came off: slack on the right until he hangs it back on. */
-    if (cordRight.current) {
-      const hung = settleAt.current >= 0 ? 1 : lift * 0.3 + square * 0.5;
-      cordRight.current.scale.y = 0.2 + hung * 0.8;
-      cordRight.current.visible = hung > 0.25;
     }
   });
 
@@ -914,25 +928,36 @@ function PictureFrame({ id }: FixableProps) {
       the character, so it is set back far enough to say so.
     */
     <group position={[0, 0, -0.16]}>
-      {/* The hook, which is what makes a hanging rectangle read as a picture. */}
-      <mesh material={M.hardware} position={[HANG_X, HANG_Y, -0.02]}>
-        <boxGeometry args={[0.016, 0.02, 0.01]} />
+      {/*
+        The nail. It stays in the wall while everything else swings on it, so it
+        lives outside the tilting group — and it is drawn slightly in FRONT of
+        the wire, because a nail the wire hangs behind is a nail the wire is
+        hanging from.
+      */}
+      <mesh material={M.hardware} position={[0, HANG_Y, -0.006]}>
+        <boxGeometry args={[0.013, 0.013, 0.026]} />
       </mesh>
-      {/* Pivoted on the corner it is still hanging by. */}
-      <group ref={tilt} position={[HANG_X, HANG_Y - 0.022, 0]}>
-        {/* The cord: one leg taut, the other slack until he re-hooks it. */}
-        <mesh material={M.dark} position={[0.012, -0.03, -0.012]} rotation={[0, 0, DEG(-24)]}>
-          <boxGeometry args={[0.004, 0.07, 0.004]} />
+      <mesh material={M.hardware} position={[0, HANG_Y + 0.008, -0.006]}>
+        <boxGeometry args={[0.019, 0.007, 0.012]} />
+      </mesh>
+      {/* Everything that hangs, pivoting on the nail itself. */}
+      <group ref={tilt} position={[0, HANG_Y, 0]}>
+        {/* Both legs of the wire, from the nail to the frame's top corners. */}
+        <mesh
+          material={M.dark}
+          position={[-W / 4, -DROP / 2, -0.014]}
+          rotation={[0, 0, -LEG_TILT]}
+        >
+          <boxGeometry args={[0.005, LEG, 0.005]} />
         </mesh>
         <mesh
-          ref={cordRight}
           material={M.dark}
-          position={[W * 0.52, -0.03, -0.012]}
-          rotation={[0, 0, DEG(38)]}
+          position={[W / 4, -DROP / 2, -0.014]}
+          rotation={[0, 0, LEG_TILT]}
         >
-          <boxGeometry args={[0.004, 0.16, 0.004]} />
+          <boxGeometry args={[0.005, LEG, 0.005]} />
         </mesh>
-        <group position={[W / 2 - 0.03, -H / 2 - 0.055, 0]}>
+        <group position={[0, -DROP - H / 2, 0]}>
           {/* four rails rather than a slab, so it reads as a frame edge-on */}
           {[
             { p: [0, H / 2, 0], s: [W + T, T, 0.018] },

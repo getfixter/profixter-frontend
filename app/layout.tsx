@@ -4,6 +4,7 @@ import Script from "next/script";
 import Providers from "./providers";
 import ScrollToTop from "./ScrollToTop";
 import CustomerSiteMobileNav from "./components/CustomerSiteMobileNav";
+import FixterStage from "./components/fixter/FixterStage";
 import "./globals.css";
 import { DEFAULT_OG_IMAGE, PROFIXTER_STRUCTURED_DATA, SITE_NAME, SITE_URL } from "@/lib/seo";
 
@@ -185,6 +186,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
         <Providers>
           {children}
+          {/*
+            The 3D marketing world. One mount for the whole site, and it renders
+            nothing at all unless the route is on its own allow-list — see the
+            note in FixterStage about why that list is an allow-list.
+          */}
+          <FixterStage />
           <CustomerSiteMobileNav />
         </Providers>
       </body>

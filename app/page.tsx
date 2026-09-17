@@ -13,7 +13,10 @@ export default function HomePage() {
           <Header />
         </div>
         <HomeMarketing />
-        <Footer />
+        {/* Above the 3D layer, like every other piece of real page content. */}
+        <div className="relative z-20">
+          <Footer />
+        </div>
       </div>
     </RoleEntryGate>
   );
