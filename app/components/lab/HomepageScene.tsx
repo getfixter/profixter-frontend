@@ -13,7 +13,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useProgress } from "@react-three/drei";
 import * as THREE from "three";
 import FixterModel, { type FixterModelProps } from "./FixterModel";
-import type { Bounds, Placer } from "./lab-choreography";
+import { measuredSpan, type Bounds, type Placer } from "./lab-choreography";
 import { WORK_MOTIONS, type JobDefinition } from "./lab-jobs";
 import {
   PAGE_CAMERA_TILT,
@@ -67,6 +67,9 @@ type HomepageSceneProps = Omit<
 };
 
 /** Keep clear of the browser's own edges and of any fixed site chrome. */
+/* Scratch for the scroll offset, asked for once a frame. */
+const _pageAt = new THREE.Vector2();
+
 const EDGE_INSET: Record<LayoutId, { top: number; right: number; bottom: number; left: number }> = {
   desktop: { top: 24, right: 28, bottom: 28, left: 28 },
   tablet: { top: 20, right: 22, bottom: 24, left: 22 },
@@ -213,13 +216,48 @@ function SceneContents({
       /* The silhouette this posture actually has, not the standing one. */
       const poseH = bodyH * (motion.boxH ?? 1);
       const poseW = bodyW * (motion.boxW ?? 1);
+      /*
+       * Ask for room for the REPAIR as well as for the man.
+       *
+       * The block the search validates is centred on the anchor and was sized
+       * from his body alone, so a wide prop — and every prop here comes mounted
+       * on a piece of wall, tile or door — hung outside it. That had two costs,
+       * and I shipped both before understanding they were the same bug: the
+       * clamp afterwards dragged him inland to keep the prop on screen and then
+       * the check refused him for being where the clamp had put him (stalls),
+       * and when I shrank the clamp to stop that, the opening's pendant lamp
+       * came up with its shade cut off by the edge of the phone.
+       *
+       * Neither is a clamp problem. The search was being asked the wrong
+       * question. It is measured from the renderer the first time each repair
+       * appears, so from the second appearance on the answer is exact.
+       */
+      const seen = measuredSpan(job.id);
+      const origin = projection.pixelAt(0, 0);
+      const pxAcross = (world: number) =>
+        Math.abs(projection.pixelAt(world, 0).x - origin.x);
+      const pxDown = (world: number) =>
+        Math.abs(projection.pixelAt(0, world).y - origin.y);
+      const propScale = PAGE_OBJECT_SCALE * scale * (job.propScale ?? 1);
+      const rawOffset = job.objectOffset ?? [0, 0];
+      const offX = pxAcross(rawOffset[0] * propScale);
+      const offY = rawOffset[1] * propScale;
+      const propW = seen ? pxAcross(seen.w) : 0;
+      const propH = seen ? pxDown(seen.h) : 0;
+      /* Half the prop, plus however far it sits from the point he works at. */
+      const propHalf = offX + propW / 2;
+      const propUp = (offY > 0 ? pxDown(offY) : 0) + propH / 2;
+      const propDown = (offY < 0 ? pxDown(-offY) : 0) + propH / 2;
+      const needW = Math.round(Math.max(poseW * extra.w, propHalf * 2));
+      const needAbove = Math.round(
+        Math.max(Math.max(poseH - handY, 0) + poseH * 0.3 * extra.h, propUp)
+      );
+      const needBelow = Math.round(
+        Math.max(handY + poseH * 0.12, propDown)
+      );
       const spot = findSpot({
         viewport: { w: size.width, h: size.height },
-        need: {
-          w: Math.round(poseW * extra.w),
-          above: Math.round(Math.max(poseH - handY, 0) + poseH * 0.3 * extra.h),
-          below: Math.round(handY + poseH * 0.12),
-        },
+        need: { w: needW, above: needAbove, below: needBelow },
         inset,
         awayFrom: { x: here.x, y: here.y },
         /*
@@ -258,9 +296,47 @@ function SceneContents({
        * of the viewport. Clamping the anchor rather than the mark keeps the
        * repair — and therefore the thing worth looking at — inside the frame.
        */
-      const padX = poseW * extra.w * 0.7 + 20;
-      const padTop = Math.max(poseH - handY, 0) + poseH * 0.25;
-      const padBottom = handY + poseH * 0.15;
+      /*
+       * From here on, measure the size he will ACTUALLY be.
+       *
+       * The finder may only have had room for a smaller handyman, and every
+       * check below — the clamp, his silhouette, the prop's fragment — was
+       * written against his full size. Checking a full-sized body for a spot
+       * that was awarded to a two-thirds-sized one is how a search that refused
+       * to overlap anything still ended up refusing everything.
+       */
+      const fit = spot.fit;
+      const fitHandY = handY * fit;
+      /*
+       * Only as much padding as the search already guaranteed.
+       *
+       * These used to ask for more room than the block the finder had just
+       * verified — seven tenths of his width plus twenty pixels, against a
+       * search that only promises half his width from the edge. So a spot that
+       * was genuinely empty got dragged inland by thirty pixels, landed on a
+       * paragraph, and was then rejected by the check below. The search said
+       * yes, the clamp moved him, and the check said no: nine refusals in a row
+       * on a phone, which is a character standing still for seven seconds.
+       *
+       * Sized close to the half-extents of the validated block instead, so the
+       * clamp barely moves him at all. Not exactly half, because the repair
+       * hangs to one side of him and the half-width is his, not its: at exactly
+       * half the opening's pendant lamp came up with its shade cut off by the
+       * right edge of a phone. A little over half keeps the thing he is fixing
+       * inside the frame without the clamp becoming a second, stricter opinion
+       * than the search it is supposed to be trimming.
+       */
+      /*
+       * Exactly what the search guaranteed, and nothing more.
+       *
+       * The block it validated is centred on the anchor and lies inside the
+       * inset, so clamping to its own half-extents cannot move him at all. This
+       * is a guard against a degenerate viewport now, not a second opinion —
+       * which is what it used to be, and what made it fight the search.
+       */
+      const padX = (needW * fit) / 2;
+      const padTop = needAbove * fit;
+      const padBottom = needBelow * fit;
       const x = THREE.MathUtils.clamp(
         spot.x,
         inset.left + padX,
@@ -279,12 +355,12 @@ function SceneContents({
        * not going to be. That is how he ended up crouched over "There is
        * always something" on a phone while the check reported a clear stage.
        */
-      const feetY = y + handY;
+      const feetY = y + fitHandY;
       const under = whatIsUnder({
-        x: x - bodyW / 2,
-        y: feetY - bodyH,
-        w: bodyW,
-        h: bodyH,
+        x: x - (bodyW * fit) / 2,
+        y: feetY - bodyH * fit,
+        w: bodyW * fit,
+        h: bodyH * fit,
       });
       if (process.env.NODE_ENV !== "production") {
         const w = window as unknown as Record<string, unknown>;
@@ -292,17 +368,22 @@ function SceneContents({
         w.__fxTour = { ...t, under: `heavy=${under.heavy.toFixed(3)} cov=${under.covered.toFixed(2)}` };
       }
       /*
-       * A nick of a heading is allowed; standing on one is not.
+       * Strict, because the finder is now honest.
        *
-       * A tenth of his silhouette is a shoulder crossing the tail of a word.
-       * Standing in front of a headline is thirty per cent and up, and stays
-       * refused. The stricter number read as principled and behaved as
-       * paralysis: on a phone every candidate clipped the one headline by five
-       * to eight per cent, all of them were refused, and he stopped working
-       * entirely — which is a worse answer to "do not cover the copy" than a
-       * shoulder over one word.
+       * These numbers used to be a compromise with a search that would hand
+       * back a spot on a paragraph rather than admit defeat — tolerating a
+       * tenth of a heading was the price of him working at all. The search
+       * shrinks him instead of overlapping now, so the acceptance can say what
+       * it actually means: almost nothing over anything that matters, and no
+       * more than a nick of body copy.
        */
-      if (under.controls > 0.05 || under.heavy > 0.09 || under.covered > 0.2) {
+      if (
+        under.controls > 0.02 ||
+        under.heavy > 0.03 ||
+        under.covered > 0.08 ||
+        /* And not somewhere the header would simply hide him. */
+        under.chrome > 0.3
+      ) {
         /* Nowhere this time. Drop the memory so the retry has the whole page. */
         forgetSpots();
         return null;
@@ -310,7 +391,12 @@ function SceneContents({
 
       rememberSpot(x, y);
       const world = projection.worldAt(x, y);
-      return new THREE.Vector3(world.x, world.y, 0);
+      return {
+        point: new THREE.Vector3(world.x, world.y, 0),
+        /* How big he may be here. The finder shrinks him rather than letting
+           him stand on something when the page is tight. */
+        fit: spot.fit,
+      };
     },
     [projection, size.width, size.height, bodyW, bodyH, scale, unit, inset, version]
   );
@@ -358,8 +444,111 @@ function SceneContents({
    * off from the work, the work yaw turning that offset — moves him, and it
    * moved him onto a pricing card while the estimate reported a clear stage.
    */
+  /*
+   * Is he, right now, on top of something that matters?
+   *
+   * The same question `standable` answers about a candidate, asked about where
+   * he actually is. Cheap enough to run several times a second, and it is what
+   * catches the page moving underneath him.
+   */
+  const blocked = useCallback(() => {
+    const pose = getFixterPose();
+    const px = projection.pixelAt(pose.x, pose.y);
+    /*
+     * Scrolled off the screen counts as blocked.
+     *
+     * He travels with the page now, which is what stops him sliding over the
+     * copy — and it means a reader who scrolls a screenful leaves him behind.
+     * Treating that as "nowhere to be" reuses the machinery that already
+     * exists: he gives up the spot while nobody can see him, and the next one
+     * is chosen in the part of the page they are actually reading.
+     */
+    if (
+      px.y < bodyH * 0.5 ||
+      px.y - bodyH * 0.5 > size.height ||
+      px.x < -bodyW ||
+      px.x > size.width + bodyW
+    ) {
+      return true;
+    }
+    const under = whatIsUnder({
+      x: px.x - bodyW / 2,
+      y: px.y - bodyH,
+      w: bodyW,
+      h: bodyH,
+    });
+    return under.controls > 0.03 || under.heavy > 0.05 || under.covered > 0.14;
+  }, [projection, bodyW, bodyH, size.width, size.height]);
+
+  /**
+   * Where the document has been scrolled to, in world units.
+   *
+   * One pixel of downward scroll moves page content one pixel UP the screen, so
+   * the world offset is the negative of the projection's per-pixel step. Taken
+   * from the projection rather than assumed, because the stage camera is tilted
+   * a few degrees and a scroll therefore carries a little sideways travel too.
+   */
+  const pageOffset = useCallback(() => {
+    const y = typeof window === "undefined" ? 0 : window.scrollY;
+    return _pageAt.set(
+      projection.perPixelDown.x * -y,
+      projection.perPixelDown.y * -y
+    );
+  }, [projection]);
+
+  /**
+   * Is this repair standing on a control?
+   *
+   * The narrow version of `standable`, asked about the one station the content
+   * check leaves alone. Same box, same projection, one threshold.
+   */
+  const onControl = useCallback(
+    (
+      propAt: THREE.Vector3,
+      span: number | { w: number; h: number },
+      fit = 1
+    ) => {
+      let box;
+      if (typeof span === "object") {
+        const a = projection.pixelAt(propAt.x - span.w / 2, propAt.y + span.h / 2);
+        const b = projection.pixelAt(propAt.x + span.w / 2, propAt.y - span.h / 2);
+        box = {
+          x: Math.min(a.x, b.x),
+          y: Math.min(a.y, b.y),
+          w: Math.abs(b.x - a.x),
+          h: Math.abs(b.y - a.y),
+        };
+      } else {
+        const pp = projection.pixelAt(propAt.x, propAt.y);
+        const w = (span ?? 1) * bodyW * fit;
+        box = { x: pp.x - w / 2, y: pp.y - w * 0.55, w, h: w * 1.1 };
+      }
+      return whatIsUnder(box).controls > 0.02;
+    },
+    [projection, bodyW]
+  );
+
+  /** Is this world point still somewhere the reader can see? */
+  const inView = useCallback(
+    (point: THREE.Vector3) => {
+      const px = projection.pixelAt(point.x, point.y);
+      return (
+        px.y > -80 &&
+        px.y < size.height + 80 &&
+        px.x > -140 &&
+        px.x < size.width + 140
+      );
+    },
+    [projection, size.width, size.height]
+  );
+
   const standable = useCallback(
-    (feet: THREE.Vector3, propAt?: THREE.Vector3, propSpan?: number) => {
+    (
+      feet: THREE.Vector3,
+      propAt?: THREE.Vector3,
+      propSpan?: number | { w: number; h: number },
+      fit = 1
+    ) => {
       /*
        * The prop's finished position, checked where it actually lands.
        *
@@ -375,6 +564,31 @@ function SceneContents({
        */
       if (propAt) {
         const pp = projection.pixelAt(propAt.x, propAt.y);
+        /* A measured box beats an estimate: project its real corners. */
+        if (typeof propSpan === "object") {
+          const a = projection.pixelAt(
+            propAt.x - propSpan.w / 2,
+            propAt.y + propSpan.h / 2
+          );
+          const b = projection.pixelAt(
+            propAt.x + propSpan.w / 2,
+            propAt.y - propSpan.h / 2
+          );
+          const real = whatIsUnder({
+            x: Math.min(a.x, b.x),
+            y: Math.min(a.y, b.y),
+            w: Math.abs(b.x - a.x),
+            h: Math.abs(b.y - a.y),
+          });
+          if (
+            real.controls > 0.02 ||
+            real.heavy > 0.03 ||
+            real.covered > 0.1
+          ) {
+            return false;
+          }
+          return true;
+        }
         /*
          * Measure the whole fragment, not the object.
          *
@@ -382,7 +596,19 @@ function SceneContents({
          * the size of the thing mounted on it, and it was the fragment that
          * kept landing on the copy.
          */
-        const span = (propSpan ?? 1) * bodyW * 1.25;
+        /*
+         * Sized to what these things actually measure, not generously.
+         *
+         * Coverage is a SHARE of the box, so an estimate that is too big is not
+         * the safe direction — it dilutes the answer. At 1.25 the estimated box
+         * came out about a fifth wider than the object really draws, which
+         * divides the share by around 1.45: a repair genuinely sitting on 14%
+         * of a paragraph reported 10% and passed. Every job is measured from
+         * the renderer the first time it appears, so this only decides the
+         * first placement of each — which is precisely what a first-time
+         * visitor sees.
+         */
+        const span = (propSpan ?? 1) * bodyW * fit;
         const propUnder = whatIsUnder({
           x: pp.x - span / 2,
           y: pp.y - span * 0.55,
@@ -413,14 +639,30 @@ function SceneContents({
          * fragment is a compromise worth making, because the alternative is no
          * handyman at all.
          */
-        if (propUnder.controls > 0.02 || propUnder.heavy > 0.05) return false;
+        /*
+         * A prop may not cover the copy either.
+         *
+         * Body text had no protection from props at all — the rule only looked
+         * at buttons and headings — which is exactly what the recording shows: a
+         * shelf across "mounting, repairs, installations", a towel rail across
+         * "Book online whenever something comes up", a sink across "Book the
+         * next when you're ready". Every one of those is body copy, and every
+         * one of them passed.
+         */
+        if (
+          propUnder.controls > 0.02 ||
+          propUnder.heavy > 0.03 ||
+          propUnder.covered > 0.1
+        ) {
+          return false;
+        }
       }
       const px = projection.pixelAt(feet.x, feet.y);
       const under = whatIsUnder({
-        x: px.x - bodyW / 2,
-        y: px.y - bodyH,
-        w: bodyW,
-        h: bodyH,
+        x: px.x - (bodyW * fit) / 2,
+        y: px.y - bodyH * fit,
+        w: bodyW * fit,
+        h: bodyH * fit,
       });
       if (process.env.NODE_ENV !== "production") {
         const w = window as unknown as Record<string, unknown>;
@@ -441,7 +683,7 @@ function SceneContents({
        * goes on carrying everything else.
        */
       return (
-        under.controls <= 0.05 && under.heavy <= 0.09 && under.covered <= 0.2
+        under.controls <= 0.02 && under.heavy <= 0.03 && under.covered <= 0.08
       );
     },
     [projection, bodyW, bodyH]
@@ -481,6 +723,10 @@ function SceneContents({
           busyAt={busyAt}
           perch={perch}
           standable={standable}
+          blocked={blocked}
+          pageOffset={pageOffset}
+          inView={inView}
+          onControl={onControl}
           /* How much of the house can stand in view at once. A phone has far
              less room to put anything without covering something. */
           maxStations={size.width < 560 ? 2 : 3}
@@ -632,19 +878,22 @@ function DiagReporter({
       w.__fxBodyW = bodyW;
       w.__fxBodyH = bodyH;
       /* Lab only: the working hand in screen pixels, for zooming in on it. */
-      /* The prop's world box, in viewport pixels, for the coverage check. */
-      const prop = (w.__fxProp ?? null) as
-        | { x: number; y: number; w: number; h: number }
+      /* Every station's box in viewport pixels, for the overlap audit. */
+      const st = (w.__fxStations ?? null) as
+        | { id: string; x: number; y: number; w: number; h: number }[]
         | null;
-      if (prop) {
-        const a = projection.pixelAt(prop.x - prop.w / 2, prop.y + prop.h / 2);
-        const b = projection.pixelAt(prop.x + prop.w / 2, prop.y - prop.h / 2);
-        w.__fxPropPx = {
-          x: Math.round(Math.min(a.x, b.x)),
-          y: Math.round(Math.min(a.y, b.y)),
-          w: Math.round(Math.abs(b.x - a.x)),
-          h: Math.round(Math.abs(b.y - a.y)),
-        };
+      if (st) {
+        w.__fxStationPx = st.map((b) => {
+          const a = projection.pixelAt(b.x - b.w / 2, b.y + b.h / 2);
+          const c2 = projection.pixelAt(b.x + b.w / 2, b.y - b.h / 2);
+          return {
+            id: b.id,
+            x: Math.round(Math.min(a.x, c2.x)),
+            y: Math.round(Math.min(a.y, c2.y)),
+            w: Math.round(Math.abs(c2.x - a.x)),
+            h: Math.round(Math.abs(c2.y - a.y)),
+          };
+        });
       }
       const hand = (w.__fxHandWorld ?? null) as { x: number; y: number } | null;
       if (hand) {
