@@ -47,6 +47,7 @@ import {
   requestRepair,
   layoutWorld,
   homeAt,
+  STAGE,
   stepWorld,
   walkClipRate,
   type WorldMark,
@@ -72,7 +73,14 @@ function sizing(width: number) {
   const narrow = width < NARROW_AT;
   return {
     narrow,
-    unitPx: narrow ? 104 : 132,
+    /*
+     * Pixels per world unit, and therefore the size of everything drawn —
+     * character, props, tools and every particle, since they are all children
+     * of the same world. STAGE takes the whole show down together; see the note
+     * on it in lab-world, and note that it is also applied to the composition,
+     * which is what keeps the timing and his stride exactly as approved.
+     */
+    unitPx: (narrow ? 104 : 132) * STAGE,
     /*
      * Small. A phone is 390 wide and has to hold six repairs, the man, and the
      * website underneath all of it — so he is about a tenth of the screen, and
@@ -262,7 +270,15 @@ function ObjectShadow({
  * smallest thing here is smaller than a fingertip.
  */
 const _pick = new THREE.Vector3();
-const TAP_MIN = 26;
+/*
+ * The smallest a tap target is allowed to be.
+ *
+ * Brought down with the stage, but not by the full factor: this is a floor for
+ * a fingertip rather than a property of the artwork, and the objects it applies
+ * to are the ones already smaller than a finger. Enough slack to be tappable,
+ * not enough to leave a hit box visibly adrift of the thing it belongs to.
+ */
+const TAP_MIN = 21;
 const TAP_PAD = 7;
 
 function pickSpot(
