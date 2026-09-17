@@ -9,6 +9,7 @@ import {
   createGlowTexture,
   createLampMaterial,
   createSmokeTexture,
+  createSparkTexture,
 } from "./lab-materials";
 import { getObjectBusy, getObjectFix, getObjectNudge } from "./lab-object-state";
 
@@ -143,7 +144,9 @@ type Fault = {
   sootMat: THREE.MeshBasicMaterial;
   sparks: Spark[];
   flares: Flare[];
-  puffs: { t: number; seed: number }[];
+  puffs: { t: number; seed: number; alive: boolean }[];
+  /** How much of the stain is still there. Lags the sparks, on purpose. */
+  soot: number;
   nextSpark: number;
   nextFlicker: number;
   flashFor: number;
@@ -155,10 +158,10 @@ type Fault = {
 /**
  * Everything the fault owns, built once per socket.
  *
- * Sparks are bare coloured quads — no texture at all. A soft radial gradient
- * stretched into a streak is nearly all falloff, so at the handful of pixels
- * this gets on a phone there is no core left and the whole thing reads as an
- * orange haze. A hard-edged quad is nothing BUT core.
+ * A spark is one textured quad: a hot head with a trail fraying out behind it,
+ * stretched along the direction it is travelling. Bare rectangles read as
+ * sticks and soft radial dots read as haze, so the shape has to live in the
+ * texture — one 96x24 canvas is the whole cost of having it.
  *
  * Normal blending throughout, never additive: this socket lives on the WHITE
  * band, and adding light to white produces white.
@@ -166,9 +169,10 @@ type Fault = {
 function makeFault(): Fault {
   const glowMap = createGlowTexture();
   const smokeMap = createSmokeTexture();
+  const sparkMap = createSparkTexture();
   const sparkMat = () =>
     new THREE.MeshBasicMaterial({
-      color: new THREE.Color("#ff6a12"),
+      map: sparkMap,
       transparent: true,
       depthWrite: false,
       opacity: 0,
@@ -229,7 +233,9 @@ function makeFault(): Fault {
     puffs: Array.from({ length: PUFFS }, (_, i) => ({
       t: i / PUFFS,
       seed: Math.random() * 6.28,
+      alive: true,
     })),
+    soot: 1,
     nextSpark: 0.2,
     nextFlicker: 0.4,
     flashFor: 0,
@@ -370,8 +376,12 @@ function stepFault(
   }
   if (fixed < 0.02) fault.finale = false;
 
-  /* Mended: wipe it clean, hide it, and stop paying for any of it. */
-  if (broken < 0.05 && fault.flashFor <= 0) {
+  /* Mended, and the aftermath over: wipe it, hide it, stop paying for it. */
+  const settled =
+    fault.soot < 0.02 &&
+    !fault.puffs.some((puff) => puff.alive) &&
+    !fault.sparks.some((spark) => spark.life > 0);
+  if (broken < 0.05 && fault.flashFor <= 0 && settled) {
     if (group.visible) {
       for (const mat of fault.sparkMats) mat.opacity = 0;
       for (const mat of fault.puffMats) mat.opacity = 0;
@@ -380,6 +390,7 @@ function stepFault(
       fault.sootMat.opacity = 0;
       for (const spark of fault.sparks) spark.life = 0;
       for (const f of fault.flares) f.life = 0;
+      fault.soot = 0;
       group.visible = false;
     }
     if (process.env.NODE_ENV !== "production") {
@@ -389,8 +400,15 @@ function stepFault(
   }
   group.visible = true;
 
-  /* The stain, always there while it is broken, gone the moment it is not. */
-  fault.sootMat.opacity = 0.34 * heat * heat;
+  /*
+   * The stain fades on the smoke's clock, not the sparks'.
+   *
+   * A scorch mark that vanishes on the same frame as the last spark reads as a
+   * light being switched off. This one is still there, faintly, while the last
+   * of the smoke clears — and then it is not.
+   */
+  fault.soot += (Math.min(1, heat * 3) - fault.soot) * Math.min(1, step * 1.8);
+  fault.sootMat.opacity = 0.34 * fault.soot;
 
   /*
    * HIS TURNS DRIVE THE SPARKS.
@@ -484,39 +502,32 @@ function stepFault(
     spark.x += spark.vx * step;
     spark.y += spark.vy * step;
     const u = Math.max(0, spark.life / spark.ttl);
-    mesh.position.set(spark.x, spark.y, FX_Z + 0.02);
     /*
-     * A streak, not a dot: stretched along the way it is travelling and
-     * thinned across it, which is the difference between "spark" and "orange
-     * blob" when there are only a few pixels to say it with.
-     */
-    mesh.rotation.z = Math.atan2(spark.vy, spark.vx);
-    /*
-     * Long and thin, not short and fat.
+     * The HEAD goes where the particle is; the trail is drawn behind it.
      *
-     * Both dimensions came off one number and the big ones were coming out as
-     * orange planks — at three to one a spark still reads as a stick. Thickness
-     * is now about a ninth of the length at full size, which is a streak.
+     * The texture's bright end sits about a third of the way in from the quad's
+     * leading edge, so the quad is pushed back along its own heading to put
+     * that end on the point that is actually moving. Without it the streak
+     * straddles the particle and the hot end runs ahead of the spark.
      */
-    const len = spark.size * (2.2 + u * 2.1);
-    mesh.scale.set(len, spark.size * 0.34, 1);
+    const ang = Math.atan2(spark.vy, spark.vx);
+    const len = spark.size * (1.9 + u * 1.7);
+    mesh.rotation.z = ang;
+    mesh.position.set(
+      spark.x - Math.cos(ang) * len * 0.34,
+      spark.y - Math.sin(ang) * len * 0.34,
+      FX_Z + 0.02
+    );
+    /* Soft across its width now, so it can be thicker without reading as a bar. */
+    mesh.scale.set(len, spark.size * 0.62, 1);
     /*
-     * Saturated the whole way, never pale.
+     * The texture carries the heat; this only varies how deep each one is.
      *
-     * The obvious thing is white-hot at birth cooling to orange, and on a white
-     * band white-hot is invisible — the brightest part of each spark was the
-     * part that disappeared. They stay orange and only vary in how deep.
+     * A white-hot head would be the honest thing and is invisible on a white
+     * band, so the hottest this gets is amber and the cooler ones tint down
+     * toward red rather than up toward white.
      */
-    mat.color.setRGB(1, 0.24 + spark.hot * 0.2 * u, 0.02);
-    /*
-     * Solid for most of its life, then gone.
-     *
-     * Fading across the whole life looks right in isolation and is wrong on a
-     * white band: a half-transparent orange streak on white is salmon, and
-     * salmon is not a spark at any size. They hold full colour and get shorter
-     * instead — the length already tracks the same curve — so what disappears
-     * is the spark, not its saturation.
-     */
+    mat.color.setRGB(1, 0.74 + spark.hot * 0.26, 0.66 + spark.hot * 0.34);
     mat.opacity = Math.min(1, u * 4) * heat;
   }
 
@@ -548,8 +559,32 @@ function stepFault(
     const mesh = puffMeshes[i];
     const mat = fault.puffMats[i];
     if (!mesh || !mat) continue;
+    if (!puff.alive) {
+      if (mat.opacity !== 0) mat.opacity = 0;
+      /* Ready to run again if this socket is ever reset. */
+      if (heat > 0.6) {
+        puff.alive = true;
+        puff.t = 0;
+      }
+      continue;
+    }
     puff.t += step / (2.2 + (i % 4) * 0.18);
     if (puff.t > 1) {
+      /*
+       * Once the fault is out, a puff that finishes its climb is NOT replaced.
+       *
+       * This is the whole of "the smoke stops, and then the smoke that is
+       * already there goes away". Fading the plume out with the sparks made the
+       * two read as one event and left nothing to watch afterwards; letting the
+       * column empty from the bottom up over its own couple of seconds gives
+       * the repair an aftermath, which is what a viewer needs in order to
+       * notice that it is over.
+       */
+      if (heat <= 0.3) {
+        puff.alive = false;
+        mat.opacity = 0;
+        continue;
+      }
       puff.t -= 1;
       puff.seed = Math.random() * 6.28;
     }
@@ -569,8 +604,12 @@ function stepFault(
      * thing this has to say is where it is coming FROM. Full darkness within a
      * few pixels of the faceplate puts the source beyond doubt.
      */
-    mat.opacity =
-      Math.min(1, u * 9) * Math.pow(1 - u, 1.15) * 0.58 * heat * heat;
+    /*
+     * No `heat` in here at all: the puff's own life is the only thing that
+     * fades it, so the last of the smoke drifts off after the sparks have
+     * stopped rather than being switched off with them.
+     */
+    mat.opacity = Math.min(1, u * 9) * Math.pow(1 - u, 1.15) * 0.62;
   }
 
   if (process.env.NODE_ENV !== "production") {
@@ -598,9 +637,26 @@ function stepFault(
   }
 }
 
+/**
+ * The faceplate's snap back to square.
+ *
+ * `t` is seconds since the repair landed, and this is a damped cosine: it
+ * leaves the crooked angle immediately, crosses level in about a sixteenth of
+ * a second, tips a couple of degrees past, and settles. Easing the tilt out
+ * along with the fix value was the honest version and it had no moment in it —
+ * the plate simply became less crooked until it wasn't. A thing that snaps is a
+ * thing you saw happen.
+ */
+function snapCurve(t: number): number {
+  if (t < 0) return 1;
+  return Math.exp(-13 * t) * Math.cos(25 * t);
+}
+
 function Outlet({ id }: FixableProps) {
   const plate = useRef<THREE.Group>(null);
   const screw = useRef<THREE.Mesh>(null);
+  /* Seconds since the snap, or below zero while it is still broken. */
+  const snap = useRef(-1);
   const faultGroup = useRef<THREE.Group>(null);
   const sparkMeshes = useRef<(THREE.Mesh | null)[]>([]);
   const puffMeshes = useRef<(THREE.Mesh | null)[]>([]);
@@ -611,12 +667,26 @@ function Outlet({ id }: FixableProps) {
 
   useFrame((_, dt) => {
     const step = Math.min(0.05, dt);
-    f.current = ease(f.current, getObjectFix(id), dt);
+    const target = getObjectFix(id);
+    f.current = ease(f.current, target, dt);
     const broken = 1 - f.current;
+    /*
+     * The snap fires a breath AFTER the closing flash, which goes off at 0.3.
+     *
+     * Order is the whole point of the beat: bang, then the plate goes straight.
+     * The other way round it reads as the plate being knocked crooked-to-square
+     * by something that happened afterwards.
+     */
+    if (snap.current < 0 && f.current > 0.42) snap.current = 0;
+    if (snap.current >= 0) snap.current += dt;
+    if (target < 0.02 && snap.current >= 0) snap.current = -1;
+    const tilt = snapCurve(snap.current);
     /* Crooked enough to notice, and a screw standing visibly proud — the two
        things that say "this is wrong" without anybody reading a label. */
-    if (plate.current) plate.current.rotation.z = DEG(15) * broken;
-    if (screw.current) screw.current.position.z = 0.004 + 0.011 * broken;
+    if (plate.current) plate.current.rotation.z = DEG(15) * tilt;
+    if (screw.current) {
+      screw.current.position.z = 0.004 + 0.011 * Math.max(0, tilt);
+    }
 
     const group = faultGroup.current;
     if (!group) return;

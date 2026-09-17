@@ -133,15 +133,26 @@ export function createSmokeTexture(): THREE.Texture {
      * other, so a puff has a lumpy edge and a dense core — which is the
      * difference between smoke and a grey smudge.
      */
+    /*
+     * Dark in the middle, pale at the edge — the whole grey range in one puff.
+     *
+     * This socket's plume rises off a white band and straight into the navy
+     * hero above it, and no single value survives that trip: soot vanishes
+     * against the dark, pale smoke vanishes against the page. So the colour is
+     * baked here instead of tinted by the material. Over white the dark core
+     * does the reading and the pale rim is invisible; over the hero the rim
+     * does it and the core is invisible. Same quad, both grounds.
+     */
     const blob = (cx: number, cy: number, r: number, a: number) => {
       const g = ctx.createRadialGradient(
         cx * size, cy * size, 0,
         cx * size, cy * size, r * size
       );
-      g.addColorStop(0, `rgba(255,255,255,${a})`);
-      g.addColorStop(0.55, `rgba(255,255,255,${a * 0.62})`);
-      g.addColorStop(0.82, `rgba(255,255,255,${a * 0.2})`);
-      g.addColorStop(1, "rgba(255,255,255,0)");
+      g.addColorStop(0, `rgba(48,54,64,${a})`);
+      g.addColorStop(0.42, `rgba(72,79,91,${a * 0.78})`);
+      g.addColorStop(0.68, `rgba(148,157,172,${a * 0.52})`);
+      g.addColorStop(0.86, `rgba(190,198,212,${a * 0.26})`);
+      g.addColorStop(1, "rgba(198,205,218,0)");
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, size, size);
     };
@@ -151,6 +162,69 @@ export function createSmokeTexture(): THREE.Texture {
   }
   smokeTexture = new THREE.CanvasTexture(canvas);
   return smokeTexture;
+}
+
+let sparkTexture: THREE.Texture | null = null;
+
+/**
+ * One spark: a hot head with a trail behind it.
+ *
+ * The sparks were bare rectangles, because a soft radial dot stretched into a
+ * streak is nearly all falloff and disappears at this size. That solved the
+ * disappearing and produced orange sticks instead. This is the shape itself —
+ * a bright amber head at the leading edge, a body that cools along the length,
+ * and an alpha that runs out before the tail does, so the far end frays rather
+ * than stopping square.
+ *
+ * Not white-hot at the head, which is what a spark really is: this one lives on
+ * a white band, where the brightest part of a real spark would be the part that
+ * vanished. Saturated amber is as hot as this page allows.
+ */
+export function createSparkTexture(): THREE.Texture {
+  if (sparkTexture) return sparkTexture;
+  const w = 96;
+  const h = 24;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    /*
+     * A short, steep trail — most of the quad is empty.
+     *
+     * The first version spread the trail across the whole length with a gentle
+     * ramp, which magnified beautifully and turned into an orange smudge at the
+     * size a phone actually draws it. On a 40-pixel streak there is no room for
+     * a gradient: what has to survive is a bright point and a hint of where it
+     * came from, so the alpha is gone by the halfway mark.
+     */
+    const trail = ctx.createLinearGradient(w * 0.86, 0, w * 0.3, 0);
+    trail.addColorStop(0, "rgba(255,146,18,0.95)");
+    trail.addColorStop(0.35, "rgba(255,110,12,0.5)");
+    trail.addColorStop(0.75, "rgba(245,85,10,0.13)");
+    trail.addColorStop(1, "rgba(235,75,10,0)");
+    ctx.fillStyle = trail;
+    ctx.fillRect(0, h * 0.38, w * 0.88, h * 0.24);
+    /* Softened across its width, so the streak has no straight edges. */
+    const across = ctx.createLinearGradient(0, 0, 0, h);
+    across.addColorStop(0, "rgba(0,0,0,1)");
+    across.addColorStop(0.5, "rgba(0,0,0,0)");
+    across.addColorStop(1, "rgba(0,0,0,1)");
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.fillStyle = across;
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = "source-over";
+    /* The head: small, dense, and the brightest thing in the texture. */
+    const head = ctx.createRadialGradient(w * 0.84, h / 2, 0, w * 0.84, h / 2, h * 0.42);
+    head.addColorStop(0, "rgba(255,214,128,1)");
+    head.addColorStop(0.42, "rgba(255,158,30,1)");
+    head.addColorStop(0.78, "rgba(255,120,14,0.55)");
+    head.addColorStop(1, "rgba(255,110,12,0)");
+    ctx.fillStyle = head;
+    ctx.fillRect(w * 0.62, 0, w * 0.38, h);
+  }
+  sparkTexture = new THREE.CanvasTexture(canvas);
+  return sparkTexture;
 }
 
 export function createGlowTexture(): THREE.Texture {

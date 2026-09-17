@@ -147,6 +147,18 @@ export type WorkMotion = {
    */
   toolHand?: "left" | "right";
   /**
+   * Degrees of head lift to put back into this stance while he works.
+   *
+   * The takes were authored for their own purposes and one of them buries his
+   * chin in his chest. That is a fine pose for a man concentrating and a bad
+   * one for a character whose face is the point: at phone size a bowed head is
+   * a cap and no person underneath it. This is applied after the mixer, split
+   * across the neck and the head so the lift comes from the whole column rather
+   * than hinging at the skull, and clamped to something small — the intent is a
+   * clean game animation, not a lighting-accurate inspection pose.
+   */
+  headLiftDeg?: number;
+  /**
    * Is he working above himself?
    *
    * Stated rather than inferred from the hand height. It was inferred, against
@@ -326,6 +338,7 @@ export const WORK_MOTIONS: Record<string, WorkMotion> = {
   kneel: {
     id: "kneel",
     toolHand: "left",
+    headLiftDeg: 26,
     crouched: true,
     boxH: 0.72,
     headMaxDeg: 72,

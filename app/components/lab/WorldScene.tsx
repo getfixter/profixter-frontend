@@ -255,6 +255,24 @@ function WorldFixter({
     return copy;
   }, [scene]);
 
+  /*
+   * The neck and the head, for the one correction the rig gets.
+   *
+   * Everything else about the takes is left exactly as authored — see the note
+   * in the frame loop. This is the exception, and it earns it: the kneel take
+   * folds his chin onto his chest, and a character whose whole value is that he
+   * has a face cannot spend his first repair without one.
+   */
+  const spine = useMemo(() => {
+    let neck: THREE.Object3D | null = null;
+    let head: THREE.Object3D | null = null;
+    model.traverse((child) => {
+      if (!neck && child.name === "neck") neck = child;
+      if (!head && child.name === "Head") head = child;
+    });
+    return { neck: neck as THREE.Object3D | null, head: head as THREE.Object3D | null };
+  }, [model]);
+
   const hands = useMemo(() => {
     let right: THREE.Object3D | null = null;
     let left: THREE.Object3D | null = null;
@@ -383,9 +401,12 @@ function WorldFixter({
   /* Where the tool tip is asked to point, and whether it is being asked. */
   const toolAim = useRef(new THREE.Vector3());
   const aiming = useRef(false);
+  /* How much of the head lift is applied right now: 0 walking, 1 working. */
+  const look = useRef(0);
   const currentAction = useRef<THREE.AnimationAction | null>(null);
   const currentName = useRef<string | null>(null);
   const [toolKind, setToolKind] = useState(WORLD_SPOTS[0]?.tool ?? null);
+  const [toolSize, setToolSize] = useState(WORLD_SPOTS[0]?.toolScale ?? 1);
   const [toolHand, setToolHand] = useState<"left" | "right">(
     WORK_MOTIONS[WORLD_SPOTS[0]?.motion]?.toolHand ?? "right"
   );
@@ -488,6 +509,34 @@ function WorldFixter({
      * nothing else, which is the cheapest honest answer to "the screwdriver
      * has to meet the socket". Only spots carrying an authored `aim` get it.
      */
+    /*
+     * Put his face back, after the mixer has had its say.
+     *
+     * This useFrame is registered after the one useAnimations installs, so the
+     * clip has already written the bones by the time we get here and adding to
+     * them is a correction rather than an accumulation. Weighted onto the beats
+     * where he is actually down at the work, and eased in and out so the lift
+     * arrives with the crouch instead of snapping on with the beat.
+     */
+    const lift = WORK_MOTIONS[mark.spot.motion]?.headLiftDeg ?? 0;
+    if (lift > 0 && (spine.neck || spine.head)) {
+      /*
+       * Only while he is down at it.
+       *
+       * Not through the look afterwards: by then he is standing, the take has
+       * his head where it should be, and adding the same lift to an upright
+       * pose points his chin at the ceiling. It unwinds over the crouch-out,
+       * which is exactly the movement that should carry it away.
+       */
+      const wantLook =
+        runtime.beat === "WORK" || runtime.beat === "WORK_IN" ? 1 : 0;
+      look.current += (wantLook - look.current) * Math.min(1, dt * 5);
+      const radians = THREE.MathUtils.degToRad(lift) * look.current;
+      /* Most of it out of the neck, the rest out of the skull. */
+      if (spine.neck) spine.neck.rotation.x -= radians * 0.62;
+      if (spine.head) spine.head.rotation.x -= radians * 0.38;
+    }
+
     const spotAim = mark.spot.aim;
     if (spotAim && (runtime.beat === "WORK" || runtime.beat === "WORK_IN")) {
       toolAim.current.set(
@@ -506,6 +555,8 @@ function WorldFixter({
     if (wantTool !== toolKind) setToolKind(wantTool);
     const wantHand = WORK_MOTIONS[mark.spot.motion]?.toolHand ?? "right";
     if (wantHand !== toolHand) setToolHand(wantHand);
+    const wantSize = mark.spot.toolScale ?? 1;
+    if (wantSize !== toolSize) setToolSize(wantSize);
 
     if (process.env.NODE_ENV !== "production") {
       const w = window as unknown as Record<string, unknown>;
@@ -538,7 +589,7 @@ function WorldFixter({
           createPortal(
             <AimedHandTool
               kind={toolKind}
-              scale={TOOL_SCALE}
+              scale={TOOL_SCALE * toolSize}
               position={[grip, 0.055 + holdingLength * TOOL_PALM, 0.005]}
               restRotationDeg={[0, 0, 0]}
               getTarget={() => (aiming.current ? toolAim.current : null)}
