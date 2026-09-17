@@ -86,11 +86,30 @@ export type Station = {
   age: number;
   /** How many times he has mended this one. */
   visits: number;
+  /**
+   * The object's real size in world units, measured once it has been drawn.
+   *
+   * Estimating this from the job's footprint was wrong in the direction that
+   * matters: the estimate was smaller than the object, so the content check
+   * passed while the thing on screen sat across a paragraph. A measured box
+   * cannot disagree with what the viewer sees.
+   */
+  boxW: number;
+  boxH: number;
   /** Counts up while it is being retired. */
   retiring: boolean;
 };
 
 export type Placement = {
+  /**
+   * How large he may be at this spot, as a fraction of his usual size.
+   *
+   * A dense page often has room for a smaller handyman and none at all for a
+   * full-sized one. Carrying the fit on the placement — rather than only using
+   * it to pick the square — is what makes the geometry agree with the picture:
+   * his reach, his prop and his body all shrink together.
+   */
+  fit: number;
   /** Where the working hand belongs: the work, minus a tool length. */
   handAt: THREE.Vector3;
   /** The repair itself — the screw, the handle, the bracket. */
@@ -110,7 +129,9 @@ export type Placement = {
  * Returning null means "nowhere sensible right now" — the runner waits rather
  * than standing on a headline.
  */
-export type Placer = (job: JobDefinition) => THREE.Vector3 | null;
+export type Placer = (
+  job: JobDefinition
+) => { point: THREE.Vector3; fit: number } | null;
 
 type Path = {
   from: THREE.Vector2;
@@ -199,6 +220,9 @@ export type TourRuntime = {
   stations: Station[];
   stationKey: number;
   stationCheck: number;
+  blocked: boolean;
+  blockedFor: number;
+  blockCheck: number;
   /** How long this rest should last. Varied, so the pacing is not metronomic. */
   restFor: number;
   /** Set when the screen changed under him and his spot is no longer free. */
@@ -234,6 +258,15 @@ export type TourRuntime = {
    * scrolls somewhere roomier is the behaviour that reads as tact.
    */
   presence: number;
+  /**
+   * Where the page was, in world units, when everything was last positioned.
+   *
+   * The whole household is glued to the DOCUMENT, not to the screen: when the
+   * reader scrolls, every mark, prop and anchor moves with the copy it was
+   * placed beside. This is the last offset that was applied, and the difference
+   * against the current one is how far everything has to travel this frame.
+   */
+  pageAt: THREE.Vector2 | null;
 };
 
 export const WALK_SPEED = 1.05;
@@ -376,11 +409,91 @@ export function repairCurve(t: number): number {
   return HOLD * 0.06 + (1 - HOLD * 0.06) * eased;
 }
 
+/**
+ * Record how big a station's object really is, once it has been drawn.
+ *
+ * A function rather than a direct assignment because the React Compiler
+ * (correctly) refuses mutation of anything that reached the component through a
+ * hook, and the runtime does. Same pattern as the finish pose.
+ */
+export function rememberStationBox(
+  station: Station,
+  w: number,
+  h: number
+): void {
+  station.boxW = w;
+  station.boxH = h;
+  /*
+   * Remembered at FULL size, not at the size it happened to be drawn.
+   *
+   * A station that could only be placed by shrinking is measured shrunk, and a
+   * remembered size that carries someone else's fit is a size that is wrong
+   * everywhere else. Divide it back out and the memory is a property of the
+   * repair rather than of one spot on one screen.
+   */
+  const fit = station.placed.fit || 1;
+  MEASURED.set(station.jobId, { w: w / fit, h: h / fit });
+}
+
+/**
+ * How big each repair actually draws, learned the first time it appears.
+ *
+ * Placement was validating the character's standing box and an ESTIMATE of the
+ * prop — a single number per job, scaled by his body — while what lands on the
+ * page is the object plus the piece of wall, tile or door it is mounted on, two
+ * to three times larger. So a spot could pass with his body clear and a cabinet
+ * sitting across a paragraph, and nothing caught it afterwards because the one
+ * station the content re-check leaves alone is the one he is walking to.
+ *
+ * A repair is the same size every time it is drawn, so measuring it once is
+ * enough: the first appearance uses the estimate, every appearance after that
+ * is checked against the real thing.
+ */
+const MEASURED = new Map<string, { w: number; h: number }>();
+
+/** The measured size of this repair, if it has been on screen this visit. */
+export function measuredSpan(jobId: string): { w: number; h: number } | null {
+  return MEASURED.get(jobId) ?? null;
+}
+
+/**
+ * The size this repair will actually be drawn at, here.
+ *
+ * Coverage is a SHARE of the box, so checking a full-sized box against a spot
+ * that only has room for a two-thirds-sized one divides the answer down by the
+ * square of the difference — a repair genuinely sitting on nearly half a
+ * paragraph can report a sixth of one and pass. Every check has to ask about
+ * the object as it will be seen, which means at its fit.
+ */
+function spanAt(
+  jobId: string,
+  fit: number,
+  fallback: number
+): { w: number; h: number } | number {
+  const seen = MEASURED.get(jobId);
+  if (!seen) return fallback;
+  return { w: seen.w * fit, h: seen.h * fit };
+}
+
+/**
+ * Record a repair's size before it is ever placed.
+ *
+ * Measuring on first appearance is too late by exactly one appearance, and the
+ * first appearance of each repair is the part of the visit everybody sees. The
+ * renderer draws one invisible copy of every job at startup and calls this, so
+ * the very first placement is checked against the real object rather than
+ * against a number somebody typed into the job list.
+ */
+export function rememberJobBox(jobId: string, w: number, h: number): void {
+  if (w > 0 && h > 0) MEASURED.set(jobId, { w, h });
+}
+
 export function placeStop(
   stop: Stop,
   anchor: THREE.Vector3,
   characterScale: number,
-  objectScale: number
+  objectScale: number,
+  fit = 1
 ): Placement {
   const { job, motion } = stop;
   const workYaw = THREE.MathUtils.degToRad(job.workYawDeg ?? 0);
@@ -434,6 +547,7 @@ export function placeStop(
     workPoint: new THREE.Vector3(anchor.x, anchor.y, hand.z + PROP_DEPTH),
     mark: new THREE.Vector3(handTarget.x - hand.x, handTarget.y - hand.y, 0),
     workYaw,
+    fit,
   };
 }
 
@@ -473,6 +587,9 @@ export function createTourRuntime(): TourRuntime {
     stations: [],
     stationKey: 1,
     stationCheck: 0,
+    blocked: false,
+    blockedFor: 0,
+    blockCheck: 0,
     restFor: REST_MIN,
     displaced: false,
     presence: 1,
@@ -482,6 +599,7 @@ export function createTourRuntime(): TourRuntime {
     finish: "nod",
     finishAt: 0,
     finishRecent: [],
+    pageAt: null,
   };
 }
 
@@ -669,6 +787,18 @@ export type StepOptions = {
   bounds: Bounds;
   /** Scroll or resize made his current spot unusable. */
   displaced?: boolean;
+  /**
+   * Is he covering something right now?
+   *
+   * Asked continuously rather than only when a scroll settles. Everything else
+   * in this file validates a spot at the moment it is CHOSEN, which is correct
+   * and insufficient: the page moves underneath him afterwards. A reader
+   * scrolling a paragraph under a working handyman was the single biggest
+   * source of covered text in the recording, and nothing was watching for it —
+   * the old response to being in the way was to work faster, which means
+   * several more seconds sitting on the copy.
+   */
+  blocked?: () => boolean;
   /** How unwelcome this world point is, 0 to 3. */
   busyAt?: (x: number, y: number) => number;
   /**
@@ -690,7 +820,8 @@ export type StepOptions = {
   standable?: (
     feet: THREE.Vector3,
     propAt?: THREE.Vector3,
-    propSpan?: number
+    propSpan?: number | { w: number; h: number },
+    fit?: number
   ) => boolean;
   /**
    * How many repairs may stand in the world at once.
@@ -701,6 +832,47 @@ export type StepOptions = {
   maxStations?: number;
   /** How far apart two stations must stand, in world units. */
   stationGap?: number;
+  /**
+   * Where the page has been scrolled to, as a world-space offset.
+   *
+   * THE fix for content overlap, and the reason most of the re-checking below
+   * is now a safety net rather than the mechanism. Everything used to be
+   * anchored to the VIEWPORT: a spot was chosen in a genuinely empty piece of
+   * screen and was correct until the reader scrolled a paragraph underneath it,
+   * which takes about a second. No amount of re-validation fixes that — it only
+   * decides whether the answer is "an object on the text" or "objects vanishing
+   * constantly", and both are wrong.
+   *
+   * Anchored to the page instead, a placement that was clear when it was made
+   * STAYS clear, because it travels with the very content it was placed beside.
+   * Scrolling stops being a hazard and becomes what it is on any other page:
+   * the furniture moves with the room.
+   */
+  pageOffset?: () => THREE.Vector2;
+  /**
+   * Is this repair sitting on top of something a reader is trying to use?
+   *
+   * Asked about the ONE station the content check is not allowed to touch: the
+   * repair he is committed to. Taking that away over a paragraph reads as a
+   * glitch and costs more than the overlap — I measured it, and it put a third
+   * of the run back to standing about. A button is different. The page is there
+   * to be used, and a cabinet door across "Book your free visit" is the one
+   * overlap with a price on it.
+   */
+  onControl?: (
+    propAt: THREE.Vector3,
+    span: number | { w: number; h: number },
+    fit: number
+  ) => boolean;
+  /**
+   * Is this world point still on screen?
+   *
+   * Page-anchored things scroll away. A station that has left the screen is
+   * retired — which costs nothing visually, because nobody can see it — and its
+   * repair becomes available to place again somewhere the reader is actually
+   * looking.
+   */
+  inView?: (point: THREE.Vector3) => boolean;
 };
 
 /**
@@ -756,6 +928,55 @@ const SHORT_HOP = 2.4;
  */
 const STATION_GAP = 2.1;
 
+/**
+ * Move the whole world with the page.
+ *
+ * Positions are kept in world units rather than in page coordinates because
+ * everything else — walking, reaching, the IK, the camera — is in world units
+ * and converting at every use would be a much larger change for the same
+ * result. So the world is translated instead, once a frame, by however far the
+ * document has moved since the last one.
+ *
+ * Every vector that describes WHERE SOMETHING IS has to be in here. A single
+ * one left out is a repair whose prop scrolls away from the hand fixing it.
+ */
+function driftWithPage(runtime: TourRuntime, dx: number, dy: number) {
+  const moved = new Set<Placement>();
+  const move = (placement: Placement | null) => {
+    if (!placement || moved.has(placement)) return;
+    moved.add(placement);
+    placement.handAt.x += dx;
+    placement.handAt.y += dy;
+    placement.anchor.x += dx;
+    placement.anchor.y += dy;
+    placement.object.x += dx;
+    placement.object.y += dy;
+    placement.workPoint.x += dx;
+    placement.workPoint.y += dy;
+    placement.mark.x += dx;
+    placement.mark.y += dy;
+  };
+  move(runtime.placed);
+  move(runtime.nextPlaced);
+  move(runtime.gonePlaced);
+  for (const station of runtime.stations) move(station.placed);
+  runtime.position.x += dx;
+  runtime.position.y += dy;
+  if (runtime.perch) {
+    runtime.perch.x += dx;
+    runtime.perch.y += dy;
+  }
+  const path = runtime.path;
+  if (path) {
+    path.from.x += dx;
+    path.from.y += dy;
+    path.to.x += dx;
+    path.to.y += dy;
+    path.control.x += dx;
+    path.control.y += dy;
+  }
+}
+
 export function stepTour(
   runtime: TourRuntime,
   stops: Stop[],
@@ -763,6 +984,21 @@ export function stepTour(
   options: StepOptions
 ) {
   if (!stops.length) return;
+
+  /*
+   * First, before anything reads a position: go where the page went.
+   */
+  if (options.pageOffset) {
+    const at = options.pageOffset();
+    if (!runtime.pageAt) runtime.pageAt = at.clone();
+    const dx = at.x - runtime.pageAt.x;
+    const dy = at.y - runtime.pageAt.y;
+    if (dx !== 0 || dy !== 0) {
+      runtime.pageAt.copy(at);
+      driftWithPage(runtime, dx, dy);
+    }
+  }
+
   /*
    * When he is in the way, everything he is doing happens faster.
    *
@@ -778,6 +1014,29 @@ export function stepTour(
    * needs to stay in a hurry until he has actually got out of the way, which is
    * when the next job clears it.
    */
+  /*
+   * Get out of the way first, and ask questions afterwards.
+   *
+   * Checked six times a second. When the page has moved under him he fades out
+   * where he stands, gives up the spot, and comes back somewhere that has room
+   * — which is both instant and guaranteed, where hurrying was neither.
+   */
+  runtime.blockCheck += dt;
+  if (runtime.blockCheck > 0.1) {
+    runtime.blockCheck = 0;
+    const blocked = options.blocked ? options.blocked() : false;
+    if (blocked) runtime.blockedFor += 0.1;
+    else runtime.blockedFor = 0;
+    runtime.blocked = blocked;
+  }
+  /* Long enough to be sure it is not a momentary overlap during a step. */
+  if (runtime.blockedFor > 0.2 && runtime.placed) {
+    runtime.placed = null;
+    runtime.path = null;
+    runtime.restFor = 0.3;
+    setPhase(runtime, "REST");
+  }
+
   const inTheWay = options.displaced || runtime.displaced;
   const urgency = inTheWay ? 2.8 : 1;
   runtime.phaseElapsed += dt * urgency;
@@ -826,16 +1085,27 @@ export function stepTour(
     2.4
   );
   if (stranded && runtime.perch) {
+    /*
+     * Invisible? Then simply be there.
+     *
+     * Ambling is right when a viewer can see him. When the reader has scrolled
+     * a screenful away he is page-anchored, out of shot and fully faded, and
+     * gliding back at walking pace means several seconds of nothing while the
+     * character crosses a stretch of document nobody is looking at.
+     */
+    if (runtime.presence < 0.05) runtime.position.copy(runtime.perch);
     /* Amble over rather than teleport; it is a pause, not a cut. */
-    runtime.position.lerp(runtime.perch, 1 - Math.exp(-2.2 * dt));
+    else runtime.position.lerp(runtime.perch, 1 - Math.exp(-2.2 * dt));
     runtime.yaw = approachValue(runtime.yaw, 0, dt, 3);
   }
-  const wantPresence: number = stranded && !runtime.perch ? 0 : 1;
+  const wantPresence: number =
+    runtime.blocked || (stranded && !runtime.perch) ? 0 : 1;
   runtime.presence = approachValue(
     runtime.presence,
     wantPresence,
     dt,
-    PRESENCE_RATE
+    /* Out of the way fast, back at a civilised pace. */
+    runtime.blocked ? 9 : PRESENCE_RATE
   );
 
   /* Prop fade follows the phase: present from setting off until he walks away. */
@@ -883,13 +1153,47 @@ export function stepTour(
       station.fade,
       station.retiring ? 0 : 1,
       dt,
-      station.retiring ? 0.9 : 1.3
+      station.retiring ? 3.6 : 1.3
     );
     if (station.done) station.age += dt;
   }
   runtime.stations = runtime.stations.filter(
     (station) => !station.retiring || station.fade > 0.02
   );
+
+  /**
+   * Put a repair into the registry.
+   *
+   * The registry is the only thing that draws anything, so a repair that is not
+   * in it does not exist on screen however carefully it has been placed. That
+   * sounds obvious and it was not: `departFor` could place a job for itself,
+   * set it as his current work, and send him off to fix a thing nobody had
+   * drawn — which is exactly what the cold opening did, because the opening
+   * never goes through the staging path. He arrived, raised the screwdriver and
+   * worked on an empty piece of page, and every number said the run was fine.
+   */
+  const addStation = (
+    jobId: string,
+    index: number,
+    placed: Placement
+  ): Station => {
+    const station: Station = {
+      key: runtime.stationKey++,
+      jobId,
+      index: index % stops.length,
+      placed,
+      fade: 0,
+      done: false,
+      age: 0,
+      visits: 0,
+      boxW: 0,
+      boxH: 0,
+      retiring: false,
+    };
+    runtime.stations.push(station);
+    setObjectFix(jobId, 0);
+    return station;
+  };
 
   /**
    * Find a home for a job without committing to it.
@@ -913,16 +1217,25 @@ export function stepTour(
     let noAnchor = 0;
     let crowdedOut = 0;
     for (let attempt = 0; attempt < 6; attempt++) {
-      const anchor = options.place(next.job);
-      if (!anchor) {
+      const spot = options.place(next.job);
+      if (!spot) {
         noAnchor += 1;
         continue;
       }
+      /*
+       * Everything shrinks together.
+       *
+       * The spot finder may only have room for a smaller handyman, and his
+       * reach, his mark and his prop are all derived from his size — so the fit
+       * has to go into the geometry, not just into the drawing. Scaling only
+       * the picture would leave him reaching for a prop that had not moved.
+       */
       const candidate = placeStop(
         next,
-        anchor,
-        options.characterScale,
-        options.objectScale
+        spot.point,
+        options.characterScale * spot.fit,
+        options.objectScale * spot.fit,
+        spot.fit
       );
       /*
        * The gap has to be a share of the room, not a constant.
@@ -979,7 +1292,8 @@ export function stepTour(
       !options.standable(
         placed.mark,
         placed.object,
-        next.job.footprint?.w ?? 1
+        spanAt(next.job.id, placed.fit, next.job.footprint?.w ?? 1),
+        placed.fit
       )
     ) {
       if (process.env.NODE_ENV !== "production") {
@@ -1014,18 +1328,82 @@ export function stepTour(
    * would be worse than the overlap.
    */
   runtime.stationCheck += dt;
-  if (runtime.stationCheck > 0.45 && options.standable) {
+  if (runtime.stationCheck > 0.2 && options.standable) {
     runtime.stationCheck = 0;
+    /*
+     * The repair he is committed to is exempt.
+     *
+     * I tried narrowing this to "only while his hands are on it", so that a
+     * station he was merely walking towards could still be taken away. It read
+     * far worse: pulling the destination out from under an approach sent him
+     * back to standing about, and the run went from fifteen per cent of samples
+     * with nothing happening to fifty-two, with a twenty-two second stretch of
+     * nothing. Reverted. A staged spot is re-checked once, at the moment he
+     * commits to it, which is the right place for that question.
+     */
     for (const station of runtime.stations) {
       if (station.retiring) continue;
-      if (station.jobId === runtime.propJobId) continue;
       const job = stops[station.index % stops.length]?.job;
+      /* Its measured size where we have one, the estimate until then. */
+      const span =
+        station.boxW > 0
+          ? { w: station.boxW, h: station.boxH }
+          : spanAt(station.jobId, station.placed.fit, job?.footprint?.w ?? 1);
+      if (station.jobId === runtime.propJobId) {
+        /*
+         * Exempt from the content check. Never exempt from the button check.
+         *
+         * If the page has carried his work over something the reader is trying
+         * to press, the repair goes and he goes with it — he cannot stand there
+         * fixing a lamp on top of the booking button because he got there
+         * first.
+         */
+        if (
+          options.onControl &&
+          options.onControl(station.placed.object, span, station.placed.fit)
+        ) {
+          station.retiring = true;
+          station.fade = Math.min(station.fade, 0.35);
+          if (runtime.placed === station.placed) {
+            runtime.placed = null;
+            runtime.path = null;
+            runtime.restFor = 0.3;
+            setPhase(runtime, "REST");
+          }
+        }
+        continue;
+      }
+      /*
+       * Gone off the screen with the page? Then it can go.
+       *
+       * Retiring something nobody can see is free, and it is what keeps the
+       * household in front of the reader: the slot it gives up is immediately
+       * available to a repair placed where they are actually looking. This is
+       * the only kind of disappearance the page-anchored world needs, and it
+       * happens out of sight by construction.
+       */
+      if (options.inView && !options.inView(station.placed.object)) {
+        station.retiring = true;
+        continue;
+      }
       const ok = options.standable(
         station.placed.mark,
         station.placed.object,
-        job?.footprint?.w ?? 1
+        span,
+        station.placed.fit
       );
-      if (!ok) station.retiring = true;
+      if (!ok) {
+        station.retiring = true;
+        /*
+         * Out quickly, because it is on the copy for every frame it lingers.
+         *
+         * A gentle fade is right for a station whose work is finished and which
+         * is making way; it is the wrong answer for one that a scroll has just
+         * put across a button. Dropping it most of the way at once makes it
+         * gone within about a fifth of a second.
+         */
+        station.fade = Math.min(station.fade, 0.35);
+      }
     }
   }
 
@@ -1097,17 +1475,7 @@ export function stepTour(
     if (live.length < limit) {
       const placed = placeFor(index);
       if (placed) {
-        runtime.stations.push({
-          key: runtime.stationKey++,
-          jobId: job.id,
-          index: index % stops.length,
-          placed,
-          fade: 0,
-          done: false,
-          age: 0,
-          visits: 0,
-          retiring: false,
-        });
+        addStation(job.id, index, placed);
         runtime.nextIndex = index;
         runtime.nextPlaced = placed;
         runtime.nextJobId = job.id;
@@ -1145,17 +1513,7 @@ export function stepTour(
     /* Nothing exists yet at all — try once more for anywhere. */
     const placed = placeFor(index);
     if (!placed) return;
-    runtime.stations.push({
-      key: runtime.stationKey++,
-      jobId: job.id,
-      index: index % stops.length,
-      placed,
-      fade: 0,
-      done: false,
-      age: 0,
-      visits: 0,
-      retiring: false,
-    });
+    addStation(job.id, index, placed);
     runtime.nextIndex = index;
     runtime.nextPlaced = placed;
     runtime.nextJobId = job.id;
@@ -1186,17 +1544,41 @@ export function stepTour(
      * Cheap, and it turns a stale decision into a fresh one at exactly the
      * moment it starts to matter.
      */
+    /*
+     * Ask about the object that is actually standing there.
+     *
+     * This check used to compare an estimate of the footprint — a number per
+     * job, scaled by his body — which is smaller than most of the props and
+     * much smaller than the wall and door fragments they are mounted on. The
+     * station has been on screen for a few seconds by now and has been measured
+     * from the renderer, so use that and the answer is about the thing a reader
+     * can see rather than about a guess at it.
+     */
+    const stagedStation = stagedRaw
+      ? runtime.stations.find((station) => station.placed === stagedRaw)
+      : undefined;
+    const stagedSpan =
+      stagedStation && stagedStation.boxW > 0
+        ? { w: stagedStation.boxW, h: stagedStation.boxH }
+        : stagedRaw
+          ? spanAt(next.job.id, stagedRaw.fit, next.job.footprint?.w ?? 1)
+          : (next.job.footprint?.w ?? 1);
     const stillClear =
       stagedRaw !== null &&
       (!options.standable ||
         options.standable(
           stagedRaw.mark,
           stagedRaw.object,
-          next.job.footprint?.w ?? 1
+          stagedSpan,
+          stagedRaw.fit
         ));
     const staged = stillClear ? stagedRaw : null;
     const placed = staged ?? placeFor(index);
     if (!placed) return false;
+    /* Anything he walks to has to be in the registry, or it is not drawn. */
+    if (!runtime.stations.some((station) => station.placed === placed)) {
+      addStation(next.job.id, index, placed);
+    }
     runtime.stopIndex = index % stops.length;
     remember(runtime.schedule, next);
     runtime.placed = placed;
@@ -1477,8 +1859,17 @@ export function stepTour(
         const target =
           runtime.nextIndex ?? pickNext(stops, runtime.schedule, Math.random());
         if (!departFor(target)) {
-          /* Nowhere free right now — wait and ask again rather than barge on. */
-          runtime.restFor = 0.8;
+          /*
+           * Nowhere free right now — wait and ask again rather than barge on.
+           *
+           * Asked twice a second rather than once. A refusal is no longer a
+           * verdict on the page, it is a verdict on this instant of it: the
+           * reader is scrolling, and the screen a moment from now is a
+           * different screen. Waiting the best part of a second between tries
+           * turned a couple of unlucky rolls into a man standing still for
+           * seven seconds.
+           */
+          runtime.restFor = 0.45;
           setPhase(runtime, "REST");
         }
       }

@@ -132,7 +132,8 @@ function StageContents({
     () => (job) => {
       const placement = (job as StageJob).placement?.[layout];
       if (!placement) return null;
-      return stageToWorld(placement, layout, aspect);
+      /* The stage is a fixed arrangement with room by construction. */
+      return { point: stageToWorld(placement, layout, aspect), fit: 1 };
     },
     [layout, aspect]
   );

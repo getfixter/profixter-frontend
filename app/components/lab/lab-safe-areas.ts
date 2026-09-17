@@ -333,6 +333,14 @@ export type Spot = {
   /** Viewport pixels, top-left origin. */
   x: number;
   y: number;
+  /**
+   * How large he may be here, as a fraction of his normal size.
+   *
+   * A dense phone page often has room for a smaller handyman and none at all
+   * for a full-sized one. Shrinking to fit is what keeps him present without
+   * ever standing on the copy.
+   */
+  fit: number;
   /** How much clear room this spot has, 0..1. Bigger is calmer. */
   clearance: number;
 };
@@ -439,7 +447,34 @@ export function findSpot(options: {
     }
   }
 
-  const baseC = Math.max(1, Math.min(COLS, Math.ceil(need.w / cellW)));
+  /*
+   * A SIZE ladder, not a tolerance ladder.
+   *
+   * The old ladder relaxed what counted as acceptable until, on its last rung,
+   * it accepted anything at all — `allowBusy: Infinity` — so that the character
+   * could never freeze. That rung is why props sit on paragraphs: measured on a
+   * 360px phone, the largest genuinely empty rectangle at six scroll positions
+   * was 168x152, 272x208, 104x392, 360x80, 360x56 and 360x96, while he and his
+   * repair need roughly 62x130. At most scroll positions there IS no hole, so
+   * the last rung fired nearly every time and quietly chose the least-bad piece
+   * of body copy to stand on.
+   *
+   * Relaxing the standard cannot fix that, because the standard was never the
+   * problem — the SIZE was. So the ladder now asks for less room rather than
+   * for lower standards: full size, then progressively smaller, every rung
+   * demanding genuinely empty space. If even the smallest rung does not fit,
+   * the honest answer is that there is nowhere for him to be, and the caller
+   * hides him until scrolling opens something up.
+   */
+  const fits = [1.12, 1, 0.84, 0.7, 0.58];
+  for (const fit of fits) {
+    const spot = search(fit);
+    if (spot) return spot;
+  }
+  return null;
+
+  function search(fit: number): Spot | null {
+  const baseC = Math.max(1, Math.min(COLS, Math.ceil((need.w * fit) / cellW)));
   /*
    * Round the block once, not twice.
    *
@@ -452,7 +487,7 @@ export function findSpot(options: {
    */
   const baseR = Math.max(
     1,
-    Math.min(ROWS, Math.ceil((need.above + need.below) / cellH))
+    Math.min(ROWS, Math.ceil(((need.above + need.below) * fit) / cellH))
   );
   const rowsAbove = Math.max(
     0,
@@ -471,11 +506,12 @@ export function findSpot(options: {
    * for room to spare, then for exactly enough, then for the emptiest place
    * there is. The last pass always answers.
    */
+  /*
+   * Every rung demands genuinely empty space. There is no longer a rung that
+   * accepts covering something: that is what the size ladder above replaces.
+   */
   const attempts: { c: number; r: number; allowBusy: number; allowSeam: boolean }[] = [
-    { c: Math.min(COLS, baseC + 1), r: Math.min(ROWS, baseR + 1), allowBusy: 0, allowSeam: false },
     { c: baseC, r: baseR, allowBusy: 0, allowSeam: false },
-    { c: baseC, r: Math.max(1, baseR - 1), allowBusy: 0, allowSeam: false },
-    { c: baseC, r: Math.max(1, baseR - 1), allowBusy: Infinity, allowSeam: true },
   ];
 
   for (const attempt of attempts) {
@@ -668,13 +704,16 @@ export function findSpot(options: {
         x: pick.x,
         y: pick.y,
         clearance: pick.clearance,
-        /* 1.0 means every cell of him is on body copy; 3 means on controls. */
-        crowding: Math.min(1, pick.busyWeight / Math.max(1, needC * needR)),
+        /* Always zero now: nothing is returned that overlaps anything. */
+        crowding: 0,
+        /* How much he has to shrink to fit here. 1 is full size. */
+        fit: Math.min(1, fit),
       };
     }
   }
 
   return null;
+  }
 }
 
 /**
@@ -697,7 +736,13 @@ export function findSpot(options: {
  */
 export function whatIsUnder(box: {
   x: number; y: number; w: number; h: number;
-}): { worst: number; heavy: number; covered: number; controls: number } {
+}): {
+  worst: number;
+  heavy: number;
+  covered: number;
+  controls: number;
+  chrome: number;
+} {
   const scrollY = typeof window === "undefined" ? 0 : window.scrollY;
   const area = Math.max(1, box.w * box.h);
   let worst = 0;
@@ -706,6 +751,19 @@ export function whatIsUnder(box: {
   /* Buttons and cards, kept separate from text: a shoulder over a word is a
      compromise, and a shoulder over a "Book visit" button is a lost booking. */
   let controls = 0;
+  /*
+   * Site chrome is measured, and counted apart from everything else.
+   *
+   * The sticky header is drawn ABOVE the 3D layer — z-50 against z-40, on
+   * purpose — so a repair that scrolls up into it is not covering the header,
+   * the header is covering the repair. Counting that as an overlap made him
+   * flee from the top of the screen every time the page moved, which cost real
+   * time standing about and fixed a problem that does not exist. It is still
+   * worth knowing about, because a repair hidden behind the header is a repair
+   * nobody can see — so it is reported, separately, and the placement search
+   * uses it while the continuous checks ignore it.
+   */
+  let chrome = 0;
   for (const r of rects) {
     const ry = r.fixed ? r.y : r.y - scrollY;
     const ox = Math.min(box.x + box.w, r.x + r.w) - Math.max(box.x, r.x);
@@ -714,6 +772,10 @@ export function whatIsUnder(box: {
     const share = (ox * oy) / area;
     /* A glancing corner of something is not "standing on" it. */
     if (share < 0.012) continue;
+    if (r.fixed) {
+      chrome += share;
+      continue;
+    }
     if (r.weight > worst) worst = r.weight;
     if (r.weight >= 2) heavy += share;
     if (r.interactive) controls += share;
@@ -724,6 +786,7 @@ export function whatIsUnder(box: {
     heavy: Math.min(1, heavy),
     covered: Math.min(1, covered),
     controls: Math.min(1, controls),
+    chrome: Math.min(1, chrome),
   };
 }
 

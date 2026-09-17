@@ -39,6 +39,8 @@ import {
   approachValue,
   buildStops,
   clipRoleForPhase,
+  rememberStationBox,
+  rememberJobBox,
   pathHeading,
   createTourRuntime,
   stepTour,
@@ -108,10 +110,22 @@ export type FixterModelProps = {
   standable?: (
     feet: THREE.Vector3,
     propAt?: THREE.Vector3,
-    propSpan?: number
+    propSpan?: number | { w: number; h: number },
+    fit?: number
   ) => boolean;
   maxStations?: number;
   stationGap?: number;
+  blocked?: () => boolean;
+  /** Where the document has been scrolled to, in world units. */
+  pageOffset?: () => THREE.Vector2;
+  /** Is this world point still on screen? */
+  inView?: (point: THREE.Vector3) => boolean;
+  /** Is this repair standing on a control? */
+  onControl?: (
+    propAt: THREE.Vector3,
+    span: number | { w: number; h: number },
+    fit: number
+  ) => boolean;
   /** Scale for the props he carries with him. */
   objectScale: number;
   toolOffset: ToolOffset;
@@ -196,6 +210,10 @@ export default function FixterModel({
   standable,
   maxStations = 4,
   stationGap = 2.1,
+  blocked,
+  pageOffset,
+  inView,
+  onControl,
   objectScale,
   toolOffset,
   onReady,
@@ -289,6 +307,7 @@ export default function FixterModel({
   const carryWeight = useRef(0);
   /** How far he has to drop for his lowest bone to reach the floor. */
   const groundFix = useRef(0);
+  const fitEase = useRef(1);
   const jerkPrev = useRef(new Map<string, THREE.Quaternion>());
   const jerkRate = useRef(new Map<string, number>());
   const handPrev = useRef(new Map<string, THREE.Vector3>());
@@ -450,10 +469,6 @@ export default function FixterModel({
   const [phase, setPhase] = useState<TourPhase>("IDLE");
   const [stopIndex, setStopIndex] = useState(0);
   const [propJobId, setPropJobId] = useState<string | null>(null);
-  /** The repair already on the page that he has not walked to yet. */
-  const [nextJobId, setNextJobId] = useState<string | null>(null);
-  /** The repair he has just walked away from, still fading out. */
-  const [goneJobId, setGoneJobId] = useState<string | null>(null);
   /**
    * The persistent household, mirrored for rendering.
    *
@@ -465,14 +480,26 @@ export default function FixterModel({
     { key: number; jobId: string }[]
   >([]);
   const stationRefs = useRef(new Map<number, THREE.Group>());
+  /**
+   * Every repair, drawn once, invisibly, so its real size is known up front.
+   *
+   * The placement checks compare how much of an OBJECT lands on the copy, and
+   * until a thing has been drawn the only size available is the estimate in the
+   * job list — which is not the object, it is the object plus whatever piece of
+   * wall or door it is mounted on, guessed. Guessing it low lets a repair sit
+   * on a paragraph; guessing it high is worse, because coverage is a share and
+   * a bigger box divides the answer down.
+   *
+   * So: measure all of them on the first frame and throw the copies away. It
+   * costs one frame of eleven small procedural meshes, once, and it means the
+   * first placement of every repair — the part of the visit a first-time
+   * visitor actually sees — is checked against the real thing.
+   */
+  const [measuring, setMeasuring] = useState(true);
+  const measureRefs = useRef(new Map<string, THREE.Group>());
   const [finishClip, setFinishClip] = useState<string | null>(null);
   const lookRef = useRef(0);
   const presenceRef = useRef(1);
-  const propRef = useRef<THREE.Group>(null);
-  const nextPropRef = useRef<THREE.Group>(null);
-  const nextScaleRef = useRef(1);
-  const gonePropRef = useRef<THREE.Group>(null);
-  const goneScaleRef = useRef(1);
   const effectRef = useRef<THREE.Group>(null);
   /* Mirrored so the tool's aim callback can read it without being rebuilt. */
   const stopIndexRef = useRef(0);
@@ -622,11 +649,9 @@ export default function FixterModel({
    * would rebuild the loop mid-walk.
    */
   const propJob = propJobId ? jobs.find((j) => j.id === propJobId) : undefined;
-  const propKind = propJob?.object ?? null;
   const propEffect = propJob?.effect ?? null;
   const propScale = propJob?.propScale ?? 1;
   const working = phase === "WORK";
-  const propRotation = propJob?.objectRotationDeg ?? ([0, 0, 0] as [number, number, number]);
   /* Which trade the payoff beat should look like. */
   const payoffFlavour: PayoffFlavour =
     propJob?.category === "electrical"
@@ -634,14 +659,6 @@ export default function FixterModel({
       : propJob?.category === "plumbing"
         ? "plumbing"
         : "settle";
-  const goneJob = goneJobId ? jobs.find((j) => j.id === goneJobId) : undefined;
-  const goneKind = goneJob?.object ?? null;
-  const goneRotation =
-    goneJob?.objectRotationDeg ?? ([0, 0, 0] as [number, number, number]);
-  const nextJob = nextJobId ? jobs.find((j) => j.id === nextJobId) : undefined;
-  const nextKind = nextJob?.object ?? null;
-  const nextRotation =
-    nextJob?.objectRotationDeg ?? ([0, 0, 0] as [number, number, number]);
 
   const placeRef = useRef(place);
   const boundsRef = useRef(bounds);
@@ -650,14 +667,6 @@ export default function FixterModel({
   useEffect(() => {
     propScaleRef.current = propScale;
   }, [propScale]);
-  const nextPropScale = nextJob?.propScale ?? 1;
-  useEffect(() => {
-    nextScaleRef.current = nextPropScale;
-  }, [nextPropScale]);
-  const gonePropScale = goneJob?.propScale ?? 1;
-  useEffect(() => {
-    goneScaleRef.current = gonePropScale;
-  }, [gonePropScale]);
   const perchRef = useRef(perch);
   useEffect(() => {
     perchRef.current = perch;
@@ -670,6 +679,33 @@ export default function FixterModel({
   useEffect(() => {
     stationGapRef.current = stationGap;
   }, [stationGap]);
+  const blockedRef = useRef(blocked);
+  useEffect(() => {
+    blockedRef.current = blocked;
+  }, [blocked]);
+  const pageOffsetRef = useRef(pageOffset);
+  useEffect(() => {
+    pageOffsetRef.current = pageOffset;
+    /*
+     * A new projection means a new frame of reference.
+     *
+     * The offset is world units per pixel of scroll, and a resize changes the
+     * camera's zoom — so the same scroll position answers differently before
+     * and after. Comparing the two would read as one enormous scroll and throw
+     * the whole household off the screen. Forgetting the last reading makes the
+     * next frame re-seed it, and the drift resumes from wherever it now is.
+     */
+    const runtime = tourRef.current;
+    if (runtime) runtime.pageAt = null;
+  }, [pageOffset]);
+  const inViewRef = useRef(inView);
+  useEffect(() => {
+    inViewRef.current = inView;
+  }, [inView]);
+  const onControlRef = useRef(onControl);
+  useEffect(() => {
+    onControlRef.current = onControl;
+  }, [onControl]);
   const standableRef = useRef(standable);
   useEffect(() => {
     standableRef.current = standable;
@@ -762,58 +798,92 @@ export default function FixterModel({
           busyAt: busyRef.current,
           perch: perchRef.current,
           standable: standableRef.current,
+          blocked: blockedRef.current,
           /* Fewer on a phone: less room to put anything without covering it. */
           maxStations: maxStationsRef.current,
           stationGap: stationGapRef.current,
+          pageOffset: pageOffsetRef.current,
+          inView: inViewRef.current,
+          onControl: onControlRef.current,
         });
       }
 
-      /*
-       * The prop he is currently dealing with, carried with him rather than
-       * scattered across the page.
-       *
-       * One at a time is a composition decision as much as a performance one:
-       * six floating objects at once reads as a diagram, one reads as the thing
-       * he noticed. It scales in as he sets off and out as he leaves, so the
-       * screen is never cluttered with finished work.
-       */
-      const prop = propRef.current;
-      if (prop) {
-        if (runtime.placed) prop.position.copy(runtime.placed.object);
-        const f = runtime.propFade;
-        /*
-         * Barely any scale.
-         *
-         * It used to come in from just over half size, which is a pop — the one
-         * unmistakable tell that an object was spawned rather than noticed. A
-         * few per cent reads as settling; anything more reads as arriving.
-         */
-        prop.scale.setScalar(
-          objectScale * propScaleRef.current * (0.94 + 0.06 * f) * (f > 0.01 ? 1 : 0)
-        );
-        prop.visible = f > 0.01;
+      if (measuring) {
+        let all = true;
+        for (const job of jobs) {
+          const node = measureRefs.current.get(job.id);
+          if (!node) {
+            all = false;
+            continue;
+          }
+          _propBox.setFromObject(node);
+          _propBox.getSize(_propSize);
+          rememberJobBox(job.id, _propSize.x, _propSize.y);
+        }
+        if (all) setMeasuring(false);
       }
+
       /*
-       * Every station, every frame: where it is and how present it is.
+       * Every repair on screen, every frame: where it is, how big, how present.
        *
-       * The character's own prop slot still drives the repair he is working on
-       * — the animated state, the nudges, the effects — and the station beneath
-       * it is hidden so the two do not z-fight. Everything else in the house
-       * simply stands there.
+       * This is now the ONLY place a repair gets drawn — the one in his hands
+       * included. The old rig had three separate slots outside the registry for
+       * the working prop, the staged one and the departing one, and nothing
+       * re-checked any of them against the page, so three objects a frame could
+       * sit on the copy with no way to notice. One registry, one content check,
+       * one drawer.
        */
       {
-        const working = runtime.propJobId;
+        /* Lab only: every visible station's world box, for the overlap audit. */
+        const seen =
+          process.env.NODE_ENV !== "production"
+            ? ([] as { id: string; x: number; y: number; w: number; h: number }[])
+            : null;
         for (const station of runtime.stations) {
           const node = stationRefs.current.get(station.key);
           if (!node) continue;
           node.position.copy(station.placed.object);
           const job = jobs.find((j) => j.id === station.jobId);
           const f = station.fade;
-          const busy = station.jobId === working && runtime.propFade > 0.05;
+          /*
+           * Its own fit rides on the scale: a station that could only be placed
+           * by shrinking has to STAY shrunk, or it grows back over the text the
+           * search shrank it to avoid.
+           */
           node.scale.setScalar(
-            objectScale * (job?.propScale ?? 1) * (0.94 + 0.06 * f)
+            objectScale *
+              (job?.propScale ?? 1) *
+              station.placed.fit *
+              (0.94 + 0.06 * f)
           );
-          node.visible = f > 0.02 && !busy;
+          const show = f > 0.02;
+          node.visible = show;
+          /*
+           * Ask the renderer how big it really is, rather than guessing.
+           *
+           * The re-check used to compare an ESTIMATE of the footprint against
+           * the page, and the estimate was smaller than the object — so checks
+           * passed while a cabinet stood on a paragraph. Measured once it is on
+           * screen, and kept live while he is working on it, because the shape
+           * changes as it is repaired.
+           */
+          if (show && (!station.boxW || station.jobId === runtime.propJobId)) {
+            _propBox.setFromObject(node);
+            _propBox.getSize(_propSize);
+            rememberStationBox(station, _propSize.x, _propSize.y);
+          }
+          if (seen && show) {
+            seen.push({
+              id: station.jobId,
+              x: station.placed.object.x,
+              y: station.placed.object.y,
+              w: station.boxW,
+              h: station.boxH,
+            });
+          }
+        }
+        if (seen) {
+          (window as unknown as Record<string, unknown>).__fxStations = seen;
         }
         if (
           runtime.stations.length !== stationList.length ||
@@ -824,32 +894,11 @@ export default function FixterModel({
           );
         }
       }
-      const leaving = gonePropRef.current;
-      if (leaving) {
-        const g = runtime.goneFade;
-        if (runtime.gonePlaced) leaving.position.copy(runtime.gonePlaced.object);
-        leaving.scale.setScalar(
-          objectScale * goneScaleRef.current * (0.94 + 0.06 * g) * (g > 0.01 ? 1 : 0)
-        );
-        leaving.visible = g > 0.01;
-      }
-      if (runtime.goneJobId !== goneJobId) setGoneJobId(runtime.goneJobId);
-      const staged = nextPropRef.current;
-      if (staged) {
-        const n = runtime.nextFade;
-        if (runtime.nextPlaced) staged.position.copy(runtime.nextPlaced.object);
-        staged.scale.setScalar(
-          objectScale * nextScaleRef.current * (0.94 + 0.06 * n) * (n > 0.01 ? 1 : 0)
-        );
-        staged.visible = n > 0.01;
-      }
-      if (runtime.nextJobId !== nextJobId) setNextJobId(runtime.nextJobId);
       /*
        * The instant the repair lands.
        *
        * repairCurve holds the damage and then snaps at 0.72 of the way through
-       * the work, so that crossing is the moment — not the end of the phase,
-       * which is nearly a second later and by then nobody is looking for it.
+       * the work, so that crossing is the moment.
        */
       if (
         runtime.propJobId &&
@@ -864,7 +913,7 @@ export default function FixterModel({
       const fx = effectRef.current;
       if (fx) {
         if (runtime.placed) fx.position.copy(runtime.placed.workPoint);
-        fx.visible = runtime.propFade > 0.4;
+        fx.visible = !!runtime.placed && runtime.presence > 0.4;
       }
       if (runtime.propJobId !== propJobId) setPropJobId(runtime.propJobId);
       const wantFinishClip =
@@ -883,6 +932,8 @@ export default function FixterModel({
           liveJob: stops[runtime.stopIndex % stops.length]?.job.id ?? null,
           prop: runtime.propJobId,
           presence: Math.round(runtime.presence * 100) / 100,
+          fit: +(runtime.placed?.fit ?? 1).toFixed(2),
+          blocked: runtime.blocked,
           clip: currentActionRef.current?.getClip().name ?? null,
           fade: Math.round(runtime.propFade * 100) / 100,
         };
@@ -914,8 +965,26 @@ export default function FixterModel({
       presenceRef.current = present;
       /* Smaller while he waits out a page with no room to work on. */
       const small = 1 - 0.34 * runtime.smallness;
+      /*
+       * He is as big as the space allows.
+       *
+       * The spot finder hands back how much room it actually found, and a page
+       * that only has space for a smaller handyman gets one rather than getting
+       * a full-sized one standing on its paragraphs. Eased, so the change of
+       * size reads as perspective rather than as a pop.
+       */
+      fitEase.current = approachValue(
+        fitEase.current,
+        runtime.placed?.fit ?? runtime.nextPlaced?.fit ?? 1,
+        dt,
+        2.2
+      );
       group.scale.setScalar(
-        scale * small * (0.72 + 0.28 * present) * (present > 0.02 ? 1 : 0)
+        scale *
+          small *
+          fitEase.current *
+          (0.72 + 0.28 * present) *
+          (present > 0.02 ? 1 : 0)
       );
       group.visible = present > 0.02;
 
@@ -1832,20 +1901,6 @@ export default function FixterModel({
            * nothing was watching whether the thing he is fixing covers the
            * website.
            */
-          const propGroup = propRef.current;
-          if (propGroup && propGroup.visible) {
-            _propBox.setFromObject(propGroup);
-            if (!_propBox.isEmpty()) {
-              _propBox.getCenter(_probe);
-              _propBox.getSize(_propSize);
-              w.__fxProp = {
-                x: +_probe.x.toFixed(3),
-                y: +_probe.y.toFixed(3),
-                w: +_propSize.x.toFixed(3),
-                h: +_propSize.y.toFixed(3),
-              };
-            }
-          }
           w.__fxBox = {
               h: +(top - lowest).toFixed(2),
               w: +(right - left).toFixed(2),
@@ -1906,27 +1961,45 @@ export default function FixterModel({
   return (
     <>
       <ContactShadow follow={groupRef} scale={scale} presence={presenceRef} />
-      <group ref={propRef} visible={false}>
-        {propJobId && propKind && (
-          <FixableObject
-            kind={propKind}
-            id={propJobId}
-            scale={1}
-            position={[0, 0, 0]}
-            rotationDeg={propRotation}
-          />
-        )}
-      </group>
       {/*
-        The next repair, already on the page.
-        It eases in while he is still finishing the last one, so by the time he
-        turns to look there is something there to look at rather than something
-        arriving because he looked.
+        The house.
+
+        Every repair on screen is drawn from here — the one in his hands, the
+        ones standing around him, and the ones easing away. One registry means
+        one place that decides where a thing may be, and one content check that
+        governs all of them.
       */}
       {/*
-        The house. These persist across jobs — he walks between them rather than
-        the world being rebuilt around whichever repair is current.
+        The measuring pass: one invisible copy of every repair, for one frame.
+        Scaled exactly as a station draws it at full size, so what comes back is
+        the number the placement checks want.
       */}
+      {measuring &&
+        jobs.map((job) => (
+          <group
+            key={`measure-${job.id}`}
+            ref={(node) => {
+              if (node) measureRefs.current.set(job.id, node);
+              else measureRefs.current.delete(job.id);
+            }}
+            visible={false}
+            position={[0, -9999, 0]}
+            scale={objectScale * (job.propScale ?? 1)}
+            rotation={[
+              THREE.MathUtils.degToRad(job.objectRotationDeg?.[0] ?? 0),
+              THREE.MathUtils.degToRad(job.objectRotationDeg?.[1] ?? 0),
+              THREE.MathUtils.degToRad(job.objectRotationDeg?.[2] ?? 0),
+            ]}
+          >
+            <FixableObject
+              kind={job.object}
+              id={`${job.id}__measure`}
+              scale={1}
+              position={[0, 0, 0]}
+              rotationDeg={[0, 0, 0]}
+            />
+          </group>
+        ))}
       {stationList.map(({ key, jobId }) => {
         const job = jobs.find((j) => j.id === jobId);
         if (!job) return null;
@@ -1954,29 +2027,6 @@ export default function FixterModel({
           </group>
         );
       })}
-      {/* The repair he has just finished, easing out behind him. */}
-      <group ref={gonePropRef} visible={false}>
-        {goneJobId && goneKind && (
-          <FixableObject
-            kind={goneKind}
-            id={goneJobId}
-            scale={1}
-            position={[0, 0, 0]}
-            rotationDeg={goneRotation}
-          />
-        )}
-      </group>
-      <group ref={nextPropRef} visible={false}>
-        {nextJobId && nextKind && (
-          <FixableObject
-            kind={nextKind}
-            id={nextJobId}
-            scale={1}
-            position={[0, 0, 0]}
-            rotationDeg={nextRotation}
-          />
-        )}
-      </group>
       {/*
         The flourish, parked on the work itself rather than on the prop, so a
         spark comes off the screw and not off the middle of the faceplate.
