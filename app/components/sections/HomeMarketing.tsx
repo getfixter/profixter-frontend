@@ -204,20 +204,36 @@ export default function HomeMarketing() {
       : "/signup?redirect=%2Fmembership";
 
   return (
-    <main className="bg-white text-[#111111]">
+    /*
+     * THREE LAYERS, and the middle one is not in this file.
+     *
+     * Every band paints its colour into an absolutely-positioned div at z-0 and
+     * every band's content sits in a wrapper at z-20. The 3D world is mounted
+     * at z-10 by the page shell, which puts the little household BEHIND the
+     * interface: he can walk past the booking button and the button covers him,
+     * and a cabinet can drift under a paragraph without touching a word of it.
+     *
+     * On its own this changes nothing about how the page looks. The white comes
+     * from the page wrapper instead of from main, and every band that had a
+     * colour of its own still has it — it is just painted by a child rather
+     * than by the section, which is the only way anything can get between a
+     * background and the words on top of it.
+     */
+    <main className="text-[#111111]">
       {/* ============================ HERO ============================ */}
-      <section className="relative isolate overflow-hidden bg-[#080E18]">
+      <section className="relative overflow-hidden">
+        <div aria-hidden="true" className="absolute inset-0 z-0 bg-[#080E18]" />
         <Image
           src="/images/hero-bg.webp"
           alt=""
           fill
           priority
           sizes="100vw"
-          className="object-cover object-center opacity-[0.26]"
+          className="z-0 object-cover object-center opacity-[0.26]"
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_0%,rgba(48,110,236,0.20)_0%,transparent_60%),linear-gradient(180deg,rgba(8,14,24,0.55)_0%,rgba(8,14,24,0.86)_70%,#080E18_100%)]"
+          className="absolute inset-0 z-0 bg-[radial-gradient(120%_80%_at_50%_0%,rgba(48,110,236,0.20)_0%,transparent_60%),linear-gradient(180deg,rgba(8,14,24,0.55)_0%,rgba(8,14,24,0.86)_70%,#080E18_100%)]"
         />
 
         {/*
@@ -227,7 +243,7 @@ export default function HomeMarketing() {
          * half of the hero empty. Each
          * column now starts at the top and the right one simply runs longer.
          */}
-        <div className="relative mx-auto grid max-w-[1120px] gap-8 px-5 pb-9 pt-10 sm:px-6 sm:pb-14 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10 lg:pb-28 lg:pt-24">
+        <div className="relative z-20 mx-auto grid max-w-[1120px] gap-8 px-5 pb-9 pt-10 sm:px-6 sm:pb-14 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10 lg:pb-28 lg:pt-24">
           <div>
             <Reveal>
               <Eyebrow tone="light">Handyman membership · Long Island</Eyebrow>
@@ -303,8 +319,8 @@ export default function HomeMarketing() {
 
 
       {/* ========================= RECOGNITION ========================= */}
-      <section className="px-5 py-9 sm:px-6 sm:py-13">
-        <div className="mx-auto max-w-[1120px]">
+      <section className="relative px-5 py-9 sm:px-6 sm:py-13">
+        <div className="relative z-20 mx-auto max-w-[1120px]">
           <Reveal>
             <Eyebrow>The list</Eyebrow>
             <H2 className="mt-4 max-w-[16ch]">There&rsquo;s always something.</H2>
@@ -354,15 +370,15 @@ export default function HomeMarketing() {
       */}
       <section
         className="relative w-full overflow-hidden px-5 pt-11 sm:px-6 sm:pt-14"
-        style={{ background: "#080F1E" }}
         aria-labelledby="membership-covers-heading"
       >
+        <div aria-hidden="true" className="absolute inset-0 z-0 bg-[#080F1E]" />
         <div
           aria-hidden="true"
-          className="absolute top-0 left-0 right-0 h-px"
+          className="absolute top-0 left-0 right-0 z-0 h-px"
           style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.18), transparent)" }}
         />
-        <div className="mx-auto max-w-[1120px] text-white">
+        <div className="relative z-20 mx-auto max-w-[1120px] text-white">
           <Reveal>
             <Eyebrow tone="light">Membership</Eyebrow>
             <h2
@@ -394,8 +410,9 @@ export default function HomeMarketing() {
       <RecentWorkSection variant="preview" showHeading={false} />
 
       {/* ========================== HOW IT WORKS ======================= */}
-      <section id="how-it-works" className="scroll-mt-2 bg-[#F5F5F7] px-5 py-9 sm:px-6 sm:py-13">
-        <div className="mx-auto max-w-[1120px]">
+      <section id="how-it-works" className="relative scroll-mt-2 px-5 py-9 sm:px-6 sm:py-13">
+        <div aria-hidden="true" className="absolute inset-0 z-0 bg-[#F5F5F7]" />
+        <div className="relative z-20 mx-auto max-w-[1120px]">
           <Reveal>
             <Eyebrow>How it works</Eyebrow>
             <H2 className="mt-4 max-w-[18ch]">Book it. We come. It&rsquo;s done.</H2>
@@ -434,8 +451,8 @@ export default function HomeMarketing() {
           Acquisition only. A member already pays us, so an offer for their
           "first" visit is both untrue and slightly insulting. */}
       {!isMember && (
-      <section className="px-5 py-9 sm:px-6 sm:py-13">
-        <div className="mx-auto max-w-[820px]">
+      <section className="relative px-5 py-9 sm:px-6 sm:py-13">
+        <div className="relative z-20 mx-auto max-w-[820px]">
           <Reveal>
             <Eyebrow>Try it first</Eyebrow>
             <H2 className="mt-4 max-w-[19ch]">Your first visit is free.</H2>
@@ -482,8 +499,8 @@ export default function HomeMarketing() {
         arrangement is; comparison lives on the page built to compare, which has
         the real feature lists behind it.
       */}
-      <section className="px-5 py-9 sm:px-6 sm:py-13">
-        <div className="mx-auto max-w-[820px]">
+      <section className="relative px-5 py-9 sm:px-6 sm:py-13">
+        <div className="relative z-20 mx-auto max-w-[820px]">
           <Reveal>
             <Eyebrow>What it costs</Eyebrow>
             <H2 className="mt-4 max-w-[20ch]">Membership starts at ${startingPrice} a month.</H2>
@@ -561,8 +578,8 @@ export default function HomeMarketing() {
         arriving at 71% - after most people had stopped scrolling. It now sits
         where the decision is being made, between the price and the ask.
       */}
-      <section className="px-5 py-9 sm:px-6 sm:py-13">
-        <div className="mx-auto max-w-[1120px]">
+      <section className="relative px-5 py-9 sm:px-6 sm:py-13">
+        <div className="relative z-20 mx-auto max-w-[1120px]">
           <div className="grid gap-8 lg:grid-cols-[1fr_380px] lg:gap-10">
             <Reveal>
               <Eyebrow>Who comes to your home</Eyebrow>
@@ -632,8 +649,9 @@ export default function HomeMarketing() {
       <MembershipMap />
 
       {/* ========================== BIGGER PROJECTS ==================== */}
-      <section className="bg-[#F5F5F7] px-5 py-9 sm:px-6 sm:py-9">
-        <div className="mx-auto max-w-[1120px]">
+      <section className="relative px-5 py-9 sm:px-6 sm:py-9">
+        <div aria-hidden="true" className="absolute inset-0 z-0 bg-[#F5F5F7]" />
+        <div className="relative z-20 mx-auto max-w-[1120px]">
           <Reveal>
             <Eyebrow>Bigger projects</Eyebrow>
             <H2 className="mt-4 max-w-[20ch]">Small fix today. Bigger project later.</H2>
@@ -680,8 +698,8 @@ export default function HomeMarketing() {
 
 
       {/* ============================= CLOSE ========================== */}
-      <section className="px-5 pb-11 pt-3 sm:px-6 sm:pb-14">
-        <div className="mx-auto max-w-[1120px]">
+      <section className="relative px-5 pb-11 pt-3 sm:px-6 sm:pb-14">
+        <div className="relative z-20 mx-auto max-w-[1120px]">
           {/* Close */}
           <Reveal delay={60}>
             <div className="mt-8 border-t border-[#EDEDF0] pt-9 text-center sm:mt-9 sm:pt-11">
