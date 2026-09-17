@@ -842,8 +842,10 @@ function PictureFrame({ id }: FixableProps) {
     if (tilt.current) {
       tilt.current.rotation.z =
         settleAt.current >= 0
-          ? DEG(30) * off * Math.max(0, swing) + DEG(1.1) * swing
-          : DEG(30) * off + DEG(1.3) * idle;
+          ? DEG(34) * off * Math.max(0, swing) + DEG(1.1) * swing
+          : DEG(34) * off + DEG(1.3) * idle;
+      /* And it has slipped DOWN the wall, not only round. */
+      tilt.current.position.y = HANG_Y - 0.022 - 0.03 * Math.max(0, off);
     }
     /* The cord that came off: slack on the right until he hangs it back on. */
     if (cordRight.current) {
@@ -854,7 +856,14 @@ function PictureFrame({ id }: FixableProps) {
   });
 
   return (
-    <group>
+    /*
+      ON THE WALL, which means BEHIND him.
+      Everything in this world is drawn on one plane, so a picture at z=0 painted
+      straight over the man standing at it — he was levelling it from inside the
+      wall. A picture is the one object here that unambiguously belongs behind
+      the character, so it is set back far enough to say so.
+    */
+    <group position={[0, 0, -0.16]}>
       {/* The hook, which is what makes a hanging rectangle read as a picture. */}
       <mesh material={M.hardware} position={[HANG_X, HANG_Y, -0.02]}>
         <boxGeometry args={[0.016, 0.02, 0.01]} />
@@ -968,15 +977,25 @@ function Shelf({ id }: FixableProps) {
       stroke,
       step,
       now,
-      W * 0.32,
+      -W * 0.32,
       -0.05
     );
     const off = (1 - lift * 0.55 - drive * 0.33) * settle;
     /* A board held by one and a half brackets is never quite still. */
     const creak = working || target > 0.2 ? 0 : Math.sin(now * 1.9) * 0.5 + Math.sin(now * 1.1) * 0.3;
 
+    /*
+     * IT SAGS TOWARD HIM.
+     *
+     * It used to drop on the right while he stood on the left, so the whole
+     * repair was a man with his hands under the good end of a shelf and the
+     * broken bracket hanging in clear air forty pixels away. Mirroring the
+     * failure costs one sign per line and puts the bracket under the hand that
+     * is already reaching for it — much cheaper than sending him the long way
+     * round the object to get at it.
+     */
     if (board.current) {
-      board.current.rotation.z = -DEG(22) * off - DEG(0.9) * creak - DEG(0.7) * shake;
+      board.current.rotation.z = DEG(22) * off + DEG(0.9) * creak + DEG(0.7) * shake;
       board.current.position.y = -0.03 * off;
     }
     /* The bracket that has come away: dropped, swung out and hanging. */
@@ -984,7 +1003,7 @@ function Shelf({ id }: FixableProps) {
       loose.current.position.y = -0.07 * off;
       loose.current.position.z = 0.04 * off;
       loose.current.rotation.x = DEG(24) * off;
-      loose.current.rotation.z = DEG(11) * off;
+      loose.current.rotation.z = -DEG(11) * off;
     }
     if (screw.current) {
       screw.current.position.z = 0.012 + 0.055 * off;
@@ -1001,9 +1020,10 @@ function Shelf({ id }: FixableProps) {
     for (let i = 0; i < things.current.length; i++) {
       const node = things.current[i];
       if (!node) continue;
-      const bias = (i + 1) / things.current.length;
-      node.position.x = SITTING[i] + 0.05 * off * bias;
-      node.rotation.z = -DEG(13) * off * (0.5 + bias * 0.8);
+      /* The one nearest the drop leans hardest and ends up on the lip. */
+      const bias = (things.current.length - i) / things.current.length;
+      node.position.x = SITTING[i] - 0.07 * off * bias;
+      node.rotation.z = DEG(15) * off * (0.4 + bias * 0.9);
     }
 
   });
@@ -1015,10 +1035,10 @@ function Shelf({ id }: FixableProps) {
         <mesh material={M.wood} position={[0, 0, 0.055]}>
           <boxGeometry args={[W, 0.032, 0.15]} />
         </mesh>
-        <group position={[-W * 0.32, -0.016, 0]}>
+        <group position={[W * 0.32, -0.016, 0]}>
           <ShelfBracket />
         </group>
-        <group ref={loose} position={[W * 0.32, -0.016, 0]}>
+        <group ref={loose} position={[-W * 0.32, -0.016, 0]}>
           <ShelfBracket />
           <mesh
             ref={screw}

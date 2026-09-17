@@ -219,13 +219,22 @@ export const WORLD_SPOTS: WorldSpot[] = [
     motion: "mid",
     tool: null,
     at: { x: 0.17, y: 0.3 },
-    narrow: { x: 0.2, y: 0.24 },
+    /*
+     * Down off the headline on a phone.
+     *
+     * Objects live behind the type and that is the design — but there is a
+     * difference between sixty-pixel display type and body copy. Against the
+     * headline the frame was a crooked rectangle behind a solid white wall of
+     * letters; twenty per cent further down it sits over the paragraph, which
+     * lets a shape through.
+     */
+    narrow: { x: 0.19, y: 0.31 },
     side: 1,
     /* Lift, square, let go, watch it rock. */
     seconds: 4.0,
     admire: 1.7,
-    scale: 0.85,
-    stand: [0.66, -0.9],
+    scale: 1.05,
+    stand: [0.72, -0.86],
   },
   {
     id: "lamp",
