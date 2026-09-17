@@ -11,7 +11,12 @@ import {
   createSmokeTexture,
   createSparkTexture,
 } from "./lab-materials";
-import { getObjectBusy, getObjectFix, getObjectNudge } from "./lab-object-state";
+import {
+  getObjectBusy,
+  getObjectFix,
+  getObjectNudge,
+  getObjectWork,
+} from "./lab-object-state";
 
 /**
  * The things the Fixter fixes.
@@ -980,63 +985,417 @@ function Faucet({ id }: FixableProps) {
 
 /* ------------------------------------------------------------------ cabinet */
 
-function Cabinet({ id }: FixableProps) {
-  const door = useRef<THREE.Group>(null);
-  const f = useRef(0);
+/**
+ * THE CABINET DOOR, coming off its top hinge.
+ *
+ * The old one was a brown rectangle that opened twenty-six degrees, which at a
+ * phone's scale is not a story — it is not even recognisably a cabinet. The
+ * damage here is authored for the silhouette first: a door pivoting on its one
+ * surviving hinge, dropped far enough that its free corner hangs below the
+ * carcass and its top corner has swung clear, leaving a black wedge of open
+ * cupboard where the door should be. That wedge is the thing you read at sixty
+ * pixels. The loose hinge, the proud screw and the skew handle are detail for
+ * anybody who looks closer; none of them is carrying the message.
+ *
+ * Hinged on the RIGHT, which is a composition decision rather than a carpentry
+ * one: he walks in from the right, so the hinge he has to work on is the near
+ * edge and the ruined corner falls away from him into open space. The other way
+ * round he would be reaching across the whole carcass and standing in the
+ * doorway of the thing he is mending.
+ */
 
-  useFrame((_, dt) => {
-    f.current = ease(f.current, getObjectFix(id), dt);
-    const broken = 1 - f.current;
+/** Half a dozen specks of dust off the hinge, and no more than that. */
+const GRIT = 9;
+
+type Grit = { life: number; x: number; y: number; vx: number; vy: number };
+
+type Shop = {
+  gritMats: THREE.MeshBasicMaterial[];
+  grit: Grit[];
+  cycle: number;
+  /** How hard the drill is shaking the door right now. */
+  buzz: number;
+};
+
+function makeShop(): Shop {
+  return {
+    gritMats: Array.from(
+      { length: GRIT },
+      () =>
+        new THREE.MeshBasicMaterial({
+          color: new THREE.Color("#cbb994"),
+          transparent: true,
+          depthWrite: false,
+          opacity: 0,
+        })
+    ),
+    grit: Array.from({ length: GRIT }, () => ({
+      life: 0, x: 0, y: 0, vx: 0, vy: 0,
+    })),
+    cycle: -1,
+    buzz: 0,
+  };
+}
+
+/** Knock a couple of specks out of the hinge. */
+function shed(shop: Shop, x: number, y: number): void {
+  for (let n = 0; n < 2; n++) {
+    const bit = shop.grit.find((g) => g.life <= 0);
+    if (!bit) return;
+    bit.x = x + (Math.random() - 0.5) * 0.02;
+    bit.y = y + (Math.random() - 0.5) * 0.02;
+    bit.vx = (Math.random() - 0.5) * 0.12;
+    bit.vy = -0.05 - Math.random() * 0.1;
+    bit.life = 0.45 + Math.random() * 0.3;
+  }
+}
+
+/**
+ * The drill's effect on the hinge, and the dust it throws.
+ *
+ * A module function rather than inline for the same reason the socket's fault
+ * is one: the React Compiler will not allow a value that arrived through a hook
+ * to be mutated in the component body, and every particle is mutation. Returns
+ * how hard the door is being shaken this frame.
+ */
+function stepShop(
+  shop: Shop,
+  meshes: (THREE.Mesh | null)[],
+  drilling: boolean,
+  stroke: number,
+  step: number,
+  now: number
+): number {
+  shop.buzz = Math.max(0, shop.buzz - step * 6);
+  if (drilling) {
+    const cycle = actionCycle("spin", stroke);
+    if (cycle !== shop.cycle) {
+      shop.cycle = cycle;
+      shop.buzz = 0.18;
+      if (Math.random() < 0.6) shed(shop, CAB_W / 2 - 0.02, HINGE_Y);
+    }
+  }
+  stepGrit(shop, meshes, step);
+  return shop.buzz * Math.sin(now * 61);
+}
+
+function stepGrit(
+  shop: Shop,
+  meshes: (THREE.Mesh | null)[],
+  step: number
+): void {
+  for (let i = 0; i < GRIT; i++) {
+    const bit = shop.grit[i];
+    const mesh = meshes[i];
+    const mat = shop.gritMats[i];
+    if (!mesh || !mat) continue;
+    if (bit.life <= 0) {
+      if (mat.opacity !== 0) mat.opacity = 0;
+      continue;
+    }
+    bit.life -= step;
+    bit.vy -= 1.1 * step;
+    bit.x += bit.vx * step;
+    bit.y += bit.vy * step;
+    mesh.position.set(bit.x, bit.y, 0.13);
+    mat.opacity = Math.min(1, bit.life * 3) * 0.75;
+  }
+}
+
+/** Damped overshoot, for a thing that seats hard and rings once. */
+function seatCurve(t: number): number {
+  if (t < 0) return 1;
+  return Math.exp(-11 * t) * Math.cos(21 * t);
+}
+
+/** 0 below a, 1 above b, smooth in between. */
+function ramp(value: number, a: number, b: number): number {
+  const u = THREE.MathUtils.clamp((value - a) / (b - a), 0, 1);
+  return u * u * (3 - 2 * u);
+}
+
+/** The opening. The timber goes round the outside of this. */
+const CAB_W = 0.34;
+const CAB_H = 0.44;
+const RAIL = 0.038;
+/** An overlay door: it covers the opening and laps onto the frame. */
+const DOOR_W = CAB_W + 0.034;
+const DOOR_H = CAB_H + 0.034;
+const HINGE_Y = DOOR_H / 2 - 0.058;
+
+function Cabinet({ id }: FixableProps) {
+  const sag = useRef<THREE.Group>(null);
+  const swing = useRef<THREE.Group>(null);
+  const leafTop = useRef<THREE.Group>(null);
+  const screwTop = useRef<THREE.Mesh>(null);
+  const handle = useRef<THREE.Group>(null);
+  const gritMeshes = useRef<(THREE.Mesh | null)[]>([]);
+  const f = useRef(0);
+  const seat = useRef(-1);
+  const shop = useMemo(() => makeShop(), []);
+
+  useFrame((state, dt) => {
+    const step = Math.min(0.05, dt);
+    const now = state.clock.elapsedTime;
+    const target = getObjectFix(id);
+    f.current = ease(f.current, target, dt);
+    const mended = f.current;
+    const p = getObjectWork(id);
+    const stroke = getObjectBusy(id);
+    const working = p > 0;
+
     /*
-     * The whole story is the door.
+     * FOUR STAGES, all read off how far through he is.
      *
-     * It used to be a loose handle hanging off one screw, which at a hundred
-     * pixels is a grey speck on a brown rectangle — and a brown rectangle could
-     * be a picture, a panel or a door. A door standing open and then closing
-     * flush into its carcass is legible from across the room, and it is a thing
-     * everyone has in their kitchen.
+     * lift  — he takes the weight and shoves it back into the opening
+     * drive — the drill goes into the hinge and the leaf pulls in tight
+     * seat  — the last of the droop snaps out
+     * test  — he swings it and lets it fall shut
+     *
+     * Driven from the work progress rather than from the repair value, because
+     * the repair value is one number with one shape and this is a sequence. The
+     * repair value still decides whether the thing counts as MENDED; it is just
+     * not what the timber is doing.
      */
-    const give = getObjectNudge(id);
-    if (door.current) {
-      /* Tested, it rocks a few degrees on its catch and comes back. */
-      door.current.rotation.y = -DEG(26) * broken - DEG(7) * give;
-      door.current.position.z = 0.02 * broken;
+    /*
+     * Two shoves, not one smooth rise.
+     *
+     * A door that floats back into its opening is the thing to avoid above all
+     * else here — it is the "he waves a tool and the cupboard heals itself"
+     * failure. Lifting it in two quick heaves with a pause between them is what
+     * taking the weight of something actually looks like, and the pause is
+     * doing most of that work.
+     */
+    const lift = 0.56 * ramp(p, 0.1, 0.17) + 0.44 * ramp(p, 0.25, 0.32);
+    const drive = ramp(p, 0.36, 0.7);
+    /*
+     * And then he tries it.
+     *
+     * Out, a beat, back, and a small rebound off the catch. Written as four
+     * overlapping ramps rather than one curve because a door being tested is
+     * four distinct events, and the beat in the middle — the moment it is just
+     * hanging open, doing nothing — is what makes the closing read as a close
+     * rather than as a wobble.
+     */
+    const test = working
+      ? ramp(p, 0.76, 0.83) -
+        ramp(p, 0.865, 0.945) +
+        ramp(p, 0.945, 0.972) * 0.08 -
+        ramp(p, 0.972, 1) * 0.08
+      : 0;
+
+    /*
+     * The seat fires off the WORK CLOCK, not off the repair value.
+     *
+     * Keyed to the repair value it landed at the same instant as the test,
+     * because that value only starts moving at seven-tenths — so the door
+     * snapped square and swung open on the same frame, and the two best moments
+     * in the repair cancelled each other out. Snap, look at it, then try it.
+     */
+    if (seat.current < 0 && working && p > 0.72) seat.current = 0;
+    if (seat.current >= 0) seat.current += dt;
+    if (target < 0.02 && !working && seat.current >= 0) seat.current = -1;
+
+    /*
+     * How far off true it hangs.
+     *
+     * A drop no hinge would survive; most of the way back when he takes the
+     * weight, but only most — he is holding it roughly in place, not fixing it;
+     * closer as the screw bites; and square when it seats.
+     */
+    const droop = 1 - lift * 0.62 - drive * 0.26;
+    const settle = seat.current >= 0 ? Math.max(0, seatCurve(seat.current)) : 1;
+    const off = seat.current >= 0 ? droop * settle : droop;
+
+    /* A door hanging on one screw never quite stops moving. */
+    const hang =
+      working || mended > 0.1
+        ? 0
+        : Math.sin(now * 2.3) * 0.6 + Math.sin(now * 1.37) * 0.4;
+    const shake = stepShop(
+      shop,
+      gritMeshes.current,
+      working && p > 0.34 && p < 0.74,
+      stroke,
+      step,
+      now
+    );
+
+    /* And a knock as it lands on the catch, which is in-plane and so is seen. */
+    const thud = working ? ramp(p, 0.935, 0.955) - ramp(p, 0.955, 0.995) : 0;
+
+    if (sag.current) {
+      sag.current.rotation.z =
+        DEG(31) * off + DEG(2.4) * hang + DEG(0.9) * shake + DEG(1.7) * thud;
+      /*
+       * And it has SUNK.
+       *
+       * Rotation alone leaves the door pinned at one corner, which reads as
+       * tilted rather than as failing. Dropping the whole thing half an inch as
+       * well is the difference: the screws are pulling out of the carcass, so
+       * the door is both crooked AND lower than its own opening.
+       */
+      sag.current.position.y = -HINGE_Y - 0.042 * off;
+    }
+    if (swing.current) {
+      /*
+       * Open while it is wrecked, shut once he has lifted it, and then the test
+       * pushes it out and lets it fall closed again.
+       */
+      /*
+       * The test has to swing WIDE.
+       *
+       * This camera is very nearly head-on, so a door opening thirty degrees
+       * foreshortens by about a seventh and reads as nothing at all — I shot
+       * the whole test window and could not tell the open frames from the shut
+       * ones. Sixty takes the door to half its width and lays the dark of the
+       * cupboard bare, which is a door opening rather than a door being
+       * described as opening.
+       */
+      /*
+       * Positive, which is the door swinging OUT.
+       *
+       * It was negative, and negative takes the free edge backwards through the
+       * carcass: the door was opening into the cupboard, so what the test
+       * showed was its back face sliding behind the frame. Right shape, wrong
+       * side of the wall, and invisible as a result.
+       */
+      swing.current.rotation.y = DEG(20) * off + DEG(60) * test;
+    }
+
+    /*
+     * The hinge is what the drill is actually pointed at.
+     *
+     * Its leaf starts pulled off the carcass and twisted, closes as he drives
+     * the screw home, and the screw turns and sinks flush on the same clock the
+     * bit spins on — so the metal moves when the tool does.
+     */
+    const gap = 1 - Math.max(drive, seat.current >= 0 ? 1 : 0);
+    if (leafTop.current) {
+      leafTop.current.position.x = 0.055 * gap;
+      leafTop.current.position.z = 0.04 * gap;
+      leafTop.current.rotation.z = -DEG(19) * gap;
+    }
+    if (screwTop.current) {
+      screwTop.current.position.z = 0.026 + 0.05 * gap;
+      if (working && p > 0.34 && p < 0.74) screwTop.current.rotation.y = stroke * 9;
+    }
+    /* The handle hangs skew until the door is back on true. */
+    if (handle.current) handle.current.rotation.z = DEG(14) * off;
+
+    if (process.env.NODE_ENV !== "production") {
+      (window as unknown as Record<string, unknown>).__fxCab = {
+        p: +p.toFixed(2),
+        lift: +lift.toFixed(2),
+        drive: +drive.toFixed(2),
+        test: +test.toFixed(2),
+        off: +off.toFixed(2),
+        mended: +mended.toFixed(2),
+      };
     }
   });
 
-  const W = 0.3;
-  const H = 0.4;
+  const inset = 0.062;
 
   return (
     <group>
-      {/* the carcass, so the door is fitted INTO something */}
-      <mesh material={M.dark} position={[0, 0, -0.045]}>
-        <boxGeometry args={[W + 0.03, H + 0.03, 0.07]} />
+      {/*
+        A CARCASS WITH A HOLE IN IT, which the old one was not.
+        It was a solid slab with the cupboard interior modelled behind its own
+        front face, so there was nothing to see through and a door hanging off
+        read as a panel lying on a brown square. Four rails around an open
+        middle is the whole fix: now the door is covering something, and when it
+        stops covering it you can see what.
+      */}
+      <mesh material={M.cavity} position={[0, 0, -0.085]}>
+        <boxGeometry args={[CAB_W, CAB_H, 0.02]} />
       </mesh>
-      <mesh material={M.woodDark} position={[0, 0, -0.012]}>
-        <boxGeometry args={[W - 0.01, H - 0.01, 0.01]} />
+      <mesh material={M.wood} position={[0, CAB_H / 2 + RAIL / 2, -0.04]}>
+        <boxGeometry args={[CAB_W + RAIL * 2, RAIL, 0.1]} />
+      </mesh>
+      <mesh material={M.wood} position={[0, -CAB_H / 2 - RAIL / 2, -0.04]}>
+        <boxGeometry args={[CAB_W + RAIL * 2, RAIL, 0.1]} />
+      </mesh>
+      <mesh material={M.wood} position={[-CAB_W / 2 - RAIL / 2, 0, -0.04]}>
+        <boxGeometry args={[RAIL, CAB_H, 0.1]} />
+      </mesh>
+      <mesh material={M.wood} position={[CAB_W / 2 + RAIL / 2, 0, -0.04]}>
+        <boxGeometry args={[RAIL, CAB_H, 0.1]} />
+      </mesh>
+      {/* The carcass halves of the hinges, screwed to the right-hand rail. */}
+      <mesh material={M.hardware} position={[CAB_W / 2 + 0.006, HINGE_Y, 0.014]}>
+        <boxGeometry args={[0.04, 0.054, 0.014]} />
+      </mesh>
+      <mesh material={M.hardware} position={[CAB_W / 2 + 0.006, -HINGE_Y, 0.014]}>
+        <boxGeometry args={[0.04, 0.054, 0.014]} />
       </mesh>
 
-      {/* hinged at the left edge */}
-      <group ref={door} position={[-W / 2, 0, 0]}>
-        <group position={[W / 2, 0, 0]}>
-          <mesh material={M.wood}>
-            <boxGeometry args={[W, H, 0.022]} />
-          </mesh>
-          <mesh material={M.woodDark} position={[0, 0, 0.012]}>
-            <boxGeometry args={[W - 0.07, H - 0.07, 0.004]} />
-          </mesh>
-          {/* a handle big enough to see: the thing that says "door" */}
-          <mesh material={M.brass} position={[W / 2 - 0.035, 0, 0.026]}>
-            <boxGeometry args={[0.016, 0.13, 0.016]} />
-          </mesh>
-          <mesh material={M.brass} position={[W / 2 - 0.035, 0.062, 0.014]}>
-            <boxGeometry args={[0.014, 0.014, 0.026]} />
-          </mesh>
-          <mesh material={M.brass} position={[W / 2 - 0.035, -0.062, 0.014]}>
-            <boxGeometry args={[0.014, 0.014, 0.026]} />
-          </mesh>
+      {/* Everything that hangs, pivoting on the surviving bottom hinge. */}
+      <group ref={sag} position={[CAB_W / 2 + 0.006, -HINGE_Y, 0]}>
+        <group ref={swing}>
+          <group position={[-DOOR_W / 2 + 0.03, HINGE_Y, 0.042]}>
+            {/* A shaker door: frame, recessed panel, brass bar. */}
+            <mesh material={M.paint}>
+              <boxGeometry args={[DOOR_W, DOOR_H, 0.024]} />
+            </mesh>
+            <mesh material={M.paintShade} position={[0, 0, 0.009]}>
+              <boxGeometry args={[DOOR_W - inset * 2, DOOR_H - inset * 2, 0.012]} />
+            </mesh>
+            {/* A bar long enough to be a handle at sixty pixels, not a stud. */}
+            <group ref={handle} position={[-DOOR_W / 2 + 0.064, 0, 0.032]}>
+              <mesh material={M.brass}>
+                <boxGeometry args={[0.024, 0.19, 0.022]} />
+              </mesh>
+              <mesh material={M.brass} position={[0, 0.082, -0.014]}>
+                <boxGeometry args={[0.018, 0.018, 0.026]} />
+              </mesh>
+              <mesh material={M.brass} position={[0, -0.082, -0.014]}>
+                <boxGeometry args={[0.018, 0.018, 0.026]} />
+              </mesh>
+            </group>
+            {/* The door half of the bottom hinge, still doing its job. */}
+            <mesh
+              material={M.hardware}
+              position={[DOOR_W / 2 - 0.03, -HINGE_Y, -0.016]}
+            >
+              <boxGeometry args={[0.036, 0.05, 0.014]} />
+            </mesh>
+            {/* And of the top one, which is not. */}
+            <group
+              ref={leafTop}
+              position={[DOOR_W / 2 - 0.03, HINGE_Y, -0.016]}
+            >
+              <mesh material={M.hardware}>
+                <boxGeometry args={[0.036, 0.05, 0.014]} />
+              </mesh>
+              <mesh
+                ref={screwTop}
+                material={M.brass}
+                position={[0, 0.012, 0.026]}
+                rotation={[Math.PI / 2, 0, 0]}
+              >
+                <cylinderGeometry args={[0.009, 0.009, 0.012, 10]} />
+              </mesh>
+            </group>
+          </group>
         </group>
+      </group>
+
+      {/* Dust off the hinge while he drills. Flagged so the drop shadow
+          measures the cabinet rather than these. */}
+      <group userData={{ fx: true }}>
+        {shop.gritMats.map((mat, i) => (
+          <mesh
+            key={`grit-${i}`}
+            ref={(node) => {
+              gritMeshes.current[i] = node;
+            }}
+            material={mat}
+            scale={0.034}
+          >
+            <planeGeometry args={[1, 1]} />
+          </mesh>
+        ))}
       </group>
     </group>
   );

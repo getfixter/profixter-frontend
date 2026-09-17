@@ -172,13 +172,45 @@ export const WORLD_SPOTS: WorldSpot[] = [
     label: "Cabinet door",
     kind: "cabinet",
     motion: "mid",
-    tool: "screwdriver",
-    at: { x: 0.22, y: 0.62 },
-    narrow: { x: 0.18, y: 0.62 },
+    /*
+     * A drill, not a screwdriver.
+     *
+     * Partly so the second repair does not look like the first, and partly
+     * because a drill spins at nearly three times a screwdriver's rate: the
+     * hinge can jolt on the bit, which is the whole of "the cabinet reacts to
+     * his tool" for a mechanical job with no sparks to spend.
+     */
+    tool: "drill",
+    /* Low enough on a wide screen that the small print above it stays clear. */
+    at: { x: 0.24, y: 0.64 },
+    narrow: { x: 0.2, y: 0.6 },
     side: 1,
-    seconds: 3.6,
-    scale: 0.41,
-    stand: [0.66, -0.95],
+    /*
+     * Long, because this repair is a sequence rather than a single action: he
+     * lifts the door, drills the hinge, seats it, and then tries it. Four
+     * things at four seconds is four things nobody sees.
+     */
+    seconds: 5.6,
+    admire: 1.9,
+    /*
+     * Big enough to be a cabinet.
+     *
+     * The old ratio drew it at twenty pixels across on a phone, which is not a
+     * cupboard, a door or a problem — it is a brown mark. Nothing about the
+     * damage could have read at that size.
+     */
+    scale: 0.9,
+    /*
+     * High enough that his hand meets the HINGE.
+     *
+     * The stance holds its working hand one unit above his feet, and the hinge
+     * that has failed is near the top of the door — so where he stands decides
+     * whether he is drilling the hinge or the middle of the panel. This is that
+     * subtraction rather than a number that looked right in a drawing.
+     */
+    stand: [0.93, -0.75],
+    aim: [0.34, 0.42],
+    toolScale: 1.15,
   },
   {
     id: "frame",

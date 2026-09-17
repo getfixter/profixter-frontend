@@ -30,7 +30,12 @@ import { reverseClip, subclipByTime } from "./lab-clip-utils";
 import { AimedHandTool } from "./lab-tools";
 import { createContactShadow, createContactTexture } from "./lab-materials";
 import FixableObject from "./lab-objects";
-import { setObjectBusy, setObjectFix, resetObjectFix } from "./lab-object-state";
+import {
+  setObjectBusy,
+  setObjectFix,
+  setObjectWork,
+  resetObjectFix,
+} from "./lab-object-state";
 import { setDiag } from "./lab-diagnostics";
 import {
   WORLD_SPOTS,
@@ -501,6 +506,10 @@ function WorldFixter({
      */
     workTime.current = runtime.beat === "WORK" ? runtime.elapsed : 0;
     setObjectBusy(mark.spot.id, workTime.current);
+    setObjectWork(
+      mark.spot.id,
+      runtime.beat === "WORK" ? Math.min(1, runtime.progress) : 0
+    );
 
     /*
      * Point the tool at the thing, for the repairs that ask for it.
