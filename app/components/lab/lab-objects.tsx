@@ -10,6 +10,7 @@ import {
   createLampMaterial,
   createSmokeTexture,
   createSparkTexture,
+  createDropTexture,
 } from "./lab-materials";
 import {
   getObjectBusy,
@@ -785,53 +786,117 @@ function Outlet({ id }: FixableProps) {
 
 /* ------------------------------------------------------------- picture frame */
 
+/**
+ * THE PICTURE THAT HAS COME OFF ITS HOOK AT ONE END.
+ *
+ * It used to rotate twenty degrees about its own middle, which is a picture
+ * somebody knocked. This one hangs from a single point: the cord has come off
+ * the hook on the right, so the frame is pivoting on the left corner and the
+ * right one has dropped. That is a different silhouette — not a tilted
+ * rectangle but a rectangle that is clearly HANGING — and it is the one that
+ * says the word "crooked" without anybody having to compare it to anything.
+ *
+ * The only repair in the six he does with his bare hands, which is worth having
+ * for its own sake: five tools and one that just needs lifting.
+ */
 function PictureFrame({ id }: FixableProps) {
   const tilt = useRef<THREE.Group>(null);
+  const cordRight = useRef<THREE.Mesh>(null);
   const f = useRef(0);
-
-  useFrame((_, dt) => {
-    f.current = ease(f.current, getObjectFix(id), dt);
-    /* A fingertip check: it rocks a degree and settles back level. */
-    const give = getObjectNudge(id);
-    if (tilt.current) {
-      tilt.current.rotation.z = DEG(20) * (1 - f.current) + DEG(1.8) * give;
-    }
-  });
+  const settleAt = useRef(-1);
 
   const W = 0.3;
   const H = 0.23;
   const T = 0.016;
+  const HANG_X = -W / 2 + 0.03;
+  const HANG_Y = H / 2 + 0.055;
+
+  useFrame((state, dt) => {
+    const now = state.clock.elapsedTime;
+    const target = getObjectFix(id);
+    f.current = ease(f.current, target, dt);
+    const p = getObjectWork(id);
+    const working = p > 0;
+
+    /*
+     * Two movements and a release.
+     *
+     * He takes the weight of the dropped corner and swings it most of the way
+     * up, squares it off, then lets go — and it rocks once on its own cord
+     * before it settles, because everything hanging on a wire does.
+     */
+    const lift = ramp(p, 0.12, 0.36);
+    const square = ramp(p, 0.44, 0.7);
+    if (settleAt.current < 0 && working && p > 0.74) settleAt.current = 0;
+    if (settleAt.current >= 0) settleAt.current += dt;
+    if (target < 0.02 && !working && settleAt.current >= 0) settleAt.current = -1;
+
+    const off = 1 - lift * 0.74 - square * 0.21;
+    const swing =
+      settleAt.current >= 0
+        ? Math.exp(-4.2 * settleAt.current) * Math.cos(9 * settleAt.current)
+        : 1;
+    /* Hanging on one corner, it never quite stops moving. */
+    const idle = working || target > 0.2 ? 0 : Math.sin(now * 1.6) * 0.5 + Math.sin(now * 0.93) * 0.3;
+
+    if (tilt.current) {
+      tilt.current.rotation.z =
+        settleAt.current >= 0
+          ? DEG(30) * off * Math.max(0, swing) + DEG(1.1) * swing
+          : DEG(30) * off + DEG(1.3) * idle;
+    }
+    /* The cord that came off: slack on the right until he hangs it back on. */
+    if (cordRight.current) {
+      const hung = settleAt.current >= 0 ? 1 : lift * 0.3 + square * 0.5;
+      cordRight.current.scale.y = 0.2 + hung * 0.8;
+      cordRight.current.visible = hung > 0.25;
+    }
+  });
 
   return (
     <group>
-      {/* The hook it hangs from, which is what makes a tilted rectangle read as
-          a picture hanging crooked rather than a rectangle floating crooked. */}
-      <mesh material={M.hardware} position={[0, H / 2 + 0.05, -0.02]}>
-        <boxGeometry args={[0.012, 0.016, 0.008]} />
+      {/* The hook, which is what makes a hanging rectangle read as a picture. */}
+      <mesh material={M.hardware} position={[HANG_X, HANG_Y, -0.02]}>
+        <boxGeometry args={[0.016, 0.02, 0.01]} />
       </mesh>
-      <group ref={tilt}>
-        {/* four rails rather than a slab, so it reads as a frame edge-on */}
-        {[
-          { p: [0, H / 2, 0], s: [W + T, T, 0.018] },
-          { p: [0, -H / 2, 0], s: [W + T, T, 0.018] },
-          { p: [-W / 2, 0, 0], s: [T, H, 0.018] },
-          { p: [W / 2, 0, 0], s: [T, H, 0.018] },
-        ].map((r, i) => (
-          <mesh
-            key={i}
-            material={M.woodDark}
-            position={r.p as [number, number, number]}
-          >
-            <boxGeometry args={r.s as [number, number, number]} />
+      {/* Pivoted on the corner it is still hanging by. */}
+      <group ref={tilt} position={[HANG_X, HANG_Y - 0.022, 0]}>
+        {/* The cord: one leg taut, the other slack until he re-hooks it. */}
+        <mesh material={M.dark} position={[0.012, -0.03, -0.012]} rotation={[0, 0, DEG(-24)]}>
+          <boxGeometry args={[0.004, 0.07, 0.004]} />
+        </mesh>
+        <mesh
+          ref={cordRight}
+          material={M.dark}
+          position={[W * 0.52, -0.03, -0.012]}
+          rotation={[0, 0, DEG(38)]}
+        >
+          <boxGeometry args={[0.004, 0.16, 0.004]} />
+        </mesh>
+        <group position={[W / 2 - 0.03, -H / 2 - 0.055, 0]}>
+          {/* four rails rather than a slab, so it reads as a frame edge-on */}
+          {[
+            { p: [0, H / 2, 0], s: [W + T, T, 0.018] },
+            { p: [0, -H / 2, 0], s: [W + T, T, 0.018] },
+            { p: [-W / 2, 0, 0], s: [T, H, 0.018] },
+            { p: [W / 2, 0, 0], s: [T, H, 0.018] },
+          ].map((r, i) => (
+            <mesh
+              key={i}
+              material={M.woodDark}
+              position={r.p as [number, number, number]}
+            >
+              <boxGeometry args={r.s as [number, number, number]} />
+            </mesh>
+          ))}
+          {/* mount + a hint of a picture */}
+          <mesh material={M.shell} position={[0, 0, -0.004]}>
+            <boxGeometry args={[W - 0.004, H - 0.004, 0.006]} />
           </mesh>
-        ))}
-        {/* mount + a hint of a picture */}
-        <mesh material={M.shell} position={[0, 0, -0.004]}>
-          <boxGeometry args={[W - 0.004, H - 0.004, 0.006]} />
-        </mesh>
-        <mesh material={M.accent} position={[0, -0.03, 0.001]}>
-          <boxGeometry args={[W - 0.07, H - 0.11, 0.004]} />
-        </mesh>
+          <mesh material={M.accent} position={[0, -0.03, 0.001]}>
+            <boxGeometry args={[W - 0.07, H - 0.11, 0.004]} />
+          </mesh>
+        </group>
       </group>
     </group>
   );
@@ -843,56 +908,167 @@ function PictureFrame({ id }: FixableProps) {
 function ShelfBracket() {
   return (
     <group>
-      <mesh material={M.metal} position={[0, -0.035, 0.005]}>
-        <boxGeometry args={[0.014, 0.07, 0.012]} />
+      <mesh material={M.metal} position={[0, -0.045, 0.005]}>
+        <boxGeometry args={[0.018, 0.09, 0.014]} />
       </mesh>
-      <mesh material={M.metal} position={[0, -0.006, 0.042]}>
-        <boxGeometry args={[0.014, 0.012, 0.075]} />
+      <mesh material={M.metal} position={[0, -0.007, 0.05]}>
+        <boxGeometry args={[0.018, 0.014, 0.09]} />
+      </mesh>
+      <mesh material={M.metal} position={[0, -0.032, 0.03]} rotation={[0, 0, 0]}>
+        <boxGeometry args={[0.012, 0.055, 0.012]} />
       </mesh>
     </group>
   );
 }
 
+/**
+ * THE SHELF WITH ONE BRACKET PULLING OUT OF THE WALL.
+ *
+ * The board dropping is the headline; the things standing on it are the point.
+ * A shelf at twenty-two degrees is a shelf at an angle, and half the people
+ * looking at a phone will read that as a shelf drawn badly. Three objects
+ * sliding down it and leaning over are not ambiguous — they are the reason
+ * anybody cares that a shelf is level, and they give the fixed state something
+ * to do besides be straight.
+ */
 function Shelf({ id }: FixableProps) {
   const board = useRef<THREE.Group>(null);
   const loose = useRef<THREE.Group>(null);
+  const screw = useRef<THREE.Mesh>(null);
+  const things = useRef<(THREE.Group | null)[]>([]);
+  const gritMeshes = useRef<(THREE.Mesh | null)[]>([]);
   const f = useRef(0);
-
-  useFrame((_, dt) => {
-    f.current = ease(f.current, getObjectFix(id), dt);
-    const broken = 1 - f.current;
-    /* Pressed on, it flexes a degree and a half and springs back. That is the
-       difference between "it looks level" and "it is actually holding". */
-    const give = getObjectNudge(id);
-    // the right end droops, and its bracket has slipped down and out
-    if (board.current) {
-      board.current.rotation.z = -DEG(13) * broken - DEG(1.6) * give;
-      board.current.position.y = -0.004 * give;
-    }
-    if (loose.current) {
-      loose.current.position.y = -0.055 * broken;
-      loose.current.position.z = 0.03 * broken;
-      loose.current.rotation.x = DEG(18) * broken;
-    }
-  });
+  const seat = useRef(-1);
+  const shop = useMemo(() => makeShop(), []);
 
   const W = 0.56;
+  /* Where each thing sits when the shelf is level, and where it slides to. */
+  const SITTING = [-0.17, 0.02, 0.19];
+
+  useFrame((state, dt) => {
+    const step = Math.min(0.05, dt);
+    const now = state.clock.elapsedTime;
+    const target = getObjectFix(id);
+    f.current = ease(f.current, target, dt);
+    const p = getObjectWork(id);
+    const stroke = getObjectBusy(id);
+    const working = p > 0;
+
+    const lift = ramp(p, 0.1, 0.34);
+    const drive = ramp(p, 0.38, 0.72);
+    if (seat.current < 0 && working && p > 0.74) seat.current = 0;
+    if (seat.current >= 0) seat.current += dt;
+    if (target < 0.02 && !working && seat.current >= 0) seat.current = -1;
+    const settle = seat.current >= 0 ? Math.max(0, seatCurve(seat.current)) : 1;
+
+    const shake = stepShop(
+      shop,
+      gritMeshes.current,
+      working && p > 0.36 && p < 0.76,
+      stroke,
+      step,
+      now,
+      W * 0.32,
+      -0.05
+    );
+    const off = (1 - lift * 0.55 - drive * 0.33) * settle;
+    /* A board held by one and a half brackets is never quite still. */
+    const creak = working || target > 0.2 ? 0 : Math.sin(now * 1.9) * 0.5 + Math.sin(now * 1.1) * 0.3;
+
+    if (board.current) {
+      board.current.rotation.z = -DEG(22) * off - DEG(0.9) * creak - DEG(0.7) * shake;
+      board.current.position.y = -0.03 * off;
+    }
+    /* The bracket that has come away: dropped, swung out and hanging. */
+    if (loose.current) {
+      loose.current.position.y = -0.07 * off;
+      loose.current.position.z = 0.04 * off;
+      loose.current.rotation.x = DEG(24) * off;
+      loose.current.rotation.z = DEG(11) * off;
+    }
+    if (screw.current) {
+      screw.current.position.z = 0.012 + 0.055 * off;
+      if (working && p > 0.36 && p < 0.76) screw.current.rotation.y = stroke * 9;
+    }
+
+    /*
+     * And the things on it.
+     *
+     * They lean with the board and slide toward the low end, and the one on the
+     * end leans furthest — which is the bit that reads as "this is about to go
+     * on the floor" rather than "this is on a slope".
+     */
+    for (let i = 0; i < things.current.length; i++) {
+      const node = things.current[i];
+      if (!node) continue;
+      const bias = (i + 1) / things.current.length;
+      node.position.x = SITTING[i] + 0.05 * off * bias;
+      node.rotation.z = -DEG(13) * off * (0.5 + bias * 0.8);
+    }
+
+  });
 
   return (
     <group>
+      {/* The wall plate the far bracket is still screwed to. */}
       <group ref={board}>
         <mesh material={M.wood} position={[0, 0, 0.055]}>
-          <boxGeometry args={[W, 0.03, 0.14]} />
+          <boxGeometry args={[W, 0.032, 0.15]} />
         </mesh>
-        <mesh material={M.wood} position={[0, 0.036, 0.055]}>
-          <boxGeometry args={[W * 0.35, 0.042, 0.05]} />
-        </mesh>
-        <group position={[-W * 0.32, -0.015, 0]}>
+        <group position={[-W * 0.32, -0.016, 0]}>
           <ShelfBracket />
         </group>
-        <group ref={loose} position={[W * 0.32, -0.015, 0]}>
+        <group ref={loose} position={[W * 0.32, -0.016, 0]}>
           <ShelfBracket />
+          <mesh
+            ref={screw}
+            material={M.brass}
+            position={[0, -0.05, 0.012]}
+            rotation={[Math.PI / 2, 0, 0]}
+          >
+            <cylinderGeometry args={[0.009, 0.009, 0.014, 10]} />
+          </mesh>
         </group>
+        {/* Three things that would rather be on a level shelf. */}
+        {SITTING.map((x, i) => (
+          <group
+            key={x}
+            ref={(node) => {
+              things.current[i] = node;
+            }}
+            position={[x, 0, 0.06]}
+          >
+            {i === 2 ? (
+              <mesh material={M.paint} position={[0, 0.05, 0]}>
+                <cylinderGeometry args={[0.038, 0.032, 0.07, 14]} />
+              </mesh>
+            ) : (
+              <>
+                <mesh material={i ? M.accent : M.brass} position={[-0.012, 0.055, 0]}>
+                  <boxGeometry args={[0.022, 0.09, 0.07]} />
+                </mesh>
+                <mesh material={i ? M.brass : M.accent} position={[0.014, 0.05, 0]}>
+                  <boxGeometry args={[0.026, 0.08, 0.066]} />
+                </mesh>
+              </>
+            )}
+          </group>
+        ))}
+      </group>
+      {/* Dust out of the bracket while he drives the screw. */}
+      <group userData={{ fx: true }}>
+        {shop.gritMats.map((mat, i) => (
+          <mesh
+            key={`grit-${i}`}
+            ref={(node) => {
+              gritMeshes.current[i] = node;
+            }}
+            material={mat}
+            scale={0.03}
+          >
+            <planeGeometry args={[1, 1]} />
+          </mesh>
+        ))}
       </group>
     </group>
   );
@@ -900,34 +1076,309 @@ function Shelf({ id }: FixableProps) {
 
 /* ------------------------------------------------------------------- faucet */
 
+/**
+ * THE TAP THAT WILL NOT STOP.
+ *
+ * The old one had a single bead of blue sliding down a quarter of an inch every
+ * second, which is honest plumbing and invisible marketing: at phone size it
+ * was one pixel of accent colour, and nothing about the object said the word
+ * "leak". This is the opposite bet. The joint under the spout sprays, the spout
+ * itself runs, both of them land in the basin and throw rings, and the bowl
+ * fills with standing water — four things all saying one thing, which is what
+ * it takes for a glance to land.
+ *
+ * The payoff is the rarest one in the set: it is a thing STOPPING. Everything
+ * else here ends with something appearing — a light, a straight door, a clean
+ * socket. This ends with the screen going quiet, and it is worth the couple of
+ * last drips that make the quiet deliberate rather than a switch being thrown.
+ */
+const DROPS = 34;
+const RINGS = 5;
+
+type Drop = { life: number; x: number; y: number; z: number; vx: number; vy: number; size: number };
+type Ring = { life: number; x: number; z: number };
+
+type Water = {
+  dropMats: THREE.MeshBasicMaterial[];
+  ringMats: THREE.MeshBasicMaterial[];
+  poolMat: THREE.MeshBasicMaterial;
+  drops: Drop[];
+  rings: Ring[];
+  nextSpray: number;
+  nextRun: number;
+  pool: number;
+};
+
+/** Where a drop stops falling, and where the standing water sits. */
+const BASIN_Y = -0.045;
+const WATER_Y = -0.052;
+
+function makeWater(): Water {
+  const dropMap = createDropTexture();
+  return {
+    dropMats: Array.from(
+      { length: DROPS },
+      () =>
+        new THREE.MeshBasicMaterial({
+          map: dropMap,
+          color: new THREE.Color("#8ecbe8"),
+          transparent: true,
+          depthWrite: false,
+          opacity: 0,
+        })
+    ),
+    ringMats: Array.from(
+      { length: RINGS },
+      () =>
+        new THREE.MeshBasicMaterial({
+          map: dropMap,
+          color: new THREE.Color("#a9d8ee"),
+          transparent: true,
+          depthWrite: false,
+          opacity: 0,
+        })
+    ),
+    poolMat: new THREE.MeshBasicMaterial({
+      map: dropMap,
+      color: new THREE.Color("#9ed0e8"),
+      transparent: true,
+      depthWrite: false,
+      opacity: 0,
+    }),
+    drops: Array.from({ length: DROPS }, () => ({
+      life: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, size: 1,
+    })),
+    rings: Array.from({ length: RINGS }, () => ({ life: 0, x: 0, z: 0 })),
+    nextSpray: 0,
+    nextRun: 0,
+    pool: 0,
+  };
+}
+
+/** A drop, thrown from wherever it is thrown from. */
+function spill(
+  water: Water,
+  x: number,
+  y: number,
+  vx: number,
+  vy: number,
+  size: number
+): void {
+  const drop = water.drops.find((d) => d.life <= 0);
+  if (!drop) return;
+  drop.x = x;
+  drop.y = y;
+  drop.z = 0.05 + Math.random() * 0.05;
+  drop.vx = vx;
+  drop.vy = vy;
+  drop.size = size;
+  drop.life = 1;
+}
+
+/** The ring a drop leaves on the water it lands in. */
+function ripple(water: Water, x: number, z: number): void {
+  const ring = water.rings.find((r) => r.life <= 0);
+  if (!ring) return;
+  ring.x = x;
+  ring.z = z;
+  ring.life = 1;
+}
+
+/**
+ * One frame of the leak.
+ *
+ * `flow` is how badly it is leaking, 1 to 0, and it is the only input that
+ * matters: the spray rate, the run rate, the size of everything and the depth
+ * of the standing water all come off it, so one number turning down turns the
+ * whole thing down together.
+ */
+function stepWater(
+  water: Water,
+  group: THREE.Group,
+  dropMeshes: (THREE.Mesh | null)[],
+  ringMeshes: (THREE.Mesh | null)[],
+  pool: THREE.Mesh | null,
+  flow: number,
+  step: number
+): void {
+  const live =
+    flow > 0.02 ||
+    water.pool > 0.01 ||
+    water.drops.some((d) => d.life > 0) ||
+    water.rings.some((r) => r.life > 0);
+  if (!live) {
+    if (group.visible) {
+      for (const mat of water.dropMats) mat.opacity = 0;
+      for (const mat of water.ringMats) mat.opacity = 0;
+      water.poolMat.opacity = 0;
+      group.visible = false;
+    }
+    return;
+  }
+  group.visible = true;
+
+  /*
+   * TWO SOURCES, because one is a drip and two is a fault.
+   *
+   * The joint under the spout sprays sideways — that is the failure — and the
+   * spout runs into the bowl because a tap nobody can shut off does. Different
+   * rates, different directions, different sizes; together they read as water
+   * going where it should not.
+   */
+  water.nextSpray -= step;
+  if (water.nextSpray <= 0 && flow > 0.05) {
+    const n = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) {
+      const ang = -0.5 + Math.random() * 1.2;
+      const speed = (0.16 + Math.random() * 0.3) * (0.45 + flow * 0.55);
+      spill(
+        water,
+        0.012 + (Math.random() - 0.5) * 0.02,
+        0.055,
+        Math.cos(ang) * speed,
+        Math.sin(ang) * speed * 0.7,
+        0.02 + Math.random() * 0.022
+      );
+    }
+    water.nextSpray = (0.028 + Math.random() * 0.038) / Math.max(0.2, flow);
+  }
+
+  water.nextRun -= step;
+  if (water.nextRun <= 0 && flow > 0.02) {
+    spill(
+      water,
+      (Math.random() - 0.5) * 0.012,
+      0.03,
+      (Math.random() - 0.5) * 0.03,
+      -0.05,
+      0.024 + Math.random() * 0.018
+    );
+    water.nextRun = (0.03 + Math.random() * 0.026) / Math.max(0.15, flow);
+  }
+
+  for (let i = 0; i < DROPS; i++) {
+    const drop = water.drops[i];
+    const mesh = dropMeshes[i];
+    const mat = water.dropMats[i];
+    if (!mesh || !mat) continue;
+    if (drop.life <= 0) {
+      if (mat.opacity !== 0) mat.opacity = 0;
+      continue;
+    }
+    drop.vy -= 1.5 * step;
+    drop.x += drop.vx * step;
+    drop.y += drop.vy * step;
+    if (drop.y <= BASIN_Y) {
+      drop.life = 0;
+      mat.opacity = 0;
+      if (Math.abs(drop.x) < 0.2 && Math.random() < 0.5) ripple(water, drop.x, drop.z);
+      continue;
+    }
+    mesh.position.set(drop.x, drop.y, drop.z);
+    /*
+     * Narrow and stretched, which is what turns a dot into moving water.
+     *
+     * Round drops at the size this needs to be seen at merged into one white
+     * cloud and the tap looked like it was steaming. Thin ones overlap without
+     * filling in, so twenty of them still read as twenty.
+     */
+    const stretch = 1 + Math.min(2.2, Math.abs(drop.vy) * 2.4);
+    mesh.scale.set(drop.size * 0.62, drop.size * stretch, 1);
+    mat.opacity = 0.85;
+  }
+
+  for (let i = 0; i < RINGS; i++) {
+    const ring = water.rings[i];
+    const mesh = ringMeshes[i];
+    const mat = water.ringMats[i];
+    if (!mesh || !mat) continue;
+    if (ring.life <= 0) {
+      if (mat.opacity !== 0) mat.opacity = 0;
+      continue;
+    }
+    ring.life -= step * 3.2;
+    const u = Math.max(0, ring.life);
+    /*
+     * Flat to the camera, not flat to the world.
+     *
+     * A ring lying on the surface of the water is the correct thing to model
+     * and, under a camera this close to head-on, is a horizontal line four
+     * pixels long. These are drawn facing the viewer and squashed by hand,
+     * which is a cheat and is the only version anybody can see.
+     */
+    mesh.position.set(ring.x, WATER_Y, 0.12);
+    const w = 0.04 + (1 - u) * 0.13;
+    mesh.scale.set(w, w * 0.34, 1);
+    mat.opacity = u * 0.6;
+  }
+
+  /* Standing water, which fills while it leaks and drains when it stops. */
+  water.pool +=
+    ((flow > 0.05 ? Math.min(1, 0.35 + flow) : 0) - water.pool) *
+    Math.min(1, step * (flow > 0.05 ? 1.6 : 0.9));
+  if (pool) {
+    pool.scale.set(0.2 + water.pool * 0.22, 0.05 + water.pool * 0.055, 1);
+    water.poolMat.opacity = water.pool * 0.8;
+  }
+}
+
 function Faucet({ id }: FixableProps) {
   const handle = useRef<THREE.Group>(null);
   const spout = useRef<THREE.Group>(null);
-  const drip = useRef<THREE.Mesh>(null);
+  const wet = useRef<THREE.Group>(null);
+  const dropMeshes = useRef<(THREE.Mesh | null)[]>([]);
+  const ringMeshes = useRef<(THREE.Mesh | null)[]>([]);
+  const pool = useRef<THREE.Mesh>(null);
   const f = useRef(0);
-  const t = useRef(0);
+  const water = useMemo(() => makeWater(), []);
 
   useFrame((_, dt) => {
-    f.current = ease(f.current, getObjectFix(id), dt);
+    const step = Math.min(0.05, dt);
+    const target = getObjectFix(id);
+    f.current = ease(f.current, target, dt);
     const broken = 1 - f.current;
-    if (handle.current) handle.current.rotation.z = DEG(38) * broken;
-    if (spout.current) spout.current.rotation.z = DEG(5) * broken;
+    const p = getObjectWork(id);
+    const working = p > 0;
 
-    // a drip that falls while it is still leaking, and stops when it is not
-    if (drip.current) {
-      t.current = (t.current + dt * 0.85) % 1;
-      const visible = broken > 0.08;
-      drip.current.visible = visible;
-      if (visible) {
-        drip.current.position.y = 0.035 - t.current * 0.16;
-        const s = (1 - t.current * 0.55) * broken;
-        drip.current.scale.setScalar(Math.max(0.001, s));
-      }
-    }
+    /*
+     * THE LEAK COMES DOWN IN STEPS, on his turns.
+     *
+     * A wrench does not taper anything; it takes a bite, stops, and takes
+     * another. So the flow holds, drops when the first turn lands, holds again,
+     * drops on the second, and is shut off by the last one — which is the
+     * difference between a man tightening a nut and a man standing beside a
+     * fade-out.
+     */
+    const flow = working
+      ? 1 - 0.42 * ramp(p, 0.16, 0.3) - 0.36 * ramp(p, 0.46, 0.6) - 0.22 * ramp(p, 0.72, 0.82)
+      : broken;
+
+    if (handle.current) handle.current.rotation.z = DEG(40) * broken;
+    if (spout.current) spout.current.rotation.z = DEG(6) * broken;
+
+    const group = wet.current;
+    if (!group) return;
+    stepWater(
+      water,
+      group,
+      dropMeshes.current,
+      ringMeshes.current,
+      pool.current,
+      Math.max(0, flow),
+      step
+    );
   });
 
   return (
-    <group>
+    /*
+      SET BACK, so he can stand in front of his own work.
+      Everything in this world is drawn on the z=0 plane and the basin was
+      modelled forward of it, so the bowl was painting over the man crouched at
+      it — he was working from inside the cupboard under the sink. Pushing the
+      whole fitting behind the character plane costs nothing at this camera and
+      puts him where a person would be.
+    */
+    <group position={[0, 0, -0.14]}>
       {/*
         The basin, rebuilt.
         The first attempt was a thin slab tilted toward the camera, which from
@@ -966,8 +1417,9 @@ function Faucet({ id }: FixableProps) {
         <mesh material={M.metal} position={[0, 0.048, 0.078]}>
           <cylinderGeometry args={[0.013, 0.015, 0.03, 14]} />
         </mesh>
-        <mesh ref={drip} material={M.accent} position={[0, 0.035, 0.078]}>
-          <sphereGeometry args={[0.008, 10, 8]} />
+        {/* The nut he puts the wrench on, and the thing that is weeping. */}
+        <mesh material={M.hardware} position={[0, 0.055, 0.012]}>
+          <cylinderGeometry args={[0.028, 0.028, 0.026, 6]} />
         </mesh>
       </group>
       {/* the tell: the lever sits cocked until it is tightened */}
@@ -978,6 +1430,35 @@ function Faucet({ id }: FixableProps) {
         <mesh material={M.hardware}>
           <cylinderGeometry args={[0.014, 0.014, 0.016, 12]} />
         </mesh>
+      </group>
+
+      {/* Everything wet. Flagged so the drop shadow measures the basin. */}
+      <group ref={wet} userData={{ fx: true }}>
+        <mesh ref={pool} material={water.poolMat} position={[0, WATER_Y, 0.12]}>
+          <planeGeometry args={[1, 1]} />
+        </mesh>
+        {water.ringMats.map((mat, i) => (
+          <mesh
+            key={`ring-${i}`}
+            ref={(node) => {
+              ringMeshes.current[i] = node;
+            }}
+            material={mat}
+          >
+            <planeGeometry args={[1, 1]} />
+          </mesh>
+        ))}
+        {water.dropMats.map((mat, i) => (
+          <mesh
+            key={`drop-${i}`}
+            ref={(node) => {
+              dropMeshes.current[i] = node;
+            }}
+            material={mat}
+          >
+            <planeGeometry args={[1, 1]} />
+          </mesh>
+        ))}
       </group>
     </group>
   );
@@ -1064,7 +1545,9 @@ function stepShop(
   drilling: boolean,
   stroke: number,
   step: number,
-  now: number
+  now: number,
+  atX: number,
+  atY: number
 ): number {
   shop.buzz = Math.max(0, shop.buzz - step * 6);
   if (drilling) {
@@ -1072,7 +1555,7 @@ function stepShop(
     if (cycle !== shop.cycle) {
       shop.cycle = cycle;
       shop.buzz = 0.18;
-      if (Math.random() < 0.6) shed(shop, CAB_W / 2 - 0.02, HINGE_Y);
+      if (Math.random() < 0.6) shed(shop, atX, atY);
     }
   }
   stepGrit(shop, meshes, step);
@@ -1218,7 +1701,9 @@ function Cabinet({ id }: FixableProps) {
       working && p > 0.34 && p < 0.74,
       stroke,
       step,
-      now
+      now,
+      CAB_W / 2 - 0.02,
+      HINGE_Y
     );
 
     /* And a knock as it lands on the catch, which is in-plane and so is seen. */
@@ -1403,12 +1888,41 @@ function Cabinet({ id }: FixableProps) {
 
 /* --------------------------------------------------------------------- lamp */
 
+/**
+ * THE PENDANT THAT HAS COME LOOSE IN ITS FITTING.
+ *
+ * The old one tilted seventeen degrees and went dark, which is a lamp that has
+ * been nudged rather than a lamp that is broken — and he reached for a point a
+ * clear forty pixels above the shade, so the repair was a man gesturing at the
+ * ceiling. Two separate failures now, and they compound in silhouette: the
+ * whole pendant hangs off true on a kinked flex, and the SHADE has slipped its
+ * collar and sits skew and dropped on top of that. A lampshade at an angle to
+ * its own cord is a thing nobody has to be told is wrong.
+ *
+ * The light is the payoff and it is the only one of the six that is pure
+ * reward: nothing about the fixed state is a detail you have to find. It comes
+ * on, it blooms, and it stays on.
+ */
 function Lamp({ id }: FixableProps) {
-  const swing = useRef<THREE.Group>(null);
+  const droop = useRef<THREE.Group>(null);
+  const slip = useRef<THREE.Group>(null);
   const shade = useRef<THREE.Mesh>(null);
+  const bulb = useRef<THREE.Mesh>(null);
   const glow = useRef<THREE.Sprite>(null);
   const f = useRef(0);
-  const material = useMemo(() => createLampMaterial(), []);
+  const seat = useRef(-1);
+  const flicker = useRef({ next: 2, level: 0 });
+  /*
+   * A brass shade, not an off-white one.
+   *
+   * The pendant hangs in the middle of the hero headline — everything here
+   * lives behind the type by design, and moving objects away from text is the
+   * thing we stopped doing — so a pale shade put white words on a white shape.
+   * Brass reads against the navy, reads against the page, and takes white type
+   * across it; and it is the right colour to be glowing at the end anyway.
+   */
+  const material = useMemo(() => createLampMaterial("#94793f"), []);
+  const bulbMaterial = useMemo(() => createLampMaterial("#f6efe2"), []);
   const glowMaterial = useMemo(
     () =>
       new THREE.SpriteMaterial({
@@ -1422,6 +1936,7 @@ function Lamp({ id }: FixableProps) {
     []
   );
   useEffect(() => () => material.dispose(), [material]);
+  useEffect(() => () => bulbMaterial.dispose(), [bulbMaterial]);
   useEffect(
     () => () => {
       glowMaterial.map?.dispose();
@@ -1430,32 +1945,82 @@ function Lamp({ id }: FixableProps) {
     [glowMaterial]
   );
 
-  useFrame((_, dt) => {
-    f.current = ease(f.current, getObjectFix(id), dt);
-    const broken = 1 - f.current;
-    if (swing.current) swing.current.rotation.z = DEG(17) * broken;
+  useFrame((state, dt) => {
+    const step = Math.min(0.05, dt);
+    const now = state.clock.elapsedTime;
+    const target = getObjectFix(id);
+    f.current = ease(f.current, target, dt);
+    const lit = f.current;
+    const p = getObjectWork(id);
+    const stroke = getObjectBusy(id);
+    const working = p > 0;
+
     /*
-     * The bulb blooms as it seats, and keeps a slow breath afterwards.
+     * He pushes the shade back up onto its collar before he tightens it.
      *
-     * This is the loudest moment in the whole loop and it is deliberately the
-     * first thing a visitor sees, so it is worth more than an emissive nudge:
-     * against a dark hero a warm additive bloom is visible from the corner of
-     * the eye, which is the entire job of the opening.
+     * Same shape as the cabinet, for the same reason: a fitting that drifts
+     * back into place while somebody waves a tool at it is the failure this
+     * whole pass exists to avoid.
      */
-    if (glow.current) {
-      const breathe = 1 + Math.sin(performance.now() / 700) * 0.05;
-      const g = glow.current;
-      g.scale.setScalar(f.current * 0.95 * breathe);
-      (g.material as THREE.SpriteMaterial).opacity = f.current * 0.9;
-      g.visible = f.current > 0.02;
+    const seated = ramp(p, 0.14, 0.4);
+    const driven = ramp(p, 0.44, 0.74);
+
+    if (seat.current < 0 && working && p > 0.76) seat.current = 0;
+    if (seat.current >= 0) seat.current += dt;
+    if (target < 0.02 && !working && seat.current >= 0) seat.current = -1;
+    const settle = seat.current >= 0 ? Math.max(0, seatCurve(seat.current)) : 1;
+
+    const off = (1 - seated * 0.72 - driven * 0.22) * settle;
+    /* A dead pendant still moves: it is hanging on a wire. */
+    const sway = working ? 0 : Math.sin(now * 1.15) * 0.5 + Math.sin(now * 0.71) * 0.3;
+    /* And it flinches when the screwdriver bites. */
+    const jolt =
+      working && p > 0.42 && p < 0.78
+        ? Math.sin(now * 46) * 0.5 * (1 - Math.abs(actionPhase("turn", stroke) - 0.5) * 2)
+        : 0;
+
+    if (droop.current) {
+      droop.current.rotation.z = DEG(15) * off + DEG(1.6) * sway * (1 - lit);
     }
+    if (slip.current) {
+      /* The shade itself: skew, dropped and pushed off centre on its collar. */
+      slip.current.rotation.z = -DEG(30) * off + DEG(1.2) * jolt;
+      slip.current.position.y = -0.045 * off;
+      slip.current.position.x = 0.035 * off;
+    }
+
     /*
-     * The payoff: it comes on. Reached through the mesh rather than the memo
-     * so this is a mutation of the scene graph, which is what a frame loop is
-     * for, rather than of a value React handed back.
+     * Dead, with the occasional feeble attempt.
+     *
+     * Not the socket's stutter — that one is fast, bright and dangerous. This
+     * is slow and dim and gives up, which is what a light with a bad connection
+     * looks like and, more to the point, is the opposite of the moment it is
+     * setting up.
      */
-    const lit = shade.current?.material as THREE.MeshStandardMaterial | undefined;
-    if (lit) lit.emissiveIntensity = f.current * 1.5;
+    const flick = flicker.current;
+    if (lit < 0.05) {
+      flick.next -= step;
+      if (flick.next <= 0) {
+        flick.level = 0.16 + Math.random() * 0.12;
+        flick.next = 2.2 + Math.random() * 2.6;
+      }
+      flick.level = Math.max(0, flick.level - step * 1.6);
+    } else {
+      flick.level = 0;
+    }
+
+    const brightness = Math.max(lit, flick.level);
+    if (glow.current) {
+      const breathe = 1 + Math.sin(now * 1.4) * 0.05;
+      const g = glow.current;
+      g.scale.setScalar(brightness * 1.05 * breathe);
+      (g.material as THREE.SpriteMaterial).opacity = brightness * 0.72;
+      g.visible = brightness > 0.02;
+    }
+    const shadeMat = shade.current?.material as THREE.MeshStandardMaterial | undefined;
+    if (shadeMat) shadeMat.emissiveIntensity = brightness * 1.4;
+    const bulbMat = bulb.current?.material as THREE.MeshStandardMaterial | undefined;
+    if (bulbMat) bulbMat.emissiveIntensity = brightness * 3.4;
   });
 
   return (
@@ -1463,26 +2028,33 @@ function Lamp({ id }: FixableProps) {
       {/*
         No ceiling patch here, and that is a decision rather than an omission.
         A pendant already says "ceiling" with its cord — the flex runs up and
-        out of frame, which is exactly how a hanging light reads. Adding a
-        surface behind it put a pale grey band in the middle of the hero with a
-        gap between it and the rose: a floating box, which is the one thing this
-        whole feature exists to avoid. The contact shadow stays; it is the part
-        that was doing useful work.
+        out of frame, which is exactly how a hanging light reads.
       */}
-      <mesh material={M.shell} position={[0, 0.2, 0]}>
-        <cylinderGeometry args={[0.035, 0.035, 0.012, 14]} />
+      <mesh material={M.shell} position={[0, 0.26, 0]}>
+        <cylinderGeometry args={[0.05, 0.05, 0.016, 16]} />
       </mesh>
-      <group ref={swing} position={[0, 0.2, 0]}>
-        <mesh material={M.dark} position={[0, -0.11, 0]}>
-          <cylinderGeometry args={[0.004, 0.004, 0.22, 6]} />
+      <group ref={droop} position={[0, 0.26, 0]}>
+        <mesh material={M.dark} position={[0, -0.13, 0]}>
+          <cylinderGeometry args={[0.006, 0.006, 0.26, 6]} />
         </mesh>
-        <mesh ref={shade} material={material} position={[0, -0.27, 0]}>
-          <cylinderGeometry args={[0.055, 0.105, 0.11, 20, 1, true]} />
+        {/* The collar the shade hangs from, and the thing he works on. */}
+        <mesh material={M.hardware} position={[0, -0.27, 0]}>
+          <cylinderGeometry args={[0.028, 0.034, 0.05, 14]} />
         </mesh>
-        <mesh material={material} position={[0, -0.315, 0]}>
-          <sphereGeometry args={[0.032, 12, 10]} />
-        </mesh>
-        <sprite ref={glow} material={glowMaterial} position={[0, -0.3, 0.02]} visible={false} />
+        <group ref={slip} position={[0, 0, 0]}>
+          <mesh ref={shade} material={material} position={[0, -0.37, 0]}>
+            <cylinderGeometry args={[0.072, 0.15, 0.16, 22, 1, true]} />
+          </mesh>
+          <mesh ref={bulb} material={bulbMaterial} position={[0, -0.4, 0]}>
+            <sphereGeometry args={[0.046, 14, 12]} />
+          </mesh>
+          <sprite
+            ref={glow}
+            material={glowMaterial}
+            position={[0, -0.4, 0.03]}
+            visible={false}
+          />
+        </group>
       </group>
     </group>
   );

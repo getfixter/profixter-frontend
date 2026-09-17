@@ -1,13 +1,7 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback } from "react";
 import { registerAnchor } from "./lab-page-anchors";
-import {
-  getSettledVersion,
-  isObjectLatched,
-  subscribeObjectSettled,
-} from "./lab-object-state";
-import { ROW_JOBS } from "./lab-page-jobs";
 
 /**
  * A mock of the Profixter homepage, for the Lab only.
@@ -94,22 +88,22 @@ function Lede({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * A checklist row.
+ * A checklist row. Always ticked.
  *
- * The box ticks itself when the Fixter finishes the job that belongs to this
- * row. It is the one place where the 3D layer reaches back into the DOM, and it
- * is the whole argument for the experiment: the character is not decorating the
- * page, he is changing it.
+ * These boxes used to tick themselves as the Fixter finished the matching job,
+ * which was a lovely trick and the wrong one: it made a piece of marketing copy
+ * into a progress bar for an animation, so the page appeared to be waiting for
+ * a cartoon to finish before it would say what the company does. The list is
+ * part of the page now, and the 3D layer no longer reaches into the DOM at all.
  */
 function ListRow({
   text,
   anchorId,
-  done,
 }: {
   text: string;
   anchorId?: string;
-  done: boolean;
 }) {
+  const done = true;
   const ref = useAnchor(anchorId ?? "");
   return (
     <li ref={anchorId ? ref : undefined}>
@@ -246,11 +240,11 @@ function BookingCard() {
  */
 const THE_LIST: { text: string; anchorId?: string }[] = [
   { text: "A door that doesn't close right", anchorId: "row-door" },
-  { text: "A cabinet handle working loose", anchorId: "row-cabinet" },
-  { text: "Caulk around the tub gone grey" },
-  { text: "A light fixture you meant to swap", anchorId: "row-lamp" },
   { text: "The TV still waiting to go up" },
+  { text: "Caulk around the tub gone grey" },
+  { text: "A cabinet handle working loose", anchorId: "row-cabinet" },
   { text: "The shelf still in its box", anchorId: "row-shelf" },
+  { text: "A drywall ding you stopped seeing" },
 ];
 
 const STEPS = [
@@ -270,17 +264,6 @@ const MEMBERSHIP_VALUE = [
 export default function LabHomepage() {
   const heroCta = useAnchor("hero-cta");
   const membershipHeading = useAnchor("membership-heading");
-
-  /*
-   * One subscription for the whole list. The store fires when an object crosses
-   * the line between broken and mended — twice a job, not sixty times a second
-   * — so the rows can be ordinary React without costing anything.
-   */
-  useSyncExternalStore(
-    subscribeObjectSettled,
-    getSettledVersion,
-    () => 0
-  );
 
   return (
     /*
@@ -410,11 +393,6 @@ export default function LabHomepage() {
                 key={item.text}
                 text={item.text}
                 anchorId={item.anchorId}
-                done={
-                  item.anchorId
-                    ? isObjectLatched(ROW_JOBS[item.anchorId] ?? "")
-                    : false
-                }
               />
             ))}
           </ul>

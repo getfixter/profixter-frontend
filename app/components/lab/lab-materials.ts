@@ -70,9 +70,9 @@ export const M = {
  * instance rather than a shared one — turning the light on must not tint every
  * other off-white surface in the scene.
  */
-export function createLampMaterial() {
+export function createLampMaterial(color = "#f2f0ec") {
   return new THREE.MeshStandardMaterial({
-    color: "#f2f0ec",
+    color,
     roughness: 0.5,
     metalness: 0.05,
     emissive: new THREE.Color("#ffb347"),
@@ -246,6 +246,38 @@ export function createSparkTexture(): THREE.Texture {
   }
   sparkTexture = new THREE.CanvasTexture(canvas);
   return sparkTexture;
+}
+
+let dropTexture: THREE.Texture | null = null;
+
+/**
+ * One drop of water: a bright core with a soft edge.
+ *
+ * Tighter than the smoke and the glow, both of which are mostly falloff. Water
+ * has a surface — it ends somewhere — and at the handful of pixels a drop gets
+ * on a phone, a gradient that fades gently the whole way out is mist.
+ */
+export function createDropTexture(): THREE.Texture {
+  if (dropTexture) return dropTexture;
+  const size = 64;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const g = ctx.createRadialGradient(
+      size / 2, size / 2, 0,
+      size / 2, size / 2, size / 2
+    );
+    g.addColorStop(0, "rgba(255,255,255,1)");
+    g.addColorStop(0.5, "rgba(255,255,255,0.95)");
+    g.addColorStop(0.78, "rgba(255,255,255,0.45)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+  }
+  dropTexture = new THREE.CanvasTexture(canvas);
+  return dropTexture;
 }
 
 export function createGlowTexture(): THREE.Texture {

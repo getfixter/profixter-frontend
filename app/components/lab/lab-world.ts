@@ -221,9 +221,11 @@ export const WORLD_SPOTS: WorldSpot[] = [
     at: { x: 0.17, y: 0.3 },
     narrow: { x: 0.2, y: 0.24 },
     side: 1,
-    seconds: 3.0,
-    scale: 0.6,
-    stand: [0.54, -0.98],
+    /* Lift, square, let go, watch it rock. */
+    seconds: 4.0,
+    admire: 1.7,
+    scale: 0.85,
+    stand: [0.66, -0.9],
   },
   {
     id: "lamp",
@@ -231,12 +233,24 @@ export const WORLD_SPOTS: WorldSpot[] = [
     kind: "lamp",
     motion: "reach",
     tool: "screwdriver",
-    at: { x: 0.37, y: 0.19 },
-    narrow: { x: 0.56, y: 0.21 },
+    at: { x: 0.37, y: 0.17 },
+    narrow: { x: 0.56, y: 0.18 },
     side: -1,
-    seconds: 4.2,
-    scale: 0.82,
-    stand: [0.46, -1.2],
+    seconds: 4.6,
+    admire: 1.8,
+    scale: 1.12,
+    /*
+     * Deep enough below it that his hand reaches the COLLAR.
+     *
+     * The old number put his palm a clear finger above the shade, so the whole
+     * repair was a man gesturing at a ceiling. This is the arithmetic instead:
+     * the reach stance holds its hand about seven tenths of a unit above his
+     * feet, the fitting hangs six tenths below the rose, and the difference is
+     * where he has to stand.
+     */
+    stand: [0.58, -1.92],
+    aim: [0.18, -0.46],
+    toolScale: 1.12,
   },
   {
     id: "shelf",
@@ -245,24 +259,48 @@ export const WORLD_SPOTS: WorldSpot[] = [
     motion: "mid",
     tool: "drill",
     at: { x: 0.57, y: 0.28 },
-    narrow: { x: 0.82, y: 0.4 },
+    /*
+     * Off the button.
+     *
+     * Everything here lives behind the interface and that is the design — but
+     * "behind a paragraph" and "behind a solid blue call to action" are not the
+     * same thing. Text lets a shape through; a filled button is a wall, and the
+     * shelf was spending its whole repair invisible behind one.
+     */
+    narrow: { x: 0.78, y: 0.29 },
     side: -1,
-    seconds: 4.4,
-    scale: 0.66,
-    stand: [0.74, -0.96],
+    seconds: 5.2,
+    admire: 1.8,
+    scale: 0.8,
+    stand: [0.78, -0.86],
+    aim: [-0.42, -0.14],
+    toolScale: 1.12,
   },
   {
     id: "faucet",
     label: "Dripping tap",
     kind: "faucet",
-    motion: "squat",
+    /*
+     * Standing, not squatting.
+     *
+     * The squat holds its hand about half a unit off the floor, which for a
+     * basin at waist height put the wrench on the rim of the bowl and his face
+     * behind it. A tap is chest-high work and the mid stance is chest-high; the
+     * stance was fighting the fixture rather than the other way round.
+     */
+    motion: "mid",
     tool: "wrench",
-    at: { x: 0.8, y: 0.55 },
+    /* Clear of the booking card, which on a wide screen is a solid white wall. */
+    at: { x: 0.58, y: 0.63 },
     narrow: { x: 0.76, y: 0.6 },
     side: -1,
-    seconds: 4.0,
-    scale: 0.66,
-    stand: [0.52, -0.52],
+    /* Three bites of the wrench and a beat to watch it stop. */
+    seconds: 5.0,
+    admire: 2.0,
+    scale: 0.86,
+    stand: [0.36, -0.86],
+    aim: [0.02, 0.14],
+    toolScale: 1.15,
   },
 ];
 
@@ -403,8 +441,19 @@ export type WorldBeat =
 
 export type WorldRuntime = {
   beat: WorldBeat;
-  /** Which repair he is at or heading to. marks.length means he is going home. */
+  /** Which repair he is at or heading to. -1 means he has no job. */
   index: number;
+  /**
+   * What is waiting for him, in the order it was asked for.
+   *
+   * The performance used to be a counter walking from zero to five, which said
+   * both what he was doing and what was left in one number — fine for a fixed
+   * list, useless the moment a visitor can break something. This is the list
+   * itself: it starts as all six, the head of it is the job he is on, and a tap
+   * puts an index on the end. Strictly first in, first out, and an index is
+   * never in it twice.
+   */
+  queue: number[];
   elapsed: number;
   position: THREE.Vector3;
   yaw: number;
@@ -478,7 +527,8 @@ export function createWorldRuntime(
 ): WorldRuntime {
   return {
     beat: "START",
-    index: 0,
+    index: -1,
+    queue: marks.map((_, i) => i),
     elapsed: 0,
     position: home.clone(),
     yaw: 0,
@@ -523,6 +573,43 @@ function setOff(
 }
 
 /**
+ * Off to whatever is at the head of the queue, or home if there is nothing.
+ *
+ * The one place the runner decides where he goes next, so "finish what you are
+ * on, then take the next in order" is a property of the code rather than a rule
+ * repeated in four branches.
+ */
+function departNext(runtime: WorldRuntime, marks: WorldMark[]): void {
+  const next = runtime.queue[0];
+  if (next === undefined) {
+    runtime.index = -1;
+    setOff(runtime, runtime.home, 0);
+    return;
+  }
+  runtime.index = next;
+  setOff(runtime, marks[next].feet, marks[next].yaw);
+}
+
+/**
+ * Break something, and put it in the line.
+ *
+ * Refuses anything already queued — which includes whatever he is working on,
+ * since a job stays at the head of the queue until he has finished admiring it.
+ * One object, at most one pending repair; tap it again and nothing happens
+ * until it has been mended.
+ */
+export function requestRepair(
+  runtime: WorldRuntime,
+  index: number
+): boolean {
+  if (index < 0 || index >= runtime.fixed.length) return false;
+  if (runtime.queue.includes(index)) return false;
+  runtime.queue.push(index);
+  runtime.fixed[index] = false;
+  return true;
+}
+
+/**
  * One frame of the performance.
  *
  * `setFix` is how a repair changes: the runner owns WHEN, the prop owns what
@@ -538,17 +625,15 @@ export function stepWorld(
 ): void {
   if (!marks.length) return;
   runtime.elapsed += dt;
-  const goingHome = runtime.index >= marks.length;
-  const mark = marks[Math.min(runtime.index, marks.length - 1)];
-  const motion = WORK_MOTIONS[mark.spot.motion];
+  const goingHome = runtime.index < 0;
+  const mark = goingHome ? null : marks[runtime.index];
+  const motion = mark ? WORK_MOTIONS[mark.spot.motion] : null;
 
   switch (runtime.beat) {
     case "START": {
       /* A breath before he sets off, so the curtain is not also the first step. */
       runtime.yaw = approach(runtime.yaw, 0, dt, 4);
-      if (runtime.elapsed >= START_SECONDS) {
-        setOff(runtime, marks[0].feet, marks[0].yaw);
-      }
+      if (runtime.elapsed >= START_SECONDS) departNext(runtime, marks);
       break;
     }
 
@@ -572,6 +657,18 @@ export function stepWorld(
         runtime.distance,
         runtime.travelled + runtime.speed * dt
       );
+      /*
+       * On the way home is not "busy".
+       *
+       * Finishing the current REPAIR before taking the next one is the rule; a
+       * walk back to his mark is not a repair, and making him complete it
+       * before turning round would have him cross the screen twice for no
+       * reason anybody watching could explain.
+       */
+      if (goingHome && runtime.queue.length) {
+        departNext(runtime, marks);
+        break;
+      }
       const u = runtime.distance > 0 ? runtime.travelled / runtime.distance : 1;
       runtime.position.lerpVectors(runtime.from, runtime.to, u);
       /* Face the way he is going, then face the work — all while still moving. */
@@ -597,7 +694,7 @@ export function stepWorld(
         runtime.restedFor = 0;
         break;
       }
-      runtime.beat = motion.crouched ? "WORK_IN" : "WORK";
+      runtime.beat = motion?.crouched ? "WORK_IN" : "WORK";
       runtime.elapsed = 0;
       runtime.progress = 0;
       break;
@@ -605,6 +702,7 @@ export function stepWorld(
 
     case "WORK_IN": {
       /* Lowering himself. The clip does it; we only wait for it. */
+      if (!mark) break;
       runtime.yaw = approach(runtime.yaw, mark.yaw, dt, 8);
       if (runtime.elapsed >= 0.62) {
         runtime.beat = "WORK";
@@ -614,6 +712,7 @@ export function stepWorld(
     }
 
     case "WORK": {
+      if (!mark) break;
       runtime.yaw = approach(runtime.yaw, mark.yaw, dt, 8);
       runtime.progress = Math.min(1, runtime.elapsed / mark.spot.seconds);
       /*
@@ -632,7 +731,7 @@ export function stepWorld(
       );
       if (runtime.progress >= 1) {
         runtime.fixed[runtime.index] = true;
-        runtime.beat = motion.crouched ? "WORK_OUT" : "ADMIRE";
+        runtime.beat = motion?.crouched ? "WORK_OUT" : "ADMIRE";
         runtime.elapsed = 0;
       }
       break;
@@ -655,15 +754,10 @@ export function stepWorld(
        * walk, and a man who turns away the instant a job is done reads as a
        * machine advancing a queue.
        */
-      if (runtime.elapsed < (mark.spot.admire ?? ADMIRE_SECONDS)) break;
-      const next = runtime.index + 1;
-      runtime.index = next;
-      if (next >= marks.length) {
-        /* Everything is mended. Back to the mark he came in on. */
-        setOff(runtime, runtime.home, 0);
-      } else {
-        setOff(runtime, marks[next].feet, marks[next].yaw);
-      }
+      if (runtime.elapsed < (mark?.spot.admire ?? ADMIRE_SECONDS)) break;
+      /* Done with it: off the queue, and on to whatever is next. */
+      if (runtime.queue[0] === runtime.index) runtime.queue.shift();
+      departNext(runtime, marks);
       break;
     }
 
@@ -672,6 +766,8 @@ export function stepWorld(
       runtime.restedFor += dt;
       runtime.speed = 0;
       runtime.yaw = approach(runtime.yaw, 0, dt, 2.6);
+      /* Somebody broke something while he was standing here. */
+      if (runtime.queue.length) departNext(runtime, marks);
       break;
     }
   }
@@ -683,7 +779,7 @@ export function clipForBeat(
   marks: WorldMark[],
   walkClip: string | null
 ): string {
-  const mark = marks[Math.min(runtime.index, marks.length - 1)];
+  const mark = runtime.index >= 0 ? marks[runtime.index] : null;
   const motion = mark ? WORK_MOTIONS[mark.spot.motion] : null;
   switch (runtime.beat) {
     case "WALK":

@@ -31,6 +31,8 @@ import { AimedHandTool } from "./lab-tools";
 import { createContactShadow, createContactTexture } from "./lab-materials";
 import FixableObject from "./lab-objects";
 import {
+  getObjectBounds,
+  setObjectBounds,
   setObjectBusy,
   setObjectFix,
   setObjectWork,
@@ -41,6 +43,7 @@ import {
   WORLD_SPOTS,
   clipForBeat,
   createWorldRuntime,
+  requestRepair,
   layoutWorld,
   homeAt,
   stepWorld,
@@ -182,7 +185,13 @@ function ContactShadow({
  * number per prop: the set ranges from a socket to a cabinet, and one constant
  * would be wrong for both ends of it.
  */
-function ObjectShadow({ of }: { of: React.RefObject<THREE.Group | null> }) {
+function ObjectShadow({
+  of,
+  id,
+}: {
+  of: React.RefObject<THREE.Group | null>;
+  id: string;
+}) {
   const ref = useRef<THREE.Mesh>(null);
   const texture = useMemo(() => createContactTexture(), []);
   const sized = useRef(false);
@@ -209,6 +218,8 @@ function ObjectShadow({ of }: { of: React.RefObject<THREE.Group | null> }) {
     _propBox.getSize(_propSize);
     if (_propSize.x <= 0 || _propSize.y <= 0) return;
     sized.current = true;
+    /* The tap test wants this measurement too; nobody else measures a prop. */
+    setObjectBounds(id, _propSize.x, _propSize.y);
     /*
      * Barely there, on purpose.
      *
@@ -236,17 +247,78 @@ function ObjectShadow({ of }: { of: React.RefObject<THREE.Group | null> }) {
   );
 }
 
+/**
+ * WHICH REPAIR IS UNDER THAT TAP, if any.
+ *
+ * Deliberately not a raycast. Under an orthographic camera every prop sits on
+ * one plane, so projecting six points and comparing rectangles is exact, costs
+ * nothing, and — the part that matters — lets the tap target be a different
+ * size from the geometry. Raycasting the actual meshes would make the socket a
+ * seventeen-pixel bullseye and the cabinet's open doorway a hole you could tap
+ * through, which is the opposite of what a finger wants.
+ *
+ * Each box is the prop's own measured size with a floor under it, because the
+ * smallest thing here is smaller than a fingertip.
+ */
+const _pick = new THREE.Vector3();
+const TAP_MIN = 26;
+const TAP_PAD = 7;
+
+function pickSpot(
+  marks: WorldMark[],
+  camera: THREE.Camera,
+  size: { width: number; height: number },
+  unitPx: number,
+  x: number,
+  y: number
+): number {
+  let best = -1;
+  let bestArea = Infinity;
+  for (let i = 0; i < marks.length; i++) {
+    const mark = marks[i];
+    _pick.copy(mark.object).project(camera);
+    const sx = (_pick.x * 0.5 + 0.5) * size.width;
+    const sy = (-_pick.y * 0.5 + 0.5) * size.height;
+    const measured = getObjectBounds(mark.spot.id);
+    const halfW = Math.max(TAP_MIN, ((measured?.[0] ?? 0.4) * unitPx) / 2 + TAP_PAD);
+    const halfH = Math.max(TAP_MIN, ((measured?.[1] ?? 0.4) * unitPx) / 2 + TAP_PAD);
+    if (Math.abs(x - sx) > halfW || Math.abs(y - sy) > halfH) continue;
+    /* Overlapping targets: the smaller one wins, or the big ones swallow it. */
+    const area = halfW * halfH;
+    if (area < bestArea) {
+      bestArea = area;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/**
+ * Anything the website owns a click on.
+ *
+ * The canvas takes no pointer events at all — it never has — so this listener
+ * sees clicks the DOM has already delivered somewhere. That makes the rule
+ * simple to state and impossible to get subtly wrong: if the click landed on
+ * something the page can act on, the page has it and we are not involved.
+ * Everything else is background, and background may have a repair behind it.
+ */
+const SITE_CONTROLS =
+  'a, button, input, select, textarea, label, summary, [role="button"], [role="link"], [contenteditable], [data-fx-nointeract]';
+
 function WorldFixter({
   marks,
   home,
   characterScale,
+  unitPx,
   onBeat,
 }: {
   marks: WorldMark[];
   home: THREE.Vector3;
   characterScale: number;
+  unitPx: number;
   onBeat: (runtime: WorldRuntime) => void;
 }) {
+  const { camera, size } = useThree();
   const { scene, animations } = useGLTF(FIXTER_GLB);
   const bvhs = useLoader(BVHLoader, MOTION_FILES);
   const kneelGltf = useGLTF(CLIP_KNEEL_GLB);
@@ -408,6 +480,24 @@ function WorldFixter({
   const aiming = useRef(false);
   /* How much of the head lift is applied right now: 0 walking, 1 working. */
   const look = useRef(0);
+  /* Whose clocks were running last frame, so they can be stopped. */
+  const lastMark = useRef<string | null>(null);
+
+  /*
+   * What the tap listener reads.
+   *
+   * Through refs rather than through the closure, so the listener is bound once
+   * for the life of the scene instead of being torn down and rebuilt on every
+   * resize — and so a tap can never land on a stale layout.
+   */
+  const runtimeRef = useRef(runtime);
+  const marksRef = useRef(marks);
+  const sizeRef = useRef(size);
+  const unitPxRef = useRef(unitPx);
+  runtimeRef.current = runtime;
+  marksRef.current = marks;
+  sizeRef.current = size;
+  unitPxRef.current = unitPx;
   const currentAction = useRef<THREE.AnimationAction | null>(null);
   const currentName = useRef<string | null>(null);
   const [toolKind, setToolKind] = useState(WORLD_SPOTS[0]?.tool ?? null);
@@ -415,6 +505,85 @@ function WorldFixter({
   const [toolHand, setToolHand] = useState<"left" | "right">(
     WORK_MOTIONS[WORLD_SPOTS[0]?.motion]?.toolHand ?? "right"
   );
+
+  /*
+   * TAP A THING TO BREAK IT.
+   *
+   * The whole interaction is one window listener and six rectangles, and that
+   * is on purpose. The obvious build — put the canvas in front and let
+   * react-three-fiber deliver pointer events — means a full-screen surface that
+   * swallows every tap on the page and has to hand the ones it does not want
+   * back, which on a phone also costs you scrolling. Here the canvas keeps
+   * `pointer-events: none` for its whole life, the DOM does what it always did,
+   * and this listens to clicks that have already been delivered. A click on a
+   * button is a click on a button; only the ones that landed on background can
+   * possibly be ours.
+   *
+   * `click` rather than `pointerdown`, deliberately: a click is only synthesised
+   * for a press and release in the same place, so a scroll drag or a swipe
+   * never reaches this, and a finger dragged off the object cancels itself.
+   */
+  useEffect(() => {
+    const canBreak = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return false;
+      if (target.closest(SITE_CONTROLS)) return false;
+      /* Finishing a text selection is not a tap. */
+      const selection = window.getSelection();
+      if (selection && !selection.isCollapsed) return false;
+      return true;
+    };
+    const onClick = (event: MouseEvent) => {
+      if (!canBreak(event)) return;
+      const runtime = runtimeRef.current;
+      if (!runtime) return;
+      const index = pickSpot(
+        marksRef.current,
+        camera,
+        sizeRef.current,
+        unitPxRef.current,
+        event.clientX,
+        event.clientY
+      );
+      if (index < 0) return;
+      const spot = marksRef.current[index].spot;
+      if (!requestRepair(runtime, index)) return;
+      setObjectFix(spot.id, 0);
+      setObjectBusy(spot.id, 0);
+      setObjectWork(spot.id, 0);
+    };
+    /*
+     * And a pointer cursor over one, which is the only hint there is. No
+     * outline, no glow, no label: the whole brief for this is that somebody
+     * finds it, not that they are told about it.
+     */
+    let pointing = false;
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse") return;
+      const target = event.target;
+      const over =
+        target instanceof Element &&
+        !target.closest(SITE_CONTROLS) &&
+        pickSpot(
+          marksRef.current,
+          camera,
+          sizeRef.current,
+          unitPxRef.current,
+          event.clientX,
+          event.clientY
+        ) >= 0;
+      if (over === pointing) return;
+      pointing = over;
+      document.body.style.cursor = over ? "pointer" : "";
+    };
+    window.addEventListener("click", onClick);
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => {
+      window.removeEventListener("click", onClick);
+      window.removeEventListener("pointermove", onMove);
+      document.body.style.cursor = "";
+    };
+  }, [camera]);
 
   useFrame((_, rawDelta) => {
     /*
@@ -440,7 +609,7 @@ function WorldFixter({
     runtime.home.copy(home);
     if (runtime.beat === "WALK") {
       const aim =
-        runtime.index >= marks.length ? home : marks[runtime.index].feet;
+        runtime.index < 0 ? home : marks[runtime.index].feet;
       runtime.to.copy(aim);
       runtime.distance = runtime.from.distanceTo(runtime.to);
     }
@@ -495,7 +664,7 @@ function WorldFixter({
       );
     }
 
-    const mark = marks[Math.min(runtime.index, marks.length - 1)];
+    const mark = runtime.index >= 0 ? marks[runtime.index] : null;
     /*
      * Hand the prop the SAME clock the tool animates on.
      *
@@ -503,13 +672,24 @@ function WorldFixter({
      * socket derives the screwdriver's turn from it and fires its sparks on
      * those turns — which is the difference between a man working and a man
      * moving next to some particles.
+     *
+     * Cleared on the way out as well as set on the way in: with a queue he can
+     * now leave a job and have nothing at all to be doing, and a prop still
+     * holding last frame's work clock would carry on being drilled.
      */
-    workTime.current = runtime.beat === "WORK" ? runtime.elapsed : 0;
-    setObjectBusy(mark.spot.id, workTime.current);
-    setObjectWork(
-      mark.spot.id,
-      runtime.beat === "WORK" ? Math.min(1, runtime.progress) : 0
-    );
+    workTime.current = mark && runtime.beat === "WORK" ? runtime.elapsed : 0;
+    if (mark) {
+      setObjectBusy(mark.spot.id, workTime.current);
+      setObjectWork(
+        mark.spot.id,
+        runtime.beat === "WORK" ? Math.min(1, runtime.progress) : 0
+      );
+    }
+    if (lastMark.current && lastMark.current !== mark?.spot.id) {
+      setObjectBusy(lastMark.current, 0);
+      setObjectWork(lastMark.current, 0);
+    }
+    lastMark.current = mark?.spot.id ?? null;
 
     /*
      * Point the tool at the thing, for the repairs that ask for it.
@@ -527,7 +707,7 @@ function WorldFixter({
      * where he is actually down at the work, and eased in and out so the lift
      * arrives with the crouch instead of snapping on with the beat.
      */
-    const lift = WORK_MOTIONS[mark.spot.motion]?.headLiftDeg ?? 0;
+    const lift = mark ? WORK_MOTIONS[mark.spot.motion]?.headLiftDeg ?? 0 : 0;
     if (lift > 0 && (spine.neck || spine.head)) {
       /*
        * Only while he is down at it.
@@ -546,8 +726,8 @@ function WorldFixter({
       if (spine.head) spine.head.rotation.x -= radians * 0.38;
     }
 
-    const spotAim = mark.spot.aim;
-    if (spotAim && (runtime.beat === "WORK" || runtime.beat === "WORK_IN")) {
+    const spotAim = mark?.spot.aim;
+    if (mark && spotAim && (runtime.beat === "WORK" || runtime.beat === "WORK_IN")) {
       toolAim.current.set(
         mark.object.x + spotAim[0] * characterScale,
         mark.object.y + spotAim[1] * characterScale,
@@ -558,21 +738,34 @@ function WorldFixter({
       aiming.current = false;
     }
     const wantTool =
-      runtime.beat === "WORK" || runtime.beat === "WORK_IN"
+      mark && (runtime.beat === "WORK" || runtime.beat === "WORK_IN")
         ? mark.spot.tool
         : null;
     if (wantTool !== toolKind) setToolKind(wantTool);
-    const wantHand = WORK_MOTIONS[mark.spot.motion]?.toolHand ?? "right";
-    if (wantHand !== toolHand) setToolHand(wantHand);
-    const wantSize = mark.spot.toolScale ?? 1;
-    if (wantSize !== toolSize) setToolSize(wantSize);
+    if (mark) {
+      const wantHand = WORK_MOTIONS[mark.spot.motion]?.toolHand ?? "right";
+      if (wantHand !== toolHand) setToolHand(wantHand);
+      const wantSize = mark.spot.toolScale ?? 1;
+      if (wantSize !== toolSize) setToolSize(wantSize);
+    }
 
     if (process.env.NODE_ENV !== "production") {
       const w = window as unknown as Record<string, unknown>;
+      /* Where each repair currently is on screen, so a test can tap one. */
+      const where: Record<string, { x: number; y: number }> = {};
+      for (const m of marks) {
+        _pick.copy(m.object).project(camera);
+        where[m.spot.id] = {
+          x: Math.round((_pick.x * 0.5 + 0.5) * size.width),
+          y: Math.round((-_pick.y * 0.5 + 0.5) * size.height),
+        };
+      }
+      w.__fxSpots = where;
       w.__fxWorld = {
         beat: runtime.beat,
         index: runtime.index,
-        spot: mark.spot.id,
+        spot: mark?.spot.id ?? "-",
+        queue: runtime.queue.map((i) => marks[i]?.spot.id).join(","),
         fixed: runtime.fixed.filter(Boolean).length,
         total: marks.length,
         rested: +runtime.restedFor.toFixed(1),
@@ -624,7 +817,7 @@ function WorldObject({
   const ref = useRef<THREE.Group>(null);
   return (
     <>
-      <ObjectShadow of={ref} />
+      <ObjectShadow of={ref} id={mark.spot.id} />
       <group ref={ref} position={[mark.object.x, mark.object.y, mark.object.z]}>
         <FixableObject
           kind={mark.spot.kind}
@@ -688,6 +881,7 @@ function WorldContents() {
           marks={marks}
           home={home}
           characterScale={characterScale}
+          unitPx={unitPx}
           onBeat={onBeat}
         />
       </Suspense>
