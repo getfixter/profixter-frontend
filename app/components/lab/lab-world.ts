@@ -75,6 +75,18 @@ export type WorldSpot = {
    */
   scale?: number;
   rotationDeg?: [number, number, number];
+  /**
+   * Where the tool tip should point while he works, offset from the repair in
+   * HIS units. Absent means the tool holds its rest angle in his fist.
+   *
+   * Rest angle is right for most of them — a wrench on a tap and a drill into a
+   * bracket both come out of the clip pointing about where they should. It is
+   * wrong for the socket: the screwdriver comes to rest angled off past the
+   * faceplate, so he was turning a screw that was four inches to the left of
+   * the one that was loose. Aiming is authored per repair rather than switched
+   * on globally, because the other five are approved as they stand.
+   */
+  aim?: [number, number];
 };
 
 /**
@@ -113,8 +125,19 @@ export const WORLD_SPOTS: WorldSpot[] = [
     narrow: { x: 0.42, y: 0.8 },
     side: 1,
     seconds: 3.8,
-    scale: 0.62,
-    stand: [0.44, -0.38],
+    /*
+     * Iconic, not accurate.
+     *
+     * A real socket beside a real man is six per cent of his height, which on a
+     * phone came out ten pixels wide — and ten pixels cannot look like anything,
+     * least of all like something going wrong. No amount of effect tuning fixes
+     * a subject that small; the sparks were correct and unreadable. At this size
+     * it is about a quarter of his height, which is a game's socket rather than
+     * a builder's, and every effect hanging off it grows with it.
+     */
+    scale: 1.32,
+    stand: [0.46, -0.36],
+    aim: [-0.02, 0.0],
   },
   {
     id: "cabinet",

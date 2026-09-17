@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
+import { actionCycle, actionHit, actionPhase } from "./lab-action";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import {
@@ -104,8 +105,22 @@ function ease(current: number, target: number, dt: number, rate?: number) {
  * is mended and can never come back — there is no separate effect system with
  * its own opinion about when to run.
  */
-const SPARKS = 6;
-const PUFFS = 3;
+const SPARKS = 28;
+const PUFFS = 9;
+const FLASHES = 4;
+
+/**
+ * How far in front of the socket the effects live.
+ *
+ * His forearm reaches ACROSS this repair — he kneels beside it and the hand
+ * holding the screwdriver ends up about a sixth of a unit nearer the camera
+ * than the faceplate. Sparks drawn on the plate were therefore behind his own
+ * arm exactly when they mattered most, during the repair. Sitting them in front
+ * of the hand costs nothing at this camera angle (the tilt moves a thing this
+ * near the plane by about a pixel) and guarantees the effect is never the part
+ * that gets hidden.
+ */
+const FX_Z = 0.16;
 
 type Spark = {
   life: number;
@@ -115,50 +130,42 @@ type Spark = {
   vx: number;
   vy: number;
   size: number;
+  hot: number;
 };
+
+type Flare = { life: number; ttl: number; x: number; y: number; size: number };
 
 type Fault = {
   sparkMats: THREE.MeshBasicMaterial[];
   puffMats: THREE.MeshBasicMaterial[];
+  flareMats: THREE.MeshBasicMaterial[];
   flashMat: THREE.MeshBasicMaterial;
+  sootMat: THREE.MeshBasicMaterial;
   sparks: Spark[];
-  puffs: { t: number }[];
+  flares: Flare[];
+  puffs: { t: number; seed: number }[];
   nextSpark: number;
+  nextFlicker: number;
   flashFor: number;
+  flashPeak: number;
+  cycle: number;
   finale: boolean;
 };
 
 /**
  * Everything the fault owns, built once per socket.
  *
- * One material per quad so each can fade on its own clock. Nine tiny materials
- * is nothing, and the two canvas textures behind them are shared by every
- * object in the scene.
+ * Sparks are bare coloured quads — no texture at all. A soft radial gradient
+ * stretched into a streak is nearly all falloff, so at the handful of pixels
+ * this gets on a phone there is no core left and the whole thing reads as an
+ * orange haze. A hard-edged quad is nothing BUT core.
+ *
+ * Normal blending throughout, never additive: this socket lives on the WHITE
+ * band, and adding light to white produces white.
  */
 function makeFault(): Fault {
-  const spark = createGlowTexture();
-  const smoke = createSmokeTexture();
-  /*
-   * Normal blending, not additive.
-   *
-   * Additive was the obvious choice and it was wrong here: this socket lives on
-   * the white band, and adding light to white produces white. The sparks were
-   * rendering perfectly and were invisible. A saturated amber over the glow
-   * texture reads on paper AND on the dark hero, which is what a prop that the
-   * page scrolls behind actually needs.
-   */
-  /*
-   * Sparks are bare coloured quads — no texture at all.
-   *
-   * A soft radial gradient stretched into a streak is mostly falloff, so at the
-   * four or five pixels this gets on a phone there was no core left and the
-   * whole thing read as a faint orange haze. A hard-edged quad has nothing BUT
-   * core, which is what makes it legible at this size. The flash still uses the
-   * glow texture, because a flash should be soft.
-   *
-   * Normal blending, not additive: this socket lives on the white band, and
-   * adding light to white produces white.
-   */
+  const glowMap = createGlowTexture();
+  const smokeMap = createSmokeTexture();
   const sparkMat = () =>
     new THREE.MeshBasicMaterial({
       color: new THREE.Color("#ff6a12"),
@@ -166,36 +173,149 @@ function makeFault(): Fault {
       depthWrite: false,
       opacity: 0,
     });
-  const glow = () =>
+  const flareMat = () =>
     new THREE.MeshBasicMaterial({
-      map: spark,
-      color: new THREE.Color("#ff8a2a"),
+      map: glowMap,
+      color: new THREE.Color("#ff7d1a"),
       transparent: true,
       depthWrite: false,
       opacity: 0,
     });
   return {
     sparkMats: Array.from({ length: SPARKS }, sparkMat),
+    /*
+     * Dark smoke — but only as dark as it can afford to be.
+     *
+     * The socket sits on the seam between the dark hero and the white band
+     * below it, and the plume rises off the white and INTO the dark. True soot
+     * reads beautifully against the page and vanishes completely against the
+     * hero, which is half the audience seeing no smoke at all. This grey is the
+     * darkest value that still lifts off the navy.
+     */
     puffMats: Array.from(
       { length: PUFFS },
       () =>
         new THREE.MeshBasicMaterial({
-          map: smoke,
+          map: smokeMap,
+          color: new THREE.Color("#4a505c"),
           transparent: true,
           depthWrite: false,
           opacity: 0,
         })
     ),
-    flashMat: glow(),
+    flareMats: Array.from({ length: FLASHES }, flareMat),
+    flashMat: flareMat(),
+    /*
+     * The soot mark above the socket.
+     *
+     * Static, and the only part of the fault that is not a particle. A burnt
+     * contact leaves a stain, and a stain is the one piece of evidence that is
+     * still there between sparks — so the socket reads as broken even in the
+     * frames where nothing is happening. It goes when the repair goes.
+     */
+    sootMat: new THREE.MeshBasicMaterial({
+      map: smokeMap,
+      color: new THREE.Color("#454b56"),
+      transparent: true,
+      depthWrite: false,
+      opacity: 0,
+    }),
     sparks: Array.from({ length: SPARKS }, () => ({
-      life: 0, ttl: 0, x: 0, y: 0, vx: 0, vy: 0, size: 1,
+      life: 0, ttl: 0, x: 0, y: 0, vx: 0, vy: 0, size: 1, hot: 0,
     })),
-    /* Staggered, so the three puffs never rise in step. */
-    puffs: Array.from({ length: PUFFS }, (_, i) => ({ t: i / PUFFS })),
-    nextSpark: 0.8,
+    flares: Array.from({ length: FLASHES }, () => ({
+      life: 0, ttl: 0, x: 0, y: 0, size: 1,
+    })),
+    puffs: Array.from({ length: PUFFS }, (_, i) => ({
+      t: i / PUFFS,
+      seed: Math.random() * 6.28,
+    })),
+    nextSpark: 0.2,
+    nextFlicker: 0.4,
     flashFor: 0,
+    flashPeak: 0,
+    cycle: -1,
     finale: false,
   };
+}
+
+/**
+ * Throw a handful of sparks out of the socket.
+ *
+ * Biased to the RIGHT, because he kneels on the left of this one and his
+ * forearm was sitting on top of the best part of the effect. Sizes and
+ * directions both spread, so no two bursts read as the same animation.
+ */
+function burst(fault: Fault, count: number, power: number, atTip = false): void {
+  if (process.env.NODE_ENV !== "production" && (window as unknown as Record<string, unknown>).__fxNoSparks) return;
+  for (let n = 0; n < count; n++) {
+    const spark = fault.sparks.find((s) => s.life <= 0);
+    if (!spark) return;
+    /*
+     * Where it comes out of: the two socket faces normally, the centre screw
+     * while he is turning it.
+     *
+     * Moving the origin under the tip is what makes the tool the cause rather
+     * than the accompaniment. Timing alone got most of the way there — the
+     * sparks fire on his turns — but they were still coming out of the sockets
+     * a centimetre below the thing he was touching, and the eye notices that
+     * before it notices the rhythm.
+     */
+    const slot = Math.random() < 0.68 ? -0.028 : 0.028;
+    spark.x = (Math.random() - 0.5) * 0.03;
+    spark.y = atTip ? (Math.random() - 0.5) * 0.02 : slot;
+    /*
+     * Mostly out to the right and down, but a third go anywhere at all.
+     *
+     * The bias is his: he kneels on the left of this socket, so the right is
+     * the half of the effect nothing is standing in front of. The wild third
+     * is what stops a burst reading as a fan — real arcing has no preferred
+     * direction, it only has a preferred SIDE once something is in the way.
+     */
+    const wild = Math.random() < 0.34;
+    /*
+     * Thrown on an angle, not on a pair of ranges.
+     *
+     * Written as independent vx and vy every spark came out heading down and
+     * right at about the same forty-five degrees, and forty sparks on the same
+     * heading is rain. An angle and a speed give a real fan: a wide arc out of
+     * the socket, a third of them in any direction at all, and speeds spread
+     * far enough apart that the near ones and the far ones are different
+     * sparks rather than the same spark at two ages.
+     */
+    const ang = wild
+      ? Math.random() * Math.PI * 2
+      : -1.0 + Math.random() * 2.2;
+    const speed = (0.1 + Math.random() * 0.42) * power;
+    spark.vx = Math.cos(ang) * speed;
+    spark.vy = Math.sin(ang) * speed;
+    spark.ttl = 0.2 + Math.random() * 0.26;
+    spark.life = spark.ttl;
+    /*
+     * Three to one between the smallest and the largest, so a burst has grain.
+     *
+     * Both the size and the reach came back far too big on the first pass at
+     * this: with the socket itself now four times what it was, sparks written
+     * in its local units grew with it and came out as orange planks flying
+     * half a phone screen. A spark has to be SMALLER than the thing it comes
+     * out of, and it has to stay near it.
+     */
+    const big = Math.random() < 0.1;
+    spark.size = (big ? 0.017 + Math.random() * 0.008 : 0.007 + Math.random() * 0.01) *
+      (0.85 + power * 0.3);
+    spark.hot = Math.random();
+  }
+}
+
+/** A small flash somewhere on or beside the plate. */
+function flare(fault: Fault, power: number, atTip = false): void {
+  const f = fault.flares.find((x) => x.life <= 0);
+  if (!f) return;
+  f.x = atTip ? (Math.random() - 0.5) * 0.03 : (Math.random() - 0.35) * 0.1;
+  f.y = atTip ? (Math.random() - 0.5) * 0.03 : (Math.random() - 0.5) * 0.12;
+  f.ttl = 0.09 + Math.random() * 0.12;
+  f.life = f.ttl;
+  f.size = (0.055 + Math.random() * 0.055) * power;
 }
 
 /**
@@ -203,28 +323,50 @@ function makeFault(): Fault {
  *
  * A module function rather than inline, because the React Compiler (correctly)
  * refuses mutation of anything that reached the component through a hook — and
- * a particle is nothing but mutation. Same pattern as the station box.
+ * a particle is nothing but mutation.
+ *
+ * `stroke` is seconds since he started working, or 0 when nobody is there. It
+ * is the SAME clock the screwdriver animates on, which is the whole point: the
+ * sparks fire on his turns rather than beside them.
  */
 function stepFault(
   fault: Fault,
   group: THREE.Group,
   sparkMeshes: (THREE.Mesh | null)[],
   puffMeshes: (THREE.Mesh | null)[],
+  flareMeshes: (THREE.Mesh | null)[],
   flash: THREE.Mesh | null,
   broken: number,
   fixed: number,
-  busy: number,
+  stroke: number,
   step: number
 ): void {
+  const working = stroke > 0;
   /*
-   * The payoff: one last flash as the repair takes hold, then silence.
+   * How hard the fault is running, which is NOT how bent the faceplate is.
    *
-   * Fired on the way up rather than at the end, so the flash belongs to the fix
+   * Tying the effects straight to `broken` faded them out across the whole
+   * repair, so the sparks were at half strength exactly when he was working
+   * hardest and the big finish arrived after the show had already quietened
+   * down. The plate straightens on its own curve; the electricity holds full
+   * strength until the fix actually lands and then stops within a breath — a
+   * fault does not taper, it goes out.
+   */
+  const heat = Math.min(1, broken * 2.2);
+
+  /*
+   * The payoff: one big flash as the repair takes hold, then silence.
+   *
+   * Fired on the way up rather than at the end, so it belongs to the fix
    * landing rather than to him straightening up afterwards.
    */
-  if (!fault.finale && fixed > 0.22) {
+  if (!fault.finale && fixed > 0.3) {
     fault.finale = true;
-    fault.flashFor = 0.18;
+    fault.flashFor = 0.34;
+    fault.flashPeak = 1;
+    burst(fault, 14, 1.7, true);
+    flare(fault, 1.6, true);
+    flare(fault, 1.2);
   }
   if (fixed < 0.02) fault.finale = false;
 
@@ -233,56 +375,99 @@ function stepFault(
     if (group.visible) {
       for (const mat of fault.sparkMats) mat.opacity = 0;
       for (const mat of fault.puffMats) mat.opacity = 0;
+      for (const mat of fault.flareMats) mat.opacity = 0;
       fault.flashMat.opacity = 0;
+      fault.sootMat.opacity = 0;
       for (const spark of fault.sparks) spark.life = 0;
+      for (const f of fault.flares) f.life = 0;
       group.visible = false;
+    }
+    if (process.env.NODE_ENV !== "production") {
+      (window as unknown as Record<string, unknown>).__fxFault = { off: true };
     }
     return;
   }
   group.visible = true;
 
+  /* The stain, always there while it is broken, gone the moment it is not. */
+  fault.sootMat.opacity = 0.34 * heat * heat;
+
   /*
-   * When the next spark happens, and how big.
+   * HIS TURNS DRIVE THE SPARKS.
    *
-   * Randomised gaps, because a fault on a metronome is a lamp. Weak ones are
-   * the common case and a strong one is rare, which is what makes a strong one
-   * land. He gets a livelier reaction while he is actually at it.
+   * actionCycle counts the screwdriver's repetitions on the clock the tool is
+   * animating from, so this fires on the turn rather than on a timer of its
+   * own. Without it you get a man moving and particles happening, which is two
+   * things; with it you get one thing, and it reads as him causing it.
+   */
+  if (working && heat > 0.3) {
+    const cycle = actionCycle("turn", stroke);
+    if (cycle !== fault.cycle) {
+      fault.cycle = cycle;
+      /*
+       * Every turn throws sparks; every third turn is a proper bang.
+       *
+       * The uneven one matters more than the frequent one. A reaction on every
+       * single turn and nothing else is just a louder metronome — the third
+       * beat landing harder is what gives the repair a shape you can hear
+       * without sound, and it is why the work reads as going somewhere rather
+       * than as a loop playing until a timer runs out.
+       */
+      const heavy = cycle % 3 === 2;
+      burst(fault, heavy ? 10 : 5 + Math.floor(Math.random() * 3), heavy ? 1.7 : 1.25, true);
+      flare(fault, heavy ? 1.5 : 1.05, true);
+      fault.flashFor = Math.max(fault.flashFor, heavy ? 0.22 : 0.14);
+      fault.flashPeak = Math.max(fault.flashPeak, heavy ? 1 : 0.78);
+    }
+    /* And a shower on the push, halfway through each turn. */
+    if (actionHit("press", actionPhase("turn", stroke))) {
+      burst(fault, 2 + Math.floor(Math.random() * 3), 1, true);
+      flare(fault, 0.8, true);
+      fault.flashFor = Math.max(fault.flashFor, 0.08);
+      fault.flashPeak = Math.max(fault.flashPeak, 0.5);
+    }
+  }
+
+  /*
+   * Ambient faulting, on randomised gaps.
+   *
+   * Short gaps so there is nearly always something happening, but never the
+   * same gap twice — a fault on a metronome is a lamp.
    */
   fault.nextSpark -= step;
-  /* Lab only: hold the fault wide open so the effect can be judged on a still. */
-  const soak =
-    process.env.NODE_ENV !== "production" &&
-    (window as unknown as Record<string, unknown>).__fxSparkSoak === true;
-  if ((fault.nextSpark <= 0 || soak) && broken > 0.35) {
-    const strong = Math.random() < (busy > 0.5 ? 0.55 : 0.26);
-    const count = strong ? 3 : 1;
-    for (let n = 0; n < count; n++) {
-      const spark = fault.sparks.find((s) => s.life <= 0);
-      if (!spark) break;
-      /*
-       * Out of the lower socket, and AWAY from the plate.
-       *
-       * The first version emitted into the middle of the faceplate and the
-       * sparks spent their whole short life on top of white plastic, where an
-       * orange dot reads as a smudge. Thrown down and out they cross the edge
-       * within a frame or two and are seen against the page instead.
-       */
-      const slot = Math.random() < 0.72 ? -0.028 : 0.028;
-      spark.x = (Math.random() - 0.5) * 0.03;
-      spark.y = slot;
-      spark.vx = (Math.random() - 0.5) * 0.5;
-      /* Falling hard: sparks drop, they do not float. */
-      spark.vy = -0.34 - Math.random() * 0.34;
-      spark.ttl = 0.26 + Math.random() * 0.16;
-      spark.life = spark.ttl;
-      spark.size = (strong ? 0.032 : 0.022) + Math.random() * 0.008;
+  if (fault.nextSpark <= 0 && heat > 0.3) {
+    const strong = Math.random() < 0.38;
+    burst(
+      fault,
+      strong ? 7 + Math.floor(Math.random() * 4) : 3 + Math.floor(Math.random() * 4),
+      strong ? 1.45 : 1
+    );
+    if (strong) {
+      flare(fault, 1.2);
+      fault.flashFor = Math.max(fault.flashFor, 0.15);
+      fault.flashPeak = Math.max(fault.flashPeak, 0.8);
     }
-    if (strong) fault.flashFor = Math.max(fault.flashFor, 0.11);
+    /*
+     * Never a long silence.
+     *
+     * The gaps are what make it read as a fault rather than a loop, but the
+     * long end of them was landing whole seconds with nothing on screen at all
+     * — and somebody arriving on the page during one of those sees a crooked
+     * faceplate and no fault. Varied, and never quiet for more than about a
+     * third of a second.
+     */
     fault.nextSpark = strong
-      ? 1.2 + Math.random() * 1.4
-      : 0.4 + Math.random() * 1.7;
-    if (busy > 0.5) fault.nextSpark *= 0.55;
-    if (soak) fault.nextSpark = 0.1;
+      ? 0.22 + Math.random() * 0.42
+      : 0.05 + Math.random() * 0.2;
+  }
+
+  /* Irregular flicker: a low pulse on its own ragged clock. */
+  fault.nextFlicker -= step;
+  if (fault.nextFlicker <= 0 && heat > 0.3) {
+    fault.flashFor = Math.max(fault.flashFor, 0.08);
+    fault.flashPeak = Math.max(fault.flashPeak, 0.35 + Math.random() * 0.3);
+    if (Math.random() < 0.55) flare(fault, 0.85);
+    fault.nextFlicker = 0.08 + Math.random() * 0.55;
   }
 
   for (let i = 0; i < SPARKS; i++) {
@@ -295,78 +480,121 @@ function stepFault(
       continue;
     }
     spark.life -= step;
-    spark.vy -= 1.1 * step;
+    spark.vy -= 1.25 * step;
     spark.x += spark.vx * step;
     spark.y += spark.vy * step;
     const u = Math.max(0, spark.life / spark.ttl);
-    mesh.position.set(spark.x, spark.y, 0.016);
+    mesh.position.set(spark.x, spark.y, FX_Z + 0.02);
     /*
-     * A streak, not a dot.
-     *
-     * Stretched along the direction it is travelling and thinned across it,
-     * which is the whole difference between "spark" and "orange blob" at a
-     * size where there are only a few pixels to say it with.
+     * A streak, not a dot: stretched along the way it is travelling and
+     * thinned across it, which is the difference between "spark" and "orange
+     * blob" when there are only a few pixels to say it with.
      */
     mesh.rotation.z = Math.atan2(spark.vy, spark.vx);
-    const len = spark.size * (1.35 + u * 0.9);
-    mesh.scale.set(len, spark.size * 0.5, 1);
-    mat.opacity = u * broken;
+    /*
+     * Long and thin, not short and fat.
+     *
+     * Both dimensions came off one number and the big ones were coming out as
+     * orange planks — at three to one a spark still reads as a stick. Thickness
+     * is now about a ninth of the length at full size, which is a streak.
+     */
+    const len = spark.size * (2.2 + u * 2.1);
+    mesh.scale.set(len, spark.size * 0.34, 1);
+    /*
+     * Saturated the whole way, never pale.
+     *
+     * The obvious thing is white-hot at birth cooling to orange, and on a white
+     * band white-hot is invisible — the brightest part of each spark was the
+     * part that disappeared. They stay orange and only vary in how deep.
+     */
+    mat.color.setRGB(1, 0.24 + spark.hot * 0.2 * u, 0.02);
+    /*
+     * Solid for most of its life, then gone.
+     *
+     * Fading across the whole life looks right in isolation and is wrong on a
+     * white band: a half-transparent orange streak on white is salmon, and
+     * salmon is not a spark at any size. They hold full colour and get shorter
+     * instead — the length already tracks the same curve — so what disappears
+     * is the spark, not its saturation.
+     */
+    mat.opacity = Math.min(1, u * 4) * heat;
+  }
+
+  for (let i = 0; i < FLASHES; i++) {
+    const f = fault.flares[i];
+    const mesh = flareMeshes[i];
+    const mat = fault.flareMats[i];
+    if (!mesh || !mat) continue;
+    if (f.life <= 0) {
+      if (mat.opacity !== 0) mat.opacity = 0;
+      continue;
+    }
+    f.life -= step;
+    const u = Math.max(0, f.life / f.ttl);
+    mesh.position.set(f.x, f.y, FX_Z + 0.01);
+    mesh.scale.setScalar(f.size * (0.7 + (1 - u) * 0.7));
+    mat.opacity = u * 0.9 * heat;
   }
 
   /*
-   * Smoke: continuous, and almost nothing.
+   * Smoke: dark, and clearly coming OUT of the socket.
    *
-   * Three puffs on a slow loop, rising about a plate's height and spreading as
-   * they go. At full strength it is a thread you notice only after a spark has
-   * made you look.
+   * Born small at the top edge of the plate and growing as it climbs, so the
+   * eye reads a source rather than a floating cloud. Biased right, away from
+   * the arm that is about to reach across it.
    */
   for (let i = 0; i < PUFFS; i++) {
     const puff = fault.puffs[i];
     const mesh = puffMeshes[i];
     const mat = fault.puffMats[i];
     if (!mesh || !mat) continue;
-    puff.t += step / 2.6;
-    if (puff.t > 1) puff.t -= 1;
+    puff.t += step / (2.2 + (i % 4) * 0.18);
+    if (puff.t > 1) {
+      puff.t -= 1;
+      puff.seed = Math.random() * 6.28;
+    }
     const u = puff.t;
     mesh.position.set(
-      0.004 + Math.sin(u * 4.2 + i) * 0.016,
-      0.064 + u * 0.12,
-      0.012
+      0.016 + Math.sin(u * 3.3 + puff.seed) * 0.032 + u * 0.03,
+      0.035 + u * 0.26,
+      FX_Z - 0.02 + (i % 3) * 0.004
     );
-    mesh.scale.setScalar(0.06 + u * 0.1);
-    mat.opacity = Math.sin(Math.min(1, u) * Math.PI) * 0.42 * broken;
+    mesh.scale.setScalar(0.048 + u * 0.14);
+    mesh.rotation.z = puff.seed + u * 1.1;
+    /*
+     * Opaque almost at once, then thinning the whole way up.
+     *
+     * Fading IN would be honest and is wrong: a puff that arrives gradually
+     * seems to condense out of the air a little above the socket, and the one
+     * thing this has to say is where it is coming FROM. Full darkness within a
+     * few pixels of the faceplate puts the source beyond doubt.
+     */
+    mat.opacity =
+      Math.min(1, u * 9) * Math.pow(1 - u, 1.15) * 0.58 * heat * heat;
   }
 
   if (process.env.NODE_ENV !== "production") {
-    const w = window as unknown as Record<string, unknown>;
-    let live = 0;
-    let top = 0;
-    for (let i = 0; i < SPARKS; i++) {
-      if (fault.sparks[i].life > 0) live++;
-      top = Math.max(top, fault.sparkMats[i].opacity);
-    }
-    w.__fxFault = {
-      visible: group.visible,
-      children: group.children.length,
-      live,
-      sparkOpacity: +top.toFixed(2),
-      puffOpacity: +fault.puffMats[0].opacity.toFixed(3),
+    (window as unknown as Record<string, unknown>).__fxFault = {
+      sparks: fault.sparks.filter((x) => x.life > 0).length,
+      flares: fault.flares.filter((x) => x.life > 0).length,
+      smoke: +fault.puffMats.reduce((a, m) => a + m.opacity, 0).toFixed(2),
+      flash: +fault.flashMat.opacity.toFixed(2),
       broken: +broken.toFixed(2),
-      meshes: sparkMeshes.filter(Boolean).length,
-      scale0: +(sparkMeshes[0]?.scale.x ?? -1).toFixed(4),
+      heat: +heat.toFixed(2),
     };
   }
 
-  /* The flicker, and the closing flash. Same quad, same clock. */
+  /* The flicker, the bursts and the closing flash all share this quad. */
   if (fault.flashFor > 0) {
     fault.flashFor -= step;
-    const u = Math.max(0, fault.flashFor) / 0.18;
+    const u = Math.max(0, fault.flashFor) / 0.3;
     if (flash) {
-      flash.scale.setScalar(0.13 + (1 - u) * 0.06);
-      fault.flashMat.opacity = u * 0.7;
+      flash.scale.setScalar(0.2 + (1 - u) * 0.14);
+      fault.flashMat.opacity = Math.min(1, u * 1.6) * fault.flashPeak * 0.85 * heat;
     }
-  } else if (fault.flashMat.opacity !== 0) {
-    fault.flashMat.opacity = 0;
+  } else {
+    fault.flashPeak = 0;
+    if (fault.flashMat.opacity !== 0) fault.flashMat.opacity = 0;
   }
 }
 
@@ -376,6 +604,7 @@ function Outlet({ id }: FixableProps) {
   const faultGroup = useRef<THREE.Group>(null);
   const sparkMeshes = useRef<(THREE.Mesh | null)[]>([]);
   const puffMeshes = useRef<(THREE.Mesh | null)[]>([]);
+  const flareMeshes = useRef<(THREE.Mesh | null)[]>([]);
   const flash = useRef<THREE.Mesh>(null);
   const f = useRef(0);
   const fault = useMemo(() => makeFault(), []);
@@ -396,6 +625,7 @@ function Outlet({ id }: FixableProps) {
       group,
       sparkMeshes.current,
       puffMeshes.current,
+      flareMeshes.current,
       flash.current,
       broken,
       f.current,
@@ -429,10 +659,12 @@ function Outlet({ id }: FixableProps) {
       </group>
       {/*
         The fault, outside the tilting plate so the smoke rises straight up
-        while the faceplate hangs crooked.
+        while the faceplate hangs crooked. Flagged so the prop's drop shadow
+        measures the socket and not these unit-sized quads.
       */}
       <group ref={faultGroup} userData={{ fx: true }}>
-        <mesh ref={flash} material={fault.flashMat} position={[0, 0, 0.014]}>
+        {/* The stain sits just behind the plate's top edge, on the wall. */}
+        <mesh material={fault.sootMat} position={[0.008, 0.075, -0.004]} scale={0.19}>
           <planeGeometry args={[1, 1]} />
         </mesh>
         {fault.puffMats.map((mat, i) => (
@@ -440,6 +672,20 @@ function Outlet({ id }: FixableProps) {
             key={`puff-${i}`}
             ref={(node) => {
               puffMeshes.current[i] = node;
+            }}
+            material={mat}
+          >
+            <planeGeometry args={[1, 1]} />
+          </mesh>
+        ))}
+        <mesh ref={flash} material={fault.flashMat} position={[0.01, 0, FX_Z]}>
+          <planeGeometry args={[1, 1]} />
+        </mesh>
+        {fault.flareMats.map((mat, i) => (
+          <mesh
+            key={`flare-${i}`}
+            ref={(node) => {
+              flareMeshes.current[i] = node;
             }}
             material={mat}
           >

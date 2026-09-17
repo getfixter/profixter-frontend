@@ -137,6 +137,16 @@ export type WorkMotion = {
   clip: ClipSpec;
   handOffset: [number, number, number];
   /**
+   * Which fist holds the tool in this stance. Right unless stated.
+   *
+   * Not a preference — a fact about the take. The kneel came out of a reload
+   * preset, and a reload is the right hand down at the magazine while the LEFT
+   * arm holds the thing out in front. Attaching the screwdriver to the right
+   * hand by convention therefore put it by his knee while the empty hand did
+   * the work at the socket, which no amount of aiming can rescue.
+   */
+  toolHand?: "left" | "right";
+  /**
    * Is he working above himself?
    *
    * Stated rather than inferred from the hand height. It was inferred, against
@@ -315,6 +325,7 @@ export const WORK_MOTIONS: Record<string, WorkMotion> = {
    */
   kneel: {
     id: "kneel",
+    toolHand: "left",
     crouched: true,
     boxH: 0.72,
     headMaxDeg: 72,
@@ -685,6 +696,7 @@ export const JOBS: StageJob[] = [
 export const OBJECT_SCALE = 1.7;
 
 export const TOOL_ATTACH_BONE = "RightHand";
+export const TOOL_ATTACH_BONE_LEFT = "LeftHand";
 
 /**
  * How far up the hand the tool is held, as a fraction of its length.
