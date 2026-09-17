@@ -69,6 +69,28 @@ const HomepageScene = dynamic(
       }),
   { ssr: false, loading: () => null }
 );
+/**
+ * The little world — the current experiment.
+ *
+ * Its own scene rather than a mode inside the touring one, because it shares
+ * almost nothing with it: no placement search, no safe areas, no scheduler. The
+ * touring version stays one click away for comparison until we are sure this is
+ * the better idea.
+ */
+const WorldScene = dynamic(
+  () =>
+    import("@/app/components/lab/WorldScene")
+      .then((mod) => {
+        setDiag({ chunk: "loaded" });
+        return mod;
+      })
+      .catch((error) => {
+        setDiag({ chunk: "FAILED: " + String(error).slice(0, 120) });
+        addDiagError("chunk: " + String(error));
+        throw error;
+      }),
+  { ssr: false, loading: () => null }
+);
 const LabArticlePage = dynamic(
   () => import("@/app/components/lab/LabPages").then((m) => m.LabArticlePage),
   { ssr: false, loading: () => null }
@@ -87,7 +109,7 @@ const LabHomepage = dynamic(() => import("@/app/components/lab/LabHomepage"), {
 });
 
 /** Which experiment the Lab is showing. */
-type LabMode = "homepage" | "stage";
+type LabMode = "world" | "homepage" | "stage";
 
 /**
  * Which mock page the character is standing on.
@@ -244,7 +266,7 @@ export default function LabClient() {
    * belongs inside the website, so that is what the Lab opens on; the empty
    * stage stays one click away for comparison.
    */
-  const [mode, setMode] = useState<LabMode>("homepage");
+  const [mode, setMode] = useState<LabMode>("world");
   const [page, setPage] = useState<LabPage>("homepage");
   /*
    * Preview hides every control so the experiment can be judged as a website
@@ -378,6 +400,61 @@ export default function LabClient() {
    * that `position: fixed` on the canvas means what it means on a real website
    * and the scroll being tested is the browser's own.
    */
+  /*
+   * The little world, over the mock homepage.
+   *
+   * The page is there so the composition can be judged against real content —
+   * it scrolls behind the world, which stays put on the screen.
+   */
+  if (mode === "world") {
+    return (
+      <div className="relative min-h-screen bg-white">
+        {!preview && (
+          <div
+            data-fx-chrome=""
+            className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-1.5"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setPreview(false);
+                setSceneKey((k) => k + 1);
+              }}
+              className="min-h-[30px] shrink-0 rounded-lg bg-[#306EEC] px-3 text-[12px] font-bold text-white active:scale-[0.99]"
+            >
+              &#9654; RESTART
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("homepage")}
+              className="min-h-[30px] shrink-0 rounded-lg border border-slate-300 px-3 text-[12px] font-bold text-slate-700"
+            >
+              Old tour
+            </button>
+            <p className="truncate font-mono text-[11px] text-slate-600">
+              {sceneStatus}
+            </p>
+          </div>
+        )}
+        {!preview && <LabDiagnostics />}
+        <LabHomepage />
+        <LabErrorBoundary fixed key={sceneKey}>
+          <WorldScene />
+        </LabErrorBoundary>
+        {!preview && (
+          <button
+            type="button"
+            onClick={() => setPreview(true)}
+            data-fx-chrome=""
+            className="fixed bottom-3 right-3 z-[60] rounded-full bg-[#0B1628] px-4 py-2 text-[12px] font-bold text-white"
+          >
+            Preview
+          </button>
+        )}
+      </div>
+    );
+  }
+
   if (mode === "homepage") {
     return (
       <div className="relative min-h-screen bg-white">
