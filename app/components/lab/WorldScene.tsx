@@ -35,7 +35,9 @@ import {
   clipForBeat,
   createWorldRuntime,
   layoutWorld,
+  homeAt,
   stepWorld,
+  walkClipRate,
   type WorldMark,
   type WorldRuntime,
 } from "./lab-world";
@@ -214,10 +216,12 @@ function ObjectShadow({ of }: { of: React.RefObject<THREE.Group | null> }) {
 
 function WorldFixter({
   marks,
+  home,
   characterScale,
   onBeat,
 }: {
   marks: WorldMark[];
+  home: THREE.Vector3;
   characterScale: number;
   onBeat: (runtime: WorldRuntime) => void;
 }) {
@@ -330,10 +334,28 @@ function WorldFixter({
     setDiag({ model: `world · ${names.length} clips` });
   }, [names.length]);
 
-  /* The performance. Created once per composition, and it runs to the end. */
-  const runtime = useMemo(() => createWorldRuntime(marks), [marks]);
+  /*
+   * The performance. Created ONCE, and it runs to the end.
+   *
+   * This was memoised on the marks and the home point, which are themselves
+   * memoised on the viewport size — so anything that nudged the canvas by a
+   * pixel built a brand new runtime, reset every repair, and started the whole
+   * show again from the socket. I caught it watching a ninety-second capture:
+   * he walked home, and then quietly did all six a second time. Keyed on the
+   * NUMBER of repairs instead, which never changes, so a resize re-aims him
+   * rather than rewinding him.
+   */
+  const runtime = useMemo(
+    () => createWorldRuntime(marks, home),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [marks.length]
+  );
   useEffect(() => {
     resetObjectFix();
+    if (process.env.NODE_ENV !== "production") {
+      const w = window as unknown as Record<string, unknown>;
+      w.__fxMounts = ((w.__fxMounts as number) ?? 0) + 1;
+    }
   }, [runtime]);
 
   const currentAction = useRef<THREE.AnimationAction | null>(null);
@@ -353,6 +375,21 @@ function WorldFixter({
     const dt = Math.min(0.1, rawDelta);
     const group = groupRef.current;
     if (!group || !marks.length) return;
+
+    /*
+     * Keep the targets current without disturbing the story.
+     *
+     * If the viewport changes shape the composition moves, so where he is
+     * walking to moves with it. Re-pointing is all that is needed: the beat, the
+     * index and what he has already mended are untouched.
+     */
+    runtime.home.copy(home);
+    if (runtime.beat === "WALK") {
+      const aim =
+        runtime.index >= marks.length ? home : marks[runtime.index].feet;
+      runtime.to.copy(aim);
+      runtime.distance = runtime.from.distanceTo(runtime.to);
+    }
 
     stepWorld(runtime, marks, dt, setObjectFix, characterScale);
 
@@ -390,6 +427,20 @@ function WorldFixter({
       }
     }
 
+    /*
+     * The legs run at the speed he is actually travelling.
+     *
+     * Set once at the crossfade this was a constant, so the clip kept its own
+     * pace while he accelerated out of an idle and braked into an arrival —
+     * which is exactly when feet skate. Driven per frame, the stride stretches
+     * and shortens with him and the contact stays put.
+     */
+    if (currentAction.current && want === roles.walkInPlace) {
+      currentAction.current.setEffectiveTimeScale(
+        walkClipRate(runtime.speed, characterScale)
+      );
+    }
+
     const mark = marks[Math.min(runtime.index, marks.length - 1)];
     const wantTool =
       runtime.beat === "WORK" || runtime.beat === "WORK_IN"
@@ -406,6 +457,7 @@ function WorldFixter({
         fixed: runtime.fixed.filter(Boolean).length,
         total: marks.length,
         rested: +runtime.restedFor.toFixed(1),
+        mounts: (window as unknown as Record<string, number>).__fxMounts ?? 0,
       };
     }
     onBeat(runtime);
@@ -475,6 +527,10 @@ function WorldContents() {
       ),
     [size.width, size.height, unitPx, characterScale, narrow]
   );
+  const home = useMemo(
+    () => homeAt({ w: size.width, h: size.height }, unitPx, narrow),
+    [size.width, size.height, unitPx, narrow]
+  );
   const objectScale = characterScale * objectRatio;
 
   const report = useRef(0);
@@ -506,6 +562,7 @@ function WorldContents() {
       <Suspense fallback={null}>
         <WorldFixter
           marks={marks}
+          home={home}
           characterScale={characterScale}
           onBeat={onBeat}
         />
