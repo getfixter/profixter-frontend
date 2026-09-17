@@ -26,7 +26,7 @@ import {
 } from "./meshy-bone-map";
 import { reverseClip, subclipByTime } from "./lab-clip-utils";
 import { AimedHandTool } from "./lab-tools";
-import { createContactShadow } from "./lab-materials";
+import { createContactShadow, createContactTexture } from "./lab-materials";
 import FixableObject from "./lab-objects";
 import { setObjectFix, resetObjectFix } from "./lab-object-state";
 import { setDiag } from "./lab-diagnostics";
@@ -86,6 +86,8 @@ const LOOP_MODE: Record<LoopStyle, THREE.AnimationActionLoopStyles> = {
 
 /* Scratch, so the frame loop allocates nothing. */
 const _shadowAt = new THREE.Vector3();
+const _propBox = new THREE.Box3();
+const _propSize = new THREE.Vector3();
 
 /**
  * A module function rather than an inline effect, because the React Compiler
@@ -153,6 +155,59 @@ function ContactShadow({
     <mesh ref={ref} rotation={[-Math.PI / 2.06, 0, 0]}>
       <planeGeometry args={[1.5 * scale, 1.0 * scale]} />
       <meshBasicMaterial map={texture} transparent depthWrite={false} />
+    </mesh>
+  );
+}
+
+/**
+ * The shadow a repair casts onto the page.
+ *
+ * The mounting patches are gone, which is right — they read as cards — but they
+ * were also doing a second job nobody noticed until they left: a white basin or
+ * a white faceplate on a white band has nothing to separate it from the paper.
+ * This is the shadow without the card. A soft radial blob, offset down and
+ * right to agree with the key light, fading to nothing at its edges so there is
+ * no rectangle anywhere in it.
+ *
+ * Sized from the object itself on its first drawn frame rather than from a
+ * number per prop: the set ranges from a socket to a cabinet, and one constant
+ * would be wrong for both ends of it.
+ */
+function ObjectShadow({ of }: { of: React.RefObject<THREE.Group | null> }) {
+  const ref = useRef<THREE.Mesh>(null);
+  const texture = useMemo(() => createContactTexture(), []);
+  const sized = useRef(false);
+  useFrame(() => {
+    const target = of.current;
+    const mesh = ref.current;
+    if (!target || !mesh || sized.current) return;
+    _propBox.setFromObject(target);
+    _propBox.getSize(_propSize);
+    if (_propSize.x <= 0 || _propSize.y <= 0) return;
+    sized.current = true;
+    /*
+     * Barely there, on purpose.
+     *
+     * I overshot this first: half again the object's size at two-thirds opacity
+     * put a soft grey cloud behind every prop, and behind the picture frame it
+     * read as exactly the card we had just spent the morning removing. A
+     * shadow that anybody notices AS a shadow is already too strong here. This
+     * is the smallest one that still stops a white basin dissolving into a
+     * white band.
+     */
+    const w = Math.max(_propSize.x, _propSize.y) * 1.08;
+    mesh.scale.set(w, w, 1);
+    mesh.position.set(
+      target.position.x + _propSize.x * 0.17,
+      target.position.y - _propSize.y * 0.19,
+      target.position.z - 0.06
+    );
+    mesh.visible = true;
+  });
+  return (
+    <mesh ref={ref} visible={false}>
+      <planeGeometry args={[1, 1]} />
+      <meshBasicMaterial map={texture} transparent opacity={0.3} depthWrite={false} />
     </mesh>
   );
 }
@@ -382,6 +437,31 @@ function WorldFixter({
   );
 }
 
+/** One repair, and the shadow it drops on the page behind it. */
+function WorldObject({
+  mark,
+  objectScale,
+}: {
+  mark: WorldMark;
+  objectScale: number;
+}) {
+  const ref = useRef<THREE.Group>(null);
+  return (
+    <>
+      <ObjectShadow of={ref} />
+      <group ref={ref} position={[mark.object.x, mark.object.y, mark.object.z]}>
+        <FixableObject
+          kind={mark.spot.kind}
+          id={mark.spot.id}
+          position={[0, 0, 0]}
+          scale={objectScale * (mark.spot.scale ?? 1)}
+          rotationDeg={mark.spot.rotationDeg ?? [0, 0, 0]}
+        />
+      </group>
+    </>
+  );
+}
+
 function WorldContents() {
   const size = useThree((state) => state.size);
   const { narrow, unitPx, characterScale, objectRatio } = sizing(size.width);
@@ -411,13 +491,10 @@ function WorldContents() {
     <>
       <WorldCamera />
       {marks.map((mark) => (
-        <FixableObject
+        <WorldObject
           key={mark.spot.id}
-          kind={mark.spot.kind}
-          id={mark.spot.id}
-          position={[mark.object.x, mark.object.y, mark.object.z]}
-          scale={objectScale * (mark.spot.scale ?? 1)}
-          rotationDeg={mark.spot.rotationDeg ?? [0, 0, 0]}
+          mark={mark}
+          objectScale={objectScale}
         />
       ))}
       {/*
@@ -442,7 +519,15 @@ export default function WorldScene() {
     <div
       data-fx-layer="1"
       data-fx-chrome=""
-      className="pointer-events-none fixed inset-0 z-40"
+      /*
+        BEHIND the interface, not over it.
+        The page paints its band colours at z-0 and its text, cards and buttons
+        at z-20; the world lives in between. That single number is what turns a
+        3D overlay into a character who lives in the site: the booking button
+        passes in front of him, a paragraph stays perfectly readable while a
+        cabinet drifts under it, and nothing has to be kept away from anything.
+      */
+      className="pointer-events-none fixed inset-0 z-10"
     >
       <Canvas
         flat
@@ -457,10 +542,19 @@ export default function WorldScene() {
           });
         }}
       >
-        <ambientLight intensity={0.78} />
-        <hemisphereLight args={["#ffffff", "#dfe4ec", 0.6]} />
-        <directionalLight position={[-4, 6, 8]} intensity={1.35} />
-        <directionalLight position={[5, 2, 4]} intensity={0.45} />
+        {/*
+          Less ambient, more key.
+          With the mounting patches gone, a white basin or a white faceplate has
+          nothing behind it but the page — and on the white bands that was a
+          pale shape on pale paper. Flat ambient light was most of the reason:
+          at 0.78 nothing had a dark side. Dropping it and driving a single key
+          from the upper left gives every prop real shading, which is what
+          separates it from the paper it is standing on.
+        */}
+        <ambientLight intensity={0.44} />
+        <hemisphereLight args={["#ffffff", "#c8cfdc", 0.42]} />
+        <directionalLight position={[-4, 6, 8]} intensity={1.65} />
+        <directionalLight position={[5, 2, 4]} intensity={0.4} />
         <WorldContents />
       </Canvas>
     </div>

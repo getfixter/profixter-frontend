@@ -283,7 +283,17 @@ export default function LabHomepage() {
   );
 
   return (
-    <div className="bg-white text-[#111111]">
+    /*
+      THE PAGE IS THREE LAYERS NOW, and the middle one is not here.
+      Every band paints its colour into an absolutely-positioned div at z-0,
+      and every band's content sits in a wrapper at z-20. The 3D world is
+      mounted at z-10 by the Lab shell, which puts the whole little household
+      BEHIND the interface: he can walk past the booking button and the button
+      covers him, and a cabinet can drift under a paragraph without touching a
+      word of it. The alternative — keeping objects away from text — is the
+      thing we spent two builds failing to do.
+    */
+    <div className="text-[#111111]">
       {/* ============================== HEADER ============================ */}
       {/*
         z-50, above the 3D layer's z-40. A sticky header is chrome: the
@@ -320,10 +330,11 @@ export default function LabHomepage() {
       </header>
 
       {/* =============================== HERO ============================= */}
-      <section className="relative bg-[#080E18]">
+      <section className="relative">
+        <div aria-hidden="true" className="absolute inset-0 z-0 bg-[#080E18]" />
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_0%,rgba(48,110,236,0.20)_0%,transparent_60%)]"
+          className="absolute inset-0 z-0 bg-[radial-gradient(120%_80%_at_50%_0%,rgba(48,110,236,0.20)_0%,transparent_60%)]"
         />
         <div /*
               Extra bottom padding on a phone only. A mobile hero is packed
@@ -331,7 +342,7 @@ export default function LabHomepage() {
               the character had nowhere to stand that was not on top of a
               sentence. The page gives him a strip of its own.
             */
-            className="relative mx-auto grid max-w-[1120px] gap-8 px-5 pb-32 pt-12 sm:px-6 sm:pb-16 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10 lg:pb-24 lg:pt-20">
+            className="relative z-20 mx-auto grid max-w-[1120px] gap-8 px-5 pb-32 pt-12 sm:px-6 sm:pb-16 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10 lg:pb-24 lg:pt-20">
           <div>
             <Eyebrow tone="light" anchorId="hero-eyebrow">
               Handyman membership · Long Island
@@ -382,8 +393,8 @@ export default function LabHomepage() {
       </section>
 
       {/* ============================ THE LIST ============================ */}
-      <section className="px-5 py-11 sm:px-6 sm:py-14">
-        <div className="mx-auto max-w-[1120px]">
+      <section className="relative px-5 py-11 sm:px-6 sm:py-14">
+        <div className="relative z-20 mx-auto max-w-[1120px]">
           <Eyebrow>The list</Eyebrow>
           <H2>There&rsquo;s always something.</H2>
 
@@ -415,8 +426,9 @@ export default function LabHomepage() {
       </section>
 
       {/* =========================== MEMBERSHIP =========================== */}
-      <section className="bg-[#080F1E] px-5 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-[1120px] text-white">
+      <section className="relative px-5 py-12 sm:px-6 sm:py-16">
+        <div aria-hidden="true" className="absolute inset-0 z-0 bg-[#080F1E]" />
+        <div className="relative z-20 mx-auto max-w-[1120px] text-white">
           <Eyebrow tone="light">Membership</Eyebrow>
           <h2
             ref={membershipHeading}
@@ -433,8 +445,9 @@ export default function LabHomepage() {
       </section>
 
       {/* ========================== HOW IT WORKS ========================== */}
-      <section className="bg-[#F5F5F7] px-5 py-11 sm:px-6 sm:py-14">
-        <div className="mx-auto max-w-[1120px]">
+      <section className="relative px-5 py-11 sm:px-6 sm:py-14">
+        <div aria-hidden="true" className="absolute inset-0 z-0 bg-[#F5F5F7]" />
+        <div className="relative z-20 mx-auto max-w-[1120px]">
           <Eyebrow>How it works</Eyebrow>
           <H2>Book it. We come. It&rsquo;s done.</H2>
           <ol className="mt-7 max-w-[640px] sm:mt-9">
@@ -460,8 +473,8 @@ export default function LabHomepage() {
       </section>
 
       {/* ========================== WHAT IT COSTS ========================= */}
-      <section className="px-5 py-11 sm:px-6 sm:py-14">
-        <div className="mx-auto max-w-[820px]">
+      <section className="relative px-5 py-11 sm:px-6 sm:py-14">
+        <div className="relative z-20 mx-auto max-w-[820px]">
           <Eyebrow>What it costs</Eyebrow>
           <H2>Membership starts at $149 a month.</H2>
           <Lede>
@@ -501,8 +514,8 @@ export default function LabHomepage() {
       </section>
 
       {/* ============================== TRUST ============================= */}
-      <section className="px-5 pb-14 sm:px-6 sm:pb-16">
-        <div className="mx-auto max-w-[1120px]">
+      <section className="relative px-5 pb-14 sm:px-6 sm:pb-16">
+        <div className="relative z-20 mx-auto max-w-[1120px]">
           <Eyebrow>Who comes to your home</Eyebrow>
           <H2>A local company, not a marketplace.</H2>
           <Lede>
@@ -530,8 +543,9 @@ export default function LabHomepage() {
       </section>
 
       {/* ============================= FOOTER ============================= */}
-      <footer className="border-t border-[#EDEDF0] bg-[#F5F5F7] px-5 py-9 sm:px-6">
-        <div className="mx-auto flex max-w-[1120px] flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <footer className="relative border-t border-[#EDEDF0] px-5 py-9 sm:px-6">
+        <div aria-hidden="true" className="absolute inset-0 z-0 bg-[#F5F5F7]" />
+        <div className="relative z-20 mx-auto flex max-w-[1120px] flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <Logo />
           <p className="text-[13px] text-[#6E6E73]">
             Lab mock &middot; not the production homepage
