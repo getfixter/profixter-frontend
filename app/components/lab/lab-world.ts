@@ -142,7 +142,8 @@ export const WORLD_SPOTS: WorldSpot[] = [
     at: { x: 0.55, y: 0.79 },
     narrow: { x: 0.42, y: 0.8 },
     side: 1,
-    seconds: 3.8,
+    seconds: 3.6,
+    admire: 1.4,
     /*
      * Iconic, not accurate.
      *
@@ -164,7 +165,6 @@ export const WORLD_SPOTS: WorldSpot[] = [
      */
     stand: [0.5, -0.36],
     aim: [-0.02, 0.0],
-    admire: 2.1,
     toolScale: 1.28,
   },
   {
@@ -190,8 +190,8 @@ export const WORLD_SPOTS: WorldSpot[] = [
      * lifts the door, drills the hinge, seats it, and then tries it. Four
      * things at four seconds is four things nobody sees.
      */
-    seconds: 5.6,
-    admire: 1.9,
+    seconds: 4.6,
+    admire: 1.2,
     /*
      * Big enough to be a cabinet.
      *
@@ -231,10 +231,19 @@ export const WORLD_SPOTS: WorldSpot[] = [
     narrow: { x: 0.19, y: 0.31 },
     side: 1,
     /* Lift, square, let go, watch it rock. */
-    seconds: 4.0,
-    admire: 1.7,
-    scale: 1.05,
-    stand: [0.72, -0.86],
+    seconds: 2.4,
+    admire: 0.7,
+    /*
+     * The one that was getting lost.
+     *
+     * Watched end to end, five of the six repairs announce themselves and this
+     * one did not: a seventy-pixel frame behind body copy, changing angle by
+     * twenty degrees, in the busiest part of the page. It is not a worse idea
+     * than the others, it was a smaller one. At this size it is the largest
+     * thing in the upper half of the screen and the tilt is unmissable.
+     */
+    scale: 1.4,
+    stand: [0.95, -0.86],
   },
   {
     id: "lamp",
@@ -245,8 +254,8 @@ export const WORLD_SPOTS: WorldSpot[] = [
     at: { x: 0.37, y: 0.17 },
     narrow: { x: 0.56, y: 0.18 },
     side: -1,
-    seconds: 4.6,
-    admire: 1.8,
+    seconds: 3.1,
+    admire: 1.2,
     scale: 1.12,
     /*
      * Deep enough below it that his hand reaches the COLLAR.
@@ -278,8 +287,8 @@ export const WORLD_SPOTS: WorldSpot[] = [
      */
     narrow: { x: 0.78, y: 0.29 },
     side: -1,
-    seconds: 5.2,
-    admire: 1.8,
+    seconds: 3.3,
+    admire: 0.7,
     scale: 0.8,
     stand: [0.78, -0.86],
     aim: [-0.42, -0.14],
@@ -304,8 +313,8 @@ export const WORLD_SPOTS: WorldSpot[] = [
     narrow: { x: 0.76, y: 0.6 },
     side: -1,
     /* Three bites of the wrench and a beat to watch it stop. */
-    seconds: 5.0,
-    admire: 2.0,
+    seconds: 3.9,
+    admire: 1.3,
     /*
      * Big, because the water has to be bigger than the sink.
      *
@@ -491,14 +500,22 @@ export type WorldRuntime = {
 /** A repair is visibly mended a little before he stops fussing over it. */
 const FIX_AT = 0.72;
 
-/** A beat of standing and looking at it before he moves on. */
-const ADMIRE_SECONDS = 0.85;
+/**
+ * A beat of standing and looking at it before he moves on.
+ *
+ * Halved, along with every other pause in here. The full performance ran to a
+ * minute and a half, and almost none of that was repairs — it was arrivals,
+ * settles, looks and walks. Somebody who gives this twenty seconds should see
+ * more than two jobs, so every gap that was not itself worth watching has come
+ * down and the seconds have gone back into the six things that are.
+ */
+const ADMIRE_SECONDS = 0.55;
 
 /** A moment to settle between the last step and the first turn of the screwdriver. */
-const ARRIVE_SECONDS = 0.26;
+const ARRIVE_SECONDS = 0.14;
 
 /** How long he waits at the start before setting off. */
-const START_SECONDS = 0.7;
+const START_SECONDS = 0.35;
 
 /**
  * Metres per second, in his own scale.
@@ -510,15 +527,23 @@ const START_SECONDS = 0.7;
  * still looks like walking when it is played at that rate.
  */
 const MEASURED_WALK = 0.875;
-const GAIT = 1.8;
+/*
+ * Brisk, and capped by his own legs.
+ *
+ * The clip is played at whatever rate matches the ground he is covering, so
+ * GAIT is really "how much faster than the take is he allowed to move" — and
+ * past about 2.2 the feet stop keeping up and he skates. This is just under
+ * that: as quick as he can go and still be walking.
+ */
+const GAIT = 2.15;
 
 export function walkSpeed(characterScale: number): number {
   return MEASURED_WALK * characterScale * GAIT;
 }
 
 /** Up to speed in about a third of a second, down again a little quicker. */
-const ACCEL = 3.4;
-const BRAKE = 4.6;
+const ACCEL = 4.2;
+const BRAKE = 6.2;
 
 /**
  * How far out he starts slowing down, in his own units.
@@ -527,7 +552,16 @@ const BRAKE = 4.6;
  * Stopping dead on the last frame of a constant-speed slide is the single most
  * robotic thing in a walk cycle: real approaches are announced.
  */
-const SLOW_FROM = 1.5;
+/*
+ * Shortened hard.
+ *
+ * At a stride and a half he was braking for ninety pixels, and most legs of
+ * this route are only two hundred — so half of nearly every walk was a
+ * deceleration. Measured, walking was thirty-nine per cent of the entire
+ * performance. The approach still has to be announced; it does not have to be
+ * announced from across the room.
+ */
+const SLOW_FROM = 0.72;
 
 /**
  * When to stop steering toward the destination and start facing the work.
@@ -538,23 +572,34 @@ const SLOW_FROM = 1.5;
  */
 const TURN_IN_AT = 0.76;
 
+/**
+ * HE IS ALREADY THERE.
+ *
+ * The opening used to be a beat of standing still and then a walk across the
+ * screen, and the first thing a new visitor saw was travel. Nothing about that
+ * is worth the three seconds it costs: the six broken things are on screen from
+ * the first frame and they are the hook, so he starts standing at the first one
+ * with his hands about to move. HOME is still HOME — it is where he goes when
+ * the work runs out, which is a different job from where he begins.
+ */
 export function createWorldRuntime(
   marks: WorldMark[],
   home: THREE.Vector3
 ): WorldRuntime {
+  const first = marks[0];
   return {
-    beat: "START",
-    index: -1,
+    beat: first ? "ARRIVE" : "START",
+    index: first ? 0 : -1,
     queue: marks.map((_, i) => i),
     elapsed: 0,
-    position: home.clone(),
-    yaw: 0,
+    position: first ? first.feet.clone() : home.clone(),
+    yaw: first ? first.yaw : 0,
     speed: 0,
     progress: 0,
     fixed: marks.map(() => false),
     from: home.clone(),
     to: home.clone(),
-    arriveYaw: 0,
+    arriveYaw: first ? first.yaw : 0,
     distance: 0,
     travelled: 0,
     restedFor: 0,
@@ -721,7 +766,7 @@ export function stepWorld(
       /* Lowering himself. The clip does it; we only wait for it. */
       if (!mark) break;
       runtime.yaw = approach(runtime.yaw, mark.yaw, dt, 8);
-      if (runtime.elapsed >= 0.62) {
+      if (runtime.elapsed >= 0.42) {
         runtime.beat = "WORK";
         runtime.elapsed = 0;
       }
@@ -756,7 +801,7 @@ export function stepWorld(
 
     case "WORK_OUT": {
       /* Standing back up out of the crouch. */
-      if (runtime.elapsed >= 0.55) {
+      if (runtime.elapsed >= 0.38) {
         runtime.beat = "ADMIRE";
         runtime.elapsed = 0;
       }

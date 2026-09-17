@@ -94,6 +94,27 @@ export function getObjectBounds(id: string): [number, number] | null {
   return bounds[id] ?? null;
 }
 
+/**
+ * When a visitor last broke this thing with a tap.
+ *
+ * Props read it to give the break a shape. Without this a tapped object eased
+ * into its damaged pose over a third of a second, which is correct and reads as
+ * nothing — the visitor touches the screen and something quietly becomes true.
+ * A quarter-second of the thing GIVING is the whole difference between watching
+ * a state change and feeling you caused one.
+ */
+const brokenAt: Record<string, number> = {};
+
+export function markObjectBroken(id: string) {
+  brokenAt[id] = performance.now();
+}
+
+/** Seconds since a tap broke it. Large if nobody ever has. */
+export function objectBreakAge(id: string) {
+  const at = brokenAt[id];
+  return at === undefined ? 99 : (performance.now() - at) / 1000;
+}
+
 export function setObjectBusy(id: string, value: number) {
   busy[id] = value;
 }

@@ -18,6 +18,7 @@ import {
   getObjectFix,
   getObjectNudge,
   getObjectWork,
+  objectBreakAge,
 } from "./lab-object-state";
 
 /**
@@ -94,6 +95,30 @@ function ease(current: number, target: number, dt: number, rate?: number) {
   return current + (target - current) * (1 - Math.exp(-r * Math.min(dt, 0.1)));
 }
 
+/**
+ * HOW A THING GIVES WAY when somebody taps it.
+ *
+ * Two numbers, shared by all six. `breakRate` is how fast it collapses into its
+ * damaged pose — the default decay was a three-second drift, which was right
+ * when things aged on their own and is badly wrong now that a person is causing
+ * it: you touch the screen and nothing appears to answer. A quarter of a second
+ * answers. `breakKick` is a damped bounce over the half second after, so the
+ * thing overshoots its own broken angle and settles into it rather than
+ * arriving at it — which is the difference between a door dropping and a door
+ * being set down.
+ *
+ * Neither changes the broken state itself. They are the transition into it.
+ */
+function breakRate(id: string): number | undefined {
+  return objectBreakAge(id) < 0.7 ? 19 : undefined;
+}
+
+function breakKick(id: string): number {
+  const age = objectBreakAge(id);
+  if (age > 0.7) return 0;
+  return Math.exp(-6.5 * age) * Math.cos(14 * age);
+}
+
 /* ------------------------------------------------------------------ outlet */
 
 /**
@@ -160,6 +185,8 @@ type Fault = {
   flashPeak: number;
   cycle: number;
   finale: boolean;
+  /** Has the tap that just broke it already been answered? */
+  popped: boolean;
 };
 
 /**
@@ -249,6 +276,7 @@ function makeFault(): Fault {
     flashPeak: 0,
     cycle: -1,
     finale: false,
+    popped: false,
   };
 }
 
@@ -352,9 +380,26 @@ function stepFault(
   broken: number,
   fixed: number,
   stroke: number,
+  kick: number,
   step: number
 ): void {
   const working = stroke > 0;
+
+  /*
+   * TAPPED: it goes with a bang, not with a fade.
+   *
+   * The same flash and shower the repair ends on, fired at the other end of the
+   * story. A visitor who touches a socket and watches smoke slowly appear has
+   * not been answered; one who gets a crack of light has.
+   */
+  if (kick > 0.8 && !fault.popped) {
+    fault.popped = true;
+    fault.flashFor = 0.24;
+    fault.flashPeak = 1;
+    burst(fault, 9, 1.5);
+    flare(fault, 1.3);
+  }
+  if (kick === 0) fault.popped = false;
   /*
    * How hard the fault is running, which is NOT how bent the faceplate is.
    *
@@ -675,7 +720,8 @@ function Outlet({ id }: FixableProps) {
   useFrame((_, dt) => {
     const step = Math.min(0.05, dt);
     const target = getObjectFix(id);
-    f.current = ease(f.current, target, dt);
+    f.current = ease(f.current, target, dt, breakRate(id));
+    const kick = breakKick(id);
     const broken = 1 - f.current;
     /*
      * The snap fires a breath AFTER the closing flash, which goes off at 0.3.
@@ -707,6 +753,7 @@ function Outlet({ id }: FixableProps) {
       broken,
       f.current,
       getObjectBusy(id),
+      kick,
       step
     );
   });
@@ -815,7 +862,8 @@ function PictureFrame({ id }: FixableProps) {
   useFrame((state, dt) => {
     const now = state.clock.elapsedTime;
     const target = getObjectFix(id);
-    f.current = ease(f.current, target, dt);
+    f.current = ease(f.current, target, dt, breakRate(id));
+    const kick = breakKick(id);
     const p = getObjectWork(id);
     const working = p > 0;
 
@@ -832,7 +880,8 @@ function PictureFrame({ id }: FixableProps) {
     if (settleAt.current >= 0) settleAt.current += dt;
     if (target < 0.02 && !working && settleAt.current >= 0) settleAt.current = -1;
 
-    const off = 1 - lift * 0.74 - square * 0.21;
+    /* A tap slips the hook: it drops past its own angle and swings back. */
+    const off = 1 - lift * 0.74 - square * 0.21 + Math.max(0, kick) * 0.3;
     const swing =
       settleAt.current >= 0
         ? Math.exp(-4.2 * settleAt.current) * Math.cos(9 * settleAt.current)
@@ -947,6 +996,7 @@ function Shelf({ id }: FixableProps) {
   const screw = useRef<THREE.Mesh>(null);
   const things = useRef<(THREE.Group | null)[]>([]);
   const gritMeshes = useRef<(THREE.Mesh | null)[]>([]);
+  const gritGroup = useRef<THREE.Group>(null);
   const f = useRef(0);
   const seat = useRef(-1);
   const shop = useMemo(() => makeShop(), []);
@@ -959,7 +1009,8 @@ function Shelf({ id }: FixableProps) {
     const step = Math.min(0.05, dt);
     const now = state.clock.elapsedTime;
     const target = getObjectFix(id);
-    f.current = ease(f.current, target, dt);
+    f.current = ease(f.current, target, dt, breakRate(id));
+    const kick = breakKick(id);
     const p = getObjectWork(id);
     const stroke = getObjectBusy(id);
     const working = p > 0;
@@ -973,6 +1024,7 @@ function Shelf({ id }: FixableProps) {
 
     const shake = stepShop(
       shop,
+      gritGroup.current,
       gritMeshes.current,
       working && p > 0.36 && p < 0.76,
       stroke,
@@ -981,7 +1033,8 @@ function Shelf({ id }: FixableProps) {
       -W * 0.32,
       -0.05
     );
-    const off = (1 - lift * 0.55 - drive * 0.33) * settle;
+    /* A tap lets the bracket go: the end drops hard and rebounds once. */
+    const off = (1 - lift * 0.55 - drive * 0.33) * settle + Math.max(0, kick) * 0.26;
     /* A board held by one and a half brackets is never quite still. */
     const creak = working || target > 0.2 ? 0 : Math.sin(now * 1.9) * 0.5 + Math.sin(now * 1.1) * 0.3;
 
@@ -1077,7 +1130,7 @@ function Shelf({ id }: FixableProps) {
         ))}
       </group>
       {/* Dust out of the bracket while he drives the screw. */}
-      <group userData={{ fx: true }}>
+      <group ref={gritGroup} userData={{ fx: true }}>
         {shop.gritMats.map((mat, i) => (
           <mesh
             key={`grit-${i}`}
@@ -1152,6 +1205,7 @@ type Water = {
   dribble: number;
   nextDribble: number;
   wasFlowing: boolean;
+  popped: boolean;
 };
 
 /** Where a drop stops falling, and where the standing water sits. */
@@ -1192,6 +1246,7 @@ function makeWater(): Water {
     dribble: 0,
     nextDribble: 0,
     wasFlowing: false,
+    popped: false,
   };
 }
 
@@ -1259,9 +1314,35 @@ function stepWater(
   jet: THREE.Mesh | null,
   run: THREE.Mesh | null,
   flow: number,
+  kick: number,
   step: number
 ): void {
   const running = flow > 0.02;
+
+  /*
+   * TAPPED: the joint lets go all at once.
+   *
+   * A hard shove of water out of the nut on the first frame, so the leak
+   * ARRIVES instead of ramping up. Nothing else about the leak changes — this
+   * is the half second before the steady state it already had.
+   */
+  if (kick > 0.8 && !water.popped) {
+    water.popped = true;
+    for (let i = 0; i < 14; i++) {
+      const ang = 0.75 + (Math.random() - 0.5) * 1;
+      const speed = 0.55 + Math.random() * 0.4;
+      spill(
+        water,
+        JOINT[0],
+        JOINT[1],
+        Math.cos(ang) * speed,
+        Math.sin(ang) * speed,
+        0.016 + Math.random() * 0.026
+      );
+    }
+    water.pool = Math.max(water.pool, 0.5);
+  }
+  if (kick === 0) water.popped = false;
   const busy =
     running ||
     water.pool > 0.01 ||
@@ -1511,7 +1592,8 @@ function Faucet({ id }: FixableProps) {
   useFrame((_, dt) => {
     const step = Math.min(0.05, dt);
     const target = getObjectFix(id);
-    f.current = ease(f.current, target, dt);
+    f.current = ease(f.current, target, dt, breakRate(id));
+    const kick = breakKick(id);
     const broken = 1 - f.current;
     const p = getObjectWork(id);
     const working = p > 0;
@@ -1548,6 +1630,7 @@ function Faucet({ id }: FixableProps) {
       jet.current,
       run.current,
       Math.max(0, flow),
+      kick,
       step
     );
   });
@@ -1752,6 +1835,7 @@ function shed(shop: Shop, x: number, y: number): void {
  */
 function stepShop(
   shop: Shop,
+  group: THREE.Group | null,
   meshes: (THREE.Mesh | null)[],
   drilling: boolean,
   stroke: number,
@@ -1760,6 +1844,18 @@ function stepShop(
   atX: number,
   atY: number
 ): number {
+  /*
+   * Nothing to say, nothing to draw.
+   *
+   * A pool of nine transparent quads at zero opacity still costs nine draw
+   * calls a frame, for the whole life of the page, on an object that has been
+   * mended and will probably never be touched again. Hiding the group is the
+   * difference between "cheap" and "free", and free is what a repaired thing
+   * should be.
+   */
+  const live = drilling || shop.buzz > 0 || shop.grit.some((g) => g.life > 0);
+  if (group) group.visible = live;
+  if (!live) return 0;
   shop.buzz = Math.max(0, shop.buzz - step * 6);
   if (drilling) {
     const cycle = actionCycle("spin", stroke);
@@ -1824,6 +1920,7 @@ function Cabinet({ id }: FixableProps) {
   const screwTop = useRef<THREE.Mesh>(null);
   const handle = useRef<THREE.Group>(null);
   const gritMeshes = useRef<(THREE.Mesh | null)[]>([]);
+  const gritGroup = useRef<THREE.Group>(null);
   const f = useRef(0);
   const seat = useRef(-1);
   const shop = useMemo(() => makeShop(), []);
@@ -1832,7 +1929,8 @@ function Cabinet({ id }: FixableProps) {
     const step = Math.min(0.05, dt);
     const now = state.clock.elapsedTime;
     const target = getObjectFix(id);
-    f.current = ease(f.current, target, dt);
+    f.current = ease(f.current, target, dt, breakRate(id));
+    const kick = breakKick(id);
     const mended = f.current;
     const p = getObjectWork(id);
     const stroke = getObjectBusy(id);
@@ -1899,7 +1997,8 @@ function Cabinet({ id }: FixableProps) {
      */
     const droop = 1 - lift * 0.62 - drive * 0.26;
     const settle = seat.current >= 0 ? Math.max(0, seatCurve(seat.current)) : 1;
-    const off = seat.current >= 0 ? droop * settle : droop;
+    /* A tap pulls the last screw: the door drops past the hang and settles. */
+    const off = (seat.current >= 0 ? droop * settle : droop) + Math.max(0, kick) * 0.24;
 
     /* A door hanging on one screw never quite stops moving. */
     const hang =
@@ -1908,6 +2007,7 @@ function Cabinet({ id }: FixableProps) {
         : Math.sin(now * 2.3) * 0.6 + Math.sin(now * 1.37) * 0.4;
     const shake = stepShop(
       shop,
+      gritGroup.current,
       gritMeshes.current,
       working && p > 0.34 && p < 0.74,
       stroke,
@@ -2079,7 +2179,7 @@ function Cabinet({ id }: FixableProps) {
 
       {/* Dust off the hinge while he drills. Flagged so the drop shadow
           measures the cabinet rather than these. */}
-      <group userData={{ fx: true }}>
+      <group ref={gritGroup} userData={{ fx: true }}>
         {shop.gritMats.map((mat, i) => (
           <mesh
             key={`grit-${i}`}
@@ -2160,7 +2260,8 @@ function Lamp({ id }: FixableProps) {
     const step = Math.min(0.05, dt);
     const now = state.clock.elapsedTime;
     const target = getObjectFix(id);
-    f.current = ease(f.current, target, dt);
+    f.current = ease(f.current, target, dt, breakRate(id));
+    const kick = breakKick(id);
     const lit = f.current;
     const p = getObjectWork(id);
     const stroke = getObjectBusy(id);
@@ -2181,7 +2282,7 @@ function Lamp({ id }: FixableProps) {
     if (target < 0.02 && !working && seat.current >= 0) seat.current = -1;
     const settle = seat.current >= 0 ? Math.max(0, seatCurve(seat.current)) : 1;
 
-    const off = (1 - seated * 0.72 - driven * 0.22) * settle;
+    const off = (1 - seated * 0.72 - driven * 0.22) * settle + Math.max(0, kick) * 0.3;
     /* A dead pendant still moves: it is hanging on a wire. */
     const sway = working ? 0 : Math.sin(now * 1.15) * 0.5 + Math.sin(now * 0.71) * 0.3;
     /* And it flinches when the screwdriver bites. */
@@ -2209,6 +2310,8 @@ function Lamp({ id }: FixableProps) {
      * setting up.
      */
     const flick = flicker.current;
+    /* Tapped: it flares once and goes out, the way a bulb actually fails. */
+    if (kick > 0.8) flick.level = Math.max(flick.level, 0.9);
     if (lit < 0.05) {
       flick.next -= step;
       if (flick.next <= 0) {
