@@ -76,6 +76,24 @@ export function getObjectWork(id: string) {
   return work[id] ?? 0;
 }
 
+/**
+ * How big each repair is drawn, in world units, measured from the prop itself.
+ *
+ * Only the tap test needs this, and it needs it because the props range from a
+ * socket to a cabinet: one tap radius would be a pixel of slack on the big ones
+ * and a bullseye on the small. Published by the shadow, which is already
+ * measuring the bounding box for its own reasons.
+ */
+const bounds: Record<string, [number, number]> = {};
+
+export function setObjectBounds(id: string, w: number, h: number) {
+  bounds[id] = [w, h];
+}
+
+export function getObjectBounds(id: string): [number, number] | null {
+  return bounds[id] ?? null;
+}
+
 export function setObjectBusy(id: string, value: number) {
   busy[id] = value;
 }
