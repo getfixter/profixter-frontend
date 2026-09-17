@@ -440,8 +440,24 @@ export default function BookingSection() {
 
     if (d < today) return true;
 
+    /*
+     * The server's earliest offerable date for a member.
+     *
+     * Applied silently, exactly like every other reason a day is not offered:
+     * the day is simply not selectable, with no notice, tooltip or explanation
+     * anywhere — a closed Sunday is not annotated either. Gated on
+     * `hasSubscription` because the API scopes the same answer the same way.
+     *
+     * Presentation only. The API decides this again when the booking is
+     * created, and its decision stands whether or not this line ran.
+     */
+    const earliestBookable = config.earliestBookableDate;
+    if (hasSubscription && earliestBookable && ymd < earliestBookable) {
+      return true;
+    }
+
     return !isAvailabilityOpen(info);
-  }, [calendarMode, config, dayAvailabilityMap, isAvailabilityOpen]);
+  }, [calendarMode, config, dayAvailabilityMap, hasSubscription, isAvailabilityOpen]);
 
   const isDateSelectable = useCallback((date: Date) => {
     const normalized = new Date(date);

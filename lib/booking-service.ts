@@ -16,6 +16,19 @@ export interface CalendarConfig {
   engine?: "legacy" | "reservation";
   visitDurationMinutes?: number;
   maxAdvanceDays?: number;
+
+  /*
+   * The first date a member can be offered, resolved by the server.
+   *
+   * A date, not a policy. Whatever scheduling rules produced it stay on the
+   * server and are never sent here — the calendar treats this the same way it
+   * treats any other answer about what is available, and there is nothing in
+   * the payload for anyone to work backwards from.
+   *
+   * It arrives already resolved in company time, so the calendar never does
+   * date arithmetic against a device clock that might be in another timezone.
+   */
+  earliestBookableDate?: string;
 }
 
 export interface TimeSlot {
