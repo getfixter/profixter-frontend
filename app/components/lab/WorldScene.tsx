@@ -33,6 +33,7 @@ import FixableObject from "./lab-objects";
 import {
   getObjectBounds,
   setObjectBounds,
+  markObjectBroken,
   setObjectBusy,
   setObjectFix,
   setObjectWork,
@@ -318,7 +319,7 @@ function WorldFixter({
   unitPx: number;
   onBeat: (runtime: WorldRuntime) => void;
 }) {
-  const { camera, size } = useThree();
+  const { camera, size, gl } = useThree();
   const { scene, animations } = useGLTF(FIXTER_GLB);
   const bvhs = useLoader(BVHLoader, MOTION_FILES);
   const kneelGltf = useGLTF(CLIP_KNEEL_GLB);
@@ -551,6 +552,7 @@ function WorldFixter({
       setObjectFix(spot.id, 0);
       setObjectBusy(spot.id, 0);
       setObjectWork(spot.id, 0);
+      markObjectBroken(spot.id);
     };
     /*
      * And a pointer cursor over one, which is the only hint there is. No
@@ -761,6 +763,15 @@ function WorldFixter({
         };
       }
       w.__fxSpots = where;
+      /* What the scene is actually costing, straight off the renderer. */
+      const info = (gl as THREE.WebGLRenderer).info;
+      w.__fxPerf = {
+        calls: info.render.calls,
+        tris: info.render.triangles,
+        geometries: info.memory.geometries,
+        textures: info.memory.textures,
+        programs: info.programs?.length ?? 0,
+      };
       w.__fxWorld = {
         beat: runtime.beat,
         index: runtime.index,
