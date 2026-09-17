@@ -330,10 +330,31 @@ export default function HomeMarketing() {
             {THE_LIST.slice(0, 6).map((item, i) => (
               <Reveal as="li" key={item} delay={Math.min(i, 5) * 45}>
                 <span className="flex items-center gap-3 border-b border-[#EDEDF0] py-2.5 text-[17px] leading-[1.35] text-[#1D1D1F] sm:py-3 sm:text-[18px]">
+                  {/*
+                    Ticked, always, and by nothing.
+
+                    Static presentation: no state, no props, no subscription.
+                    The 3D layer on this page has no route into the DOM and this
+                    box is the one place it could plausibly have wanted one — so
+                    it is written as a constant on purpose rather than left to
+                    look like something that might change later.
+                  */}
                   <span
                     aria-hidden="true"
-                    className="h-[19px] w-[19px] flex-none rounded-[6px] border-[1.5px] border-[#D8D8DD]"
-                  />
+                    className="flex h-[19px] w-[19px] flex-none items-center justify-center rounded-[6px] border-[1.5px] border-[#306EEC] bg-[#306EEC]"
+                  >
+                    <svg
+                      viewBox="0 0 12 12"
+                      className="h-[11px] w-[11px] text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M2.5 6.4 4.8 8.7 9.5 3.6" />
+                    </svg>
+                  </span>
                   {item}
                 </span>
               </Reveal>
