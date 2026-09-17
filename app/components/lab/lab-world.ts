@@ -87,6 +87,24 @@ export type WorldSpot = {
    * on globally, because the other five are approved as they stand.
    */
   aim?: [number, number];
+  /**
+   * How long he stands looking at it before moving on, in seconds.
+   *
+   * Overridden where the repair itself has an aftermath worth watching. The
+   * socket's smoke takes a couple of seconds to clear after the sparks stop,
+   * and walking away halfway through that throws away the only part of the
+   * sequence that says "and now it is finished".
+   */
+  admire?: number;
+  /**
+   * The tool, larger than its usual larger-than-life, for this repair only.
+   *
+   * A screwdriver against a socket is the smallest hand-to-object relationship
+   * in the set, and at phone size the shaft was a grey line on a white plate.
+   * A quarter more is enough to see the tool meet the thing; more than that and
+   * he is holding a prop.
+   */
+  toolScale?: number;
 };
 
 /**
@@ -136,8 +154,18 @@ export const WORLD_SPOTS: WorldSpot[] = [
      * a builder's, and every effect hanging off it grows with it.
      */
     scale: 1.32,
-    stand: [0.46, -0.36],
+    /*
+     * Close enough to reach it, far enough not to stand on it.
+     *
+     * Pulled in tight the screwdriver met the plate beautifully and his own
+     * shoulder covered half of it; the aim on the tool buys back most of what
+     * the extra distance costs, and a repair you cannot see is worse than a
+     * tool that stops an inch short.
+     */
+    stand: [0.5, -0.36],
     aim: [-0.02, 0.0],
+    admire: 2.1,
+    toolScale: 1.28,
   },
   {
     id: "cabinet",
@@ -595,7 +623,7 @@ export function stepWorld(
        * walk, and a man who turns away the instant a job is done reads as a
        * machine advancing a queue.
        */
-      if (runtime.elapsed < ADMIRE_SECONDS) break;
+      if (runtime.elapsed < (mark.spot.admire ?? ADMIRE_SECONDS)) break;
       const next = runtime.index + 1;
       runtime.index = next;
       if (next >= marks.length) {
