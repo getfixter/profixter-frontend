@@ -306,8 +306,16 @@ export const WORLD_SPOTS: WorldSpot[] = [
     /* Three bites of the wrench and a beat to watch it stop. */
     seconds: 5.0,
     admire: 2.0,
-    scale: 0.86,
-    stand: [0.36, -0.86],
+    /*
+     * Big, because the water has to be bigger than the sink.
+     *
+     * The socket's plume works because it is taller than the socket; a leak
+     * drawn inside the outline of a sixty-pixel basin is a blue smudge whatever
+     * is happening inside it. At this size the wet area is about the same
+     * screen presence as the smoke, which is the benchmark that was set.
+     */
+    scale: 1.15,
+    stand: [0.36, -0.82],
     aim: [0.02, 0.14],
     toolScale: 1.15,
   },
