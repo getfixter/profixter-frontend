@@ -9,8 +9,10 @@ import { BVHLoader } from "three/examples/jsm/loaders/BVHLoader.js";
 import { FIXTER_GLB, resolveClipRoles } from "./lab-config";
 import {
   MOTION_FILES,
+  WORK_MOTIONS,
   CLIP_KNEEL_GLB,
   TOOL_ATTACH_BONE,
+  TOOL_ATTACH_BONE_LEFT,
   TOOL_PALM,
   TOOL_SCALE,
   DEFAULT_ACTION,
@@ -253,20 +255,23 @@ function WorldFixter({
     return copy;
   }, [scene]);
 
-  const handBone = useMemo(() => {
-    let found: THREE.Object3D | null = null;
+  const hands = useMemo(() => {
+    let right: THREE.Object3D | null = null;
+    let left: THREE.Object3D | null = null;
+    let rightLen = 0.2;
+    let leftLen = 0.2;
     model.traverse((child) => {
-      if (!found && child.name === TOOL_ATTACH_BONE) found = child;
+      if (!right && child.name === TOOL_ATTACH_BONE) right = child;
+      if (!left && child.name === TOOL_ATTACH_BONE_LEFT) left = child;
+      if (child.name === "RightHand_End") rightLen = child.position.length();
+      if (child.name === "LeftHand_End") leftLen = child.position.length();
     });
-    return found as THREE.Object3D | null;
-  }, [model]);
-
-  const handLength = useMemo(() => {
-    let len = 0.2;
-    model.traverse((child) => {
-      if (child.name === "RightHand_End") len = child.position.length();
-    });
-    return len;
+    return {
+      right: right as THREE.Object3D | null,
+      left: left as THREE.Object3D | null,
+      rightLen,
+      leftLen,
+    };
   }, [model]);
 
   /*
@@ -373,9 +378,17 @@ function WorldFixter({
     }
   }, [runtime]);
 
+  /* Shared between the tool and whatever it is being used on. */
+  const workTime = useRef(0);
+  /* Where the tool tip is asked to point, and whether it is being asked. */
+  const toolAim = useRef(new THREE.Vector3());
+  const aiming = useRef(false);
   const currentAction = useRef<THREE.AnimationAction | null>(null);
   const currentName = useRef<string | null>(null);
   const [toolKind, setToolKind] = useState(WORLD_SPOTS[0]?.tool ?? null);
+  const [toolHand, setToolHand] = useState<"left" | "right">(
+    WORK_MOTIONS[WORLD_SPOTS[0]?.motion]?.toolHand ?? "right"
+  );
 
   useFrame((_, rawDelta) => {
     /*
@@ -457,14 +470,42 @@ function WorldFixter({
     }
 
     const mark = marks[Math.min(runtime.index, marks.length - 1)];
-    /* Tell the thing he is working on that somebody is at it, so a prop can
-       react while it is being fixed. Nothing else reads this. */
-    setObjectBusy(mark.spot.id, runtime.beat === "WORK" ? 1 : 0);
+    /*
+     * Hand the prop the SAME clock the tool animates on.
+     *
+     * Seconds since he started working, or zero when nobody is there. The
+     * socket derives the screwdriver's turn from it and fires its sparks on
+     * those turns — which is the difference between a man working and a man
+     * moving next to some particles.
+     */
+    workTime.current = runtime.beat === "WORK" ? runtime.elapsed : 0;
+    setObjectBusy(mark.spot.id, workTime.current);
+
+    /*
+     * Point the tool at the thing, for the repairs that ask for it.
+     *
+     * The rig is still untouched — this rotates the tool inside his fist and
+     * nothing else, which is the cheapest honest answer to "the screwdriver
+     * has to meet the socket". Only spots carrying an authored `aim` get it.
+     */
+    const spotAim = mark.spot.aim;
+    if (spotAim && (runtime.beat === "WORK" || runtime.beat === "WORK_IN")) {
+      toolAim.current.set(
+        mark.object.x + spotAim[0] * characterScale,
+        mark.object.y + spotAim[1] * characterScale,
+        0
+      );
+      aiming.current = true;
+    } else {
+      aiming.current = false;
+    }
     const wantTool =
       runtime.beat === "WORK" || runtime.beat === "WORK_IN"
         ? mark.spot.tool
         : null;
     if (wantTool !== toolKind) setToolKind(wantTool);
+    const wantHand = WORK_MOTIONS[mark.spot.motion]?.toolHand ?? "right";
+    if (wantHand !== toolHand) setToolHand(wantHand);
 
     if (process.env.NODE_ENV !== "production") {
       const w = window as unknown as Record<string, unknown>;
@@ -482,25 +523,30 @@ function WorldFixter({
   });
 
   const toolAction = toolKind ? DEFAULT_ACTION[toolKind] ?? "none" : "none";
+  const holding = toolHand === "left" ? hands.left : hands.right;
+  const holdingLength = toolHand === "left" ? hands.leftLen : hands.rightLen;
+  /* The palm faces the other way on the other side, so the grip offset flips. */
+  const grip = toolHand === "left" ? -0.012 : 0.012;
 
   return (
     <>
       <ContactShadow follow={groupRef} scale={characterScale} />
       <group ref={groupRef}>
         <primitive object={model} />
-        {handBone &&
+        {holding &&
           toolKind &&
           createPortal(
             <AimedHandTool
               kind={toolKind}
               scale={TOOL_SCALE}
-              position={[0.012, 0.055 + handLength * TOOL_PALM, 0.005]}
+              position={[grip, 0.055 + holdingLength * TOOL_PALM, 0.005]}
               restRotationDeg={[0, 0, 0]}
-              getTarget={() => null}
+              getTarget={() => (aiming.current ? toolAim.current : null)}
               action={toolAction}
-              tracking={false}
+              getWorkTime={() => workTime.current}
+              tracking
             />,
-            handBone
+            holding
           )}
       </group>
     </>

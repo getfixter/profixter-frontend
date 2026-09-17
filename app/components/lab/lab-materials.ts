@@ -117,21 +117,37 @@ export function createContactShadow(): THREE.Texture {
 let smokeTexture: THREE.Texture | null = null;
 export function createSmokeTexture(): THREE.Texture {
   if (smokeTexture) return smokeTexture;
-  const size = 96;
+  const size = 128;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d");
   if (ctx) {
-    const g = ctx.createRadialGradient(
-      size / 2, size / 2, 0,
-      size / 2, size / 2, size / 2
-    );
-    g.addColorStop(0, "rgba(126,134,148,0.55)");
-    g.addColorStop(0.45, "rgba(120,128,142,0.22)");
-    g.addColorStop(1, "rgba(116,124,138,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, size, size);
+    /*
+     * Three overlapping blobs, not one clean circle.
+     *
+     * A single radial gradient reads as a soft dot at every size, and the
+     * previous one was mostly falloff: 0.55 alpha at the centre dropping to
+     * 0.22 by the halfway mark meant nine tenths of the quad was doing nothing.
+     * These carry their alpha much further out and sit off-centre from each
+     * other, so a puff has a lumpy edge and a dense core — which is the
+     * difference between smoke and a grey smudge.
+     */
+    const blob = (cx: number, cy: number, r: number, a: number) => {
+      const g = ctx.createRadialGradient(
+        cx * size, cy * size, 0,
+        cx * size, cy * size, r * size
+      );
+      g.addColorStop(0, `rgba(255,255,255,${a})`);
+      g.addColorStop(0.55, `rgba(255,255,255,${a * 0.62})`);
+      g.addColorStop(0.82, `rgba(255,255,255,${a * 0.2})`);
+      g.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, size, size);
+    };
+    blob(0.5, 0.54, 0.46, 0.92);
+    blob(0.37, 0.4, 0.3, 0.7);
+    blob(0.64, 0.61, 0.28, 0.66);
   }
   smokeTexture = new THREE.CanvasTexture(canvas);
   return smokeTexture;
