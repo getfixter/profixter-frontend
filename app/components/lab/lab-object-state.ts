@@ -57,6 +57,25 @@ const nudged: Record<string, number> = {};
  */
 const busy: Record<string, number> = {};
 
+/**
+ * How far through the repair he is, 0 to 1, and 0 when he is not on it.
+ *
+ * `busy` says how many seconds he has been working, which is what an effect
+ * synced to his tool needs. This says how far through he is, which is what a
+ * repair with STAGES needs — lift the door, then drill it, then seat it, then
+ * try it. A prop cannot work that out from seconds alone without knowing how
+ * long its own job is, and that number belongs to the level, not to the prop.
+ */
+const work: Record<string, number> = {};
+
+export function setObjectWork(id: string, value: number) {
+  work[id] = value;
+}
+
+export function getObjectWork(id: string) {
+  return work[id] ?? 0;
+}
+
 export function setObjectBusy(id: string, value: number) {
   busy[id] = value;
 }

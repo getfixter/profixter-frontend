@@ -40,6 +40,27 @@ export const M = {
    * page that says "door" on its own.
    */
   brass: std({ color: "#c9a227", roughness: 0.34, metalness: 0.78 }),
+  /**
+   * Painted cabinet doors.
+   *
+   * Not the off-white the faceplates use. This door lives on the seam of the
+   * dark hero band, where off-white is perfect — and it hangs low enough that
+   * part of it crosses onto the white section, where off-white is nothing at
+   * all. A pale blue-grey is light enough to carry the navy and dark enough to
+   * hold an edge against paper, which is the only way one door can do both.
+   */
+  paint: std({ color: "#c7d0d2", roughness: 0.62, metalness: 0.03 }),
+  /**
+   * The inside of an open cupboard.
+   *
+   * Not `dark`. The gap a hanging door leaves is the single clearest thing in
+   * this repair, and near-black on the navy hero band is not a gap, it is
+   * nothing — the shape only exists where it is lighter than the page behind
+   * it. A shadowed timber brown reads as an interior on the dark band and as a
+   * hole on the white one.
+   */
+  cavity: std({ color: "#4a3728", roughness: 0.9, metalness: 0.0 }),
+  paintShade: std({ color: "#bcc6c9", roughness: 0.66, metalness: 0.03 }),
   /** Tool handle red. */
   toolGrip: std({ color: "#c8362f", roughness: 0.45, metalness: 0.05 }),
 };
