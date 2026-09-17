@@ -47,6 +47,24 @@ const latched: Record<string, boolean> = {};
  */
 const nudged: Record<string, number> = {};
 
+/**
+ * Is he working on this thing right now?
+ *
+ * A separate channel from the nudge, which is a one-off poke several props
+ * already react to — reusing it would have made a picture frame rock for the
+ * whole of every repair. This one only says "somebody is at this", so a prop
+ * can be a little livelier while it is being worked on.
+ */
+const busy: Record<string, number> = {};
+
+export function setObjectBusy(id: string, value: number) {
+  busy[id] = value;
+}
+
+export function getObjectBusy(id: string) {
+  return busy[id] ?? 0;
+}
+
 export function setObjectNudge(id: string, value: number) {
   nudged[id] = value;
 }
