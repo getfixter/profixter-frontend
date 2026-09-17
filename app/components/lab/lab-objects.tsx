@@ -3,8 +3,13 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { M, createGlowTexture, createLampMaterial } from "./lab-materials";
-import { getObjectFix, getObjectNudge } from "./lab-object-state";
+import {
+  M,
+  createGlowTexture,
+  createLampMaterial,
+  createSmokeTexture,
+} from "./lab-materials";
+import { getObjectBusy, getObjectFix, getObjectNudge } from "./lab-object-state";
 
 /**
  * The things the Fixter fixes.
@@ -82,17 +87,321 @@ function ease(current: number, target: number, dt: number, rate?: number) {
 
 /* ------------------------------------------------------------------ outlet */
 
+/**
+ * THE FAULTY SOCKET.
+ *
+ * A loose, crooked faceplate is a picture of a problem; a loose faceplate that
+ * spits the occasional spark and breathes a thread of smoke is the problem
+ * itself, and a visitor understands it without reading a word. That is the
+ * whole brief for this one: make the broken state say "electrical fault", and
+ * make the repair say "fixed" by taking all of it away at once.
+ *
+ * Deliberately NOT a fire. No flames, no plume, nothing constant. Real small
+ * faults are intermittent, which is also what makes them read: a spark you were
+ * not expecting is worth ten you were.
+ *
+ * Everything here hangs off this object's own repair value, so it stops when it
+ * is mended and can never come back — there is no separate effect system with
+ * its own opinion about when to run.
+ */
+const SPARKS = 6;
+const PUFFS = 3;
+
+type Spark = {
+  life: number;
+  ttl: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  size: number;
+};
+
+type Fault = {
+  sparkMats: THREE.MeshBasicMaterial[];
+  puffMats: THREE.MeshBasicMaterial[];
+  flashMat: THREE.MeshBasicMaterial;
+  sparks: Spark[];
+  puffs: { t: number }[];
+  nextSpark: number;
+  flashFor: number;
+  finale: boolean;
+};
+
+/**
+ * Everything the fault owns, built once per socket.
+ *
+ * One material per quad so each can fade on its own clock. Nine tiny materials
+ * is nothing, and the two canvas textures behind them are shared by every
+ * object in the scene.
+ */
+function makeFault(): Fault {
+  const spark = createGlowTexture();
+  const smoke = createSmokeTexture();
+  /*
+   * Normal blending, not additive.
+   *
+   * Additive was the obvious choice and it was wrong here: this socket lives on
+   * the white band, and adding light to white produces white. The sparks were
+   * rendering perfectly and were invisible. A saturated amber over the glow
+   * texture reads on paper AND on the dark hero, which is what a prop that the
+   * page scrolls behind actually needs.
+   */
+  /*
+   * Sparks are bare coloured quads — no texture at all.
+   *
+   * A soft radial gradient stretched into a streak is mostly falloff, so at the
+   * four or five pixels this gets on a phone there was no core left and the
+   * whole thing read as a faint orange haze. A hard-edged quad has nothing BUT
+   * core, which is what makes it legible at this size. The flash still uses the
+   * glow texture, because a flash should be soft.
+   *
+   * Normal blending, not additive: this socket lives on the white band, and
+   * adding light to white produces white.
+   */
+  const sparkMat = () =>
+    new THREE.MeshBasicMaterial({
+      color: new THREE.Color("#ff6a12"),
+      transparent: true,
+      depthWrite: false,
+      opacity: 0,
+    });
+  const glow = () =>
+    new THREE.MeshBasicMaterial({
+      map: spark,
+      color: new THREE.Color("#ff8a2a"),
+      transparent: true,
+      depthWrite: false,
+      opacity: 0,
+    });
+  return {
+    sparkMats: Array.from({ length: SPARKS }, sparkMat),
+    puffMats: Array.from(
+      { length: PUFFS },
+      () =>
+        new THREE.MeshBasicMaterial({
+          map: smoke,
+          transparent: true,
+          depthWrite: false,
+          opacity: 0,
+        })
+    ),
+    flashMat: glow(),
+    sparks: Array.from({ length: SPARKS }, () => ({
+      life: 0, ttl: 0, x: 0, y: 0, vx: 0, vy: 0, size: 1,
+    })),
+    /* Staggered, so the three puffs never rise in step. */
+    puffs: Array.from({ length: PUFFS }, (_, i) => ({ t: i / PUFFS })),
+    nextSpark: 0.8,
+    flashFor: 0,
+    finale: false,
+  };
+}
+
+/**
+ * One frame of the fault.
+ *
+ * A module function rather than inline, because the React Compiler (correctly)
+ * refuses mutation of anything that reached the component through a hook — and
+ * a particle is nothing but mutation. Same pattern as the station box.
+ */
+function stepFault(
+  fault: Fault,
+  group: THREE.Group,
+  sparkMeshes: (THREE.Mesh | null)[],
+  puffMeshes: (THREE.Mesh | null)[],
+  flash: THREE.Mesh | null,
+  broken: number,
+  fixed: number,
+  busy: number,
+  step: number
+): void {
+  /*
+   * The payoff: one last flash as the repair takes hold, then silence.
+   *
+   * Fired on the way up rather than at the end, so the flash belongs to the fix
+   * landing rather than to him straightening up afterwards.
+   */
+  if (!fault.finale && fixed > 0.22) {
+    fault.finale = true;
+    fault.flashFor = 0.18;
+  }
+  if (fixed < 0.02) fault.finale = false;
+
+  /* Mended: wipe it clean, hide it, and stop paying for any of it. */
+  if (broken < 0.05 && fault.flashFor <= 0) {
+    if (group.visible) {
+      for (const mat of fault.sparkMats) mat.opacity = 0;
+      for (const mat of fault.puffMats) mat.opacity = 0;
+      fault.flashMat.opacity = 0;
+      for (const spark of fault.sparks) spark.life = 0;
+      group.visible = false;
+    }
+    return;
+  }
+  group.visible = true;
+
+  /*
+   * When the next spark happens, and how big.
+   *
+   * Randomised gaps, because a fault on a metronome is a lamp. Weak ones are
+   * the common case and a strong one is rare, which is what makes a strong one
+   * land. He gets a livelier reaction while he is actually at it.
+   */
+  fault.nextSpark -= step;
+  /* Lab only: hold the fault wide open so the effect can be judged on a still. */
+  const soak =
+    process.env.NODE_ENV !== "production" &&
+    (window as unknown as Record<string, unknown>).__fxSparkSoak === true;
+  if ((fault.nextSpark <= 0 || soak) && broken > 0.35) {
+    const strong = Math.random() < (busy > 0.5 ? 0.55 : 0.26);
+    const count = strong ? 3 : 1;
+    for (let n = 0; n < count; n++) {
+      const spark = fault.sparks.find((s) => s.life <= 0);
+      if (!spark) break;
+      /*
+       * Out of the lower socket, and AWAY from the plate.
+       *
+       * The first version emitted into the middle of the faceplate and the
+       * sparks spent their whole short life on top of white plastic, where an
+       * orange dot reads as a smudge. Thrown down and out they cross the edge
+       * within a frame or two and are seen against the page instead.
+       */
+      const slot = Math.random() < 0.72 ? -0.028 : 0.028;
+      spark.x = (Math.random() - 0.5) * 0.03;
+      spark.y = slot;
+      spark.vx = (Math.random() - 0.5) * 0.5;
+      /* Falling hard: sparks drop, they do not float. */
+      spark.vy = -0.34 - Math.random() * 0.34;
+      spark.ttl = 0.26 + Math.random() * 0.16;
+      spark.life = spark.ttl;
+      spark.size = (strong ? 0.032 : 0.022) + Math.random() * 0.008;
+    }
+    if (strong) fault.flashFor = Math.max(fault.flashFor, 0.11);
+    fault.nextSpark = strong
+      ? 1.2 + Math.random() * 1.4
+      : 0.4 + Math.random() * 1.7;
+    if (busy > 0.5) fault.nextSpark *= 0.55;
+    if (soak) fault.nextSpark = 0.1;
+  }
+
+  for (let i = 0; i < SPARKS; i++) {
+    const spark = fault.sparks[i];
+    const mesh = sparkMeshes[i];
+    const mat = fault.sparkMats[i];
+    if (!mesh || !mat) continue;
+    if (spark.life <= 0) {
+      if (mat.opacity !== 0) mat.opacity = 0;
+      continue;
+    }
+    spark.life -= step;
+    spark.vy -= 1.1 * step;
+    spark.x += spark.vx * step;
+    spark.y += spark.vy * step;
+    const u = Math.max(0, spark.life / spark.ttl);
+    mesh.position.set(spark.x, spark.y, 0.016);
+    /*
+     * A streak, not a dot.
+     *
+     * Stretched along the direction it is travelling and thinned across it,
+     * which is the whole difference between "spark" and "orange blob" at a
+     * size where there are only a few pixels to say it with.
+     */
+    mesh.rotation.z = Math.atan2(spark.vy, spark.vx);
+    const len = spark.size * (1.35 + u * 0.9);
+    mesh.scale.set(len, spark.size * 0.5, 1);
+    mat.opacity = u * broken;
+  }
+
+  /*
+   * Smoke: continuous, and almost nothing.
+   *
+   * Three puffs on a slow loop, rising about a plate's height and spreading as
+   * they go. At full strength it is a thread you notice only after a spark has
+   * made you look.
+   */
+  for (let i = 0; i < PUFFS; i++) {
+    const puff = fault.puffs[i];
+    const mesh = puffMeshes[i];
+    const mat = fault.puffMats[i];
+    if (!mesh || !mat) continue;
+    puff.t += step / 2.6;
+    if (puff.t > 1) puff.t -= 1;
+    const u = puff.t;
+    mesh.position.set(
+      0.004 + Math.sin(u * 4.2 + i) * 0.016,
+      0.064 + u * 0.12,
+      0.012
+    );
+    mesh.scale.setScalar(0.06 + u * 0.1);
+    mat.opacity = Math.sin(Math.min(1, u) * Math.PI) * 0.42 * broken;
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    const w = window as unknown as Record<string, unknown>;
+    let live = 0;
+    let top = 0;
+    for (let i = 0; i < SPARKS; i++) {
+      if (fault.sparks[i].life > 0) live++;
+      top = Math.max(top, fault.sparkMats[i].opacity);
+    }
+    w.__fxFault = {
+      visible: group.visible,
+      children: group.children.length,
+      live,
+      sparkOpacity: +top.toFixed(2),
+      puffOpacity: +fault.puffMats[0].opacity.toFixed(3),
+      broken: +broken.toFixed(2),
+      meshes: sparkMeshes.filter(Boolean).length,
+      scale0: +(sparkMeshes[0]?.scale.x ?? -1).toFixed(4),
+    };
+  }
+
+  /* The flicker, and the closing flash. Same quad, same clock. */
+  if (fault.flashFor > 0) {
+    fault.flashFor -= step;
+    const u = Math.max(0, fault.flashFor) / 0.18;
+    if (flash) {
+      flash.scale.setScalar(0.13 + (1 - u) * 0.06);
+      fault.flashMat.opacity = u * 0.7;
+    }
+  } else if (fault.flashMat.opacity !== 0) {
+    fault.flashMat.opacity = 0;
+  }
+}
+
 function Outlet({ id }: FixableProps) {
   const plate = useRef<THREE.Group>(null);
   const screw = useRef<THREE.Mesh>(null);
+  const faultGroup = useRef<THREE.Group>(null);
+  const sparkMeshes = useRef<(THREE.Mesh | null)[]>([]);
+  const puffMeshes = useRef<(THREE.Mesh | null)[]>([]);
+  const flash = useRef<THREE.Mesh>(null);
   const f = useRef(0);
+  const fault = useMemo(() => makeFault(), []);
 
   useFrame((_, dt) => {
+    const step = Math.min(0.05, dt);
     f.current = ease(f.current, getObjectFix(id), dt);
+    const broken = 1 - f.current;
     /* Crooked enough to notice, and a screw standing visibly proud — the two
        things that say "this is wrong" without anybody reading a label. */
-    if (plate.current) plate.current.rotation.z = DEG(15) * (1 - f.current);
-    if (screw.current) screw.current.position.z = 0.004 + 0.011 * (1 - f.current);
+    if (plate.current) plate.current.rotation.z = DEG(15) * broken;
+    if (screw.current) screw.current.position.z = 0.004 + 0.011 * broken;
+
+    const group = faultGroup.current;
+    if (!group) return;
+    stepFault(
+      fault,
+      group,
+      sparkMeshes.current,
+      puffMeshes.current,
+      flash.current,
+      broken,
+      f.current,
+      getObjectBusy(id),
+      step
+    );
   });
 
   return (
@@ -117,6 +426,37 @@ function Outlet({ id }: FixableProps) {
         <mesh ref={screw} material={M.hardware} rotation={[Math.PI / 2, 0, 0]}>
           <cylinderGeometry args={[0.006, 0.006, 0.005, 12]} />
         </mesh>
+      </group>
+      {/*
+        The fault, outside the tilting plate so the smoke rises straight up
+        while the faceplate hangs crooked.
+      */}
+      <group ref={faultGroup} userData={{ fx: true }}>
+        <mesh ref={flash} material={fault.flashMat} position={[0, 0, 0.014]}>
+          <planeGeometry args={[1, 1]} />
+        </mesh>
+        {fault.puffMats.map((mat, i) => (
+          <mesh
+            key={`puff-${i}`}
+            ref={(node) => {
+              puffMeshes.current[i] = node;
+            }}
+            material={mat}
+          >
+            <planeGeometry args={[1, 1]} />
+          </mesh>
+        ))}
+        {fault.sparkMats.map((mat, i) => (
+          <mesh
+            key={`spark-${i}`}
+            ref={(node) => {
+              sparkMeshes.current[i] = node;
+            }}
+            material={mat}
+          >
+            <planeGeometry args={[1, 1]} />
+          </mesh>
+        ))}
       </group>
     </group>
   );

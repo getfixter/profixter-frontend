@@ -107,6 +107,36 @@ export function createContactShadow(): THREE.Texture {
  * white bloom on a blue page reads as a rendering artefact and a warm one reads
  * as a bulb.
  */
+/**
+ * A puff of smoke, drawn once into a small canvas.
+ *
+ * Grey rather than black and very soft at the edges, because what comes out of
+ * a loose socket is a wisp, not a fire. Shared by every puff in the scene: one
+ * 96px canvas is the entire cost of the smoke.
+ */
+let smokeTexture: THREE.Texture | null = null;
+export function createSmokeTexture(): THREE.Texture {
+  if (smokeTexture) return smokeTexture;
+  const size = 96;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const g = ctx.createRadialGradient(
+      size / 2, size / 2, 0,
+      size / 2, size / 2, size / 2
+    );
+    g.addColorStop(0, "rgba(126,134,148,0.55)");
+    g.addColorStop(0.45, "rgba(120,128,142,0.22)");
+    g.addColorStop(1, "rgba(116,124,138,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+  }
+  smokeTexture = new THREE.CanvasTexture(canvas);
+  return smokeTexture;
+}
+
 export function createGlowTexture(): THREE.Texture {
   const size = 128;
   const canvas = document.createElement("canvas");

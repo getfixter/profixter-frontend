@@ -28,7 +28,7 @@ import { reverseClip, subclipByTime } from "./lab-clip-utils";
 import { AimedHandTool } from "./lab-tools";
 import { createContactShadow, createContactTexture } from "./lab-materials";
 import FixableObject from "./lab-objects";
-import { setObjectFix, resetObjectFix } from "./lab-object-state";
+import { setObjectBusy, setObjectFix, resetObjectFix } from "./lab-object-state";
 import { setDiag } from "./lab-diagnostics";
 import {
   WORLD_SPOTS,
@@ -183,7 +183,22 @@ function ObjectShadow({ of }: { of: React.RefObject<THREE.Group | null> }) {
     const target = of.current;
     const mesh = ref.current;
     if (!target || !mesh || sized.current) return;
-    _propBox.setFromObject(target);
+    /*
+     * Measure the OBJECT, not its effects.
+     *
+     * setFromObject takes everything under the node, and the socket's fault
+     * hangs unit-sized quads off it for sparks and smoke — so the shadow was
+     * sized to a one-by-one plane and turned into a grey haze the width of the
+     * prop. Anything flagged as an effect is skipped.
+     */
+    _propBox.makeEmpty();
+    target.traverse((node) => {
+      const mesh = node as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      if (mesh.userData.fx || mesh.parent?.userData?.fx) return;
+      _propBox.expandByObject(mesh);
+    });
+    if (_propBox.isEmpty()) return;
     _propBox.getSize(_propSize);
     if (_propSize.x <= 0 || _propSize.y <= 0) return;
     sized.current = true;
@@ -442,6 +457,9 @@ function WorldFixter({
     }
 
     const mark = marks[Math.min(runtime.index, marks.length - 1)];
+    /* Tell the thing he is working on that somebody is at it, so a prop can
+       react while it is being fixed. Nothing else reads this. */
+    setObjectBusy(mark.spot.id, runtime.beat === "WORK" ? 1 : 0);
     const wantTool =
       runtime.beat === "WORK" || runtime.beat === "WORK_IN"
         ? mark.spot.tool
