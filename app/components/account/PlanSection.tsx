@@ -209,6 +209,54 @@ type PlanSectionProps = {
   hideCancellationUi?: boolean;
 };
 
+/**
+ * THE SHELL EVERY DIALOG IN THIS FLOW SITS IN.
+ *
+ * Two separate defects were putting the Cancel membership button out of reach
+ * on a phone, and either one alone was enough.
+ *
+ * The overlay centred its card and never scrolled. `flex items-center` on a
+ * fixed full-screen box is correct while the card fits and silently broken the
+ * moment it does not: the card grows off BOTH ends of the viewport and there is
+ * no scroll container anywhere to reach what fell off the bottom. The overlay
+ * is now the scroll container, and the card is centred by a `min-h-full` row
+ * inside it — short content still sits in the middle, tall content scrolls, and
+ * there is exactly one scroll container rather than two nested ones.
+ *
+ * And the site's bottom navigation is fixed at z-70, which was ABOVE these
+ * dialogs at z-50 — so even the part of the card that was on screen had its
+ * last eighty pixels covered by the nav. A dialog belongs above site chrome, so
+ * these sit above it now. That is also why there is no hard-coded navigation
+ * height anywhere in here: the nav cannot cover what it is behind, so there is
+ * nothing to compensate for and nothing to get wrong on the next phone.
+ *
+ * Height is 100dvh rather than 100vh so a collapsing mobile browser bar cannot
+ * leave the last row below the fold. Browsers without dvh drop the declaration
+ * and fall back to the inset-0 box, which is no worse than before.
+ */
+function ModalOverlay({
+  z = "z-[80]",
+  tint = "bg-black/55",
+  onBackdropClick,
+  children,
+}: {
+  z?: string;
+  tint?: string;
+  onBackdropClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`fixed inset-0 ${z} ${tint} h-[100dvh] overflow-y-auto overscroll-contain`}
+      onClick={onBackdropClick}
+    >
+      <div className="flex min-h-full items-center justify-center px-4 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {}) {
   const showCancellationUi = !hideCancellationUi;
   const [loading, setLoading] = useState(true);
@@ -256,6 +304,26 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
   const [selectedCycle, setSelectedCycle] = useState<"monthly" | "annual">("monthly");
   const [planChanging, setPlanChanging] = useState(false);
   const [planChangeConfirmOpen, setPlanChangeConfirmOpen] = useState(false);
+
+  /*
+   * Lock the page while a dialog is open.
+   *
+   * Without this the page behind takes the scroll, which on a phone reads as
+   * the dialog simply refusing to move. `overscroll-contain` on the overlay
+   * stops the chain only once the overlay has reached its own end; this stops
+   * it from starting.
+   */
+  const anyDialogOpen = Boolean(
+    (showCancellationUi && cancelTarget) || planChangeTarget
+  );
+  useEffect(() => {
+    if (!anyDialogOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [anyDialogOpen]);
 
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -1049,9 +1117,8 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
 
       {/* ── Cancel confirmation modal ── */}
       {showCancellationUi && cancelTarget ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4"
-          onClick={() => {
+        <ModalOverlay
+          onBackdropClick={() => {
             if (!canceling && !acceptingRetention && cancelMode !== "checking") {
               setCancelTarget(null);
               setRetentionError("");
@@ -1264,14 +1331,13 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
               )}
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       ) : null}
 
       {/* ── Plan change modal ── */}
       {planChangeTarget ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4"
-          onClick={() => {
+        <ModalOverlay
+          onBackdropClick={() => {
             if (!planChanging) setPlanChangeTarget(null);
           }}
         >
@@ -1378,13 +1444,14 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       ) : null}
 
       {planChangeTarget && planChangeConfirmOpen ? (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4"
-          onClick={() => {
+        <ModalOverlay
+          z="z-[90]"
+          tint="bg-black/60"
+          onBackdropClick={() => {
             if (!planChanging) setPlanChangeConfirmOpen(false);
           }}
         >
@@ -1466,7 +1533,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
           Renders nothing for the overwhelming majority who have sent none.
         */}
         <GiftsSentSection />
-      </div>
+      </ModalOverlay>
       ) : null}
     </>
   );
