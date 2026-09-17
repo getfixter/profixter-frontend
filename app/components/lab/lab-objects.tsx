@@ -3,14 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import {
-  M,
-  createGlowTexture,
-  createLampMaterial,
-  patchMaterial,
-  contactMaterial,
-  type PatchKind,
-} from "./lab-materials";
+import { M, createGlowTexture, createLampMaterial } from "./lab-materials";
 import { getObjectFix, getObjectNudge } from "./lab-object-state";
 
 /**
@@ -49,64 +42,19 @@ export type FixableProps = { id: string };
 
 const DEG = THREE.MathUtils.degToRad;
 
-/**
- * The surface a repair is mounted on.
+/*
+ * NO MOUNTING PATCHES, NO CONTACT SHADOWS.
  *
- * One quad, one shared material, sitting a little behind the object. That is
- * the entire environmental system: no rooms, no boxes, no floors. It exists
- * because a towel rail with nothing behind it is a metal rod, and four tiles
- * behind the same rod is a bathroom.
+ * Every repair used to be drawn on a square of plaster, tile or ceiling, with a
+ * soft shadow where it met that square. The intent was right — a towel rail
+ * with nothing behind it is a metal rod — but on a real page it read as
+ * furniture pasted onto white cards, and the patches were most of what covered
+ * the copy.
  *
- * `size` is in the prop's own units and should be a couple of times the object
- * — big enough that the object is clearly ON something, small enough that the
- * page is still the environment. The texture's alpha falls to nothing at its
- * edges, so there is no rectangle for the eye to find.
+ * With the world moved BEHIND the interface, the page is the wall. The site's
+ * own background is what these things are mounted on, so they are drawn as
+ * isolated objects and the composition supplies the context the quads used to.
  */
-function Surface({
-  kind,
-  size,
-  z = -0.02,
-  position = [0, 0, 0],
-  rotation = [0, 0, 0],
-}: {
-  kind: PatchKind;
-  size: [number, number];
-  z?: number;
-  position?: [number, number, number];
-  rotation?: [number, number, number];
-}) {
-  return (
-    <mesh
-      material={patchMaterial(kind)}
-      position={[position[0], position[1], position[2] + z]}
-      rotation={rotation}
-    >
-      <planeGeometry args={size} />
-    </mesh>
-  );
-}
-
-/**
- * The shadow an object drops onto whatever it is mounted on.
- *
- * Contact is most of what reads as "attached" at this size — more than any
- * modelled bracket — and it is one more quad.
- */
-function Contact({
-  size,
-  position = [0, 0, 0],
-  rotation = [0, 0, 0],
-}: {
-  size: [number, number];
-  position?: [number, number, number];
-  rotation?: [number, number, number];
-}) {
-  return (
-    <mesh material={contactMaterial()} position={position} rotation={rotation}>
-      <planeGeometry args={size} />
-    </mesh>
-  );
-}
 
 /**
  * Critically-damped-ish approach; frame-rate independent.
@@ -149,8 +97,6 @@ function Outlet({ id }: FixableProps) {
 
   return (
     <group>
-      <Surface kind="plaster" size={[0.42, 0.44]} />
-      <Contact size={[0.15, 0.20]} position={[0, -0.004, -0.008]} />
       <group ref={plate}>
         <mesh material={M.shell}>
           <boxGeometry args={[0.075, 0.122, 0.008]} />
@@ -197,13 +143,11 @@ function PictureFrame({ id }: FixableProps) {
 
   return (
     <group>
-      <Surface kind="plaster" size={[0.62, 0.62]} position={[0, 0.02, 0]} z={-0.05} />
       {/* The hook it hangs from, which is what makes a tilted rectangle read as
           a picture hanging crooked rather than a rectangle floating crooked. */}
       <mesh material={M.hardware} position={[0, H / 2 + 0.05, -0.02]}>
         <boxGeometry args={[0.012, 0.016, 0.008]} />
       </mesh>
-      <Contact size={[0.34, 0.3]} position={[0, -0.01, -0.03]} />
       <group ref={tilt}>
         {/* four rails rather than a slab, so it reads as a frame edge-on */}
         {[
@@ -275,9 +219,6 @@ function Shelf({ id }: FixableProps) {
 
   return (
     <group>
-      <Surface kind="plaster" size={[0.86, 0.6]} position={[0, 0.06, 0]} z={-0.05} />
-      <Contact size={[0.2, 0.14]} position={[-W * 0.32, -0.03, -0.03]} />
-      <Contact size={[0.2, 0.14]} position={[W * 0.32, -0.03, -0.03]} />
       <group ref={board}>
         <mesh material={M.wood} position={[0, 0, 0.055]}>
           <boxGeometry args={[W, 0.03, 0.14]} />
@@ -336,7 +277,6 @@ function Faucet({ id }: FixableProps) {
         inside the rim, which is the single thing that says "this is a hole that
         water goes into" rather than "this is a white shape".
       */}
-      <Surface kind="tile" size={[0.62, 0.5]} position={[0, 0.14, 0]} z={-0.11} />
       <mesh material={M.shell} position={[0, -0.115, 0.055]}>
         <cylinderGeometry args={[0.2, 0.135, 0.13, 26, 1, false]} />
       </mesh>
@@ -350,7 +290,6 @@ function Faucet({ id }: FixableProps) {
       <mesh material={M.hardware} position={[0, -0.042, 0.055]}>
         <cylinderGeometry args={[0.022, 0.022, 0.006, 12]} />
       </mesh>
-      <Contact size={[0.26, 0.14]} position={[0, -0.2, 0.05]} />
       {/* base */}
       <mesh material={M.metal} position={[0, -0.09, 0]}>
         <cylinderGeometry args={[0.035, 0.042, 0.02, 16]} />
@@ -515,7 +454,6 @@ function Lamp({ id }: FixableProps) {
         whole feature exists to avoid. The contact shadow stays; it is the part
         that was doing useful work.
       */}
-      <Contact size={[0.13, 0.08]} position={[0, 0.2, -0.02]} />
       <mesh material={M.shell} position={[0, 0.2, 0]}>
         <cylinderGeometry args={[0.035, 0.035, 0.012, 14]} />
       </mesh>
@@ -559,8 +497,6 @@ function LightSwitch({ id }: FixableProps) {
 
   return (
     <group>
-      <Surface kind="plaster" size={[0.42, 0.44]} />
-      <Contact size={[0.15, 0.20]} position={[0, -0.004, -0.008]} />
       <group ref={plate}>
       <mesh material={M.shell}>
         <boxGeometry args={[0.078, 0.122, 0.008]} />
@@ -665,9 +601,6 @@ function TowelBar({ id }: FixableProps) {
   return (
     <group>
       {/* Four tiles and a grout cross: the least that says "bathroom wall". */}
-      <Surface kind="tile" size={[0.86, 0.66]} position={[0, 0.02, 0]} z={-0.04} />
-      <Contact size={[0.13, 0.11]} position={[-W / 2, -0.01, -0.016]} />
-      <Contact size={[0.13, 0.11]} position={[W / 2, -0.01, -0.016]} />
       <group ref={rail}>
         <mesh material={M.metal} rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.011, 0.011, W, 12]} />
@@ -736,8 +669,6 @@ function SmokeDetector({ id }: FixableProps) {
           plane that stops above it is mounted on something. */}
       {/* Small and tight to the disc: a detector is flush against its ceiling,
           so the surface has to start where the object does. */}
-      <Surface kind="ceiling" size={[0.28, 0.19]} position={[0, 0.035, 0]} z={-0.03} />
-      <Contact size={[0.16, 0.1]} position={[0, 0.03, -0.02]} />
       <mesh
         material={M.shell}
         position={[0, 0.03, -0.01]}
@@ -897,8 +828,6 @@ function ShowerHead({ id }: FixableProps) {
 
   return (
     <group>
-      <Surface kind="tile" size={[0.66, 0.6]} position={[0.04, -0.04, 0]} z={-0.05} />
-      <Contact size={[0.13, 0.12]} position={[-0.16, 0.02, -0.02]} />
       {/* the wall fitting the arm screws into */}
       <mesh material={M.metal} position={[-0.16, 0.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.022, 0.026, 0.02, 12]} />

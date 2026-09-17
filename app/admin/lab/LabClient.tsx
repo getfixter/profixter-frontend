@@ -408,7 +408,13 @@ export default function LabClient() {
    */
   if (mode === "world") {
     return (
-      <div className="relative min-h-screen bg-white">
+      /*
+        One stacking context for the three layers: page colours at z-0, the
+        little world at z-10, page content at z-20. `isolate` keeps that
+        arrangement from leaking into whatever the Lab shell is doing around it,
+        and the white here is the base the whole thing sits on.
+      */
+      <div className="relative isolate min-h-screen bg-white">
         {!preview && (
           <div
             data-fx-chrome=""
