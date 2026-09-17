@@ -11,6 +11,7 @@ import {
   createSmokeTexture,
   createSparkTexture,
   createDropTexture,
+  createMistTexture,
 } from "./lab-materials";
 import {
   getObjectBusy,
@@ -1099,181 +1100,278 @@ function Shelf({ id }: FixableProps) {
 /**
  * THE TAP THAT WILL NOT STOP.
  *
- * The old one had a single bead of blue sliding down a quarter of an inch every
- * second, which is honest plumbing and invisible marketing: at phone size it
- * was one pixel of accent colour, and nothing about the object said the word
- * "leak". This is the opposite bet. The joint under the spout sprays, the spout
- * itself runs, both of them land in the basin and throw rings, and the bowl
- * fills with standing water — four things all saying one thing, which is what
- * it takes for a glance to land.
+ * The first version of this was one bead of blue sliding down a quarter inch a
+ * second, which is honest plumbing and invisible marketing. The second threw
+ * droplets, which read but did not alarm anybody. This one is a burst main
+ * under the counter, and the reason it works where the droplets did not is that
+ * it is not a bigger PARTICLE, it is a longer CHAIN: pressure at the joint, a
+ * jet that keeps its shape, an impact that throws water back out of the basin,
+ * mist hanging where the jet lands, and standing water rising underneath all of
+ * it. Any one of those alone is a special effect. Together they are a problem.
  *
- * The payoff is the rarest one in the set: it is a thing STOPPING. Everything
- * else here ends with something appearing — a light, a straight door, a clean
- * socket. This ends with the screen going quiet, and it is worth the couple of
- * last drips that make the quiet deliberate rather than a switch being thrown.
+ * The payoff is the rarest in the set: a thing STOPPING. Everything else here
+ * ends with something appearing — a light, a straight door, a clean socket.
+ * This ends with the screen going quiet, and the last airborne water landing
+ * after the flow has already died is what makes the quiet deliberate instead of
+ * a switch being thrown.
  */
-const DROPS = 34;
-const RINGS = 5;
+const DROPS = 68;
+const MIST = 11;
+const RINGS = 7;
 
-type Drop = { life: number; x: number; y: number; z: number; vx: number; vy: number; size: number };
-type Ring = { life: number; x: number; z: number };
+type Drop = {
+  life: number;
+  ttl: number;
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vy: number;
+  size: number;
+  /** Thrown back out of the basin, rather than falling into it. */
+  bounced: boolean;
+};
+type Mote = { life: number; ttl: number; x: number; y: number; vx: number; vy: number; size: number };
+type Ring = { life: number; x: number };
 
 type Water = {
   dropMats: THREE.MeshBasicMaterial[];
+  mistMats: THREE.MeshBasicMaterial[];
   ringMats: THREE.MeshBasicMaterial[];
   poolMat: THREE.MeshBasicMaterial;
+  jetMat: THREE.MeshBasicMaterial;
+  runMat: THREE.MeshBasicMaterial;
   drops: Drop[];
+  motes: Mote[];
   rings: Ring[];
-  nextSpray: number;
+  nextJet: number;
   nextRun: number;
+  nextMist: number;
   pool: number;
+  /** The last few drips, counted out after the main flow has gone. */
+  dribble: number;
+  nextDribble: number;
+  wasFlowing: boolean;
 };
 
 /** Where a drop stops falling, and where the standing water sits. */
 const BASIN_Y = -0.045;
 const WATER_Y = -0.052;
+/** The failed joint, and the spout's mouth. */
+const JOINT: [number, number] = [0.014, 0.056];
+const MOUTH: [number, number] = [0, 0.031];
 
 function makeWater(): Water {
   const dropMap = createDropTexture();
-  return {
-    dropMats: Array.from(
-      { length: DROPS },
-      () =>
-        new THREE.MeshBasicMaterial({
-          map: dropMap,
-          color: new THREE.Color("#8ecbe8"),
-          transparent: true,
-          depthWrite: false,
-          opacity: 0,
-        })
-    ),
-    ringMats: Array.from(
-      { length: RINGS },
-      () =>
-        new THREE.MeshBasicMaterial({
-          map: dropMap,
-          color: new THREE.Color("#a9d8ee"),
-          transparent: true,
-          depthWrite: false,
-          opacity: 0,
-        })
-    ),
-    poolMat: new THREE.MeshBasicMaterial({
-      map: dropMap,
-      color: new THREE.Color("#9ed0e8"),
+  const mistMap = createMistTexture();
+  const sheet = (map: THREE.Texture, opacity = 0) =>
+    new THREE.MeshBasicMaterial({
+      map,
       transparent: true,
       depthWrite: false,
-      opacity: 0,
-    }),
+      opacity,
+    });
+  return {
+    dropMats: Array.from({ length: DROPS }, () => sheet(dropMap)),
+    mistMats: Array.from({ length: MIST }, () => sheet(mistMap)),
+    ringMats: Array.from({ length: RINGS }, () => sheet(dropMap)),
+    poolMat: sheet(dropMap),
+    jetMat: sheet(dropMap),
+    runMat: sheet(dropMap),
     drops: Array.from({ length: DROPS }, () => ({
-      life: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, size: 1,
+      life: 0, ttl: 1, x: 0, y: 0, z: 0, vx: 0, vy: 0, size: 1, bounced: false,
     })),
-    rings: Array.from({ length: RINGS }, () => ({ life: 0, x: 0, z: 0 })),
-    nextSpray: 0,
+    motes: Array.from({ length: MIST }, () => ({
+      life: 0, ttl: 1, x: 0, y: 0, vx: 0, vy: 0, size: 1,
+    })),
+    rings: Array.from({ length: RINGS }, () => ({ life: 0, x: 0 })),
+    nextJet: 0,
     nextRun: 0,
+    nextMist: 0,
     pool: 0,
+    dribble: 0,
+    nextDribble: 0,
+    wasFlowing: false,
   };
 }
 
-/** A drop, thrown from wherever it is thrown from. */
 function spill(
   water: Water,
   x: number,
   y: number,
   vx: number,
   vy: number,
-  size: number
+  size: number,
+  bounced = false
 ): void {
   const drop = water.drops.find((d) => d.life <= 0);
   if (!drop) return;
   drop.x = x;
   drop.y = y;
-  drop.z = 0.05 + Math.random() * 0.05;
+  drop.z = 0.05 + Math.random() * 0.06;
   drop.vx = vx;
   drop.vy = vy;
   drop.size = size;
-  drop.life = 1;
+  drop.bounced = bounced;
+  drop.ttl = bounced ? 0.3 + Math.random() * 0.25 : 2;
+  drop.life = drop.ttl;
 }
 
-/** The ring a drop leaves on the water it lands in. */
-function ripple(water: Water, x: number, z: number): void {
+function haze(water: Water, x: number, y: number, power: number): void {
+  const mote = water.motes.find((m) => m.life <= 0);
+  if (!mote) return;
+  mote.x = x + (Math.random() - 0.5) * 0.12;
+  mote.y = y + Math.random() * 0.03;
+  mote.vx = (Math.random() - 0.5) * 0.1;
+  mote.vy = 0.02 + Math.random() * 0.06;
+  mote.size = (0.045 + Math.random() * 0.055) * power;
+  mote.ttl = 0.45 + Math.random() * 0.4;
+  mote.life = mote.ttl;
+}
+
+function ripple(water: Water, x: number): void {
   const ring = water.rings.find((r) => r.life <= 0);
   if (!ring) return;
   ring.x = x;
-  ring.z = z;
   ring.life = 1;
+}
+
+/** Where a drop lands, clamped so nothing splashes outside the bowl. */
+function inBasin(x: number): number {
+  return THREE.MathUtils.clamp(x, -0.19, 0.19);
 }
 
 /**
  * One frame of the leak.
  *
- * `flow` is how badly it is leaking, 1 to 0, and it is the only input that
- * matters: the spray rate, the run rate, the size of everything and the depth
- * of the standing water all come off it, so one number turning down turns the
- * whole thing down together.
+ * `flow` is how hard it is running, 1 to 0, and it is the only input: rate,
+ * speed, size, jet length, splash violence, mist and the depth of the standing
+ * water all come off it, so one number turning down turns the whole thing down
+ * together — which is what makes his wrench feel connected to it.
  */
 function stepWater(
   water: Water,
   group: THREE.Group,
   dropMeshes: (THREE.Mesh | null)[],
+  mistMeshes: (THREE.Mesh | null)[],
   ringMeshes: (THREE.Mesh | null)[],
   pool: THREE.Mesh | null,
+  jet: THREE.Mesh | null,
+  run: THREE.Mesh | null,
   flow: number,
   step: number
 ): void {
-  const live =
-    flow > 0.02 ||
+  const running = flow > 0.02;
+  const busy =
+    running ||
     water.pool > 0.01 ||
+    water.dribble > 0 ||
     water.drops.some((d) => d.life > 0) ||
+    water.motes.some((m) => m.life > 0) ||
     water.rings.some((r) => r.life > 0);
-  if (!live) {
+  if (!busy) {
     if (group.visible) {
       for (const mat of water.dropMats) mat.opacity = 0;
+      for (const mat of water.mistMats) mat.opacity = 0;
       for (const mat of water.ringMats) mat.opacity = 0;
       water.poolMat.opacity = 0;
+      water.jetMat.opacity = 0;
+      water.runMat.opacity = 0;
       group.visible = false;
     }
     return;
   }
   group.visible = true;
 
+  /* The moment the main flow dies, count out the last few drips. */
+  if (water.wasFlowing && !running) {
+    water.dribble = 3;
+    water.nextDribble = 0.35;
+  }
+  water.wasFlowing = running;
+
   /*
-   * TWO SOURCES, because one is a drip and two is a fault.
+   * THE PRESSURE ROOT.
    *
-   * The joint under the spout sprays sideways — that is the failure — and the
-   * spout runs into the bowl because a tap nobody can shut off does. Different
-   * rates, different directions, different sizes; together they read as water
-   * going where it should not.
+   * Two short quads, one out of the joint and one out of the spout, scaled by
+   * how hard it is running. Particles alone never read as pressure however many
+   * of them there are — they read as rain — because the thing the eye looks for
+   * is an unbroken connection between the hole and the water. This is that
+   * connection, and it is two triangles.
    */
-  water.nextSpray -= step;
-  if (water.nextSpray <= 0 && flow > 0.05) {
-    const n = 1 + Math.floor(Math.random() * 3);
-    for (let i = 0; i < n; i++) {
-      const ang = -0.5 + Math.random() * 1.2;
-      const speed = (0.16 + Math.random() * 0.3) * (0.45 + flow * 0.55);
-      spill(
-        water,
-        0.012 + (Math.random() - 0.5) * 0.02,
-        0.055,
-        Math.cos(ang) * speed,
-        Math.sin(ang) * speed * 0.7,
-        0.02 + Math.random() * 0.022
-      );
+  if (jet) {
+    jet.visible = flow > 0.05;
+    if (jet.visible) {
+      jet.scale.set(0.055 + flow * 0.075, 0.016 + flow * 0.016, 1);
+      water.jetMat.opacity = 0.3 + flow * 0.45;
     }
-    water.nextSpray = (0.028 + Math.random() * 0.038) / Math.max(0.2, flow);
+  }
+  if (run) {
+    run.visible = flow > 0.05;
+    if (run.visible) {
+      run.scale.set(0.02 + flow * 0.016, 0.045 + flow * 0.06, 1);
+      water.runMat.opacity = 0.3 + flow * 0.42;
+    }
   }
 
+  /*
+   * THE JET, out of the failed joint.
+   *
+   * A tight fan rather than a spray: high speed, small spread, and enough of
+   * them that they overlap into a band. The spread opens as the pressure drops,
+   * which is what a dying jet does and is a second, free signal that his wrench
+   * is working.
+   */
+  water.nextJet -= step;
+  if (water.nextJet <= 0 && flow > 0.04) {
+    const n = 2 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) {
+      const spread = 0.34 + (1 - flow) * 0.5;
+      /* Thrown UP and over, not sideways. A flat jet at phone size is a smear
+         beside a tap; an arc has a shape you can name. */
+      const ang = 0.75 + (Math.random() - 0.5) * spread;
+      const speed = (0.44 + Math.random() * 0.2) * (0.35 + flow * 0.65);
+      spill(
+        water,
+        JOINT[0] + (Math.random() - 0.5) * 0.016,
+        JOINT[1] + (Math.random() - 0.5) * 0.012,
+        Math.cos(ang) * speed,
+        Math.sin(ang) * speed,
+        0.013 + Math.random() * 0.024
+      );
+    }
+    water.nextJet = 0.012 + Math.random() * 0.016;
+  }
+
+  /* And the spout, running because nobody can shut it off. */
   water.nextRun -= step;
-  if (water.nextRun <= 0 && flow > 0.02) {
+  if (water.nextRun <= 0 && flow > 0.03) {
     spill(
       water,
-      (Math.random() - 0.5) * 0.012,
-      0.03,
-      (Math.random() - 0.5) * 0.03,
-      -0.05,
-      0.024 + Math.random() * 0.018
+      MOUTH[0] + (Math.random() - 0.5) * 0.016,
+      MOUTH[1],
+      (Math.random() - 0.5) * 0.04,
+      -0.12 - Math.random() * 0.12,
+      0.018 + Math.random() * 0.018
     );
-    water.nextRun = (0.03 + Math.random() * 0.026) / Math.max(0.15, flow);
+    water.nextRun = 0.016 + Math.random() * 0.016;
+  }
+
+  /* Haze where the jet is landing. */
+  water.nextMist -= step;
+  if (water.nextMist <= 0 && flow > 0.12) {
+    haze(water, 0.1, BASIN_Y + 0.02, 0.6 + flow * 0.6);
+    water.nextMist = 0.15 + Math.random() * 0.12;
+  }
+
+  /* The last drips, after everything else has gone. */
+  if (water.dribble > 0) {
+    water.nextDribble -= step;
+    if (water.nextDribble <= 0) {
+      water.dribble -= 1;
+      water.nextDribble = 0.42 + Math.random() * 0.22;
+      spill(water, MOUTH[0], MOUTH[1], 0, -0.02, 0.02);
+    }
   }
 
   for (let i = 0; i < DROPS; i++) {
@@ -1285,26 +1383,81 @@ function stepWater(
       if (mat.opacity !== 0) mat.opacity = 0;
       continue;
     }
-    drop.vy -= 1.5 * step;
+    drop.life -= step;
+    drop.vy -= 1.9 * step;
     drop.x += drop.vx * step;
     drop.y += drop.vy * step;
-    if (drop.y <= BASIN_Y) {
+    if (drop.y <= BASIN_Y && drop.vy < 0) {
       drop.life = 0;
       mat.opacity = 0;
-      if (Math.abs(drop.x) < 0.2 && Math.random() < 0.5) ripple(water, drop.x, drop.z);
+      if (drop.bounced) continue;
+      /*
+       * IT HITS SOMETHING.
+       *
+       * Two or three drops thrown back up and outward, a ring, and the odd
+       * puff. This is the half of the effect the earlier version was missing
+       * entirely: water that arrives and simply stops reads as water falling
+       * past a sink, not into one.
+       */
+      const at = inBasin(drop.x);
+      ripple(water, at);
+      const kick = Math.min(1, Math.abs(drop.vy) * 1.3);
+      const n = 1 + Math.floor(Math.random() * 3);
+      for (let k = 0; k < n; k++) {
+        const out = (Math.random() < 0.5 ? -1 : 1) * (0.1 + Math.random() * 0.28) * kick;
+        spill(
+          water,
+          at,
+          BASIN_Y + 0.006,
+          out,
+          (0.16 + Math.random() * 0.26) * kick,
+          drop.size * (0.5 + Math.random() * 0.34),
+          true
+        );
+      }
+      if (Math.random() < 0.28) haze(water, at, BASIN_Y + 0.01, 0.5 + kick * 0.5);
       continue;
     }
     mesh.position.set(drop.x, drop.y, drop.z);
     /*
-     * Narrow and stretched, which is what turns a dot into moving water.
+     * Stretched along the way it is going, and thin across it.
      *
-     * Round drops at the size this needs to be seen at merged into one white
-     * cloud and the tap looked like it was steaming. Thin ones overlap without
-     * filling in, so twenty of them still read as twenty.
+     * Round drops at a readable size merge into one white cloud; the tap looks
+     * like it is steaming. Thin ones overlap without filling in, so forty of
+     * them still read as forty.
      */
-    const stretch = 1 + Math.min(2.2, Math.abs(drop.vy) * 2.4);
-    mesh.scale.set(drop.size * 0.62, drop.size * stretch, 1);
-    mat.opacity = 0.85;
+    const speed = Math.hypot(drop.vx, drop.vy);
+    /*
+     * Barely stretched, and nearly as wide as it is long.
+     *
+     * A soft radial gradient pulled out to nearly three times its width is an
+     * ellipse with soft ends, and a field of those reads as pale leaves rather
+     * than as water. Water at this scale is round; the speed is carried by how
+     * many of them there are and how fast they move, not by smearing each one.
+     */
+    const stretch = 1 + Math.min(0.55, speed * 0.75);
+    mesh.rotation.z = Math.atan2(drop.vy, drop.vx) - Math.PI / 2;
+    mesh.scale.set(drop.size * 0.78, drop.size * stretch, 1);
+    mat.opacity = drop.bounced ? Math.min(1, (drop.life / drop.ttl) * 1.8) * 0.9 : 0.92;
+  }
+
+  for (let i = 0; i < MIST; i++) {
+    const mote = water.motes[i];
+    const mesh = mistMeshes[i];
+    const mat = water.mistMats[i];
+    if (!mesh || !mat) continue;
+    if (mote.life <= 0) {
+      if (mat.opacity !== 0) mat.opacity = 0;
+      continue;
+    }
+    mote.life -= step;
+    mote.x += mote.vx * step;
+    mote.y += mote.vy * step;
+    mote.vy -= 0.12 * step;
+    const u = Math.max(0, mote.life / mote.ttl);
+    mesh.position.set(mote.x, mote.y, 0.14);
+    mesh.scale.setScalar(mote.size * (1.3 - u * 0.5));
+    mat.opacity = Math.sin(u * Math.PI) * 0.26;
   }
 
   for (let i = 0; i < RINGS; i++) {
@@ -1316,29 +1469,29 @@ function stepWater(
       if (mat.opacity !== 0) mat.opacity = 0;
       continue;
     }
-    ring.life -= step * 3.2;
+    ring.life -= step * 3.4;
     const u = Math.max(0, ring.life);
     /*
      * Flat to the camera, not flat to the world.
      *
-     * A ring lying on the surface of the water is the correct thing to model
-     * and, under a camera this close to head-on, is a horizontal line four
-     * pixels long. These are drawn facing the viewer and squashed by hand,
-     * which is a cheat and is the only version anybody can see.
+     * A ring lying on the surface is the correct thing to model and, under a
+     * camera this near head-on, is a four-pixel horizontal line. These face the
+     * viewer and are squashed by hand, which is a cheat and is the only version
+     * anybody can see.
      */
-    mesh.position.set(ring.x, WATER_Y, 0.12);
-    const w = 0.04 + (1 - u) * 0.13;
-    mesh.scale.set(w, w * 0.34, 1);
+    mesh.position.set(ring.x, WATER_Y + 0.004, 0.13);
+    const w = 0.05 + (1 - u) * 0.15;
+    mesh.scale.set(w, w * 0.32, 1);
     mat.opacity = u * 0.6;
   }
 
-  /* Standing water, which fills while it leaks and drains when it stops. */
+  /* Standing water, which rises while it leaks and drains when it stops. */
   water.pool +=
-    ((flow > 0.05 ? Math.min(1, 0.35 + flow) : 0) - water.pool) *
-    Math.min(1, step * (flow > 0.05 ? 1.6 : 0.9));
+    ((running ? Math.min(1, 0.45 + flow * 0.55) : 0) - water.pool) *
+    Math.min(1, step * (running ? 1.8 : 0.85));
   if (pool) {
-    pool.scale.set(0.2 + water.pool * 0.22, 0.05 + water.pool * 0.055, 1);
-    water.poolMat.opacity = water.pool * 0.8;
+    pool.scale.set(0.22 + water.pool * 0.26, 0.05 + water.pool * 0.07, 1);
+    water.poolMat.opacity = water.pool * 0.85;
   }
 }
 
@@ -1347,8 +1500,11 @@ function Faucet({ id }: FixableProps) {
   const spout = useRef<THREE.Group>(null);
   const wet = useRef<THREE.Group>(null);
   const dropMeshes = useRef<(THREE.Mesh | null)[]>([]);
+  const mistMeshes = useRef<(THREE.Mesh | null)[]>([]);
   const ringMeshes = useRef<(THREE.Mesh | null)[]>([]);
   const pool = useRef<THREE.Mesh>(null);
+  const jet = useRef<THREE.Mesh>(null);
+  const run = useRef<THREE.Mesh>(null);
   const f = useRef(0);
   const water = useMemo(() => makeWater(), []);
 
@@ -1361,16 +1517,20 @@ function Faucet({ id }: FixableProps) {
     const working = p > 0;
 
     /*
-     * THE LEAK COMES DOWN IN STEPS, on his turns.
+     * THE PRESSURE COMES DOWN IN STEPS, on his turns.
      *
      * A wrench does not taper anything; it takes a bite, stops, and takes
      * another. So the flow holds, drops when the first turn lands, holds again,
-     * drops on the second, and is shut off by the last one — which is the
+     * drops on the second, and is shut off by the last — which is the
      * difference between a man tightening a nut and a man standing beside a
-     * fade-out.
+     * fade-out. The last step is deliberately the biggest and the quickest: the
+     * moment it goes quiet is the whole point of this repair.
      */
     const flow = working
-      ? 1 - 0.42 * ramp(p, 0.16, 0.3) - 0.36 * ramp(p, 0.46, 0.6) - 0.22 * ramp(p, 0.72, 0.82)
+      ? 1 -
+        0.34 * ramp(p, 0.16, 0.28) -
+        0.3 * ramp(p, 0.46, 0.58) -
+        0.36 * ramp(p, 0.74, 0.79)
       : broken;
 
     if (handle.current) handle.current.rotation.z = DEG(40) * broken;
@@ -1382,8 +1542,11 @@ function Faucet({ id }: FixableProps) {
       water,
       group,
       dropMeshes.current,
+      mistMeshes.current,
       ringMeshes.current,
       pool.current,
+      jet.current,
+      run.current,
       Math.max(0, flow),
       step
     );
@@ -1457,11 +1620,39 @@ function Faucet({ id }: FixableProps) {
         <mesh ref={pool} material={water.poolMat} position={[0, WATER_Y, 0.12]}>
           <planeGeometry args={[1, 1]} />
         </mesh>
+        {/* The two pressure roots: unbroken water between hole and air. */}
+        {/* Laid along the jet's own heading, so the water has a root. */}
+        <mesh
+          ref={jet}
+          material={water.jetMat}
+          position={[JOINT[0] + 0.036, JOINT[1] + 0.034, 0.13]}
+          rotation={[0, 0, DEG(43)]}
+        >
+          <planeGeometry args={[1, 1]} />
+        </mesh>
+        <mesh
+          ref={run}
+          material={water.runMat}
+          position={[MOUTH[0], MOUTH[1] - 0.05, 0.13]}
+        >
+          <planeGeometry args={[1, 1]} />
+        </mesh>
         {water.ringMats.map((mat, i) => (
           <mesh
             key={`ring-${i}`}
             ref={(node) => {
               ringMeshes.current[i] = node;
+            }}
+            material={mat}
+          >
+            <planeGeometry args={[1, 1]} />
+          </mesh>
+        ))}
+        {water.mistMats.map((mat, i) => (
+          <mesh
+            key={`mist-${i}`}
+            ref={(node) => {
+              mistMeshes.current[i] = node;
             }}
             material={mat}
           >

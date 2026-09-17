@@ -265,19 +265,56 @@ export function createDropTexture(): THREE.Texture {
   canvas.height = size;
   const ctx = canvas.getContext("2d");
   if (ctx) {
+    /*
+     * A bright core inside a dark rim, and the colour is baked here.
+     *
+     * Same problem the socket's smoke had and the same answer: this basin sits
+     * on the seam of the navy hero, and water thrown out of it crosses onto the
+     * white page below. One value cannot do both — pale water disappears
+     * against paper, deep water disappears against the hero. So each drop
+     * carries the whole range: the near-white middle does the reading on dark,
+     * the deep blue edge draws it on light, and the material tints nothing.
+     */
     const g = ctx.createRadialGradient(
       size / 2, size / 2, 0,
       size / 2, size / 2, size / 2
     );
-    g.addColorStop(0, "rgba(255,255,255,1)");
-    g.addColorStop(0.5, "rgba(255,255,255,0.95)");
-    g.addColorStop(0.78, "rgba(255,255,255,0.45)");
-    g.addColorStop(1, "rgba(255,255,255,0)");
+    g.addColorStop(0, "rgba(240,251,255,1)");
+    g.addColorStop(0.3, "rgba(166,222,246,1)");
+    g.addColorStop(0.56, "rgba(84,163,208,1)");
+    g.addColorStop(0.82, "rgba(36,102,150,0.82)");
+    g.addColorStop(1, "rgba(26,82,124,0)");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, size, size);
   }
   dropTexture = new THREE.CanvasTexture(canvas);
   return dropTexture;
+}
+
+let mistTexture: THREE.Texture | null = null;
+
+/** The haze that hangs where a jet is hitting something. All falloff, no core. */
+export function createMistTexture(): THREE.Texture {
+  if (mistTexture) return mistTexture;
+  const size = 64;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const g = ctx.createRadialGradient(
+      size / 2, size / 2, 0,
+      size / 2, size / 2, size / 2
+    );
+    g.addColorStop(0, "rgba(226,244,253,0.75)");
+    g.addColorStop(0.45, "rgba(170,214,238,0.42)");
+    g.addColorStop(0.8, "rgba(112,166,201,0.14)");
+    g.addColorStop(1, "rgba(92,150,190,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+  }
+  mistTexture = new THREE.CanvasTexture(canvas);
+  return mistTexture;
 }
 
 export function createGlowTexture(): THREE.Texture {
