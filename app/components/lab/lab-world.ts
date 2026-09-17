@@ -342,6 +342,28 @@ export const WORLD_SPOTS: WorldSpot[] = [
 export const HOME = { at: { x: 0.34, y: 0.86 }, narrow: { x: 0.26, y: 0.88 } };
 
 /**
+ * THE WHOLE STAGE, SMALLER.
+ *
+ * Applied to the camera's pixels-per-unit, which is the one place that takes
+ * everything down together: character, props, tools, smoke, sparks, water,
+ * glows, shadows and every working distance are all expressed in world units
+ * and all drawn through the same zoom. Nothing about the level changes in its
+ * own units — his stride, his arrival distances, his tool reach and the size of
+ * every particle relative to the thing it comes out of are untouched. Only the
+ * window onto it is smaller.
+ *
+ * WHERE EACH OBJECT SITS IS DELIBERATELY NOT SCALED. I tried pulling the
+ * composition in by the same factor, which is the mathematically tidy version
+ * and is wrong here: the marks are fractions of the VIEWPORT, so contracting
+ * them walks the whole cast into the middle of the page — and the middle of
+ * this page is a solid blue call-to-action. Three of the six ended up behind
+ * it. The layout was composed against real furniture and it stays where it was.
+ *
+ * The cost of that decision is paid in GAIT; see the note there.
+ */
+export const STAGE = 0.6;
+
+/**
  * How far to the side of a repair he stands.
  *
  * In his own units, so it scales with him. Standing work needs more room than
@@ -535,7 +557,23 @@ const MEASURED_WALK = 0.875;
  * past about 2.2 the feet stop keeping up and he skates. This is just under
  * that: as quick as he can go and still be walking.
  */
-const GAIT = 2.15;
+/*
+ * Raised because the stage shrank, which is the one adjustment the scaling
+ * genuinely forces.
+ *
+ * The marks are fractions of the viewport, so they are the same number of
+ * PIXELS apart as before while he is now forty per cent shorter — and a shorter
+ * man crossing the same gap at the same stride takes two-thirds again as long.
+ * Left alone, the ninety-second problem we already solved comes straight back:
+ * the show would run to nearly a minute.
+ *
+ * So he takes more steps per second, in exactly the proportion the shrink
+ * removed. That is a rate the walk take could not carry at the old size — feet
+ * begin to slip against the ground — but foot-slip is a fraction of a character
+ * and this character is now a fraction of the size. What was visible at a
+ * hundred pixels is not at sixty.
+ */
+const GAIT = 3.58;
 
 export function walkSpeed(characterScale: number): number {
   return MEASURED_WALK * characterScale * GAIT;
@@ -867,5 +905,5 @@ export function clipForBeat(
  */
 export function walkClipRate(speed: number, characterScale: number): number {
   const natural = MEASURED_WALK * characterScale;
-  return THREE.MathUtils.clamp(speed / Math.max(natural, 0.001), 0.35, 2.2);
+  return THREE.MathUtils.clamp(speed / Math.max(natural, 0.001), 0.35, 3.7);
 }
