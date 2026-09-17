@@ -43,6 +43,25 @@ export type WorldSpot = {
   narrow?: { x: number; y: number };
   /** Which side he works from: 1 stands to its right, -1 to its left. */
   side: 1 | -1;
+  /**
+   * Force the approach side rather than taking whichever is nearer.
+   *
+   * The near side is right nearly always — it is what stops him walking past a
+   * thing and turning back — but a couple of these read better approached from
+   * the far side, and an authored answer beats a clever one when the clever one
+   * is wrong.
+   */
+  fromSide?: 1 | -1;
+  /**
+   * Where his feet go, relative to the repair, in HIS units.
+   *
+   * The default is derived: out to one side by a stance-dependent step, and
+   * down by the height that stance holds its working hand at, so the hand the
+   * clip already lifts arrives at about the right place. That is right for most
+   * of them. This is the override for the ones it is not right for, and it is
+   * the single most important number for whether an arrival looks intentional.
+   */
+  stand?: [number, number];
   /** How long the repair takes, in seconds. */
   seconds: number;
   /**
@@ -61,11 +80,17 @@ export type WorldSpot = {
 /**
  * The level.
  *
- * Six, in a loop around the screen — upper left, top, upper right, down the
- * right, across the bottom, back up the left. The order is the route, so it is
- * written in the order he does them and reads as a circuit rather than as a
- * list. Each leg changes both x and y, because a character who only ever walks
- * sideways reads as a slider.
+ * Six, in a circuit that starts and finishes next to his home mark: the socket
+ * at his feet, up the left wall past the cabinet to the picture, across the top
+ * to the lamp, down the right to the shelf and the tap, and home. The order IS
+ * the route, so it is written in the order he walks it.
+ *
+ * Starting beside home matters more than it sounds. Written the other way round
+ * the opening was a seven-second walk across the whole screen before anything
+ * happened, which is a long time to ask of somebody who has just arrived. Now
+ * he kneels to the first job almost immediately, and the longest leg in the
+ * piece is the walk home at the end — which is the one leg that should be long,
+ * because it is the one that means the work is finished.
  *
  * The heights say what they are: a picture and a lamp are up, a cabinet and a
  * tap are at hand height, an outlet is at the skirting board. Nothing is at the
@@ -79,54 +104,6 @@ export type WorldSpot = {
  */
 export const WORLD_SPOTS: WorldSpot[] = [
   {
-    id: "frame",
-    label: "Crooked picture",
-    kind: "frame",
-    motion: "mid",
-    tool: null,
-    at: { x: 0.17, y: 0.3 },
-    narrow: { x: 0.2, y: 0.24 },
-    side: 1,
-    seconds: 3.0,
-    scale: 0.6,
-  },
-  {
-    id: "lamp",
-    label: "Light out",
-    kind: "lamp",
-    motion: "reach",
-    tool: "screwdriver",
-    at: { x: 0.37, y: 0.19 },
-    narrow: { x: 0.56, y: 0.21 },
-    side: -1,
-    seconds: 4.2,
-    scale: 0.82,
-  },
-  {
-    id: "shelf",
-    label: "Sagging shelf",
-    kind: "shelf",
-    motion: "mid",
-    tool: "drill",
-    at: { x: 0.57, y: 0.28 },
-    narrow: { x: 0.82, y: 0.4 },
-    side: -1,
-    seconds: 4.4,
-    scale: 0.66,
-  },
-  {
-    id: "faucet",
-    label: "Dripping tap",
-    kind: "faucet",
-    motion: "squat",
-    tool: "wrench",
-    at: { x: 0.8, y: 0.55 },
-    narrow: { x: 0.76, y: 0.6 },
-    side: -1,
-    seconds: 4.0,
-    scale: 0.66,
-  },
-  {
     id: "outlet",
     label: "Loose socket",
     kind: "outlet",
@@ -137,6 +114,7 @@ export const WORLD_SPOTS: WorldSpot[] = [
     side: 1,
     seconds: 3.8,
     scale: 0.62,
+    stand: [0.44, -0.38],
   },
   {
     id: "cabinet",
@@ -149,8 +127,72 @@ export const WORLD_SPOTS: WorldSpot[] = [
     side: 1,
     seconds: 3.6,
     scale: 0.41,
+    stand: [0.66, -0.95],
+  },
+  {
+    id: "frame",
+    label: "Crooked picture",
+    kind: "frame",
+    motion: "mid",
+    tool: null,
+    at: { x: 0.17, y: 0.3 },
+    narrow: { x: 0.2, y: 0.24 },
+    side: 1,
+    seconds: 3.0,
+    scale: 0.6,
+    stand: [0.54, -0.98],
+  },
+  {
+    id: "lamp",
+    label: "Light out",
+    kind: "lamp",
+    motion: "reach",
+    tool: "screwdriver",
+    at: { x: 0.37, y: 0.19 },
+    narrow: { x: 0.56, y: 0.21 },
+    side: -1,
+    seconds: 4.2,
+    scale: 0.82,
+    stand: [0.46, -1.2],
+  },
+  {
+    id: "shelf",
+    label: "Sagging shelf",
+    kind: "shelf",
+    motion: "mid",
+    tool: "drill",
+    at: { x: 0.57, y: 0.28 },
+    narrow: { x: 0.82, y: 0.4 },
+    side: -1,
+    seconds: 4.4,
+    scale: 0.66,
+    stand: [0.74, -0.96],
+  },
+  {
+    id: "faucet",
+    label: "Dripping tap",
+    kind: "faucet",
+    motion: "squat",
+    tool: "wrench",
+    at: { x: 0.8, y: 0.55 },
+    narrow: { x: 0.76, y: 0.6 },
+    side: -1,
+    seconds: 4.0,
+    scale: 0.66,
+    stand: [0.52, -0.52],
   },
 ];
+
+/**
+ * Where he starts, and where he goes back to.
+ *
+ * A performance needs a first position and a last one, and they should be the
+ * same position: leaving him parked beside whatever he happened to fix last is
+ * the difference between a sequence that ended and one that merely stopped.
+ * Low and a little left of centre, clear of all six repairs, with room to stand
+ * square to the reader at the end.
+ */
+export const HOME = { at: { x: 0.34, y: 0.86 }, narrow: { x: 0.26, y: 0.88 } };
 
 /**
  * How far to the side of a repair he stands.
@@ -193,6 +235,22 @@ export type WorldMark = {
  * anything. That is the whole of the "reaching" system now: put him where the
  * animation works, instead of bending the animation to where he is.
  */
+/** The start and finish mark, in world units. */
+export function homeAt(
+  viewport: { w: number; h: number },
+  unitPx: number,
+  narrow: boolean
+): THREE.Vector3 {
+  const at = narrow ? HOME.narrow : HOME.at;
+  const halfW = viewport.w / unitPx / 2;
+  const halfH = viewport.h / unitPx / 2;
+  return new THREE.Vector3(
+    (at.x - 0.5) * halfW * 2,
+    (0.5 - at.y) * halfH * 2,
+    0
+  );
+}
+
 export function layoutWorld(
   viewport: { w: number; h: number },
   unitPx: number,
@@ -222,16 +280,19 @@ export function layoutWorld(
      * side of whichever way he is coming costs one line and removes it.
      */
     const previous = marks[marks.length - 1];
-    const side = previous
-      ? previous.feet.x <= object.x
-        ? -1
-        : 1
-      : spot.side;
-    const feet = new THREE.Vector3(
-      object.x + side * step,
-      object.y - motion.handOffset[1] * characterScale,
-      0
-    );
+    const comingFrom = previous ? previous.feet.x : homeAt(viewport, unitPx, narrow).x;
+    const side = spot.fromSide ?? (comingFrom <= object.x ? -1 : 1);
+    const feet = spot.stand
+      ? new THREE.Vector3(
+          object.x + side * spot.stand[0] * characterScale,
+          object.y + spot.stand[1] * characterScale,
+          0
+        )
+      : new THREE.Vector3(
+          object.x + side * step,
+          object.y - motion.handOffset[1] * characterScale,
+          0
+        );
     /* He faces back toward the thing he is standing beside. */
     marks.push({ spot, object, feet, yaw: faceYaw(-side * 0.62) });
   }
@@ -241,98 +302,148 @@ export function layoutWorld(
 /* ------------------------------------------------------------------ runner */
 
 /**
- * The whole state machine.
+ * The whole performance.
  *
- * Five beats, in a fixed order, with no branching except "is there another one
- * after this". There is no scheduler, no transition planner, no shape library
- * and no rest: the variety in the performance comes from the objects being
- * different from each other, which is where variety should come from.
+ * He starts at home, visits each repair in order, and walks back. There is no
+ * loop, no reset and no second pass: when the last one is mended he returns to
+ * the mark he set off from and stands there, and that is the end of it.
  */
 export type WorldBeat =
+  | "START"
+  | "WALK"
+  | "ARRIVE"
   | "WORK_IN"
   | "WORK"
   | "WORK_OUT"
-  | "TURN"
-  | "WALK"
-  | "DONE";
+  | "ADMIRE"
+  | "HOME";
 
 export type WorldRuntime = {
   beat: WorldBeat;
-  /** Which spot he is at, or walking to. */
+  /** Which repair he is at or heading to. marks.length means he is going home. */
   index: number;
-  /** Seconds inside the current beat. */
   elapsed: number;
   position: THREE.Vector3;
   yaw: number;
-  /** How far through the current repair, 0 to 1. */
+  /** How fast he is actually moving. Ramped, never stepped. */
+  speed: number;
   progress: number;
-  /** Which repairs are finished. Once true, always true. */
   fixed: boolean[];
-  /** The walk in progress. */
   from: THREE.Vector3;
   to: THREE.Vector3;
+  /** Where he is facing when he gets there. */
+  arriveYaw: number;
   distance: number;
   travelled: number;
-  /** Seconds since everything was finished, for the closing idle. */
   restedFor: number;
+  home: THREE.Vector3;
 };
 
 /** A repair is visibly mended a little before he stops fussing over it. */
 const FIX_AT = 0.72;
 
-/** How long he takes to square up to the next thing before setting off. */
-const TURN_SECONDS = 0.34;
+/** A beat of standing and looking at it before he moves on. */
+const ADMIRE_SECONDS = 0.85;
+
+/** A moment to settle between the last step and the first turn of the screwdriver. */
+const ARRIVE_SECONDS = 0.26;
+
+/** How long he waits at the start before setting off. */
+const START_SECONDS = 0.7;
 
 /**
  * Metres per second, in his own scale.
  *
  * Derived from the walk take rather than chosen: the clip's feet were built for
  * 0.875 units a second on a full-sized character, so a man at half that size
- * covers half the ground per stride. GAIT is the only liberty — a shade above
- * one, which reads as somebody with a job to get on with rather than a stroll,
- * and is small enough that the feet still land where the clip puts them.
+ * covers half the ground per stride. GAIT is the only liberty — enough above
+ * one to read as somebody with a job to get on with, small enough that the clip
+ * still looks like walking when it is played at that rate.
  */
 const MEASURED_WALK = 0.875;
-const GAIT = 1.5;
+const GAIT = 1.8;
 
 export function walkSpeed(characterScale: number): number {
   return MEASURED_WALK * characterScale * GAIT;
 }
 
-export function createWorldRuntime(marks: WorldMark[]): WorldRuntime {
-  const first = marks[0];
+/** Up to speed in about a third of a second, down again a little quicker. */
+const ACCEL = 3.4;
+const BRAKE = 4.6;
+
+/**
+ * How far out he starts slowing down, in his own units.
+ *
+ * This is most of what makes an arrival look intentional rather than abrupt.
+ * Stopping dead on the last frame of a constant-speed slide is the single most
+ * robotic thing in a walk cycle: real approaches are announced.
+ */
+const SLOW_FROM = 1.5;
+
+/**
+ * When to stop steering toward the destination and start facing the work.
+ *
+ * Turning on arrival is a visible correction — he plants, then swivels. Turning
+ * over the last fifth of the approach means he walks in already squaring up,
+ * and lands facing the thing he came for.
+ */
+const TURN_IN_AT = 0.76;
+
+export function createWorldRuntime(
+  marks: WorldMark[],
+  home: THREE.Vector3
+): WorldRuntime {
   return {
-    /*
-     * He starts mid-repair, on purpose.
-     *
-     * The first three seconds have to say what this is, and a man already
-     * kneeling at a socket with a screwdriver says it immediately — where a man
-     * walking across a screen says nothing until he arrives. So the curtain
-     * goes up on the first job already under way and its payoff lands inside a
-     * couple of seconds.
-     */
-    beat: "WORK",
+    beat: "START",
     index: 0,
     elapsed: 0,
-    position: first ? first.feet.clone() : new THREE.Vector3(),
-    yaw: first ? first.yaw : 0,
+    position: home.clone(),
+    yaw: 0,
+    speed: 0,
     progress: 0,
     fixed: marks.map(() => false),
-    from: new THREE.Vector3(),
-    to: new THREE.Vector3(),
+    from: home.clone(),
+    to: home.clone(),
+    arriveYaw: 0,
     distance: 0,
     travelled: 0,
     restedFor: 0,
+    home: home.clone(),
   };
 }
 
 const ease = (u: number) => u * u * (3 - 2 * u);
 
+/** Exponential approach: frame-rate independent, and never overshoots. */
+export function approach(
+  value: number,
+  target: number,
+  dt: number,
+  rate: number
+): number {
+  return value + (target - value) * (1 - Math.exp(-rate * dt));
+}
+
+/** Send him somewhere, and remember how he should be facing when he lands. */
+function setOff(
+  runtime: WorldRuntime,
+  to: THREE.Vector3,
+  arriveYaw: number
+): void {
+  runtime.beat = "WALK";
+  runtime.elapsed = 0;
+  runtime.from.copy(runtime.position);
+  runtime.to.copy(to);
+  runtime.distance = runtime.from.distanceTo(runtime.to);
+  runtime.travelled = 0;
+  runtime.arriveYaw = arriveYaw;
+}
+
 /**
  * One frame of the performance.
  *
  * `setFix` is how a repair changes: the runner owns WHEN, the prop owns what
- * that looks like. Everything else in here is position, facing and which beat
+ * that looks like. Everything else in here is position, facing, and which beat
  * is running.
  */
 export function stepWorld(
@@ -344,14 +455,75 @@ export function stepWorld(
 ): void {
   if (!marks.length) return;
   runtime.elapsed += dt;
+  const goingHome = runtime.index >= marks.length;
   const mark = marks[Math.min(runtime.index, marks.length - 1)];
   const motion = WORK_MOTIONS[mark.spot.motion];
 
   switch (runtime.beat) {
+    case "START": {
+      /* A breath before he sets off, so the curtain is not also the first step. */
+      runtime.yaw = approach(runtime.yaw, 0, dt, 4);
+      if (runtime.elapsed >= START_SECONDS) {
+        setOff(runtime, marks[0].feet, marks[0].yaw);
+      }
+      break;
+    }
+
+    case "WALK": {
+      const top = walkSpeed(characterScale);
+      const remaining = Math.max(0, runtime.distance - runtime.travelled);
+      const slow = SLOW_FROM * characterScale;
+      /*
+       * Ease out of the idle and into the stop.
+       *
+       * Speed is a value that is chased, not assigned: he leans into the walk
+       * over a third of a second and sheds it again over the last stride, which
+       * is what stops the legs from starting and ending mid-air.
+       */
+      const want = remaining < slow ? top * Math.max(0.12, remaining / slow) : top;
+      runtime.speed =
+        want > runtime.speed
+          ? Math.min(want, runtime.speed + top * ACCEL * dt)
+          : Math.max(want, runtime.speed - top * BRAKE * dt);
+      runtime.travelled = Math.min(
+        runtime.distance,
+        runtime.travelled + runtime.speed * dt
+      );
+      const u = runtime.distance > 0 ? runtime.travelled / runtime.distance : 1;
+      runtime.position.lerpVectors(runtime.from, runtime.to, u);
+      /* Face the way he is going, then face the work — all while still moving. */
+      const dx = runtime.to.x - runtime.from.x;
+      const aim = u > TURN_IN_AT ? runtime.arriveYaw : faceYaw(dx);
+      runtime.yaw = approach(runtime.yaw, aim, dt, 5.5);
+      if (u >= 1) {
+        runtime.beat = "ARRIVE";
+        runtime.elapsed = 0;
+        runtime.speed = 0;
+      }
+      break;
+    }
+
+    case "ARRIVE": {
+      /* Planted, squaring up. Short — it is a settle, not a pause. */
+      runtime.speed = approach(runtime.speed, 0, dt, 9);
+      runtime.yaw = approach(runtime.yaw, runtime.arriveYaw, dt, 8);
+      if (runtime.elapsed < ARRIVE_SECONDS) break;
+      if (goingHome) {
+        runtime.beat = "HOME";
+        runtime.elapsed = 0;
+        runtime.restedFor = 0;
+        break;
+      }
+      runtime.beat = motion.crouched ? "WORK_IN" : "WORK";
+      runtime.elapsed = 0;
+      runtime.progress = 0;
+      break;
+    }
+
     case "WORK_IN": {
       /* Lowering himself. The clip does it; we only wait for it. */
       runtime.yaw = approach(runtime.yaw, mark.yaw, dt, 8);
-      if (runtime.elapsed >= (motion.crouched ? 0.62 : 0.3)) {
+      if (runtime.elapsed >= 0.62) {
         runtime.beat = "WORK";
         runtime.elapsed = 0;
       }
@@ -364,10 +536,10 @@ export function stepWorld(
       /*
        * The thing mends part-way through, not at the end.
        *
-       * If it changes on the last frame of the repair the change happens while
-       * he is already straightening up, and the eye ties it to him standing
-       * rather than to the work. Landing it at seven-tenths puts the moment
-       * squarely inside the fixing, with a beat of him still at it afterwards.
+       * If it changed on the last frame the change would happen while he is
+       * already straightening up, and the eye would tie it to him standing
+       * rather than to the work. Seven-tenths puts the moment squarely inside
+       * the fixing, with a beat of him still at it afterwards.
        */
       setFix(
         mark.spot.id,
@@ -377,100 +549,49 @@ export function stepWorld(
       );
       if (runtime.progress >= 1) {
         runtime.fixed[runtime.index] = true;
-        runtime.beat = motion.crouched ? "WORK_OUT" : "TURN";
+        runtime.beat = motion.crouched ? "WORK_OUT" : "ADMIRE";
         runtime.elapsed = 0;
       }
       break;
     }
 
     case "WORK_OUT": {
+      /* Standing back up out of the crouch. */
       if (runtime.elapsed >= 0.55) {
-        runtime.beat = "TURN";
+        runtime.beat = "ADMIRE";
         runtime.elapsed = 0;
       }
       break;
     }
 
-    case "TURN": {
+    case "ADMIRE": {
+      /*
+       * A look at the finished thing before he moves on.
+       *
+       * Without it the last frame of the repair is also the first frame of the
+       * walk, and a man who turns away the instant a job is done reads as a
+       * machine advancing a queue.
+       */
+      if (runtime.elapsed < ADMIRE_SECONDS) break;
       const next = runtime.index + 1;
+      runtime.index = next;
       if (next >= marks.length) {
-        runtime.beat = "DONE";
-        runtime.elapsed = 0;
-        runtime.restedFor = 0;
-        break;
-      }
-      const target = marks[next];
-      const dx = target.feet.x - runtime.position.x;
-      const want = faceYaw(dx);
-      runtime.yaw = approach(runtime.yaw, want, dt, 7);
-      /*
-       * A turn lasts as long as the turn takes, and no longer.
-       *
-       * A fixed third of a second in front of every leg is a stutter when the
-       * next thing is a step away and he is already square to it — which on a
-       * phone, where the whole world is four units wide, is most of them.
-       */
-      if (
-        Math.abs(runtime.yaw - want) < 0.07 ||
-        runtime.elapsed >= TURN_SECONDS
-      ) {
-        runtime.beat = "WALK";
-        runtime.elapsed = 0;
-        runtime.index = next;
-        runtime.from.copy(runtime.position);
-        runtime.to.copy(target.feet);
-        runtime.distance = runtime.from.distanceTo(runtime.to);
-        runtime.travelled = 0;
+        /* Everything is mended. Back to the mark he came in on. */
+        setOff(runtime, runtime.home, 0);
+      } else {
+        setOff(runtime, marks[next].feet, marks[next].yaw);
       }
       break;
     }
 
-    case "WALK": {
-      const speed = walkSpeed(characterScale);
-      runtime.travelled = Math.min(
-        runtime.distance,
-        runtime.travelled + speed * dt
-      );
-      const u = runtime.distance > 0 ? runtime.travelled / runtime.distance : 1;
-      /*
-       * A straight line, and no curve on it.
-       *
-       * The old routes bowed, bent around content and re-planned mid-walk, and
-       * the result read as a man being steered rather than a man walking. Two
-       * points and a constant speed is what a simple game does, and a simple
-       * game is what this is.
-       */
-      runtime.position.lerpVectors(runtime.from, runtime.to, u);
-      const dx = runtime.to.x - runtime.from.x;
-      runtime.yaw = approach(runtime.yaw, faceYaw(dx), dt, 6);
-      if (u >= 1) {
-        const arrived = marks[runtime.index];
-        runtime.beat = WORK_MOTIONS[arrived.spot.motion].crouched
-          ? "WORK_IN"
-          : "WORK";
-        runtime.elapsed = 0;
-        runtime.progress = 0;
-      }
-      break;
-    }
-
-    case "DONE": {
+    case "HOME": {
+      /* Square to the reader, and finished. */
       runtime.restedFor += dt;
-      /* Square up to the room he has just put right. */
-      runtime.yaw = approach(runtime.yaw, 0, dt, 2.4);
+      runtime.speed = 0;
+      runtime.yaw = approach(runtime.yaw, 0, dt, 2.6);
       break;
     }
   }
-}
-
-/** Exponential approach: frame-rate independent, and never overshoots. */
-export function approach(
-  value: number,
-  target: number,
-  dt: number,
-  rate: number
-): number {
-  return value + (target - value) * (1 - Math.exp(-rate * dt));
 }
 
 /** Which clip the current beat wants. */
@@ -493,4 +614,17 @@ export function clipForBeat(
     default:
       return "Idle";
   }
+}
+
+/**
+ * How fast to run the walk clip, so his feet match the ground he covers.
+ *
+ * The take was built for one speed, he is playing it at another, and he is
+ * accelerating and braking on top of that. Driving the clip from the speed he
+ * is actually travelling is the whole of the anti-skating system, and it costs
+ * one division.
+ */
+export function walkClipRate(speed: number, characterScale: number): number {
+  const natural = MEASURED_WALK * characterScale;
+  return THREE.MathUtils.clamp(speed / Math.max(natural, 0.001), 0.35, 2.2);
 }
