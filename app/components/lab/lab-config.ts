@@ -26,7 +26,7 @@ export const FIXTER_GLB = "/3d/fixter-animated.glb";
  * "BUILD lab-13" above a bar reading "diag-5" is exactly the kind of thing
  * that makes you doubt what you are looking at.
  */
-export const LAB_BUILD = "lab-44";
+export const LAB_BUILD = "lab-45";
 
 /**
  * Metres per second, measured from the GLB rather than guessed.
