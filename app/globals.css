@@ -1249,3 +1249,509 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
     animation: none;
   }
 }
+
+/* =========================
+   Auth — sign up, sign in, password reset
+   =========================
+
+   WHY THIS IS LIGHT NOW.
+
+   Everything else a customer sees is white: the homepage, the header, the
+   membership pages, and the start screen's content layer - navy headline, blue
+   button, frosted white chips over a bright photograph. Auth was the only dark
+   surface on the site, so pressing Get Started on a sunlit room and landing on
+   a near-black form was a change of product, at the exact moment of highest
+   intent. The same palette, continued.
+
+   WHY THERE IS NO CARD.
+
+   The old screens nested a panel inside a panel: two borders, two radii, two
+   shadows, wrapped around one question and one field. A card is for separating
+   content from other content, and there is no other content here. The question
+   is the page.
+
+   Sized against the start screen on purpose - same navy (#0b1628), same brand
+   blue (#306eec), same pill button, same tight display tracking - so the two
+   screens read as one product.
+*/
+
+.auth-screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100svh;
+  background: #f6f8fc;
+  color: #0b1628;
+}
+
+/* A single wash of brand colour, top-left, well under the content. Enough to
+   stop a plain white page feeling like a document, far too faint to read as
+   decoration. */
+.auth-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 55% at 8% 0%, rgba(48, 110, 236, 0.09) 0%, rgba(48, 110, 236, 0) 62%),
+    radial-gradient(55% 45% at 100% 100%, rgba(48, 110, 236, 0.05) 0%, rgba(48, 110, 236, 0) 70%);
+}
+
+.auth-screen__bar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) calc(env(safe-area-inset-right, 0px) + 16px) 0
+    calc(env(safe-area-inset-left, 0px) + 16px);
+}
+
+@media (min-width: 640px) {
+  .auth-screen__bar {
+    padding: calc(env(safe-area-inset-top, 0px) + 22px) calc(env(safe-area-inset-right, 0px) + 28px) 0
+      calc(env(safe-area-inset-left, 0px) + 28px);
+  }
+}
+
+/* The same dark chip the site header and the start screen use. The wordmark is
+   drawn light-on-dark and is not recoloured anywhere on the site. */
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 7px;
+  background: #0b1628;
+  padding: 6px 9px;
+  transition: background-color 0.2s ease;
+}
+
+.auth-brand:hover {
+  background: #172033;
+}
+
+.auth-brand img {
+  height: 22px;
+  width: auto;
+}
+
+@media (min-width: 640px) {
+  .auth-brand img {
+    height: 25px;
+  }
+}
+
+/* Secondary by construction: no fill, no border, no pill. It is a sentence. */
+.auth-bar__link {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a5462;
+  padding: 10px 4px;
+  transition: color 0.18s ease;
+}
+
+.auth-bar__link:hover {
+  color: #306eec;
+}
+
+.auth-bar__link b {
+  color: #0b1628;
+  font-weight: 700;
+}
+
+.auth-bar__link:hover b {
+  color: #306eec;
+}
+
+/*
+   The column.
+
+   Pinned toward the upper third rather than dead centre, because the thing
+   below the fold on a phone is the keyboard. Centring a form vertically and
+   then opening a keyboard pushes the button under it; starting high means the
+   question, the field and the button are all above the keyboard from the start.
+*/
+.auth-screen__body {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 calc(env(safe-area-inset-left, 0px) + 20px) calc(env(safe-area-inset-bottom, 0px) + 28px)
+    calc(env(safe-area-inset-right, 0px) + 20px);
+}
+
+.auth-screen__column {
+  width: 100%;
+  max-width: 420px;
+  padding-bottom: clamp(16px, 7vh, 72px);
+}
+
+@media (min-width: 1024px) {
+  .auth-screen__column {
+    max-width: 440px;
+    padding-bottom: clamp(24px, 8vh, 88px);
+  }
+}
+
+/* A phone on its side has no room to start high. */
+/* A phone on its side: no bias, every pixel is needed for the field. */
+@media (max-height: 560px) {
+  .auth-screen__column {
+    padding-bottom: 0;
+  }
+}
+
+.auth-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 8px 10px 8px 6px;
+  margin-left: -6px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7688;
+  transition: color 0.18s ease, background-color 0.18s ease;
+}
+
+.auth-back:hover {
+  color: #0b1628;
+  background: rgba(11, 22, 40, 0.04);
+}
+
+/*
+   The question.
+
+   The same display treatment as the start screen's headline, one step down in
+   size. It is the only large thing on the page, so it does not need to compete
+   with anything.
+*/
+.auth-question {
+  margin: 0;
+  font-size: clamp(27px, 7.4vw, 34px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.033em;
+  color: #0b1628;
+}
+
+@media (min-width: 1024px) {
+  .auth-question {
+    font-size: 38px;
+  }
+}
+
+@media (max-height: 560px) {
+  .auth-question {
+    font-size: clamp(22px, 5.4vh, 28px);
+  }
+}
+
+/* Used twice in the whole flow, where a question genuinely cannot carry the
+   meaning on its own. Never as a default under every heading. */
+.auth-sub {
+  margin: 10px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #5b6577;
+}
+
+.auth-fields {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/*
+   One input, everywhere.
+
+   Sign up, sign in and password reset each had their own: a filled dark box, a
+   lighter filled box, and a bare underline. Three answers to one question.
+
+   16px is not a taste decision - anything smaller makes iOS Safari zoom the
+   page on focus, which on a form is the difference between typing and fighting.
+*/
+.auth-input {
+  width: 100%;
+  height: 56px;
+  border-radius: 12px;
+  border: 1px solid #dde4f0;
+  background: #ffffff;
+  padding: 0 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #0b1628;
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.auth-input::placeholder {
+  color: #9aa5b8;
+  font-weight: 400;
+}
+
+.auth-input:focus {
+  border-color: #306eec;
+  box-shadow: 0 0 0 4px rgba(48, 110, 236, 0.14);
+}
+
+.auth-input[aria-invalid="true"] {
+  border-color: #dc5b5b;
+}
+
+.auth-input[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 4px rgba(220, 91, 91, 0.14);
+}
+
+/*
+ * Room for whatever sits at the right-hand end - a reveal toggle, a verified
+ * tick, a spinner.
+ *
+ * A real class, not Tailwind's pr-12, for the same cascade reason the hero
+ * image needed one: .auth-input is unlayered and its padding shorthand beats
+ * any utility, which is why the address text ran straight under the tick.
+ */
+.auth-input--trailing {
+  padding-right: 50px;
+  text-overflow: ellipsis;
+}
+
+.auth-reveal {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  width: 44px;
+  border-radius: 10px;
+  color: #8a94a6;
+  transition: color 0.16s ease, background-color 0.16s ease;
+}
+
+.auth-reveal:hover {
+  color: #0b1628;
+  background: rgba(11, 22, 40, 0.05);
+}
+
+/*
+   The primary action: the start screen's button, in a rectangle's clothing.
+   Same blue, same weight, same pill radius, full width because on a phone the
+   full width is the easiest thing in the world to hit.
+*/
+.auth-submit {
+  margin-top: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  border-radius: 999px;
+  background: #306eec;
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  box-shadow: 0 12px 30px rgba(48, 110, 236, 0.26);
+  transition: background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.auth-submit:hover:not(:disabled) {
+  background: #2059d4;
+  transform: translateY(-1px);
+  box-shadow: 0 16px 36px rgba(48, 110, 236, 0.32);
+}
+
+.auth-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.auth-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.auth-spinner {
+  height: 18px;
+  width: 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #ffffff;
+  animation: auth-spin 0.7s linear infinite;
+}
+
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*
+   The free first visit, said once and quietly.
+
+   It used to be a bordered green badge repeated on all four steps, and on a
+   desktop it was also the headline of the panel beside it - the same promise,
+   twice, on one screen. It is reassurance, not an announcement: one line under
+   the button, where somebody deciding whether to press it is already looking.
+
+   Absent entirely once the address is confirmed outside the service area, and
+   it stays absent for the rest of the flow.
+*/
+.auth-reassure {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: #5b6577;
+}
+
+.auth-reassure b {
+  color: #0b1628;
+  font-weight: 700;
+}
+
+/* Short, specific, and under the thing it is about. */
+.auth-error {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c4453f;
+}
+
+.auth-error--form {
+  margin-top: 14px;
+  border-radius: 10px;
+  background: #fdeceb;
+  padding: 10px 13px;
+}
+
+.auth-alt {
+  margin-top: 22px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7688;
+}
+
+.auth-alt a {
+  font-weight: 700;
+  color: #0b1628;
+}
+
+.auth-alt a:hover {
+  color: #306eec;
+}
+
+.auth-inline-link {
+  font-weight: 600;
+  color: #306eec;
+}
+
+.auth-inline-link:hover {
+  text-decoration: underline;
+}
+
+/*
+   Consent, as three quiet rows rather than three bordered boxes.
+
+   The boxes are still real checkboxes, still unchecked, still individually
+   labelled and linked - none of that is style. What changed is that they no
+   longer look like three more form controls stacked on the heaviest screen in
+   the flow.
+*/
+.auth-consent {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-top: 1px solid #e6ebf4;
+  padding-top: 18px;
+}
+
+.auth-consent__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.auth-consent__box {
+  flex: none;
+  margin-top: 1px;
+  height: 20px;
+  width: 20px;
+  border-radius: 6px;
+  border: 1.5px solid #c3cddf;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.auth-consent__row input:checked + .auth-consent__box {
+  background: #306eec;
+  border-color: #306eec;
+  color: #ffffff;
+}
+
+.auth-consent__row input:focus-visible + .auth-consent__box {
+  box-shadow: 0 0 0 4px rgba(48, 110, 236, 0.18);
+}
+
+.auth-consent__text {
+  font-size: 14px;
+  line-height: 1.45;
+  color: #3f4a5c;
+}
+
+.auth-consent__text b {
+  font-weight: 600;
+  color: #0b1628;
+}
+
+/* "Required" / "Optional" said plainly, because a customer deciding whether to
+   tick a box is entitled to know which ones they can skip. */
+.auth-consent__note {
+  color: #8a94a6;
+  font-weight: 500;
+}
+
+/*
+   Autofill, on a light surface.
+
+   Chrome paints its own pale yellow over an autofilled input and overrides the
+   background outright; the long transition is the standard way to keep our own
+   colour. Without this the one field a password manager fills looks broken
+   next to the ones it did not.
+*/
+.auth-screen input:-webkit-autofill,
+.auth-screen input:-webkit-autofill:hover,
+.auth-screen input:-webkit-autofill:focus,
+.auth-screen input:-webkit-autofill:active {
+  -webkit-text-fill-color: #0b1628 !important;
+  caret-color: #0b1628;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  transition: background-color 9999s ease-out 0s, color 9999s ease-out 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-submit:hover:not(:disabled) {
+    transform: none;
+  }
+  .auth-spinner {
+    animation-duration: 2s;
+  }
+}

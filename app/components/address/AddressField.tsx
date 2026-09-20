@@ -207,8 +207,8 @@ export default function AddressField({ value, onChange, onServiceArea }: Props) 
     void checkServiceArea(zip);
   };
 
-  const inputBase =
-    "h-[56px] w-full rounded-[10px] border border-white/[0.14] bg-white/[0.07] px-4 text-[16px] text-white placeholder-white/35 outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20";
+  /* The shared auth input. See the auth block in globals.css. */
+  const inputBase = "auth-input";
 
   return (
     <div ref={boxRef} className="w-full">
@@ -235,17 +235,17 @@ export default function AddressField({ value, onChange, onServiceArea }: Props) 
                 Austin, TX 78701, USA" - and on a 390px phone it ran straight
                 under the checkmark.
               */
-              className={`${inputBase} ${value?.verified || resolving ? "pr-12" : ""} text-ellipsis`}
+              className={`${inputBase} ${value?.verified || resolving ? "auth-input--trailing" : ""}`}
             />
             {value?.verified ? (
-              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#86EFAC]" aria-hidden="true">
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#1FA463]" aria-hidden="true">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                   <path d="M4 10.5l4 4 8-8.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </span>
             ) : null}
             {resolving ? (
-              <span className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-white/30 border-t-transparent" aria-hidden="true" />
+              <span className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-[#C3CDDF] border-t-transparent" aria-hidden="true" />
             ) : null}
 
           {/*
@@ -268,7 +268,7 @@ export default function AddressField({ value, onChange, onServiceArea }: Props) 
               id={listId}
               role="listbox"
               aria-label="Address suggestions"
-              className="absolute inset-x-0 top-full z-50 mt-2 max-h-[min(280px,42svh)] overflow-y-auto overscroll-contain rounded-[10px] border border-white/[0.12] bg-[#0B1526] shadow-[0_18px_44px_rgba(3,8,18,0.6)]"
+              className="absolute inset-x-0 top-full z-50 mt-2 max-h-[min(280px,42svh)] overflow-y-auto overscroll-contain rounded-[12px] border border-[#DDE4F0] bg-white shadow-[0_18px_44px_rgba(11,22,40,0.14)]"
             >
               {suggestions.map((s, i) => (
                 <li key={s.id} id={`${listId}-${i}`} role="option" aria-selected={i === active}>
@@ -277,12 +277,12 @@ export default function AddressField({ value, onChange, onServiceArea }: Props) 
                     onMouseEnter={() => setActive(i)}
                     onClick={() => void choose(s)}
                     className={`flex min-h-[52px] w-full flex-col justify-center gap-0.5 px-4 py-2.5 text-left transition ${
-                      i === active ? "bg-white/[0.09]" : "hover:bg-white/[0.06]"
+                      i === active ? "bg-[#EEF4FF]" : "hover:bg-[#F4F7FC]"
                     }`}
                   >
-                    <span className="text-[15px] font-semibold leading-tight text-white">{s.primary}</span>
+                    <span className="text-[15px] font-semibold leading-tight text-[#0B1628]">{s.primary}</span>
                     {s.secondary ? (
-                      <span className="text-[13px] leading-tight text-white/50">{s.secondary}</span>
+                      <span className="text-[13px] leading-tight text-[#6B7688]">{s.secondary}</span>
                     ) : null}
                   </button>
                 </li>
@@ -294,7 +294,7 @@ export default function AddressField({ value, onChange, onServiceArea }: Props) 
       ) : (
         <div className="space-y-2.5">
           {lookupDown ? (
-            <p className="text-[13px] font-medium text-white/55">Enter your address.</p>
+            <p className="text-[13px] font-medium text-[#6B7688]">Enter your address.</p>
           ) : null}
           <input
             aria-label="Street address" value={manualFields.line1}
@@ -328,8 +328,8 @@ export default function AddressField({ value, onChange, onServiceArea }: Props) 
       ) : null}
 
       {areaState === "outside" ? (
-        <p className="mt-3 text-[13px] font-medium leading-5 text-white/62">
-          <span className="font-bold text-white/85">We&rsquo;re not in your area yet.</span>{" "}
+        <p className="mt-3 text-[13px] font-medium leading-5 text-[#5B6577]">
+          <span className="font-bold text-[#0B1628]">We&rsquo;re not in your area yet.</span>{" "}
           Profixter currently serves Long Island.
         </p>
       ) : null}
@@ -338,7 +338,7 @@ export default function AddressField({ value, onChange, onServiceArea }: Props) 
         <button
           type="button"
           onClick={() => { setManual(true); setOpen(false); }}
-          className="mt-3 text-[13px] font-semibold text-white/45 underline-offset-4 transition hover:text-white/75 hover:underline"
+          className="mt-3 text-[13px] font-semibold text-[#8A94A6] underline-offset-4 transition hover:text-[#306EEC] hover:underline"
         >
           Can&rsquo;t find your address?
         </button>

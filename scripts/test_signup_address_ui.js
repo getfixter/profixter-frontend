@@ -184,7 +184,7 @@ async function stepIsOne(page) {
     check(`${pick.city}: field shows the full verified address`, state.value.includes(pick.city) && state.value.includes(pick.zip), state.value);
     check(`${pick.city}: optional unit appears only after selection`, state.unitVisible, "");
 
-    const inAreaBadge = await page.evaluate(() => document.body.innerText.includes("Your first 90-minute visit is free"));
+    const inAreaBadge = await page.evaluate(() => document.body.innerText.includes("First visit free"));
     check(`${pick.city}: free-visit promise stays for an eligible address`, inAreaBadge, "");
 
     await page.click(CONTINUE);
@@ -203,13 +203,13 @@ async function stepIsOne(page) {
     const text = (await page.evaluate(() => document.body.innerText)).replace(/’/g, "'");
     check(`${c.label}: shown the short out-of-area note`, text.includes("We're not in your area yet") && text.includes("Profixter currently serves Long Island"), "");
     check(`${c.label}: note is short - no modal, no essay`, !text.includes("Check whether we serve") && !text.includes("residents only"), "");
-    check(`${c.label}: free-visit promise is withdrawn, not left contradicting it`, !text.includes("Your first 90-minute visit is free"), "");
+    check(`${c.label}: free-visit promise is withdrawn, not left contradicting it`, !text.includes("First visit free"), "");
 
     await page.click(CONTINUE);
     await page.waitForTimeout(700);
     check(`${c.label}: registration is NOT blocked (accounts stay open)`, !(await stepIsOne(page)), "");
 
-    const laterStep = await page.evaluate(() => document.body.innerText.includes("Your first 90-minute visit is free"));
+    const laterStep = await page.evaluate(() => document.body.innerText.includes("First visit free"));
     check(`${c.label}: and stays withdrawn on the following step`, !laterStep, "");
     await ctx.close();
   }
@@ -268,6 +268,13 @@ async function stepIsOne(page) {
     const unitGone = await page.evaluate(() => !document.querySelector('input[placeholder="Apt / Unit (optional)"]'));
     check("editing the text drops the verified state", unitGone, "");
 
+    /*
+     * Editing re-opens the suggestion list, and the list is an overlay - it sits
+     * over the button, as any autocomplete does. Dismiss it first, which is what
+     * a customer does by tapping away or pressing Escape.
+     */
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
     await page.click(CONTINUE);
     await page.waitForTimeout(500);
     check("and Continue is refused until a new suggestion is picked", await stepIsOne(page), "");
@@ -338,7 +345,7 @@ async function stepIsOne(page) {
     await page.waitForTimeout(900);
 
     const t = (await page.evaluate(() => document.body.innerText)).replace(/’/g, "'");
-    check("a failed service-area check does not withdraw the offer", t.includes("Your first 90-minute visit is free"), "");
+    check("a failed service-area check does not withdraw the offer", t.includes("First visit free"), "");
     check("and does not accuse an eligible customer of being out of area", !t.includes("We're not in your area yet"), "");
     await ctx.close();
   }
@@ -367,7 +374,6 @@ async function stepIsOne(page) {
     await page.waitForTimeout(400);
     await page.fill("#phone", "6315551234");
     await page.fill("#password", "supersecret1");
-    await page.fill("#confirm-password", "supersecret1");
     /*
      * Service SMS and Terms are conditions of registration, so the form will
      * not submit without them. `force` because these inputs are visually

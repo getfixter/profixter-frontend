@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+
 import { useRouter } from "next/navigation";
 import {
   useEffect,
@@ -17,41 +17,31 @@ import { useAuth } from "@/lib/useAuth";
 import { extractUSNationalPhoneDigits, isValidUSNationalPhoneDigits } from "@/lib/phone";
 import { trackEvent } from "@/lib/analytics";
 import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
+import AuthScreen, { AuthHeading, AuthSubmit } from "@/app/components/auth/AuthScreen";
 import AddressField, { type AddressValue, type ServiceAreaState } from "@/app/components/address/AddressField";
 
 type Step = 1 | 2 | 3 | 4;
 
+/*
+ * Four questions, and almost no other words.
+ *
+ * Every step used to carry a subtitle under its heading, and every subtitle
+ * said the heading again: "How should we call you?" / "Tell us whose home we
+ * are helping." A subtitle survives on exactly one step, where the question
+ * genuinely cannot carry the meaning on its own - "Protect your account" does
+ * not tell anybody the password needs eight characters.
+ */
 const stepCopy: Record<Step, { title: string; subtitle: string }> = {
-  1: {
-    /*
-     * One question, and nothing underneath it.
-     *
-     * The subtitle used to explain what an address was for. The field now says
-     * "Start typing your address..." and the button says Continue, which is the
-     * same information in a place the customer was already looking.
-     */
-    title: "What's your home address?",
-    subtitle: "",
-  },
-  2: {
-    title: "How should we call you?",
-    subtitle: "Tell us whose home we are helping.",
-  },
-  3: {
-    title: "What is your email?",
-    subtitle: "Confirmations, reminders and receipts go here.",
-  },
-  4: {
-    title: "Almost done",
-    subtitle: "Set a password and choose which texts you want.",
-  },
+  1: { title: "What's your home address?", subtitle: "" },
+  2: { title: "What's your name?", subtitle: "" },
+  3: { title: "What's your email?", subtitle: "" },
+  4: { title: "Protect your account", subtitle: "" },
 };
 
 const initialFormData = {
   name: "",
   email: "",
   password: "",
-  repeatPassword: "",
   phone: "",
   address: "",
   city: "",
@@ -85,12 +75,12 @@ function PasswordToggle({
         onChange={onChange}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className="h-12 w-full rounded-[6px] border border-white/[0.14] bg-white/[0.07] px-3.5 pr-11 text-[14px] text-white placeholder-white/32 outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
+        className="auth-input auth-input--trailing"
       />
       <button
         type="button"
         onClick={() => setShow(!show)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/38 transition hover:text-white/72"
+        className="auth-reveal"
         aria-label={show ? "Hide password" : "Show password"}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -111,9 +101,17 @@ function PasswordToggle({
   );
 }
 
+/*
+ * The label, kept for assistive technology and no longer drawn.
+ *
+ * Every field used to carry a letterspaced capitalised caption - PASSWORD,
+ * FULL NAME, MOBILE PHONE NUMBER - above an input that already had a
+ * placeholder and a question above that. Three labels for one box. The heading
+ * is the label; this keeps the accessible name real without printing it again.
+ */
 function FieldLabel({ htmlFor, children }: { htmlFor: string; children: ReactNode }) {
   return (
-    <label htmlFor={htmlFor} className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-white/58">
+    <label htmlFor={htmlFor} className="sr-only">
       {children}
     </label>
   );
@@ -145,7 +143,7 @@ function FieldInput({
       placeholder={placeholder}
       autoComplete={autoComplete}
       maxLength={maxLength}
-      className="h-12 w-full rounded-[6px] border border-white/[0.14] bg-white/[0.07] px-3.5 text-[14px] text-white placeholder-white/32 outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
+      className="auth-input"
     />
   );
 }
@@ -177,7 +175,7 @@ function ConsentCheckbox({
   return (
     <label
       htmlFor={id}
-      className="flex cursor-pointer items-start gap-2.5 rounded-[8px] border border-white/[0.09] bg-white/[0.04] p-3"
+      className="auth-consent__row cursor-pointer"
     >
       <span className="relative mt-0.5 flex flex-shrink-0">
         <input
@@ -187,7 +185,7 @@ function ConsentCheckbox({
           onChange={(e) => onChange(e.target.checked)}
           className="peer sr-only"
         />
-        <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[4px] border border-white/30 transition peer-checked:border-[#306EEC] peer-checked:bg-[#306EEC]">
+        <span className="auth-consent__box">
           {checked ? (
             <svg width="9" height="7" viewBox="0 0 9 7" fill="none" aria-hidden="true">
               <path d="M1 3.5l2 2L8 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -195,9 +193,9 @@ function ConsentCheckbox({
           ) : null}
         </span>
       </span>
-      <span className="text-[12px] leading-relaxed text-white/56">
-        <span className="font-semibold text-white/78">{label}</span>
-        {children ? <span className="mt-1 block text-white/44">{children}</span> : null}
+      <span className="auth-consent__text">
+        <span className="font-semibold text-[#0B1628]">{label}</span>
+        {children ? <span className="mt-1 block text-[#8A94A6]">{children}</span> : null}
       </span>
     </label>
   );
@@ -249,7 +247,7 @@ function ConsentRow({
   requirement: "Required" | "Optional";
 }) {
   return (
-    <div className="flex items-center gap-2.5 rounded-[8px] border border-white/[0.09] bg-white/[0.04] px-3 py-2.5">
+    <div className="auth-consent__row">
       {/*
         * The negative margin is what keeps this honest: the padding grows the
         * tap target to something a thumb can hit, and the -m-2 pulls the row
@@ -271,7 +269,7 @@ function ConsentRow({
           aria-required={requirement === "Required"}
           className="peer sr-only"
         />
-        <span className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-[4px] border border-white/30 transition peer-checked:border-[#306EEC] peer-checked:bg-[#306EEC] peer-focus-visible:ring-2 peer-focus-visible:ring-[#306EEC]/60">
+        <span className="auth-consent__box">
           {checked ? (
             <svg width="10" height="8" viewBox="0 0 9 7" fill="none" aria-hidden="true">
               <path d="M1 3.5l2 2L8 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -284,7 +282,7 @@ function ConsentRow({
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="font-semibold text-white/82 underline decoration-white/25 underline-offset-4 transition hover:text-white"
+          className="auth-consent__text font-semibold text-[#0B1628] underline decoration-[#C3CDDF] underline-offset-4 transition hover:text-[#306EEC]"
         >
           {label}
         </a>
@@ -347,10 +345,6 @@ export default function SignUpPage() {
 
   const [formData, setFormData] = useState<FormData>(initialFormData);
 
-  const passwordsDoNotMatch =
-    formData.password.length > 0 &&
-    formData.repeatPassword.length > 0 &&
-    formData.password !== formData.repeatPassword;
 
   const phoneDigits = useMemo(() => extractUSNationalPhoneDigits(formData.phone), [formData.phone]);
   const zipDigits = useMemo(() => formData.zip.replace(/\D/g, ""), [formData.zip]);
@@ -417,10 +411,8 @@ export default function SignUpPage() {
     if (!formData.phone.trim()) { setFieldErrors((p) => ({ ...p, phone: "Please enter your phone number" })); return false; }
     if (phoneDigits.length !== 10 || !isValidUSNationalPhoneDigits(phoneDigits)) { setFieldErrors((p) => ({ ...p, phone: "Please enter a valid 10-digit US phone number" })); return false; }
     setFieldErrors((p) => ({ ...p, phone: undefined }));
-    if (!formData.password) { setError("Please create a password"); return false; }
-    if (formData.password.length < 8) { setError("Password must be at least 8 characters"); return false; }
-    if (!formData.repeatPassword) { setError("Please repeat your password"); return false; }
-    if (formData.password !== formData.repeatPassword) { setError("Passwords do not match"); return false; }
+    if (!formData.password) { setError("Create a password."); return false; }
+    if (formData.password.length < 8) { setError("Use at least 8 characters."); return false; }
     if (!agreeTerms) {
       setConsentError(true);
       setError("You must agree to the Terms and Privacy Policy to continue.");
@@ -568,119 +560,22 @@ export default function SignUpPage() {
 
   return (
     <RoleEntryGate loadingLabel="Checking your session..." redirectLabel="Opening Your Home...">
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#050B18] px-3.5 py-3.5 text-white sm:px-6 sm:py-6">
-      <Image
-        src="/images/hero-bg.webp"
-        alt="Long Island home cared for by Profixter"
-        fill
-        priority
-        sizes="100vw"
-        className="pointer-events-none object-cover opacity-28"
-      />
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(5,11,24,0.94)_0%,rgba(8,18,40,0.88)_48%,rgba(5,11,24,0.72)_100%)]" />
-      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#050B18] to-transparent" />
+      <AuthScreen altLabel="Log In" altHref="/signin">
+        {/*
+          The question, and nothing else above it.
 
-      <div className="relative z-10 mx-auto flex w-full max-w-[1120px] flex-1 flex-col">
-        <div className="flex items-center justify-end gap-3 py-1 lg:justify-between">
-          <Link href="/" className="hidden items-center lg:inline-flex">
-            <Image
-              src="/images/logo.svg"
-              alt="ProFixter"
-              width={132}
-              height={44}
-              className="h-9 w-auto sm:h-11"
-            />
-          </Link>
-          <Link
-            href="/"
-            className="inline-flex min-h-[40px] items-center rounded-[8px] border border-white/[0.13] bg-white/[0.08] px-4 text-[13px] font-bold text-white/72 transition hover:bg-white/[0.12] hover:text-white"
-          >
-            Back to Home
-          </Link>
-        </div>
+          What used to be here: a "Back to Home" pill, a LONG ISLAND HOME CARE
+          eyebrow, a marketing headline with a paragraph and three trust badges
+          on desktop, a green "first visit is free" panel repeated on all four
+          steps, a card inside a card, a heading and a subtitle restating the
+          heading. Eight things wrapped around one field.
+        */}
+        <AuthHeading onBack={step > 1 ? handleBackStep : undefined}>
+          {stepCopy[step].title}
+        </AuthHeading>
+        {stepCopy[step].subtitle ? <p className="auth-sub">{stepCopy[step].subtitle}</p> : null}
 
-        <main className="grid flex-1 items-center gap-6 py-5 lg:grid-cols-[0.82fr_1fr] lg:gap-10 lg:py-7">
-          <section className="hidden max-w-[440px] lg:block">
-            <div className="inline-flex items-center gap-2 rounded-[6px] border border-white/12 bg-white/[0.08] px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white/58">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#86EFAC]" />
-              Long Island home care
-            </div>
-            <h1 className="mt-6 text-[43px] font-black leading-[0.92] tracking-[-0.048em] text-white">
-              Book your first visit free.
-            </h1>
-            <p className="mt-5 text-[17px] font-medium leading-8 text-white/62">
-              Let&rsquo;s set up your home. Once it&rsquo;s added you can book your first
-              90-minute handyman visit &mdash; no card required.
-            </p>
-            <div className="mt-8 grid gap-3">
-              {["Licensed HI-71484", "Fully insured", "Nassau and Suffolk Counties"].map((item) => (
-                <div key={item} className="flex items-center gap-3 text-[14px] font-bold text-white/68">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#86EFAC]/16 text-[#86EFAC]">
-                    <svg width="11" height="9" viewBox="0 0 11 9" fill="none" aria-hidden="true">
-                      <path d="M1 4.5L4 7.5L10 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </span>
-                  {item}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="mx-auto w-full max-w-[570px]">
-            <div className="rounded-[8px] border border-white/[0.10] bg-white/[0.075] p-3 shadow-[0_20px_60px_rgba(0,0,0,0.20)] backdrop-blur-2xl sm:p-5 lg:p-6">
-              <div className="rounded-[8px] border border-white/[0.09] bg-[#071225]/72 p-3.5 sm:p-5">
-                {step > 1 ? (
-                  <button
-                    type="button"
-                    onClick={handleBackStep}
-                    className="mb-3.5 inline-flex min-h-9 items-center gap-1.5 rounded-[8px] border border-white/[0.10] bg-white/[0.05] px-3 py-1.5 text-[12px] font-bold text-white/58 transition hover:bg-white/[0.09] hover:text-white"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                      <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    Back
-                  </button>
-                ) : null}
-
-                {/*
-                  Keeps the reason for the form visible at every step, and on
-                  mobile where the left value panel is hidden.
-
-                  Suppressed entirely once the address turns out to be outside
-                  the service area. The free first visit is gated by the ZIP
-                  allowlist, so for that customer this badge is not marketing,
-                  it is a promise we have already decided not to keep - and it
-                  was sitting directly above the line telling them so.
-
-                  Only a confirmed "outside" hides it. "unknown" keeps it: a
-                  failed service-area lookup must not quietly withdraw a real
-                  offer from somebody two towns from the office.
-                */}
-                {serviceArea !== "outside" ? (
-                <div className="mb-4 flex items-center gap-2.5 rounded-[8px] border border-[#86EFAC]/25 bg-[#86EFAC]/[0.07] px-3 py-2.5">
-                  <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#86EFAC]/18 text-[#86EFAC]">
-                    <svg width="11" height="9" viewBox="0 0 11 9" fill="none" aria-hidden="true">
-                      <path d="M1 4.5L4 7.5L10 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </span>
-                  <span className="text-[12px] font-bold leading-4 text-white/78 sm:text-[13px]">
-                    Your first 90-minute visit is free &middot; No card required
-                  </span>
-                </div>
-                ) : null}
-
-                <div className="mb-4 sm:mb-5">
-                  <h2 className="text-[23px] font-black leading-none tracking-[-0.03em] text-white sm:text-[30px]">
-                    {stepCopy[step].title}
-                  </h2>
-                  {stepCopy[step].subtitle ? (
-                    <p className="mt-2 max-w-[430px] text-[13px] font-medium leading-5 text-white/58 sm:text-[14px]">
-                      {stepCopy[step].subtitle}
-                    </p>
-                  ) : null}
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="auth-fields" noValidate>
                   {step === 1 ? (
                     <AddressField
                       value={address}
@@ -714,7 +609,7 @@ export default function SignUpPage() {
                         id="name"
                         value={formData.name}
                         onChange={(e) => handleChange("name", e.target.value)}
-                        placeholder="John Smith"
+                        placeholder="Full name"
                         autoComplete="name"
                       />
                     </div>
@@ -728,11 +623,11 @@ export default function SignUpPage() {
                         type="email"
                         value={formData.email}
                         onChange={(e) => handleChange("email", e.target.value)}
-                        placeholder="you@example.com"
+                        placeholder="Email"
                         autoComplete="email"
                       />
                       {fieldErrors.email ? (
-                        <p className="mt-2 text-[12px] font-semibold text-red-300">{fieldErrors.email}</p>
+                        <p className="auth-error">{fieldErrors.email}</p>
                       ) : null}
                     </div>
                   ) : null}
@@ -745,21 +640,8 @@ export default function SignUpPage() {
                           id="password"
                           value={formData.password}
                           onChange={(e) => handleChange("password", e.target.value)}
-                          placeholder="Minimum 8 characters"
+                          placeholder="Create a password"
                         />
-                      </div>
-                      <div>
-                        <FieldLabel htmlFor="confirm-password">Confirm Password</FieldLabel>
-                        <PasswordToggle
-                          id="confirm-password"
-                          value={formData.repeatPassword}
-                          onChange={(e) => handleChange("repeatPassword", e.target.value)}
-                          placeholder="Repeat password"
-                          autoComplete="new-password"
-                        />
-                        {passwordsDoNotMatch ? (
-                          <p className="mt-2 text-[12px] font-semibold text-red-300">Passwords do not match</p>
-                        ) : null}
                       </div>
 
                       {/*
@@ -803,11 +685,11 @@ export default function SignUpPage() {
                             type="tel"
                             value={formData.phone}
                             onChange={(e) => handleChange("phone", formatPhone(e.target.value))}
-                            placeholder="(631) 000-0000"
+                            placeholder="Mobile number"
                             autoComplete="tel"
                           />
                           {fieldErrors.phone ? (
-                            <p className="mt-2 text-[12px] font-semibold text-red-300">{fieldErrors.phone}</p>
+                            <p className="auth-error">{fieldErrors.phone}</p>
                           ) : null}
                         </div>
 
@@ -831,7 +713,7 @@ export default function SignUpPage() {
                           * state to report.
                           */}
                         {smsConsentError ? (
-                          <p className="text-[12px] font-semibold text-red-300">
+                          <p className="auth-error">
                             Service texts are required to create your account.
                           </p>
                         ) : null}
@@ -864,11 +746,11 @@ export default function SignUpPage() {
                         label="I agree to the Terms of Service and Privacy Policy."
                       >
                         Required to create an account.{" "}
-                        <Link href="/terms" className="text-white/72 underline decoration-white/25 underline-offset-4 transition hover:text-white">
+                        <Link href="/terms" className="auth-inline-link underline underline-offset-4">
                           Terms of Service
                         </Link>
                         {" · "}
-                        <Link href="/privacy" className="text-white/72 underline decoration-white/25 underline-offset-4 transition hover:text-white">
+                        <Link href="/privacy" className="auth-inline-link underline underline-offset-4">
                           Privacy Policy
                         </Link>
                       </ConsentCheckbox>
@@ -876,35 +758,24 @@ export default function SignUpPage() {
                   ) : null}
 
 
-                  {error ? (
-                    <div className="rounded-[6px] border border-red-400/25 bg-red-500/[0.10] px-3.5 py-2.5 text-center text-[12px] font-semibold text-red-200">
-                      {error}
-                    </div>
-                  ) : null}
+                  {error ? <p className="auth-error auth-error--form">{error}</p> : null}
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="mt-0.5 flex h-12 w-full items-center justify-center rounded-[8px] bg-[#306EEC] text-[14px] font-black text-white shadow-[0_10px_28px_rgba(48,110,236,0.28)] transition hover:bg-[#2558c9] disabled:cursor-not-allowed disabled:opacity-55"
-                  >
-                    {step === 4 ? (loading ? "Finishing..." : "Finish") : "Continue"}
-                  </button>
-                </form>
+          <AuthSubmit disabled={loading} loading={loading}>
+            {step === 4 ? (loading ? "Creating your account" : "Create account") : "Continue"}
+          </AuthSubmit>
+        </form>
 
-                
-
-                <p className="mt-4 text-center text-[13px] text-white/48">
-                  Already have an account?{" "}
-                  <Link href="/signin" className="font-bold text-white transition hover:text-white/80">
-                    Log In
-                  </Link>
-                </p>
-              </div>
-            </div>
-          </section>
-        </main>
-      </div>
-    </div>
+        {/*
+          The free first visit, once, under the button - not a bordered badge on
+          every screen. Suppressed the moment the address is confirmed outside
+          the service area, and it stays suppressed for the rest of the flow.
+        */}
+        {serviceArea !== "outside" ? (
+          <p className="auth-reassure">
+            <b>First visit free.</b> No card required.
+          </p>
+        ) : null}
+      </AuthScreen>
     </RoleEntryGate>
   );
 }
