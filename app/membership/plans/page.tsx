@@ -36,9 +36,10 @@ export default function MembershipPlansPage() {
     <div className="min-h-screen overflow-x-hidden bg-white">
       {/*
         The accordion below renders these questions and answers as real text,
-        which is the condition Google puts on FAQ markup. The `true` passes the
-        same hideCancellationUi the accordion gets, so the markup describes
-        exactly the eleven questions this page shows and not the twelfth.
+        which is the condition Google puts on FAQ markup. The `true` is the
+        same flag the accordion gets, so the markup describes exactly the
+        questions this page shows - the selector answers the rest on the way
+        past, and a question that is not on the page must not be in the markup.
       */}
       <script
         type="application/ld+json"

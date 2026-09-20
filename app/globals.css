@@ -2159,245 +2159,416 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
 }
 
 /* =========================
-   Membership plans — the ladder
+   Membership — the one-box selector
    =========================
 
-   FOUR CARDS WERE THE WRONG SHAPE FOR THIS PRODUCT.
+   FOUR CARDS, THEN A LADDER, NOW ONE BOX.
 
-   Parallel cards say "four different things, pick one". These plans are not
-   parallel: each one is the one below it plus something. The old page had to
-   spend "Everything in Basic / Plus / Premium" to say so, and still put the
-   shared foundation - 90-minute visits, all services, the same team - inside
-   the FIRST card, so nobody could understand any plan without reading Basic.
+   Cards were four parallel choices for a product whose plans are not parallel.
+   The ladder fixed the structure and broke the value: showing only what each
+   tier ADDED meant Premium - a hundred dollars more than Plus - displayed a
+   single line, so the more you paid the emptier the card looked, and
+   "Everything in Plus" asked the reader to scroll back and do arithmetic.
 
-   So: the foundation is stated once, above, and each rung shows only what it
-   adds. Four plans, seven real differences, and the differences are the only
-   thing on screen.
+   One box, four tabs, and the same seven rows in the same positions for every
+   plan. Only the marks change, so moving up a tier is something you watch
+   happen in place rather than something you reconstruct. Rows switched on run
+   3 / 4 / 5 / 7: the box fills as the price rises, and Elite is the only state
+   with nothing greyed out.
+
+   Two rules hold the layout perfectly still, and both are load-bearing:
+   every plan's rows are stacked in ONE grid cell so the cell is always as tall
+   as Elite, and the line above the price is always present and empty on
+   monthly. The CTA therefore never moves - which is not only tidiness, it is
+   what stops a tap being swallowed when the button shifts under a thumb.
 */
 
-.plan-foundation {
+.plan-box {
   margin-inline: auto;
-  max-width: 780px;
-  border-radius: 14px;
-  border: 1px solid #dde4f0;
+  max-width: 620px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f4;
   background: #ffffff;
-  padding: clamp(18px, 4vw, 24px);
-  text-align: left;
+  padding: clamp(16px, 4.2vw, 26px);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.07);
 }
 
-.plan-foundation__label {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #8a94a6;
-}
+/* ------------------- billing cycle, above the price ------------------- */
+/* Above the tabs on purpose: the cycle frames the number, so it has to be
+   legible BEFORE the eye reaches it, and it applies to all four plans rather
+   than being a property of the one on screen. */
 
-.plan-foundation__items {
-  margin: 10px 0 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 18px;
-  padding: 0;
-  list-style: none;
-  font-size: clamp(14px, 3.6vw, 15.5px);
-  font-weight: 600;
-  color: #0b1628;
-}
-
-.plan-foundation__items li {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-/* The sentence the whole product hangs on, which used to sit BELOW all four
-   cards - so people read the plans misunderstanding the model, then got
-   corrected. */
-.plan-foundation__rule {
-  margin: 14px 0 0;
-  border-top: 1px solid #eef2f8;
-  padding-top: 13px;
-  font-size: clamp(13.5px, 3.5vw, 15px);
-  line-height: 1.5;
-  color: #5b6577;
-}
-
-.plan-foundation__rule b {
-  color: #0b1628;
-  font-weight: 700;
-}
-
-/* ---------------- the ladder ---------------- */
-
-.plan-ladder {
-  margin-inline: auto;
-  margin-top: clamp(18px, 4vw, 26px);
-  max-width: 780px;
+.plan-box__billing {
   display: grid;
-  gap: 10px;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  border-radius: 999px;
+  background: #f1f4fa;
+  padding: 4px;
 }
 
-/* Four abreast once there is room, sharing one baseline so the eye scans
-   across instead of down. */
-@media (min-width: 1000px) {
-  .plan-foundation,
-  .plan-after,
-  .plan-note {
-    max-width: 1180px;
-  }
-
-  .plan-ladder {
-    max-width: 1180px;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-    align-items: stretch;
-  }
+.plan-box__cycle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #5b6577;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 
-.plan-rung {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  border-radius: 14px;
-  border: 1px solid #dde4f0;
+.plan-box__cycle.is-active {
   background: #ffffff;
-  padding: clamp(16px, 4vw, 22px);
+  color: #0b1628;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
 }
 
-/* Popular, not dominant. The old page gave Plus a solid black button and every
-   other plan an outline one, which makes three of four choices look like the
-   consolation prize. Same button everywhere; the badge does the pointing. */
-.plan-rung--popular {
-  border-color: #306eec;
-  box-shadow: 0 0 0 1px #306eec;
+.plan-box__chip {
+  border-radius: 999px;
+  background: #e6f0ff;
+  padding: 2px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #1f5ed8;
 }
 
-.plan-rung__badge {
+/* ------------------------------- tabs -------------------------------- */
+
+.plan-box__tabs {
+  position: relative;
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-radius: 12px;
+  background: #f1f4fa;
+  padding: 4px;
+}
+
+/* The moving part. One element sliding is cheaper and calmer than four
+   elements each changing background. */
+.plan-box__pill {
   position: absolute;
-  top: -10px;
-  left: clamp(16px, 4vw, 22px);
+  top: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 4);
+  height: calc(100% - 8px);
+  border-radius: 9px;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.12);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.plan-box__tab {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 42px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #5b6577;
+  transition: color 0.18s ease;
+}
+
+.plan-box__tab.is-active {
+  color: #0b1628;
+}
+
+/* Popular, quietly: a dot on the strip, and the word only once Plus is open. */
+.plan-box__dot {
+  width: 5px;
+  height: 5px;
   border-radius: 999px;
   background: #306eec;
-  padding: 3px 11px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #ffffff;
 }
 
-.plan-rung__head {
+/* ------------------------------- price ------------------------------- */
+
+.plan-box__price {
+  margin-top: clamp(16px, 4vw, 22px);
+  text-align: center;
+}
+
+/* Always here, empty on every plan but Plus, so the price never moves. */
+/* A fixed height, not a minimum: the Popular chip is a hair over 22px, so a
+   min-height let Plus make the whole box one pixel taller than the other three
+   and nudged the CTA down as you moved between tabs. */
+.plan-box__pricetop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+}
+
+.plan-box__popular {
+  border-radius: 999px;
+  background: #eef4ff;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1f5ed8;
+}
+
+.plan-box__amount {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 4px;
+  animation: plan-price-in 0.16s ease-out;
 }
 
-@media (min-width: 1000px) {
-  .plan-rung__head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
+@keyframes plan-price-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
-.plan-rung__name {
-  margin: 0;
-  font-size: clamp(19px, 5vw, 22px);
+/* The largest thing on the page, which is what a price on a pricing page is
+   supposed to be. It used to share a baseline with the plan name, which made it
+   read as a label. */
+.plan-box__figure {
+  font-size: clamp(46px, 13vw, 64px);
   font-weight: 700;
-  letter-spacing: -0.03em;
-  color: #0b1628;
-}
-
-.plan-rung__price {
-  display: flex;
-  align-items: baseline;
-  gap: 3px;
-  font-size: clamp(24px, 6.4vw, 30px);
-  font-weight: 700;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.04em;
+  line-height: 1;
   color: #0b1628;
   font-variant-numeric: tabular-nums;
 }
 
-.plan-rung__per {
-  font-size: 13px;
+.plan-box__unit {
+  font-size: clamp(14px, 3.6vw, 16px);
   font-weight: 600;
   color: #8a94a6;
-  letter-spacing: 0;
 }
 
-/* The cumulative line. One short phrase, in the plan's own colour, doing the
-   job that four repeated feature lists used to do. */
-.plan-rung__inherits {
-  margin: 13px 0 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #306eec;
-}
-
-.plan-rung__adds {
+/* Two lines' worth, reserved, so Monthly <-> Annual does not shift the rows. */
+.plan-box__terms {
   margin: 10px 0 0;
+  min-height: 38px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: #5b6577;
+}
+
+.plan-box__terms-sub {
+  display: block;
+  color: #8a94a6;
+}
+
+/* ----------------------- the seven rows, stacked ---------------------- */
+/* All four panels share one grid cell. The cell is as tall as the tallest
+   (Elite), so switching plans cannot resize the box - no min-height constant
+   to keep in sync with the copy, and nothing below ever moves. */
+
+.plan-box__stack {
+  display: grid;
+  margin-top: clamp(14px, 3.5vw, 20px);
+}
+
+.plan-box__benefits {
+  grid-area: 1 / 1;
+  margin: 0;
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 7px;
+  align-content: start;
+  gap: clamp(9px, 2.4vw, 12px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.16s ease;
 }
 
-.plan-rung__adds li {
+.plan-box__benefits.is-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.plan-box__row {
   display: flex;
-  gap: 8px;
-  font-size: clamp(14px, 3.7vw, 15px);
-  line-height: 1.45;
-  color: #20304a;
+  align-items: flex-start;
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition-delay: var(--plan-row-delay, 0ms);
 }
 
-/* A literal plus sign, because the relationship between the rungs IS addition. */
-.plan-rung__plus {
+.plan-box__benefits.is-active .plan-box__row {
+  opacity: 1;
+  transform: none;
+}
+
+.plan-box__mark {
   flex: none;
-  font-weight: 700;
-  color: #306eec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  margin-top: 1px;
 }
 
-.plan-rung__cta {
-  margin-top: clamp(16px, 4vw, 20px);
+.plan-box__row.is-on .plan-box__mark {
+  color: #306eec;
+  transform: scale(0.72);
+  transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition-delay: var(--plan-row-delay, 0ms);
+}
+
+.plan-box__benefits.is-active .plan-box__row.is-on .plan-box__mark {
+  transform: scale(1);
+}
+
+/* Not a cross, and never red. This says "not in this plan", not "refused". */
+.plan-box__dash {
+  font-size: 14px;
+  line-height: 1;
+  color: #c3cddf;
+}
+
+.plan-box__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plan-box__name {
+  font-size: clamp(14.5px, 3.8vw, 15.5px);
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.plan-box__row.is-on .plan-box__name {
+  color: #0b1628;
+}
+
+.plan-box__row.is-off .plan-box__name {
+  font-weight: 500;
+  color: #9aa4b5;
+}
+
+.plan-box__detail {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #7b8698;
+}
+
+/* -------------------------------- CTA -------------------------------- */
+
+.plan-box__cta {
+  margin-top: clamp(16px, 4vw, 22px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 50px;
+  min-height: 54px;
   border-radius: 999px;
   background: #306eec;
   color: #ffffff;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   transition: background-color 0.18s ease;
 }
 
-@media (min-width: 1000px) {
-  .plan-rung__cta {
-    margin-top: auto;
-  }
-}
-
-.plan-rung__cta:hover:not(:disabled) {
+.plan-box__cta:hover:not(:disabled) {
   background: #2059d4;
 }
 
-.plan-rung__cta:disabled {
+.plan-box__cta:disabled {
   background: #c3cddf;
   cursor: not-allowed;
 }
 
-/* ---------------- below the decision ---------------- */
-
-.plan-note {
-  margin: clamp(16px, 3.5vw, 22px) auto 0;
-  max-width: 780px;
-  font-size: 13px;
+/* The sentence the whole product hangs on, said once, under the decision.
+   "Allowance" denies the credits model; "limit" would deny all constraints and
+   read as unlimited service, so the two halves bound each other deliberately. */
+.plan-box__foot {
+  margin: 12px 0 0;
+  font-size: 12.5px;
   line-height: 1.5;
   color: #8a94a6;
+  text-align: center;
+}
+
+.plan-box__cycle:focus-visible,
+.plan-box__tab:focus-visible,
+.plan-box__cta:focus-visible {
+  outline: 2px solid #306eec;
+  outline-offset: 2px;
+}
+
+/* ------------------------------ widths ------------------------------- */
+
+/* "Premium" is the longest label; below 360px it needs a smaller size to sit in
+   a quarter of the strip without the tabs scrolling. They never scroll. */
+@media (max-width: 359px) {
+  .plan-box__tab {
+    font-size: 12px;
+  }
+  .plan-box__chip {
+    padding: 2px 5px;
+    font-size: 9.5px;
+  }
+  .plan-box__cycle {
+    font-size: 12.5px;
+  }
+}
+
+/* Desktop keeps the SAME one-box interaction. It does not become four cards:
+   a wide grid would dilute exactly the focus that makes this work. */
+@media (min-width: 720px) {
+  .plan-box {
+    padding: 30px 34px;
+  }
+  .plan-box__cycle {
+    min-height: 40px;
+    font-size: 14.5px;
+  }
+  .plan-box__tab {
+    min-height: 46px;
+    font-size: 15px;
+  }
+  .plan-box__terms {
+    font-size: 14px;
+  }
+  /*
+    The rows are a centred block of left-aligned text, not a left-aligned
+    column in a wide box. Text stays left because that is how a list is read;
+    the block centres so it sits under the price instead of stranding half the
+    box empty beside it.
+  */
+  .plan-box__benefits {
+    justify-self: center;
+    width: 100%;
+    max-width: 430px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-box__pill,
+  .plan-box__amount,
+  .plan-box__benefits,
+  .plan-box__row,
+  .plan-box__mark {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
 }
 
 .plan-after {

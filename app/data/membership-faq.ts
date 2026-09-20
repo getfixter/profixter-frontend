@@ -49,25 +49,43 @@ export const MEMBERSHIP_FAQS: MembershipFaq[] = [
 /**
  * The questions a given surface actually renders.
  *
- * /membership/plans hides the cancellation question, because the plan cards
- * beside it already carry the cancellation controls. The markup has to hide it
- * too: Google only accepts FAQ structured data whose questions and answers are
- * visible on the page, so a list built from the full set would have been
- * describing a question that surface does not show.
+ * The flag means "this is /membership/plans", where the selector and the plan
+ * controls already answer some of these on the way past. Three questions drop
+ * out there and nowhere else:
+ *
+ *   cancellation   the plan controls beside it carry the cancellation UI
+ *   how many visits the pace row states it per plan, with the governing
+ *                  sentence under the box
+ *   materials      the "Small supplies included" row carries it
+ *
+ * Every other surface - /handyman-membership in particular, which has no
+ * selector to lean on - still gets the full set, which is why these are
+ * filtered per surface rather than deleted.
+ *
+ * The markup has to hide them too: Google only accepts FAQ structured data
+ * whose questions and answers are VISIBLE on the page, so both the accordion
+ * and the JSON-LD read this one function and cannot drift apart.
  */
-export function visibleMembershipFaqs(hideCancellation = false): MembershipFaq[] {
-  return hideCancellation
-    ? MEMBERSHIP_FAQS.filter(({ q }) => !q.toLowerCase().includes("cancellation"))
-    : MEMBERSHIP_FAQS;
+const ANSWERED_BY_THE_SELECTOR = [
+  "cancellation",
+  "how many visits",
+  "are materials included",
+];
+
+export function visibleMembershipFaqs(onPlansPage = false): MembershipFaq[] {
+  if (!onPlansPage) return MEMBERSHIP_FAQS;
+  return MEMBERSHIP_FAQS.filter(
+    ({ q }) => !ANSWERED_BY_THE_SELECTOR.some((needle) => q.toLowerCase().includes(needle))
+  );
 }
 
 /** FAQPage JSON-LD for a page that actually displays these questions. */
-export function membershipFaqJsonLd(pageUrl: string, hideCancellation = false) {
+export function membershipFaqJsonLd(pageUrl: string, onPlansPage = false) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "@id": `${pageUrl}#faq`,
-    mainEntity: visibleMembershipFaqs(hideCancellation).map((faq) => ({
+    mainEntity: visibleMembershipFaqs(onPlansPage).map((faq) => ({
       "@type": "Question",
       name: faq.q,
       acceptedAnswer: { "@type": "Answer", text: faq.a },

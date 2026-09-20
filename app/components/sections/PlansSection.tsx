@@ -34,61 +34,117 @@ type ChangeActionKind =
   | "upgrade"
   | "downgrade";
 
+type PlanName = Plan["name"];
+
 /**
- * What each tier ADDS, not what each tier has.
+ * The seven rows, in one fixed order, for all four plans.
  *
- * These lists used to be absolute, and they were absolute inconsistently:
- * Basic was the only plan that said "All handyman services included", Elite was
- * the only plan that did NOT say "Basic materials included", and "90-minute
- * visits" vanished at Premium. Read literally - which is how a homeowner
- * comparing four boxes reads them - the $499 plan appeared to include less than
- * the $249 one, and Elite's project discount was missing altogether.
+ * WHY A MATRIX AND NOT A LADDER.
  *
- * Nothing about the plans changed. The ladder is now stated cumulatively, so
- * each card carries only its own differences and inherits everything below it.
- * That fixes the false implications, makes the reason to pay more the only
- * thing on the card, and makes the cards shorter at the same time.
+ * The ladder showed only what each tier ADDED, which explained the structure
+ * and destroyed the value: Premium is a hundred dollars more than Plus and
+ * added exactly one line, so the more you paid the emptier the card looked.
+ * "Everything in Plus" was an IOU that asked the reader to scroll up and
+ * reassemble the total in their head, and nobody does that.
  *
- * The Priority Visit caveat used to be repeated verbatim inside two cards,
- * where it took about a quarter of each. It is now stated once under the grid.
+ * So every plan now shows the SAME rows in the SAME positions, and only the
+ * marks change. Switching from Plus to Premium leaves row 5 where it is and
+ * turns it on, which is a thing you can watch happen. Rows switched on run
+ * 3 / 4 / 5 / 7, so the box visibly fills as the price rises and Elite is the
+ * only state with nothing greyed out.
+ *
+ * ACCURACY. Every row here is checked against what the system actually does:
+ *
+ *   pace      routes/bookings.js: `plan === "basic" ? 1 : plan ? 2 : 0`.
+ *             Elite is 2, not 3. Never described as a monthly quantity - it is
+ *             a pace, and "allowance"/"limit" wording is settled elsewhere.
+ *   fullDay   utils/fullDayEntitlements.js grants one per MEMBERSHIP MONTH,
+ *             annual members included. It said "per billing period", which
+ *             gave an annual member one for the whole year; the entitlement
+ *             now slices the year into months, so "/ month" is true on both
+ *             cycles and needs no per-cycle wording here.
+ *   priority  Has no backend entitlement or counter anywhere - it is delivered
+ *             by scheduling. The copy is the whole definition of the benefit,
+ *             which is exactly why it keeps "subject to availability".
+ *   supplies  Plus and above include small materials; fixtures, appliances and
+ *             project materials are quoted separately.
  */
-/**
- * What each rung ADDS, and nothing else.
- *
- * This replaced a per-plan description plus a full feature list. Three of
- * Basic's four bullets - "All handyman services included", "90-minute visits",
- * "Request membership visits as needed" - are true of every plan, so they were
- * the foundation masquerading as Basic's benefits, and every card above had to
- * say "Everything in X" to point back at them.
- *
- * The foundation is stated once above the ladder now. These are the seven real
- * differences between the four plans.
- */
-const planLadder: Record<
-  Plan["name"],
-  { inherits: string | null; adds: string[] }
-> = {
-  Basic: {
-    inherits: null,
-    adds: ["1 visit at a time"],
-  },
-  Plus: {
-    inherits: "Everything in Basic",
-    adds: ["2 visits at a time", "Basic materials included"],
-  },
-  Premium: {
-    inherits: "Everything in Plus",
-    adds: ["1 Priority Visit a month"],
-  },
-  Elite: {
-    inherits: "Everything in Premium",
-    adds: [
-      "2 Priority Visits a month",
-      "1 full project day a month (up to 8 hours)",
-      "10% off home improvement projects",
-    ],
-  },
+type BenefitRow = {
+  id: string;
+  /** How the row reads for a plan that does NOT include it. */
+  off: string;
+  /**
+   * How it reads for a plan that DOES. A string means every plan includes it;
+   * a partial record means only the plans named include it, and the wording is
+   * allowed to differ where the number itself differs.
+   */
+  on: string | Partial<Record<PlanName, string>>;
+  /** A single short line, shown only when the row is on. Never an explanation. */
+  detail?: string;
 };
+
+const BENEFIT_ROWS: BenefitRow[] = [
+  {
+    id: "visits",
+    off: "90-minute visits, any home task",
+    on: "90-minute visits, any home task",
+  },
+  {
+    id: "team",
+    off: "The same local team every time",
+    on: "The same local team every time",
+  },
+  {
+    id: "pace",
+    off: "Book visits as you need them",
+    on: {
+      Basic: "Book 1 visit at a time",
+      Plus: "Book up to 2 visits at a time",
+      Premium: "Book up to 2 visits at a time",
+      Elite: "Book up to 2 visits at a time",
+    },
+    detail: "As often as you need.",
+  },
+  {
+    id: "supplies",
+    off: "Small supplies included",
+    on: {
+      Plus: "Small supplies included",
+      Premium: "Small supplies included",
+      Elite: "Small supplies included",
+    },
+    detail: "Screws, anchors, caulk and sealant.",
+  },
+  {
+    id: "priority",
+    off: "Priority Visits",
+    on: {
+      Premium: "1 Priority Visit / month",
+      Elite: "2 Priority Visits / month",
+    },
+    detail: "When it can't wait. Subject to availability.",
+  },
+  {
+    id: "fullDay",
+    off: "A Full Day of work",
+    on: { Elite: "1 Full Day / month" },
+    detail: "Up to 8 hours for a bigger job.",
+  },
+  {
+    id: "projects",
+    off: "10% off larger projects",
+    on: { Elite: "10% off larger projects" },
+  },
+];
+
+function benefitIncluded(row: BenefitRow, plan: PlanName): boolean {
+  return typeof row.on === "string" ? true : Boolean(row.on[plan]);
+}
+
+function benefitLabel(row: BenefitRow, plan: PlanName): string {
+  if (typeof row.on === "string") return row.on;
+  return row.on[plan] || row.off;
+}
 
 function toNumberPrice(v: unknown): number {
   if (typeof v === "number") return v;
@@ -222,6 +278,16 @@ type PlansSectionProps = {
 
 export default function PlansSection({ hideCancellationUi = false, compact = false, hideIntro = false }: PlansSectionProps = {}) {
   const [billing, setBilling] = useState<BillingCycle>("monthly");
+  /*
+   * Which plan the one box is showing.
+   *
+   * Plus, because it is the recommended plan and because opening on a middle
+   * tier shows checks AND dashes at once, which is what makes the mechanic
+   * obvious without a word of instruction. Restored from ?plan= below, so
+   * somebody who picked Elite, signed up and came back does not land on Plus -
+   * with four cards there was no selection to lose, and with one box there is.
+   */
+  const [selectedPlanName, setSelectedPlanName] = useState<PlanName>("Plus");
   const [promoCode, setPromoCode] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [actionError, setActionError] = useState("");
@@ -299,6 +365,12 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     if (requestedBilling === "monthly" || requestedBilling === "annual") {
       setBilling(requestedBilling);
     }
+
+    const requestedPlan = String(
+      params.get("plan") || pending?.plan || pending?.planName || ""
+    ).toLowerCase();
+    const restored = plans.find((plan) => plan.name.toLowerCase() === requestedPlan);
+    if (restored) setSelectedPlanName(restored.name);
 
     /*
       Backing out of Stripe is ordinary behaviour, not an error. Stripe used to
@@ -781,6 +853,240 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
    * own; the shared basics are stated once above the list instead of repeated
    * as table rows.
    */
+  /**
+   * One box. Four tabs. The same seven rows, switching on and off.
+   *
+   * WHAT REPLACED WHAT. Four parallel cards, then a four-rung ladder, now one
+   * selector. Cards and rungs both put four prices and four buttons on screen
+   * at once, which is four decisions; this is one decision with four positions,
+   * which is how a phone presents a subscription and why it reads instantly.
+   *
+   * TWO THINGS HOLD THE LAYOUT STILL, both deliberate:
+   *
+   *  - All four benefit panels are stacked in ONE grid cell, so the cell is
+   *    always as tall as Elite and nothing below it moves when the plan
+   *    changes. No magic min-height to keep in sync with the copy.
+   *  - The savings line above the price is always in the DOM and empty on
+   *    monthly, so the Monthly/Annual toggle does not shift the price either.
+   *
+   * That matters beyond tidiness: the CTA sits directly under the thumb, and a
+   * control that moves between a finger going down and coming up is how a tap
+   * gets swallowed. Nothing here moves.
+   *
+   * BUSINESS LOGIC IS UNTOUCHED. getActionForPlan still decides what the button
+   * does and says for members, handleSubscribe still runs checkout, and the
+   * prices still come from getPlanPricing. This is presentation.
+   *
+   * CALLED, NOT MOUNTED. This is invoked as renderPlanSelector() rather than
+   * rendered as <PlanSelector />. Declared inside the parent, it is a NEW
+   * component type on every parent render, so React would unmount and rebuild
+   * the whole subtree each time - which throws keyboard focus back to <body>
+   * and makes Home/End on the tab strip scroll the page instead of moving
+   * between plans. Calling it puts the elements in the parent tree, where they
+   * reconcile in place and keep their focus.
+   */
+  const renderPlanSelector = () => {
+    const selectedPlan = plans.find((p) => p.name === selectedPlanName) || plans[0];
+    const pricing = getPlanPricing(selectedPlan, billing);
+    const action = getActionForPlan(selectedPlan.name);
+    const disabled = action.disabled || !!actionLoadingPlan || checkingAddr;
+    const activeIndex = plans.findIndex((p) => p.name === selectedPlan.name);
+
+    /*
+     * "Choose Plus", not "Start Membership". kind === "subscribe" is exactly
+     * the fresh-signup case; every member state - upgrade, downgrade, manage,
+     * cancellation scheduled - keeps the label its own logic chose.
+     */
+    const label =
+      actionLoadingPlan === selectedPlan.name
+        ? "Working..."
+        : !isAuthenticated || action.kind === "subscribe"
+          ? `Choose ${selectedPlan.displayName}`
+          : action.label;
+
+    // Roving focus, so the tab strip behaves like a tab strip on a keyboard.
+    const onTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+      const moves: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1 };
+      let next = -1;
+      if (event.key in moves) {
+        next = (activeIndex + moves[event.key] + plans.length) % plans.length;
+      } else if (event.key === "Home") {
+        next = 0;
+      } else if (event.key === "End") {
+        next = plans.length - 1;
+      }
+      if (next < 0) return;
+      event.preventDefault();
+      setSelectedPlanName(plans[next].name);
+      document.getElementById(`plan-tab-${plans[next].name}`)?.focus();
+    };
+
+    return (
+      <div className="plan-box">
+        {/* ---------- billing cycle, above the price it frames ---------- */}
+        <div className="plan-box__billing" role="group" aria-label="Billing cycle">
+          {(["monthly", "annual"] as const).map((cycle) => (
+            <button
+              key={cycle}
+              type="button"
+              aria-pressed={billing === cycle}
+              onClick={() => setBilling(cycle)}
+              className={`plan-box__cycle${billing === cycle ? " is-active" : ""}`}
+            >
+              {cycle === "monthly" ? "Monthly" : "Annual"}
+              {cycle === "annual" ? (
+                <span className="plan-box__chip">2 months free</span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+
+        {/* ---------------------------- tabs ---------------------------- */}
+        <div className="plan-box__tabs" role="tablist" aria-label="Membership plans">
+          <span
+            className="plan-box__pill"
+            aria-hidden="true"
+            style={{ transform: `translateX(${activeIndex * 100}%)` }}
+          />
+          {plans.map((plan) => {
+            const isActive = plan.name === selectedPlan.name;
+            return (
+              <button
+                key={plan.name}
+                id={`plan-tab-${plan.name}`}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`plan-panel-${plan.name}`}
+                tabIndex={isActive ? 0 : -1}
+                onClick={() => setSelectedPlanName(plan.name)}
+                onKeyDown={onTabKeyDown}
+                className={`plan-box__tab${isActive ? " is-active" : ""}`}
+              >
+                {plan.displayName}
+                {/*
+                  Popular, quietly. A dot marks Plus from the strip; the word
+                  itself only appears once Plus is open, so the recommendation
+                  never shouts over the other three.
+                */}
+                {plan.name === "Plus" && !isActive ? (
+                  <span className="plan-box__dot" aria-hidden="true" />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ---------------------------- price --------------------------- */}
+        <div className="plan-box__price">
+          <div className="plan-box__pricetop">
+            {selectedPlan.name === "Plus" ? (
+              <span className="plan-box__popular">Most popular</span>
+            ) : null}
+          </div>
+
+          <div className="plan-box__amount" key={`${selectedPlan.name}-${billing}`}>
+            <span className="plan-box__figure">${formatMoney(pricing.amount)}</span>
+            <span className="plan-box__unit">
+              {billing === "annual" ? "/ year" : "/ month"}
+            </span>
+          </div>
+
+          <p className="plan-box__terms">
+            {billing === "annual" ? (
+              <>
+                Pay for 10 months, get 12.
+                <span className="plan-box__terms-sub">
+                  About ${formatMoney(Math.round(pricing.amount / MONTHS_PER_YEAR))} a month.
+                </span>
+              </>
+            ) : (
+              <>
+                Billed monthly.
+                <span className="plan-box__terms-sub">Cancel anytime.</span>
+              </>
+            )}
+          </p>
+        </div>
+
+        {/* ------------- the seven rows, all four plans stacked ---------- */}
+        <div className="plan-box__stack">
+          {plans.map((plan) => {
+            const isActive = plan.name === selectedPlan.name;
+            return (
+              <ul
+                key={plan.name}
+                id={`plan-panel-${plan.name}`}
+                role="tabpanel"
+                aria-labelledby={`plan-tab-${plan.name}`}
+                className={`plan-box__benefits${isActive ? " is-active" : ""}`}
+              >
+                {BENEFIT_ROWS.map((row, index) => {
+                  const included = benefitIncluded(row, plan.name);
+                  return (
+                    <li
+                      key={row.id}
+                      className={`plan-box__row${included ? " is-on" : " is-off"}`}
+                      /* A short stagger, so switching plans reads as rows
+                         lighting up rather than the whole list blinking. The
+                         row and its checkmark both read this one delay. */
+                      style={
+                        {
+                          "--plan-row-delay": isActive ? `${index * 22}ms` : "0ms",
+                        } as React.CSSProperties
+                      }
+                    >
+                      <span className="plan-box__mark" aria-hidden="true">
+                        {included ? (
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                            <path
+                              d="M5 12.5l4 4 10-10"
+                              stroke="currentColor"
+                              strokeWidth="2.6"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        ) : (
+                          /* An em dash. Never a cross, never red: this is
+                             "not in this plan", not "you have been refused". */
+                          <span className="plan-box__dash">&mdash;</span>
+                        )}
+                      </span>
+                      <span className="plan-box__text">
+                        <span className="plan-box__name">{benefitLabel(row, plan.name)}</span>
+                        {included && row.detail ? (
+                          <span className="plan-box__detail">{row.detail}</span>
+                        ) : null}
+                      </span>
+                      <span className="sr-only">{included ? " included" : " not included"}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            );
+          })}
+        </div>
+
+        {/* ----------------------------- CTA ---------------------------- */}
+        <button
+          type="button"
+          onClick={() => handleSubscribe(selectedPlan.name)}
+          data-track="plans-cta"
+          disabled={disabled}
+          className="plan-box__cta"
+        >
+          {label}
+        </button>
+
+        <p className="plan-box__foot">
+          There&rsquo;s no monthly visit allowance. Book as often as you need &mdash; your plan
+          sets how many visits you can have booked at the same time.
+        </p>
+      </div>
+    );
+  };
+
   const CompactPlanComparison = () => {
     const planCopy: Record<Plan["name"], { adds: string[] }> = {
       Basic: { adds: [] },
@@ -932,7 +1238,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
               </p>
             </div>
           ) : null}
-          <BillingToggle />
+          {compact ? <BillingToggle /> : null}
         </div>
 
         {/*
@@ -981,107 +1287,8 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           </div>
         )}
 
-        {/* ===================== THE FOUNDATION, ONCE ===================== */}
-        {!compact && (
-          <div className="plan-foundation">
-            <p className="plan-foundation__label">Every membership</p>
-            <ul className="plan-foundation__items">
-              {["90-minute visits", "The same local team", "Book online", "No estimates for small jobs"].map((f) => (
-                <li key={f}>
-                  <PlanCheck />
-                  {f}
-                </li>
-              ))}
-            </ul>
-            {/*
-              The sentence the entire product hangs on. It used to sit below all
-              four cards, so a customer read the plans under the assumption they
-              were buying a monthly allowance and was corrected afterwards.
-            */}
-            <p className="plan-foundation__rule">
-              <b>Book as often as you need.</b> Your plan sets how many visits you can have
-              booked at the same time.
-            </p>
-          </div>
-        )}
-
-        {/* ========================== THE LADDER ========================== */}
-        {compact ? <CompactPlanComparison /> : (
-          <>
-            <div className="plan-ladder">
-              {plans.map((plan) => {
-                const action = getActionForPlan(plan.name);
-                const isPopular = plan.name === "Plus";
-                const disabled = action.disabled || !!actionLoadingPlan || checkingAddr;
-                const rung = planLadder[plan.name];
-                /*
-                 * "Choose Plus", not "Start Membership".
-                 *
-                 * A signed-in non-member saw the same four words on all four
-                 * buttons, so the control stopped saying which plan it bought.
-                 * kind === "subscribe" is exactly the fresh-signup case; every
-                 * member state - upgrade, downgrade, manage, cancellation
-                 * scheduled - keeps the label its own logic chose.
-                 */
-                const label =
-                  actionLoadingPlan === plan.name
-                    ? "Working..."
-                    : !isAuthenticated || action.kind === "subscribe"
-                      ? `Choose ${plan.displayName}`
-                      : action.label;
-
-                return (
-                  <article
-                    key={plan.name}
-                    className={`plan-rung${isPopular ? " plan-rung--popular" : ""}`}
-                  >
-                    {isPopular ? <span className="plan-rung__badge">Popular</span> : null}
-
-                    <div className="plan-rung__head">
-                      <h3 className="plan-rung__name">{plan.displayName}</h3>
-                      <PlanPriceBlock
-                        plan={plan}
-                        billing={billing}
-                        amountClassName="plan-rung__price"
-                      />
-                    </div>
-
-                    {rung.inherits ? <p className="plan-rung__inherits">{rung.inherits}</p> : null}
-
-                    <ul className="plan-rung__adds">
-                      {rung.adds.map((a) => (
-                        <li key={a}>
-                          {rung.inherits ? (
-                            <span className="plan-rung__plus" aria-hidden="true">
-                              +
-                            </span>
-                          ) : (
-                            <PlanCheck />
-                          )}
-                          <span>{a}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <button
-                      onClick={() => handleSubscribe(plan.name)}
-                      data-track="plans-cta"
-                      disabled={disabled}
-                      className="plan-rung__cta"
-                    >
-                      {label}
-                    </button>
-                  </article>
-                );
-              })}
-            </div>
-
-            <p className="plan-note">
-              Priority Visit &mdash; service before the next standard appointment slot, subject
-              to Fixter availability.
-            </p>
-          </>
-        )}
+        {/* ========================= THE SELECTOR ========================= */}
+        {compact ? <CompactPlanComparison /> : renderPlanSelector()}
 
         {/* ==================== AFTER THE DECISION ==================== */}
         {/*
