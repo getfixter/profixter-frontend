@@ -2157,3 +2157,300 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
     transform: none;
   }
 }
+
+/* =========================
+   Membership plans — the ladder
+   =========================
+
+   FOUR CARDS WERE THE WRONG SHAPE FOR THIS PRODUCT.
+
+   Parallel cards say "four different things, pick one". These plans are not
+   parallel: each one is the one below it plus something. The old page had to
+   spend "Everything in Basic / Plus / Premium" to say so, and still put the
+   shared foundation - 90-minute visits, all services, the same team - inside
+   the FIRST card, so nobody could understand any plan without reading Basic.
+
+   So: the foundation is stated once, above, and each rung shows only what it
+   adds. Four plans, seven real differences, and the differences are the only
+   thing on screen.
+*/
+
+.plan-foundation {
+  margin-inline: auto;
+  max-width: 780px;
+  border-radius: 14px;
+  border: 1px solid #dde4f0;
+  background: #ffffff;
+  padding: clamp(18px, 4vw, 24px);
+  text-align: left;
+}
+
+.plan-foundation__label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a94a6;
+}
+
+.plan-foundation__items {
+  margin: 10px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding: 0;
+  list-style: none;
+  font-size: clamp(14px, 3.6vw, 15.5px);
+  font-weight: 600;
+  color: #0b1628;
+}
+
+.plan-foundation__items li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* The sentence the whole product hangs on, which used to sit BELOW all four
+   cards - so people read the plans misunderstanding the model, then got
+   corrected. */
+.plan-foundation__rule {
+  margin: 14px 0 0;
+  border-top: 1px solid #eef2f8;
+  padding-top: 13px;
+  font-size: clamp(13.5px, 3.5vw, 15px);
+  line-height: 1.5;
+  color: #5b6577;
+}
+
+.plan-foundation__rule b {
+  color: #0b1628;
+  font-weight: 700;
+}
+
+/* ---------------- the ladder ---------------- */
+
+.plan-ladder {
+  margin-inline: auto;
+  margin-top: clamp(18px, 4vw, 26px);
+  max-width: 780px;
+  display: grid;
+  gap: 10px;
+}
+
+/* Four abreast once there is room, sharing one baseline so the eye scans
+   across instead of down. */
+@media (min-width: 1000px) {
+  .plan-foundation,
+  .plan-after,
+  .plan-note {
+    max-width: 1180px;
+  }
+
+  .plan-ladder {
+    max-width: 1180px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    align-items: stretch;
+  }
+}
+
+.plan-rung {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  border: 1px solid #dde4f0;
+  background: #ffffff;
+  padding: clamp(16px, 4vw, 22px);
+}
+
+/* Popular, not dominant. The old page gave Plus a solid black button and every
+   other plan an outline one, which makes three of four choices look like the
+   consolation prize. Same button everywhere; the badge does the pointing. */
+.plan-rung--popular {
+  border-color: #306eec;
+  box-shadow: 0 0 0 1px #306eec;
+}
+
+.plan-rung__badge {
+  position: absolute;
+  top: -10px;
+  left: clamp(16px, 4vw, 22px);
+  border-radius: 999px;
+  background: #306eec;
+  padding: 3px 11px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+}
+
+.plan-rung__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (min-width: 1000px) {
+  .plan-rung__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}
+
+.plan-rung__name {
+  margin: 0;
+  font-size: clamp(19px, 5vw, 22px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #0b1628;
+}
+
+.plan-rung__price {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  font-size: clamp(24px, 6.4vw, 30px);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: #0b1628;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-rung__per {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8a94a6;
+  letter-spacing: 0;
+}
+
+/* The cumulative line. One short phrase, in the plan's own colour, doing the
+   job that four repeated feature lists used to do. */
+.plan-rung__inherits {
+  margin: 13px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #306eec;
+}
+
+.plan-rung__adds {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+}
+
+.plan-rung__adds li {
+  display: flex;
+  gap: 8px;
+  font-size: clamp(14px, 3.7vw, 15px);
+  line-height: 1.45;
+  color: #20304a;
+}
+
+/* A literal plus sign, because the relationship between the rungs IS addition. */
+.plan-rung__plus {
+  flex: none;
+  font-weight: 700;
+  color: #306eec;
+}
+
+.plan-rung__cta {
+  margin-top: clamp(16px, 4vw, 20px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 50px;
+  border-radius: 999px;
+  background: #306eec;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  transition: background-color 0.18s ease;
+}
+
+@media (min-width: 1000px) {
+  .plan-rung__cta {
+    margin-top: auto;
+  }
+}
+
+.plan-rung__cta:hover:not(:disabled) {
+  background: #2059d4;
+}
+
+.plan-rung__cta:disabled {
+  background: #c3cddf;
+  cursor: not-allowed;
+}
+
+/* ---------------- below the decision ---------------- */
+
+.plan-note {
+  margin: clamp(16px, 3.5vw, 22px) auto 0;
+  max-width: 780px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #8a94a6;
+}
+
+.plan-after {
+  margin-inline: auto;
+  margin-top: clamp(22px, 5vw, 32px);
+  max-width: 780px;
+  display: grid;
+  gap: 10px;
+}
+
+@media (min-width: 720px) {
+  .plan-after {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.plan-after__card {
+  border-radius: 12px;
+  border: 1px solid #e2e8f4;
+  background: #f8fafe;
+  padding: 16px 18px;
+}
+
+.plan-after__label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #306eec;
+}
+
+.plan-after__body {
+  margin: 7px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #5b6577;
+}
+
+.plan-after__body b {
+  color: #0b1628;
+  font-weight: 600;
+}
+
+.plan-after__link {
+  display: inline-block;
+  margin-top: 7px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #306eec;
+  text-underline-offset: 4px;
+}
+
+.plan-after__link:hover {
+  text-decoration: underline;
+}
