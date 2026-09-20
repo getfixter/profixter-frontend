@@ -52,43 +52,39 @@ type ChangeActionKind =
  * The Priority Visit caveat used to be repeated verbatim inside two cards,
  * where it took about a quarter of each. It is now stated once under the grid.
  */
-const planDisplayContent: Record<
+/**
+ * What each rung ADDS, and nothing else.
+ *
+ * This replaced a per-plan description plus a full feature list. Three of
+ * Basic's four bullets - "All handyman services included", "90-minute visits",
+ * "Request membership visits as needed" - are true of every plan, so they were
+ * the foundation masquerading as Basic's benefits, and every card above had to
+ * say "Everything in X" to point back at them.
+ *
+ * The foundation is stated once above the ladder now. These are the seven real
+ * differences between the four plans.
+ */
+const planLadder: Record<
   Plan["name"],
-  {
-    description: string;
-    features: string[];
-  }
+  { inherits: string | null; adds: string[] }
 > = {
   Basic: {
-    description: "A simple way to keep occasional home tasks moving.",
-    features: [
-      "Request membership visits as needed",
-      "All handyman services included",
-      "90-minute visits",
-      "Book 1 visit at a time, as often as you need",
-    ],
+    inherits: null,
+    adds: ["1 visit at a time"],
   },
   Plus: {
-    description: "The balanced plan for homeowners who want steady support.",
-    features: [
-      "Everything in Basic",
-      "Book up to 2 visits at a time, as often as you need",
-      "Basic materials included",
-    ],
+    inherits: "Everything in Basic",
+    adds: ["2 visits at a time", "Basic materials included"],
   },
   Premium: {
-    description: "For homes that need priority support when timing matters.",
-    features: [
-      "Everything in Plus",
-      "1 Priority Visit per month",
-    ],
+    inherits: "Everything in Plus",
+    adds: ["1 Priority Visit a month"],
   },
   Elite: {
-    description: "The most hands-on care for homes with larger ongoing needs.",
-    features: [
-      "Everything in Premium",
-      "2 Priority Visits per month",
-      "1 full project day per month (up to 8 hours)",
+    inherits: "Everything in Premium",
+    adds: [
+      "2 Priority Visits a month",
+      "1 full project day a month (up to 8 hours)",
       "10% off home improvement projects",
     ],
   },
@@ -985,258 +981,154 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           </div>
         )}
 
-        {!compact && !hideIntro && <div className="mx-auto mb-6 max-w-[720px] text-center sm:mb-8">
-          <h3 className="text-[18px] font-semibold tracking-normal text-[#111111] sm:text-[20px]">
-            Membership is the home base
-          </h3>
-          <p className="mt-2 text-[13px] leading-5 text-[#6E6E73] sm:text-base sm:leading-6">
-            Your plan determines appointment capacity, scheduling benefits, and the level of ongoing support available to your home.
-          </p>
-        </div>}
+        {/* ===================== THE FOUNDATION, ONCE ===================== */}
+        {!compact && (
+          <div className="plan-foundation">
+            <p className="plan-foundation__label">Every membership</p>
+            <ul className="plan-foundation__items">
+              {["90-minute visits", "The same local team", "Book online", "No estimates for small jobs"].map((f) => (
+                <li key={f}>
+                  <PlanCheck />
+                  {f}
+                </li>
+              ))}
+            </ul>
+            {/*
+              The sentence the entire product hangs on. It used to sit below all
+              four cards, so a customer read the plans under the assumption they
+              were buying a monthly allowance and was corrected afterwards.
+            */}
+            <p className="plan-foundation__rule">
+              <b>Book as often as you need.</b> Your plan sets how many visits you can have
+              booked at the same time.
+            </p>
+          </div>
+        )}
 
-        {!compact && !hideIntro && <div className="mx-auto mb-7 max-w-[780px] rounded-[8px] border border-[#E5E7EB] bg-white p-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:mb-7 sm:p-5">
-          <div className="grid items-stretch gap-3 text-left sm:grid-cols-[1.15fr_0.85fr]">
-            <div className="rounded-[8px] bg-[#0B1628] px-4 py-4 text-white">
-              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-white/55">
-                Recommended for homeowners
-              </div>
-              <div className="mt-2 text-[21px] font-semibold tracking-[-0.03em] sm:text-[23px]">
-                One trusted team, month after month
-              </div>
-              <div className="mt-2 text-sm font-semibold leading-6 text-white/65">
-                Better for homeowners who expect the home list to keep growing.
-              </div>
+        {/* ========================== THE LADDER ========================== */}
+        {compact ? <CompactPlanComparison /> : (
+          <>
+            <div className="plan-ladder">
+              {plans.map((plan) => {
+                const action = getActionForPlan(plan.name);
+                const isPopular = plan.name === "Plus";
+                const disabled = action.disabled || !!actionLoadingPlan || checkingAddr;
+                const rung = planLadder[plan.name];
+                /*
+                 * "Choose Plus", not "Start Membership".
+                 *
+                 * A signed-in non-member saw the same four words on all four
+                 * buttons, so the control stopped saying which plan it bought.
+                 * kind === "subscribe" is exactly the fresh-signup case; every
+                 * member state - upgrade, downgrade, manage, cancellation
+                 * scheduled - keeps the label its own logic chose.
+                 */
+                const label =
+                  actionLoadingPlan === plan.name
+                    ? "Working..."
+                    : !isAuthenticated || action.kind === "subscribe"
+                      ? `Choose ${plan.displayName}`
+                      : action.label;
+
+                return (
+                  <article
+                    key={plan.name}
+                    className={`plan-rung${isPopular ? " plan-rung--popular" : ""}`}
+                  >
+                    {isPopular ? <span className="plan-rung__badge">Popular</span> : null}
+
+                    <div className="plan-rung__head">
+                      <h3 className="plan-rung__name">{plan.displayName}</h3>
+                      <PlanPriceBlock
+                        plan={plan}
+                        billing={billing}
+                        amountClassName="plan-rung__price"
+                      />
+                    </div>
+
+                    {rung.inherits ? <p className="plan-rung__inherits">{rung.inherits}</p> : null}
+
+                    <ul className="plan-rung__adds">
+                      {rung.adds.map((a) => (
+                        <li key={a}>
+                          {rung.inherits ? (
+                            <span className="plan-rung__plus" aria-hidden="true">
+                              +
+                            </span>
+                          ) : (
+                            <PlanCheck />
+                          )}
+                          <span>{a}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <button
+                      onClick={() => handleSubscribe(plan.name)}
+                      data-track="plans-cta"
+                      disabled={disabled}
+                      className="plan-rung__cta"
+                    >
+                      {label}
+                    </button>
+                  </article>
+                );
+              })}
             </div>
-            <div className="rounded-[8px] bg-[#F8FAFC] px-4 py-4">
-              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#64748B]">
-                If you only need one visit
-              </div>
-              <div className="mt-2 text-[19px] font-semibold tracking-[-0.025em] text-[#111111]">
-                One-time booking is still available
-              </div>
-              <div className="mt-2 text-sm font-semibold leading-6 text-[#6E6E73]">
-                Use it when Membership is not the right fit today.
-              </div>
+
+            <p className="plan-note">
+              Priority Visit &mdash; service before the next standard appointment slot, subject
+              to Fixter availability.
+            </p>
+          </>
+        )}
+
+        {/* ==================== AFTER THE DECISION ==================== */}
+        {/*
+          Loyalty moved below the plans, and shortened.
+
+          It used to sit between the billing toggle and the cards - a reason to
+          STAY, printed into the middle of the moment somebody is deciding what
+          to BUY. Same fact either way; it reads better as the thing you find
+          once the choice is made.
+
+          The free visit sits here for the same reason and in the same register:
+          a way out for somebody not ready, placed UNDER the decision rather
+          than beside it, so it never competes with choosing a plan. Nothing
+          about eligibility is touched - this is a link to /book.
+        */}
+        {!compact && (
+          <div className="plan-after">
+            <div className="plan-after__card">
+              <p className="plan-after__label">Loyalty Benefits</p>
+              {billing === "annual" ? (
+                <p className="plan-after__body">
+                  <b>Already built in.</b> Annual members pay for 10 months and get 12.
+                </p>
+              ) : (
+                <p className="plan-after__body">
+                  <b>Stay, and it gets better.</b> At 3 and 6 months, the plan above yours,
+                  free. At 12 months, a month on us.
+                </p>
+              )}
+              <Link href="/membership/loyalty" className="plan-after__link">
+                How it works
+              </Link>
+            </div>
+
+            <div className="plan-after__card">
+              <p className="plan-after__label">Not ready to choose?</p>
+              <p className="plan-after__body">
+                <b>Your first 90-minute visit is free.</b> No card required.
+              </p>
+              <Link href="/book" className="plan-after__link">
+                Book a free visit
+              </Link>
             </div>
           </div>
-        </div>}
+        )}
 
-        {/*
-          Loyalty Benefits, once, at the decision point.
-
-          Deliberately NOT a fifth bullet on every card. The cards exist to make
-          four plans comparable at a glance, and a milestone ladder repeated four
-          times would bury the difference between them under a benefit they all
-          share. It is a shared fact, so it is stated where the other shared
-          facts are, with a link for anybody who wants the detail.
-
-          Above the cards rather than below them. Below, it sat past four plan
-          cards and a feature table - a scroll a phone user making the decision
-          never reached, which is exactly the visibility problem this fixes.
-
-          The annual cycle gets its own sentence rather than being left out. An
-          annual member reading "monthly memberships include Loyalty Benefits"
-          would reasonably conclude they had picked the worse deal — when in
-          fact they took the same reward up front.
-        */}
-        <div className="mx-auto mb-6 max-w-[720px] rounded-[8px] border border-[#E5E5EA] bg-[#F8FAFF] px-5 py-4 text-left sm:px-6">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#306EEC]">
-            Loyalty Benefits
-          </p>
-          {billing === "annual" ? (
-            <p className="mt-2 text-[14.5px] leading-6 text-[#1D1D1F]">
-              <span className="font-semibold">Your loyalty savings are already built in.</span>{" "}
-              Annual members pay for 10 months and get 12 &mdash; the reward, taken up front.
-            </p>
-          ) : (
-            <p className="mt-2 text-[14.5px] leading-6 text-[#1D1D1F]">
-              <span className="font-semibold">Stay a member and your benefits get better.</span>{" "}
-              At 3 and 6 months we give you the plan above yours, complimentary. At 12
-              months, your next month is on us.
-            </p>
-          )}
-          <Link
-            href="/membership/loyalty"
-            className="mt-2 inline-block text-[13.5px] font-semibold text-[#306EEC] underline-offset-4 hover:underline"
-          >
-            See how Loyalty Benefits work
-          </Link>
-        </div>
-
-        {compact ? <CompactPlanComparison /> : <><div className="grid gap-4 md:hidden">
-          {mobilePlans.map((plan) => {
-              const action = getActionForPlan(plan.name);
-              const isPopular = plan.name === "Plus";
-              const disabled = action.disabled || !!actionLoadingPlan || checkingAddr;
-              const content = planDisplayContent[plan.name];
-
-              return (
-                <article
-                  key={plan.name}
-                  className={[
-                    "relative flex w-full max-w-full min-w-0 flex-col overflow-hidden rounded-[8px] border bg-white p-5 shadow-[0_16px_54px_rgba(15,23,42,0.07)] transition duration-300 sm:p-7 sm:shadow-[0_20px_70px_rgba(15,23,42,0.07)]",
-                    isPopular
-                      ? "border-[#111111] ring-2 ring-[#111111]"
-                      : "border-[#E5E7EB]",
-                  ].join(" ")}
-                >
-                  {isPopular ? (
-                    <div className="absolute right-5 top-5 rounded-[8px] bg-[#111111] px-3 py-1 text-[12px] font-semibold text-white">
-                      Most Popular
-                    </div>
-                  ) : null}
-
-                  <div className="min-w-0 pr-24">
-                    <h3 className="text-[21px] font-semibold tracking-normal text-[#111111] sm:text-2xl">
-                      {plan.name}
-                    </h3>
-                  </div>
-
-                  <div className="mt-6 sm:mt-8">
-                    <PlanPriceBlock
-                      plan={plan}
-                      billing={billing}
-                      amountClassName="text-[34px] font-semibold leading-none tracking-normal text-[#111111] sm:text-5xl"
-                    />
-                    <p className="mt-4 min-h-[46px] text-[14px] leading-5 text-[#6E6E73] sm:mt-5 sm:min-h-[52px] sm:text-[15px] sm:leading-6">
-                      {content.description}
-                    </p>
-                  </div>
-
-                  <ul className="mt-6 space-y-3 sm:mt-7 sm:space-y-4">
-                    {content.features.map((feature) => (
-                      <li key={feature} className="flex min-w-0 gap-2.5 text-[14px] leading-5 text-[#1D1D1F] sm:gap-3 sm:text-[15px] sm:leading-6">
-                        <PlanCheck />
-                        <span className="min-w-0 break-words">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <button
-                    onClick={() => handleSubscribe(plan.name)}
-                    data-track="plans-cta"
-                    disabled={disabled}
-                    className={[
-                      "mt-auto h-12 w-full max-w-full rounded-[8px] border text-sm font-semibold transition duration-200",
-                      disabled
-                        ? "cursor-not-allowed border-[#D1D5DB] bg-[#D1D5DB] text-white"
-                        : isPopular
-                          ? "border-[#111111] bg-[#111111] text-white hover:bg-black"
-                          : "border-[#111111]/20 bg-white text-[#111111] hover:border-[#111111] hover:bg-[#F8F8F8]",
-                    ].join(" ")}
-                  >
-                    {actionLoadingPlan === plan.name ? "Working..." : !isAuthenticated ? `Choose ${plan.displayName}` : action.label}
-                  </button>
-                </article>
-              );
-            })}
-        </div>
-
-        <div className="hidden gap-4 sm:gap-5 md:grid md:grid-cols-2 xl:grid-cols-4">
-          {plans.map((plan) => {
-            const action = getActionForPlan(plan.name);
-            const isPopular = plan.name === "Plus";
-            const disabled = action.disabled || !!actionLoadingPlan || checkingAddr;
-            const content = planDisplayContent[plan.name];
-
-            return (
-              <article
-                key={plan.name}
-                className={[
-                    "relative flex min-h-[500px] flex-col rounded-[8px] border bg-white p-6 shadow-[0_20px_70px_rgba(15,23,42,0.07)] transition duration-300 sm:p-7",
-                    isPopular
-                    ? "border-[#111111] ring-2 ring-[#111111]"
-                    : "border-[#E5E7EB]",
-                ].join(" ")}
-              >
-                {isPopular ? (
-                  <div className="absolute right-5 top-5 rounded-[8px] bg-[#111111] px-3 py-1 text-[12px] font-semibold text-white">
-                    Most Popular
-                  </div>
-                ) : null}
-
-                <div className="min-w-0 pr-24">
-                  <h3 className="text-2xl font-semibold tracking-normal text-[#111111]">
-                    {plan.name}
-                  </h3>
-                </div>
-
-                <div className="mt-8">
-                  <PlanPriceBlock
-                    plan={plan}
-                    billing={billing}
-                    amountClassName="text-5xl font-semibold leading-none tracking-normal text-[#111111]"
-                  />
-                  <p className="mt-5 min-h-[46px] break-words text-[15px] leading-6 text-[#6E6E73]">
-                    {content.description}
-                  </p>
-                </div>
-
-                <ul className="mt-7 space-y-4">
-                  {content.features.map((feature) => (
-                    <li key={feature} className="flex min-w-0 gap-3 text-[15px] leading-6 text-[#1D1D1F]">
-                      <PlanCheck />
-                      <span className="min-w-0 break-words">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() => handleSubscribe(plan.name)}
-                  data-track="plans-cta"
-                  disabled={disabled}
-                  className={[
-                      "mt-auto h-12 w-full max-w-full rounded-[8px] border text-sm font-semibold transition duration-200",
-                    disabled
-                      ? "cursor-not-allowed border-[#D1D5DB] bg-[#D1D5DB] text-white"
-                      : isPopular
-                        ? "border-[#111111] bg-[#111111] text-white hover:bg-black"
-                        : "border-[#111111]/20 bg-white text-[#111111] hover:border-[#111111] hover:bg-[#F8F8F8]",
-                  ].join(" ")}
-                >
-                  {actionLoadingPlan === plan.name ? "Working..." : !isAuthenticated ? `Choose ${plan.displayName}` : action.label}
-                </button>
-              </article>
-            );
-          })}
-        </div></>}
-
-        {!compact && <p className="mx-auto mt-8 max-w-[760px] text-center text-sm leading-6 text-[#6E6E73] sm:text-base">
-          All Membership plans include the same trusted team, online booking, and access to every Profixter service.
-        </p>}
-
-        {/*
-          The two things every card used to repeat, said once.
-
-          This block used to define "Active appointments" — our own term, which
-          customers read as a monthly allowance no matter how it was worded. The
-          fix was not a better definition but a different frame: describe the
-          PACE a member books at, and never make them learn a noun. The Priority
-          caveat was printed in full inside both cards that offer it. Neither
-          belongs in a box a customer is trying to compare.
-
-          The gift line left this section entirely. Somebody choosing between
-          four plans for their own house is not shopping for a present, and Gift
-          keeps its own page and its footer entry.
-        */}
-        <div className={`mx-auto max-w-[720px] ${compact ? "mt-6" : "mt-5"}`}>
-          <dl className="grid gap-x-8 gap-y-3 text-left sm:grid-cols-2">
-            <div>
-              <dt className="text-[13px] font-semibold text-[#111111]">How booking works</dt>
-              <dd className="mt-1 text-[13.5px] leading-[1.5] text-[#6E6E73]">
-                There&rsquo;s no monthly visit allowance. Book as often as you need &mdash;
-                your plan simply determines how many visits you can have booked at the
-                same time.
-              </dd>
-            </div>
-            <div>
-              <dt className="text-[13px] font-semibold text-[#111111]">Priority Visits</dt>
-              <dd className="mt-1 text-[13.5px] leading-[1.5] text-[#6E6E73]">
-                Help when you need service before the next standard appointment
-                slot, subject to Fixter availability.
-              </dd>
-            </div>
-          </dl>
+        <div className={`mx-auto max-w-[720px] ${compact ? "mt-6" : "mt-7"}`}>
 
           {/*
             The reassurance a person wants in the second before they enter a

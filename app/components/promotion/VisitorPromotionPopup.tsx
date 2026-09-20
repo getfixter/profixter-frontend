@@ -62,6 +62,16 @@ function targetMatches(popup: PromotionPopup, pathname: string) {
   if (PRIVATE_PATHS.some((path) => pathname.startsWith(path))) return false;
   if (COMPLIANCE_PATHS.some((path) => pathname.startsWith(path))) return false;
   if (pathname === "/") return false;
+  /*
+   * And not over the page where somebody is choosing what to buy.
+   *
+   * A modal that lands on the plan comparison interrupts the one decision this
+   * page exists for, and it was arriving on top of the headline. The Gift
+   * product keeps its own page, its footer entry and every other public page -
+   * this removes it only from the two screens where it competes with a
+   * purchase already in progress.
+   */
+  if (pathname.startsWith("/membership")) return false;
   return popup.target === "all_public";
 }
 

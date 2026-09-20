@@ -62,7 +62,7 @@ export default function MembershipPlansPage() {
             <p className="mt-3 max-w-[52ch] text-[16px] leading-[1.55] text-[#6E6E73] sm:text-[17px]">
               {isMember
                 ? "Your current plan is marked below. You can move up or down at any time, and the change follows your normal billing."
-                : "Four levels, depending on how much your home has going on. Start where it makes sense today and change it as your home needs change."}
+                : "Change it whenever your home does."}
             </p>
 
             {isMember && (

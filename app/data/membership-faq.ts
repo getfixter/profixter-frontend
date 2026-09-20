@@ -15,14 +15,6 @@
 export type MembershipFaq = { q: string; a: string };
 
 export const MEMBERSHIP_FAQS: MembershipFaq[] = [
-  {
-    q: "Why become a Member instead of calling a handyman when something breaks?",
-    a: "Membership gives your home one ongoing team instead of a new search every time. You can book online, keep the small list moving, and work with a company that learns your home over time.",
-  },
-  {
-    q: "What's included in the membership?",
-    a: "Membership is built for small and medium home tasks that fit within your visit time: repairs, installations, maintenance, drywall patches, caulking, paint touch-ups, doors, locks, shelves, fixtures, and similar handyman work. Larger work moves into a project estimate.",
-  },
   /*
    * THE QUESTION CUSTOMERS ACTUALLY ASK.
    *
@@ -37,14 +29,6 @@ export const MEMBERSHIP_FAQS: MembershipFaq[] = [
     a: "Membership isn't a set number of visits per month. Book as often as you need — Basic lets you have one visit booked at a time, while Plus, Premium and Elite let you have up to two. Once a visit is done, you can book the next one. Scheduling is subject to availability.",
   },
   {
-    q: "Is there a limit on how often I can book?",
-    a: "There's no monthly visit allowance. Your plan simply determines how many visits you can have booked at the same time, and scheduling depends on the calendar. Plans also differ by basic materials, Priority Visits and project time.",
-  },
-  {
-    q: "How long is each visit?",
-    a: "Each standard visit is up to 90 minutes. It is designed for small and medium tasks, punch lists, repairs, installations, and maintenance items that can usually be completed during that visit.",
-  },
-  {
     q: "Are materials included?",
     a: "Basic includes labor only. Plus and above include basic materials for small tasks. Larger materials, special-order items, fixtures, appliances, and project materials are quoted or approved separately.",
   },
@@ -53,24 +37,12 @@ export const MEMBERSHIP_FAQS: MembershipFaq[] = [
     a: "Plans are month-to-month with no long-term contract. If you cancel, your membership stays active through the end of the current billing period and you will not be charged again.",
   },
   {
-    q: "What areas do you serve?",
-    a: "Profixter is based near Babylon and serves homeowners across Nassau and Suffolk Counties.",
-  },
-  {
-    q: "Do I need to be home during the visit?",
-    a: "You can be home if you prefer, but it is not always required. Many members provide access instructions. We document the visit and keep notes so the same trusted team can continue learning your home.",
-  },
-  {
     q: "What if my job is bigger than a regular visit?",
     a: "Larger projects like roofing, siding, bathroom remodeling, kitchen work, full-room painting, major electrical, major plumbing, or longer repairs are handled as separate project estimates. You still stay with Profixter; the work just moves into the right path.",
   },
   {
     q: "Can I still book only one visit?",
     a: "Yes. If Membership is not the right fit today, you can book a one-time handyman visit. Membership is usually better for homeowners who expect to need help more than once.",
-  },
-  {
-    q: "Are you licensed and insured?",
-    a: "Yes. Profixter is licensed as a New York Home Improvement Contractor under license HI-71484 and is fully insured.",
   },
 ];
 
