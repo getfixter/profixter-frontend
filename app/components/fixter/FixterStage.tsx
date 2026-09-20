@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
+import { useStartScreenCovering } from "@/lib/start-screen";
 
 /**
  * THE ONE PLACE THE LITTLE WORLD IS MOUNTED.
@@ -38,6 +39,19 @@ const STAGES = new Set<string>(["/"]);
 
 export default function FixterStage() {
   const pathname = usePathname();
+  /*
+   * The homepage now opens on a photographic start screen for logged-out
+   * visitors, and he is not in it — that page is one image, one headline and
+   * one button, and a second character would be a second thing to look at.
+   *
+   * The cost matters more than the composition, though. This component is a
+   * declaration, not a fetch: returning null here means three.js and the
+   * character are never requested, so the first screen a new customer sees is
+   * not competing for bandwidth with a five megabyte model they cannot see. He
+   * mounts as soon as they scroll into the homepage he was built for.
+   */
+  const startScreenCovering = useStartScreenCovering();
   if (!pathname || !STAGES.has(pathname)) return null;
+  if (startScreenCovering) return null;
   return <WorldScene />;
 }

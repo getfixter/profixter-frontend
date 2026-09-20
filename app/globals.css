@@ -666,3 +666,586 @@ select:-webkit-autofill:active {
     transform: none !important;
   }
 }
+
+/* =========================
+   Start screen — the logged-out front door at /
+   =========================
+
+   One full-viewport photographic scene, a headline, one button. The detailed
+   homepage is still directly underneath it in the same document, so scrolling
+   down is the whole navigation.
+
+   Every size here is a real CSS class rather than a Tailwind utility on the
+   <img>, for the same reason .nav-brand-logo and .gift-card-logo are: the
+   unlayered `img { max-width: 100%; height: auto }` rule near the top of this
+   file beats utilities that live in a cascade layer, and a hero image with
+   `height: auto` collapses to its intrinsic 1536px and pushes the page apart.
+*/
+
+.start-screen {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100svh; /* the viewport with the browser bars SHOWN, so nothing the
+                     visitor needs is ever underneath Safari's toolbar */
+  overflow: hidden;
+  isolation: isolate;
+  background-color: #0e1a2b; /* the room's own shadow tone, so a slow first
+                                paint is a dark room rather than a white flash */
+}
+
+/*
+   Hidden before first paint for anyone who already has a session — see the
+   inline script in StartScreen. A member pressing Home is not a prospect and
+   should land on the site they pay for, with no acquisition screen in the way.
+*/
+html[data-pf-start="off"] .start-screen {
+  display: none;
+}
+
+/*
+   THE CROP, which is the whole design problem on this page.
+
+   Back New.png is 1024x1536 — a 2:3 portrait scene. Stretched edge to edge on
+   a landscape display it has to be blown up ~1.9x and then only a 37% band of
+   it survives, and there is no 37% band that contains both handymen: the one on
+   the ladder runs from 13% to 50% of the frame and the one at the outlet from
+   54% to 78%. Every choice decapitates somebody.
+
+   So the photograph is given a frame of its own, as wide as it can be while
+   still showing about three quarters of its height:
+
+     width = height x (1024/1536) / 0.766 = height x 0.87
+
+   with the visible band pinned near the top (object-position 10%), which is
+   what puts the pendant lamp, the raised arms at the bulb and the toolbox on
+   the floor all inside one frame. A wider frame was tried first and cut his
+   hands off at the top; the margin it saved was not worth the picture.
+
+   On a phone that expression is wider than the screen, so it clamps to 100vw
+   and the frame becomes the viewport: the full height of the scene, sides
+   cropped evenly. On a desktop it is narrower than the screen, leaving a
+   margin that the blurred ambient layer fills — the room's own light spilling
+   past the edges, not a stretched copy of it. Both handymen, the dog and the
+   living room stay in frame at every size, and nothing is ever upscaled much
+   past its native 1024px.
+*/
+.start-screen {
+  --pf-frame: min(87vh, 100vw);
+  --pf-frame: min(87svh, 100vw);
+}
+
+.start-screen__frame {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 100%;
+  width: var(--pf-frame);
+  z-index: 1;
+}
+
+.start-screen__photo {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: 50% 10%;
+}
+
+/* The ambient spill. A 48px-wide copy of the same photograph, blurred past all
+   detail — 302 bytes — so the margins carry the scene's colour and light
+   instead of a flat panel. Scaled up so the blur radius never reaches an edge.
+
+   Sampled at 62% rather than the middle, and pushed hard on saturation. A
+   centred sample lands on the white kitchen wall, and a 46px blur of a white
+   wall is grey paper: the first build had the photograph floating in a dead
+   grey surround. Lower down the frame is wood floor, sofa and foliage, which
+   blurs into something that reads as the same room continuing past the edge. */
+.start-screen__ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: 50% 62%;
+  transform: scale(1.3);
+  filter: blur(58px) saturate(1.7) brightness(0.84);
+}
+
+/* Depth, so the lit photograph sits inside the room rather than on top of a
+   flat wash. Only reaches the corners, which on a phone are off screen. */
+.start-screen__vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    116% 88% at 50% 46%,
+    rgba(10, 22, 40, 0) 42%,
+    rgba(10, 22, 40, 0.22) 74%,
+    rgba(10, 22, 40, 0.46) 100%
+  );
+}
+
+/* Only once there is actually a margin to blend into. Below 1:1 the frame is
+   the viewport and a mask would just dim the edges of the screen.
+
+   The mask is on the frame rather than the photograph so that the readability
+   wash inside it fades out on exactly the same edge — masking only the photo
+   left the wash with a hard vertical seam where the frame ended. */
+@media (min-aspect-ratio: 1/1) {
+  .start-screen__frame {
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      #000 5%,
+      #000 95%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      #000 5%,
+      #000 95%,
+      transparent 100%
+    );
+  }
+}
+
+/*
+   Readability, without a white box on top of the photograph.
+
+   Three very soft washes: one elliptical and centred behind the words, one
+   along the top edge so the wordmark and the menu button never have to compete
+   with the shelf of picture frames, one along the bottom for the scroll cue.
+   The photograph stays visible through all of them.
+
+   It lives inside the frame, so on a desktop the blurred margins stay the
+   colour of the room instead of being bleached along with the photograph.
+*/
+.start-screen__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.62) 0%,
+      rgba(255, 255, 255, 0.22) 9%,
+      rgba(255, 255, 255, 0) 17%
+    ),
+    radial-gradient(
+      118% 46% at 50% 41%,
+      rgba(255, 255, 255, 0.76) 0%,
+      rgba(255, 255, 255, 0.56) 34%,
+      rgba(255, 255, 255, 0.24) 62%,
+      rgba(255, 255, 255, 0) 84%
+    ),
+    linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.58) 0%,
+      rgba(255, 255, 255, 0.18) 8%,
+      rgba(255, 255, 255, 0) 16%
+    );
+}
+
+/*
+   The content is measured against the photograph, not the window.
+
+   Left to the full viewport, the wordmark and the menu button drift out onto
+   the blurred margins on a wide screen and the composition falls apart — two
+   controls stranded in grey, half a screen away from the picture they belong
+   to. Bounded by the frame, they sit on the photograph's own top corners at
+   every width, which is the composition in the reference.
+*/
+.start-screen__content {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100%;
+  max-width: var(--pf-frame);
+  margin-inline: auto;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  padding-left: calc(env(safe-area-inset-left, 0px) + 16px);
+  padding-right: calc(env(safe-area-inset-right, 0px) + 16px);
+}
+
+/* The narrowest phones still in use. Four pixels a side is the difference
+   between a two-line headline and a three-line one. */
+@media (max-width: 359px) {
+  .start-screen__content {
+    padding-left: calc(env(safe-area-inset-left, 0px) + 12px);
+    padding-right: calc(env(safe-area-inset-right, 0px) + 12px);
+  }
+}
+
+@media (min-width: 640px) {
+  .start-screen__content {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 20px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+    padding-left: calc(env(safe-area-inset-left, 0px) + 28px);
+    padding-right: calc(env(safe-area-inset-right, 0px) + 28px);
+  }
+}
+
+.start-screen__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* The wordmark is the light-on-dark mark, so it gets the same compact dark chip
+   the site header gives it rather than being recoloured into a second identity. */
+.start-screen__brand {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 7px;
+  background: #0b1628;
+  padding: 6px 9px;
+  box-shadow: 0 8px 26px rgba(9, 22, 43, 0.28);
+  transition: background-color 0.2s ease;
+}
+
+.start-screen__brand:hover {
+  background: #172033;
+}
+
+.start-screen__brand img {
+  height: 22px;
+  width: auto;
+}
+
+@media (min-width: 640px) {
+  .start-screen__brand img {
+    height: 26px;
+  }
+}
+
+/*
+   The middle band, lifted off dead centre.
+
+   Centred exactly, the button lands on the dog's head. Four percent up puts the
+   headline across the quiet kitchen wall and the button above the dog, the
+   toolbox and the second handyman, which is the point of choosing a crop that
+   keeps them in frame.
+*/
+.start-screen__middle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(20px, 4.4svh, 40px);
+  transform: translateY(-4%);
+  text-align: center;
+  /*
+     This box fills the whole middle row and is mostly empty, and the -4% lift
+     slides that empty area up over the menu button. Transparent is not the same
+     as absent: it was intercepting every click on the hamburger. Only the
+     headline and the button take pointer events; the space around them does
+     not.
+  */
+  pointer-events: none;
+}
+
+.start-screen__middle > * {
+  pointer-events: auto;
+}
+
+.start-screen__headline {
+  margin: 0;
+  /* No width cap. The two lines are structural - a text node and a block span -
+     so the only thing a cap can do is break the first line, which is exactly
+     what a 15ch cap did to "Monthly handyman" on a 320px phone. */
+  max-width: 100%;
+  font-weight: 700;
+  /* 8.8vw, not 9.2: at 320px the larger step put "Monthly handyman" a few
+     pixels over the line and broke a two-line headline into three. */
+  font-size: clamp(25px, 8.8vw, 46px);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  color: #0b1628;
+}
+
+.start-screen__headline span {
+  display: block;
+  color: #306eec;
+}
+
+@media (min-width: 640px) {
+  .start-screen__headline {
+    font-size: clamp(46px, 5vw, 72px);
+  }
+}
+
+/* A short window — a phone on its side, or a small laptop — has no room for a
+   72px headline and a 64px button. Shrink rather than push the button off. */
+@media (max-height: 520px) {
+  .start-screen__headline {
+    font-size: clamp(24px, 5.6vh, 38px);
+  }
+
+  .start-screen__middle {
+    gap: clamp(12px, 3svh, 20px);
+    transform: none;
+  }
+}
+
+.start-screen__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 0 clamp(30px, 8vw, 52px);
+  border-radius: 999px;
+  background: #306eec;
+  color: #ffffff;
+  font-size: clamp(17px, 4.6vw, 20px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  box-shadow: 0 16px 38px rgba(30, 78, 180, 0.38);
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.start-screen__cta:hover {
+  background: #2059d4;
+  transform: translateY(-1px);
+  box-shadow: 0 20px 44px rgba(30, 78, 180, 0.44);
+}
+
+.start-screen__cta:active {
+  transform: translateY(0);
+}
+
+.start-screen__cta svg {
+  flex: none;
+  transition: transform 0.2s ease;
+}
+
+.start-screen__cta:hover svg {
+  transform: translateX(3px);
+}
+
+@media (max-height: 520px) {
+  .start-screen__cta {
+    min-height: 48px;
+    font-size: 16px;
+  }
+}
+
+/*
+   The chevron gets a frosted disc of its own.
+
+   Bare, it sat directly on the wood floor and the rug — the busiest, most
+   mid-toned strip in the whole photograph — and its nudge animation walked it
+   into the label underneath. The disc guarantees the contrast wherever the crop
+   puts it, and gives the animation somewhere to move that is not the text.
+*/
+.start-screen__scroll {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  justify-self: center;
+  border-radius: 16px;
+  padding: 6px 14px 2px;
+  color: #17243a;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  transition: color 0.2s ease;
+}
+
+.start-screen__scroll:hover {
+  color: #306eec;
+}
+
+.start-screen__scroll i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  width: 34px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 6px 20px rgba(9, 22, 43, 0.18);
+  backdrop-filter: blur(8px);
+  animation: start-screen-nudge 2.6s ease-in-out infinite;
+}
+
+@keyframes start-screen-nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+/* A phone on its side has ~250px of height. The cue is the first thing to go. */
+@media (max-height: 440px) {
+  .start-screen__scroll span {
+    display: none;
+  }
+}
+
+/* =========================
+   Start screen menu
+   ========================= */
+
+.start-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  width: 46px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #0b1628;
+  box-shadow: 0 8px 26px rgba(9, 22, 43, 0.22);
+  backdrop-filter: blur(10px);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.start-menu__trigger:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.start-menu__panel {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(8, 18, 34, 0.46);
+  backdrop-filter: blur(3px);
+  animation: start-menu-fade 0.18s ease-out;
+}
+
+.start-menu__sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 400px);
+  background: #ffffff;
+  box-shadow: -24px 0 60px rgba(9, 22, 43, 0.28);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+  animation: start-menu-slide 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes start-menu-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes start-menu-slide {
+  from {
+    transform: translateX(22px);
+    opacity: 0.4;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.start-menu__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 10px;
+  padding: 13px 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #172033;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.start-menu__link:hover {
+  background: #eef4ff;
+  color: #306eec;
+}
+
+/* While the start screen is covering the viewport it is the only thing on the
+   screen — the site's fixed bottom tab bar would sit on top of the scroll cue
+   and offer navigation the front door deliberately hides. It comes back the
+   moment the visitor scrolls into the homepage underneath. */
+html[data-pf-start="covering"] .customer-site-nav,
+html[data-pf-start="covering"] .customer-site-nav-spacer {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .start-screen__scroll i {
+    animation: none;
+  }
+
+  .start-menu__panel,
+  .start-menu__sheet {
+    animation: none;
+  }
+
+  .start-screen__cta:hover {
+    transform: none;
+  }
+}
+
+/* A single quiet arrival. Nothing waits on it: the button is clickable from the
+   first frame, and the animation only affects opacity and transform so it never
+   costs a layout. */
+.start-screen__bar,
+.start-screen__headline,
+.start-screen__cta,
+.start-screen__scroll {
+  /* `backwards`, not `both`: with `both` the final keyframe's transform keeps
+     winning the cascade after the animation ends, and the button's hover lift
+     silently stops working. */
+  animation: start-screen-rise 0.66s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.start-screen__headline {
+  animation-delay: 0.06s;
+}
+
+.start-screen__cta {
+  animation-delay: 0.16s;
+}
+
+.start-screen__scroll {
+  animation-delay: 0.26s;
+}
+
+@keyframes start-screen-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .start-screen__bar,
+  .start-screen__headline,
+  .start-screen__cta,
+  .start-screen__scroll {
+    animation: none;
+  }
+}
