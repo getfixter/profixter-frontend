@@ -1378,13 +1378,23 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   flex: 1;
   display: flex;
   justify-content: center;
-  align-items: center;
   padding: 0 calc(env(safe-area-inset-left, 0px) + 20px) calc(env(safe-area-inset-bottom, 0px) + 28px)
     calc(env(safe-area-inset-right, 0px) + 20px);
 }
 
+/*
+ * `margin-block: auto` rather than centring the container.
+ *
+ * Both centre the column when there is room. They differ when there is not:
+ * a centred flex item overflows EQUALLY in both directions, so on a 320px
+ * phone with the keyboard up the top of the last step - the Back link and half
+ * the heading - was pushed above the viewport, where no amount of scrolling
+ * down brings it back. Auto margins collapse to zero once space runs out, so
+ * the column pins to the top and the page simply scrolls.
+ */
 .auth-screen__column {
   width: 100%;
+  margin-block: auto;
   max-width: 420px;
   padding-bottom: clamp(16px, 7vh, 72px);
 }

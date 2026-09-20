@@ -370,9 +370,10 @@ async function stepIsOne(page) {
     await page.click(CONTINUE);
     await page.waitForTimeout(400);
     await page.fill("#email", "addr-test@example.com");
+    await page.fill("#phone", "6315551234");
+    await page.check("#sms-service-consent", { force: true }).catch(() => {});
     await page.click(CONTINUE);
     await page.waitForTimeout(400);
-    await page.fill("#phone", "6315551234");
     await page.fill("#password", "supersecret1");
     /*
      * Service SMS and Terms are conditions of registration, so the form will
@@ -380,9 +381,7 @@ async function stepIsOne(page) {
      * replaced by their own styled boxes, which Playwright refuses to click
      * through by default - nothing to do with the address step.
      */
-    for (const id of ["sms-service-consent", "agree-terms"]) {
-      await page.check(`#${id}`, { force: true }).catch(() => {});
-    }
+    await page.check("#agree-terms", { force: true }).catch(() => {});
     await page.click(CONTINUE);
     await page.waitForTimeout(1500);
 
