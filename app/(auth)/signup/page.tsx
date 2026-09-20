@@ -17,13 +17,21 @@ import { useAuth } from "@/lib/useAuth";
 import { extractUSNationalPhoneDigits, isValidUSNationalPhoneDigits } from "@/lib/phone";
 import { trackEvent } from "@/lib/analytics";
 import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
+import AddressField, { type AddressValue, type ServiceAreaState } from "@/app/components/address/AddressField";
 
 type Step = 1 | 2 | 3 | 4;
 
 const stepCopy: Record<Step, { title: string; subtitle: string }> = {
   1: {
-    title: "Where should we come?",
-    subtitle: "What is the address of the property you'd like us to help with?",
+    /*
+     * One question, and nothing underneath it.
+     *
+     * The subtitle used to explain what an address was for. The field now says
+     * "Start typing your address..." and the button says Continue, which is the
+     * same information in a place the customer was already looking.
+     */
+    title: "What's your home address?",
+    subtitle: "",
   },
   2: {
     title: "How should we call you?",
@@ -101,13 +109,6 @@ function PasswordToggle({
       </button>
     </div>
   );
-}
-
-function detectCounty(zip: string): string {
-  const prefix = zip.substring(0, 3);
-  if (prefix === "115") return "Nassau";
-  if (["117", "118", "119"].includes(prefix)) return "Suffolk";
-  return "";
 }
 
 function FieldLabel({ htmlFor, children }: { htmlFor: string; children: ReactNode }) {
@@ -297,6 +298,21 @@ export default function SignUpPage() {
   const { login: authLogin } = useAuth();
   const [step, setStep] = useState<Step>(1);
   /*
+   * The address, only ever set by picking one out of the lookup (or by the
+   * manual fallback). Null means "nothing we would send a Fixter to yet", which
+   * is what Continue checks.
+   */
+  const [address, setAddress] = useState<AddressValue | null>(null);
+  /*
+   * Whether the chosen property is somewhere the First Visit Free offer applies.
+   *
+   * Kept at the page level, not inside the address field, because the promise it
+   * governs is the badge at the top of every step - so once the address says the
+   * offer does not apply, it has to stop being made for the rest of the flow,
+   * not just on the screen where we found out.
+   */
+  const [serviceArea, setServiceArea] = useState<ServiceAreaState>("unknown");
+  /*
    * Unchecked, deliberately.
    *
    * A pre-ticked box is not affirmative consent. TCPA/CTIA and Twilio's web
@@ -361,13 +377,6 @@ export default function SignUpPage() {
     }
   };
 
-  const handleZipChange = (value: string) => {
-    const digits = value.replace(/\D/g, "").slice(0, 5);
-    const county = digits.length === 5 ? detectCounty(digits) : formData.county;
-    setFormData((prev) => ({ ...prev, zip: digits, county: county || prev.county }));
-    clearFeedback();
-  };
-
   const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
   const formatPhone = (value: string) => {
@@ -378,11 +387,13 @@ export default function SignUpPage() {
   };
 
   const validatePropertyStep = () => {
-    if (!formData.address.trim()) { setError("Please enter your full address"); return false; }
-    if (!formData.city.trim()) { setError("Please enter your city"); return false; }
-    if (!formData.zip.trim()) { setError("Please enter your zip code"); return false; }
-    if (zipDigits.length !== 5) { setError("Zip code must be 5 digits"); return false; }
-    if (!formData.county.trim()) { setError("Please select your county"); return false; }
+    /*
+     * One condition now: is there an address we actually looked up?
+     *
+     * Typing text is not an address. The old check counted filled boxes, which
+     * "123 whatever street" satisfies perfectly.
+     */
+    if (!address?.verified) { setError("Select your address from the list."); return false; }
     setError("");
     return true;
   };
@@ -487,7 +498,20 @@ export default function SignUpPage() {
         city: formData.city.trim(),
         state: formData.state,
         zip: zipDigits,
-        county: formData.county,
+        /*
+         * No county. It used to be a required field derived in the browser from
+         * the ZIP prefix, which is the range matching utils/serviceArea.js
+         * refuses to do because Long Island ZIPs interleave with Queens. The
+         * server derives it from the allowlist now.
+         *
+         * placeId and the coordinates are sent when the address came from a
+         * lookup and omitted when it was typed by hand, which is how the server
+         * tells the two apart. The coordinates are checked against the ZIP's
+         * own polygon before anything is stored.
+         */
+        placeId: address?.placeId || "",
+        lat: address?.lat ?? null,
+        lng: address?.lng ?? null,
         termsAccepted: true,
         consentSource: "website_signup",
         consentAt: new Date().toISOString(),
@@ -618,8 +642,21 @@ export default function SignUpPage() {
                   </button>
                 ) : null}
 
-                {/* Keeps the reason for the form visible at every step, and on
-                    mobile where the left value panel is hidden. */}
+                {/*
+                  Keeps the reason for the form visible at every step, and on
+                  mobile where the left value panel is hidden.
+
+                  Suppressed entirely once the address turns out to be outside
+                  the service area. The free first visit is gated by the ZIP
+                  allowlist, so for that customer this badge is not marketing,
+                  it is a promise we have already decided not to keep - and it
+                  was sitting directly above the line telling them so.
+
+                  Only a confirmed "outside" hides it. "unknown" keeps it: a
+                  failed service-area lookup must not quietly withdraw a real
+                  offer from somebody two towns from the office.
+                */}
+                {serviceArea !== "outside" ? (
                 <div className="mb-4 flex items-center gap-2.5 rounded-[8px] border border-[#86EFAC]/25 bg-[#86EFAC]/[0.07] px-3 py-2.5">
                   <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#86EFAC]/18 text-[#86EFAC]">
                     <svg width="11" height="9" viewBox="0 0 11 9" fill="none" aria-hidden="true">
@@ -630,86 +667,44 @@ export default function SignUpPage() {
                     Your first 90-minute visit is free &middot; No card required
                   </span>
                 </div>
+                ) : null}
 
                 <div className="mb-4 sm:mb-5">
                   <h2 className="text-[23px] font-black leading-none tracking-[-0.03em] text-white sm:text-[30px]">
                     {stepCopy[step].title}
                   </h2>
-                  <p className="mt-2 max-w-[430px] text-[13px] font-medium leading-5 text-white/58 sm:text-[14px]">
-                    {stepCopy[step].subtitle}
-                  </p>
+                  {stepCopy[step].subtitle ? (
+                    <p className="mt-2 max-w-[430px] text-[13px] font-medium leading-5 text-white/58 sm:text-[14px]">
+                      {stepCopy[step].subtitle}
+                    </p>
+                  ) : null}
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-3">
                   {step === 1 ? (
-                    <>
-                      <div>
-                        <FieldLabel htmlFor="address">Property Address</FieldLabel>
-                        <FieldInput
-                          id="address"
-                          value={formData.address}
-                          onChange={(e) => handleChange("address", e.target.value)}
-                          placeholder="123 Main St"
-                          autoComplete="street-address"
-                        />
-                      </div>
-
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <FieldLabel htmlFor="city">City</FieldLabel>
-                          <FieldInput
-                            id="city"
-                            value={formData.city}
-                            onChange={(e) => handleChange("city", e.target.value)}
-                            placeholder="Babylon"
-                            autoComplete="address-level2"
-                          />
-                        </div>
-                        <div>
-                          <FieldLabel htmlFor="zip">Zip Code</FieldLabel>
-                          <FieldInput
-                            id="zip"
-                            value={formData.zip}
-                            onChange={(e) => handleZipChange(e.target.value)}
-                            placeholder="11702"
-                            autoComplete="postal-code"
-                            maxLength={5}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <FieldLabel htmlFor="county">County</FieldLabel>
-                          <select
-                            id="county"
-                            value={formData.county}
-                            onChange={(e) => handleChange("county", e.target.value)}
-                            autoComplete="address-level3"
-                            className="auth-dark-select h-12 w-full rounded-[6px] border border-white/[0.14] bg-white/[0.07] px-3.5 text-[14px] text-white outline-none transition-all focus:border-[#7BAEFF]/80 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#306EEC]/20"
-                          >
-                            <option value="">Select County</option>
-                            <option value="Nassau">Nassau</option>
-                            <option value="Suffolk">Suffolk</option>
-                          </select>
-                          {formData.zip.length === 5 && formData.county ? (
-                            <p className="mt-2 text-[11px] font-semibold text-[#86EFAC]/78">
-                              Auto-detected from zip code
-                            </p>
-                          ) : null}
-                        </div>
-                        <div>
-                          <FieldLabel htmlFor="state">State</FieldLabel>
-                          <FieldInput
-                            id="state"
-                            value={formData.state}
-                            onChange={(e) => handleChange("state", e.target.value)}
-                            placeholder="NY"
-                            autoComplete="address-level1"
-                          />
-                        </div>
-                      </div>
-                    </>
+                    <AddressField
+                      value={address}
+                      onServiceArea={setServiceArea}
+                      onChange={(next) => {
+                        setAddress(next);
+                        clearFeedback();
+                        /*
+                          formData stays the source of truth for the submit
+                          payload, so the structured parts are mirrored into it
+                          as they arrive. The unit rides inside the street line
+                          because that is how the backend keys a property - see
+                          findDuplicateAddress, where "Apt 1" and "Apt 2" are
+                          deliberately two different homes.
+                        */
+                        setFormData((prev) => ({
+                          ...prev,
+                          address: next ? [next.line1, next.unit.trim()].filter(Boolean).join(" ") : "",
+                          city: next?.city || "",
+                          state: next?.state || "NY",
+                          zip: next?.zip || "",
+                        }));
+                      }}
+                    />
                   ) : null}
 
                   {step === 2 ? (

@@ -66,7 +66,27 @@ export interface RegisterData {
   city: string;
   state: string;
   zip: string;
-  county: string;
+
+  /**
+   * No longer sent by signup, and no longer read by the server.
+   *
+   * The county is derived from the ZIP allowlist in utils/serviceArea.js, which
+   * is the only place allowed to decide it. Kept optional so callers that still
+   * pass it keep compiling; the value is ignored.
+   */
+  county?: string;
+
+  /**
+   * What the address lookup returned, when the address came from one.
+   *
+   * Absent for a hand-typed address, which is exactly how the server tells a
+   * looked-up address from a typed one. The coordinates are checked against
+   * their own ZIP's polygon before being stored, so sending nonsense here gets
+   * the coordinates dropped rather than the registration refused.
+   */
+  placeId?: string;
+  lat?: number | null;
+  lng?: number | null;
 
   /**
    * Affirmative marketing-SMS consent, exactly as the customer left the box.
