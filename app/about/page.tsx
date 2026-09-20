@@ -4,7 +4,6 @@ import Link from "next/link";
 import GiftCallout from "@/app/components/gift/GiftCallout";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
-import MembershipCtaLink from "@/app/components/membership/MembershipCtaLink";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 import { CORE_PRODUCTS, HOME_SUPPORT_AI } from "@/lib/site-architecture";
 
@@ -361,12 +360,36 @@ export default function AboutPage() {
               Start with whatever&rsquo;s been waiting longest.
             </h2>
             <p className="mk-lede">Your first 90-minute visit is free. No card required.</p>
+            {/*
+              An explicit Get Started, not MembershipCtaLink.
+
+              That component decides the label itself and renders "See plans"
+              for anyone not signed in - a deliberate choice on pages about a
+              single job, where a registration form in front of four public
+              prices is a bureaucratic ask. It also means any label passed to it
+              is silently discarded, which is how this close ended up saying
+              something other than what the code said.
+
+              About closes the same way the start screen and Home do, because by
+              this point the reader has read everything and the primary action
+              should be the same one it has been all along.
+            */}
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              <MembershipCtaLink className="home-cta !mt-0">
+              <Link href="/signup?source=about" className="home-cta !mt-0">
                 Get Started
-              </MembershipCtaLink>
+                <svg width="19" height="14" viewBox="0 0 19 14" aria-hidden="true">
+                  <path
+                    d="M1 7h16m0 0l-5.6-5.6M17 7l-5.6 5.6"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                  />
+                </svg>
+              </Link>
               <p className="home-quiet !mt-0">
-                <Link href="/membership">See what&rsquo;s included</Link>
+                <Link href="/membership/plans">See plans</Link>
               </p>
             </div>
           </div>
