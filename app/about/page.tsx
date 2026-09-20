@@ -35,111 +35,97 @@ export const metadata: Metadata = {
   },
 };
 
-const productCards = [
+/**
+ * What a membership is actually for, moved here from the homepage.
+ *
+ * The homepage used to carry this as a paragraph - "mounting, repairs,
+ * installations, replacements, adjustments and maintenance" - underneath a
+ * heading, above photographs that already showed it. It is genuinely useful to
+ * somebody deciding, and this is the page they are on when they decide.
+ */
+const COVERED = [
+  "Mounting and hanging",
+  "Small repairs",
+  "Installations",
+  "Replacements",
+  "Adjustments",
+  "Seasonal maintenance",
+];
+
+const WAYS = [
   {
     title: CORE_PRODUCTS[0].shortTitle,
-    eyebrow: "Primary relationship",
-    role: "Recommended starting point",
+    role: "The main way people work with us",
     href: CORE_PRODUCTS[0].href,
     cta: CORE_PRODUCTS[0].cta,
-    body: "The preferred way to work with Profixter: one trusted local team that learns your home and helps keep the list moving over time.",
-    accent: "bg-[#306EEC]",
+    body: "One local team that learns your home and keeps the list moving, month after month.",
     featured: true,
   },
   {
     title: CORE_PRODUCTS[1].shortTitle,
-    eyebrow: "When you only need one visit",
-    role: "One-time support",
+    role: "One job, one visit",
     href: CORE_PRODUCTS[1].href,
     cta: CORE_PRODUCTS[1].cta,
-    body: "A focused handyman visit for one small job when Membership is not the right fit today.",
-    accent: "bg-[#16A34A]",
+    body: "A single focused visit when a membership is not the right fit today.",
     featured: false,
   },
   {
     title: CORE_PRODUCTS[2].shortTitle,
-    eyebrow: "When the work is larger",
-    role: "Project path",
+    role: "When the work is larger",
     href: CORE_PRODUCTS[2].href,
     cta: CORE_PRODUCTS[2].cta,
-    body: "Bathrooms, kitchens, roofing, siding, remodels, and larger work handled through a clear estimate path.",
-    accent: "bg-[#D97706]",
+    body: "Bathrooms, kitchens, roofing, siding and remodels, quoted separately through an estimate.",
     featured: false,
   },
   {
     title: HOME_SUPPORT_AI.shortTitle,
-    eyebrow: "Before you hire",
-    role: "Guidance",
+    role: "Before you hire anyone",
     href: HOME_SUPPORT_AI.href,
     cta: HOME_SUPPORT_AI.cta,
-    body: "Free homeowner guidance for repairs, maintenance, quotes, materials, and DIY-or-hire decisions.",
-    accent: "bg-[#306EEC]",
+    body: "Free guidance on repairs, materials, quotes and whether a job is worth doing yourself.",
     featured: false,
   },
 ] as const;
 
-const trustItems = [
-  {
-    title: "Long Island focused",
-    body: "Based near Babylon and built around the way Nassau and Suffolk homeowners actually maintain their homes.",
-  },
-  {
-    /*
-     * The company behind the brand, on the page where someone goes to find it.
-     *
-     * ProFixter is a trading name of Premium Island Homes Inc. That is the
-     * entity on the licence, on the invoices and on our carrier-registered
-     * messaging brand, and "About Us" is the first place a customer - or a
-     * reviewer checking that this website belongs to that company - will look
-     * for it. It sits inside the existing licence card rather than in a new
-     * legal block, because it is the same fact the card was already making.
-     */
-    title: "Licensed and insured",
-    body: "ProFixter is operated by Premium Island Homes Inc., holding NY State Home Improvement Contractor license HI-71484, with insurance for peace of mind.",
-  },
-  {
-    title: "No contractor chasing",
-    body: "The goal is fewer callbacks, less guessing, and one organized place to turn when the home list grows.",
-  },
-  {
-    title: "The right scope",
-    body: "Small jobs stay simple. Larger work moves into a project estimate instead of being forced into the wrong visit.",
-  },
-] as const;
-
-const serviceAreas = [
-  "Long Island",
-  "Nassau County",
-  "Suffolk County",
-  "Babylon area",
-  "Nearby communities",
-  "Residential homeowners",
+/**
+ * The trust facts, consolidated.
+ *
+ * ProFixter is a trading name of Premium Island Homes Inc. That is the entity
+ * on the licence, on the invoices and on our carrier-registered messaging
+ * brand, and About is the first place a customer - or a reviewer checking that
+ * this website belongs to that company - will look for it.
+ */
+const TRUST: Array<[string, string]> = [
+  ["Licensed", "NY HIC HI-71484, held by Premium Island Homes Inc."],
+  ["Insured", "Covered for work inside your home."],
+  ["Local", "Based near Babylon, serving Nassau and Suffolk."],
+  ["Same team", "The people who come back already know your house."],
 ];
 
+/*
+ * The questions, minus the ones the page above now answers.
+ *
+ * "Are you local?" and "How do I get started?" were both here and both
+ * answered two sections higher up - the first by the Local card, the second by
+ * the four ways to work. A FAQ that repeats the page it is on is how a page
+ * gets to a thousand words without saying anything new.
+ */
 const faqs = [
   {
-    q: "Can I book one visit?",
-    a: "Yes. Book a visit when you only need one small job handled. It is useful when Membership is not the right fit today.",
+    q: "Can I book one visit instead of joining?",
+    a: "Yes. Book a visit when you only need one small job handled, and join later if it turns out to be useful.",
   },
   {
     q: "Do you do renovations?",
-    a: "Yes. Larger work like bathrooms, kitchens, roofing, siding, remodeling, and multi-day projects starts through the project estimate path. It stays connected to the same trusted local company.",
+    a: "Yes. Bathrooms, kitchens, roofing, siding and multi-day work start with a project estimate rather than a membership visit, handled by the same local company.",
   },
   {
     q: "What is Profixter AI?",
-    a: "Profixter AI helps homeowners before they hire. It can answer questions about repairs, maintenance, safety, materials, contractor quotes, PDFs, shopping lists, and DIY-or-hire decisions.",
+    a: "Free guidance before you hire anyone: repairs, maintenance, safety, materials, reading a contractor's quote, and whether a job is worth doing yourself.",
   },
   {
     q: "Do you repair appliances?",
-    a: "No. Profixter does not offer appliance repair. For appliance issues, use the manufacturer, warranty provider, or a qualified appliance repair specialist.",
-  },
-  {
-    q: "Are you local?",
-    a: "Yes. Profixter is Long Island focused, based near Babylon, and serves homeowners across Nassau and Suffolk Counties.",
-  },
-  {
-    q: "How do I get started?",
-    a: "Start with Membership if you want a long-term home care company. Book a visit for one small job, use Projects for larger work, or ask Profixter AI if you are unsure what fits.",
+    a: "No. For an appliance, use the manufacturer, the warranty provider, or an appliance repair specialist.",
   },
 ];
 
@@ -149,385 +135,245 @@ const faqJsonLd = {
   mainEntity: faqs.map((faq) => ({
     "@type": "Question",
     name: faq.q,
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: faq.a,
-    },
+    acceptedAnswer: { "@type": "Answer", text: faq.a },
   })),
 };
 
-function CheckIcon() {
+function Tick() {
   return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className="mt-0.5 flex-shrink-0 text-[#306EEC]"
-    >
-      <path
-        d="M5 12.5l4 4 10-10"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2.4"
-      />
-    </svg>
+    <span className="mt-0.5 flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full bg-[#E6EEFE] text-[#306EEC]">
+      <svg width="9" height="7" viewBox="0 0 9 7" fill="none" aria-hidden="true">
+        <path d="M1 3.5l2 2L8 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
   );
 }
 
-function ProductCard({ product }: { product: (typeof productCards)[number] }) {
-  const isFeatured = product.featured;
-
-  return (
-    <Link
-      href={product.href}
-      className={[
-        "group rounded-[8px] border p-5 shadow-[0_18px_54px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:border-[#C7D9FF] hover:shadow-[0_28px_80px_rgba(48,110,236,0.12)]",
-        isFeatured
-          ? "bg-[#0B1628] text-white sm:p-7"
-          : "border-[#DDE5F0] bg-white",
-      ].join(" ")}
-    >
-      <span className={`mb-5 block h-2 w-12 rounded-full ${product.accent}`} />
-      <span className={`text-[11px] font-black uppercase tracking-[0.18em] ${isFeatured ? "text-[#7BAEFF]" : "text-[#306EEC]"}`}>
-        {product.eyebrow}
-      </span>
-      <h3 className={`mt-2 text-[23px] font-black leading-tight ${isFeatured ? "text-white sm:text-[30px]" : "text-[#0B1628]"}`}>
-        {product.title}
-      </h3>
-      <p className={`mt-2 text-[12px] font-black uppercase tracking-[0.14em] ${isFeatured ? "text-white/42" : "text-[#94A3B8]"}`}>
-        {product.role}
-      </p>
-      <p className={`mt-3 text-[14px] leading-6 ${isFeatured ? "text-white/68 sm:text-[15px] sm:leading-7" : "text-[#64748B]"}`}>{product.body}</p>
-      <span className={`mt-5 inline-flex text-[14px] font-black ${isFeatured ? "text-white" : "text-[#0B1628]"}`}>
-        {product.cta}
-        <span className="ml-2 transition group-hover:translate-x-1">-&gt;</span>
-      </span>
-    </Link>
-  );
-}
-
+/**
+ * ABOUT — the page for somebody who chose to learn more.
+ *
+ * Home shows; this explains. That division is the whole point of the redesign:
+ * the homepage stopped being a manual so that the information in it could live
+ * somewhere a person arrives at on purpose, rather than somewhere they have to
+ * scroll through eleven screens of on their way to a button.
+ *
+ * It uses the same type scale and rhythm as Home (the mk- primitives), so it
+ * reads as the same product at a different density - denser, because the
+ * visitor asked for density by coming here.
+ */
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-[#F6F8FC] text-[#0B1628]">
+    <div className="min-h-screen bg-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      <Header />
+      <div className="sticky top-0 z-50">
+        <Header />
+      </div>
 
-      <section className="relative overflow-hidden px-4 pb-10 pt-2 sm:px-6 sm:pb-11 sm:pt-4 lg:px-8">
-        <div className="absolute inset-0 -z-10">
-          <Image
-            src="/images/hero-bg.webp"
-            alt=""
-            fill
-            priority
-            className="object-cover"
-            sizes="100vw"
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(246,248,252,0.98)_0%,rgba(246,248,252,0.92)_45%,rgba(246,248,252,1)_100%)]" />
-        </div>
-
-        <div className="mx-auto grid max-w-[1240px] gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <div className="pt-3 sm:pt-8 lg:pt-14">
-            <div className="inline-flex items-center gap-2 rounded-[6px] border border-[#D9E4FF] bg-white/88 px-3.5 py-1.5 shadow-sm backdrop-blur sm:px-4 sm:py-2">
-              <span className="h-2 w-2 rounded-full bg-[#86EFAC]" />
-              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
-                Modern home care - Long Island
-              </span>
-            </div>
-            <h1 className="mt-4 max-w-[760px] text-[32px] font-black leading-[1] tracking-[-0.036em] text-[#0B1628] sm:mt-5 sm:text-[46px] sm:leading-[0.96] sm:tracking-[-0.045em] lg:text-[50px]">
-              One company to take care of your home.
-            </h1>
-            <p className="mt-4 max-w-[680px] text-[15px] font-medium leading-7 text-[#34435C] sm:mt-5 sm:text-[18px] sm:leading-8">
-              Profixter is a modern Long Island home services company built around long-term relationships. Membership is the preferred way to work with us.
+      <main>
+        {/* ============================ HERO ============================ */}
+        <section className="mk-beat">
+          <div className="mk-wrap">
+            <p className="mk-eyebrow">About Profixter</p>
+            <h1 className="mk-h2">One company to take care of your home.</h1>
+            <p className="mk-lede">
+              Instead of finding somebody new every time something breaks, you have a local
+              team that already knows the house.
             </p>
-            <p className="mt-3 max-w-[640px] text-[14px] leading-6 text-[#64748B] sm:mt-4 sm:text-[15px] sm:leading-7">
-              Two things sit under that: a handyman membership for the ongoing small repairs,
-              maintenance and installations a house keeps generating, and kitchen, bathroom and
-              other renovation work handled as general contracting projects. When a single visit
-              or a question makes more sense instead, those paths stay with the same local company.
-            </p>
-
-            <div className="mt-6 grid gap-2.5 sm:mt-7 sm:grid-cols-2 sm:gap-3">
-              <MembershipCtaLink
-                className="inline-flex h-[44px] items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white shadow-[0_16px_48px_rgba(48,110,236,0.30)] transition hover:-translate-y-0.5 hover:bg-[#2558c9] sm:h-[54px] sm:text-[15px]"
-              >
-                Become a Member
-              </MembershipCtaLink>
-              <Link
-                href="#ways-to-work"
-                className="inline-flex h-[44px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white/92 px-5 text-[14px] font-extrabold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC] sm:h-[54px] sm:text-[15px]"
-              >
-                See How It Works
-              </Link>
-            </div>
           </div>
+        </section>
 
-          <div className="rounded-[8px] border border-white/70 bg-white/86 p-3.5 shadow-[0_20px_64px_rgba(15,23,42,0.10)] backdrop-blur-xl sm:rounded-[10px] sm:p-5 sm:shadow-[0_28px_90px_rgba(15,23,42,0.12)] lg:p-6">
-            <div className="overflow-hidden rounded-[8px] bg-[#0B1628]">
-              <div className="relative aspect-[4/3]">
-                <Image
-                  src="/images/Taras.png"
-                  alt="Taras Bandura, founder of Profixter"
-                  fill
-                  className="object-cover object-top"
-                  sizes="(max-width: 1024px) 100vw, 520px"
-                />
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0B1628] via-[#0B1628]/75 to-transparent p-5 text-white">
-                  <div className="text-[12px] font-black uppercase tracking-[0.18em] text-white/55">
-                    Founder
-                  </div>
-                  <div className="mt-1 text-[26px] font-black leading-none">
-                    Taras Bandura
-                  </div>
-                </div>
+        {/* ======================= WHY IT EXISTS ======================== */}
+        {/*
+          The founder, in his own voice, near the top.
+
+          This is the one thing on the site nobody else can copy, and it answers
+          the question About exists to answer better than any paragraph we could
+          write around it.
+        */}
+        <section className="mk-beat pt-0" aria-labelledby="about-why">
+          <div className="mk-wrap">
+            <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:gap-12">
+              <div>
+                <p className="mk-eyebrow">Why it exists</p>
+                <h2 id="about-why" className="mk-h2">
+                  Built because every small job started over.
+                </h2>
+                <p className="mk-lede">
+                  Searching, explaining, waiting, and hoping somebody turns up. Profixter
+                  was built so a homeowner only has to do that once.
+                </p>
+                <figure className="mt-7 flex items-center gap-3.5">
+                  <Image
+                    src="/images/Taras.png"
+                    alt=""
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 flex-none rounded-full object-cover object-top"
+                  />
+                  <figcaption className="text-[14px] leading-snug">
+                    <span className="block font-semibold text-[#0B1628]">Taras Bandura</span>
+                    <span className="block text-[#8A94A6]">Founder</span>
+                  </figcaption>
+                </figure>
               </div>
-            </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              {["Membership-first", "Licensed HI-71484", "Fully insured"].map((item) => (
-                <div key={item} className="rounded-[8px] bg-[#F8FAFF] px-4 py-3 text-[12px] font-black uppercase tracking-[0.12em] text-[#34435C]">
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <section className="px-4 py-10 sm:px-6 sm:py-9 lg:px-8">
-        <div className="mx-auto grid max-w-[1240px] gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
-          <div className="lg:sticky lg:top-8">
-            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
-              Founder story
-            </div>
-            <h2 className="mt-3 text-[26px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[40px] sm:leading-[1.02] sm:tracking-[-0.04em]">
-              Built because homeowners deserved one place to turn.
-            </h2>
-          </div>
-
-          <div className="rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_56px_rgba(15,23,42,0.06)] sm:p-8 sm:shadow-[0_22px_70px_rgba(15,23,42,0.06)]">
-            <div className="space-y-4 text-[15px] leading-7 text-[#475569] sm:space-y-5 sm:text-[16px] sm:leading-8">
-              <p>
-                Profixter was built by Taras Bandura after years in construction and home services, seeing the same problem repeat: every small home issue forced people to start over.
-              </p>
-              <p>
-                A faucet leak. A loose door. A light fixture. Drywall damage. A contractor quote that does not make sense. The list grows because every item feels like its own search.
-              </p>
-              <p>
-                Profixter simplifies that into one organized home care company: become a Member for ongoing help, book one visit when that is enough, ask Profixter AI before hiring, or move larger work into a real project estimate.
-              </p>
-              <p className="text-[19px] font-extrabold leading-8 text-[#0B1628]">
-                The promise is simple: your home should have a company that already knows where to start.
-              </p>
-            </div>
-
-            <div className="mt-7 grid gap-3 sm:grid-cols-3">
-              {[
-                ["Long-term", "Built for relationships, not one-off callbacks."],
-                ["Local", "Based near Babylon and accountable to Long Island homeowners."],
-                ["Organized", "The right path for small visits, larger projects, and questions."],
-              ].map(([word, body]) => (
-                <div key={word} className="rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF] p-4">
-                  <div className="text-[19px] font-black text-[#0B1628]">{word}</div>
-                  <div className="mt-1 text-[13px] leading-5 text-[#64748B]">
-                    {body}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-4 py-10 sm:px-6 sm:py-9 lg:px-8">
-        <div className="mx-auto max-w-[1240px] overflow-hidden rounded-[8px] border border-[#DDE5F0] bg-[#0B1628] shadow-[0_22px_70px_rgba(15,23,42,0.16)] sm:rounded-[10px] sm:shadow-[0_28px_90px_rgba(15,23,42,0.18)]">
-          <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="p-5 text-white sm:p-8 lg:p-10">
-              <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#7BAEFF]">
-                Founder video
-              </div>
-              <h2 className="mt-3 text-[26px] font-black leading-tight tracking-[-0.03em] sm:text-[36px] sm:tracking-[-0.035em]">
-                Hear why Profixter was built.
-              </h2>
-              <p className="mt-4 text-[15px] leading-7 text-white/68 sm:mt-5 sm:text-[16px] sm:leading-8">
-                Taras explains the local mission and why homeowners need a more organized way to take care of a home.
-              </p>
-            </div>
-
-            <div className="bg-[linear-gradient(145deg,#172033_0%,#0B1628_60%,#306EEC_160%)] p-5 sm:p-7 lg:p-8">
-              <div className="aspect-video overflow-hidden rounded-[8px] border border-white/14 bg-black shadow-[0_18px_56px_rgba(48,110,236,0.22)]">
+              <div className="aspect-video overflow-hidden rounded-[14px] border border-[#E2E8F4] bg-black shadow-[0_18px_50px_rgba(11,22,40,0.14)]">
                 <iframe
                   src="https://www.youtube.com/embed/HQoAkLNGI9c?rel=0"
-                  title="Taras Bandura explains Profixter"
+                  title="Why Profixter was built"
                   loading="lazy"
-                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   className="h-full w-full"
                 />
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section id="ways-to-work" className="scroll-mt-[120px] px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
-        <div className="mx-auto max-w-[1240px]">
-          <div className="max-w-[760px]">
-            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
-              One company, four paths
-            </div>
-            <h2 className="mt-3 text-[26px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[40px] sm:leading-[1.02] sm:tracking-[-0.04em]">
-              Membership first. Support for everything else.
+        {/* =================== WHAT A MEMBERSHIP COVERS ================== */}
+        <section className="mk-beat bg-[#F6F8FC]" aria-labelledby="about-covers">
+          <div className="mk-wrap">
+            <p className="mk-eyebrow">What it covers</p>
+            <h2 id="about-covers" className="mk-h2">
+              The everyday kind of work.
             </h2>
-            <p className="mt-4 max-w-[680px] text-[15px] leading-7 text-[#64748B] sm:text-[16px] sm:leading-8">
-              These are not separate businesses. They are different ways to work with the same local home service company.
+            <p className="mk-lede">
+              The jobs that are too small to call a contractor about and too annoying to
+              leave. Larger work is quoted separately.
             </p>
-          </div>
 
-          <div className="mt-8 grid gap-4 lg:grid-cols-[1.08fr_1fr] lg:items-stretch">
-            <ProductCard product={productCards[0]} />
-            <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
-              {productCards.slice(1).map((product) => (
-                <ProductCard key={product.title} product={product} />
+            <ul className="mt-8 grid gap-x-8 gap-y-3.5 sm:grid-cols-2 lg:grid-cols-3">
+              {COVERED.map((item) => (
+                <li key={item} className="flex items-start gap-2.5 text-[16px] text-[#20304A]">
+                  <Tick />
+                  {item}
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
 
-          {/*
-            Compact on purpose. This page is about who ProFixter is, and the
-            section above has just listed the ways to work with us - a gift
-            membership is one more of those, worth a line rather than a
-            full marketing block that would change the subject.
-          */}
-          <GiftCallout
-            variant="bar"
-            audience="public"
-            className="mt-6"
-            headingId="about-gift-heading"
-          />
-        </div>
-      </section>
-
-      <section className="px-4 py-10 sm:px-6 sm:py-9 lg:px-8">
-        <div className="mx-auto grid max-w-[1240px] gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-          <div>
-            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
-              Why homeowners trust Profixter
-            </div>
-            <h2 className="mt-3 text-[26px] font-black leading-[1.06] tracking-[-0.034em] text-[#0B1628] sm:text-[40px] sm:leading-[1.02] sm:tracking-[-0.04em]">
-              Trust is built into the relationship.
-            </h2>
-            <p className="mt-4 text-[15px] leading-7 text-[#64748B] sm:mt-5 sm:text-[16px] sm:leading-8">
-              Profixter is designed to reduce uncertainty before anyone arrives: clear service paths, photos and notes before visits, admin review, and project routing when the work should not be squeezed into a small appointment.
-            </p>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {trustItems.map((item) => (
-              <div key={item.title} className="rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-sm">
-                <div className="flex gap-3">
-                  <CheckIcon />
-                  <div>
-                    <h3 className="text-[16px] font-black text-[#0B1628]">{item.title}</h3>
-                    <p className="mt-2 text-[13px] leading-6 text-[#64748B]">{item.body}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="px-4 py-10 sm:px-6 sm:py-9 lg:px-8">
-        <div className="mx-auto max-w-[1240px] rounded-[8px] border border-[#D9E4FF] bg-[#F0F7FF] p-5 sm:rounded-[10px] sm:p-8 lg:p-10">
-          <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-            <div>
-              <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
-                Service area
-              </div>
-              <h2 className="mt-3 text-[26px] font-black leading-tight tracking-[-0.034em] text-[#0B1628] sm:text-[36px] sm:tracking-[-0.04em]">
-                Local to Long Island. Built for real homes here.
-              </h2>
-              <p className="mt-4 text-[15px] leading-7 text-[#475569] sm:mt-5 sm:text-[16px] sm:leading-8">
-                Profixter is based near Babylon and serves homeowners across Nassau and Suffolk Counties with a practical understanding of how local homes age, break, and improve.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {serviceAreas.map((area) => (
-                <div key={area} className="rounded-[8px] border border-white bg-white/86 px-4 py-4 text-[14px] font-black text-[#0B1628] shadow-sm">
-                  {area}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-4 py-10 sm:px-6 sm:py-9 lg:px-8">
-        <div className="mx-auto max-w-[980px]">
-          <div className="text-center">
-            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#306EEC]">
-              FAQ
-            </div>
-            <h2 className="mt-3 text-[26px] font-black leading-tight tracking-[-0.034em] text-[#0B1628] sm:text-[40px] sm:tracking-[-0.04em]">
-              Clear answers before you choose a path.
-            </h2>
-          </div>
-
-          <div className="mt-8 grid gap-3">
-            {faqs.map((faq) => (
-              <div key={faq.q} className="rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-sm sm:p-6">
-                <h3 className="text-[18px] font-black text-[#0B1628]">{faq.q}</h3>
-                <p className="mt-3 text-[14px] leading-7 text-[#64748B]">{faq.a}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="px-4 py-10 sm:px-6 sm:py-9 lg:px-8">
-        <div className="mx-auto max-w-[1240px] rounded-[8px] bg-[#0B1628] p-5 text-white shadow-[0_22px_70px_rgba(15,23,42,0.16)] sm:rounded-[10px] sm:p-8 sm:shadow-[0_28px_90px_rgba(15,23,42,0.18)] lg:p-10">
-          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-            <div>
-              <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#7BAEFF]">
-                Start with the right path
-              </div>
-              <h2 className="mt-3 text-[26px] font-black leading-tight tracking-[-0.034em] sm:text-[40px] sm:tracking-[-0.04em]">
-                Start with Membership. Stay with Profixter as your home changes.
-              </h2>
-              <p className="mt-4 text-[15px] leading-7 text-white/68 sm:mt-5 sm:text-[16px] sm:leading-8">
-                The goal is simple: one trusted company that can help with the small list, the big project, and the questions in between.
-              </p>
-            </div>
-
-            {/*
-             * One action, not a second product menu. Every product already has
-             * its own card and its own CTA in the section above, so repeating
-             * all four here made the page end by asking the reader to choose
-             * again rather than by closing.
-             */}
-            <div className="grid gap-3">
-              <MembershipCtaLink className="inline-flex min-h-[48px] items-center justify-center rounded-[8px] bg-white px-5 text-[15px] font-black text-[#0B1628] transition hover:bg-[#EEF5FF]">
-                Become a Member
-              </MembershipCtaLink>
-              <Link
-                href="#ways-to-work"
-                className="inline-flex min-h-[44px] items-center justify-center text-[14px] font-bold text-white/70 transition hover:text-white"
-              >
-                Not sure yet? See the other ways to work with us
+            <p className="mt-8 text-[15px]">
+              <Link href="/recent-work" className="font-semibold text-[#306EEC] underline-offset-4 hover:underline">
+                See real finished jobs
               </Link>
+            </p>
+          </div>
+        </section>
+
+        {/* ======================== WAYS TO WORK ========================= */}
+        <section id="ways-to-work" className="mk-beat scroll-mt-[110px]" aria-labelledby="about-ways">
+          <div className="mk-wrap">
+            <p className="mk-eyebrow">Ways to work with us</p>
+            <h2 id="about-ways" className="mk-h2">
+              Start where it fits.
+            </h2>
+
+            <div className="mt-9 grid gap-4 sm:grid-cols-2">
+              {WAYS.map((w) => (
+                <div
+                  key={w.title}
+                  className={`flex flex-col rounded-[14px] border p-6 ${
+                    w.featured
+                      ? "border-[#306EEC]/35 bg-[#F4F8FF]"
+                      : "border-[#E2E8F4] bg-white"
+                  }`}
+                >
+                  <p className="text-[11px] font-bold uppercase tracking-[0.13em] text-[#8A94A6]">
+                    {w.role}
+                  </p>
+                  <h3 className="mt-2.5 text-[22px] font-bold tracking-[-0.03em] text-[#0B1628]">
+                    {w.title}
+                  </h3>
+                  <p className="mt-2.5 flex-1 text-[15px] leading-[1.55] text-[#5B6577]">{w.body}</p>
+                  <Link
+                    href={w.href}
+                    className="mt-5 inline-flex items-center gap-1.5 text-[15px] font-semibold text-[#306EEC] underline-offset-4 hover:underline"
+                  >
+                    {w.cta}
+                    <svg width="6" height="10" viewBox="0 0 7 12" aria-hidden="true">
+                      <path d="M1 1l5 5-5 5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                    </svg>
+                  </Link>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* ========================= LOCAL + TRUST ====================== */}
+        <section className="mk-beat bg-[#0B1628] text-white" aria-labelledby="about-trust">
+          <div className="mk-wrap">
+            <p className="mk-eyebrow !text-white/45">Who you are dealing with</p>
+            <h2 id="about-trust" className="mk-h2 !text-white">
+              A local company, not a marketplace.
+            </h2>
+            <p className="mk-lede !text-white/60">
+              You are not being matched with whoever is free. You work with the same
+              company each time, and nobody has to learn your house twice.
+            </p>
+
+            <dl className="mt-9 grid gap-x-10 gap-y-7 sm:grid-cols-2">
+              {TRUST.map(([k, v]) => (
+                <div key={k}>
+                  <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">{k}</dt>
+                  <dd className="mt-2 text-[16px] leading-[1.5] text-white/82">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        {/* ============================= FAQ ============================ */}
+        <section className="mk-beat" aria-labelledby="about-faq">
+          <div className="mk-wrap">
+            <p className="mk-eyebrow">Questions</p>
+            <h2 id="about-faq" className="mk-h2">
+              Before you choose.
+            </h2>
+
+            <dl className="mt-8 divide-y divide-[#E6EBF4] border-t border-[#E6EBF4]">
+              {faqs.map((faq) => (
+                <div key={faq.q} className="py-6">
+                  <dt className="text-[17px] font-bold tracking-[-0.02em] text-[#0B1628]">{faq.q}</dt>
+                  <dd className="mt-2.5 max-w-[62ch] text-[16px] leading-[1.55] text-[#5B6577]">{faq.a}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        {/* ============================ GIFT ============================ */}
+        {/* Once. It was on this page twice - once near the top and again in the
+            middle of the product cards.
+
+            Rendered bare: GiftCallout's band variant is a full-bleed section of
+            its own, so wrapping it in another section produced two nested
+            sections saying the same thing, which is how it came back. */}
+        <GiftCallout />
+
+        {/* ============================ CLOSE =========================== */}
+        <section className="home-close" aria-labelledby="about-close">
+          <div className="mk-wrap">
+            <h2 id="about-close" className="mk-h2">
+              Start with whatever&rsquo;s been waiting longest.
+            </h2>
+            <p className="mk-lede">Your first 90-minute visit is free. No card required.</p>
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <MembershipCtaLink className="home-cta !mt-0">
+                Get Started
+              </MembershipCtaLink>
+              <p className="home-quiet !mt-0">
+                <Link href="/membership">See what&rsquo;s included</Link>
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
 
       <Footer />
-    </main>
+    </div>
   );
 }

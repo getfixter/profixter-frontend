@@ -23,7 +23,8 @@
     "test:digital-gift-ui": "node scripts/test_digital_gift_ui.js",
     "test:loyalty-ui": "node scripts/test_loyalty_ui.js",
     "test:signup-address-ui": "node scripts/test_signup_address_ui.js",
-    "test:auth-redesign-ui": "node scripts/test_auth_redesign_ui.js"
+    "test:auth-redesign-ui": "node scripts/test_auth_redesign_ui.js",
+    "test:home-about-ui": "node scripts/test_home_about_ui.js"
   },
   "engines": {
     "node": "20.x"

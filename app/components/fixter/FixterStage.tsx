@@ -35,7 +35,27 @@ const WorldScene = dynamic(() => import("@/app/components/lab/WorldScene"), {
  * not been split that way he would paint over the words. So this list is not
  * "pages we like" — it is "pages that have been built to hold him".
  */
-const STAGES = new Set<string>(["/"]);
+/*
+ * EMPTY, AS OF THE HOMEPAGE REDESIGN — and the reason is worth keeping.
+ *
+ * He was on "/" until the homepage stopped being a page you read. Looked at on
+ * a real phone he was not a character doing anything: he was props drifting
+ * across the copy. A hard hat and a picture frame sat over "A handyman you
+ * don't have to find", a broom came to rest on the "See Loyalty Benefits"
+ * button, an outlet plate parked in the middle of a paragraph. On a page whose
+ * new job is to be SEEN rather than read, the one element making the words
+ * harder to read had to be the first thing to go — and it was costing three.js
+ * and a five megabyte character to do it.
+ *
+ * NOTHING ABOUT THE 3D SYSTEM WAS DELETED. WorldScene, the models, the lab and
+ * every asset are untouched; /admin/lab still mounts its own experience and is
+ * unaffected by this file. Putting him back anywhere is adding one string to
+ * this set — which is exactly why the decision lives here as a list of routes
+ * rather than as a deletion.
+ *
+ * Read the note below before adding one: a route has to be built to hold him.
+ */
+const STAGES = new Set<string>([]);
 
 export default function FixterStage() {
   const pathname = usePathname();
