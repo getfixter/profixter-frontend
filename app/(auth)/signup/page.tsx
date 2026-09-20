@@ -283,16 +283,29 @@ function ConsentRow({
           ) : null}
         </span>
       </label>
-      <span className="text-[13px] leading-snug">
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="auth-consent__text font-semibold text-[#0B1628] underline decoration-[#C3CDDF] underline-offset-4 transition hover:text-[#306EEC]"
-        >
-          {label}
-        </a>
-      </span>
+      {/*
+        * THE LABEL TICKS THE BOX. THE LINK IS SEPARATE.
+        *
+        * These two words used to BE the link - underlined, and opening the
+        * disclosure in a new tab. People tap a checkbox label to tick the
+        * checkbox, so the most natural gesture on this row threw them out of
+        * registration and into a legal page. The underline warned them, which
+        * is not the same as not setting the trap.
+        *
+        * The disclosure still has to be reachable from each consent, and it
+        * still is - it just no longer sits on top of the control.
+        */}
+      <label htmlFor={id} className="auth-consent__label">
+        {label}
+      </label>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="auth-consent__details"
+      >
+        Details
+      </a>
     </div>
   );
 }

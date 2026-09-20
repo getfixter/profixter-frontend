@@ -334,11 +334,25 @@ export default function AddressField({ value, onChange, onServiceArea }: Props) 
         </p>
       ) : null}
 
-      {!manual && !lookupDown ? (
+      {/*
+        The manual fallback, rendered into the slot below the primary button.
+
+        It used to sit between the address field and Continue - a rare escape
+        hatch placed in the middle of the path almost everybody takes, offered
+        before they had typed anything to fail at.
+      */}
+      {/*
+        Shown only once somebody is actually struggling: they have typed enough
+        for a real search and still have no verified address. On a pristine
+        screen it is noise, and it was sitting between the field and the button
+        offering an escape from something nobody had attempted yet.
+      */}
+      {!manual && !lookupDown && query.trim().length >= 3 && !value?.verified ? (
         <button
           type="button"
           onClick={() => { setManual(true); setOpen(false); }}
-          className="mt-3 text-[13px] font-semibold text-[#8A94A6] underline-offset-4 transition hover:text-[#306EEC] hover:underline"
+          className="auth-fallback"
+          data-auth-fallback=""
         >
           Can&rsquo;t find your address?
         </button>
