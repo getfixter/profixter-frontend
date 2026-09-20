@@ -34,7 +34,7 @@ type Step = 1 | 2 | 3 | 4;
 const stepCopy: Record<Step, { title: string; subtitle: string }> = {
   1: { title: "What's your home address?", subtitle: "" },
   2: { title: "What's your name?", subtitle: "" },
-  3: { title: "What's your email?", subtitle: "" },
+  3: { title: "How can we reach you?", subtitle: "" },
   4: { title: "Protect your account", subtitle: "" },
 };
 
@@ -169,7 +169,9 @@ function ConsentCheckbox({
   id: string;
   checked: boolean;
   onChange: (next: boolean) => void;
-  label: string;
+  /* Optional: when absent, the children ARE the sentence, so the documents can
+     be linked inside it rather than repeated underneath. */
+  label?: ReactNode;
   children?: ReactNode;
 }) {
   return (
@@ -194,8 +196,12 @@ function ConsentCheckbox({
         </span>
       </span>
       <span className="auth-consent__text">
-        <span className="font-semibold text-[#0B1628]">{label}</span>
-        {children ? <span className="mt-1 block text-[#8A94A6]">{children}</span> : null}
+        {label ? <span className="font-semibold text-[#0B1628]">{label}</span> : null}
+        {children ? (
+          <span className={label ? "mt-1 block text-[#8A94A6]" : "font-semibold text-[#0B1628]"}>
+            {children}
+          </span>
+        ) : null}
       </span>
     </label>
   );
@@ -401,40 +407,44 @@ export default function SignUpPage() {
   const validateContactStep = () => {
     if (!formData.email.trim()) { setFieldErrors((p) => ({ ...p, email: "Please enter your email" })); return false; }
     if (!isValidEmail(formData.email)) { setFieldErrors((p) => ({ ...p, email: "Please enter a valid email address" })); return false; }
+
+    /*
+     * The number and the texting choice are checked here because they are ASKED
+     * here. A field cannot be validated on a step that does not show it, so
+     * this check travels with the fieldset wherever it goes.
+     */
+    if (!formData.phone.trim()) { setFieldErrors((p) => ({ ...p, phone: "Please enter your phone number" })); return false; }
+    if (phoneDigits.length !== 10 || !isValidUSNationalPhoneDigits(phoneDigits)) { setFieldErrors((p) => ({ ...p, phone: "Please enter a valid 10-digit US phone number" })); return false; }
+
+    /*
+     * Service texts are a condition of registration, checked here AND on the
+     * server - a form validator is trivially bypassed by posting to the
+     * endpoint directly, and routes/auth.js refuses the request without it.
+     *
+     * MARKETING IS DELIBERATELY ABSENT from this check and must stay absent. It
+     * is its own control, its own consent, and never a condition of anything.
+     */
+    if (!smsTransactionalConsent) {
+      /*
+       * Inline, beneath the box itself. There is exactly one control that can
+       * fix this and it is a few pixels above the message.
+       */
+      setSmsConsentError(true);
+      setError("");
+      return false;
+    }
+
     setError("");
     setFieldErrors({});
     return true;
   };
 
   const validateSecurityStep = () => {
-    /* The number is collected on this step now, so it is checked on this step. */
-    if (!formData.phone.trim()) { setFieldErrors((p) => ({ ...p, phone: "Please enter your phone number" })); return false; }
-    if (phoneDigits.length !== 10 || !isValidUSNationalPhoneDigits(phoneDigits)) { setFieldErrors((p) => ({ ...p, phone: "Please enter a valid 10-digit US phone number" })); return false; }
-    setFieldErrors((p) => ({ ...p, phone: undefined }));
     if (!formData.password) { setError("Create a password."); return false; }
     if (formData.password.length < 8) { setError("Use at least 8 characters."); return false; }
     if (!agreeTerms) {
       setConsentError(true);
       setError("You must agree to the Terms and Privacy Policy to continue.");
-      return false;
-    }
-    /*
-     * Service texts are now a condition of registration.
-     *
-     * Checked here AND on the server: this stops the button, routes/auth.js
-     * stops the request, and neither alone is enough - a form validator is
-     * trivially bypassed by posting to the endpoint directly.
-     *
-     * Marketing is deliberately absent from this check and must stay absent.
-     */
-    if (!smsTransactionalConsent) {
-      /*
-       * Inline, beneath the box itself, not in the banner at the foot of the
-       * form. There is exactly one control that can fix this and it is six
-       * pixels above the message.
-       */
-      setSmsConsentError(true);
-      setError("");
       return false;
     }
     setError("");
@@ -616,6 +626,7 @@ export default function SignUpPage() {
                   ) : null}
 
                   {step === 3 ? (
+                    <>
                     <div>
                       <FieldLabel htmlFor="email">Email Address</FieldLabel>
                       <FieldInput
@@ -630,22 +641,10 @@ export default function SignUpPage() {
                         <p className="auth-error">{fieldErrors.email}</p>
                       ) : null}
                     </div>
-                  ) : null}
 
-                  {step === 4 ? (
-                    <>
-                      <div>
-                        <FieldLabel htmlFor="password">Password</FieldLabel>
-                        <PasswordToggle
-                          id="password"
-                          value={formData.password}
-                          onChange={(e) => handleChange("password", e.target.value)}
-                          placeholder="Create a password"
-                        />
-                      </div>
 
                       {/*
-                        * THE NUMBER AND THE TWO CHOICES, ON THE LAST STEP ONLY.
+                        * THE NUMBER AND THE TWO CHOICES, ON THE STEP THAT ASKS FOR THEM.
                         *
                         * This used to be a bordered panel that rendered on every
                         * step, carrying a legend, two sub-headings, the phone field,
@@ -655,23 +654,23 @@ export default function SignUpPage() {
                         * entered anything, which is a poor way to start and a worse
                         * way to ask permission.
                         *
-                        * It is now the number and two rows, shown once, at the point
-                        * the account is actually created - which is also where a
-                        * consent decision belongs.
+                        * It is now the number and two rows, shown once, on the step
+                        * that asks how to reach the customer - which is where a
+                        * question about texting them belongs, beside the number the
+                        * texts would go to.
                         *
-                        * WHY THE PHONE INPUT CAME WITH IT. Twilio's campaign check
-                        * rejected an earlier version for having "no phone number
-                        * field connected to SMS consent". Moving the boxes into this
-                        * step means they no longer exist at first paint, which gives
-                        * up half that fix; keeping the number beside them inside one
-                        * <fieldset> keeps the other half, on the one screen where
-                        * consent is actually collected. The fieldset is borderless
-                        * and its legend is screen-reader-only, so the grouping is
-                        * real to a parser and invisible as a panel.
+                        * WHY THE PHONE INPUT COMES WITH IT, ALWAYS. Twilio's campaign
+                        * check rejected an earlier version for having "no phone number
+                        * field connected to SMS consent". Wherever these boxes go the
+                        * number goes with them, inside one <fieldset>, or a reviewer
+                        * meets two checkboxes with nothing to attach them to. That is
+                        * the part that is load-bearing; which numbered step they land
+                        * on is not. The fieldset is borderless and its legend is
+                        * screen-reader-only, so the grouping is real to a parser and
+                        * invisible as a panel.
                         *
-                        * Its validation moved with it, from validateContactStep to
-                        * validateSecurityStep - a field cannot be validated on a step
-                        * that does not show it.
+                        * Its validation moves with it, always - a field cannot be
+                        * validated on a step that does not show it.
                         */}
                       <fieldset className="m-0 space-y-2.5 border-0 p-0">
                         <legend className="sr-only">
@@ -727,6 +726,20 @@ export default function SignUpPage() {
                           requirement="Optional"
                         />
                       </fieldset>
+                    </>
+                  ) : null}
+
+                  {step === 4 ? (
+                    <>
+                      <div>
+                        <FieldLabel htmlFor="password">Password</FieldLabel>
+                        <PasswordToggle
+                          id="password"
+                          value={formData.password}
+                          onChange={(e) => handleChange("password", e.target.value)}
+                          placeholder="Create a password"
+                        />
+                      </div>
 
                       {/*
                         * The one required box, and the only one.
@@ -743,16 +756,34 @@ export default function SignUpPage() {
                           setAgreeTerms(next);
                           if (consentError) setConsentError(false);
                         }}
-                        label="I agree to the Terms of Service and Privacy Policy."
                       >
-                        Required to create an account.{" "}
+                        {/*
+                          The documents linked inside the sentence rather than
+                          repeated under it.
+
+                          This row used to say "I agree to the Terms of Service
+                          and Privacy Policy." and then, underneath, "Required to
+                          create an account." followed by both documents again as
+                          links - the same two names twice, and a note saying the
+                          box is required directly above a button that will not
+                          work without it. One sentence, both links, still
+                          reachable, two lines shorter on the step where height
+                          costs the most.
+
+                          Kept as a closed element on purpose: the A2P suite
+                          scopes "the required Terms box" from this id to the
+                          matching </ConsentCheckbox>, and a self-closing tag
+                          leaves it no boundary to stop at.
+                        */}
+                        I agree to the{" "}
                         <Link href="/terms" className="auth-inline-link underline underline-offset-4">
                           Terms of Service
-                        </Link>
-                        {" · "}
+                        </Link>{" "}
+                        and{" "}
                         <Link href="/privacy" className="auth-inline-link underline underline-offset-4">
                           Privacy Policy
                         </Link>
+                        .
                       </ConsentCheckbox>
                     </>
                   ) : null}

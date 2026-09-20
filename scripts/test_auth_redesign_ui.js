@@ -86,7 +86,14 @@ async function toStep(page, n) {
     await page.click(SUBMIT); await page.waitForTimeout(500);
   }
   if (n >= 3) { await page.fill("#name", "Test Person"); await page.click(SUBMIT); await page.waitForTimeout(450); }
-  if (n >= 4) { await page.fill("#email", "t@example.com"); await page.click(SUBMIT); await page.waitForTimeout(450); }
+  if (n >= 4) {
+    // Step 3 asks how to reach you: email, phone, and the texting choice. The
+    // service box is a condition of registration, so Continue needs it ticked.
+    await page.fill("#email", "t@example.com");
+    await page.fill("#phone", "6315551234");
+    await page.check("#sms-service-consent", { force: true }).catch(() => {});
+    await page.click(SUBMIT); await page.waitForTimeout(450);
+  }
 }
 
 async function layout(page) {
@@ -139,7 +146,7 @@ async function layout(page) {
   // ---------- the keyboard ----------
   for (const [w, full] of [[320, 568], [375, 667], [390, 844], [430, 932]]) {
     const kb = Math.round(full * 0.55); // what's left once a keyboard is up
-    for (const step of [1, 2, 4]) {
+    for (const step of [1, 2, 3, 4]) {
       const { ctx, page } = await open(browser, w, full);
       await toStep(page, step);
       await page.setViewportSize({ width: w, height: kb });
@@ -149,19 +156,30 @@ async function layout(page) {
       check(`${tag} first field visible`, m.inputs.length > 0 && m.inputs[0].top >= 0 && m.inputs[0].bottom <= m.vh + 1,
         m.inputs[0] ? `${m.inputs[0].top.toFixed(0)}..${m.inputs[0].bottom.toFixed(0)} vh=${m.vh}` : "no input");
       /*
-       * Steps 1-3 must put the button on screen with the keyboard up. Step 4
-       * carries a password, a phone number and three legally required consent
-       * rows, which do not fit above a keyboard on a 320px phone in any design
-       * - so there the requirement is that the page scrolls to it, and that
-       * nothing clips it.
+       * Steps 1 and 2 ask one question and must put the button on screen with
+       * the keyboard up, at every size.
+       *
+       * Steps 3 and 4 carry the consent controls - two SMS rows beside the
+       * phone number, and the Terms row beside the password. Those are legally
+       * required and cannot be compressed, and on a 320x568 phone a keyboard
+       * leaves 312px, which is less than the controls themselves occupy. The
+       * requirement there is that the page scrolls to the button and that
+       * nothing is clipped or stranded above the viewport.
        */
-      if (step === 4) {
+      if (step === 3 || step === 4) {
         const reach = await page.evaluate(() => {
           const b = document.querySelector(".auth-submit").getBoundingClientRect();
+          const q = document.querySelector(".auth-question").getBoundingClientRect();
           const needed = b.bottom + scrollY;
-          return { scrollable: document.documentElement.scrollHeight >= needed - 1, clipped: getComputedStyle(document.body).overflow === "hidden" };
+          return {
+            scrollable: document.documentElement.scrollHeight >= needed - 1,
+            clipped: getComputedStyle(document.body).overflow === "hidden",
+            // Nothing stranded above the top of the page, which is what a
+            // centred overflow used to do.
+            topReachable: q.top + scrollY >= -1,
+          };
         });
-        check(`${tag} submit reachable by scrolling`, reach.scrollable && !reach.clipped, JSON.stringify(reach));
+        check(`${tag} submit reachable, nothing stranded above`, reach.scrollable && !reach.clipped && reach.topReachable, JSON.stringify(reach));
       } else {
         check(`${tag} submit not buried`, m.btn && m.btn.bottom <= m.vh + 1, m.btn ? `${m.btn.bottom.toFixed(0)} vh=${m.vh}` : "");
       }
@@ -193,7 +211,7 @@ async function layout(page) {
     check("Back preserves what was typed", kept === "Jane Homeowner", kept);
 
     await page.click(SUBMIT); await page.waitForTimeout(500);
-    const onEmail = await page.evaluate(() => document.body.innerText.includes("What's your email?"));
+    const onEmail = await page.evaluate(() => document.body.innerText.includes("How can we reach you?"));
     check("forward again still works", onEmail, "");
     await ctx.close();
   }
