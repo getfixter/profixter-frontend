@@ -128,9 +128,18 @@ export default function CustomerSiteMobileNav() {
 
   return (
     <>
+      {/*
+        customer-site-nav is a hook for CSS, not a style: while the logged-out
+        start screen is covering the homepage, globals.css hides this bar. It is
+        fixed to the bottom of the viewport, so on that one screen it would sit
+        across the scroll cue and offer a nav the front door is deliberately
+        without. Done in CSS because an attribute is readable before the first
+        paint and a piece of React state is not - the flash of a tab bar over
+        the hero is exactly what this avoids.
+      */}
       <nav
         aria-label="Customer site navigation"
-        className="fixed inset-x-0 bottom-0 z-[70] border-t border-[#D7E0F5] bg-white/95 px-2 pt-1.5 shadow-[0_-10px_34px_rgba(15,23,42,0.12)] backdrop-blur-md lg:hidden sm:pt-2"
+        className="customer-site-nav fixed inset-x-0 bottom-0 z-[70] border-t border-[#D7E0F5] bg-white/95 px-2 pt-1.5 shadow-[0_-10px_34px_rgba(15,23,42,0.12)] backdrop-blur-md lg:hidden sm:pt-2"
         style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom, 0px))" }}
       >
         <div className={`mx-auto grid max-w-[520px] gap-1 ${items.length === 4 ? "grid-cols-4" : "grid-cols-5"}`}>
@@ -155,7 +164,10 @@ export default function CustomerSiteMobileNav() {
           })}
         </div>
       </nav>
-      <div className="h-[calc(76px+env(safe-area-inset-bottom,0px))] lg:hidden" aria-hidden="true" />
+      <div
+        className="customer-site-nav-spacer h-[calc(76px+env(safe-area-inset-bottom,0px))] lg:hidden"
+        aria-hidden="true"
+      />
     </>
   );
 }
