@@ -30,11 +30,17 @@ const PRIMARY_LINKS = [
   { label: "Kitchen & bathroom", href: "/kitchen-bathroom" },
   { label: "Large projects", href: "/projects" },
   { label: "Gift a membership", href: "/gift" },
+  /*
+   * Promoted out of the secondary group. Home no longer explains the company,
+   * what a membership covers or why a local company beats a marketplace - all
+   * of that moved to About, which makes About the answer to "tell me more"
+   * rather than a footer-ish afterthought.
+   */
+  { label: "About us", href: "/about" },
 ];
 
 const SECONDARY_LINKS = [
   { label: "Service areas", href: "/locations" },
-  { label: "About us", href: "/about" },
 ];
 
 const PHONE = "+16315991363";
