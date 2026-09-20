@@ -307,8 +307,15 @@ async function stepIsOne(page) {
   // ---------- 8. Manual fallback, still service-area aware ----------
   {
     const { ctx, page } = await newPage(browser, 390);
-    // Matched on a fragment without the apostrophe: the button renders &rsquo;,
-    // so any selector containing an ASCII quote misses it.
+    /*
+     * The escape hatch only appears once somebody is actually struggling -
+     * enough typed for a real search, still no verified address - so this types
+     * something unfindable before reaching for it.
+     *
+     * Matched on a fragment without the apostrophe: the button renders &rsquo;,
+     * so any selector containing an ASCII quote misses it.
+     */
+    await typeAddress(page, "somewhere google does not know");
     await page.click("button:has-text('find your address')");
     await page.waitForTimeout(300);
 

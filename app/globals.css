@@ -1294,8 +1294,9 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(70% 55% at 8% 0%, rgba(48, 110, 236, 0.09) 0%, rgba(48, 110, 236, 0) 62%),
-    radial-gradient(55% 45% at 100% 100%, rgba(48, 110, 236, 0.05) 0%, rgba(48, 110, 236, 0) 70%);
+    radial-gradient(64% 46% at 6% -4%, rgba(48, 110, 236, 0.13) 0%, rgba(48, 110, 236, 0) 64%),
+    radial-gradient(52% 42% at 104% 102%, rgba(48, 110, 236, 0.09) 0%, rgba(48, 110, 236, 0) 70%),
+    linear-gradient(178deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 34%);
 }
 
 .auth-screen__bar {
@@ -1401,7 +1402,11 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
 
 @media (min-width: 1024px) {
   .auth-screen__column {
-    max-width: 440px;
+    /*
+     * 520, not 440. "How can we reach you?" wrapped after "reach" on a 1440px
+     * screen, which reads as an accident rather than a line break.
+     */
+    max-width: 520px;
     padding-bottom: clamp(24px, 8vh, 88px);
   }
 }
@@ -1572,14 +1577,14 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.01em;
-  box-shadow: 0 12px 30px rgba(48, 110, 236, 0.26);
+  box-shadow: 0 6px 16px rgba(48, 110, 236, 0.18);
   transition: background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .auth-submit:hover:not(:disabled) {
   background: #2059d4;
   transform: translateY(-1px);
-  box-shadow: 0 16px 36px rgba(48, 110, 236, 0.32);
+  box-shadow: 0 10px 22px rgba(48, 110, 236, 0.24);
 }
 
 .auth-submit:active:not(:disabled) {
@@ -1718,6 +1723,51 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
 
 .auth-consent__row input:focus-visible + .auth-consent__box {
   box-shadow: 0 0 0 4px rgba(48, 110, 236, 0.18);
+}
+
+/* The words beside the box. They tick it - see the note in ConsentRow. */
+.auth-consent__label {
+  /* Not flex:1. Stretching the label pushed Details to the far right of a
+     520px column, where it stopped looking like it belonged to this row. */
+  flex: 0 1 auto;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 600;
+  color: #0b1628;
+  cursor: pointer;
+}
+
+/* The disclosure, reachable from each consent without being the control. */
+.auth-consent__details {
+  flex: none;
+  align-self: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9aa5b8;
+  padding: 6px 2px 6px 8px;
+  transition: color 0.16s ease;
+}
+
+.auth-consent__details:hover {
+  color: #306eec;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* The manual-entry escape hatch: present, and never competing with the field. */
+.auth-fallback {
+  align-self: flex-start;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #8a94a6;
+  text-underline-offset: 4px;
+  transition: color 0.16s ease;
+}
+
+.auth-fallback:hover {
+  color: #306eec;
+  text-decoration: underline;
 }
 
 .auth-consent__text {
