@@ -2385,7 +2385,16 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   padding: 0;
   list-style: none;
   display: grid;
-  align-content: start;
+  /*
+    The cell is as tall as Elite, so every shorter plan has slack. Starting the
+    rows at the top pooled all of it into one dead block above the button -
+    about seventy pixels on Plus, which is the view most people land on.
+    Distributing it puts the extra into the gaps instead: the last row still
+    lands where Elite's does, the list reads as airy rather than unfinished,
+    and the total height is unchanged, so the CTA still never moves. Elite
+    itself defines the height and therefore has no slack to distribute.
+  */
+  align-content: space-between;
   gap: clamp(9px, 2.4vw, 12px);
   opacity: 0;
   visibility: hidden;
