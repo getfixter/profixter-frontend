@@ -74,6 +74,14 @@ export const PUBLIC_SITEMAP_ROUTES = [
   { path: "/home-support", changeFrequency: "weekly", priority: 0.82 },
   { path: "/about", changeFrequency: "monthly", priority: 0.8 },
   { path: "/communities", changeFrequency: "monthly", priority: 0.72 },
+  /*
+   * Reachable, indexable and linked from the footer, but absent from the
+   * sitemap - so discovery depended entirely on Google following a link.
+   * /gift is a product with its own funnel, and /membership/loyalty answers
+   * "what do I get for staying", which is a question people search.
+   */
+  { path: "/gift", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/membership/loyalty", changeFrequency: "monthly", priority: 0.7 },
   { path: "/july4", changeFrequency: "monthly", priority: 0.62 },
   ...getSeoEngineSitemapRoutes(),
   { path: "/careers", changeFrequency: "yearly", priority: 0.35 },
