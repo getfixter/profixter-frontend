@@ -2,14 +2,19 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { PasswordField } from '../../components/auth/PasswordField';
+import AuthScreen, {
+  AuthHeading,
+  AuthInput,
+  AuthPassword,
+  AuthSubmit,
+} from '@/app/components/auth/AuthScreen';
 import { OtpArray } from '../../components/auth/types';
 import { requestPasswordReset, verifyOTP, setNewPassword } from '@/lib/auth-service';
 
 // NOTE: Moved into (auth) route group; multi-step flow unchanged.
 type Step = 'email' | 'otp' | 'newPassword' | 'success';
 type OtpError = 'invalid' | 'expired' | null;
+type ApiError = { response?: { data?: { message?: string } } };
 
 export default function ForgotPasswordPage() {
   const [step, setStep] = useState<Step>('email');
@@ -23,7 +28,7 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const router = useRouter();
+  
 
   useEffect(() => {
     if (step === 'otp' && timer > 0) {
@@ -46,9 +51,9 @@ export default function ForgotPasswordPage() {
       await requestPasswordReset(email);
       setStep('otp');
       setTimer(60);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Request password reset failed:', err);
-      const message = err.response?.data?.message || 'Failed to send reset code. Please try again.';
+      const message = (err as ApiError).response?.data?.message || 'Failed to send reset code. Please try again.';
       setError(message);
     } finally {
       setLoading(false);
@@ -84,9 +89,9 @@ export default function ForgotPasswordPage() {
       const { token } = await verifyOTP(email, otpValue);
       setResetToken(token);
       setStep('newPassword');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Verify OTP failed:', err);
-      const message = err.response?.data?.message || '';
+      const message = (err as ApiError).response?.data?.message || '';
       if (message.includes('expired')) {
         setOtpError('expired');
       } else {
@@ -105,9 +110,9 @@ export default function ForgotPasswordPage() {
     
     try {
       await requestPasswordReset(email);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Resend OTP failed:', err);
-      const message = err.response?.data?.message || 'Failed to resend code';
+      const message = (err as ApiError).response?.data?.message || 'Failed to resend code';
       setError(message);
     }
   };
@@ -135,9 +140,9 @@ export default function ForgotPasswordPage() {
       setTimeout(() => {
         window.location.href = '/signin';
       }, 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Set new password failed:', err);
-      const message = err.response?.data?.message || 'Failed to update password. Please try again.';
+      const message = (err as ApiError).response?.data?.message || 'Failed to update password. Please try again.';
       setError(message);
       setLoading(false);
     }
@@ -155,163 +160,131 @@ export default function ForgotPasswordPage() {
     return `${mins.toString().padStart(2, '0')} : ${secs.toString().padStart(2, '0')} Sec`;
   };
 
+  /*
+   * One shell, four states.
+   *
+   * This page used to be its own small design: a translucent grey card, an
+   * 80px padlock drawn four times, headings at a different size to the rest of
+   * auth, and underline inputs found nowhere else on the site. A customer who
+   * forgot their password left a light blue product and arrived somewhere
+   * else. Same shell, same input, same button as sign in now.
+   */
   return (
-    <div className="relative z-10 min-h-screen flex items-center justify-center px-4 pt-20 pb-8">
-      <div
-        className="w-full max-w-[440px] rounded-[8px] p-12 backdrop-blur-[10px]"
-        style={{
-          background:
-            'linear-gradient(180deg, rgba(49, 50, 52, 0.4) 0%, rgba(49, 50, 52, 0.2) 50%, rgba(49, 50, 52, 0.3) 100%), rgba(238, 242, 255, 0.1)',
-          boxShadow: '0px 0px 80px 0px rgba(0, 0, 0, 0.25)',
-        }}
-      >
-          {step === 'email' && (
-            <div className="text-center">
-              <h1 className="text-white text-3xl font-semibold mb-8">Forgot password?</h1>
-              <div className="flex justify-center mb-8">
-                <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-                  <rect x="20" y="35" width="40" height="35" rx="5" fill="white" />
-                  <path d="M30 35V25C30 19.4772 34.4772 15 40 15C45.5228 15 50 19.4772 50 25V35" stroke="white" strokeWidth="4" strokeLinecap="round" />
-                  <circle cx="40" cy="52" r="4" fill="#313234" />
-                </svg>
-              </div>
-              <p className="text-[#C5CBD8] text-base mb-8">We'll send you the updated<br />instructions shortly.</p>
-              <form onSubmit={handleEmailSubmit} className="space-y-8">
-                <div>
-                  <input
-                    type="email"
-                    id="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pb-3 bg-transparent border-b border-white text-white placeholder-white/40 focus:outline-none focus:border-[#306EEC] transition-colors"
-                    placeholder="Email"
-                    aria-label="Email"
-                    required
-                  />
-                </div>
-                {error && (
-                  <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-[6px] p-3">
-                    {error}
-                  </div>
-                )}
-                <button type="submit" disabled={loading} className="w-full py-4 bg-[#306EEC] text-white rounded-[8px] text-base font-medium hover:bg-[#2557C7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                  {loading ? 'Sending...' : 'Reset password'}
-                </button>
-                <Link href="/signin" className="block text-white text-base hover:underline">
-                  Log In
-                </Link>
-              </form>
-            </div>
-          )}
-          {step === 'otp' && (
-            <div className="text-center">
-              <h1 className="text-white text-3xl font-semibold mb-8">Check your Email</h1>
-              <div className="flex justify-center mb-8">
-                <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-                  <rect x="20" y="35" width="40" height="35" rx="5" fill="white" />
-                  <path d="M30 35V25C30 19.4772 34.4772 15 40 15C45.5228 15 50 19.4772 50 25V35" stroke="white" strokeWidth="4" strokeLinecap="round" />
-                  <circle cx="40" cy="52" r="4" fill="#313234" />
-                </svg>
-              </div>
-              <h2 className="text-white text-xl font-medium mb-2">OTP VERIFICATION</h2>
-              <p className="text-[#C5CBD8] text-base mb-8">Enter the OTP sent to {email || 'tar***65.com'}</p>
-              <form onSubmit={handleVerifyOtp} className="space-y-6">
-                <div className="flex justify-center gap-2 sm:gap-3 mb-4">
-                  {otp.map((digit, index) => (
-                    <input
-                      key={index}
-                      ref={(el) => {
-                        otpInputRefs.current[index] = el;
-                      }}
-                      type="text"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      className={`w-12 h-12 sm:w-14 sm:h-14 text-center text-xl sm:text-2xl font-medium rounded-[8px] bg-white/90 text-[#313234] focus:outline-none focus:ring-2 transition-all ${
-                        otpError ? 'border-2 border-red-500 ring-2 ring-red-500' : 'focus:ring-[#306EEC]'
-                      }`}
-                    />
-                  ))}
-                </div>
-                {otpError === 'invalid' && <p className="text-red-500 text-base font-medium">Invalid OTP. Please try again!</p>}
-                {otpError === 'expired' && (
-                  <p className="text-red-500 text-base font-medium">OTP expired. Please generate<br />a new OTP and try again!</p>
-                )}
-                {!otpError && timer > 0 && <p className="text-white text-base">{formatTime(timer)}</p>}
-                {error && (
-                  <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-[6px] p-3">
-                    {error}
-                  </div>
-                )}
-                <button type="button" onClick={handleResendOtp} disabled={loading} className="text-white text-base hover:underline disabled:opacity-50">
-                  Re-send
-                </button>
-                <button type="submit" disabled={loading} className="w-full py-4 bg-[#306EEC] text-white rounded-[8px] text-base font-medium hover:bg-[#2557C7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                  {loading ? 'Verifying...' : 'Verify code'}
-                </button>
-                <Link href="/signin" className="block text-white text-base hover:underline">
-                  Log In
-                </Link>
-              </form>
-            </div>
-          )}
-          {step === 'newPassword' && (
-            <div className="text-center">
-              <h1 className="text-white text-3xl font-semibold mb-8">New credentials</h1>
-              <div className="flex justify-center mb-8">
-                <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-                  <rect x="20" y="35" width="40" height="35" rx="5" fill="white" />
-                  <path d="M30 35V25C30 19.4772 34.4772 15 40 15C45.5228 15 50 19.4772 50 25V35" stroke="white" strokeWidth="4" strokeLinecap="round" />
-                  <circle cx="40" cy="52" r="4" fill="#313234" />
-                </svg>
-              </div>
-              <form onSubmit={handleNewPasswordSubmit} className="space-y-8">
-                <PasswordField
-                  id="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create password"
-                  inputClassName="w-full pb-3"
-                  required
+    <AuthScreen altLabel="Log In" altHref="/signin">
+      {step === 'email' && (
+        <>
+          <AuthHeading sub="We'll email you a code.">Reset your password</AuthHeading>
+          <form onSubmit={handleEmailSubmit} className="auth-fields" noValidate>
+            <AuthInput
+              id="email"
+              label="Email address"
+              type="email"
+              inputMode="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              autoComplete="email"
+              required
+            />
+            {error && <p className="auth-error auth-error--form">{error}</p>}
+            <AuthSubmit disabled={loading} loading={loading}>
+              {loading ? 'Sending' : 'Send code'}
+            </AuthSubmit>
+          </form>
+        </>
+      )}
+
+      {step === 'otp' && (
+        <>
+          <AuthHeading sub={`Sent to ${email}.`}>Enter your code</AuthHeading>
+          <form onSubmit={handleVerifyOtp} className="auth-fields" noValidate>
+            <div className="flex justify-between gap-2">
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el) => {
+                    otpInputRefs.current[index] = el;
+                  }}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                  aria-label={`Digit ${index + 1}`}
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(index, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                  className="auth-input h-[58px] flex-1 px-0 text-center text-[22px] font-bold"
+                  aria-invalid={otpError ? true : undefined}
                 />
-                <PasswordField
-                  id="repeat-password"
-                  value={repeatPassword}
-                  onChange={(e) => setRepeatPassword(e.target.value)}
-                  placeholder="Repeat password"
-                  inputClassName="w-full pb-3"
-                  required
-                />
-                {error && (
-                  <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-[6px] p-3">
-                    {error}
-                  </div>
-                )}
-                <button type="submit" disabled={loading} className="w-full py-4 bg-[#306EEC] text-white rounded-[8px] text-base font-medium hover:bg-[#2557C7] transition-colors mt-8 disabled:opacity-50 disabled:cursor-not-allowed">
-                  {loading ? 'Updating...' : 'Submit'}
-                </button>
-                <button type="button" onClick={handleCancel} className="block w-full text-white text-base hover:underline">
-                  Cancel
-                </button>
-              </form>
+              ))}
             </div>
-          )}
-          {step === 'success' && (
-            <div className="text-center py-8">
-              <h1 className="text-white text-3xl font-semibold mb-8">Password updated</h1>
-              <div className="flex justify-center mb-8">
-                <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-                  <path d="M20 45L35 60L65 25" stroke="#4CAF50" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-              <p className="text-[#C5CBD8] text-base mb-8">Your password has been updated</p>
-              <Link href="/signin" className="block w-full py-4 bg-[#306EEC] text-white rounded-[8px] text-base font-medium hover:bg-[#2557C7] transition-colors">
-                Log In
-              </Link>
-            </div>
-          )}
-      </div>
-    </div>
+            {otpError === 'invalid' && <p className="auth-error">That code is not right.</p>}
+            {otpError === 'expired' && <p className="auth-error">That code has expired.</p>}
+            {!otpError && timer > 0 && (
+              <p className="text-[13px] font-medium text-[#6B7688]">Expires in {formatTime(timer)}</p>
+            )}
+            {error && <p className="auth-error auth-error--form">{error}</p>}
+            <AuthSubmit disabled={loading} loading={loading}>
+              {loading ? 'Checking' : 'Continue'}
+            </AuthSubmit>
+          </form>
+          <p className="auth-alt">
+            <button type="button" onClick={handleResendOtp} disabled={loading} className="auth-inline-link disabled:opacity-50">
+              Send a new code
+            </button>
+          </p>
+        </>
+      )}
+
+      {step === 'newPassword' && (
+        <>
+          <AuthHeading sub="At least 8 characters.">Choose a new password</AuthHeading>
+          <form onSubmit={handleNewPasswordSubmit} className="auth-fields" noValidate>
+            <AuthPassword
+              id="new-password"
+              label="New password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="New password"
+              autoComplete="new-password"
+              required
+            />
+            {/*
+              The confirmation stays HERE and only here. On sign up a typo is
+              recoverable - this page is the recovery. On this page a typo would
+              lock somebody out of the thing they came to fix.
+            */}
+            <AuthPassword
+              id="repeat-password"
+              label="Repeat new password"
+              value={repeatPassword}
+              onChange={(e) => setRepeatPassword(e.target.value)}
+              placeholder="Repeat password"
+              autoComplete="new-password"
+              required
+            />
+            {error && <p className="auth-error auth-error--form">{error}</p>}
+            <AuthSubmit disabled={loading} loading={loading}>
+              {loading ? 'Saving' : 'Save password'}
+            </AuthSubmit>
+          </form>
+          <p className="auth-alt">
+            <button type="button" onClick={handleCancel} className="auth-inline-link">
+              Cancel
+            </button>
+          </p>
+        </>
+      )}
+
+      {step === 'success' && (
+        <>
+          <AuthHeading>Password updated</AuthHeading>
+          <p className="auth-sub">You can sign in with it now.</p>
+          <Link href="/signin" className="auth-submit mt-6">
+            Log In
+          </Link>
+        </>
+      )}
+    </AuthScreen>
   );
 }
