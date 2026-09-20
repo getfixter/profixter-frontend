@@ -39,3 +39,5 @@ lib.zip
 
 # Local test artifacts (Playwright captures)
 /screenshots
+
+.vercel
