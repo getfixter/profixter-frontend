@@ -31,7 +31,7 @@
     "test:membership-plans-ui": "node scripts/test_membership_plans_ui.js"
   },
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
