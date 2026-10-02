@@ -36,11 +36,25 @@ export interface TimeSlot {
   available?: boolean;
   availableSlotCount?: number;
   slots: Array<string | { time: string; available?: boolean }>;
+  /*
+   * Every time the day's schedule offers, with whether it can be booked. Lets
+   * a booked time stay on screen as unavailable. Absent from an older API, in
+   * which case `slots` (bookable times only) is all there is.
+   */
+  candidateSlots?: Array<{ time: string; available: boolean }>;
   taken: Record<string, number>;
   capacityPerSlot: number;
   remaining?: Record<string, number>;
   engine?: "legacy" | "reservation";
 }
+
+/*
+ * "membership" asks the API for availability as a regular membership visit
+ * sees it — the server applies that visit's own scheduling rules. Other visit
+ * types read the same endpoints without it.
+ */
+export type AvailabilityVisit = "membership";
+type AvailabilityRequestOptions = { signal?: AbortSignal; visit?: AvailabilityVisit };
 
 export interface MonthAvailability {
   month: string;
@@ -53,6 +67,7 @@ export interface MonthAvailability {
     open: boolean;
     slotCount: number;
     slots: Array<string | { time: string; available?: boolean }>;
+    candidateSlots?: Array<{ time: string; available: boolean }>;
     taken: Record<string, number>;
     remaining: Record<string, number>;
     capacityPerSlot: number;
@@ -190,20 +205,20 @@ export const getCalendarConfig = async (): Promise<CalendarConfig> => {
 };
 export const getTimeSlots = async (
   date: string,
-  options: { signal?: AbortSignal } = {}
+  options: AvailabilityRequestOptions = {}
 ): Promise<TimeSlot> => {
   const response = await API.get<TimeSlot>("/api/calendar/slots", {
-    params: { date, _: Date.now() },
+    params: { date, visit: options.visit, _: Date.now() },
     signal: options.signal,
   });
   return response.data;
 };
 export const getMonthAvailability = async (
   month: string,
-  options: { signal?: AbortSignal } = {}
+  options: AvailabilityRequestOptions = {}
 ): Promise<MonthAvailability> => {
   const response = await API.get<MonthAvailability>("/api/calendar/month", {
-    params: { month, _: Date.now() },
+    params: { month, visit: options.visit, _: Date.now() },
     signal: options.signal,
   });
   return response.data;
