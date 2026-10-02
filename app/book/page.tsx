@@ -14,7 +14,12 @@ import {
 import { compressImage } from "@/lib/compressImage";
 import type { Address } from "@/lib/auth-service";
 import type { OneTimeVisitConfig } from "@/lib/booking-service";
-import { getBookableSlots, normalizeDayAvailability } from "@/lib/booking-calendar-availability";
+import {
+  getBookableSlots,
+  normalizeDayAvailability,
+  type AvailabilitySlot,
+} from "@/lib/booking-calendar-availability";
+import TimeSlotGrid from "@/app/components/booking/TimeSlotGrid";
 import { trackEvent, trackInitiateCheckout } from "@/lib/analytics";
 import { useSearchParams } from "next/navigation";
 import BookingSection from "@/app/components/sections/BookingSection";
@@ -66,6 +71,24 @@ const FALLBACK_ONE_TIME_CONFIG: OneTimeVisitConfig = {
 
 function slotsForAvailabilityDay(day: Parameters<typeof normalizeDayAvailability>[0]) {
   return getBookableSlots(normalizeDayAvailability(day)).map((slot) => slot.time);
+}
+
+/*
+ * Every time the day's schedule offers, booked ones included, for display.
+ *
+ * Bookable means exactly what slotsForAvailabilityDay says and nothing else,
+ * so a listed-but-unavailable time can never become a selectable one, and a
+ * day with no bookable time stays closed however many candidates it lists.
+ * An API without the full list yields the bookable times only.
+ */
+function candidatesForAvailabilityDay(
+  day: Parameters<typeof normalizeDayAvailability>[0]
+): AvailabilitySlot[] {
+  const normalized = normalizeDayAvailability(day);
+  const bookable = getBookableSlots(normalized);
+  const bookableTimes = new Set(bookable.map((slot) => slot.time));
+  const listed = normalized.hasCandidateSlots ? normalized.slots : bookable;
+  return listed.map((slot) => ({ time: slot.time, available: bookableTimes.has(slot.time) }));
 }
 
 function todayYMD() {
@@ -255,6 +278,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
   const servicePickerTriggerRef = useRef<HTMLButtonElement | null>(null);
   const autoSelectStartedRef = useRef(false);
   const availabilityByDateRef = useRef<Record<string, string[]>>({});
+  const [candidatesByDate, setCandidatesByDate] = useState<Record<string, AvailabilitySlot[]>>({});
 
   useEffect(() => {
     trackEvent("book_started", { page: "/book" });
@@ -326,10 +350,11 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
     }
   }, [addressId, addresses, user?.defaultAddressId]);
 
-  function cacheDateSlots(ymd: string, nextSlots: string[]) {
+  function cacheDateSlots(ymd: string, nextSlots: string[], candidates?: AvailabilitySlot[]) {
     const next = { ...availabilityByDateRef.current, [ymd]: nextSlots };
     availabilityByDateRef.current = next;
     setAvailabilityByDate(next);
+    if (candidates) setCandidatesByDate((prev) => ({ ...prev, [ymd]: candidates }));
   }
 
   useEffect(() => {
@@ -343,11 +368,14 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
     ) => {
       if (!days.length) return;
       const next = { ...availabilityByDateRef.current };
+      const candidates: Record<string, AvailabilitySlot[]> = {};
       for (const day of days) {
         next[day.date] = slotsForAvailabilityDay(day);
+        candidates[day.date] = candidatesForAvailabilityDay(day);
       }
       availabilityByDateRef.current = next;
       setAvailabilityByDate(next);
+      setCandidatesByDate((prev) => ({ ...prev, ...candidates }));
     };
 
     const selectCandidate = (ymd: string, nextSlots: string[]) => {
@@ -399,7 +427,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
           const data = await getTimeSlots(ymd);
           if (cancelled) return;
           const nextSlots = slotsForAvailabilityDay(data);
-          cacheDateSlots(ymd, nextSlots);
+          cacheDateSlots(ymd, nextSlots, candidatesForAvailabilityDay(data));
           if (nextSlots.length > 0) {
             selectCandidate(ymd, nextSlots);
             return;
@@ -456,7 +484,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
       .then((data) => {
         if (cancelled) return;
         const nextSlots = slotsForAvailabilityDay(data);
-        cacheDateSlots(selectedDate, nextSlots);
+        cacheDateSlots(selectedDate, nextSlots, candidatesForAvailabilityDay(data));
         setSlots(nextSlots);
       })
       .catch(() => {
@@ -470,6 +498,21 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
       cancelled = true;
     };
   }, [selectedDate]);
+
+  /* Read by the refresh after a SLOT_UNAVAILABLE refusal, which resolves later. */
+  const selectedDateRef = useRef(selectedDate);
+  useEffect(() => {
+    selectedDateRef.current = selectedDate;
+  }, [selectedDate]);
+
+  /*
+   * A selection is only a selection while availability still offers it: when
+   * a refresh drops the chosen time, the time is cleared rather than left
+   * looking chosen on a slot that can no longer be booked.
+   */
+  useEffect(() => {
+    if (selectedTime && !slots.includes(selectedTime)) setSelectedTime("");
+  }, [selectedTime, slots]);
 
   const selectedAddress = useMemo(
     () => addresses.find((address) => String(address._id) === String(addressId)),
@@ -519,6 +562,9 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
   );
   const days = useMemo(() => calendarDays(currentMonth), [currentMonth]);
   const today = todayYMD();
+  /* The selected day's full schedule; only times in `slots` are bookable. */
+  const slotOptions = (candidatesByDate[selectedDate] ?? slots.map((time) => ({ time, available: true })))
+    .map((slot) => ({ time: slot.time, available: slot.available && slots.includes(slot.time), remaining: null }));
   const wordsCount = note.trim().split(/\s+/).filter(Boolean).length;
   const photoUrls = useMemo(
     () => photos.map((file) => URL.createObjectURL(file)),
@@ -565,7 +611,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
     try {
       const data = await getTimeSlots(ymd);
       const nextSlots = slotsForAvailabilityDay(data);
-      cacheDateSlots(ymd, nextSlots);
+      cacheDateSlots(ymd, nextSlots, candidatesForAvailabilityDay(data));
       if (!nextSlots.length) return;
 
       const date = dateFromYMD(ymd);
@@ -643,6 +689,21 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to start checkout.";
       setError(message);
+      /*
+       * The server refused the time because it is taken now. Reload the day so
+       * the time shows as unavailable; the effect below then drops it from the
+       * selection rather than leaving it looking chosen.
+       */
+      if ((err as { code?: string })?.code === "SLOT_UNAVAILABLE" && selectedDate) {
+        const ymd = selectedDate;
+        getTimeSlots(ymd)
+          .then((data) => {
+            const nextSlots = slotsForAvailabilityDay(data);
+            cacheDateSlots(ymd, nextSlots, candidatesForAvailabilityDay(data));
+            setSlots((current) => (selectedDateRef.current === ymd ? nextSlots : current));
+          })
+          .catch(() => {});
+      }
     } finally {
       setLoading(false);
     }
@@ -822,6 +883,9 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                       <button
                         key={day.ymd}
                         type="button"
+                        data-booking-date={day.ymd}
+                        data-booking-date-muted={day.muted ? "true" : "false"}
+                        data-booking-date-selected={selected ? "true" : "false"}
                         disabled={disabled}
                         onClick={() => chooseDate(day.ymd)}
                         className={[
@@ -1112,23 +1176,11 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                         ))}
                       </div>
                     ) : slots.length ? (
-                      <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 sm:gap-2">
-                        {slots.map((slot) => (
-                          <button
-                            key={slot}
-                            type="button"
-                            onClick={() => setSelectedTime(slot)}
-                            className={[
-                              "min-h-9 rounded-[6px] border px-1 text-[10px] font-extrabold transition active:scale-[0.99] sm:min-h-11 sm:text-[13px]",
-                              selectedTime === slot
-                                ? "border-[#306EEC] bg-[#306EEC] text-white shadow-[0_10px_28px_rgba(48,110,236,0.28)]"
-                                : "border-[#E5E9F2] bg-[#F8FAFF] text-[#1D4ED8] hover:border-[#D9E4FF] hover:bg-[#EEF5FF]",
-                            ].join(" ")}
-                          >
-                            {formatTime12(slot)}
-                          </button>
-                        ))}
-                      </div>
+                      <TimeSlotGrid
+                        slotOptions={slotOptions}
+                        selectedTime={selectedTime}
+                        onSelect={setSelectedTime}
+                      />
                     ) : (
                       <div className="rounded-[8px] border border-[#E5E9F2] bg-[#F8FAFF] px-4 py-5 text-center text-[14px] text-[#64748B]">
                         Choose an available date to see times.

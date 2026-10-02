@@ -17,6 +17,7 @@
     "test:booking-calendar-live-request": "node scripts/test_booking_calendar_live_request.js",
     "test:booking-calendar-member-window": "node scripts/test_booking_calendar_member_window_unit.js",
     "test:booking-calendar-member-window-browser": "node scripts/test_booking_calendar_member_window.js",
+    "test:booking-one-time-slots": "node scripts/test_booking_one_time_slots.js",
     "test:project-customer-selector-ui": "node scripts/test_project_customer_selector_ui.js",
     "postinstall": "npm run build",
     "test:free-visit-e2e": "node scripts/test_free_visit_e2e.js",
