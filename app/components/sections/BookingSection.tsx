@@ -14,6 +14,7 @@ import {
   createBooking,
   getNextBooking,
   CalendarConfig,
+  type AvailabilityVisit,
 } from "@/lib/booking-service";
 import { compressImage } from "@/lib/compressImage";
 import { getRoleLandingPath } from "@/lib/auth-routing";
@@ -170,7 +171,7 @@ function TimeSlotGrid({
   return (
     <div className="grid grid-cols-3 gap-0.5 sm:grid-cols-4 sm:gap-1.5 xl:grid-cols-5">
       {slotOptions.map((slot) => {
-        const isSelected = slot.time === selectedTime;
+        const isSelected = slot.available && slot.time === selectedTime;
         const availabilityLabel = slot.available
           ? slot.remaining && slot.remaining > 0
             ? `${slot.remaining} left`
@@ -378,6 +379,14 @@ export default function BookingSection() {
       selectedAvailabilityAddressId,
     ]);
   const availabilityContextKey = getAvailabilityCacheKey("context");
+  /*
+   * A member is offered member-visit availability: the server closes the dates
+   * a regular membership visit cannot have. The earliest date is the server's
+   * answer from /config, used so no automatic pick ever lands before it.
+   */
+  const availabilityVisit: AvailabilityVisit | undefined = hasSubscription ? "membership" : undefined;
+  const memberEarliestBookableDate =
+    hasSubscription && config?.earliestBookableDate ? config.earliestBookableDate : null;
 
   // ✅ pick default address
   useEffect(() => {
@@ -451,13 +460,12 @@ export default function BookingSection() {
      * Presentation only. The API decides this again when the booking is
      * created, and its decision stands whether or not this line ran.
      */
-    const earliestBookable = config.earliestBookableDate;
-    if (hasSubscription && earliestBookable && ymd < earliestBookable) {
+    if (memberEarliestBookableDate && ymd < memberEarliestBookableDate) {
       return true;
     }
 
     return !isAvailabilityOpen(info);
-  }, [calendarMode, config, dayAvailabilityMap, hasSubscription, isAvailabilityOpen]);
+  }, [calendarMode, config, dayAvailabilityMap, isAvailabilityOpen, memberEarliestBookableDate]);
 
   const isDateSelectable = useCallback((date: Date) => {
     const normalized = new Date(date);
@@ -489,7 +497,7 @@ export default function BookingSection() {
     const existingRequest = dayRequestCacheRef.current[requestKey];
     if (existingRequest) return existingRequest;
 
-    const request = getTimeSlots(ymd, { signal: options.signal })
+    const request = getTimeSlots(ymd, { signal: options.signal, visit: availabilityVisit })
       .then((data) => {
         const nextAvailability = normalizeDayAvailability(data);
 
@@ -523,7 +531,7 @@ export default function BookingSection() {
 
     dayRequestCacheRef.current[requestKey] = request;
     return request;
-  }, [availabilityContextKey]);
+  }, [availabilityContextKey, availabilityVisit]);
 
   // Load calendar config
   useEffect(() => {
@@ -607,7 +615,10 @@ export default function BookingSection() {
 
       try {
         if (config.engine === "reservation") {
-          const monthData = await getMonthAvailability(monthKey, { signal: options.signal });
+          const monthData = await getMonthAvailability(monthKey, {
+            signal: options.signal,
+            visit: availabilityVisit,
+          });
           if (monthData.month && monthData.month !== monthKey) {
             throw new Error(`Month response mismatch: expected ${monthKey}, got ${monthData.month}`);
           }
@@ -702,7 +713,7 @@ export default function BookingSection() {
 
     monthRequestCacheRef.current[cacheKey] = request;
     return request;
-  }, [config, fetchDayAvailability, getAvailabilityCacheKey, getMonthKey]);
+  }, [availabilityVisit, config, fetchDayAvailability, getAvailabilityCacheKey, getMonthKey]);
 
   useEffect(() => {
     if (!config || calendarMode === "initializing") return;
@@ -763,6 +774,14 @@ export default function BookingSection() {
     const selectedDateBefore = selectedDateRef.current ? formatDateYMD(selectedDateRef.current) : null;
     const startMonth = monthStartLocal(new Date());
 
+    /*
+     * Days fetched for another context (before membership was known, or for
+     * another address) answered a different question. The day cache is keyed
+     * by date alone, so it is emptied rather than trusted.
+     */
+    dayAvailabilityMapRef.current = {};
+    setDayAvailabilityMap({});
+
     setCalendarMode("initializing");
     setAvailabilityError("");
     setCurrentMonth(startMonth);
@@ -778,6 +797,7 @@ export default function BookingSection() {
       signal: controller.signal,
       startMonth,
       maxAdvanceDays: Number(config.maxAdvanceDays ?? 90),
+      earliestBookableDate: memberEarliestBookableDate,
       visibleMonthBefore,
       selectedDateBefore,
       loadMonth: (monthDate) =>
@@ -826,7 +846,7 @@ export default function BookingSection() {
         initializationGenerationRef.current += 1;
       }
     };
-  }, [availabilityContextKey, availabilityRetryToken, config, getMonthKey, loadMonthAvailability, logAvailabilityDiagnostics]);
+  }, [availabilityContextKey, availabilityRetryToken, config, getMonthKey, loadMonthAvailability, logAvailabilityDiagnostics, memberEarliestBookableDate]);
 
 
 
@@ -995,6 +1015,21 @@ if (next?.date) {
       cancelled = true;
     };
   }, [selectedDate, dayAvailabilityMap, fetchDayAvailability]);
+
+  /*
+   * A selection is only a selection while availability still offers it. When
+   * a refresh (a month reload, or the refetch after a SLOT_UNAVAILABLE refusal)
+   * says the chosen time is gone, the time is cleared rather than left looking
+   * chosen on a slot that can no longer be booked.
+   */
+  useEffect(() => {
+    if (!selectedDate || !selectedTime) return;
+    const day = dayAvailabilityMap[formatDateYMD(selectedDate)];
+    if (!day) return;
+    if (!getBookableSlots(day).some((slot) => slot.time === selectedTime)) {
+      setSelectedTime("");
+    }
+  }, [dayAvailabilityMap, selectedDate, selectedTime]);
 
   const handleDayClick = async (dayDate: Date, muted: boolean) => {
     if (muted) return;
@@ -1364,7 +1399,8 @@ if (next?.date) {
 
   const ymdSelected = selectedDate ? formatDateYMD(selectedDate) : "";
   const selectedAvailability = ymdSelected ? dayAvailabilityMap[ymdSelected] : null;
-  const selectedDateIsBookable = isAvailabilityOpen(selectedAvailability);
+  const selectedDateIsBookable =
+    Boolean(selectedDate) && !isDayDisabled(selectedDate as Date) && isAvailabilityOpen(selectedAvailability);
   const selectedTimeIsBookable = Boolean(selectedTime && displayedTimes.includes(selectedTime));
   const selectedAddress = addresses.find(
     (address) => String(address._id) === String(selectedAddressId ?? defaultAddressId ?? "")
@@ -1414,7 +1450,12 @@ if (next?.date) {
       }
       if (monthAvailability.status !== "success") return;
 
-      const firstAvailable = firstBookableDateInMonth(candidateMonth, monthAvailability.data);
+      const firstAvailable = firstBookableDateInMonth(
+        candidateMonth,
+        monthAvailability.data,
+        new Date(),
+        memberEarliestBookableDate
+      );
       if (firstAvailable) {
         const ymd = formatDateYMD(firstAvailable);
         const availability = monthAvailability.data[ymd] || dayAvailabilityMapRef.current[ymd];
@@ -1433,9 +1474,17 @@ if (next?.date) {
     const taken = dayAvailabilityMap[ymdSelected]?.taken || {};
     const capacity = dayAvailabilityMap[ymdSelected]?.capacity || 1;
     const availableSet = new Set(displayedTimes);
+    const selectedDay = dayAvailabilityMap[ymdSelected];
 
-    const times =
-      config.engine === "reservation"
+    /*
+     * Every time the day's schedule offers, booked ones included, so a booked
+     * 8:00 stays on screen as unavailable instead of vanishing. Whether a time
+     * can be picked still comes only from `displayedTimes`, the bookable set.
+     * An older API without the full list falls back to the previous behaviour.
+     */
+    const times = selectedDay?.hasCandidateSlots
+      ? selectedDay.slots.map((slot) => slot.time)
+      : config.engine === "reservation"
         ? displayedTimes
         : getHoursForDate(selectedDate);
     return times.map((time) => {

@@ -18,6 +18,7 @@ export type DayAvailabilityInput = {
   availableSlotCount?: number;
   slotCount?: number;
   slots?: RawAvailabilitySlot[];
+  candidateSlots?: RawAvailabilitySlot[];
   taken?: Record<string, number>;
   capacity?: number;
   capacityPerSlot?: number;
@@ -30,7 +31,13 @@ export type DayAvailability = {
   availableSlotCount: number;
   taken: Record<string, number>;
   capacity: number;
+  /*
+   * Bookable AND unavailable times when the API sent the day's full schedule
+   * (`hasCandidateSlots`), otherwise only the bookable ones. Either way, only
+   * `available: true` entries are ever bookable — see getBookableSlots.
+   */
   slots: AvailabilitySlot[];
+  hasCandidateSlots: boolean;
   remaining?: Record<string, number>;
 };
 
@@ -111,8 +118,8 @@ export function buildAvailabilityCacheKey(input: AvailabilityCacheKeyInput): str
   ].join("|");
 }
 
-export function normalizeDayAvailability(data: DayAvailabilityInput): DayAvailability {
-  const normalizedSlots = (Array.isArray(data.slots) ? data.slots : [])
+function parseSlots(raw: RawAvailabilitySlot[]): AvailabilitySlot[] {
+  return raw
     .map((slot): AvailabilitySlot | null => {
       if (typeof slot === "string") {
         return slot ? { time: slot, available: true } : null;
@@ -126,6 +133,26 @@ export function normalizeDayAvailability(data: DayAvailabilityInput): DayAvailab
       };
     })
     .filter((slot): slot is AvailabilitySlot => Boolean(slot));
+}
+
+export function normalizeDayAvailability(data: DayAvailabilityInput): DayAvailability {
+  const bookableSlots = parseSlots(Array.isArray(data.slots) ? data.slots : []);
+  const candidates = parseSlots(Array.isArray(data.candidateSlots) ? data.candidateSlots : []);
+  const hasCandidateSlots = candidates.length > 0;
+  /*
+   * A candidate is bookable only if the API also listed it as bookable. The two
+   * lists come from the same server calculation and should always agree; if
+   * they ever did not, the time is shown as unavailable rather than offered.
+   */
+  const bookableTimes = new Set(
+    bookableSlots.filter((slot) => slot.available).map((slot) => slot.time)
+  );
+  const normalizedSlots = hasCandidateSlots
+    ? candidates.map((slot) => ({
+        time: slot.time,
+        available: slot.available && bookableTimes.has(slot.time),
+      }))
+    : bookableSlots;
   const inferredBookableCount = normalizedSlots.filter((slot) => slot.available === true).length;
   const count = Number(data.availableSlotCount ?? data.slotCount ?? inferredBookableCount);
   const availableSlotCount = Number.isFinite(count) ? count : inferredBookableCount;
@@ -140,6 +167,7 @@ export function normalizeDayAvailability(data: DayAvailabilityInput): DayAvailab
     taken: data.taken || {},
     capacity: data.capacity ?? data.capacityPerSlot ?? 1,
     slots: normalizedSlots,
+    hasCandidateSlots,
     remaining: data.remaining || {},
   };
 }
@@ -153,10 +181,17 @@ export function isBookableDay(day?: DayAvailability | null): boolean {
   return getBookableSlots(day).length > 0;
 }
 
+/*
+ * `earliestBookableDate` is the server's first offerable date (YYYY-MM-DD) for
+ * this visit, from /api/calendar/config. Nothing before it is ever picked
+ * automatically, so an auto-selected date is always one the calendar itself
+ * would let the customer click. The client never works the date out itself.
+ */
 export function firstBookableDateInMonth(
   monthDate: Date,
   monthAvailability: MonthAvailabilityMap,
-  now = new Date()
+  now = new Date(),
+  earliestBookableDate?: string | null
 ): Date | null {
   const monthKey = getMonthKeyLocal(monthDate);
   const today = new Date(now);
@@ -164,6 +199,7 @@ export function firstBookableDateInMonth(
 
   const first = Object.entries(monthAvailability)
     .filter(([ymd, info]) => ymd.startsWith(monthKey) && isBookableDay(info))
+    .filter(([ymd]) => !earliestBookableDate || ymd >= earliestBookableDate)
     .map(([ymd]) => dateFromYMDLocal(ymd))
     .filter((date) => date >= today)
     .sort((a, b) => a.getTime() - b.getTime())[0];
@@ -220,6 +256,7 @@ export async function resolveInitialCalendarSelection({
   maxAdvanceDays,
   loadMonth,
   now = new Date(),
+  earliestBookableDate = null,
   visibleMonthBefore,
   selectedDateBefore,
   initializationId = `booking-calendar-init-${generation}`,
@@ -231,6 +268,7 @@ export async function resolveInitialCalendarSelection({
   maxAdvanceDays: number;
   loadMonth: (monthDate: Date, requestId: number) => Promise<MonthLoadState>;
   now?: Date;
+  earliestBookableDate?: string | null;
   visibleMonthBefore?: string;
   selectedDateBefore?: string | null;
   initializationId?: string;
@@ -328,7 +366,12 @@ export async function resolveInitialCalendarSelection({
       .filter(([, info]) => isBookableDay(info))
       .map(([ymd]) => ymd)
       .sort();
-    const firstAvailable = firstBookableDateInMonth(candidateMonth, state.data, now);
+    const firstAvailable = firstBookableDateInMonth(
+      candidateMonth,
+      state.data,
+      now,
+      earliestBookableDate
+    );
     const earliestAvailableDate = firstAvailable ? formatDateYMDLocal(firstAvailable) : null;
     diagnostics.push({
       initializationId,

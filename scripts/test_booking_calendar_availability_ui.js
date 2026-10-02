@@ -24,8 +24,8 @@ function excludes(text, snippet, message) {
 }
 
 includes(service, "availableSlotCount?: number;", "API types should expose authoritative available slot counts");
-includes(service, "params: { month, _: Date.now() }", "month availability should bypass caches without custom request headers");
-includes(service, "params: { date, _: Date.now() }", "day availability should bypass caches without custom request headers");
+includes(service, "params: { month, visit: options.visit, _: Date.now() }", "month availability should bypass caches without custom request headers");
+includes(service, "params: { date, visit: options.visit, _: Date.now() }", "day availability should bypass caches without custom request headers");
 excludes(service, "\"Cache-Control\": \"no-store\"", "availability requests should not add custom cache headers that trigger CORS preflight");
 excludes(service, "Pragma: \"no-cache\"", "availability requests should not add custom pragma headers that trigger CORS preflight");
 includes(controller, "export function getBookableSlots", "bookable slots should be normalized in one helper");
@@ -39,7 +39,9 @@ includes(source, "const generation = ++initializationGenerationRef.current;", "i
 includes(source, "initializationAbortRef.current?.abort();", "old initialization requests should be aborted");
 includes(source, "allowCache: false", "initialization should fetch fresh month availability");
 includes(source, "return !isAvailabilityOpen(info);", "disabled-day logic should use authoritative availability");
-includes(source, "getMonthAvailability(monthKey, { signal: options.signal })", "reservation calendar should fetch backend month availability with abort support");
+includes(source, "getMonthAvailability(monthKey, {", "reservation calendar should fetch backend month availability");
+includes(source, "signal: options.signal,", "availability requests should support abort");
+includes(source, "visit: availabilityVisit,", "member availability should be requested as a membership visit");
 includes(source, "setDisplayedTimes(result.slots.map((slot) => slot.time))", "initial selected times should come from the same availability result");
 includes(source, "visibleMonthLoadState?.status === \"success\"", "empty month state should wait for authoritative success");
 includes(source, "calendarMode !== \"initializing\" && visibleMonthLoaded", "empty month state should not appear during initialization");
