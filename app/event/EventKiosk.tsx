@@ -73,6 +73,10 @@ const CAPTIONS = [
 export default function EventKiosk() {
   const rootRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<HTMLDivElement>(null);
+  const topbarRef = useRef<HTMLDivElement>(null);
+  const captionRef = useRef<HTMLDivElement>(null);
+  /** Where the fixed chrome actually ends: photos fill everything between. */
+  const safeRef = useRef<{ top: number; bottom: number } | undefined>(undefined);
   const [stage, setStage] = useState({ w: 0, h: 0 });
   const stageRef = useRef({ w: 1, h: 1 });
   const aspectRef = useRef(0.75);
@@ -111,7 +115,7 @@ export default function EventKiosk() {
   const show = useCallback((scene: Scene, via?: 1 | -1) => {
     currentRef.current = scene;
     const { w, h } = stageRef.current;
-    setCards((prev) => compose(scene, prev, geometry(w, h), Date.now(), via));
+    setCards((prev) => compose(scene, prev, geometry(w, h, safeRef.current), Date.now(), via));
     setSceneKind(scene.kind);
     if (scene.kind === "brand") setBrandLine(scene.line);
     if (scene.kind === "hero") {
@@ -297,19 +301,31 @@ export default function EventKiosk() {
       const w = el.clientWidth;
       const h = el.clientHeight;
       if (!w || !h) return;
-      const changed = w !== stageRef.current.w || h !== stageRef.current.h;
+      const root = el.getBoundingClientRect();
+      const bar = topbarRef.current?.getBoundingClientRect();
+      const line = captionRef.current?.getBoundingClientRect();
+      const safe = bar && line ? { top: Math.round(bar.bottom - root.top), bottom: Math.round(root.bottom - line.top) } : undefined;
+      const prevSafe = safeRef.current;
+      safeRef.current = safe;
+      const changed =
+        w !== stageRef.current.w ||
+        h !== stageRef.current.h ||
+        safe?.top !== prevSafe?.top ||
+        safe?.bottom !== prevSafe?.bottom;
       stageRef.current = { w, h };
       aspectRef.current = w / h;
       setStage({ w, h });
       // A rotation re-lays the current composition rather than waiting for the next one.
       if (changed && currentRef.current) {
         const scene = currentRef.current;
-        setCards((prev) => compose(scene, prev, geometry(w, h), Date.now()));
+        setCards((prev) => compose(scene, prev, geometry(w, h, safeRef.current), Date.now()));
       }
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
+    // The chrome's height settles once the brand font has loaded.
+    void document.fonts?.ready.then(measure);
     return () => observer.disconnect();
   }, []);
 
@@ -484,14 +500,14 @@ export default function EventKiosk() {
       </div>
 
       {/* Fixed chrome: never moves, whatever the photographs do behind it. */}
-      <div className={`ed-topbar${onBrand ? " ed-topbar-hidden" : ""}`} aria-hidden={onBrand}>
+      <div ref={topbarRef} className={`ed-topbar${onBrand ? " ed-topbar-hidden" : ""}`} aria-hidden={onBrand}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={LOGO} alt="Profixter" className="ed-topbar-logo" draggable={false} />
         <div className="ed-topbar-tagline">{TAGLINE}</div>
       </div>
 
       <div className="ed-bottom">
-        <div className={`ed-caption${onBrand ? " ed-caption-hidden" : ""}`} aria-live="off">
+        <div ref={captionRef} className={`ed-caption${onBrand ? " ed-caption-hidden" : ""}`} aria-live="off">
           <span key={caption} className="ed-caption-text">
             {CAPTIONS[caption]}
           </span>
