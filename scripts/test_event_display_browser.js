@@ -170,6 +170,18 @@ const snapshot = (page) =>
       imgPointer: [...document.querySelectorAll(".ed-root img")].every((i) => getComputedStyle(i).pointerEvents === "none"),
       imgDraggable: [...document.querySelectorAll(".ed-root img")].some((i) => i.draggable),
       ctaTop: cta ? cta.getBoundingClientRect().top : 0,
+      chromeTop: document.querySelector(".ed-topbar")?.getBoundingClientRect().bottom || 0,
+      chromeBottom: document.querySelector(".ed-caption")?.getBoundingClientRect().top || 0,
+      vw: window.innerWidth,
+      vh: window.innerHeight,
+      // Settled: no card is mid-move (a CSS transition still running on it).
+      settled: cards.every((c) => !c.getAnimations().some((a) => "transitionProperty" in a && a.playState === "running")),
+      foreground: live
+        .filter((c) => ["hero", "pair", "trio", "wall"].includes(c.dataset.role))
+        .map((c) => {
+          const r = c.querySelector(".ed-card-face").getBoundingClientRect();
+          return { role: c.dataset.role, top: r.top, bottom: r.bottom, left: r.left, right: r.right, area: r.width * r.height };
+        }),
       scrollY: window.scrollY,
       docScrollable: document.documentElement.scrollHeight > window.innerHeight + 1,
       path: location.pathname + location.search,
@@ -203,6 +215,14 @@ async function swipe(page, fromX, toX, y = 600, steps = 8) {
   }
   await page.mouse.up();
 }
+
+/** Foreground photo cards that cross the fixed chrome or the screen edge (settled frames only). */
+const overlaps = (s, slack = 3) =>
+  s.settled
+    ? s.foreground.filter(
+        (f) => f.top < s.chromeTop - slack || f.bottom > s.chromeBottom + slack || f.left < -slack || f.right > s.vw + slack
+      )
+    : [];
 
 const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullscreen|close/i.test(b));
 
@@ -270,6 +290,9 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
       let forbiddenShown = false;
       let cropped = 0;
       let heroUnderCta = 0;
+      const crossings = [];
+      let heroShareMax = 0;
+      let heroShareMin = 1;
       await run(page, 150000, 500, async () => {
         const s = await snapshot(page);
         maxCards = Math.max(maxCards, s.cards);
@@ -277,6 +300,15 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
         if (s.top) seen.add(s.top);
         ctaRects.add(s.ctaRect);
         if (s.top === "hero" && s.heroFace && s.heroFace.bottom > s.ctaTop + 4) heroUnderCta += 1;
+        for (const o of overlaps(s)) crossings.push(`${s.top}/${o.role} ${Math.round(o.top)}-${Math.round(o.bottom)} x ${Math.round(o.left)}-${Math.round(o.right)} (chrome ${Math.round(s.chromeTop)}-${Math.round(s.chromeBottom)})`);
+        if (s.top === "hero" && s.settled) {
+          const hero = s.foreground.find((f) => f.role === "hero");
+          if (hero) {
+            const share = hero.area / (s.vw * s.vh);
+            heroShareMax = Math.max(heroShareMax, share);
+            heroShareMin = Math.min(heroShareMin, share);
+          }
+        }
         if (s.srcs.some((u) => forbidden.includes(u))) forbiddenShown = true;
         if (s.top && !shots.has(s.top) && s.cards <= 12) {
           shots.add(s.top);
@@ -292,6 +324,8 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
       check("a broken or tiny photo never reaches the screen", !forbiddenShown);
       check("the call to action never moves", ctaRects.size === 1, [...ctaRects].join(" | "));
       check("the photo in focus never sits under the call to action", heroUnderCta === 0, `frames=${heroUnderCta}`);
+      check("no foreground photo crosses the branding, the caption line or the screen edge", crossings.length === 0, crossings.slice(0, 4).join(" | "));
+      console.log(`        photo in focus covers ${(heroShareMin * 100).toFixed(0)}%-${(heroShareMax * 100).toFixed(0)}% of the screen`);
       check("feed fetched on load, not per scene", state.feedCalls <= 2, `calls=${state.feedCalls}`);
 
       section("Swipe");
@@ -497,8 +531,10 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
       const taken = new Set();
       const ctaRects = new Set();
       let heroUnder = 0;
+      const crossed = [];
       await run(page, 120000, 500, async () => {
         const s = await snapshot(page);
+        for (const o of overlaps(s)) crossed.push(`${s.top}/${o.role} ${Math.round(o.top)}-${Math.round(o.bottom)} x ${Math.round(o.left)}-${Math.round(o.right)}`);
         if (s.top) seen.add(s.top);
         ctaRects.add(s.ctaRect);
         if (s.top === "hero" && s.heroFace && s.heroFace.bottom > s.ctaTop + 4) heroUnder += 1;
@@ -521,6 +557,7 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
       check(`${name}: no horizontal scroll; CTA and caption fit`, !fit.overflow && fit.ctaInside && fit.captionInside, JSON.stringify(fit));
       check(`${name}: the CTA never moves`, ctaRects.size === 1, [...ctaRects].join(" | "));
       check(`${name}: the photo in focus never sits under the call to action`, heroUnder === 0, `frames=${heroUnder}`);
+      check(`${name}: no foreground photo crosses the branding, the caption line or the screen edge`, crossed.length === 0, crossed.slice(0, 4).join(" | "));
       await context.close();
     }
   } finally {

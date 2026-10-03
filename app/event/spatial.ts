@@ -52,10 +52,20 @@ export const MAX_CARDS = 24;
 
 const MAX_SATELLITES = 4;
 
-export function geometry(W: number, H: number): Geometry {
+/** Breathing room between the photo and the fixed chrome, for its idle drift and glow. */
+const CHROME_GAP = 14;
+
+/**
+ * The photo area is everything between the fixed chrome: below the mark and
+ * above the rotating line. `safe` is measured from the real elements (see
+ * EventKiosk), so the photos use all the space they can without ever sliding
+ * under the branding or the call to action. Without a measurement it falls
+ * back to fractions of the screen.
+ */
+export function geometry(W: number, H: number, safe?: { top: number; bottom: number }): Geometry {
   const portrait = W < H;
-  const top = H * (portrait ? 0.11 : 0.13);
-  const bottom = H * (portrait ? 0.3 : 0.32);
+  const top = (safe ? safe.top : H * (portrait ? 0.09 : 0.11)) + CHROME_GAP;
+  const bottom = (safe ? safe.bottom : H * (portrait ? 0.25 : 0.29)) + CHROME_GAP;
   const avail = Math.max(1, H - top - bottom);
   return { W, H, portrait, avail, cy: top + avail / 2 - H / 2 };
 }
@@ -67,7 +77,7 @@ function fit(aspect: number, boxW: number, boxH: number) {
 
 /** Every card's natural size is its hero size; other roles scale it down. */
 function baseSize(photo: Measured, g: Geometry) {
-  return g.portrait ? fit(photo.aspect, g.W * 0.84, g.avail * 0.9) : fit(photo.aspect, g.W * 0.6, g.avail * 0.92);
+  return g.portrait ? fit(photo.aspect, g.W * 0.94, g.avail) : fit(photo.aspect, g.W * 0.7, g.avail);
 }
 
 function scaleInto(base: { w: number; h: number }, boxW: number, boxH: number) {
@@ -93,7 +103,7 @@ function satellitePose(slot: number, g: Geometry, base: { w: number; h: number }
         { x: 0.4 * W, y: 0.24 * H, z: -720 },
       ];
   const p = slots[slot % slots.length];
-  const s = scaleInto(base, W * 0.42, H * 0.3);
+  const s = scaleInto(base, W * 0.5, H * 0.34);
   return pose({ ...p, s, ry: p.x < 0 ? 14 : -14, rx: p.y < 0 ? -6 : 6, o: 0.5, blur: 2.4 });
 }
 
@@ -157,11 +167,11 @@ export function compose(scene: Scene, prev: Card[], g: Geometry, now: number, vi
     case "pair": {
       const [a, b] = scene.photos;
       if (portrait) {
-        place(a, "pair", (base) => pose({ x: -0.03 * W, y: cy - avail * 0.25, s: scaleInto(base, W * 0.8, avail * 0.47), ry: 5 }), 50, 0.8, 4);
-        place(b, "pair", (base) => pose({ x: 0.03 * W, y: cy + avail * 0.25, z: -140, s: scaleInto(base, W * 0.8, avail * 0.47), ry: -5 }), 45, 0.6, 5);
+        place(a, "pair", (base) => pose({ x: -0.02 * W, y: cy - avail * 0.255, s: scaleInto(base, W * 0.93, avail * 0.49), ry: 5 }), 50, 0.8, 4);
+        place(b, "pair", (base) => pose({ x: 0.02 * W, y: cy + avail * 0.255, z: -120, s: scaleInto(base, W * 0.93, avail * 0.49), ry: -5 }), 45, 0.6, 5);
       } else {
-        place(a, "pair", (base) => pose({ x: -0.235 * W, y: cy, s: scaleInto(base, W * 0.43, avail * 0.86), ry: 7 }), 50, 0.8, 4);
-        place(b, "pair", (base) => pose({ x: 0.24 * W, y: cy, z: -140, s: scaleInto(base, W * 0.43, avail * 0.86), ry: -7 }), 45, 0.6, 5);
+        place(a, "pair", (base) => pose({ x: -0.24 * W, y: cy, s: scaleInto(base, W * 0.47, avail), ry: 7 }), 50, 0.8, 4);
+        place(b, "pair", (base) => pose({ x: 0.245 * W, y: cy, z: -120, s: scaleInto(base, W * 0.47, avail), ry: -7 }), 45, 0.6, 5);
       }
       break;
     }
@@ -169,20 +179,20 @@ export function compose(scene: Scene, prev: Card[], g: Geometry, now: number, vi
       const [big, left, right] = scene.photos;
       const flip = scene.mirror ? -1 : 1;
       if (portrait) {
-        place(big, "trio", (base) => pose({ y: cy - avail * 0.08, s: scaleInto(base, W * 0.72, avail * 0.62) }), 50, 1, 4);
-        place(left, "trio", (base) => pose({ x: -0.36 * W * flip, y: cy + avail * 0.3, z: -260, s: scaleInto(base, W * 0.42, avail * 0.34), ry: 16 * flip }), 40, 0.4, 0);
-        place(right, "trio", (base) => pose({ x: 0.36 * W * flip, y: cy + avail * 0.3, z: -300, s: scaleInto(base, W * 0.42, avail * 0.34), ry: -16 * flip }), 39, 0.4, 1);
+        place(big, "trio", (base) => pose({ y: cy - avail * 0.1, s: scaleInto(base, W * 0.88, avail * 0.72) }), 50, 1, 4);
+        place(left, "trio", (base) => pose({ x: -0.33 * W * flip, y: cy + avail * 0.3, z: -240, s: scaleInto(base, W * 0.5, avail * 0.38), ry: 16 * flip }), 40, 0.4, 0);
+        place(right, "trio", (base) => pose({ x: 0.33 * W * flip, y: cy + avail * 0.3, z: -280, s: scaleInto(base, W * 0.5, avail * 0.38), ry: -16 * flip }), 39, 0.4, 1);
       } else {
-        place(big, "trio", (base) => pose({ y: cy, s: scaleInto(base, W * 0.5, avail * 0.86) }), 50, 1, 4);
-        place(left, "trio", (base) => pose({ x: -0.36 * W * flip, y: cy, z: -280, s: scaleInto(base, W * 0.3, avail * 0.62), ry: 20 * flip }), 40, 0.4, 0);
-        place(right, "trio", (base) => pose({ x: 0.36 * W * flip, y: cy, z: -300, s: scaleInto(base, W * 0.3, avail * 0.62), ry: -20 * flip }), 39, 0.4, 1);
+        place(big, "trio", (base) => pose({ y: cy, s: scaleInto(base, W * 0.56, avail) }), 50, 1, 4);
+        place(left, "trio", (base) => pose({ x: -0.37 * W * flip, y: cy, z: -260, s: scaleInto(base, W * 0.34, avail * 0.72), ry: 20 * flip }), 40, 0.4, 0);
+        place(right, "trio", (base) => pose({ x: 0.37 * W * flip, y: cy, z: -280, s: scaleInto(base, W * 0.34, avail * 0.72), ry: -20 * flip }), 39, 0.4, 1);
       }
       break;
     }
     case "wall": {
       const { cols, rows } = scene;
-      const cellW = (W * 0.95) / cols;
-      const cellH = (avail * 1.02) / rows;
+      const cellW = (W * 0.99) / cols;
+      const cellH = avail / rows;
       const mid = (cols - 1) / 2;
       scene.photos.forEach((photo, i) => {
         const col = i % cols;
@@ -197,7 +207,7 @@ export function compose(scene: Scene, prev: Card[], g: Geometry, now: number, vi
               y: cy + (row - (rows - 1) / 2) * cellH,
               z: -160 - Math.abs(off) * 110, // a gently concave wall
               ry: -off * 9,
-              s: scaleInto(base, cellW * 0.9, cellH * 0.88),
+              s: scaleInto(base, cellW * 0.94, cellH * 0.93),
             }),
           30 - Math.round(Math.abs(off) * 3),
           0.35,
