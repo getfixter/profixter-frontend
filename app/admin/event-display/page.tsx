@@ -9,7 +9,7 @@ import EventDisplay from "./EventDisplay";
  * anyone who is not an admin and only ever returns approved photo URLs.
  */
 export const metadata: Metadata = {
-  title: "Event Display | Profixter",
+  title: "Event Display",
   robots: { index: false, follow: false },
 };
 
