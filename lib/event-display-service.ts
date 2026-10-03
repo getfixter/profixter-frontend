@@ -1,5 +1,5 @@
 /**
- * The booth display's two calls, made with fetch rather than lib/api.
+ * The event display's calls, made with fetch rather than lib/api.
  *
  * lib/api sends the browser to /signin on any 401. On a tablet running
  * unattended on a tripod that would replace the photos with a login form in
@@ -41,8 +41,28 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<Result<
   }
 }
 
-export function fetchDisplayPhotos() {
-  return request<{ photos: DisplayPhoto[]; total: number }>("/photos?scope=display");
+/**
+ * The public kiosk feed: opaque ids only. Each image is served by our API, so
+ * no S3 URL (which carries the booking date and number) reaches a visitor.
+ * No Authorization header is sent: the kiosk works the same for everybody.
+ */
+export async function fetchPublicPhotos(): Promise<Result<{ photos: DisplayPhoto[]; total: number }>> {
+  try {
+    const res = await fetch(`${API_URL}/api/event-display/photos`, { cache: "no-store" });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, status: res.status, message: body?.message || `Request failed (${res.status})` };
+    const list: Array<{ id: string; group: string }> = Array.isArray(body?.photos) ? body.photos : [];
+    const photos = list
+      .filter((p) => /^[0-9a-f]{20}$/.test(String(p?.id)))
+      .map((p) => ({
+        id: p.id,
+        group: String(p.group || ""),
+        url: `${API_URL}/api/event-display/photos/${p.id}/image`,
+      }));
+    return { ok: true, data: { photos, total: photos.length } };
+  } catch {
+    return { ok: false, status: 0, message: "Network error" };
+  }
 }
 
 export function fetchReviewPhotos() {

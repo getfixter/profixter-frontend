@@ -1,5 +1,5 @@
 /*
- * Event display. Everything is scoped under .ed-root so none of it can reach
+ * Event kiosk. Everything is scoped under .ed-root so none of it can reach
  * another page, and every motion is a transform or opacity so the tablet's
  * compositor does the work.
  */
@@ -17,10 +17,6 @@
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
   overscroll-behavior: none;
-  cursor: none;
-}
-.ed-root.ed-cursor {
-  cursor: default;
 }
 .ed-root img {
   -webkit-user-drag: none;
@@ -188,26 +184,13 @@
   animation: ed-rule 1100ms cubic-bezier(0.22, 0.8, 0.2, 1) 900ms both;
 }
 .ed-brand-line {
-  font-size: clamp(12px, 2.3vmin, 19px);
-  font-weight: 500;
-  letter-spacing: 0.34em;
+  font-size: clamp(14px, 3vmin, 26px);
+  font-weight: 600;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: rgba(238, 242, 255, 0.74);
-  padding-left: 0.34em; /* optical centring against the trailing tracking */
+  color: rgba(238, 242, 255, 0.86);
+  padding-left: 0.28em; /* optical centring against the trailing tracking */
   animation: ed-rise 1300ms cubic-bezier(0.22, 0.8, 0.2, 1) 1250ms both;
-}
-.ed-brand-note {
-  margin-top: 28px;
-  font-size: 13px;
-  letter-spacing: 0.04em;
-  color: rgba(238, 242, 255, 0.45);
-  animation: ed-rise 1200ms ease 1600ms both;
-}
-.ed-brand-note a {
-  pointer-events: auto;
-  color: #8fb0f5;
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 @keyframes ed-rise {
   from { opacity: 0; transform: translate3d(0, 14px, 0); }
@@ -218,134 +201,167 @@
   to { opacity: 1; transform: scaleX(1); }
 }
 
-/* ---------- the only chrome: a faint mark ---------- */
 
-.ed-mark {
-  position: absolute;
-  left: max(22px, env(safe-area-inset-left));
-  bottom: max(20px, env(safe-area-inset-bottom));
-  height: clamp(13px, 1.9vmin, 18px);
-  width: auto;
-  opacity: 0.4;
-  filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.6));
-  transition: opacity 1200ms ease;
-  z-index: 5;
+/* ---------- swiped scenes slide like a carousel ---------- */
+
+.ed-layer-slide-next {
+  animation: ed-slide-from-right var(--ed-fade, 520ms) cubic-bezier(0.22, 0.8, 0.2, 1) both;
 }
-.ed-mark-hidden {
+.ed-layer-slide-prev {
+  animation: ed-slide-from-left var(--ed-fade, 520ms) cubic-bezier(0.22, 0.8, 0.2, 1) both;
+}
+@keyframes ed-slide-from-right {
+  from { transform: translate3d(100%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+@keyframes ed-slide-from-left {
+  from { transform: translate3d(-100%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+
+/* ---------- fixed chrome: the mark, the line, the one action ---------- */
+
+.ed-kiosk .ed-vignette {
+  background:
+    linear-gradient(to bottom, rgba(3, 4, 6, 0.62) 0%, rgba(3, 4, 6, 0) 17%),
+    linear-gradient(to top, rgba(3, 4, 6, 0.86) 0%, rgba(3, 4, 6, 0.55) 22%, rgba(3, 4, 6, 0) 42%);
+}
+
+.ed-topbar {
+  position: absolute;
+  z-index: 6;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: max(28px, calc(env(safe-area-inset-top) + 16px)) max(32px, env(safe-area-inset-right)) 0
+    max(32px, env(safe-area-inset-left));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  pointer-events: none;
+  transition: opacity 900ms ease;
+}
+.ed-topbar-hidden {
   opacity: 0;
 }
+.ed-topbar-logo {
+  height: clamp(30px, 4.6vmin, 50px);
+  width: auto;
+  filter: drop-shadow(0 2px 12px rgba(0, 0, 0, 0.45));
+}
+.ed-topbar-tagline {
+  font-size: clamp(13px, 2vmin, 19px);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(238, 242, 255, 0.92);
+  text-align: right;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
+}
 
-/* ---------- hidden admin panel ---------- */
-
-.ed-panel {
+.ed-bottom {
   position: absolute;
-  top: max(16px, env(safe-area-inset-top));
-  right: max(16px, env(safe-area-inset-right));
-  z-index: 20;
+  z-index: 6;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 max(28px, env(safe-area-inset-right)) max(30px, calc(env(safe-area-inset-bottom) + 18px))
+    max(28px, env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  min-width: 250px;
-  border-radius: 18px;
-  background: rgba(16, 18, 24, 0.72);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  backdrop-filter: blur(24px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  touch-action: manipulation;
-  cursor: default;
-  animation: ed-fade-in 260ms ease both;
-}
-.ed-panel-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.ed-panel button,
-.ed-panel a {
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0 14px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #eef2ff;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  border: 0;
-  cursor: pointer;
-  text-decoration: none;
-}
-.ed-panel button:active,
-.ed-panel a:active {
-  background: rgba(255, 255, 255, 0.18);
-}
-.ed-panel-status {
-  font-size: 12px;
-  color: rgba(238, 242, 255, 0.6);
-  letter-spacing: 0.02em;
-}
-.ed-toast {
-  position: absolute;
-  left: 50%;
-  top: max(18px, env(safe-area-inset-top));
-  transform: translateX(-50%);
-  z-index: 21;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(16, 18, 24, 0.7);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: rgba(238, 242, 255, 0.85);
-  animation: ed-fade-in 200ms ease both;
+  pointer-events: none;
 }
 
-/* ---------- guard screens ---------- */
-
-.ed-gate {
-  position: fixed;
-  inset: 0;
+/* A reserved line: its height never changes, so the button never moves. */
+.ed-caption {
+  height: clamp(44px, 7.4vmin, 84px);
+  margin-bottom: clamp(14px, 2.4vmin, 26px);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 24px;
-  background: #030406;
-  color: #eef2ff;
-  font-family: var(--font-sans), system-ui, sans-serif;
-}
-.ed-gate-card {
-  max-width: 440px;
   text-align: center;
+  transition: opacity 900ms ease;
 }
-.ed-gate-card p {
-  margin-top: 14px;
-  font-size: 14px;
-  line-height: 1.6;
-  color: rgba(238, 242, 255, 0.65);
+.ed-caption-hidden {
+  opacity: 0;
 }
-.ed-gate-card a {
-  display: inline-flex;
-  margin-top: 22px;
-  min-height: 44px;
-  align-items: center;
-  padding: 0 20px;
-  border-radius: 999px;
-  background: #306eec;
+.ed-caption-text {
+  font-size: clamp(24px, 4.8vmin, 54px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.015em;
   color: #fff;
-  font-size: 14px;
-  font-weight: 600;
+  text-shadow: 0 2px 22px rgba(0, 0, 0, 0.55);
+  white-space: nowrap;
+  animation: ed-caption-in 900ms cubic-bezier(0.22, 0.8, 0.2, 1) both;
 }
-.ed-pulse {
-  animation: ed-pulse 2200ms ease-in-out infinite;
+@keyframes ed-caption-in {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
-@keyframes ed-pulse {
-  0%, 100% { opacity: 0.25; }
-  50% { opacity: 0.6; }
+
+.ed-cta {
+  pointer-events: auto;
+  touch-action: manipulation;
+  width: min(100%, 620px);
+  min-height: clamp(68px, 9.4vmin, 104px);
+  padding: 0 34px;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #fff;
+  font-family: inherit;
+  font-size: clamp(20px, 3.4vmin, 34px);
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  background: linear-gradient(180deg, #3d7bf2 0%, #2a62de 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.14) inset,
+    0 18px 48px rgba(16, 52, 140, 0.55),
+    0 4px 14px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: transform 140ms ease, filter 140ms ease;
+}
+.ed-cta:active {
+  transform: scale(0.98);
+  filter: brightness(0.94);
+}
+.ed-cta:disabled {
+  cursor: default;
+  filter: saturate(0.85);
+}
+.ed-cta svg {
+  flex: none;
+  animation: ed-nudge 2600ms ease-in-out infinite;
+}
+@keyframes ed-nudge {
+  0%, 70%, 100% { transform: translateX(0); }
+  80% { transform: translateX(5px); }
+}
+.ed-cta-sub {
+  margin-top: clamp(10px, 1.6vmin, 16px);
+  font-size: clamp(13px, 1.9vmin, 18px);
+  font-weight: 500;
+  color: rgba(238, 242, 255, 0.82);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+}
+
+/* Short screens (landscape phones): keep the photo, shrink the chrome. */
+@media (max-height: 520px) {
+  .ed-caption { height: 34px; margin-bottom: 8px; }
+  .ed-caption-text { font-size: 20px; }
+  .ed-cta { min-height: 52px; font-size: 18px; }
+  .ed-cta-sub { display: none; }
+  .ed-topbar { padding-top: 14px; }
+}
+/* Narrow phones: the caption may wrap rather than overflow. */
+@media (max-width: 480px) {
+  .ed-caption-text { white-space: normal; font-size: 24px; }
+  .ed-topbar-tagline { display: none; }
+  .ed-cta { font-size: 18px; padding: 0 20px; gap: 10px; min-height: 60px; }
+  .ed-cta svg { width: 20px; height: 16px; }
 }

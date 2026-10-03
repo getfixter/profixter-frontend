@@ -31,6 +31,7 @@ const ALLOWED_PATH_PREFIXES = [
 
 const BLOCKED_PATH_PREFIXES = [
   "/admin",
+  "/event",
   "/signin",
   "/signup",
   "/forgot-password",

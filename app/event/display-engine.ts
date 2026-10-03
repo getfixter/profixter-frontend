@@ -16,7 +16,8 @@ export type Measured = DisplayPhoto & { w: number; h: number; aspect: number };
 export type Fit = "cover" | "ambient";
 export type Motion = { s0: number; x0: number; y0: number; s1: number; x1: number; y1: number };
 
-type Base = { key: number; duration: number; fade: number };
+/** `from`: set on a swiped scene, the side it slides in from (1 = right, -1 = left). */
+type Base = { key: number; duration: number; fade: number; from?: 1 | -1 };
 export type Scene =
   | (Base & { kind: "hero"; photo: Measured; fit: Fit; motion: Motion })
   | (Base & { kind: "pair"; photos: [Measured, Measured] })
@@ -52,9 +53,10 @@ const MAX_ASPECT = 3.2;
 const RETRY_FAILED_AFTER_MS = 15 * 60 * 1000;
 const LOAD_TIMEOUT_MS = 20000;
 
+/** The brand moment's line, under the big mark. */
 export const BRAND_LINES = [
+  "Monthly handyman for your home.",
   "Real homes. Real things to fix.",
-  "Your handyman. Every month.",
   "Everything handled, every month.",
   "Long Island's handyman membership.",
 ];
@@ -329,7 +331,7 @@ export function heroScene(
   state: PlannerState,
   photo: Measured,
   stageAspect: number,
-  opts: { fade?: number; duration?: number; forceCover?: boolean; calm?: boolean } = {}
+  opts: { fade?: number; duration?: number; forceCover?: boolean; calm?: boolean; from?: 1 | -1 } = {}
 ): Scene {
   state.key += 1;
   state.lastKind = "hero";
@@ -342,6 +344,7 @@ export function heroScene(
     motion: makeMotion(fit, opts.calm),
     duration: opts.duration ?? (fit === "ambient" ? AMBIENT_MS : HERO_MS),
     fade: opts.fade ?? FADE_MS,
+    from: opts.from,
   };
 }
 

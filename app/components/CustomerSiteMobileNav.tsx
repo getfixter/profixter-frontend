@@ -15,6 +15,8 @@ type NavItem = {
 
 const hiddenPathPrefixes = [
   "/admin",
+  // The event kiosk is a full-screen booth display with exactly one action.
+  "/event",
   // Document signing is a focused ceremony. The site nav is fixed to the bottom
   // of the viewport, so it both covers the signing controls and offers the
   // customer a way out of the page mid-signature.
