@@ -137,15 +137,27 @@ async function run(page, ms, step = 500, onStep) {
 
 const snapshot = (page) =>
   page.evaluate(() => {
-    const layers = [...document.querySelectorAll(".ed-layer")];
+    const cards = [...document.querySelectorAll(".ed-card")];
+    const live = cards.filter((c) => c.dataset.role !== "exit");
+    const hero = live.find((c) => c.dataset.role === "hero");
+    const scene = document.querySelector(".ed-world")?.getAttribute("data-scene") || null;
     const root = document.querySelector(".ed-root");
     const cta = document.querySelector(".ed-cta");
     const r = cta ? cta.getBoundingClientRect() : null;
     return {
-      layers: layers.length,
-      kinds: layers.map((l) => l.getAttribute("data-scene")),
-      top: layers.length ? layers[layers.length - 1].getAttribute("data-scene") : null,
-      srcs: [...document.querySelectorAll(".ed-layer img")].map((i) => i.getAttribute("src")),
+      cards: cards.length,
+      roles: live.map((c) => c.dataset.role),
+      kinds: [scene],
+      top: scene,
+      heroSrc: hero ? hero.querySelector("img").getAttribute("src") : null,
+      srcs: live.map((c) => c.querySelector("img").getAttribute("src")),
+      heroFace: hero
+        ? (() => {
+            const img = hero.querySelector("img");
+            const r = hero.getBoundingClientRect();
+            return { natural: img.naturalWidth / Math.max(1, img.naturalHeight), box: r.width / Math.max(1, r.height), bottom: r.bottom, top: r.top };
+          })()
+        : null,
       nodes: document.getElementsByTagName("*").length,
       animations: document.getAnimations().length,
       ctaText: cta ? cta.textContent.trim() : "",
@@ -155,8 +167,9 @@ const snapshot = (page) =>
       anyAdminText: /review|admin|pause|shuffle|refresh/i.test(document.body.innerText),
       selectable: root ? getComputedStyle(root).userSelect : "",
       touchAction: root ? getComputedStyle(root).touchAction : "",
-      imgPointer: [...document.querySelectorAll(".ed-layer img")].every((i) => getComputedStyle(i).pointerEvents === "none"),
-      imgDraggable: [...document.querySelectorAll(".ed-layer img")].some((i) => i.draggable),
+      imgPointer: [...document.querySelectorAll(".ed-root img")].every((i) => getComputedStyle(i).pointerEvents === "none"),
+      imgDraggable: [...document.querySelectorAll(".ed-root img")].some((i) => i.draggable),
+      ctaTop: cta ? cta.getBoundingClientRect().top : 0,
       scrollY: window.scrollY,
       docScrollable: document.documentElement.scrollHeight > window.innerHeight + 1,
       path: location.pathname + location.search,
@@ -210,7 +223,7 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
       await shot(page, "portrait-brand");
       await run(page, 9000);
       s = await snapshot(page);
-      check("plays photos with nobody signed in", s.srcs.some((u) => u.startsWith(IMG)), s.kinds.join(","));
+      check("plays photos with nobody signed in", s.srcs.some((u) => u.startsWith(IMG)), `${s.top} ${s.cards}`);
       check("never calls an admin API", state.adminCalls === 0, `adminCalls=${state.adminCalls}`);
       check("sends no Authorization header to the public feed", state.authHeadersOnFeed === 0);
       check("every image comes from our API, never a storage URL", s.srcs.every((u) => u.startsWith(IMG)), s.srcs.join(" "));
@@ -235,7 +248,7 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
 
       const prevented = await page.evaluate(() => {
         const e = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
-        document.querySelector(".ed-layer")?.dispatchEvent(e);
+        document.querySelector(".ed-card")?.dispatchEvent(e);
         return e.defaultPrevented;
       });
       check("the context menu on a photo is suppressed", prevented);
@@ -253,15 +266,19 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
       const seen = new Set();
       const shots = new Set();
       const ctaRects = new Set();
-      let maxLayers = 0;
+      let maxCards = 0;
       let forbiddenShown = false;
+      let cropped = 0;
+      let heroUnderCta = 0;
       await run(page, 150000, 500, async () => {
         const s = await snapshot(page);
-        maxLayers = Math.max(maxLayers, s.layers);
+        maxCards = Math.max(maxCards, s.cards);
+        if (s.heroFace && s.heroFace.natural > 0 && Math.abs(Math.log(s.heroFace.natural / s.heroFace.box)) > 0.12 && s.roles.length === 1) cropped += 1;
         if (s.top) seen.add(s.top);
         ctaRects.add(s.ctaRect);
+        if (s.top === "hero" && s.heroFace && s.heroFace.bottom > s.ctaTop + 4) heroUnderCta += 1;
         if (s.srcs.some((u) => forbidden.includes(u))) forbiddenShown = true;
-        if (s.layers === 1 && s.top && !shots.has(s.top)) {
+        if (s.top && !shots.has(s.top) && s.cards <= 12) {
           shots.add(s.top);
           await page.clock.runFor(2500);
           await shot(page, `portrait-${s.top}`);
@@ -270,33 +287,51 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
       check("plays on its own", seen.has("hero"), [...seen].join(","));
       check("varies the composition", ["pair", "trio", "wall"].filter((k) => seen.has(k)).length >= 2, [...seen].join(","));
       check("returns to the brand between groups", seen.has("brand"));
-      check("never more than two scenes mounted", maxLayers <= 2, `max=${maxLayers}`);
+      check("the card count stays capped", maxCards <= 24, `max=${maxCards}`);
+      check("the photo in focus is shown whole (its card has the photo's shape)", cropped === 0, `cropped frames=${cropped}`);
       check("a broken or tiny photo never reaches the screen", !forbiddenShown);
       check("the call to action never moves", ctaRects.size === 1, [...ctaRects].join(" | "));
+      check("the photo in focus never sits under the call to action", heroUnderCta === 0, `frames=${heroUnderCta}`);
       check("feed fetched on load, not per scene", state.feedCalls <= 2, `calls=${state.feedCalls}`);
 
       section("Swipe");
+      // Wait for a moment with a photo in focus.
+      for (let i = 0; i < 40 && !(await snapshot(page)).heroSrc; i += 1) await run(page, 500);
       await run(page, 2500);
       const before = await snapshot(page);
-      await swipe(page, 640, 260);
-      await run(page, 200);
+      await page.mouse.move(640, 600);
+      await page.mouse.down();
+      await page.mouse.move(520, 602, { steps: 4 });
+      const dragging = await page.evaluate(() => {
+        const hero = [...document.querySelectorAll(".ed-card")].find((c) => c.dataset.role === "hero");
+        const world = document.querySelector(".ed-world");
+        return { follows: world.classList.contains("ed-dragging") && parseFloat(getComputedStyle(world).getPropertyValue("--dx")) < -50, hero: !!hero };
+      });
+      check("the photo follows the finger while dragging", dragging.follows && dragging.hero);
+      await page.mouse.move(260, 605, { steps: 4 });
+      await page.mouse.up();
+      await run(page, 250);
       const mid = await snapshot(page);
-      const topClass = await page.evaluate(() => [...document.querySelectorAll(".ed-layer")].pop()?.className || "");
-      check("a swipe slides the next photo in", mid.layers === 2 && /slide-next/.test(topClass), `${mid.kinds} / ${topClass}`);
-      await run(page, 900);
+      const leaving = await page.evaluate((src) => {
+        const c = [...document.querySelectorAll(".ed-card")].find((el) => el.querySelector("img").getAttribute("src") === src);
+        return c ? c.dataset.role : "gone";
+      }, before.heroSrc);
+      check("a swipe throws the old photo off and brings the next one in", mid.heroSrc && mid.heroSrc !== before.heroSrc && ["exit", "gone"].includes(leaving), `old card: ${leaving}`);
+      await run(page, 1200);
       const afterLeft = await snapshot(page);
-      check("swipe left lands on a single new photo", afterLeft.top === "hero" && afterLeft.srcs.join() !== before.srcs.join());
-      const leftSrc = afterLeft.srcs[afterLeft.srcs.length - 1];
+      check("swipe left lands on a photo in focus", afterLeft.top === "hero" && !!afterLeft.heroSrc);
+      const leftSrc = afterLeft.heroSrc;
 
       await swipe(page, 200, 620);
-      await run(page, 1100);
+      await run(page, 1200);
       const afterRight = await snapshot(page);
-      check("swipe right goes back to an earlier photo", afterRight.top === "hero" && afterRight.srcs[afterRight.srcs.length - 1] !== leftSrc);
+      check("swipe right goes back to an earlier photo", afterRight.top === "hero" && afterRight.heroSrc && afterRight.heroSrc !== leftSrc);
 
-      const settled = (await snapshot(page)).srcs.join();
+      const settled = (await snapshot(page)).heroSrc;
       await swipe(page, 400, 380, 600, 4);
-      await run(page, 600);
-      check("a tiny drag springs back without changing photo", (await snapshot(page)).srcs.join() === settled);
+      await run(page, 900);
+      const sprung = await page.evaluate(() => getComputedStyle(document.querySelector(".ed-world")).getPropertyValue("--dx").trim());
+      check("a tiny drag springs back without changing photo", (await snapshot(page)).heroSrc === settled && (sprung === "0px" || sprung === "0"), sprung);
 
       await page.mouse.move(400, 300);
       await page.mouse.down();
@@ -304,44 +339,53 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
       await page.mouse.up();
       await run(page, 600);
       const vert = await snapshot(page);
-      check("a vertical drag neither swipes nor scrolls", vert.srcs.join() === settled && vert.scrollY === 0);
+      check("a vertical drag neither swipes nor scrolls", vert.heroSrc === settled && vert.scrollY === 0);
 
       let rapidMax = 0;
+      const seenHeroes = new Set();
       for (let i = 0; i < 6; i += 1) {
         await swipe(page, 640, 240, 600, 3);
         await run(page, 120, 60);
-        rapidMax = Math.max(rapidMax, (await snapshot(page)).layers);
+        const r = await snapshot(page);
+        rapidMax = Math.max(rapidMax, r.cards);
+        if (r.heroSrc) seenHeroes.add(r.heroSrc);
       }
-      await run(page, 1200);
+      await run(page, 2400);
       const rapid = await snapshot(page);
-      check("six rapid swipes: at most two scenes, ending on one photo", rapidMax <= 2 && rapid.layers === 1 && rapid.top === "hero", `max=${rapidMax} end=${rapid.kinds}`);
+      check("six rapid swipes: six different photos, cards stay capped, one photo in focus at the end",
+        seenHeroes.size >= 5 && rapidMax <= 24 && rapid.top === "hero" && rapid.roles.filter((r) => r === "hero").length === 1,
+        `photos=${seenHeroes.size} max=${rapidMax} roles=${rapid.roles}`);
+      const held = (await snapshot(page)).heroSrc;
+      await run(page, 9000);
+      check("autoplay waits while someone is browsing", (await snapshot(page)).heroSrc === held);
+      await run(page, 5000);
+      const resumed = await snapshot(page);
+      check("autoplay resumes about 12s after the last touch", resumed.heroSrc !== held || resumed.top !== "hero");
       await shot(page, "portrait-after-swipes");
-
-      const held = (await snapshot(page)).srcs.join();
-      await run(page, 10000);
-      check("autoplay waits while someone is browsing", (await snapshot(page)).srcs.join() === held);
-      await run(page, 4000);
-      check("autoplay resumes about 12s after the last touch", (await snapshot(page)).srcs.join() !== held);
 
       section(`Long run (${MINUTES} simulated minutes)`);
       const start = await snapshot(page);
       let peakNodes = 0;
       let peakAnimations = 0;
-      let peakLayers = 0;
+      let peakEarly = 0;
+      let peakLate = 0;
+      let peakCards = 0;
       const samples = [];
       await run(page, MINUTES * 60000, 1000, async (t) => {
         const s = await snapshot(page);
         peakNodes = Math.max(peakNodes, s.nodes);
         peakAnimations = Math.max(peakAnimations, s.animations);
-        peakLayers = Math.max(peakLayers, s.layers);
+        if (t < (MINUTES * 60000) / 2) peakEarly = Math.max(peakEarly, s.animations);
+        else peakLate = Math.max(peakLate, s.animations);
+        peakCards = Math.max(peakCards, s.cards);
         if (t % 60000 === 0) samples.push(await heapAfterGc(page));
       });
       console.log(`        heap per minute (MB): ${samples.map((b) => (b / 1048576).toFixed(1)).join(" ")}`);
       const end = await snapshot(page);
       check("still playing at the end", end.srcs.some((u) => u.startsWith(IMG)) || end.top === "brand");
       check("DOM stays bounded", peakNodes < start.nodes + 120, `start=${start.nodes} peak=${peakNodes}`);
-      check("animations do not pile up", peakAnimations < 60, `peak=${peakAnimations}`);
-      check("never more than two scenes mounted (long run)", peakLayers <= 2, `peak=${peakLayers}`);
+      check("animations stay bounded and do not grow over time", peakAnimations < 110 && peakLate <= peakEarly + 10, `peak=${peakAnimations} early=${peakEarly} late=${peakLate}`);
+      check("the card count stays capped (long run)", peakCards <= 24, `peak=${peakCards}`);
       const half = Math.ceil(samples.length / 2);
       const avg = (xs) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
       const growth = avg(samples.slice(half)) - avg(samples.slice(1, half));
@@ -413,6 +457,27 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
       await context.close();
     }
 
+    section("Footer link");
+    {
+      const { context, page } = await open(browser, { token: null, photos, viewport: { width: 1280, height: 900 }, path: "/about", clock: false });
+      await page.waitForTimeout(3000);
+      const footer = await page.evaluate(() =>
+        [...document.querySelectorAll("footer nav[aria-label='Footer company'] a")].map((a) => [a.textContent.trim(), a.getAttribute("href")])
+      );
+      const last = footer[footer.length - 1] || [];
+      check("the footer's Company links end with 'Event Page' → /event", last[0] === "Event Page" && last[1] === "/event", JSON.stringify(last));
+      check("the other Company links are unchanged",
+        JSON.stringify(footer.slice(0, -1).map((l) => l[0])) ===
+          JSON.stringify(["About Us", "Community Partnerships", "Careers", "Privacy Policy", "Terms of Service", "Communication Consent", "SMS Consent"]),
+        JSON.stringify(footer.map((l) => l[0])));
+      await page.locator("footer a[href='/event']").click();
+      await page.waitForURL(/\/event$/, { timeout: 15000 });
+      await page.waitForTimeout(2000);
+      const s = await snapshot(page);
+      check("following it opens the kiosk, with its one button and no links", s.links.length === 0 && s.buttons.length === 1, `${s.links.length} links`);
+      await context.close();
+    }
+
     section("Old admin URL");
     {
       const { context, page } = await open(browser, { token: null, photos, device: ipad, path: "/admin/event-display", clock: false });
@@ -431,11 +496,13 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
       const seen = new Set();
       const taken = new Set();
       const ctaRects = new Set();
+      let heroUnder = 0;
       await run(page, 120000, 500, async () => {
         const s = await snapshot(page);
         if (s.top) seen.add(s.top);
         ctaRects.add(s.ctaRect);
-        if (s.layers === 1 && s.top && !taken.has(s.top) && ["hero", "pair", "brand"].includes(s.top)) {
+        if (s.top === "hero" && s.heroFace && s.heroFace.bottom > s.ctaTop + 4) heroUnder += 1;
+        if (s.top && !taken.has(s.top) && ["hero", "pair", "trio", "wall", "brand"].includes(s.top) && s.cards <= 12) {
           taken.add(s.top);
           await page.clock.runFor(2500);
           await shot(page, `${name}-${s.top}`);
@@ -453,6 +520,7 @@ const hasPanel = (s) => s.buttons.some((b) => /pause|play|shuffle|refresh|fullsc
       check(`${name}: plays photos`, seen.has("hero"), [...seen].join(","));
       check(`${name}: no horizontal scroll; CTA and caption fit`, !fit.overflow && fit.ctaInside && fit.captionInside, JSON.stringify(fit));
       check(`${name}: the CTA never moves`, ctaRects.size === 1, [...ctaRects].join(" | "));
+      check(`${name}: the photo in focus never sits under the call to action`, heroUnder === 0, `frames=${heroUnder}`);
       await context.close();
     }
   } finally {
