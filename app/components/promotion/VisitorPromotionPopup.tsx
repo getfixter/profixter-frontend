@@ -12,6 +12,7 @@ import PromotionPopupCard from "./PromotionPopupCard";
 const DISMISSED_KEY = "profixter_promotion_popup_dismissed_date";
 const PRIVATE_PATHS = [
   "/admin",
+  "/event",
   "/account",
   "/signin",
   "/signup",

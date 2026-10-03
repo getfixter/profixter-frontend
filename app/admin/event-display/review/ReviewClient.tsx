@@ -155,7 +155,7 @@ function Review() {
               Admin
             </Link>
             <Link
-              href="/admin/event-display"
+              href="/event"
               className="inline-flex min-h-[40px] items-center rounded-lg bg-[#0B1628] px-4 text-[13px] font-semibold text-white"
             >
               Open display →
@@ -186,7 +186,7 @@ function Review() {
       <main className="mx-auto max-w-[1200px] px-4 pt-4">
         <p className="mb-4 max-w-[760px] text-[13px] leading-relaxed text-slate-600">
           {tab === "showing"
-            ? "Every eligible customer booking photo plays on the display, newest first here. If you see one you don't want shown, tap it and press Hide. The display drops it on its next refresh (or press Refresh in its hidden panel)."
+            ? "Every eligible customer booking photo plays on the display, newest first here. If you see one you don't want shown, tap it and press Hide. The public display stops serving it at once, and drops it from rotation on its next refresh (within 30 minutes, or reload the display)."
             : "These never play. Tap any to put them back on the display."}
         </p>
 

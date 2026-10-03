@@ -1,26 +1,33 @@
 "use client";
 
 /**
- * The booth display.
+ * The public event kiosk: an iPad on a tripod at a Profixter booth.
  *
- * Plays on its own. A passer-by may swipe; it picks itself back up after
- * twelve quiet seconds. Admin controls exist but are hidden: long-press the
- * top-right corner, or use the keyboard (space, arrows, F, S, R, P).
+ * A visitor can do exactly three things here: watch, swipe left/right, and
+ * tap "Get My First Visit Free". There are no other controls, no admin panel,
+ * no keyboard shortcuts, no links, and the photos themselves are not
+ * clickable, draggable or long-pressable. Photo management stays in
+ * /admin/event-display/review, behind the admin API.
  *
- * Built to run for a whole day: at most two scenes are mounted at once, only
- * a small buffer of photos is ever preloaded (display-engine.ts), every timer
- * and animation is torn down with the scene that started it, and after a few
- * hours the page reloads itself at a quiet moment, right after confirming the
- * API still answers.
+ * Photos come from the public kiosk feed (opaque ids; images served by our
+ * API, never S3 URLs, so no booking date or number reaches the browser).
+ *
+ * The call to action signs out whatever session this browser holds, using
+ * the site's own logout, before opening registration. The iPad may have been
+ * set up while signed in as an admin, and a visitor must never register, or
+ * see anything, inside that session.
+ *
+ * Built to run all day: at most two scenes are mounted at once, only a small
+ * buffer of photos is preloaded (display-engine.ts), every timer and animation
+ * is torn down with its scene, and after a few hours the page reloads itself
+ * at a quiet moment, right after confirming the API still answers.
  */
 
-import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
-import { isAdminUser } from "@/lib/auth-routing";
-import { fetchDisplayPhotos } from "@/lib/event-display-service";
+import { fetchPublicPhotos } from "@/lib/event-display-service";
+import { KIOSK_RETURN_KEY, clearKioskCarryOver } from "@/lib/event-kiosk";
 import {
-  MANUAL_FADE_MS,
   RESUME_AFTER_MS,
   WALL_EXPAND_LEAD_MS,
   PhotoPool,
@@ -33,64 +40,39 @@ import {
   type Motion,
   type Scene,
 } from "./display-engine";
-import "./event-display.css";
+import "./event-kiosk.css";
 
 const LOGO = "/images/logo-footer.svg";
+const SIGNUP_PATH = "/signup?source=event";
 const REFRESH_MS = 30 * 60 * 1000;
 const REFRESH_WHEN_EMPTY_MS = 60 * 1000;
 const RELOAD_AFTER_MS = 4 * 60 * 60 * 1000;
-const LONG_PRESS_MS = 650;
-const CORNER_PX = 96;
-const SWIPE_PX = 48;
-const PANEL_IDLE_MS = 10000;
+const SWIPE_PX = 56;
+const SLIDE_MS = 520;
 const HISTORY_LIMIT = 60;
+const CAPTION_MS = 7000;
 
-export default function EventDisplay() {
-  const { user, isLoading } = useAuth();
+/** The one persistent line under the mark: what Profixter is, in five words. */
+const TAGLINE = "Your handyman. Every month.";
 
-  if (isLoading) {
-    return (
-      <div className="ed-gate">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={LOGO} alt="Profixter" width={220} className="ed-pulse" />
-      </div>
-    );
-  }
+/** Short, readable from across a room; rotates in a fixed place. */
+const CAPTIONS = [
+  "Something broken at home?",
+  "Real requests from Long Island homes.",
+  "Small repairs. One simple membership.",
+  "There’s always something to fix.",
+  "Real homes. Real things to fix.",
+];
 
-  if (!user || !isAdminUser(user)) {
-    return (
-      <div className="ed-gate">
-        <div className="ed-gate-card">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={LOGO} alt="Profixter" width={200} style={{ margin: "0 auto", opacity: 0.85 }} />
-          <p>
-            The event display needs an admin session on this device.
-            {user ? ` This browser is signed in as ${user.email || "a non-admin account"}.` : ""}
-          </p>
-          <Link href="/signin">{user ? "Sign in as admin" : "Sign in"}</Link>
-        </div>
-      </div>
-    );
-  }
-
-  return <Player />;
-}
-
-/* ====================================================================== */
-
-function Player() {
+export default function EventKiosk() {
   const rootRef = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState({ w: 0, h: 0 });
   const aspectRef = useRef(0.75);
 
   const [layers, setLayers] = useState<Scene[]>([]);
   const currentRef = useRef<Scene | null>(null);
-  const [paused, setPaused] = useState(false);
-  const pausedRef = useRef(false);
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-  const [count, setCount] = useState<number | null>(null);
-  const [cursor, setCursor] = useState(false);
+  const [caption, setCaption] = useState(0);
+  const [leaving, setLeaving] = useState(false);
 
   const plannerRef = useRef(newPlannerState());
   const timerRef = useRef<number | undefined>(undefined);
@@ -99,14 +81,14 @@ function Player() {
   const backRef = useRef(0);
   const startedAtRef = useRef(0);
   const reloadReadyRef = useRef(false);
-  const tickRef = useRef<() => void>(() => {});
-
   const countRef = useRef<number | null>(null);
+  const tickRef = useRef<() => void>(() => {});
+  const dragRef = useRef<{ x: number; y: number; id: number; t: number; active: boolean } | null>(null);
 
   const [pool] = useState(() => new PhotoPool());
   useEffect(() => {
     pool.listen(() => {
-      if (waitingRef.current && !pausedRef.current) {
+      if (waitingRef.current && !dragRef.current?.active) {
         waitingRef.current = false;
         tickRef.current();
       }
@@ -134,28 +116,20 @@ function Player() {
 
   const tick = useCallback(() => {
     window.clearTimeout(timerRef.current);
-    if (pausedRef.current) return;
     const planner = plannerRef.current;
-    const loaded = countRef.current !== null;
     backRef.current = 0;
 
     if (pool.size === 0) {
-      // Nothing to show (or not loaded yet): stay on the brand, quietly, and
-      // start the moment the first photo is ready.
+      // Nothing to show (or not loaded yet): stay on the brand, and start the
+      // moment the first photo is ready.
       waitingRef.current = true;
-      const note = loaded ? "empty" : undefined;
-      if (currentRef.current?.kind !== "brand" || currentRef.current.note !== note) {
-        show(brandScene(planner, note));
-      }
+      if (currentRef.current?.kind !== "brand") show(brandScene(planner));
       return;
     }
 
     const scene = planScene(planner, pool, aspectRef.current);
     if (!scene) {
       waitingRef.current = true;
-      if (pool.looksOffline && currentRef.current?.kind !== "brand") {
-        show(brandScene(planner, "offline"));
-      }
       schedule(4000);
       return;
     }
@@ -175,12 +149,24 @@ function Player() {
     tickRef.current = tick;
   }, [tick]);
 
-  /** A finger moved the show: one photo, quickly, then autoplay waits. */
+  /** The element of the scene currently on top, for drag and slide. */
+  const topLayerEl = useCallback(() => {
+    const all = rootRef.current?.querySelectorAll<HTMLElement>(".ed-layer");
+    return all && all.length ? all[all.length - 1] : null;
+  }, []);
+
+  /**
+   * A finger moved the show: one photo slides in from the side it was pulled
+   * toward, the old one slides out, and autoplay waits RESUME_AFTER_MS.
+   */
   const step = useCallback(
     (direction: 1 | -1) => {
       const planner = plannerRef.current;
       const history = historyRef.current;
       let photo: Measured | null = null;
+      // A person is driving now: autoplay comes back on the resume timer only,
+      // not because a photo it was waiting for finished loading.
+      waitingRef.current = false;
 
       if (direction < 0) {
         const next = Math.min(backRef.current + 1, history.length - 1);
@@ -196,25 +182,35 @@ function Player() {
         photo = pool.take();
         if (photo) history.push(photo);
       }
-      if (!photo) return;
-      show(heroScene(planner, photo, aspectRef.current, { fade: MANUAL_FADE_MS }));
-      if (!pausedRef.current) schedule(RESUME_AFTER_MS);
+
+      const outgoing = topLayerEl();
+      if (!photo) {
+        if (outgoing) snapBack(outgoing);
+        schedule(RESUME_AFTER_MS);
+        return;
+      }
+      if (outgoing) {
+        outgoing.style.transition = `transform ${SLIDE_MS}ms cubic-bezier(0.22, 0.8, 0.2, 1)`;
+        outgoing.style.transform = `translate3d(${direction > 0 ? -100 : 100}%, 0, 0)`;
+      }
+      show(heroScene(planner, photo, aspectRef.current, { fade: SLIDE_MS, from: direction }));
+      schedule(RESUME_AFTER_MS);
     },
-    [pool, schedule, show]
+    [pool, schedule, show, topLayerEl]
   );
 
   const onBroken = useCallback(
     (id: string) => {
       pool.markBroken(id);
       const current = currentRef.current;
-      if (current && photosIn(current).some((p) => p.id === id) && !pausedRef.current) {
+      if (current && photosIn(current).some((p) => p.id === id) && !dragRef.current?.active) {
         schedule(300);
       }
     },
     [pool, schedule]
   );
 
-  // Drop the layer underneath once the one on top has fully faded in.
+  // Drop the layer underneath once the one on top has fully arrived.
   useEffect(() => {
     if (layers.length < 2) return;
     const top = layers[layers.length - 1];
@@ -226,27 +222,14 @@ function Player() {
 
   /* ---------- photos ---------- */
 
-  const toastTimer = useRef<number | undefined>(undefined);
-  const flash = useCallback((message: string) => {
-    setToast(message);
-    window.clearTimeout(toastTimer.current);
-    toastTimer.current = window.setTimeout(() => setToast(null), 2200);
-  }, []);
-  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
-
-  const refresh = useCallback(async (announce = false) => {
-    const result = await fetchDisplayPhotos();
-    if (!result.ok) {
-      if (announce) flash(`Refresh failed: ${result.message}`);
-      return false;
-    }
+  const refresh = useCallback(async () => {
+    const result = await fetchPublicPhotos();
+    if (!result.ok) return false;
     pool.setPhotos(result.data.photos);
     countRef.current = result.data.photos.length;
-    setCount(result.data.photos.length);
-    if (announce) flash(`${result.data.photos.length} photos`);
     if (Date.now() - startedAtRef.current > RELOAD_AFTER_MS) reloadReadyRef.current = true;
     return true;
-  }, [flash, pool]);
+  }, [pool]);
 
   useEffect(() => {
     let cancelled = false;
@@ -254,8 +237,7 @@ function Player() {
     const loop = async () => {
       const ok = await refresh();
       if (cancelled) return;
-      const empty = pool.size === 0;
-      t = window.setTimeout(loop, ok && !empty ? REFRESH_MS : REFRESH_WHEN_EMPTY_MS);
+      t = window.setTimeout(loop, ok && pool.size > 0 ? REFRESH_MS : REFRESH_WHEN_EMPTY_MS);
     };
     void loop();
     return () => {
@@ -274,11 +256,18 @@ function Player() {
     return () => window.clearTimeout(timerRef.current);
   }, [schedule, show]);
 
-  // When the library goes from "nothing" to "something" (or back), react now.
+  // The short line under the photos, on its own steady clock.
   useEffect(() => {
-    if (count === null) return;
-    if (count === 0) tickRef.current();
-  }, [count]);
+    const t = window.setInterval(() => setCaption((c) => (c + 1) % CAPTIONS.length), CAPTION_MS);
+    return () => window.clearInterval(t);
+  }, []);
+
+  // Back on the kiosk: the "Back to event" escape hatch is no longer needed.
+  useEffect(() => {
+    try {
+      window.sessionStorage.removeItem(KIOSK_RETURN_KEY);
+    } catch {}
+  }, []);
 
   /* ---------- the stage ---------- */
 
@@ -299,20 +288,38 @@ function Player() {
     return () => observer.disconnect();
   }, []);
 
-  // A page that is a screen: no scroll, no bounce, no pinch, no light flash, no sleep.
+  // A page that is a screen: no scroll, no bounce, no pinch, no callouts, no sleep.
   useEffect(() => {
     const html = document.documentElement;
     const body = document.body;
     const saved = [html.style.cssText, body.style.cssText];
     html.style.background = "#030406";
     html.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
     body.style.background = "#030406";
     body.style.overflow = "hidden";
     body.style.overscrollBehavior = "none";
 
-    const stopGesture = (e: Event) => e.preventDefault();
-    document.addEventListener("gesturestart", stopGesture, { passive: false });
-    document.addEventListener("contextmenu", stopGesture);
+    const stop = (e: Event) => e.preventDefault();
+    // Nothing on this page scrolls; a moving finger is a swipe, never a scroll.
+    const stopMove = (e: TouchEvent) => {
+      if (e.cancelable) e.preventDefault();
+    };
+    // Safari's edge-swipe back/forward: a touch that starts at the very edge
+    // is claimed here. Not every iOS version honours this; a Home Screen app
+    // with Guided Access is the dependable way to rule it out.
+    const stopEdge = (e: TouchEvent) => {
+      const x = e.touches[0]?.clientX ?? 0;
+      const target = e.target as HTMLElement | null;
+      if (target?.closest("button")) return;
+      if ((x < 24 || x > window.innerWidth - 24) && e.cancelable) e.preventDefault();
+    };
+    document.addEventListener("gesturestart", stop, { passive: false });
+    document.addEventListener("contextmenu", stop);
+    document.addEventListener("dragstart", stop);
+    document.addEventListener("selectstart", stop);
+    document.addEventListener("touchmove", stopMove, { passive: false });
+    document.addEventListener("touchstart", stopEdge, { passive: false });
 
     let lock: { release: () => Promise<void> } | null = null;
     const wakeLock = (navigator as Navigator & {
@@ -333,165 +340,108 @@ function Player() {
     return () => {
       html.style.cssText = saved[0];
       body.style.cssText = saved[1];
-      document.removeEventListener("gesturestart", stopGesture);
-      document.removeEventListener("contextmenu", stopGesture);
+      document.removeEventListener("gesturestart", stop);
+      document.removeEventListener("contextmenu", stop);
+      document.removeEventListener("dragstart", stop);
+      document.removeEventListener("selectstart", stop);
+      document.removeEventListener("touchmove", stopMove);
+      document.removeEventListener("touchstart", stopEdge);
       document.removeEventListener("visibilitychange", requestLock);
       void lock?.release().catch(() => {});
     };
   }, []);
 
-  /* ---------- admin controls ---------- */
-
-  const setPausedBoth = useCallback(
-    (value: boolean) => {
-      pausedRef.current = value;
-      setPaused(value);
-      if (value) window.clearTimeout(timerRef.current);
-      else schedule(600);
-    },
-    [schedule]
-  );
-
-  const actions = useMemo(
-    () => ({
-      togglePause: () => {
-        const next = !pausedRef.current;
-        setPausedBoth(next);
-        flash(next ? "Paused" : "Playing");
-      },
-      next: () => step(1),
-      prev: () => step(-1),
-      shuffle: () => {
-        pool.reshuffle();
-        flash("Shuffled");
-      },
-      refresh: () => void refresh(true),
-      fullscreen: () => {
-        const el = document.documentElement as HTMLElement & {
-          webkitRequestFullscreen?: () => void;
-        };
-        const doc = document as Document & {
-          webkitFullscreenElement?: Element | null;
-          webkitExitFullscreen?: () => void;
-        };
-        const active = document.fullscreenElement || doc.webkitFullscreenElement;
-        try {
-          if (active) {
-            if (document.exitFullscreen) void document.exitFullscreen();
-            else doc.webkitExitFullscreen?.();
-          } else if (el.requestFullscreen) {
-            void el.requestFullscreen().catch(() => flash("Fullscreen not available"));
-          } else if (el.webkitRequestFullscreen) {
-            el.webkitRequestFullscreen();
-          } else {
-            flash("Use Add to Home Screen for fullscreen");
-          }
-        } catch {
-          flash("Fullscreen not available");
-        }
-      },
-    }),
-    [flash, pool, refresh, setPausedBoth, step]
-  );
-
-  // The panel tucks itself away again.
-  const panelTimer = useRef<number | undefined>(undefined);
-  const touchPanel = useCallback(() => {
-    window.clearTimeout(panelTimer.current);
-    panelTimer.current = window.setTimeout(() => setPanelOpen(false), PANEL_IDLE_MS);
-  }, []);
-  useEffect(() => {
-    if (panelOpen) touchPanel();
-    return () => window.clearTimeout(panelTimer.current);
-  }, [panelOpen, touchPanel]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const key = e.key.toLowerCase();
-      const map: Record<string, () => void> = {
-        " ": actions.togglePause,
-        arrowright: actions.next,
-        arrowleft: actions.prev,
-        f: actions.fullscreen,
-        s: actions.shuffle,
-        r: actions.refresh,
-        p: () => setPanelOpen((open) => !open),
-        escape: () => setPanelOpen(false),
-      };
-      const action = map[key];
-      if (action) {
-        e.preventDefault();
-        action();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [actions]);
-
-  /* ---------- touch: swipe, and the secret corner ---------- */
-
-  const gesture = useRef<{ x: number; y: number; id: number; corner: boolean } | null>(null);
-  const pressTimer = useRef<number | undefined>(undefined);
-  const cursorTimer = useRef<number | undefined>(undefined);
+  /* ---------- swipe ---------- */
 
   const onPointerDown = (e: React.PointerEvent) => {
-    const rect = rootRef.current!.getBoundingClientRect();
-    const corner = e.clientX > rect.right - CORNER_PX && e.clientY < rect.top + CORNER_PX;
-    gesture.current = { x: e.clientX, y: e.clientY, id: e.pointerId, corner };
-    window.clearTimeout(pressTimer.current);
-    if (corner) {
-      pressTimer.current = window.setTimeout(() => {
-        setPanelOpen(true);
-        gesture.current = null;
-      }, LONG_PRESS_MS);
-    }
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    dragRef.current = { x: e.clientX, y: e.clientY, id: e.pointerId, t: performance.now(), active: false };
   };
+
   const onPointerMove = (e: React.PointerEvent) => {
-    if (e.pointerType === "mouse") {
-      setCursor(true);
-      window.clearTimeout(cursorTimer.current);
-      cursorTimer.current = window.setTimeout(() => setCursor(false), 2500);
+    const d = dragRef.current;
+    if (!d || d.id !== e.pointerId) return;
+    const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    if (!d.active) {
+      if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+      d.active = true;
+      window.clearTimeout(timerRef.current); // hold autoplay while a finger is down
+      waitingRef.current = false;
     }
-    const g = gesture.current;
-    if (g && g.id === e.pointerId && Math.hypot(e.clientX - g.x, e.clientY - g.y) > 12) {
-      window.clearTimeout(pressTimer.current);
+    const el = topLayerEl();
+    if (el) {
+      el.style.transition = "none";
+      el.style.transform = `translate3d(${dx}px, 0, 0)`;
     }
   };
+
   const onPointerUp = (e: React.PointerEvent) => {
-    window.clearTimeout(pressTimer.current);
-    const g = gesture.current;
-    gesture.current = null;
-    if (!g || g.id !== e.pointerId) return;
-    const dx = e.clientX - g.x;
-    const dy = e.clientY - g.y;
-    if (Math.abs(dx) > SWIPE_PX && Math.abs(dx) > Math.abs(dy) * 1.2) {
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (!d || d.id !== e.pointerId || !d.active) return;
+    const dx = e.clientX - d.x;
+    const speed = Math.abs(dx) / Math.max(1, performance.now() - d.t);
+    if (Math.abs(dx) > SWIPE_PX || (speed > 0.5 && Math.abs(dx) > 24)) {
       step(dx < 0 ? 1 : -1);
+    } else {
+      const el = topLayerEl();
+      if (el) snapBack(el);
+      waitingRef.current = false;
+      schedule(RESUME_AFTER_MS);
     }
   };
-  useEffect(
-    () => () => {
-      window.clearTimeout(pressTimer.current);
-      window.clearTimeout(cursorTimer.current);
-    },
-    []
-  );
+
+  const onPointerCancel = () => {
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (d?.active) {
+      const el = topLayerEl();
+      if (el) snapBack(el);
+      schedule(RESUME_AFTER_MS);
+    }
+  };
+
+  /* ---------- the one action ---------- */
+
+  const { logout, isLoading: authLoading } = useAuth();
+  const [ctaPending, setCtaPending] = useState(false);
+
+  const startSignup = useCallback(() => {
+    setCtaPending(true);
+    setLeaving(true);
+  }, []);
+
+  useEffect(() => {
+    // Wait for the session check to settle, so a sign-in still resolving cannot
+    // write its token back after the sign-out below.
+    if (!ctaPending || authLoading) return;
+    logout();
+    clearKioskCarryOver();
+    try {
+      window.sessionStorage.setItem(KIOSK_RETURN_KEY, "1");
+    } catch {}
+    // A full navigation, so registration starts from a fresh, signed-out app.
+    window.location.assign(SIGNUP_PATH);
+  }, [ctaPending, authLoading, logout]);
 
   const top = layers[layers.length - 1];
+  const onBrand = !top || top.kind === "brand";
   const portrait = stage.w > 0 ? stage.w < stage.h : true;
+  const insets = {
+    top: stage.h * (portrait ? 0.11 : 0.13),
+    bottom: stage.h * (portrait ? 0.3 : 0.32),
+  };
 
   return (
     <div
       ref={rootRef}
-      className={`ed-root${cursor || panelOpen ? " ed-cursor" : ""}`}
+      className="ed-root ed-kiosk"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerCancel={() => {
-        window.clearTimeout(pressTimer.current);
-        gesture.current = null;
-      }}
-      aria-label="Profixter event display"
+      onPointerCancel={onPointerCancel}
+      aria-label="Profixter: real homes, real things to fix"
     >
       {layers.map((scene, index) => (
         <Layer
@@ -499,67 +449,87 @@ function Player() {
           scene={scene}
           entering={index > 0 || layers.length === 1}
           stage={stage}
+          insets={insets}
           portrait={portrait}
           onBroken={onBroken}
         />
       ))}
 
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={LOGO} alt="" className={`ed-mark${!top || top.kind === "brand" ? " ed-mark-hidden" : ""}`} />
+      {/* Fixed chrome: never moves, whatever the photographs do behind it. */}
+      <div className={`ed-topbar${onBrand ? " ed-topbar-hidden" : ""}`} aria-hidden={onBrand}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={LOGO} alt="Profixter" className="ed-topbar-logo" draggable={false} />
+        <div className="ed-topbar-tagline">{TAGLINE}</div>
+      </div>
 
-      {toast && <div className="ed-toast">{toast}</div>}
-
-      {panelOpen && (
-        <div
-          className="ed-panel"
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            touchPanel();
-          }}
-          onPointerUp={(e) => e.stopPropagation()}
-        >
-          <div className="ed-panel-status">
-            {count === null ? "Loading photos…" : `${count} photos`} · {paused ? "paused" : "playing"}
-          </div>
-          <div className="ed-panel-row">
-            <button type="button" onClick={actions.prev} aria-label="Previous">‹</button>
-            <button type="button" onClick={actions.togglePause}>{paused ? "Play" : "Pause"}</button>
-            <button type="button" onClick={actions.next} aria-label="Next">›</button>
-          </div>
-          <div className="ed-panel-row">
-            <button type="button" onClick={actions.shuffle}>Shuffle</button>
-            <button type="button" onClick={actions.refresh}>Refresh</button>
-            <button type="button" onClick={actions.fullscreen}>Fullscreen</button>
-          </div>
-          <div className="ed-panel-row">
-            <Link href="/admin/event-display/review">Manage photos</Link>
-            <button type="button" onClick={() => setPanelOpen(false)}>Close</button>
-          </div>
+      <div className="ed-bottom">
+        <div className={`ed-caption${onBrand ? " ed-caption-hidden" : ""}`} aria-live="off">
+          <span key={caption} className="ed-caption-text">
+            {CAPTIONS[caption]}
+          </span>
         </div>
-      )}
+        <button
+          type="button"
+          className="ed-cta"
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
+          onClick={startSignup}
+          disabled={leaving}
+        >
+          <span>{leaving ? "One moment…" : "Get My First Visit Free"}</span>
+          {!leaving && (
+            <svg width="26" height="20" viewBox="0 0 19 14" aria-hidden="true">
+              <path
+                d="M1 7h16m0 0l-5.6-5.6M17 7l-5.6 5.6"
+                stroke="currentColor"
+                strokeWidth="2"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+        </button>
+        <div className="ed-cta-sub">90-minute handyman visit &middot; No card required</div>
+      </div>
     </div>
   );
 }
 
+function snapBack(el: HTMLElement) {
+  el.style.transition = "transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1)";
+  el.style.transform = "translate3d(0, 0, 0)";
+}
+
 /* ====================================================================== */
+
+type Insets = { top: number; bottom: number };
 
 type LayerProps = {
   scene: Scene;
   entering: boolean;
   stage: { w: number; h: number };
+  insets: Insets;
   portrait: boolean;
   onBroken: (id: string) => void;
 };
 
-function Layer({ scene, entering, stage, portrait, onBroken }: LayerProps) {
+function Layer({ scene, entering, stage, insets, portrait, onBroken }: LayerProps) {
   const style = { "--ed-fade": `${scene.fade}ms` } as React.CSSProperties;
+  const enter = !entering
+    ? ""
+    : scene.from === 1
+      ? " ed-layer-slide-next"
+      : scene.from === -1
+        ? " ed-layer-slide-prev"
+        : " ed-layer-enter";
   return (
-    <div className={`ed-layer${entering ? " ed-layer-enter" : ""}`} style={style} data-scene={scene.kind}>
-      {scene.kind === "hero" && <Hero scene={scene} stage={stage} onBroken={onBroken} />}
+    <div className={`ed-layer${enter}`} style={style} data-scene={scene.kind}>
+      {scene.kind === "hero" && <Hero scene={scene} stage={stage} insets={insets} onBroken={onBroken} />}
       {scene.kind === "pair" && <Pair scene={scene} portrait={portrait} onBroken={onBroken} />}
       {scene.kind === "trio" && <Trio scene={scene} portrait={portrait} onBroken={onBroken} />}
       {scene.kind === "wall" && <Wall scene={scene} onBroken={onBroken} />}
-      {scene.kind === "brand" && <Brand scene={scene} />}
+      {scene.kind === "brand" && <Brand scene={scene} insets={insets} />}
       {scene.kind !== "brand" && <div className="ed-vignette" />}
     </div>
   );
@@ -619,10 +589,12 @@ function Drift({ motion, duration, children }: { motion: Motion; duration: numbe
 function Hero({
   scene,
   stage,
+  insets,
   onBroken,
 }: {
   scene: Extract<Scene, { kind: "hero" }>;
   stage: { w: number; h: number };
+  insets: Insets;
   onBroken: (id: string) => void;
 }) {
   const life = scene.duration + scene.fade * 2;
@@ -636,10 +608,12 @@ function Hero({
     );
   }
 
-  // The whole photo, lit by a blurred copy of itself.
+  // The whole photo, lit by a blurred copy of itself, centred in the space
+  // between the mark at the top and the call to action at the bottom.
   const portrait = stage.w < stage.h;
-  const maxW = stage.w * (portrait ? 0.9 : 0.84);
-  const maxH = stage.h * (portrait ? 0.74 : 0.86);
+  const availH = Math.max(0, stage.h - insets.top - insets.bottom);
+  const maxW = stage.w * (portrait ? 0.92 : 0.84);
+  const maxH = availH * 0.96;
   const width = Math.min(maxW, maxH * photo.aspect);
   const height = width / photo.aspect;
   return (
@@ -649,7 +623,7 @@ function Hero({
         <Photo
           photo={photo}
           className="ed-ambient-photo"
-          style={{ width, height, marginLeft: -width / 2, marginTop: -height / 2 }}
+          style={{ width, height, marginLeft: -width / 2, top: insets.top + (availH - height) / 2 }}
           onBroken={onBroken}
         />
       </Drift>
@@ -798,20 +772,13 @@ function Wall({ scene, onBroken }: { scene: Extract<Scene, { kind: "wall" }>; on
   );
 }
 
-function Brand({ scene }: { scene: Extract<Scene, { kind: "brand" }> }) {
+function Brand({ scene, insets }: { scene: Extract<Scene, { kind: "brand" }>; insets: Insets }) {
   return (
-    <div className="ed-brand">
+    <div className="ed-brand" style={{ paddingBottom: insets.bottom * 0.75 }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={LOGO} alt="Profixter" className="ed-brand-logo" />
+      <img src={LOGO} alt="Profixter" className="ed-brand-logo" draggable={false} />
       <div className="ed-brand-rule" />
       <div className="ed-brand-line">{scene.line}</div>
-      {scene.note === "empty" && (
-        <div className="ed-brand-note">
-          No eligible photos to show right now.{" "}
-          <Link href="/admin/event-display/review">Manage photos</Link>
-        </div>
-      )}
-      {scene.note === "offline" && <div className="ed-brand-note">Reconnecting…</div>}
     </div>
   );
 }
