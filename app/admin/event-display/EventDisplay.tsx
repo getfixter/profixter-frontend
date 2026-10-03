@@ -140,7 +140,7 @@ function Player() {
     backRef.current = 0;
 
     if (pool.size === 0) {
-      // Nothing approved (or not loaded yet): stay on the brand, quietly, and
+      // Nothing to show (or not loaded yet): stay on the brand, quietly, and
       // start the moment the first photo is ready.
       waitingRef.current = true;
       const note = loaded ? "empty" : undefined;
@@ -519,7 +519,7 @@ function Player() {
           onPointerUp={(e) => e.stopPropagation()}
         >
           <div className="ed-panel-status">
-            {count === null ? "Loading photos…" : `${count} approved photos`} · {paused ? "paused" : "playing"}
+            {count === null ? "Loading photos…" : `${count} photos`} · {paused ? "paused" : "playing"}
           </div>
           <div className="ed-panel-row">
             <button type="button" onClick={actions.prev} aria-label="Previous">‹</button>
@@ -532,7 +532,7 @@ function Player() {
             <button type="button" onClick={actions.fullscreen}>Fullscreen</button>
           </div>
           <div className="ed-panel-row">
-            <Link href="/admin/event-display/review">Review photos</Link>
+            <Link href="/admin/event-display/review">Manage photos</Link>
             <button type="button" onClick={() => setPanelOpen(false)}>Close</button>
           </div>
         </div>
@@ -807,8 +807,8 @@ function Brand({ scene }: { scene: Extract<Scene, { kind: "brand" }> }) {
       <div className="ed-brand-line">{scene.line}</div>
       {scene.note === "empty" && (
         <div className="ed-brand-note">
-          No photos are approved for the display yet.{" "}
-          <Link href="/admin/event-display/review">Review photos</Link>
+          No eligible photos to show right now.{" "}
+          <Link href="/admin/event-display/review">Manage photos</Link>
         </div>
       )}
       {scene.note === "offline" && <div className="ed-brand-note">Reconnecting…</div>}

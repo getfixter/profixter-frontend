@@ -206,8 +206,8 @@ async function shot(page, name) {
       const { context, page } = await open(browser, { token: "admin-token", photos: [], device: ipad });
       await run(page, 8000);
       const s = await snapshot(page);
-      check("no approved photos: brand frame with a way to review", /No photos are approved/.test(s.brandNote), s.brandNote);
-      check("no approved photos: nothing else plays", s.kinds.every((k) => k === "brand"), s.kinds.join(","));
+      check("no eligible photos: brand frame with a way to manage photos", /No eligible photos/.test(s.brandNote), s.brandNote);
+      check("no eligible photos: nothing else plays", s.kinds.every((k) => k === "brand"), s.kinds.join(","));
       await shot(page, "empty");
       await context.close();
     }

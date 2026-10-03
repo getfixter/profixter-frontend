@@ -9,7 +9,7 @@
 
 export type DisplayPhoto = { id: string; url: string; group: string };
 export type ReviewStatus = "approved" | "hidden" | "unreviewed";
-export type ReviewPhoto = DisplayPhoto & { status: ReviewStatus; shortlisted: boolean };
+export type ReviewPhoto = DisplayPhoto & { status: ReviewStatus };
 
 type Result<T> = { ok: true; data: T } | { ok: false; status: number; message: string };
 
@@ -48,7 +48,7 @@ export function fetchDisplayPhotos() {
 export function fetchReviewPhotos() {
   return request<{
     photos: ReviewPhoto[];
-    counts: Record<ReviewStatus | "shortlist", number>;
+    counts: Record<ReviewStatus, number>;
     total: number;
   }>("/photos?scope=review");
 }
