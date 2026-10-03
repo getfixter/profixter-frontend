@@ -74,6 +74,12 @@ export const COMPANY_LINKS = [
    * itself for why that distinction is load-bearing.
    */
   { label: "SMS Consent", href: "/sms-consent-example" },
+  /*
+   * The booth kiosk, linked so it can be opened on an event iPad without
+   * typing a URL. Deliberately last and plain: it is a convenience, not a
+   * destination we promote. Left out of the compact footer.
+   */
+  { label: "Event Page", href: "/event" },
 ] as const;
 
 /**

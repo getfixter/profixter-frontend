@@ -12,15 +12,22 @@
  * Photos come from the public kiosk feed (opaque ids; images served by our
  * API, never S3 URLs, so no booking date or number reaches the browser).
  *
+ * THE PRESENTATION
+ * Photos are cards in a quiet 3D field (spatial.ts): one dominant card shows a
+ * photo whole, recently shown photos drift behind it at different depths, new
+ * photos come forward out of the field, and a swipe throws the card aside.
+ * Cards keep their identity between compositions, so the motion reads as one
+ * continuous space rather than a sequence of slides.
+ *
  * The call to action signs out whatever session this browser holds, using
  * the site's own logout, before opening registration. The iPad may have been
  * set up while signed in as an admin, and a visitor must never register, or
  * see anything, inside that session.
  *
- * Built to run all day: at most two scenes are mounted at once, only a small
- * buffer of photos is preloaded (display-engine.ts), every timer and animation
- * is torn down with its scene, and after a few hours the page reloads itself
- * at a quiet moment, right after confirming the API still answers.
+ * Built to run all day: a hard cap on cards (spatial.MAX_CARDS), only a small
+ * buffer of photos preloaded (display-engine.ts), every timer and animation
+ * torn down with its card, and after a few hours the page reloads itself at a
+ * quiet moment, right after confirming the API still answers.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -29,7 +36,6 @@ import { fetchPublicPhotos } from "@/lib/event-display-service";
 import { KIOSK_RETURN_KEY, clearKioskCarryOver } from "@/lib/event-kiosk";
 import {
   RESUME_AFTER_MS,
-  WALL_EXPAND_LEAD_MS,
   PhotoPool,
   brandScene,
   heroScene,
@@ -37,9 +43,9 @@ import {
   photosIn,
   planScene,
   type Measured,
-  type Motion,
   type Scene,
 } from "./display-engine";
+import { compose, geometry, type Card } from "./spatial";
 import "./event-kiosk.css";
 
 const LOGO = "/images/logo-footer.svg";
@@ -48,9 +54,9 @@ const REFRESH_MS = 30 * 60 * 1000;
 const REFRESH_WHEN_EMPTY_MS = 60 * 1000;
 const RELOAD_AFTER_MS = 4 * 60 * 60 * 1000;
 const SWIPE_PX = 56;
-const SLIDE_MS = 520;
 const HISTORY_LIMIT = 60;
 const CAPTION_MS = 7000;
+const EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
 
 /** The one persistent line under the mark: what Profixter is, in five words. */
 const TAGLINE = "Your handyman. Every month.";
@@ -66,10 +72,15 @@ const CAPTIONS = [
 
 export default function EventKiosk() {
   const rootRef = useRef<HTMLDivElement>(null);
+  const worldRef = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState({ w: 0, h: 0 });
+  const stageRef = useRef({ w: 1, h: 1 });
   const aspectRef = useRef(0.75);
 
-  const [layers, setLayers] = useState<Scene[]>([]);
+  const [cards, setCards] = useState<Card[]>([]);
+  const [sceneKind, setSceneKind] = useState<Scene["kind"]>("brand");
+  const [brandLine, setBrandLine] = useState("");
+  const [ambient, setAmbient] = useState<Array<{ key: string; url: string }>>([]);
   const currentRef = useRef<Scene | null>(null);
   const [caption, setCaption] = useState(0);
   const [leaving, setLeaving] = useState(false);
@@ -81,7 +92,6 @@ export default function EventKiosk() {
   const backRef = useRef(0);
   const startedAtRef = useRef(0);
   const reloadReadyRef = useRef(false);
-  const countRef = useRef<number | null>(null);
   const tickRef = useRef<() => void>(() => {});
   const dragRef = useRef<{ x: number; y: number; id: number; t: number; active: boolean } | null>(null);
 
@@ -98,9 +108,15 @@ export default function EventKiosk() {
 
   /* ---------- showing scenes ---------- */
 
-  const show = useCallback((scene: Scene) => {
+  const show = useCallback((scene: Scene, via?: 1 | -1) => {
     currentRef.current = scene;
-    setLayers((prev) => [...prev.slice(-1), scene]);
+    const { w, h } = stageRef.current;
+    setCards((prev) => compose(scene, prev, geometry(w, h), Date.now(), via));
+    setSceneKind(scene.kind);
+    if (scene.kind === "brand") setBrandLine(scene.line);
+    if (scene.kind === "hero") {
+      setAmbient((prev) => [...prev.filter((a) => a.key !== scene.photo.id).slice(-1), { key: scene.photo.id, url: scene.photo.url }]);
+    }
   }, []);
 
   const schedule = useCallback((ms: number) => {
@@ -149,15 +165,18 @@ export default function EventKiosk() {
     tickRef.current = tick;
   }, [tick]);
 
-  /** The element of the scene currently on top, for drag and slide. */
-  const topLayerEl = useCallback(() => {
-    const all = rootRef.current?.querySelectorAll<HTMLElement>(".ed-layer");
-    return all && all.length ? all[all.length - 1] : null;
+  /** Drag offset for the field, read by every card's CSS. */
+  const setDrag = useCallback((dx: number, dragging: boolean) => {
+    const world = worldRef.current;
+    if (!world) return;
+    world.classList.toggle("ed-dragging", dragging);
+    world.style.setProperty("--dx", `${dx}px`);
+    world.style.setProperty("--dxn", String(dx / Math.max(1, stageRef.current.w)));
   }, []);
 
   /**
-   * A finger moved the show: one photo slides in from the side it was pulled
-   * toward, the old one slides out, and autoplay waits RESUME_AFTER_MS.
+   * A finger moved the show: the photo is thrown off to one side, the next
+   * one sweeps in from the other, and autoplay waits RESUME_AFTER_MS.
    */
   const step = useCallback(
     (direction: 1 | -1) => {
@@ -183,25 +202,17 @@ export default function EventKiosk() {
         if (photo) history.push(photo);
       }
 
-      const outgoing = topLayerEl();
-      if (!photo) {
-        if (outgoing) snapBack(outgoing);
-        schedule(RESUME_AFTER_MS);
-        return;
-      }
-      if (outgoing) {
-        outgoing.style.transition = `transform ${SLIDE_MS}ms cubic-bezier(0.22, 0.8, 0.2, 1)`;
-        outgoing.style.transform = `translate3d(${direction > 0 ? -100 : 100}%, 0, 0)`;
-      }
-      show(heroScene(planner, photo, aspectRef.current, { fade: SLIDE_MS, from: direction }));
+      setDrag(0, false);
+      if (photo) show(heroScene(planner, photo, aspectRef.current, { from: direction }), direction);
       schedule(RESUME_AFTER_MS);
     },
-    [pool, schedule, show, topLayerEl]
+    [pool, schedule, setDrag, show]
   );
 
   const onBroken = useCallback(
     (id: string) => {
       pool.markBroken(id);
+      setCards((prev) => prev.filter((c) => c.id !== id));
       const current = currentRef.current;
       if (current && photosIn(current).some((p) => p.id === id) && !dragRef.current?.active) {
         schedule(300);
@@ -210,15 +221,24 @@ export default function EventKiosk() {
     [pool, schedule]
   );
 
-  // Drop the layer underneath once the one on top has fully arrived.
+  // Cards that have finished leaving are removed.
   useEffect(() => {
-    if (layers.length < 2) return;
-    const top = layers[layers.length - 1];
+    const leaving = cards.filter((c) => c.exitAt > 0);
+    if (!leaving.length) return;
+    const due = Math.min(...leaving.map((c) => c.exitAt));
     const t = window.setTimeout(() => {
-      setLayers((l) => (l.length > 1 && l[l.length - 1].key === top.key ? [top] : l));
-    }, top.fade + 200);
+      const now = Date.now();
+      setCards((prev) => prev.filter((c) => c.exitAt === 0 || c.exitAt > now));
+    }, Math.max(50, due - Date.now()));
     return () => window.clearTimeout(t);
-  }, [layers]);
+  }, [cards]);
+
+  // The ambient light: only the latest two backdrops, the older fading under.
+  useEffect(() => {
+    if (ambient.length < 2) return;
+    const t = window.setTimeout(() => setAmbient((a) => a.slice(-1)), 2600);
+    return () => window.clearTimeout(t);
+  }, [ambient]);
 
   /* ---------- photos ---------- */
 
@@ -226,7 +246,6 @@ export default function EventKiosk() {
     const result = await fetchPublicPhotos();
     if (!result.ok) return false;
     pool.setPhotos(result.data.photos);
-    countRef.current = result.data.photos.length;
     if (Date.now() - startedAtRef.current > RELOAD_AFTER_MS) reloadReadyRef.current = true;
     return true;
   }, [pool]);
@@ -277,9 +296,15 @@ export default function EventKiosk() {
     const measure = () => {
       const w = el.clientWidth;
       const h = el.clientHeight;
-      if (w && h) {
-        aspectRef.current = w / h;
-        setStage({ w, h });
+      if (!w || !h) return;
+      const changed = w !== stageRef.current.w || h !== stageRef.current.h;
+      stageRef.current = { w, h };
+      aspectRef.current = w / h;
+      setStage({ w, h });
+      // A rotation re-lays the current composition rather than waiting for the next one.
+      if (changed && currentRef.current) {
+        const scene = currentRef.current;
+        setCards((prev) => compose(scene, prev, geometry(w, h), Date.now()));
       }
     };
     measure();
@@ -351,7 +376,7 @@ export default function EventKiosk() {
     };
   }, []);
 
-  /* ---------- swipe ---------- */
+  /* ---------- swipe: the field follows the finger ---------- */
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
@@ -369,11 +394,7 @@ export default function EventKiosk() {
       window.clearTimeout(timerRef.current); // hold autoplay while a finger is down
       waitingRef.current = false;
     }
-    const el = topLayerEl();
-    if (el) {
-      el.style.transition = "none";
-      el.style.transform = `translate3d(${dx}px, 0, 0)`;
-    }
+    setDrag(dx, true);
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
@@ -385,8 +406,7 @@ export default function EventKiosk() {
     if (Math.abs(dx) > SWIPE_PX || (speed > 0.5 && Math.abs(dx) > 24)) {
       step(dx < 0 ? 1 : -1);
     } else {
-      const el = topLayerEl();
-      if (el) snapBack(el);
+      setDrag(0, false); // springs back
       waitingRef.current = false;
       schedule(RESUME_AFTER_MS);
     }
@@ -396,8 +416,7 @@ export default function EventKiosk() {
     const d = dragRef.current;
     dragRef.current = null;
     if (d?.active) {
-      const el = topLayerEl();
-      if (el) snapBack(el);
+      setDrag(0, false);
       schedule(RESUME_AFTER_MS);
     }
   };
@@ -425,13 +444,7 @@ export default function EventKiosk() {
     window.location.assign(SIGNUP_PATH);
   }, [ctaPending, authLoading, logout]);
 
-  const top = layers[layers.length - 1];
-  const onBrand = !top || top.kind === "brand";
-  const portrait = stage.w > 0 ? stage.w < stage.h : true;
-  const insets = {
-    top: stage.h * (portrait ? 0.11 : 0.13),
-    bottom: stage.h * (portrait ? 0.3 : 0.32),
-  };
+  const onBrand = sceneKind === "brand";
 
   return (
     <div
@@ -443,17 +456,32 @@ export default function EventKiosk() {
       onPointerCancel={onPointerCancel}
       aria-label="Profixter: real homes, real things to fix"
     >
-      {layers.map((scene, index) => (
-        <Layer
-          key={scene.key}
-          scene={scene}
-          entering={index > 0 || layers.length === 1}
-          stage={stage}
-          insets={insets}
-          portrait={portrait}
-          onBroken={onBroken}
-        />
-      ))}
+      {/* Ambient light: the current photo, blurred far out of focus, behind everything. */}
+      <div className={`ed-ambient${onBrand ? " ed-ambient-dim" : ""}`} aria-hidden>
+        {ambient.map((a) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={a.key} src={a.url} alt="" draggable={false} className="ed-ambient-img" />
+        ))}
+      </div>
+      <div className="ed-light" aria-hidden />
+
+      <div ref={worldRef} className="ed-world" data-scene={sceneKind}>
+        <div className={`ed-camera${sceneKind === "wall" ? " ed-camera-dolly" : ""}`}>
+          {stage.w > 0 &&
+            cards.map((card) => <PhotoCard key={card.id} card={card} onBroken={onBroken} />)}
+        </div>
+      </div>
+
+      <div className="ed-vignette" aria-hidden />
+
+      <div className={`ed-brand${onBrand ? " ed-brand-on" : ""}`} aria-hidden={!onBrand}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={LOGO} alt="Profixter" className="ed-brand-logo" draggable={false} />
+        <div className="ed-brand-rule" />
+        <div key={brandLine} className="ed-brand-line">
+          {brandLine}
+        </div>
+      </div>
 
       {/* Fixed chrome: never moves, whatever the photographs do behind it. */}
       <div className={`ed-topbar${onBrand ? " ed-topbar-hidden" : ""}`} aria-hidden={onBrand}>
@@ -496,289 +524,64 @@ export default function EventKiosk() {
   );
 }
 
-function snapBack(el: HTMLElement) {
-  el.style.transition = "transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1)";
-  el.style.transform = "translate3d(0, 0, 0)";
-}
-
 /* ====================================================================== */
 
-type Insets = { top: number; bottom: number };
-
-type LayerProps = {
-  scene: Scene;
-  entering: boolean;
-  stage: { w: number; h: number };
-  insets: Insets;
-  portrait: boolean;
-  onBroken: (id: string) => void;
-};
-
-function Layer({ scene, entering, stage, insets, portrait, onBroken }: LayerProps) {
-  const style = { "--ed-fade": `${scene.fade}ms` } as React.CSSProperties;
-  const enter = !entering
-    ? ""
-    : scene.from === 1
-      ? " ed-layer-slide-next"
-      : scene.from === -1
-        ? " ed-layer-slide-prev"
-        : " ed-layer-enter";
-  return (
-    <div className={`ed-layer${enter}`} style={style} data-scene={scene.kind}>
-      {scene.kind === "hero" && <Hero scene={scene} stage={stage} insets={insets} onBroken={onBroken} />}
-      {scene.kind === "pair" && <Pair scene={scene} portrait={portrait} onBroken={onBroken} />}
-      {scene.kind === "trio" && <Trio scene={scene} portrait={portrait} onBroken={onBroken} />}
-      {scene.kind === "wall" && <Wall scene={scene} onBroken={onBroken} />}
-      {scene.kind === "brand" && <Brand scene={scene} insets={insets} />}
-      {scene.kind !== "brand" && <div className="ed-vignette" />}
-    </div>
-  );
-}
-
-function Photo({
-  photo,
-  className,
-  style,
-  onBroken,
-}: {
-  photo: Measured;
-  className: string;
-  style?: React.CSSProperties;
-  onBroken: (id: string) => void;
-}) {
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={photo.url}
-      alt=""
-      draggable={false}
-      decoding="async"
-      className={className}
-      style={style}
-      onError={() => onBroken(photo.id)}
-    />
-  );
-}
-
-/** Slow push/pull via the Web Animations API, cancelled with the scene. */
-function Drift({ motion, duration, children }: { motion: Motion; duration: number; children: React.ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
+/**
+ * One photo in the field. It mounts at its entry pose and moves to its pose on
+ * the next frame, so arrivals animate; after that, every change of pose is a
+ * CSS transition on transform/opacity/filter. Drag parallax lives on an inner
+ * wrapper, so a finger and the choreography never fight over one transform.
+ */
+function PhotoCard({ card, onBroken }: { card: Card; onBroken: (id: string) => void }) {
+  const [arrived, setArrived] = useState(!card.enter);
   useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof el.animate !== "function") return;
-    const animation = el.animate(
-      [
-        { transform: `translate3d(${motion.x0}%, ${motion.y0}%, 0) scale(${motion.s0})` },
-        { transform: `translate3d(${motion.x1}%, ${motion.y1}%, 0) scale(${motion.s1})` },
-      ],
-      { duration, easing: "cubic-bezier(0.33, 0, 0.67, 1)", fill: "forwards" }
-    );
-    return () => animation.cancel();
-  }, [motion, duration]);
-  return (
-    <div
-      ref={ref}
-      className="ed-motion"
-      style={{ transform: `translate3d(${motion.x0}%, ${motion.y0}%, 0) scale(${motion.s0})` }}
-    >
-      {children}
-    </div>
-  );
-}
+    if (arrived) return;
+    let r2 = 0;
+    const r1 = requestAnimationFrame(() => {
+      r2 = requestAnimationFrame(() => setArrived(true));
+    });
+    return () => {
+      cancelAnimationFrame(r1);
+      cancelAnimationFrame(r2);
+    };
+  }, [arrived]);
 
-function Hero({
-  scene,
-  stage,
-  insets,
-  onBroken,
-}: {
-  scene: Extract<Scene, { kind: "hero" }>;
-  stage: { w: number; h: number };
-  insets: Insets;
-  onBroken: (id: string) => void;
-}) {
-  const life = scene.duration + scene.fade * 2;
-  const { photo } = scene;
-
-  if (scene.fit === "cover") {
-    return (
-      <Drift motion={scene.motion} duration={life}>
-        <Photo photo={photo} className="ed-fill" onBroken={onBroken} />
-      </Drift>
-    );
-  }
-
-  // The whole photo, lit by a blurred copy of itself, centred in the space
-  // between the mark at the top and the call to action at the bottom.
-  const portrait = stage.w < stage.h;
-  const availH = Math.max(0, stage.h - insets.top - insets.bottom);
-  const maxW = stage.w * (portrait ? 0.92 : 0.84);
-  const maxH = availH * 0.96;
-  const width = Math.min(maxW, maxH * photo.aspect);
-  const height = width / photo.aspect;
-  return (
-    <>
-      <Photo photo={photo} className="ed-ambient-bg" onBroken={onBroken} />
-      <Drift motion={scene.motion} duration={life}>
-        <Photo
-          photo={photo}
-          className="ed-ambient-photo"
-          style={{ width, height, marginLeft: -width / 2, top: insets.top + (availH - height) / 2 }}
-          onBroken={onBroken}
-        />
-      </Drift>
-    </>
-  );
-}
-
-const GAP = 3; // px either side of a seam
-
-function slotStyle(
-  box: { top?: string; left?: string; width: string; height: string },
-  delay: number,
-  from: [string, string],
-  life: number
-): React.CSSProperties {
-  return {
-    ...box,
-    animationDelay: `${delay}ms`,
-    "--ed-dx": from[0],
-    "--ed-dy": from[1],
-    "--ed-life": `${life}ms`,
+  const p = arrived || !card.enter ? card.pose : card.enter;
+  const { w, h } = card.base;
+  const style = {
+    width: w,
+    height: h,
+    marginLeft: -w / 2,
+    marginTop: -h / 2,
+    zIndex: card.zIndex,
+    opacity: p.o,
+    transform: `translate3d(${p.x}px, ${p.y}px, ${p.z}px) rotateX(${p.rx}deg) rotateY(${p.ry}deg) scale(${p.s})`,
+    filter: p.blur > 0.2 ? `blur(${p.blur}px)` : "none",
+    transition: arrived
+      ? `transform ${card.t}ms ${EASE}, opacity ${Math.round(card.t * 0.8)}ms ease, filter ${card.t}ms ease`
+      : "none",
+    "--k": card.k,
   } as React.CSSProperties;
-}
-
-function Pair({
-  scene,
-  portrait,
-  onBroken,
-}: {
-  scene: Extract<Scene, { kind: "pair" }>;
-  portrait: boolean;
-  onBroken: (id: string) => void;
-}) {
-  const life = scene.duration + scene.fade * 2;
-  const half = `calc(50% - ${GAP}px)`;
-  const boxes = portrait
-    ? [
-        { top: "0", left: "0", width: "100%", height: half },
-        { top: `calc(50% + ${GAP}px)`, left: "0", width: "100%", height: half },
-      ]
-    : [
-        { top: "0", left: "0", width: half, height: "100%" },
-        { top: "0", left: `calc(50% + ${GAP}px)`, width: half, height: "100%" },
-      ];
-  const from: [string, string][] = portrait
-    ? [["-2%", "0"], ["2%", "0"]]
-    : [["0", "-2%"], ["0", "2%"]];
-  return (
-    <>
-      {scene.photos.map((photo, i) => (
-        <div
-          key={photo.id}
-          className={`ed-slot${i === 1 ? " ed-slot-rev" : ""}`}
-          style={slotStyle(boxes[i], i * 650, from[i], life)}
-        >
-          <Photo photo={photo} className="ed-fill" onBroken={onBroken} />
-        </div>
-      ))}
-    </>
-  );
-}
-
-function Trio({
-  scene,
-  portrait,
-  onBroken,
-}: {
-  scene: Extract<Scene, { kind: "trio" }>;
-  portrait: boolean;
-  onBroken: (id: string) => void;
-}) {
-  const life = scene.duration + scene.fade * 2;
-  const big = 62;
-  const g = GAP;
-  const near = scene.mirror ? `calc(${100 - big}% + ${g}px)` : "0";
-  const far = scene.mirror ? "0" : `calc(${big}% + ${g}px)`;
-  const bigLen = `calc(${big}% - ${g}px)`;
-  const smallLen = `calc(${100 - big}% - ${g}px)`;
-  const half = `calc(50% - ${g}px)`;
-  const halfOffset = `calc(50% + ${g}px)`;
-
-  const boxes = portrait
-    ? [
-        { top: near, left: "0", width: "100%", height: bigLen },
-        { top: far, left: "0", width: half, height: smallLen },
-        { top: far, left: halfOffset, width: half, height: smallLen },
-      ]
-    : [
-        { top: "0", left: near, width: bigLen, height: "100%" },
-        { top: "0", left: far, width: smallLen, height: half },
-        { top: halfOffset, left: far, width: smallLen, height: half },
-      ];
-  const from: [string, string][] = portrait
-    ? [["0", scene.mirror ? "2%" : "-2%"], ["-3%", "0"], ["3%", "0"]]
-    : [[scene.mirror ? "2%" : "-2%", "0"], ["0", "-3%"], ["0", "3%"]];
 
   return (
-    <>
-      {scene.photos.map((photo, i) => (
-        <div
-          key={photo.id}
-          className={`ed-slot${i === 2 ? " ed-slot-rev" : ""}`}
-          style={slotStyle(boxes[i], [0, 550, 950][i], from[i], life)}
-        >
-          <Photo photo={photo} className="ed-fill" onBroken={onBroken} />
-        </div>
-      ))}
-    </>
-  );
-}
-
-function Wall({ scene, onBroken }: { scene: Extract<Scene, { kind: "wall" }>; onBroken: (id: string) => void }) {
-  const [expanding, setExpanding] = useState(false);
-
-  useEffect(() => {
-    const t = window.setTimeout(() => setExpanding(true), scene.duration - WALL_EXPAND_LEAD_MS);
-    return () => window.clearTimeout(t);
-  }, [scene]);
-
-  const { cols, rows } = scene;
-  return (
-    <div
-      className={`ed-wall${expanding ? " ed-wall-expanding" : ""}`}
-      style={{ "--ed-life": `${scene.duration}ms` } as React.CSSProperties}
-    >
-      {scene.photos.map((photo, i) => {
-        const focus = i === scene.focus;
-        const box =
-          focus && expanding
-            ? { left: "0%", top: "0%", width: "100%", height: "100%" }
-            : {
-                left: `${((i % cols) * 100) / cols}%`,
-                top: `${(Math.floor(i / cols) * 100) / rows}%`,
-                width: `${100 / cols}%`,
-                height: `${100 / rows}%`,
-              };
-        return (
-          <div key={photo.id} className={`ed-cell${focus ? " ed-cell-focus" : ""}`} style={box}>
-            <div className="ed-cell-inner" style={{ animationDelay: `${scene.delays[i]}ms` }}>
-              <Photo photo={photo} className="ed-fill" onBroken={onBroken} />
-            </div>
+    <div className="ed-card" data-role={card.role} style={style}>
+      <div className="ed-card-drag">
+        <div className={`ed-card-float${card.float >= 0 ? ` ed-float-${card.float}` : ""}`}>
+          <div className="ed-card-face">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={card.photo.url}
+              alt=""
+              draggable={false}
+              decoding="async"
+              className="ed-card-img"
+              onError={() => onBroken(card.id)}
+            />
+            <div className="ed-card-glass" />
+            {card.role === "hero" && <div className="ed-card-sheen" />}
           </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function Brand({ scene, insets }: { scene: Extract<Scene, { kind: "brand" }>; insets: Insets }) {
-  return (
-    <div className="ed-brand" style={{ paddingBottom: insets.bottom * 0.75 }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={LOGO} alt="Profixter" className="ed-brand-logo" draggable={false} />
-      <div className="ed-brand-rule" />
-      <div className="ed-brand-line">{scene.line}</div>
+        </div>
+      </div>
     </div>
   );
 }
