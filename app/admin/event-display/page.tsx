@@ -6,7 +6,8 @@ import EventDisplay from "./EventDisplay";
  *
  * Admin only. The page guards itself on the client like the Lab does, and the
  * only data it can get comes from /api/admin/event-display, which refuses
- * anyone who is not an admin and only ever returns approved photo URLs.
+ * anyone who is not an admin and returns photo URLs only: every eligible
+ * booking photo that an admin has not hidden.
  */
 export const metadata: Metadata = {
   title: "Event Display",

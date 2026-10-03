@@ -1,7 +1,7 @@
 /**
  * The event display's brain, free of React.
  *
- * PhotoPool decides what is loaded. It walks a shuffled deck of approved photos
+ * PhotoPool decides what is loaded. It walks a shuffled deck of displayable photos
  * and keeps only a small buffer of them preloaded and measured, so a library of
  * thousands costs the tablet a dozen images at a time, never all of them.
  *
@@ -140,7 +140,7 @@ export class PhotoPool {
     return this.consecutiveFailures >= 6 && this.ready.length === 0;
   }
 
-  /** Replace the library. Photos no longer approved disappear from the buffer at once. */
+  /** Replace the library. Photos that were hidden disappear from the buffer at once. */
   setPhotos(list: DisplayPhoto[]) {
     const next = new Map(list.map((p) => [p.id, p]));
     const added = list.filter((p) => !this.byId.has(p.id)).map((p) => p.id);
