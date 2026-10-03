@@ -163,6 +163,8 @@ export interface Booking {
   state?: string;
   zip?: string;
   images?: Array<string | { key: string; url: string }>;
+  /** A Profixter Library example key chosen at booking; never a photo of the home. */
+  libraryReference?: string;
   assignedFixterId?: string | null;
   assignedFixterName?: string;
   assignedFixterEmail?: string;

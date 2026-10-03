@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { Booking, BookingAdminPatch, BookingAssignee, User } from "@/lib/admin-service";
 import BookingStatusSelect from "./BookingStatusSelect";
 import BookingImageGallery from "./BookingImageGallery";
+import { libraryLabel } from "@/lib/booking-library";
+import { LibraryThumb } from "@/app/components/booking/PhotoLibraryPicker";
 import BookingHistory from "./BookingHistory";
 import { CollapsibleCommunicationHistory } from "./CommunicationHistory";
 import {
@@ -685,6 +687,15 @@ export default function BookingsTable({
                               </button>
                             )}
 
+                            {libraryLabel(booking.libraryReference) && (
+                              <span
+                                className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700"
+                                title="The customer chose a generic Profixter example, not a photo of their home"
+                              >
+                                Example: {libraryLabel(booking.libraryReference)}
+                              </span>
+                            )}
+
                             {hasPhotos && (
                               <button
                                 type="button"
@@ -1056,13 +1067,37 @@ export default function BookingsTable({
                           </div>
                         )}
 
+                        {libraryLabel(booking.libraryReference) && (
+                          <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50/60 p-2.5">
+                            <LibraryThumb
+                              itemKey={booking.libraryReference || ""}
+                              label={libraryLabel(booking.libraryReference)}
+                              className="h-12 w-12 flex-none rounded-md"
+                            />
+                            <div className="min-w-0">
+                              <div className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+                                Job type (Profixter example)
+                              </div>
+                              <div className="text-sm font-semibold text-slate-800">
+                                {libraryLabel(booking.libraryReference)}
+                              </div>
+                              <div className="text-xs text-slate-500">
+                                Generic Profixter picture, not the customer&apos;s home.{" "}
+                                {hasPhotos
+                                  ? `Customer photos: ${booking.images?.length}`
+                                  : "Customer photos: Not added yet"}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         {hasPhotos && (
                           <div
                             id={`photos-${booking._id}`}
                             className="rounded-lg border border-slate-200 bg-white p-2.5"
                           >
                             <div className="text-xs font-semibold text-slate-700">
-                              Photos ({booking.images?.length})
+                              {booking.libraryReference ? "Customer photos" : "Photos"} ({booking.images?.length})
                             </div>
                             <div className="mt-2">
                               <BookingImageGallery

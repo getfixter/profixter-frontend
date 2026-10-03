@@ -30,6 +30,7 @@ import BookingsSection from "@/app/components/account/BookingsSection";
 import ShareFinishedProject from "@/app/components/workPhotos/ShareFinishedProject";
 import PriorityVisitPanel from "@/app/components/booking/PriorityVisitPanel";
 import FullDayVisitPanel from "@/app/components/booking/FullDayVisitPanel";
+import PhotoLibraryPicker from "@/app/components/booking/PhotoLibraryPicker";
 import MembershipGatewayPanel from "@/app/components/booking/MembershipGatewayPanel";
 import MembershipUpgradePrompt, { normalizePlanKey } from "@/app/components/membership/MembershipUpgradePrompt";
 import { hasActiveMembership as hasActiveMembershipFor } from "@/lib/auth-routing";
@@ -270,6 +271,8 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
   const [availabilityByDate, setAvailabilityByDate] = useState<Record<string, string[]>>({});
   const [note, setNote] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
+  // A Profixter Library example when there is no photo to hand; never a photo.
+  const [libraryReference, setLibraryReference] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -652,8 +655,8 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
       setError("Describe the task in at least a few words.");
       return;
     }
-    if (!photos.length) {
-      setError("Add at least one photo so our team can prepare.");
+    if (!photos.length && !libraryReference) {
+      setError("Add a photo, or choose the closest example from the Profixter Library.");
       return;
     }
 
@@ -684,6 +687,7 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
         requestedTime: selectedTime,
         note: note.trim(),
         images: photos,
+        libraryReference: libraryReference || undefined,
       });
       window.location.href = result.url;
     } catch (err) {
@@ -1203,6 +1207,9 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                       <div className="text-[9px] font-semibold text-[#64748B] sm:mb-1 sm:text-[11px]">
                         Photos required
                       </div>
+                      <p className="mb-1 text-[9px] leading-[13px] text-[#94A3B8] sm:text-[11px] sm:leading-4">
+                        A photo of the actual issue helps your Fixter arrive prepared.
+                      </p>
                       <div className="flex gap-1">
                         <button
                           type="button"
@@ -1272,6 +1279,14 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                           Choose Photos{photos.length > 0 ? ` (${photos.length})` : ""}
                         </button>
                       </div>
+                      <PhotoLibraryPicker
+                        value={libraryReference}
+                        context="one_time"
+                        onChange={(key) => {
+                          setLibraryReference(key);
+                          if (key) setError((current) => (current.includes("Profixter Library") ? "" : current));
+                        }}
+                      />
                       <input
                         ref={cameraInputRef}
                         type="file"

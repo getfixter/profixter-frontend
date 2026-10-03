@@ -1,9 +1,12 @@
 ﻿"use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { addBookingDetails } from "@/lib/booking-service";
+import { compressImage } from "@/lib/compressImage";
+import { libraryLabel } from "@/lib/booking-library";
+import { LibraryThumb } from "@/app/components/booking/PhotoLibraryPicker";
 
 type Booking = {
   _id: string;
@@ -25,6 +28,8 @@ type Booking = {
   zip?: string;
   subscription?: string;
   images?: string[];
+  /** A Profixter Library example chosen at booking (not a photo of the home). */
+  libraryReference?: string;
 };
 
 type MeResponse = {
@@ -315,6 +320,15 @@ function AddDetailsModal({
   const [photos, setPhotos] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const uploadRef = useRef<HTMLInputElement>(null);
+
+  const addFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const compressed: File[] = [];
+    for (const file of Array.from(files)) compressed.push(await compressImage(file));
+    setPhotos((prev) => [...prev, ...compressed].slice(0, 10));
+  };
 
   useEffect(() => {
     setNote("");
@@ -360,9 +374,13 @@ function AddDetailsModal({
         <div className="flex justify-center mb-4 sm:hidden">
           <div className="w-10 h-1 rounded-full bg-[#E2E8F0]" />
         </div>
-        <div className="text-[18px] font-bold text-[#313234]">Add notes/photos</div>
+        <div className="text-[18px] font-bold text-[#313234]">
+          {booking.libraryReference && !booking.images?.length ? "Add real photos" : "Add notes/photos"}
+        </div>
         <div className="mt-1 text-[13px] text-[#6A6D71]">
-          You can add missing details. Existing notes and photos stay unchanged.
+          {booking.libraryReference && !booking.images?.length
+            ? "Real photos of the actual issue help your Fixter prepare for your visit."
+            : "You can add missing details. Existing notes and photos stay unchanged."}
         </div>
 
         <label className="mt-4 block">
@@ -378,21 +396,57 @@ function AddDetailsModal({
           />
         </label>
 
-        <label className="mt-3 block rounded-[8px] border border-dashed border-[#C7D9FF] bg-[#F8FAFF] px-3 py-3 text-[13px] font-semibold text-[#313234]">
-          Add photos
+        <div className="mt-3 rounded-[8px] border border-dashed border-[#C7D9FF] bg-[#F8FAFF] px-3 py-3">
+          <div className="text-[13px] font-semibold text-[#313234]">Add photos</div>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => cameraRef.current?.click()}
+              className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[6px] bg-[#306EEC] px-3 text-[13px] font-semibold text-white hover:bg-[#2557C7]"
+            >
+              Take Photo
+            </button>
+            <button
+              type="button"
+              onClick={() => uploadRef.current?.click()}
+              className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[6px] border border-[#C5CBD8] bg-white px-3 text-[13px] font-semibold text-[#475569] hover:border-[#306EEC] hover:text-[#306EEC]"
+            >
+              Upload Photos
+            </button>
+          </div>
           <input
+            ref={cameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(event) => {
+              void addFiles(event.target.files);
+              event.target.value = "";
+            }}
+          />
+          <input
+            ref={uploadRef}
             type="file"
             accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
             multiple
-            className="mt-2 block w-full text-[12px] text-[#6A6D71] file:mr-3 file:rounded-[6px] file:border-0 file:bg-[#306EEC] file:px-3 file:py-2 file:text-[12px] file:font-bold file:text-white"
-            onChange={(event) => setPhotos(Array.from(event.target.files || []))}
+            className="hidden"
+            onChange={(event) => {
+              void addFiles(event.target.files);
+              event.target.value = "";
+            }}
           />
           {photos.length > 0 && (
-            <div className="mt-2 text-[12px] text-[#6A6D71]">
-              {photos.length} photo{photos.length === 1 ? "" : "s"} selected
+            <div className="mt-2 flex items-center justify-between text-[12px] text-[#6A6D71]">
+              <span>
+                {photos.length} photo{photos.length === 1 ? "" : "s"} ready to add
+              </span>
+              <button type="button" onClick={() => setPhotos([])} className="font-semibold text-[#306EEC]">
+                Clear
+              </button>
             </div>
           )}
-        </label>
+        </div>
 
         {error && (
           <div className="mt-3 rounded-[8px] bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-[13px]">
@@ -530,11 +584,31 @@ function BookingCard({
           </div>
         )}
 
+        {/* The Profixter example chosen at booking: job type, never a photo of the home. */}
+        {libraryLabel(booking.libraryReference) && (
+          <div className="flex items-center gap-3 rounded-[8px] border border-[#D9E4FF] bg-[#F5F8FF] p-2.5">
+            <LibraryThumb
+              itemKey={booking.libraryReference || ""}
+              label={libraryLabel(booking.libraryReference)}
+              className="h-12 w-12 flex-none rounded-[6px]"
+            />
+            <div className="min-w-0">
+              <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#306EEC]">Profixter example</div>
+              <div className="text-[13px] font-semibold text-[#313234]">{libraryLabel(booking.libraryReference)}</div>
+              {!booking.images?.length && (
+                <div className="text-[12px] leading-4 text-[#6A6D71]">
+                  Real photos of the actual issue help your Fixter prepare.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Photos */}
         {!!booking.images?.length && (
           <div>
             <div className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-[0.08em] mb-2">
-              Photos ({booking.images.length})
+              {booking.libraryReference ? "Your photos" : "Photos"} ({booking.images.length})
             </div>
             <Gallery images={booking.images} />
           </div>
@@ -547,9 +621,13 @@ function BookingCard({
               <button
                 type="button"
                 onClick={() => setDetailsOpen(true)}
-                className="w-full rounded-[8px] border border-[#D9E4FF] bg-[#F0F7FF] px-3 py-2.5 text-[13px] font-semibold text-[#1D4ED8] transition hover:bg-[#E6F0FF]"
+                className={
+                  booking.libraryReference && !booking.images?.length
+                    ? "w-full rounded-[8px] bg-[#306EEC] px-3 py-2.5 text-[13px] font-semibold text-white transition hover:bg-[#2557C7]"
+                    : "w-full rounded-[8px] border border-[#D9E4FF] bg-[#F0F7FF] px-3 py-2.5 text-[13px] font-semibold text-[#1D4ED8] transition hover:bg-[#E6F0FF]"
+                }
               >
-                Add notes/photos
+                {booking.libraryReference && !booking.images?.length ? "Add real photos" : "Add notes/photos"}
               </button>
             ) : (
               <div className="rounded-[8px] border border-[#E0E6F5] bg-[#F8FAFF] px-3 py-2.5 text-[12px] font-semibold text-[#6A6D71]">

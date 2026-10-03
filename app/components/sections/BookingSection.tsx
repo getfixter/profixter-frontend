@@ -39,6 +39,7 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import { POPULAR_TASKS } from "./PopularTasksSection";
 import TimeSlotGrid from "@/app/components/booking/TimeSlotGrid";
+import PhotoLibraryPicker from "@/app/components/booking/PhotoLibraryPicker";
 import BookingConfirmationDialog, {
   type BookingConfirmation,
 } from "@/app/components/booking/BookingConfirmationDialog";
@@ -229,6 +230,9 @@ export default function BookingSection() {
   const [note, setNote] = useState<string>("");
   const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  // A Profixter Library example, for when there is no photo to hand. Kept apart
+  // from uploadedPhotos: it is never sent as, or shown as, a customer photo.
+  const [libraryReference, setLibraryReference] = useState("");
   const [showAddressPicker, setShowAddressPicker] = useState(false);
 
   // UI state
@@ -338,6 +342,7 @@ export default function BookingSection() {
     setNotice("");
     setUploadedPhotos([]);
     setPhotoUrls([]);
+    setLibraryReference("");
     setNote("");
   }, [selectedAddressId]);
 
@@ -1112,11 +1117,12 @@ if (next?.date) {
     if (note.trim().split(/\s+/).filter(Boolean).length < 3) {
       nextFieldErrors.note = "Tell us what you need help with.";
     }
-    // At least one photo is required for every booking, including First Visit
-    // Free. Technicians review job photos before the visit so they arrive with
-    // the right tools and materials.
-    if (uploadedPhotos.length === 0) {
-      nextFieldErrors.photos = "Add at least one photo so your technician can review the job.";
+    // A photo, or the closest Profixter Library example, is required for every
+    // booking, including First Visit Free. Technicians review job photos before
+    // the visit so they arrive with the right tools and materials; the example
+    // lets someone without a photo to hand still book (real photos can follow).
+    if (uploadedPhotos.length === 0 && !libraryReference) {
+      nextFieldErrors.photos = "Add a photo, or choose the closest example from the Profixter Library.";
     }
 
     if (Object.keys(nextFieldErrors).length > 0) {
@@ -1181,6 +1187,7 @@ if (next?.date) {
         note: note.trim(),
         addressId,
         images: uploadedPhotos,
+        libraryReference: libraryReference || undefined,
         requestedDate: formatDateYMD(selectedDate),
         requestedTime: selectedTime,
       });
@@ -1217,6 +1224,7 @@ if (next?.date) {
       setSelectedTime("");
       setNote("");
       setUploadedPhotos([]);
+      setLibraryReference("");
 
     } catch (err: unknown) {
       const bookingError = err as Error & {
@@ -1803,7 +1811,7 @@ if (next?.date) {
                   Photos<RequiredAsterisk />
                 </div>
                 <p className="mb-1.5 text-[11px] leading-4 text-[#94A3B8] sm:text-[12px]">
-                  Add at least one photo so your technician can review the job and arrive prepared.
+                  A photo of the actual issue helps your Fixter arrive prepared.
                 </p>
                 {fieldErrors.photos ? (
                   <p id="booking-photos-error" role="alert" className="mt-1 text-[10px] font-semibold text-red-600 sm:text-[12px]">
@@ -1835,6 +1843,14 @@ if (next?.date) {
                     Choose Photos{uploadedPhotos.length > 0 ? ` (${uploadedPhotos.length})` : ""}
                   </button>
                 </div>
+                <PhotoLibraryPicker
+                  value={libraryReference}
+                  context={freeFirstVisitAvailable ? "free_visit" : "member"}
+                  onChange={(key) => {
+                    setLibraryReference(key);
+                    if (key) clearFieldError("photos");
+                  }}
+                />
 
                 <input
                   ref={cameraInputRef}
