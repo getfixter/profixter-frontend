@@ -16,6 +16,7 @@ import {
   type FullDayEligibility,
 } from "@/lib/booking-service";
 import type { Address } from "@/lib/auth-service";
+import PhotoLibraryPicker from "@/app/components/booking/PhotoLibraryPicker";
 
 /**
  * Full Day Fixter: one Fixter, one day, the whole list.
@@ -129,6 +130,8 @@ export default function FullDayVisitPanel() {
   const [selectedDate, setSelectedDate] = useState("");
   const [note, setNote] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
+  // Optional, like photos on a Full Day: the closest Profixter Library example.
+  const [libraryReference, setLibraryReference] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [booked, setBooked] = useState<{ bookingNumber: string; date: string } | null>(null);
@@ -249,7 +252,13 @@ export default function FullDayVisitPanel() {
 
     setSubmitting(true);
     try {
-      const payload = { addressId, date: selectedDate, note: note.trim(), images: photos };
+      const payload = {
+        addressId,
+        date: selectedDate,
+        note: note.trim(),
+        images: photos,
+        libraryReference: libraryReference || undefined,
+      };
       if (included) {
         trackEvent("full_day_included_booking_started", { date: selectedDate });
         const result = await bookIncludedFullDay(payload);
@@ -562,6 +571,7 @@ export default function FullDayVisitPanel() {
                         Choose Photos{photos.length > 0 ? ` (${photos.length})` : ""}
                       </button>
                     </div>
+                    <PhotoLibraryPicker value={libraryReference} context="full_day" onChange={setLibraryReference} />
                     <input
                       ref={cameraInputRef}
                       type="file"

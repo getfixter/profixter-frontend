@@ -80,6 +80,8 @@ export interface BookingData {
   note: string;
   addressId: string;
   images: File[];
+  /** A Profixter Library example key (see lib/booking-library). Never a photo. */
+  libraryReference?: string;
   requestedDate?: string;
   requestedTime?: string;
 }
@@ -90,6 +92,8 @@ export interface OneTimeCheckoutData {
   date: string;
   note: string;
   images: File[];
+  /** A Profixter Library example key (see lib/booking-library). Never a photo. */
+  libraryReference?: string;
   requestedDate?: string;
   requestedTime?: string;
 }
@@ -306,6 +310,7 @@ export const createBooking = async (data: BookingData): Promise<BookingResponse>
   formData.append("addressId", data.addressId);
   if (data.requestedDate) formData.append("requestedDate", data.requestedDate);
   if (data.requestedTime) formData.append("requestedTime", data.requestedTime);
+  if (data.libraryReference) formData.append("libraryReference", data.libraryReference);
 
   data.images.forEach((img) => formData.append("images", img));
 
@@ -343,6 +348,7 @@ export const createOneTimeVisitCheckout = async (
   formData.append("note", data.note);
   if (data.requestedDate) formData.append("requestedDate", data.requestedDate);
   if (data.requestedTime) formData.append("requestedTime", data.requestedTime);
+  if (data.libraryReference) formData.append("libraryReference", data.libraryReference);
   data.images.forEach((img) => formData.append("images", img));
 
   const token = localStorage.getItem("token") || "";
@@ -422,6 +428,8 @@ export interface FullDayBookingData {
   date: string;
   note: string;
   images: File[];
+  /** A Profixter Library example key (see lib/booking-library). Never a photo. */
+  libraryReference?: string;
 }
 
 export const getFullDayConfig = async (): Promise<FullDayConfig> => {
@@ -455,6 +463,7 @@ async function postFullDay<T>(path: string, data: FullDayBookingData): Promise<T
   formData.append("addressId", data.addressId);
   formData.append("date", data.date);
   formData.append("note", data.note);
+  if (data.libraryReference) formData.append("libraryReference", data.libraryReference);
   data.images.forEach((image) => formData.append("images", image));
 
   const token = localStorage.getItem("token") || "";
