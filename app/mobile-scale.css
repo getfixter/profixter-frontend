@@ -1,0 +1,191 @@
+/* ==================================================================== */
+/* PHONE SCALE                                                           */
+/*                                                                       */
+/* The customer site on a phone (< 640px), one type + spacing system.    */
+/* Tablet and desktop are untouched: every rule below is inside the      */
+/* max-width: 639px query, and scoped to html[data-surface="site"]       */
+/* (lib/surface.ts) so the admin and the event kiosk keep their own.     */
+/*                                                                       */
+/* How it works: Tailwind v4 puts utilities in a cascade layer, and      */
+/* unlayered rules win over layered ones. So instead of re-editing       */
+/* hundreds of components, the phone scale is one map from the sizes the */
+/* code uses to the sizes a phone should show:                           */
+/*                                                                       */
+/*   display  46/43/40/36 -> 30     body   18/17 -> 16                    */
+/*   title    34/32       -> 26            16/15 kept                     */
+/*            30          -> 24     small  14/13/12 kept                  */
+/*   section  27/26       -> 23     micro  8/9/10 -> 11 (raised: these    */
+/*            24          -> 21            carried real information)       */
+/*   card     23/22/21    -> 19                                           */
+/*            20/19       -> 17                                           */
+/*                                                                       */
+/* Spacing follows the same idea: large vertical gaps shrink by ~30%,    */
+/* small ones are left alone. Tap targets never go below 44px.           */
+/* ==================================================================== */
+
+:root {
+  --m-display: 30px;
+  --m-title: 24px;
+  --m-section: 21px;
+  --m-card: 17px;
+  --m-body: 15px;
+  --m-lede: 15px;
+  --m-small: 13px;
+  --m-label: 12px;
+  --m-control: 46px;
+  --m-beat: 28px;
+}
+
+@media (max-width: 639px) {
+  /* ---------------------------------------------------------------- */
+  /* Type ramp: utility classes                                          */
+  /* ---------------------------------------------------------------- */
+  :root[data-surface="site"] :is(.text-5xl, .text-\[46px\], .text-\[43px\], .text-\[40px\], .text-4xl, .text-\[36px\]) {
+    font-size: var(--m-display);
+    line-height: 1.08;
+  }
+  :root[data-surface="site"] :is(.text-\[34px\], .text-\[32px\]) { font-size: 26px; line-height: 1.12; }
+  :root[data-surface="site"] :is(.text-3xl, .text-\[30px\]) { font-size: var(--m-title); line-height: 1.15; }
+  :root[data-surface="site"] :is(.text-\[27px\], .text-\[26px\]) { font-size: 23px; line-height: 1.18; }
+  :root[data-surface="site"] :is(.text-2xl, .text-\[24px\]) { font-size: var(--m-section); line-height: 1.22; }
+  :root[data-surface="site"] :is(.text-\[23px\], .text-\[22px\], .text-\[21px\]) { font-size: 19px; line-height: 1.25; }
+  :root[data-surface="site"] :is(.text-xl, .text-\[20px\], .text-\[19px\]) { font-size: var(--m-card); line-height: 1.3; }
+  :root[data-surface="site"] :is(.text-lg, .text-\[18px\], .text-\[17px\]) { font-size: 16px; line-height: 1.45; }
+  :root[data-surface="site"] :is(.text-\[8px\], .text-\[9px\], .text-\[9\.5px\], .text-\[10px\]) { font-size: 11px; }
+
+  /* ---------------------------------------------------------------- */
+  /* Spacing ramp: large vertical gaps only                               */
+  /* ---------------------------------------------------------------- */
+  :root[data-surface="site"] .py-8 { padding-top: 24px; padding-bottom: 24px; }
+  :root[data-surface="site"] .pt-8 { padding-top: 24px; }
+  :root[data-surface="site"] .pb-8 { padding-bottom: 24px; }
+  :root[data-surface="site"] .py-10 { padding-top: 28px; padding-bottom: 28px; }
+  :root[data-surface="site"] .py-12 { padding-top: 32px; padding-bottom: 32px; }
+  :root[data-surface="site"] .py-14 { padding-top: 36px; padding-bottom: 36px; }
+  :root[data-surface="site"] .py-16 { padding-top: 40px; padding-bottom: 40px; }
+  :root[data-surface="site"] .py-20 { padding-top: 48px; padding-bottom: 48px; }
+  :root[data-surface="site"] .pt-10 { padding-top: 28px; }
+  :root[data-surface="site"] .pt-12 { padding-top: 32px; }
+  :root[data-surface="site"] .pt-20 { padding-top: 48px; }
+  :root[data-surface="site"] .pt-24 { padding-top: 56px; }
+  :root[data-surface="site"] .pb-10 { padding-bottom: 28px; }
+  :root[data-surface="site"] .pb-12 { padding-bottom: 32px; }
+  :root[data-surface="site"] .pb-14 { padding-bottom: 36px; }
+  :root[data-surface="site"] .pb-16 { padding-bottom: 40px; }
+  :root[data-surface="site"] .pb-20 { padding-bottom: 48px; }
+  :root[data-surface="site"] .pb-24 { padding-bottom: 56px; }
+  :root[data-surface="site"] .pb-28 { padding-bottom: 64px; }
+  :root[data-surface="site"] .mt-10 { margin-top: 28px; }
+  :root[data-surface="site"] .mt-12 { margin-top: 32px; }
+  :root[data-surface="site"] .mt-14 { margin-top: 36px; }
+  :root[data-surface="site"] .mt-16 { margin-top: 40px; }
+  :root[data-surface="site"] .gap-10 { gap: 24px; }
+  :root[data-surface="site"] .gap-12 { gap: 28px; }
+  :root[data-surface="site"] .gap-\[62px\] { gap: 32px; }
+  :root[data-surface="site"] .space-y-10 > :not(:last-child) { margin-block-start: 0; margin-block-end: 28px; }
+
+  /* Controls: tall buttons come down to a comfortable 46-48px. */
+  :root[data-surface="site"] :is(.h-14, .h-\[52px\], .h-16) { height: 48px; }
+  :root[data-surface="site"] :is(.min-h-\[52px\], .min-h-14, .min-h-\[56px\]) { min-height: 48px; }
+
+  /* ---------------------------------------------------------------- */
+  /* Site chrome                                                        */
+  /* ---------------------------------------------------------------- */
+  :root[data-surface="site"] .site-header { padding-top: 6px; padding-bottom: 6px; }
+  :root[data-surface="site"] .site-header > div > div { padding-top: 6px; padding-bottom: 6px; }
+  :root[data-surface="site"] .site-header .nav-brand-logo { height: 20px; width: auto; }
+
+  :root[data-surface="site"] .customer-site-nav { padding-top: 4px; }
+  :root[data-surface="site"] .csn-item { min-height: 44px; gap: 1px; font-size: 11px; }
+  :root[data-surface="site"] .csn-item svg { width: 19px; height: 19px; }
+  :root[data-surface="site"] .customer-site-nav-spacer { height: calc(64px + env(safe-area-inset-bottom, 0px)); }
+
+  :root[data-surface="site"] .pf-tabs { padding-top: 8px; }
+  :root[data-surface="site"] .pf-tabs > div { padding: 3px; gap: 2px; }
+  :root[data-surface="site"] .pf-tab { min-height: 40px; font-size: 12.5px; }
+
+  /* ---------------------------------------------------------------- */
+  /* Shared marketing system (About, Projects, SEO pages, member home)  */
+  /* ---------------------------------------------------------------- */
+  :root[data-surface="site"] .mk-beat { padding: var(--m-beat) 0; }
+  :root[data-surface="site"] .mk-h2 { font-size: 22px; line-height: 1.18; }
+  :root[data-surface="site"] .mk-lede { font-size: var(--m-lede); line-height: 1.55; }
+  :root[data-surface="site"] .mk-eyebrow { font-size: 11px; }
+  :root[data-surface="site"] .home-step { padding: 16px 0; }
+  :root[data-surface="site"] .home-step__t { font-size: 19px; }
+  :root[data-surface="site"] .home-price { font-size: 15px; }
+  :root[data-surface="site"] .home-chip { font-size: 14px; padding: 9px 15px; }
+
+  /* ---------------------------------------------------------------- */
+  /* Signup / login                                                     */
+  /* ---------------------------------------------------------------- */
+  :root[data-surface="site"] .auth-question { font-size: 24px; line-height: 1.15; }
+  :root[data-surface="site"] .auth-input { height: 50px; font-size: 16px; }
+  :root[data-surface="site"] .auth-submit { min-height: 50px; font-size: 16px; }
+  :root[data-surface="site"] .auth-fields { gap: 10px; }
+
+  /* ---------------------------------------------------------------- */
+  /* Plans page                                                         */
+  /* ---------------------------------------------------------------- */
+  :root[data-surface="site"] .plan-box { padding: 14px; }
+  :root[data-surface="site"] .plan-box__figure { font-size: 44px; }
+  :root[data-surface="site"] .plan-box__price { margin-top: 12px; }
+  :root[data-surface="site"] .plan-box__stack { margin-top: 12px; }
+  :root[data-surface="site"] .plan-box__cta { min-height: 48px; margin-top: 14px; }
+  :root[data-surface="site"] .plan-after { margin-top: 18px; }
+  :root[data-surface="site"] .plan-after__card { padding: 13px 14px; }
+
+  /* ---------------------------------------------------------------- */
+  /* Landing (lx-*)                                                     */
+  /* ---------------------------------------------------------------- */
+  :root[data-surface="site"] .lx-h1 { font-size: var(--m-display); line-height: 1.04; letter-spacing: -0.04em; }
+  :root[data-surface="site"] .lx-h2 { font-size: 22px; line-height: 1.15; }
+  :root[data-surface="site"] .lx-lede { font-size: var(--m-lede); line-height: 1.5; }
+  :root[data-surface="site"] .lx-pill { font-size: 13px; padding: 5px 12px 5px 6px; }
+  :root[data-surface="site"] .lx-pill b { height: 20px; padding: 0 8px; font-size: 11px; }
+  :root[data-surface="site"] .lx-section { padding: 40px 16px; }
+  :root[data-surface="site"] .lx-step-card { padding: 16px; border-radius: 16px; }
+  :root[data-surface="site"] .lx-step-card h3 { margin-top: 10px; font-size: 17px; }
+  :root[data-surface="site"] .lx-step-card p { font-size: 14px; line-height: 1.5; }
+  :root[data-surface="site"] .lx-step-num { width: 32px; height: 32px; border-radius: 10px; font-size: 14px; }
+  :root[data-surface="site"] .lx-dark { border-radius: 20px; padding: 24px 18px; }
+  :root[data-surface="site"] .lx-tick { font-size: 13px; }
+  :root[data-surface="site"] .lx-faq summary { min-height: 52px; font-size: 15px; padding: 12px 0; }
+
+  /* ---------------------------------------------------------------- */
+  /* Booker (fv-*) and plan picker (pk-*)                               */
+  /* ---------------------------------------------------------------- */
+  :root[data-surface="site"] .fv-card { border-radius: 20px; }
+  :root[data-surface="site"] .fv-step { padding: 16px 14px; }
+  :root[data-surface="site"] .fv-step-n { width: 22px; height: 22px; margin-bottom: 8px; font-size: 11px; }
+  :root[data-surface="site"] .fv-step-title { font-size: 18px; }
+  :root[data-surface="site"] .fv-input { padding: 12px 14px; border-radius: 12px; }
+  :root[data-surface="site"] .fv-chip { padding: 6px 11px; font-size: 13px; }
+  :root[data-surface="site"] .fv-compact .fv-chip { min-height: 34px; }
+  :root[data-surface="site"] .fv-photo-btn { min-height: 44px; font-size: 14px; border-radius: 12px; }
+  :root[data-surface="site"] .fv-day { height: 40px; font-size: 14px; border-radius: 10px; }
+  :root[data-surface="site"] .fv-day--compact { height: 40px; }
+  :root[data-surface="site"] .fv-slot, :root[data-surface="site"] .fv-slot--compact { height: 44px; font-size: 14px; border-radius: 10px; }
+  :root[data-surface="site"] .fv-cta { min-height: 48px; font-size: 16px; border-radius: 13px; padding: 0 20px; }
+  :root[data-surface="site"] .fv-cta--compact { min-height: 48px; }
+  :root[data-surface="site"] .fv-compact { padding: 12px; border-radius: 18px; }
+  :root[data-surface="site"] .fv-field { min-height: 48px; border-radius: 12px; padding: 0 12px; gap: 9px; }
+  :root[data-surface="site"] .fv-field-icon { margin-top: 14px; }
+  :root[data-surface="site"] .fv-cinput { padding: 12px 0; min-height: 46px; font-size: 16px; }
+  :root[data-surface="site"] .fv-strip { margin-left: -12px; margin-right: -12px; padding-left: 12px; padding-right: 12px; scroll-padding-left: 12px; }
+  :root[data-surface="site"] .fv-mini-btn { min-height: 44px; font-size: 13.5px; border-radius: 11px; }
+  :root[data-surface="site"] .fv-daypill { width: 52px; height: 56px; border-radius: 12px; }
+  :root[data-surface="site"] .fv-daypill-d { font-size: 16px; }
+  :root[data-surface="site"] .fv-daypill-wd { font-size: 10.5px; }
+  :root[data-surface="site"] .fv-daypill-mo { font-size: 10px; }
+  :root[data-surface="site"] .fv-sumrow { min-height: 46px; font-size: 14px; border-radius: 12px; }
+  :root[data-surface="site"] .fv-summary { padding: 12px 14px; border-radius: 14px; }
+  :root[data-surface="site"] .fv-summary-row { font-size: 14px; }
+  :root[data-surface="site"] .fv-panel { padding: 14px; border-radius: 14px; }
+  :root[data-surface="site"] .fv-check { width: 56px; height: 56px; }
+
+  :root[data-surface="site"] .pk-row { border-radius: 13px; }
+  :root[data-surface="site"] .pk-row > button { padding: 11px 13px; gap: 10px; }
+  :root[data-surface="site"] .pk-dot { width: 18px; height: 18px; }
+  :root[data-surface="site"] .pk-details { padding-left: 41px; padding-right: 13px; }
+}

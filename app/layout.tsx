@@ -8,11 +8,15 @@ import CustomerSiteMobileNav from "./components/CustomerSiteMobileNav";
 import FixterStage from "./components/fixter/FixterStage";
 import "./globals.css";
 import "./free-visit.css";
+/* Last, so its phone-only rules sit after every other stylesheet. */
+import "./mobile-scale.css";
 import { DEFAULT_OG_IMAGE, PROFIXTER_STRUCTURED_DATA, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { META_PIXEL_ID } from "@/lib/meta-config";
 import AttributionCapture from "./components/AttributionCapture";
 import PhoneClickTracker from "./components/PhoneClickTracker";
 import MetaPageView from "./components/MetaPageView";
+import SurfaceMarker from "./components/SurfaceMarker";
+import { SURFACE_SCRIPT } from "@/lib/surface";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -128,8 +132,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} ${cormorant.variable}`}
+      data-surface="site"
+      suppressHydrationWarning
     >
       <head>
+        {/* Customer page or staff tool, decided before paint - see lib/surface.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: SURFACE_SCRIPT }} />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#0B1628" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -219,6 +227,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         </noscript>
 
         <ScrollToTop />
+        <SurfaceMarker />
 
         {/*
           Suspense because useSearchParams opts a subtree into client rendering,
