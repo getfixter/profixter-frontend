@@ -32,6 +32,8 @@ import PriorityVisitPanel from "@/app/components/booking/PriorityVisitPanel";
 import FullDayVisitPanel from "@/app/components/booking/FullDayVisitPanel";
 import PhotoLibraryPicker from "@/app/components/booking/PhotoLibraryPicker";
 import MembershipGatewayPanel from "@/app/components/booking/MembershipGatewayPanel";
+import FreeVisitBooker from "@/app/components/booking/FreeVisitBooker";
+import { useFreeVisitEligibility } from "@/lib/free-visit";
 import MembershipUpgradePrompt, { normalizePlanKey } from "@/app/components/membership/MembershipUpgradePrompt";
 import { hasActiveMembership as hasActiveMembershipFor } from "@/lib/auth-routing";
 
@@ -1491,15 +1493,17 @@ function FullDayVisitHistory() {
  * them.
  */
 function BookExperience() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const searchParams = useSearchParams();
   const isMember = hasActiveMembershipFor(user);
+  const isAnonymous = !isLoading && !isAuthenticated;
+  const freeVisit = useFreeVisitEligibility();
   // Same plan source the Extra Visit flow uses: the subscribed address.
   const currentPlanKey = normalizePlanKey(
     (user?.addresses || []).find((address) => Boolean(address.hasActiveSubscription))?.plan
   );
 
-  const visit = resolveVisitType(searchParams.get("visit"), isMember);
+  const visit = resolveVisitType(searchParams.get("visit"), isMember, isAnonymous);
   const nav = <VisitTypeNav active={visit} isMember={isMember} />;
 
   if (visit === "additional") return <AdditionalVisitBooking navSlot={nav} />;
@@ -1535,11 +1539,39 @@ function BookExperience() {
    * the URL still describes the page.
    */
   if (!isMember && visit === "membership") {
+    /*
+     * Anyone who can still have the First Free Visit books it right here:
+     * description, real calendar, time, then signup at the end if they have
+     * no account. Everyone else gets the gateway, as before.
+     */
+    const canBookFree = isAnonymous || freeVisit === "eligible";
     return (
       <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
         <Header />
         {nav}
-        <MembershipGatewayPanel />
+        {canBookFree ? (
+          <section className="lx-hero px-4 pb-14 pt-6 sm:pt-10">
+            <div className="mx-auto max-w-[620px]">
+              <p className="lx-pill">
+                <b>Free</b> First 90-minute visit
+              </p>
+              <h1 className="mt-4 text-[32px] font-bold leading-[1.05] tracking-[-0.04em] sm:text-[42px]">
+                Book your free visit.
+              </h1>
+              <p className="mt-2 text-[16px] text-[#5b6577]">
+                One per home. No card needed.{" "}
+                <Link href="/membership/plans" className="fv-link text-[16px]">
+                  Or see plans
+                </Link>
+              </p>
+              <div className="mt-6">
+                <FreeVisitBooker id="book" />
+              </div>
+            </div>
+          </section>
+        ) : (
+          <MembershipGatewayPanel />
+        )}
         <Footer />
       </main>
     );

@@ -53,10 +53,10 @@ function buildItems({ homeHref, isMember }: { homeHref: string; isMember: boolea
   },
   {
     // Members never see this item: the list below filters down to Home, Book,
-    // Projects and Account for them. It is the visitor's route into the
-    // membership pitch, and it now also lights up on the comparison page.
-    label: "Membership",
-    href: "/membership",
+    // Projects and Account for them. "Plans", and straight to the prices - it
+    // was "Membership" -> /membership, one page short of what anything costs.
+    label: "Plans",
+    href: "/membership/plans",
     match: (pathname) =>
       pathname === "/membership" || pathname === "/membership-info" || pathname === "/membership/plans",
     icon: (

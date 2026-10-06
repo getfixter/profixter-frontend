@@ -403,7 +403,7 @@ export default function GiftPurchaseClient() {
           be started at any time.
         </p>
         <Link
-          href="/membership"
+          href="/membership/plans"
           className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-semibold text-white transition hover:bg-[#2558C4]"
         >
           See membership plans

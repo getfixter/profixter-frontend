@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/useAuth";
 import { getRoleLandingPath } from "@/lib/auth-routing";
 import type { PlanType } from "@/lib/stripe-links";
 import type { Address } from "@/lib/auth-service";
-import { trackInitiateCheckout } from "@/lib/analytics";
+import { trackEvent, trackInitiateCheckout } from "@/lib/analytics";
 import {
   createBillingPortalSession,
   getSubscriptionActionErrorMessage,
@@ -215,6 +215,14 @@ function getPlanPricing(plan: Plan, billing: BillingCycle): PlanPricing {
   };
 }
 
+/** "Premium · Annual · $3,490/year" - the same numbers the plan card shows. */
+function planSummary(planName: string, billing: BillingCycle): string {
+  const plan = plans.find((p) => p.name === planName);
+  if (!plan) return planName;
+  const { amount, suffix } = getPlanPricing(plan, billing);
+  return `${planName} · ${billing === "annual" ? "Annual" : "Monthly"} · $${amount.toLocaleString("en-US")}${suffix === "/mo" ? "/month" : "/year"}`;
+}
+
 /**
  * The price area of a plan card.
  *
@@ -293,6 +301,15 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
   const [actionError, setActionError] = useState("");
   const [checkoutCanceled, setCheckoutCanceled] = useState(false);
   const [actionLoadingPlan, setActionLoadingPlan] = useState<string | null>(null);
+  /* Back from signup with a plan already chosen: confirm it in one step. */
+  const [resumeRequested, setResumeRequested] = useState(false);
+  const [resumeOpen, setResumeOpen] = useState(false);
+
+  /* The funnel step between "See plans" and "plan_selected". Once per mount. */
+  useEffect(() => {
+    trackEvent("plans_viewed", { layout: compact ? "compact" : "full" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const { user, isAuthenticated, token } = useAuth();
   const roleLandingPath = getRoleLandingPath(user);
 
@@ -380,6 +397,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
       them where they are.
     */
     if (params.get("canceled") === "true") setCheckoutCanceled(true);
+    if (params.get("resume") === "1" && pendingRaw) setResumeRequested(true);
 
     if (requestedPromo) {
       setPromoCode(requestedPromo);
@@ -414,6 +432,28 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     }
   }, [token, selectedAddressId, addressSubscriptionMap, checkAddressState]);
 
+  /*
+   * Off to create an account, with the plan kept.
+   *
+   * `next` is what /signup actually reads - this used to send `redirect`,
+   * which signup ignored, so new customers landed on /membership with their
+   * choice gone and had to find it again. resume=1 asks this page to put a
+   * one-line confirmation in front of them on return instead of the grid.
+   */
+  const sendToSignupWithPlan = (
+    plan: PlanType,
+    cycle: BillingCycle,
+    planName: string,
+    addressId?: string
+  ) => {
+    sessionStorage.setItem(
+      "pendingCheckoutPlan",
+      JSON.stringify({ plan, billingCycle: cycle, planName, addressId, summary: planSummary(planName, cycle) })
+    );
+    const back = `/membership/plans?plan=${encodeURIComponent(plan)}&billingCycle=${encodeURIComponent(cycle)}&resume=1`;
+    window.location.href = `/signup?next=${encodeURIComponent(back)}`;
+  };
+
   const startCheckout = async (
     plan: PlanType,
     addressId: string,
@@ -425,15 +465,6 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     const authToken = token || localStorage.getItem("token");
     const endpointPath = "/api/stripe/checkout/create-checkout-session";
     const endpointUrl = `${apiBase.replace(/\/$/, "")}${endpointPath}`;
-    /*
-      Where to land after signing up: the page that actually holds the
-      comparison. This pointed at /membership#plans, which was correct while the
-      grid was duplicated there - it is not any more, and a customer returning
-      from signup would have found a price and no way to resume.
-    */
-    const preservePlanUrl = `/membership/plans?plan=${encodeURIComponent(plan)}&billingCycle=${encodeURIComponent(
-      cycle
-    )}&addressId=${encodeURIComponent(addressId)}`;
 
     if (!authToken) {
       console.error("[checkout] Missing auth token before checkout request", {
@@ -444,11 +475,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         addressId,
         billingCycle: cycle,
       });
-      sessionStorage.setItem(
-        "pendingCheckoutPlan",
-        JSON.stringify({ plan, billingCycle: cycle, planName, addressId })
-      );
-      window.location.href = `/signup?redirect=${encodeURIComponent(preservePlanUrl)}`;
+      sendToSignupWithPlan(plan, cycle, planName, addressId);
       return;
     }
 
@@ -522,11 +549,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
       });
 
       if (status === 401) {
-        sessionStorage.setItem(
-          "pendingCheckoutPlan",
-          JSON.stringify({ plan, billingCycle: cycle, planName, addressId })
-        );
-        window.location.href = `/signup?redirect=${encodeURIComponent(preservePlanUrl)}`;
+        sendToSignupWithPlan(plan, cycle, planName, addressId);
         return;
       }
 
@@ -681,6 +704,20 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     }
   };
 
+  /*
+   * Only a fresh subscription gets the sheet. A member who somehow arrives
+   * with a stale pending plan sees the normal page, so nobody already paying
+   * is walked into a new-customer checkout. Waits for the address's
+   * subscription lookup, which is what decides that.
+   */
+  useEffect(() => {
+    if (!resumeRequested || !isAuthenticated || !user || !selectedAddressId) return;
+    if (addressSubscriptionMap[selectedAddressId] === undefined) return;
+    setResumeRequested(false);
+    if (getActionForPlan(selectedPlanName).kind === "subscribe") setResumeOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeRequested, isAuthenticated, user, selectedAddressId, addressSubscriptionMap, selectedPlanName]);
+
   const handleSubscribe = async (planName: string) => {
     if (actionLoadingPlan) return;
     const planType = normalizePlanType(planName);
@@ -693,14 +730,8 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     }
 
     if (!isAuthenticated || !user) {
-      sessionStorage.setItem(
-        "pendingCheckoutPlan",
-        JSON.stringify({ plan: planType, billingCycle: billing, planName })
-      );
-      /* Back to the comparison, which is where the grid now lives. */
-      window.location.href = `/signup?redirect=${encodeURIComponent(
-        `/membership/plans?plan=${encodeURIComponent(planType)}&billingCycle=${encodeURIComponent(billing)}`
-      )}`;
+      trackEvent("plan_selected", { plan: planType, billing_cycle: billing, signed_in: false });
+      sendToSignupWithPlan(planType, billing, planName);
       return;
     }
 
@@ -1207,6 +1238,24 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
 
   return (
     <section id="plans" className={`w-full scroll-mt-[140px] bg-[#F5F5F7] px-4 sm:px-5 ${compact ? "py-8 sm:py-11" : "py-8 sm:py-13 lg:py-12"}`}>
+      {resumeOpen && selectedAddress ? (
+        <PlanResumeSheet
+          planName={selectedPlanName}
+          billing={billing}
+          address={[selectedAddress.line1, selectedAddress.city].filter(Boolean).join(", ")}
+          busy={actionLoadingPlan === selectedPlanName}
+          error={actionError}
+          onContinue={() => {
+            trackEvent("plan_selected", { plan: normalizePlanType(selectedPlanName) || "", billing_cycle: billing, signed_in: true, resumed: true });
+            sessionStorage.removeItem("pendingCheckoutPlan");
+            void handleSubscribe(selectedPlanName);
+          }}
+          onClose={() => {
+            sessionStorage.removeItem("pendingCheckoutPlan");
+            setResumeOpen(false);
+          }}
+        />
+      ) : null}
       <div className="mx-auto max-w-[1280px]">
         <div className={`mx-auto max-w-[720px] text-center ${compact ? "mb-7 sm:mb-9" : "mb-8 sm:mb-9"}`}>
           {/*
@@ -1361,5 +1410,84 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * "Here's what you picked." Shown once, after signup, before Stripe.
+ *
+ * The price is the same figure the plan card shows, tax is named rather than
+ * hidden, and the only two choices are to continue or to change the plan.
+ */
+function PlanResumeSheet({
+  planName,
+  billing,
+  address,
+  busy,
+  error,
+  onContinue,
+  onClose,
+}: {
+  planName: string;
+  billing: BillingCycle;
+  address: string;
+  busy: boolean;
+  error: string;
+  onContinue: () => void;
+  onClose: () => void;
+}) {
+  const plan = plans.find((p) => p.name === planName);
+  const pricing = plan ? getPlanPricing(plan, billing) : null;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !busy) onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [busy, onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-end justify-center bg-[#0B1628]/45 backdrop-blur-[3px] sm:items-center sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="plan-resume-title"
+      data-plan-resume
+    >
+      <div className="fv-card fv-enter w-full max-w-[460px] !bg-white !rounded-b-none p-6 pb-[max(24px,env(safe-area-inset-bottom))] sm:!rounded-[26px] sm:p-8">
+        <p className="lx-eyebrow">Almost there</p>
+        <h2 id="plan-resume-title" className="mt-2 text-[26px] font-bold leading-tight tracking-[-0.03em] text-[#0B1628]">
+          {planName} · {billing === "annual" ? "Annual" : "Monthly"}
+        </h2>
+        {pricing ? (
+          <p className="mt-3 text-[#0B1628]">
+            <span className="text-[40px] font-bold tracking-[-0.04em]">${pricing.amount.toLocaleString("en-US")}</span>
+            <span className="ml-1 text-[16px] font-semibold text-[#64748B]">{pricing.suffix === "/mo" ? "/ month" : "/ year"}</span>
+          </p>
+        ) : null}
+        <dl className="mt-4 space-y-2 text-[14px]">
+          {address ? (
+            <div className="flex justify-between gap-4 rounded-[12px] bg-[#F6F8FC] px-4 py-3">
+              <dt className="font-semibold text-[#64748B]">Home</dt>
+              <dd className="text-right font-semibold text-[#0B1628]">{address}</dd>
+            </div>
+          ) : null}
+          <div className="flex justify-between gap-4 rounded-[12px] bg-[#F6F8FC] px-4 py-3">
+            <dt className="font-semibold text-[#64748B]">Billed</dt>
+            <dd className="text-right font-semibold text-[#0B1628]">
+              {billing === "annual" ? "Yearly, upfront" : "Monthly"} · tax calculated at checkout
+            </dd>
+          </div>
+        </dl>
+        {error ? <p className="fv-error" role="alert">{error}</p> : null}
+        <button type="button" className="fv-cta mt-6 w-full" onClick={onContinue} disabled={busy} data-plan-resume-continue>
+          {busy ? <><span className="fv-spinner" aria-hidden="true" /> Opening checkout…</> : <>Continue to secure checkout <span aria-hidden="true">→</span></>}
+        </button>
+        <button type="button" className="mt-3 w-full py-2 text-[15px] font-semibold text-[#306EEC]" onClick={onClose} disabled={busy}>
+          Change plan
+        </button>
+      </div>
+    </div>
   );
 }

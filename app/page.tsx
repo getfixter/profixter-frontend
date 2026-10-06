@@ -3,36 +3,36 @@
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import HomeMarketing from "@/app/components/sections/HomeMarketing";
+import HomeLanding from "@/app/components/home/HomeLanding";
 import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
-import StartScreen from "@/app/components/start/StartScreen";
+import { useAuth } from "@/lib/useAuth";
+import { hasActiveMembership } from "@/lib/auth-routing";
 
 /**
- * The homepage, with a front door in front of it.
+ * The homepage.
  *
- * A visitor who is not logged in gets one full screen first: the room, four
- * words, and Get Started. Everything below it is the homepage exactly as it
- * was — same route, same components, same order, same metadata and canonical
- * URL, so nothing about the detailed site or its search presence moved.
+ * Anyone who is not a member lands on the booker: the first screen states the
+ * offer in a line and lets them describe the job, pick a real time and book
+ * their First Free Visit before they have an account. Signup comes last.
  *
- * The two are one document on purpose. "Scroll to explore" is not a link to
- * somewhere else; scrolling down *is* the navigation, which is why the front
- * door can be this bare without hiding anything.
+ * It replaced a full-screen front door whose only button was "Get Started" to
+ * /signup - a registration wall on the very first tap.
  *
- * A member never sees it. StartScreen removes itself before first paint when
- * there is a session — see the inline check in that file — so Home stays Home
- * for the people who already pay for it, and RoleEntryGate keeps sending staff
- * to their workspace exactly as before.
+ * A member keeps the home they already know (HomeMarketing, with its member
+ * CTA), because an offer they cannot use is noise to them. RoleEntryGate still
+ * sends staff to their workspace exactly as before.
  */
 export default function HomePage() {
+  const { user, isAuthenticated } = useAuth();
+  const isMember = isAuthenticated && hasActiveMembership(user);
+
   return (
     <RoleEntryGate>
       <div className="min-h-screen bg-white">
-        <StartScreen />
-
         <div className="sticky top-0 z-50">
           <Header />
         </div>
-        <HomeMarketing />
+        {isMember ? <HomeMarketing /> : <HomeLanding />}
         {/* Above the 3D layer, like every other piece of real page content. */}
         <div className="relative z-20">
           <Footer />

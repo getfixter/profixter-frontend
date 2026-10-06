@@ -143,10 +143,16 @@ export default function RecentWorkSection({
           category: nextCategory || undefined,
         });
         if (ticket !== requestRef.current) return;
-        setPhotos((current) => (append ? [...current, ...data.photos] : data.photos));
-        setHasMore(isPreview ? false : data.hasMore);
-        setTotal(data.total);
-        setPage(data.page);
+        /*
+         * An answer without a photos array (a proxy error page, a deploy in
+         * progress) shows no photos rather than taking the whole page down -
+         * this section sits on the homepage, under the booker.
+         */
+        const list = Array.isArray(data?.photos) ? data.photos : [];
+        setPhotos((current) => (append ? [...current, ...list] : list));
+        setHasMore(isPreview ? false : !!data?.hasMore);
+        setTotal(Number(data?.total) || 0);
+        setPage(Number(data?.page) || nextPage);
         setStatus("ready");
       } catch {
         if (ticket !== requestRef.current) return;

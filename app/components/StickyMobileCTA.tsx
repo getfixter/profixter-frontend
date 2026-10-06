@@ -42,7 +42,7 @@ export default function StickyMobileCTA() {
         ) : (
           /* Cold traffic gets the offer, not an account chore. */
           <Link
-            href="/signup?redirect=%2Fmembership"
+            href="/book/free"
             className="flex w-full h-[46px] flex-col items-center justify-center rounded-[8px] bg-[#306EEC] text-white shadow-[0_8px_22px_rgba(48,110,236,0.28)] active:bg-[#2558c9]"
           >
             <span className="text-[15px] font-bold leading-tight">Book your free visit</span>

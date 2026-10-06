@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { MAIN_NAV_LINKS } from "@/lib/site-architecture";
 import { getCustomerHomePath, getRoleLandingPath, hasActiveMembership } from "@/lib/auth-routing";
 
@@ -13,6 +13,7 @@ export default function Header() {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   const { user, isAuthenticated, logout } = useAuth();
+  const pathname = usePathname();
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -33,6 +34,13 @@ export default function Header() {
    * first-class item here rather than only a profile-menu entry, which was too
    * easy to miss.
    */
+  /*
+   * The free-visit booker: in place on the homepage, its own page elsewhere.
+   * This used to be /signup?redirect=/membership - an account form first, and
+   * a `redirect` parameter signup never read.
+   */
+  const freeVisitHref = pathname === "/" ? "/#book" : "/book/free";
+
   const navLinks = useMemo(() => {
     if (isMember) {
       return [
@@ -211,10 +219,10 @@ export default function Header() {
             ) : (
               <>
                 <Link
-                  href="/signup?redirect=%2Fmembership"
+                  href={freeVisitHref}
                   className="rounded-[8px] bg-[#306EEC] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#2558C9]"
                 >
-                  Book your free visit
+                  Book free visit
                 </Link>
                 <Link
                   href="/signin"
@@ -329,11 +337,11 @@ export default function Header() {
               ) : (
                 <>
                   <Link
-                    href="/signup?redirect=%2Fmembership"
+                    href={freeVisitHref}
                     onClick={() => setIsMenuOpen(false)}
                     className="w-full rounded-[8px] bg-[#306EEC] px-5 py-3.5 text-center text-[15px] font-bold text-white transition hover:bg-[#2558C9] sm:px-6 sm:py-4 sm:text-base"
                   >
-                    Book your free visit
+                    Book free visit
                   </Link>
                   <Link
                     href="/signin"
