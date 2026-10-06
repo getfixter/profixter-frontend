@@ -121,7 +121,7 @@ export default function Header() {
   };
 
   return (
-    <header className="relative z-50 w-full py-[8px] sm:py-[12px]">
+    <header className="site-header relative z-50 w-full py-[8px] sm:py-[12px]">
       <div className="mx-2.5 rounded-[8px] border border-white/50 bg-white/92 shadow-[0_14px_48px_rgba(9,22,43,0.14)] backdrop-blur-xl sm:mx-5">
         <div className="mx-auto flex max-w-[1240px] items-center justify-between px-[12px] py-[8px] sm:px-[18px] sm:py-[10px]">
           {/*
