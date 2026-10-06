@@ -171,6 +171,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           disablePushState turns off fbevents.js's own history listener, which
           fires a PageView on every pushState. MetaPageView fires the route-change
           PageViews instead; with both on, every client navigation counted twice.
+          allowDuplicatePageViews is the other half: with the listener off,
+          fbevents.js treats every later PageView as a repeat of the first page
+          and silently drops it - verified on production, where route changes
+          sent nothing until this was set.
         */}
         <script
           id="meta-pixel"
@@ -185,6 +189,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               s.parentNode.insertBefore(t,s)}(window, document,'script',
               'https://connect.facebook.net/en_US/fbevents.js');
               fbq.disablePushState = true;
+              fbq.allowDuplicatePageViews = true;
               fbq('init', '${FB_PIXEL_ID}');
               fbq('track', 'PageView');
             `,
