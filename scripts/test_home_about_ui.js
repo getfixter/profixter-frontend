@@ -1,10 +1,10 @@
 /*
  * The simplified Home and the redesigned About.
  *
- * The checks that matter most here are not layout ones. They are: that the
- * start screen is untouched, that the 3D character and three.js are no longer
- * FETCHED on Home at all (not merely hidden), and that the membership map never
- * publishes a count of anything.
+ * The checks that matter most here are not layout ones. They are: that Home
+ * is the free-visit booker with no signup wall in front of it, that the 3D
+ * character and three.js are never FETCHED on Home (not merely hidden), and
+ * that nothing on Home publishes a count of anything.
  *
  *   node scripts/test_home_about_ui.js [baseUrl]
  */
@@ -22,6 +22,8 @@ function check(name, pass, detail) {
 
 async function openPage(browser, width, height, path = "/") {
   const ctx = await browser.newContext({ viewport: { width, height }, isMobile: width < 700, hasTouch: width < 700 });
+  /* Optional: a local build on a port the API's CORS list does not include. */
+  if (process.env.PF_CORS_PROXY) await require(process.env.PF_CORS_PROXY)(ctx);
   const page = await ctx.newPage();
   const heavy = [];
   page.on("request", (r) => {
@@ -52,47 +54,43 @@ async function scrollThrough(page) {
 (async () => {
   const browser = await chromium.launch();
 
-  /* ---------------- the start screen is untouched ---------------- */
+  /* ---------------- the landing is the booker ---------------- */
+  /*
+   * The full-screen start screen and its "Get Started" -> /signup button are
+   * gone on purpose: a visitor now describes the job and picks a real time
+   * before any account exists. What is pinned here is that the booker is on
+   * the first screen, live, and that nothing on Home sends a new visitor to a
+   * signup form first.
+   */
   {
     const { ctx, page } = await openPage(browser, 390, 844);
-    await page.waitForSelector(".start-screen__photo", { timeout: 30000 });
+    await page.waitForSelector('[data-fv="note"]', { timeout: 30000 });
+    await page.waitForSelector('[data-booking-date-disabled="false"]', { timeout: 30000 }).catch(() => {});
     const s = await page.evaluate(() => {
       const t = document.body.innerText.replace(/’/g, "'");
-      const hero = document.querySelector(".start-screen").getBoundingClientRect();
+      const note = document.querySelector('[data-fv="note"]').getBoundingClientRect();
       return {
-        headline: t.includes("Monthly handyman") && t.includes("for your home."),
-        cta: !!document.querySelector(".start-screen__cta"),
-        cue: t.includes("Scroll to explore"),
-        burger: !!document.querySelector(".start-menu__trigger"),
-        oneViewport: Math.abs(hero.height - window.innerHeight) < 2,
-        pf: document.documentElement.dataset.pfStart,
+        headline: t.includes("Your handyman.") && t.includes("On demand."),
+        offer: t.includes("First 90-minute visit"),
+        bookerOnFirstScreen: note.top < window.innerHeight,
+        liveCalendar: document.querySelectorAll('[data-booking-date-disabled="false"]').length > 0,
+        noStartScreen: !document.querySelector(".start-screen"),
+        noSignupWall: !document.querySelector('a[href^="/signup"]'),
       };
     });
-    check("start screen headline unchanged", s.headline, "");
-    check("start screen CTA present", s.cta, "");
-    check("scroll cue present", s.cue, "");
-    check("hamburger present", s.burger, "");
-    check("start screen is exactly one viewport", s.oneViewport, "");
-    check("start screen state = covering", s.pf === "covering", s.pf);
-
-    await page.click(".start-screen__scroll");
-    await page.waitForTimeout(1800);
-    const after = await page.evaluate(() => ({
-      y: window.scrollY,
-      heroH: document.querySelector(".start-screen").getBoundingClientRect().height,
-      pf: document.documentElement.dataset.pfStart,
-      recognition: document.body.innerText.replace(/’/g, "'").includes("There's always something."),
-    }));
-    check("Scroll to explore still enters Home", after.y >= after.heroH - 4, `y=${after.y.toFixed(0)}`);
-    check("state flips to passed", after.pf === "passed", after.pf);
-    check("first Home beat is the recognition strip", after.recognition, "");
+    check("headline states the product", s.headline, "");
+    check("free 90-minute offer stated", s.offer, "");
+    check("booker starts on the first screen (390px)", s.bookerOnFirstScreen, "");
+    check("real availability shown signed out", s.liveCalendar, "");
+    check("old start screen removed", s.noStartScreen, "");
+    check("no signup link anywhere on Home", s.noSignupWall, "");
     await ctx.close();
   }
 
   /* ---------------- the 3D is gone, and not downloaded ---------------- */
   {
     const { ctx, page, heavy } = await openPage(browser, 390, 844);
-    await page.waitForSelector(".start-screen__photo", { timeout: 30000 });
+    await page.waitForSelector('[data-fv="note"]', { timeout: 30000 });
     await scrollThrough(page);
     const canvas = await page.evaluate(() => !!document.querySelector("canvas"));
     check("no 3D canvas anywhere on Home", canvas === false, `canvas=${canvas}`);
@@ -108,45 +106,41 @@ async function scrollThrough(page) {
       const t = document.body.innerText.replace(/’/g, "'");
       return {
         beats: {
-          recognition: t.includes("There's always something."),
+          how: t.includes("Book. We come. Done."),
+          plans: t.includes("Want a handyman all year?"),
           work: /real work/i.test(t),
-          how: t.includes("Book it. We come. It's done."),
-          map: t.includes("Homes with an active membership"),
           proof: t.includes("A local company, not a marketplace."),
-          close: t.includes("Start with whatever's been waiting longest."),
+          faq: !!document.querySelector("details.lx-faq"),
         },
         photos: document.querySelectorAll('section img[src*="work"], section img[srcset]').length,
-        mapSvg: !!document.querySelector('[aria-labelledby="membership-map-heading"]'),
-        price: t.includes("From $149 a month"),
-        membershipLink: !!document.querySelector('a[href="/membership"]'),
+        price: t.includes("Plans from $149 a month"),
+        plansLink: !!document.querySelector('a[href="/membership/plans"]'),
         aboutLink: !!document.querySelector('a[href="/about"]'),
-        getStarted: !!document.querySelector('a[href^="/signup"]'),
-        /* Things that must no longer be on Home. */
+        /* Things that must not be on Home. */
         gone: {
           callForm: t.includes("Request a call") || t.includes("Interested in membership?"),
           planCards: t.includes("Compare plans") && t.includes("Membership starts at"),
-          bookingMock: t.includes("WHAT NEEDS DOING") || t.includes("Book your visit"),
         },
         /* The rule that must never be broken. */
         numbers: (t.match(/\b\d{2,}\s+(members?|homes?|customers?|memberships?)\b/gi) || []),
+        /* Membership copy is a pace, never a count. */
+        badWords: (t.match(/unlimited visits|visits per month|active booking|active appointment/gi) || []),
       };
     });
 
     for (const [k, v] of Object.entries(m.beats)) check(`Home beat present: ${k}`, v, "");
     check("real work photographs render", m.photos > 0, `${m.photos} images`);
-    check("membership map renders", m.mapSvg, "");
     check("price signal present", m.price, "");
-    check("Membership link present", m.membershipLink, "");
+    check("Plans link goes straight to prices", m.plansLink, "");
     check("About link present", m.aboutLink, "");
-    check("Get Started present", m.getStarted, "");
     check("lead-capture form removed from Home", !m.gone.callForm, "");
     check("plan cards removed from Home", !m.gone.planCards, "");
-    check("mock booking UI removed from Home", !m.gone.bookingMock, "");
     check("NO public member/customer count anywhere on Home", m.numbers.length === 0, m.numbers.join(", "));
+    check("membership copy never counts visits", m.badWords.length === 0, m.badWords.join(", "));
 
-    await page.click('a[href^="/signup"]');
-    await page.waitForURL(/\/signup/, { timeout: 20000 });
-    check("Get Started reaches signup", /\/signup/.test(page.url()), page.url());
+    await page.locator('a[href="/membership/plans"]:visible').first().click();
+    await page.waitForURL(/\/membership\/plans/, { timeout: 20000 });
+    check("See plans reaches the prices in one tap", /\/membership\/plans/.test(page.url()), page.url());
     await ctx.close();
   }
 
@@ -185,15 +179,15 @@ async function scrollThrough(page) {
   /* ---------------- navigation ---------------- */
   {
     const { ctx, page } = await openPage(browser, 390, 844);
-    await page.waitForSelector(".start-menu__trigger", { timeout: 20000 });
-    await page.click(".start-menu__trigger");
+    await page.click('button[aria-label="Open menu"]');
     await page.waitForTimeout(500);
     const links = await page.evaluate(() =>
-      Array.from(document.querySelectorAll(".start-menu__sheet a")).map((a) => a.getAttribute("href"))
+      Array.from(document.querySelectorAll("header a, nav a")).map((a) => a.getAttribute("href"))
     );
-    check("hamburger opens", links.length > 0, "");
+    check("menu opens", links.length > 0, "");
     check("About reachable from the menu", links.includes("/about"), "");
-    check("Membership reachable from the menu", links.includes("/membership"), "");
+    check("Plans reachable from the menu", links.includes("/membership/plans"), "");
+    check("Book free visit reachable from the menu", links.includes("/#book") || links.includes("/book/free"), "");
     await page.keyboard.press("Escape");
     await ctx.close();
   }

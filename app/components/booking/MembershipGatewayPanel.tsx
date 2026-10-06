@@ -32,7 +32,8 @@ export default function MembershipGatewayPanel() {
    * so they get a straight answer.
    */
   const offerFreeVisit = isAuthenticated ? freeVisit === "eligible" : true;
-  const freeVisitHref = isAuthenticated ? "/membership" : "/signup?redirect=%2Fmembership";
+  /* The booker itself - for a visitor with no account, signup comes after the time is picked. */
+  const freeVisitHref = "/book/free";
   const freeVisitLabel = isAuthenticated
     ? "Book your free first visit"
     : "Book your free first visit";

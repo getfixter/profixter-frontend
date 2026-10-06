@@ -27,6 +27,7 @@ import {
 import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
 import AuthScreen, { AuthHeading, AuthSubmit } from "@/app/components/auth/AuthScreen";
 import AddressField, { type AddressValue, type ServiceAreaState } from "@/app/components/address/AddressField";
+import { hasBookableDraft, loadDraft } from "@/lib/booking-draft";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -373,6 +374,45 @@ export default function SignUpPage() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
 
 
+  /*
+   * What the visitor was in the middle of when signup was asked of them.
+   *
+   * A free visit they already scheduled, or a plan they already chose. Shown
+   * once, above the question, so signup reads as the last small step of that
+   * task rather than the start of a new one - and nothing has to be chosen
+   * again afterwards, because `next` returns them to finish it.
+   */
+  const [returnTo, setReturnTo] = useState("");
+  const [carry, setCarry] = useState<
+    | { kind: "free-visit"; when: string }
+    | { kind: "plan"; label: string }
+    | null
+  >(null);
+
+  useEffect(() => {
+    const next = safeReturnPath(new URLSearchParams(window.location.search).get("next")) || "";
+    setReturnTo(next);
+    if (next.startsWith("/book/free")) {
+      const draft = loadDraft();
+      if (hasBookableDraft(draft)) {
+        const [y, m, d] = draft.requestedDate.split("-").map(Number);
+        const day = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", {
+          weekday: "short", month: "short", day: "numeric", timeZone: "UTC",
+        });
+        const [hh, mm] = draft.requestedTime.split(":").map(Number);
+        const time = `${hh % 12 === 0 ? 12 : hh % 12}:${String(mm).padStart(2, "0")} ${hh >= 12 ? "PM" : "AM"}`;
+        setCarry({ kind: "free-visit", when: `${day} · ${time}` });
+      }
+    } else if (next.startsWith("/membership/plans")) {
+      try {
+        const pending = JSON.parse(sessionStorage.getItem("pendingCheckoutPlan") || "null");
+        if (pending?.summary) setCarry({ kind: "plan", label: String(pending.summary) });
+      } catch {
+        /* no plan to show */
+      }
+    }
+  }, []);
+
   const phoneDigits = useMemo(() => extractUSNationalPhoneDigits(formData.phone), [formData.phone]);
   const zipDigits = useMemo(() => formData.zip.replace(/\D/g, ""), [formData.zip]);
 
@@ -415,6 +455,15 @@ export default function SignUpPage() {
      * "123 whatever street" satisfies perfectly.
      */
     if (!address?.verified) { setError("Select your address from the list."); return false; }
+    /*
+     * Booking a free visit, at an address we do not serve: stop here, before
+     * an account is made for a visit that cannot happen. Plain signup is not
+     * affected - it never promised a visit.
+     */
+    if (carry?.kind === "free-visit" && serviceArea === "outside") {
+      setError("We don't serve this address yet, so we can't book this visit. Profixter serves Nassau and Suffolk counties.");
+      return false;
+    }
     setError("");
     return true;
   };
@@ -656,7 +705,23 @@ export default function SignUpPage() {
 
   return (
     <RoleEntryGate loadingLabel="Checking your session..." redirectLabel="Opening Your Home...">
-      <AuthScreen altLabel="Log In" altHref="/signin">
+      <AuthScreen
+        altLabel="Log In"
+        altHref={returnTo ? `/signin?next=${encodeURIComponent(returnTo)}` : "/signin"}
+      >
+        {carry ? (
+          <p className="auth-carry" data-signup-carry={carry.kind}>
+            {carry.kind === "free-visit" ? (
+              <>
+                <b>Free visit</b> {carry.when}
+              </>
+            ) : (
+              <>
+                <b>Your plan</b> {carry.label}
+              </>
+            )}
+          </p>
+        ) : null}
         {/*
           The question, and nothing else above it.
 
@@ -667,7 +732,9 @@ export default function SignUpPage() {
           heading. Eight things wrapped around one field.
         */}
         <AuthHeading onBack={step > 1 ? handleBackStep : undefined}>
-          {stepCopy[step].title}
+          {step === 1 && carry?.kind === "free-visit"
+            ? "Almost done. Where should we send your Fixter?"
+            : stepCopy[step].title}
         </AuthHeading>
         {stepCopy[step].subtitle ? <p className="auth-sub">{stepCopy[step].subtitle}</p> : null}
 
@@ -878,7 +945,15 @@ export default function SignUpPage() {
                   {error ? <p className="auth-error auth-error--form">{error}</p> : null}
 
           <AuthSubmit disabled={loading} loading={loading}>
-            {step === 4 ? (loading ? "Creating your account" : "Create account") : "Continue"}
+            {step === 4
+              ? loading
+                ? "Creating your account"
+                : carry?.kind === "free-visit"
+                  ? "Create account & book"
+                  : carry?.kind === "plan"
+                    ? "Create account & continue"
+                    : "Create account"
+              : "Continue"}
           </AuthSubmit>
         </form>
 
@@ -887,7 +962,7 @@ export default function SignUpPage() {
           every screen. Suppressed the moment the address is confirmed outside
           the service area, and it stays suppressed for the rest of the flow.
         */}
-        {serviceArea !== "outside" ? (
+        {serviceArea !== "outside" && carry?.kind !== "plan" ? (
           <p className="auth-reassure">
             <b>First visit free.</b> No card required.
           </p>

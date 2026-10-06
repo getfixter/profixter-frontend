@@ -102,7 +102,7 @@ function ActiveGiftCard({ gift }: { gift: MyGift }) {
            * gift itself.
            */
           <Link
-            href="/membership"
+            href="/membership/plans"
             className="inline-flex min-h-[46px] flex-1 items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-6 text-[15px] font-semibold text-[#313234] transition hover:bg-[#F8FAFF]"
           >
             Continue membership

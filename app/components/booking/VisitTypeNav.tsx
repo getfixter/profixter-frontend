@@ -46,9 +46,17 @@ export function parseVisitType(value: string | null | undefined): VisitType {
  */
 export function resolveVisitType(
   value: string | null | undefined,
-  isMember: boolean
+  isMember: boolean,
+  isAnonymous = false
 ): VisitType {
   if (VISIT_TYPES.includes(value as VisitType)) return value as VisitType;
+  /*
+   * A visitor with no account opens on Book Fixter, which for them is the First
+   * Free Visit booker - the visit they can actually have today, at no cost, and
+   * without signing in first. A signed-in non-member keeps the one-time default
+   * above, because that is where their visit history lives.
+   */
+  if (isAnonymous) return "membership";
   return isMember ? "membership" : "additional";
 }
 

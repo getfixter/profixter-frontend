@@ -314,7 +314,7 @@ function ProspectMembershipFlow({
                 90-minute first visit · No card required · One per home
               </p>
               <Link
-                href="/signup?redirect=%2Fmembership"
+                href="/book/free"
                 onClick={() => trackEvent("free_visit_cta_clicked", { placement: "membership_hero" })}
                 className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9] sm:w-auto"
               >

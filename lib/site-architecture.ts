@@ -99,7 +99,13 @@ export const COMPANY_LINKS = [
  * so pinning a ?visit= here would override a decision that belongs to Book.
  */
 export const MAIN_NAV_LINKS = [
-  { label: "Membership", href: "/membership" },
+  /*
+   * "Plans", straight to the prices. This was "Membership" -> /membership, a
+   * teaser page with one more "Compare plans" link to click before a visitor
+   * could see what anything cost. The explainer still exists at /membership
+   * and /handyman-membership for anyone who wants the long version.
+   */
+  { label: "Plans", href: "/membership/plans" },
   /*
    * "What we do" rather than "Our work" - or "What we fix", which this was.
    *
@@ -114,7 +120,11 @@ export const MAIN_NAV_LINKS = [
    * decide whether it counts as fixing before they click.
    */
   { label: "What we do", href: "/recent-work" },
-  { label: "Book", href: "/book" },
+  /*
+   * No separate "Book": for a visitor without an account the header's one
+   * button is "Book free visit", which opens the booker itself. Two entries
+   * for the same action was one decision too many.
+   */
   { label: "Projects", href: "/projects" },
   { label: "About Us", href: "/about" },
   /*

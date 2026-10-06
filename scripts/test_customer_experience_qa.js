@@ -134,8 +134,11 @@ async function run() {
       const body = await page.evaluate(() => document.body.innerText);
       record(`${vp.name}/logged-out/no-fixter`, !body.includes("Your primary Fixter"), "Your Fixter must not appear to anonymous visitors");
       if (phone) {
-        const membershipTab = await page.locator('nav[aria-label="Customer site navigation"] a', { hasText: "Membership" }).count();
-        record(`${vp.name}/logged-out/membership-tab-kept`, membershipTab > 0, "logged-out nav must be unchanged");
+        // "Plans", straight to the prices - it was "Membership" -> /membership, one page short of them.
+        const plansTab = await page
+          .locator('nav[aria-label="Customer site navigation"] a[href="/membership/plans"]', { hasText: "Plans" })
+          .count();
+        record(`${vp.name}/logged-out/plans-tab`, plansTab > 0, "logged-out nav must reach the prices in one tap");
       }
       await noHorizontalOverflow(page, `${vp.name}/logged-out/home`);
       await ctx.close();

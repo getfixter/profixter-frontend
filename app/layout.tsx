@@ -7,6 +7,7 @@ import ScrollToTop from "./ScrollToTop";
 import CustomerSiteMobileNav from "./components/CustomerSiteMobileNav";
 import FixterStage from "./components/fixter/FixterStage";
 import "./globals.css";
+import "./free-visit.css";
 import { DEFAULT_OG_IMAGE, PROFIXTER_STRUCTURED_DATA, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { META_PIXEL_ID } from "@/lib/meta-config";
 import AttributionCapture from "./components/AttributionCapture";
