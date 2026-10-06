@@ -155,6 +155,14 @@ async function completeSignup(page, { zip = "11758" } = {}) {
   // Step 1: address. Use the manual entry the field offers when lookup fails.
   await page.fill("#pf-address", "12 Main St");
   await page.waitForTimeout(900);
+  /*
+   * Where Google lookup works (production), real suggestions open over the
+   * button. Close them and use the field's own manual entry, so the run never
+   * depends on which real address Google happens to suggest.
+   */
+  await page.keyboard.press("Escape");
+  await page.locator("h1, h2").first().click().catch(() => {});
+  await page.waitForTimeout(300);
   const fallback = page.locator("[data-auth-fallback]");
   if (await fallback.count()) await fallback.click();
   if (await page.locator('[aria-label="Street address"]').count()) {
