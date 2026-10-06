@@ -16,6 +16,14 @@ import { getRoleLandingPath, safeReturnPath } from "@/lib/auth-routing";
 import { useAuth } from "@/lib/useAuth";
 import { extractUSNationalPhoneDigits, isValidUSNationalPhoneDigits } from "@/lib/phone";
 import { trackEvent } from "@/lib/analytics";
+import {
+  getAttribution,
+  getFbCookies,
+  identify,
+  newEventId,
+  trackLead,
+  trackStartSignup,
+} from "@/lib/meta";
 import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
 import AuthScreen, { AuthHeading, AuthSubmit } from "@/app/components/auth/AuthScreen";
 import AddressField, { type AddressValue, type ServiceAreaState } from "@/app/components/address/AddressField";
@@ -477,6 +485,28 @@ export default function SignUpPage() {
 
   const handleNextStep = () => {
     if (!validateCurrentStep()) return;
+
+    /*
+     * StartSignup, at the only moment it is true.
+     *
+     * Fired here rather than on the button's onClick, because a tap that fails
+     * validation is not a signup starting - it is somebody being told their
+     * address is outside the service area. Validation has already passed by
+     * this line, so the visitor has given us an address we accepted.
+     *
+     * It also cannot be a page-load or URL trigger: the four steps are one
+     * route and one component, so from a tag manager's point of view nothing
+     * happens between landing on /signup and the account existing.
+     */
+    if (step === 1) {
+      trackStartSignup({
+        content_name: "signup_address",
+        city: formData.city || undefined,
+        state: formData.state || undefined,
+        verified_address: address?.placeId ? "yes" : "manual",
+      });
+    }
+
     if (step < 4) {
       setStep((step + 1) as Step);
       scrollToTop();
@@ -503,6 +533,12 @@ export default function SignUpPage() {
     if (!validateSecurityStep()) { setStep(4); return; }
 
     setLoading(true);
+
+    // Minted before the request so the browser event and the server event that
+    // the request triggers are the same event as far as Meta is concerned.
+    const leadEventId = newEventId();
+    const { fbp, fbc } = getFbCookies();
+
     try {
       const registrationPayload = {
         name: formData.name.trim(),
@@ -540,6 +576,24 @@ export default function SignUpPage() {
          */
         smsTransactionalConsent,
         smsMarketingConsent,
+        /*
+         * Tracking rides along with the registration it describes.
+         *
+         * The event id is minted HERE, before the request, so the browser and
+         * the server can both describe this one account creation with the same
+         * id and Meta counts one Lead rather than two. The server is the one
+         * that talks to the Conversions API, because at that point it holds the
+         * real email, phone, name and address to hash - the things that decide
+         * whether Meta can match the conversion to a person who saw the ad.
+         *
+         * Attribution is sent at the same time for the same reason: this is the
+         * moment an anonymous visitor becomes a row we can attribute, and the
+         * campaign that produced them only exists in this browser's storage.
+         */
+        metaEventId: leadEventId,
+        attribution: getAttribution(),
+        fbp,
+        fbc,
       };
 
       const { token } = await register(registrationPayload);
@@ -547,7 +601,26 @@ export default function SignUpPage() {
       if (!verifiedUser) {
         throw new Error("We could not verify your new account. Please try again.");
       }
+
+      /*
+       * Advanced matching before the Lead, not after.
+       *
+       * fbq queues calls in order, so re-initing with the hashed email and
+       * phone first means the Lead that follows carries them. Reversed, the
+       * most important event of the funnel would be the one event sent without
+       * the identifiers that let Meta match it.
+       */
+      identify({ email: formData.email, phone: formData.phone });
+
       trackEvent("signup_completed", { source: "website_signup" });
+      /*
+       * relay: false - the registration handler already sent this to the
+       * Conversions API with the same id and better data than the page has.
+       */
+      trackLead(
+        { content_name: "account_created", status: "new_account" },
+        { eventId: leadEventId, relay: false }
+      );
       const checkoutPromo =
         new URLSearchParams(window.location.search).get("promo")?.trim().toUpperCase() ||
         sessionStorage.getItem("pendingPromoCode") ||

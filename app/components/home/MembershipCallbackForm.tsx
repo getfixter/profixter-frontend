@@ -22,6 +22,7 @@
 import { useState } from "react";
 import { submitMembershipLead } from "@/lib/contact";
 import { trackEvent } from "@/lib/analytics";
+import { trackLead } from "@/lib/meta";
 
 type Phase = "idle" | "sending" | "done";
 
@@ -67,6 +68,8 @@ export default function MembershipCallbackForm({
 
     if (result.ok) {
       trackEvent("membership_callback_requested", { placement: "home_hero" });
+      // Meta Lead: only after the server accepted the request.
+      trackLead({ content_name: "membership_callback" }, { dataLayerEvent: null });
       setPhase("done");
       return;
     }

@@ -36,13 +36,16 @@ export function trackInitiateCheckout(params?: EventParams) {
   }
 }
 
-export function trackPurchase(params?: EventParams) {
-  if (typeof window === "undefined") return;
-
-  pushDataLayer("purchase", params);
-
-  if (typeof window.fbq === "function") {
-    window.fbq("track", "Purchase", params || {});
-    window.fbq("trackCustom", "purchase", params || {});
-  }
-}
+/*
+ * trackPurchase used to live here and has been removed.
+ *
+ * It fired fbq('track','Purchase') with no eventID, so Meta had no way to
+ * recognise it as the same conversion the server was also reporting, and every
+ * sale was counted twice. It was also being used for memberships, which are
+ * Subscribe, not Purchase.
+ *
+ * Conversions - Lead, Subscribe, Purchase - now live in lib/meta.ts, which
+ * mints the shared event id and mirrors each one to the Conversions API.
+ * Import from there. This module keeps the non-conversion product analytics
+ * that only ever needed to reach the dataLayer.
+ */

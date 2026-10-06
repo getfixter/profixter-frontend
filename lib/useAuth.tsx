@@ -9,6 +9,7 @@ import {
   useCallback,
 } from 'react';
 import { User, getCurrentUser } from './auth-service';
+import { identify } from './meta';
 
 interface AuthContextType {
   user: User | null;
@@ -99,6 +100,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updatedUser);
     persist(token, updatedUser);
   }, [persist, token]);
+
+  /*
+   * Advanced matching, for every signed-in session rather than only at signup.
+   *
+   * The pixel is re-initialised with the customer's email and phone as soon as
+   * we know who they are, so the events that follow on that page - a Subscribe
+   * on the confirmation screen, a Contact from the account page - carry
+   * identifiers Meta can match against a person who saw an ad. Without this,
+   * only the events fired during registration were ever well matched.
+   *
+   * fbq hashes these itself; nothing is hashed here, because a value Meta
+   * hashes twice matches nobody. Re-initialising the same pixel id is the
+   * documented way to add matching mid-session: it does not create a second
+   * pixel and does not re-fire PageView.
+   *
+   * Keyed on the identity rather than the object, so a refreshUser that returns
+   * an equal-but-new user does not re-init on every render.
+   */
+  useEffect(() => {
+    if (!user) return;
+    identify({ email: user.email, phone: user.phone });
+  }, [user?.email, user?.phone]);
 
   const value: AuthContextType = {
     user,
