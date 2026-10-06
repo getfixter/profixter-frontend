@@ -8,6 +8,7 @@ import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import { useAuth } from "@/lib/useAuth";
 import { hasActiveMembership } from "@/lib/auth-routing";
+import { trackLead } from "@/lib/meta";
 
 type ProjectType =
   | "roofing"
@@ -312,6 +313,11 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
         );
         return;
       }
+      // Meta Lead: only after the server accepted the request.
+      trackLead(
+        { content_name: "project_estimate", content_category: form.service },
+        { dataLayerEvent: null }
+      );
       setStatus("success");
       setMessage(
         "Thanks - your project request was received. We will review the details and get back to you."

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Cormorant_Garamond, Geist, Geist_Mono, Montserrat } from "next/font/google";
 import Script from "next/script";
 import Providers from "./providers";
@@ -7,6 +8,10 @@ import CustomerSiteMobileNav from "./components/CustomerSiteMobileNav";
 import FixterStage from "./components/fixter/FixterStage";
 import "./globals.css";
 import { DEFAULT_OG_IMAGE, PROFIXTER_STRUCTURED_DATA, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { META_PIXEL_ID } from "@/lib/meta-config";
+import AttributionCapture from "./components/AttributionCapture";
+import PhoneClickTracker from "./components/PhoneClickTracker";
+import MetaPageView from "./components/MetaPageView";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -104,7 +109,18 @@ export const metadata: Metadata = {
   },
 };
 
-const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FB_PIXEL_ID;
+/*
+ * The one pixel, named in code rather than in an env var.
+ *
+ * This read NEXT_PUBLIC_FB_PIXEL_ID, which is exactly how the wrong pixel came
+ * to be live for months: the value was set once in a dashboard, nobody read it
+ * again, and the page gave no sign it was wrong. A pixel id is a public
+ * identifier - it ships in the page source regardless - so config bought no
+ * secrecy and cost the ability to review a change. One constant, imported from
+ * the module every event also goes through, means the browser and the server
+ * cannot disagree about which dataset they are writing to.
+ */
+const FB_PIXEL_ID = META_PIXEL_ID;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -140,12 +156,26 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','GTM-KFPSD2P6');`}
         </Script>
-      </head>
 
-      {FB_PIXEL_ID ? (
-        <>
-          <Script id="meta-pixel" strategy="afterInteractive">
-            {`
+        {/*
+          Exactly one fbq('init') exists in this codebase, and it is here.
+          The guard that used to wrap this block tested an env var that is now a
+          constant, so it could only ever be true; a second init - from a GTM
+          tag, say - would quietly send every event to two datasets, which is the
+          failure this file is arranged to make impossible.
+
+          A plain script tag in <head>, for the same reason as the JSON-LD above:
+          next/script sat outside <head> and only injected the snippet after
+          hydration, so it was missing from the served HTML.
+
+          disablePushState turns off fbevents.js's own history listener, which
+          fires a PageView on every pushState. MetaPageView fires the route-change
+          PageViews instead; with both on, every client navigation counted twice.
+        */}
+        <script
+          id="meta-pixel"
+          dangerouslySetInnerHTML={{
+            __html: `
               !function(f,b,e,v,n,t,s)
               {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
               n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -154,23 +184,23 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               t.src=v;s=b.getElementsByTagName(e)[0];
               s.parentNode.insertBefore(t,s)}(window, document,'script',
               'https://connect.facebook.net/en_US/fbevents.js');
+              fbq.disablePushState = true;
               fbq('init', '${FB_PIXEL_ID}');
               fbq('track', 'PageView');
-            `}
-          </Script>
-
-          <noscript>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              height="1"
-              width="1"
-              style={{ display: "none" }}
-              src={`https://www.facebook.com/tr?id=${FB_PIXEL_ID}&ev=PageView&noscript=1`}
-              alt=""
-            />
-          </noscript>
-        </>
-      ) : null}
+            `,
+          }}
+        />
+        <noscript>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            height="1"
+            width="1"
+            style={{ display: "none" }}
+            src={`https://www.facebook.com/tr?id=${FB_PIXEL_ID}&ev=PageView&noscript=1`}
+            alt=""
+          />
+        </noscript>
+      </head>
 
       <body className="antialiased">
         <noscript>
@@ -183,6 +213,18 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         </noscript>
 
         <ScrollToTop />
+
+        {/*
+          Suspense because useSearchParams opts a subtree into client rendering,
+          and without a boundary that would deopt every static page in the app
+          into dynamic rendering. The fallback is nothing, which is exactly what
+          this component renders anyway.
+        */}
+        <Suspense fallback={null}>
+          <AttributionCapture />
+        </Suspense>
+        <PhoneClickTracker />
+        <MetaPageView />
 
         <Providers>
           {children}

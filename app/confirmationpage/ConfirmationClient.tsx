@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
-import { trackPurchase } from "@/lib/analytics";
+import { trackSubscribe } from "@/lib/meta";
 import YourFixter from "@/app/components/fixter/YourFixter";
 import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
 import { getMySubscriptions, type ManagedSubscription } from "@/lib/subscription-service";
@@ -126,6 +126,27 @@ export default function ConfirmationClient() {
   }, [confirmMembership, attempt]);
 
   /* ------------------------------------------------------------- attribution */
+  /*
+   * The browser half of the Subscribe conversion.
+   *
+   * SUBSCRIBE, NOT PURCHASE. This page fired Purchase for a started membership,
+   * and so did the Stripe webhook, which put recurring memberships in the same
+   * bucket as one-off visit payments. Purchase now means a single paid visit
+   * and nothing else.
+   *
+   * THE VALUE IS NEVER INVENTED. It is read back from the checkout the server
+   * recorded, so it is the amount actually charged - $149/$249/$349/$499 on
+   * monthly, ten months' worth on annual - rather than a price looked up from a
+   * table the page happens to hold.
+   *
+   * THE EVENT ID COMES FROM THE SERVER. The webhook already reported this
+   * membership to the Conversions API under an id generated when the checkout
+   * was created. Reusing it here is what makes Meta treat the two as one
+   * conversion; minting a fresh one would double-count every sale. That id
+   * only began persisting when the User schema stopped discarding it, so the
+   * request is still allowed to come back without one - in which case this
+   * fires alone, which is the behaviour that has always been in place.
+   */
   useEffect(() => {
     if (!sessionId) return;
 
@@ -144,12 +165,25 @@ export default function ConfirmationClient() {
         const data = await r.json();
         if (!data?.ok) throw new Error("no data");
 
-        trackPurchase({
-          currency: data.currency || "USD",
-          value: Number(data.value) || 0,
-          plan: data.plan || "unknown",
-          page_type: "stripe_confirmation",
-        });
+        trackSubscribe(
+          {
+            currency: data.currency || "USD",
+            value: Number(data.value) || 0,
+            content_name: data.plan || "unknown",
+            plan: data.plan || "unknown",
+            billing_cycle: data.billingCycle || undefined,
+            page_type: "stripe_confirmation",
+          },
+          {
+            eventId: data.eventId || undefined,
+            /*
+             * The webhook is the server side of this event and has already
+             * sent it. Relaying again would post the same id to Meta twice
+             * from the server for no gain.
+             */
+            relay: false,
+          }
+        );
         sessionStorage.setItem(key, "1");
       } catch {
         // no fake purchase

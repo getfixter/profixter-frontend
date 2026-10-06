@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { trackLead } from "@/lib/meta";
 
 type ProjectType = "roofing" | "siding" | "both";
 
@@ -107,6 +108,11 @@ export default function ExteriorLeadForm({ defaultProject, accentLabel }: Props)
         return;
       }
 
+      // Meta Lead: only after the server accepted the request.
+      trackLead(
+        { content_name: "exterior_estimate", content_category: form.projectType },
+        { dataLayerEvent: null }
+      );
       setStatus("success");
       setMessage("Thanks - your request was sent. A real person will review it and follow up shortly.");
       setForm({ ...INITIAL_FORM, projectType: defaultProject });

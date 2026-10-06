@@ -28,6 +28,7 @@
     "test:signup-address-ui": "node scripts/test_signup_address_ui.js",
     "test:auth-redesign-ui": "node scripts/test_auth_redesign_ui.js",
     "test:seo-crawlability": "node scripts/test_seo_crawlability.js",
+    "test:meta-browser": "node scripts/test_meta_browser.js",
     "test:home-about-ui": "node scripts/test_home_about_ui.js",
     "test:membership-plans-ui": "node scripts/test_membership_plans_ui.js"
   },

@@ -17,6 +17,7 @@ import {
   type AvailabilityVisit,
 } from "@/lib/booking-service";
 import { compressImage } from "@/lib/compressImage";
+import { trackLead } from "@/lib/meta";
 import { getRoleLandingPath } from "@/lib/auth-routing";
 import {
   buildAvailabilityCacheKey,
@@ -1200,6 +1201,31 @@ if (next?.date) {
         freeFirstVisitAvailable ? "free_visit_booked" : "member_visit_booked",
         { bookingReference: String(bookingResult.booking.bookingNumber || "") }
       );
+
+      /*
+       * Lead - the free first visit, which is the other way a stranger becomes
+       * a customer we can reach.
+       *
+       * Fired here, after createBooking has resolved, so it describes a booking
+       * the server actually accepted rather than a tap on a button. A slot that
+       * was taken a second earlier throws and this line is never reached.
+       *
+       * Only for the FREE FIRST visit. A member booking their fourth visit of
+       * the month is not a lead, and counting it as one would teach the ad
+       * account to optimise for people who are already paying us.
+       *
+       * The relay is left on, unlike the signup and checkout events: there is
+       * no server-side hook that knows a free visit was booked, so this is the
+       * only path to the Conversions API for it. The relay reads the customer's
+       * identity from their session rather than from anything sent here.
+       */
+      if (freeFirstVisitAvailable) {
+        trackLead({
+          content_name: "free_first_visit",
+          status: "free_visit_booked",
+          booking_reference: String(bookingResult.booking.bookingNumber || ""),
+        });
+      }
 
       setBookingConfirmation({
         dateLabel: `${confirmedDateOnly.toLocaleDateString("en-US", {
