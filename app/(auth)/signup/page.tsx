@@ -403,7 +403,7 @@ export default function SignUpPage() {
         const time = `${hh % 12 === 0 ? 12 : hh % 12}:${String(mm).padStart(2, "0")} ${hh >= 12 ? "PM" : "AM"}`;
         setCarry({ kind: "free-visit", when: `${day} · ${time}` });
       }
-    } else if (next.startsWith("/membership/plans")) {
+    } else if (next.startsWith("/membership/plans") || next.startsWith("/book?visit=membership")) {
       try {
         const pending = JSON.parse(sessionStorage.getItem("pendingCheckoutPlan") || "null");
         if (pending?.summary) setCarry({ kind: "plan", label: String(pending.summary) });

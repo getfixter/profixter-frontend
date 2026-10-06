@@ -106,7 +106,10 @@ async function fakeApi(ctx, opts = {}) {
      * Anything else a signed-in page asks for gets an empty answer, so the fake
      * token never meets the real API and logs the test user out.
      */
-    const isPublic = /^\/api\/(calendar|service-area|recent-work|google|reviews|event-display|promotions?|popups?)(\/|$)/.test(p);
+    const isPublic =
+      /^\/api\/(calendar|service-area|google|reviews|event-display|promotions?|popups?)(\/|$)/.test(p) ||
+      p === "/api/recent-work" ||
+      p === "/api/recent-work/categories";
     if (authed && !isPublic) return json(200, {});
     try {
       const res = await route.fetch();
@@ -118,6 +121,14 @@ async function fakeApi(ctx, opts = {}) {
   await ctx.route(`${BASE}/__stripe_stub`, (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<h1>stripe stub</h1>" }));
   return state;
 }
+
+const activeTab = (page) =>
+  page
+    .locator('nav[aria-label="Visit type"] [aria-current="page"]')
+    .first()
+    .innerText()
+    .then((t) => t.trim())
+    .catch(() => "");
 
 async function newContext(browser, { signedIn = false, ...opts } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
@@ -144,11 +155,14 @@ async function buildVisit(page, { photo = true } = {}) {
   }
   await page.locator('[data-booking-date-disabled="false"]').first().click();
   await page.waitForSelector('[data-booking-time-available="true"]', { timeout: 15000 });
+  // Read the chosen day before picking a time: the compact homepage booker
+  // folds day and time into one summary row as soon as the time is chosen.
+  const date = await page.locator('[data-booking-date][aria-selected="true"]').first().getAttribute("data-booking-date");
+  const taken = await page.locator('[data-booking-time-available="false"]').count();
   const slot = page.locator('[data-booking-time-available="true"]').first();
   const time = await slot.getAttribute("data-booking-time");
   await slot.click();
-  const date = await page.locator(".fv-day--selected").getAttribute("data-booking-date");
-  return { date, time };
+  return { date, time, taken };
 }
 
 async function completeSignup(page, { zip = "11758" } = {}) {
@@ -217,9 +231,15 @@ async function finishSignupSteps(page) {
     check("empty booking is stopped with a message", page.url().endsWith("/") && (await page.locator(".fv-error").count()) > 0);
 
     const visit = await buildVisit(page);
-    check("summary assembles after a time is picked", await page.locator(".fv-summary").isVisible(), `${visit.date} ${visit.time}`);
-    const taken = await page.locator('[data-booking-time-available="false"]').count();
-    console.log(`      (live day ${visit.date} shows ${taken} booked slot(s) as disabled)`);
+    check("home uses the compact booker", (await page.locator('[data-fv-variant="compact"]').count()) === 1);
+    await page.waitForSelector('[data-fv="when-summary"]', { timeout: 5000 }).catch(() => {});
+    const folded = await page.locator('[data-fv="when-summary"]').innerText().catch(() => "");
+    check("day + time fold into one summary row", /·/.test(folded) && (await page.locator('[data-fv="days"]').count()) === 0, folded.replace(/\s+/g, " "));
+    console.log(`      (live day ${visit.date} showed ${visit.taken} booked slot(s) as disabled)`);
+    await page.click('[data-fv="when-summary"]');
+    check("Change re-opens day and time", (await page.locator('[data-fv="days"]').count()) === 1);
+    await page.locator('[data-booking-time-available="true"]').first().click();
+    await page.waitForSelector('[data-fv="when-summary"]', { timeout: 5000 }).catch(() => {});
 
     await page.click('[data-fv="book"]');
     await page.waitForURL(/\/signup\?next=%2Fbook%2Ffree/, { timeout: 10000 });
@@ -270,7 +290,7 @@ async function finishSignupSteps(page) {
     await page.goto(BASE + "/", { waitUntil: "networkidle" });
     const visit = await buildVisit(page, { photo: false });
     // No photo: use the library instead, which must also carry through.
-    await page.locator("text=Choose from Profixter Library").first().click();
+    await page.locator("[data-library-open]").or(page.getByText("Choose from Profixter Library")).first().click();
     await page.locator('[role="dialog"] button[aria-pressed]').first().click();
     await page.waitForTimeout(500);
     const lib = await page.evaluate(() => JSON.parse(sessionStorage.getItem("pf_free_visit_draft") || "{}").libraryReference);
@@ -333,7 +353,9 @@ async function finishSignupSteps(page) {
     check("member home: no free-visit booker", (await page.locator('[data-fv="note"]').count()) === 0);
     await page.goto(BASE + "/book", { waitUntil: "networkidle" });
     await page.waitForTimeout(1500);
-    check("member /book: unchanged member calendar, no free booker", (await page.locator('[data-fv="note"]').count()) === 0);
+    check("member /book: still signed in, on /book", new URL(page.url()).pathname === "/book", page.url());
+    check("member /book: Book Fixter is the member calendar", /Book Your Visit/i.test(await page.locator("body").innerText()) && (await page.locator('[data-booking-date]').count()) > 0);
+    check("member /book: no plans, no free booker", (await page.locator("[data-plan-picker]").count()) === 0 && (await page.locator('[data-fv="note"]').count()) === 0);
     await ctx.close();
   }
   {
@@ -341,7 +363,9 @@ async function finishSignupSteps(page) {
     const { ctx, page } = await newContext(browser);
     await page.goto(BASE + "/book", { waitUntil: "networkidle" });
     await page.waitForTimeout(1200);
-    check("anonymous /book opens the free-visit booker", (await page.locator('[data-fv="note"]').count()) === 1);
+    check("anonymous /book opens on Book Fixter", (await activeTab(page)) === "Book Fixter", await activeTab(page));
+    check("anonymous /book: four plans, no essay", (await page.locator("[data-plan-option]").count()) === 4 && !/Get a Fixter for your home/i.test(await page.locator("body").innerText()));
+    check("anonymous /book: free visit one line away", (await page.locator('a[data-book-free-visit][href="/book/free"]').count()) === 1);
     await page.goto(BASE + "/book?visit=additional", { waitUntil: "networkidle" });
     await page.waitForTimeout(1200);
     check("explicit ?visit=additional still opens One-Time", (await page.locator('[data-fv="note"]').count()) === 0 && (await page.content()).includes("$99"));
@@ -398,6 +422,79 @@ async function finishSignupSteps(page) {
     await page.goto(BASE + "/membership/plans?plan=premium&billingCycle=annual&resume=1", { waitUntil: "networkidle" });
     await page.waitForTimeout(2500);
     check("member: no new-customer checkout sheet", (await page.locator("[data-plan-resume]").count()) === 0);
+    await ctx.close();
+  }
+
+  /* 7. Book is membership-first: a non-member buys a plan right on the tab. */
+  for (const [planName, cycle] of [["Basic", "monthly"], ["Plus", "monthly"], ["Premium", "monthly"], ["Elite", "monthly"], ["Premium", "annual"]]) {
+    console.log(`\n--- registered non-member buys ${planName} ${cycle} from Book ---`);
+    const { ctx, page, state } = await newContext(browser, { signedIn: true, next: { freeFirstVisitAvailable: false, introVisitStatus: "consumed", introVisitServiceable: true, hasSubscription: false } });
+    await page.goto(BASE + "/book", { waitUntil: "networkidle" });
+    await page.waitForSelector("[data-plan-picker]", { timeout: 15000 }).catch(() => {});
+    if (planName === "Basic" && cycle === "monthly") {
+      check("non-member /book opens on Book Fixter", (await activeTab(page)) === "Book Fixter", await activeTab(page));
+      check("non-member /book: four plans immediately", (await page.locator("[data-plan-option]").count()) === 4);
+      check("non-member /book: no membership essay, no See plans detour", !/Get a Fixter for your home/i.test(await page.locator("body").innerText()));
+      check("non-member /book: visit history still here", (await page.locator("#your-visits").count()) === 1);
+    }
+    if (cycle === "annual") await page.getByRole("button", { name: /^Annual/ }).first().click();
+    await page.click(`[data-plan-option="${planName}"]`);
+    await page.click("[data-plan-picker-continue]");
+    await page.waitForSelector("[data-plan-resume]", { timeout: 10000 }).catch(() => {});
+    const sheet = (await page.locator("[data-plan-resume]").innerText().catch(() => "")).replace(/\s+/g, " ");
+    check(`${planName} ${cycle}: confirmation shows plan and cycle`, sheet.includes(`${planName} · ${cycle === "annual" ? "Annual" : "Monthly"}`), sheet.slice(0, 80));
+    await page.click("[data-plan-resume-continue]");
+    await page.waitForURL(/__stripe_stub/, { timeout: 15000 }).catch(() => {});
+    const body = state.checkoutPosts[0] || {};
+    check(`${planName} ${cycle}: checkout gets the plan chosen on Book`, body.plan === planName.toLowerCase() && body.billingCycle === cycle && body.addressId === "addr1", JSON.stringify(body));
+    await ctx.close();
+  }
+  {
+    console.log("\n--- anonymous: plan chosen on Book survives signup, back to Book ---");
+    const { ctx, page, state } = await newContext(browser);
+    await page.goto(BASE + "/book", { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: /^Annual/ }).first().click();
+    await page.click('[data-plan-option="Elite"]');
+    await page.click("[data-plan-picker-continue]");
+    await page.waitForURL(/\/signup\?next=/, { timeout: 10000 });
+    const carry = (await page.locator("[data-signup-carry]").innerText().catch(() => "")).replace(/\s+/g, " ");
+    check("signup shows Elite annual chosen on Book", carry.includes("Elite") && carry.includes("$4,990/year"), carry);
+    await completeSignup(page);
+    await finishSignupSteps(page);
+    await page.click('button[type="submit"]');
+    await page.waitForURL((u) => u.pathname === "/book", { timeout: 15000 }).catch(() => {});
+    check("signup returns to Book", new URL(page.url()).pathname === "/book", page.url());
+    await page.waitForSelector("[data-plan-resume]", { timeout: 15000 }).catch(() => {});
+    await page.click("[data-plan-resume-continue]").catch(() => {});
+    await page.waitForURL(/__stripe_stub/, { timeout: 15000 }).catch(() => {});
+    const body = state.checkoutPosts[0] || {};
+    check("checkout gets Elite annual, chosen once", body.plan === "elite" && body.billingCycle === "annual", JSON.stringify(body));
+    await ctx.close();
+  }
+
+  /* 8. One-Time, Full Day and Priority are still there when chosen; back and logout behave. */
+  {
+    console.log("\n--- tabs, back button, logout ---");
+    const { ctx, page } = await newContext(browser, { signedIn: true, next: { freeFirstVisitAvailable: false, introVisitStatus: "consumed", introVisitServiceable: true, hasSubscription: false } });
+    await page.goto(BASE + "/book", { waitUntil: "networkidle" });
+    await page.waitForSelector("[data-plan-picker]", { timeout: 15000 }).catch(() => {});
+    for (const [label, expectInUrl] of [["One-Time", "visit=additional"], ["Full Day", "visit=full-day"], ["Priority", "visit=priority"]]) {
+      await page.locator('nav[aria-label="Visit type"] a', { hasText: label }).first().click();
+      await page.waitForURL(new RegExp(expectInUrl), { timeout: 10000 }).catch(() => {});
+      await page.waitForTimeout(800);
+      check(`${label} tab opens when chosen`, page.url().includes(expectInUrl) && (await activeTab(page)) === label && (await page.locator("[data-plan-picker]").count()) === 0, page.url());
+    }
+    check("One-Time still shows its $99 visit", await page.goto(BASE + "/book?visit=additional", { waitUntil: "networkidle" }).then(async () => { await page.waitForTimeout(800); return (await page.content()).includes("$99"); }));
+    await page.goto(BASE + "/book", { waitUntil: "networkidle" });
+    await page.locator('nav[aria-label="Visit type"] a', { hasText: "One-Time" }).first().click();
+    await page.waitForURL(/visit=additional/, { timeout: 10000 }).catch(() => {});
+    await page.goBack({ waitUntil: "networkidle" });
+    await page.waitForTimeout(800);
+    check("back from One-Time returns to Book Fixter", (await activeTab(page)) === "Book Fixter", page.url());
+    await page.evaluate(() => localStorage.removeItem("token"));
+    await page.reload({ waitUntil: "networkidle" });
+    await page.waitForTimeout(1200);
+    check("after logout /book still opens Book Fixter with plans", (await activeTab(page)) === "Book Fixter" && (await page.locator("[data-plan-option]").count()) === 4);
     await ctx.close();
   }
 

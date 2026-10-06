@@ -282,9 +282,11 @@ type PlansSectionProps = {
   hideIntro?: boolean;
   hideCancellationUi?: boolean;
   compact?: boolean;
+  /** The short four-row list for the Book tab: choose, confirm, checkout. */
+  picker?: boolean;
 };
 
-export default function PlansSection({ hideCancellationUi = false, compact = false, hideIntro = false }: PlansSectionProps = {}) {
+export default function PlansSection({ hideCancellationUi = false, compact = false, hideIntro = false, picker = false }: PlansSectionProps = {}) {
   const [billing, setBilling] = useState<BillingCycle>("monthly");
   /*
    * Which plan the one box is showing.
@@ -307,7 +309,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
 
   /* The funnel step between "See plans" and "plan_selected". Once per mount. */
   useEffect(() => {
-    trackEvent("plans_viewed", { layout: compact ? "compact" : "full" });
+    trackEvent("plans_viewed", { layout: picker ? "book_picker" : compact ? "compact" : "full" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const { user, isAuthenticated, token } = useAuth();
@@ -450,7 +452,10 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
       "pendingCheckoutPlan",
       JSON.stringify({ plan, billingCycle: cycle, planName, addressId, summary: planSummary(planName, cycle) })
     );
-    const back = `/membership/plans?plan=${encodeURIComponent(plan)}&billingCycle=${encodeURIComponent(cycle)}&resume=1`;
+    /* Back to wherever the plan was chosen: the Book tab, or the comparison page. */
+    const query = `plan=${encodeURIComponent(plan)}&billingCycle=${encodeURIComponent(cycle)}&resume=1`;
+    const back =
+      window.location.pathname === "/book" ? `/book?visit=membership&${query}` : `/membership/plans?${query}`;
     window.location.href = `/signup?next=${encodeURIComponent(back)}`;
   };
 
@@ -1236,26 +1241,192 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     );
   };
 
+  const resumeSheet =
+    resumeOpen && selectedAddress ? (
+      <PlanResumeSheet
+        planName={selectedPlanName}
+        billing={billing}
+        address={[selectedAddress.line1, selectedAddress.city].filter(Boolean).join(", ")}
+        busy={actionLoadingPlan === selectedPlanName}
+        error={actionError}
+        onContinue={() => {
+          trackEvent("plan_selected", { plan: normalizePlanType(selectedPlanName) || "", billing_cycle: billing, signed_in: true, resumed: true });
+          sessionStorage.removeItem("pendingCheckoutPlan");
+          void handleSubscribe(selectedPlanName);
+        }}
+        onClose={() => {
+          sessionStorage.removeItem("pendingCheckoutPlan");
+          setResumeOpen(false);
+        }}
+      />
+    ) : null;
+
+  /*
+   * The picker: the four plans as one short list, for the Book tab.
+   *
+   * Somebody on Book has already decided they want a Fixter; this is where
+   * they choose which plan, not where they are sold the idea. One line per
+   * plan - what it adds over the plan below it, read straight from
+   * BENEFIT_ROWS - the full list one tap away, and one button. Everything
+   * behind the button is the same as the comparison page: the same address
+   * check, the same confirmation, the same checkout.
+   */
+  if (picker) {
+    const chosen = plans.find((p) => p.name === selectedPlanName) || plans[1];
+    const chosenPricing = getPlanPricing(chosen, billing);
+    const chosenAction = isAuthenticated ? getActionForPlan(chosen.name) : null;
+    const busy = actionLoadingPlan === chosen.name;
+    const priceLabel = (p: Plan) => {
+      const pr = getPlanPricing(p, billing);
+      return `$${pr.amount.toLocaleString("en-US")}${pr.suffix === "/mo" ? "/mo" : "/yr"}`;
+    };
+    const onContinue = () => {
+      if (!isAuthenticated) {
+        void handleSubscribe(chosen.name);
+        return;
+      }
+      trackEvent("plan_selected", { plan: normalizePlanType(chosen.name) || "", billing_cycle: billing, signed_in: true });
+      if (chosenAction?.kind === "subscribe") setResumeOpen(true);
+      else void handleSubscribe(chosen.name);
+    };
+
+    return (
+      <section id="plans" className="scroll-mt-28" data-plan-picker>
+        {resumeSheet}
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 className="text-[22px] font-bold leading-tight tracking-[-0.025em] text-[#0B1628] sm:text-[26px]">
+            Choose your membership
+          </h2>
+          <div className="inline-flex rounded-[12px] bg-[#EEF1F6] p-1" role="group" aria-label="Billing">
+            {(["monthly", "annual"] as const).map((cycle) => (
+              <button
+                key={cycle}
+                type="button"
+                aria-pressed={billing === cycle}
+                onClick={() => setBilling(cycle)}
+                className={`h-10 rounded-[9px] px-4 text-[14px] font-semibold transition ${
+                  billing === cycle ? "bg-white text-[#0B1628] shadow-[0_4px_14px_rgba(15,23,42,0.10)]" : "text-[#5b6577]"
+                }`}
+              >
+                {cycle === "monthly" ? "Monthly" : (
+                  <>Annual <span className="ml-1 text-[12px] font-bold text-[#306EEC]">2 mo free</span></>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {checkoutCanceled ? (
+          <p className="mt-3 rounded-[12px] bg-[#F3F7FF] px-4 py-2.5 text-[14px] text-[#3b4658]">
+            You didn&rsquo;t finish checking out. Nothing was charged.
+          </p>
+        ) : null}
+
+        <div className="mt-4 grid gap-2" role="radiogroup" aria-label="Membership plans">
+          {plans.map((p, index) => {
+            const isChosen = p.name === chosen.name;
+            const prev = index > 0 ? (plans[index - 1].name as PlanName) : null;
+            const adds = BENEFIT_ROWS.filter(
+              (row) =>
+                typeof row.on !== "string" &&
+                benefitIncluded(row, p.name as PlanName) &&
+                (!prev || !benefitIncluded(row, prev) || benefitLabel(row, prev) !== benefitLabel(row, p.name as PlanName))
+            ).map((row) => benefitLabel(row, p.name as PlanName));
+            const line = (prev ? "+ " : "") + adds.join(" · ");
+            return (
+              <div key={p.name} className={`pk-row ${isChosen ? "pk-row--on" : ""}`}>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={isChosen}
+                  onClick={() => setSelectedPlanName(p.name as PlanName)}
+                  className="flex w-full items-start gap-3 px-4 py-3.5 text-left"
+                  data-plan-option={p.name}
+                >
+                  <span className={`pk-dot ${isChosen ? "pk-dot--on" : ""}`} aria-hidden="true" />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span className="text-[16px] font-bold text-[#0B1628]">{p.displayName}</span>
+                      {p.badge === "StartHere" ? (
+                        <span className="rounded-full bg-[#EEF4FF] px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-[#306EEC]">Popular</span>
+                      ) : null}
+                    </span>
+                    <span className="mt-0.5 block text-[13px] leading-5 text-[#5b6577]">{line}</span>
+                  </span>
+                  <span className="shrink-0 text-right text-[16px] font-bold text-[#0B1628]">{priceLabel(p)}</span>
+                </button>
+                {isChosen ? (
+                  <details className="pk-details px-4 pb-3 pl-11">
+                    <summary className="cursor-pointer text-[13px] font-semibold text-[#306EEC]">What&rsquo;s included</summary>
+                    <ul className="mt-2 space-y-1.5 text-[13px] leading-5 text-[#3b4658]">
+                      {BENEFIT_ROWS.filter((row) => benefitIncluded(row, p.name as PlanName)).map((row) => (
+                        <li key={row.id} className="flex gap-2">
+                          <span className="text-[#306EEC]" aria-hidden="true">✓</span>
+                          <span>
+                            {benefitLabel(row, p.name as PlanName)}
+                            {row.detail ? <span className="text-[#64748B]"> - {row.detail}</span> : null}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-2 text-[13px] leading-5 text-[#64748B]">
+                      There&rsquo;s no monthly visit allowance. Book as often as you need - your plan simply determines how many visits you can have booked at the same time.{" "}
+                      <Link href="/membership/plans" className="font-semibold text-[#306EEC]">Full comparison</Link>
+                      {" · "}
+                      <Link href="/terms" className="font-semibold text-[#306EEC]">Terms</Link>
+                    </p>
+                  </details>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+
+        {isAuthenticated && addresses.length > 1 ? (
+          <label className="mt-3 flex items-center gap-3 text-[13px] font-semibold text-[#5b6577]">
+            For
+            <select
+              value={selectedAddressId || ""}
+              onChange={(e) => {
+                const id = e.target.value;
+                setSelectedAddressId(id);
+                if (token && addressSubscriptionMap[id] === undefined) checkAddressState(id);
+              }}
+              className="h-10 min-w-0 flex-1 rounded-[10px] border border-[#D7DEE9] bg-white px-3 text-[14px] text-[#0B1628]"
+            >
+              {addresses.map((a) => (
+                <option key={a._id} value={a._id}>{`${a.line1}, ${a.city}`}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
+        {actionError && !resumeOpen ? <p className="fv-error" role="alert">{actionError}</p> : null}
+        {actionMessage ? <p className="mt-2 text-[14px] text-[#3b4658]">{actionMessage}</p> : null}
+
+        <button
+          type="button"
+          className="fv-cta mt-4 w-full"
+          onClick={onContinue}
+          disabled={busy || chosenAction?.disabled}
+          data-plan-picker-continue
+        >
+          {busy ? (
+            <><span className="fv-spinner" aria-hidden="true" /> One moment…</>
+          ) : (
+            <>Choose {chosen.displayName} · ${chosenPricing.amount.toLocaleString("en-US")}{chosenPricing.suffix === "/mo" ? "/mo" : "/yr"}</>
+          )}
+        </button>
+        <p className="mt-2 text-center text-[13px] text-[#64748B]">
+          {billing === "annual" ? "Billed once for the year · 12 months for the price of 10" : "Billed monthly · cancel anytime"} · tax at checkout
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section id="plans" className={`w-full scroll-mt-[140px] bg-[#F5F5F7] px-4 sm:px-5 ${compact ? "py-8 sm:py-11" : "py-8 sm:py-13 lg:py-12"}`}>
-      {resumeOpen && selectedAddress ? (
-        <PlanResumeSheet
-          planName={selectedPlanName}
-          billing={billing}
-          address={[selectedAddress.line1, selectedAddress.city].filter(Boolean).join(", ")}
-          busy={actionLoadingPlan === selectedPlanName}
-          error={actionError}
-          onContinue={() => {
-            trackEvent("plan_selected", { plan: normalizePlanType(selectedPlanName) || "", billing_cycle: billing, signed_in: true, resumed: true });
-            sessionStorage.removeItem("pendingCheckoutPlan");
-            void handleSubscribe(selectedPlanName);
-          }}
-          onClose={() => {
-            sessionStorage.removeItem("pendingCheckoutPlan");
-            setResumeOpen(false);
-          }}
-        />
-      ) : null}
+      {resumeSheet}
       <div className="mx-auto max-w-[1280px]">
         <div className={`mx-auto max-w-[720px] text-center ${compact ? "mb-7 sm:mb-9" : "mb-8 sm:mb-9"}`}>
           {/*
@@ -1377,7 +1548,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
               <p className="plan-after__body">
                 <b>Your first 90-minute visit is free.</b> No card required.
               </p>
-              <Link href="/book" className="plan-after__link">
+              <Link href="/book/free" className="plan-after__link">
                 Book a free visit
               </Link>
             </div>

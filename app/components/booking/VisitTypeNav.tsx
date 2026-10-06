@@ -34,30 +34,22 @@ export function parseVisitType(value: string | null | undefined): VisitType {
 }
 
 /**
- * Which tab a bare /book should open on.
+ * Which tab a bare /book should open on: Book Fixter, for everybody.
  *
- * A member came for the visit their membership includes. Everybody else came
- * to book the visit they can actually buy today, and /book is a public
- * marketing destination that has always meant exactly that, so opening them on
- * the membership pitch would answer a question they did not ask and, less
- * obviously, would hide the visit history that lives under the one-time flow.
+ * Membership is the Profixter relationship; One-Time is the alternative a
+ * customer chooses on purpose. Book Fixter is the member's calendar for a
+ * member, and the plan picker for everybody else.
+ *
+ * This used to open non-members on One-Time, for a real reason: their visit
+ * history (/book#your-visits, where Account and the one-time confirmation send
+ * them) only rendered under that tab. The history now renders under Book
+ * Fixter too, so the reason is gone rather than worked around.
  *
  * An explicit ?visit= always wins. This only decides the default.
  */
-export function resolveVisitType(
-  value: string | null | undefined,
-  isMember: boolean,
-  isAnonymous = false
-): VisitType {
+export function resolveVisitType(value: string | null | undefined): VisitType {
   if (VISIT_TYPES.includes(value as VisitType)) return value as VisitType;
-  /*
-   * A visitor with no account opens on Book Fixter, which for them is the First
-   * Free Visit booker - the visit they can actually have today, at no cost, and
-   * without signing in first. A signed-in non-member keeps the one-time default
-   * above, because that is where their visit history lives.
-   */
-  if (isAnonymous) return "membership";
-  return isMember ? "membership" : "additional";
+  return "membership";
 }
 
 /*

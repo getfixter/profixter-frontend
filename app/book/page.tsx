@@ -31,8 +31,7 @@ import ShareFinishedProject from "@/app/components/workPhotos/ShareFinishedProje
 import PriorityVisitPanel from "@/app/components/booking/PriorityVisitPanel";
 import FullDayVisitPanel from "@/app/components/booking/FullDayVisitPanel";
 import PhotoLibraryPicker from "@/app/components/booking/PhotoLibraryPicker";
-import MembershipGatewayPanel from "@/app/components/booking/MembershipGatewayPanel";
-import FreeVisitBooker from "@/app/components/booking/FreeVisitBooker";
+import PlansSection from "@/app/components/sections/PlansSection";
 import { useFreeVisitEligibility } from "@/lib/free-visit";
 import MembershipUpgradePrompt, { normalizePlanKey } from "@/app/components/membership/MembershipUpgradePrompt";
 import { hasActiveMembership as hasActiveMembershipFor } from "@/lib/auth-routing";
@@ -1503,7 +1502,7 @@ function BookExperience() {
     (user?.addresses || []).find((address) => Boolean(address.hasActiveSubscription))?.plan
   );
 
-  const visit = resolveVisitType(searchParams.get("visit"), isMember, isAnonymous);
+  const visit = resolveVisitType(searchParams.get("visit"));
   const nav = <VisitTypeNav active={visit} isMember={isMember} />;
 
   if (visit === "additional") return <AdditionalVisitBooking navSlot={nav} />;
@@ -1540,38 +1539,42 @@ function BookExperience() {
    */
   if (!isMember && visit === "membership") {
     /*
-     * Anyone who can still have the First Free Visit books it right here:
-     * description, real calendar, time, then signup at the end if they have
-     * no account. Everyone else gets the gateway, as before.
+     * Book Fixter is the membership tab for everybody, so a non-member chooses
+     * a plan right here - four short rows, confirm, checkout - instead of
+     * reading a pitch and being sent to another page to choose.
+     *
+     * Their visit history comes along: it is why this tab used to default to
+     * One-Time for non-members (Account and the one-time confirmation link to
+     * /book#your-visits), and it is the same single list the other tabs show.
+     *
+     * The First Free Visit stays one line away for whoever can still have it;
+     * its booker lives on the homepage and at /book/free.
      */
-    const canBookFree = isAnonymous || freeVisit === "eligible";
+    const showFreeVisit = isAnonymous || freeVisit === "eligible";
     return (
       <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
         <Header />
         {nav}
-        {canBookFree ? (
-          <section className="lx-hero px-4 pb-14 pt-6 sm:pt-10">
-            <div className="mx-auto max-w-[620px]">
-              <p className="lx-pill">
-                <b>Free</b> First 90-minute visit
-              </p>
-              <h1 className="mt-4 text-[32px] font-bold leading-[1.05] tracking-[-0.04em] sm:text-[42px]">
-                Book your free visit.
-              </h1>
-              <p className="mt-2 text-[16px] text-[#5b6577]">
-                One per home. No card needed.{" "}
-                <Link href="/membership/plans" className="fv-link text-[16px]">
-                  Or see plans
-                </Link>
-              </p>
-              <div className="mt-6">
-                <FreeVisitBooker id="book" />
-              </div>
-            </div>
-          </section>
-        ) : (
-          <MembershipGatewayPanel />
-        )}
+        <h1 className="sr-only">Book Fixter</h1>
+        <section className="mx-auto w-full max-w-[640px] px-4 pb-10 pt-5 sm:pt-8">
+          <div className="fv-card p-4 sm:p-6">
+            <PlansSection picker />
+          </div>
+          {showFreeVisit ? (
+            <Link
+              href="/book/free"
+              className="mt-3 flex items-center justify-between gap-3 rounded-[16px] border border-[#E3E8F1] bg-white px-4 py-3.5 text-[14px] transition hover:border-[#C9D6EE]"
+              onClick={() => trackEvent("free_visit_cta_clicked", { placement: "book_tab" })}
+              data-book-free-visit
+            >
+              <span className="text-[#3b4658]">
+                <b className="text-[#0B1628]">Try us first.</b> Your first 90-minute visit is free.
+              </span>
+              <span className="shrink-0 font-semibold text-[#306EEC]">Book it →</span>
+            </Link>
+          ) : null}
+        </section>
+        <FullDayVisitHistory />
         <Footer />
       </main>
     );

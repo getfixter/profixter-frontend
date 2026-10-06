@@ -475,7 +475,7 @@ export default function AccountOverview({
                 See Membership Plans
               </Link>
               <Link
-                href={freeVisit ? "/book" : "/book?visit=additional"}
+                href={freeVisit ? "/book/free" : "/book?visit=additional"}
                 className="inline-flex min-h-[46px] items-center justify-center rounded-[9px] border border-[#CBD6E8] bg-white px-7 text-[15px] font-semibold text-[#0F172A] transition hover:bg-[#F5F8FF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]"
               >
                 {freeVisit ? "Book your free visit" : "Book a single visit"}
