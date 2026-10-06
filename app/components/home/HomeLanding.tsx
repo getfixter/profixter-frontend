@@ -63,20 +63,20 @@ export default function HomeLanding() {
   return (
     <main className="lx-root">
       {/* ============================ HERO + BOOKER ============================ */}
-      <section className="lx-hero px-4 pb-14 pt-8 sm:pb-20 sm:pt-14">
+      <section className="lx-hero px-4 pb-10 pt-6 sm:pb-16 sm:pt-12">
         <div className="lx-glow -right-40 -top-40" aria-hidden="true" />
-        <div className="lx-wrap grid grid-cols-[minmax(0,1fr)] items-start gap-8 lg:grid-cols-[minmax(0,1fr)_540px] lg:gap-14">
-          <div className="lg:sticky lg:top-28 lg:pt-10">
+        <div className="lx-wrap grid grid-cols-[minmax(0,1fr)] items-start gap-8 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-16">
+          <div className="lg:pt-6">
             <p className="lx-pill fv-enter">
               <b>Free</b> First 90-minute visit
             </p>
-            <h1 className="lx-h1 fv-enter mt-5" style={{ animationDelay: "60ms" }}>
+            <h1 className="lx-h1 fv-enter mt-4" style={{ animationDelay: "60ms" }}>
               Your handyman.
               <br />
               <span>On demand.</span>
             </h1>
-            <p className="lx-lede fv-enter mt-4 max-w-[460px]" style={{ animationDelay: "120ms" }}>
-              Tell us what needs fixing, pick a time, and a Fixter comes to your home on Long Island.
+            <p className="lx-lede fv-enter mt-3 max-w-[440px]" style={{ animationDelay: "120ms" }}>
+              Tell us what needs fixing and pick a time. A Fixter comes to your home on Long Island.
             </p>
             <ul className="mt-6 hidden flex-wrap gap-x-5 gap-y-2 lg:flex" aria-label="Why Profixter">
               <li className="lx-tick">Licensed &amp; insured</li>
@@ -91,8 +91,8 @@ export default function HomeLanding() {
           </div>
 
           <div className="fv-enter" style={{ animationDelay: "160ms" }}>
-            <FreeVisitBooker id="book" />
-            <p className="mt-4 text-center text-[14px] text-[#64748B] lg:hidden">
+            <FreeVisitBooker id="book" variant="compact" />
+            <p className="mt-3 text-center text-[14px] text-[#64748B] lg:hidden">
               Need regular help?{" "}
               <Link href="/membership/plans" className="fv-link text-[14px]" onClick={() => trackEvent("see_plans_clicked", { placement: "home_hero" })}>
                 See plans

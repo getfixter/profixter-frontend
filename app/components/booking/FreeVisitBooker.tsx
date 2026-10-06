@@ -167,12 +167,20 @@ function errorMessage(err: unknown): string {
 export default function FreeVisitBooker({
   id = "book",
   autoResume = false,
+  variant = "full",
 }: {
   /** Anchor id, so a header link can scroll straight to the booker. */
   id?: string;
   /** On the page signup returns to: create the drafted booking on arrival. */
   autoResume?: boolean;
+  /**
+   * "compact" is the homepage widget: one field, a strip of open days, times
+   * under the chosen day, and a one-line summary once both are picked. Same
+   * state, same rules, same booking - only the layout is smaller.
+   */
+  variant?: "full" | "compact";
 }) {
+  const compact = variant === "compact";
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
 
@@ -201,6 +209,10 @@ export default function FreeVisitBooker({
   const [formError, setFormError] = useState("");
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  /* Compact layout: day/time open for choosing, or folded into one summary row. */
+  const [whenOpen, setWhenOpen] = useState(true);
+  const [gridOpen, setGridOpen] = useState(false);
+  const [noteFocused, setNoteFocused] = useState(false);
   /* Photos come back from IndexedDB asynchronously; until then their count is unknown, not zero. */
   const [photosRestored, setPhotosRestored] = useState(false);
 
@@ -230,6 +242,7 @@ export default function FreeVisitBooker({
         setInitialMonthResolved(true);
       }
       setSelectedTime(draft.requestedTime);
+      if (draft.requestedDate && draft.requestedTime) setWhenOpen(false);
     }
     void loadPhotos()
       .then((files) => {
@@ -348,6 +361,28 @@ export default function FreeVisitBooker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [month, initialMonthResolved]);
 
+  /* The compact strip spans the turn of the month, so it needs next month too. */
+  useEffect(() => {
+    if (compact && initialMonthResolved) void loadMonth(shiftMonth(monthOf(today), 1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compact, initialMonthResolved]);
+
+  const upcomingDays = useMemo(() => {
+    const all: string[] = [];
+    for (const map of Object.values(months)) {
+      for (const [ymd, info] of Object.entries(map)) if (ymd >= today && isBookableDay(info)) all.push(ymd);
+    }
+    return Array.from(new Set(all)).sort().slice(0, 14);
+  }, [months, today]);
+
+  /* The note grows with what is typed, up to a few lines. */
+  useEffect(() => {
+    if (!compact || !noteRef.current) return;
+    const el = noteRef.current;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [compact, note]);
+
   const dayFor = useCallback(
     (ymd: string): DayAvailability | undefined => months[monthOf(ymd)]?.[ymd],
     [months]
@@ -435,6 +470,11 @@ export default function FreeVisitBooker({
     setNotice("");
     setErrors((e) => ({ ...e, time: undefined }));
     trackEvent("free_visit_time_selected", { date: selectedDate, time });
+    if (compact) {
+      // Let the chosen time register, then fold day + time into one row.
+      window.setTimeout(() => setWhenOpen(false), 260);
+      return;
+    }
     window.setTimeout(() => {
       summaryRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }, 160);
@@ -447,6 +487,7 @@ export default function FreeVisitBooker({
     if (!selectedDate) next.date = "Pick a day.";
     else if (!selectedSlotOpen) next.time = "Pick a time.";
     setErrors(next);
+    if (next.date || next.time) setWhenOpen(true);
     const first = next.note ? noteRef : next.photos ? photosRef : next.date ? calendarRef : next.time ? timesRef : null;
     if (first?.current) {
       first.current.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -458,6 +499,7 @@ export default function FreeVisitBooker({
   /* --- creating the booking --------------------------------------- */
   const slotTaken = useCallback(async (ymd: string, message?: string) => {
     setSelectedTime("");
+    setWhenOpen(true);
     saveDraft({ requestedTime: "", submitRequested: false });
     setNotice(message || "That time was just taken. Pick another - everything else is saved.");
     await refreshDay(ymd);
@@ -628,6 +670,251 @@ export default function FreeVisitBooker({
   const canGoBack = month > monthOf(today);
   const canGoForward = month < shiftMonth(monthOf(today), MONTHS_AHEAD - 1);
   const submitting = phase === "submitting";
+
+  if (compact) {
+    const started = noteFocused || note.trim().length > 0 || photos.length > 0 || !!libraryReference;
+    const picked = !!selectedDate && selectedSlotOpen;
+    const showWhen = whenOpen || !picked;
+    return (
+      <div id={id} className="fv-card fv-compact scroll-mt-24" aria-busy={submitting} data-fv-variant="compact">
+        {/* The job */}
+        <div className={`fv-field ${errors.note ? "fv-field--error" : ""}`}>
+          <svg className="fv-field-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+            <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5 2.5-2.5z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+          </svg>
+          <textarea
+            ref={noteRef}
+            rows={1}
+            value={note}
+            onChange={(e) => onNoteChange(e.target.value)}
+            onFocus={() => setNoteFocused(true)}
+            onBlur={() => setNoteFocused(false)}
+            maxLength={1200}
+            placeholder="What needs fixing?"
+            aria-label="What do you need help with?"
+            aria-invalid={!!errors.note}
+            className="fv-cinput"
+            data-fv="note"
+          />
+        </div>
+        {errors.note ? <p className="fv-error">{errors.note}</p> : null}
+
+        {!note.trim() ? (
+          <div className="fv-strip mt-2" aria-label="Common jobs">
+            {QUICK_TASKS.map((task) => (
+              <button key={task} type="button" className="fv-chip shrink-0" onClick={() => addQuickTask(task)}>
+                {task}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {/* Photo or example - appears once the job is being described */}
+        <div className={`fv-reveal ${started ? "fv-reveal--open" : ""}`}>
+          <div>
+            <div ref={photosRef} className="fv-proof pt-2.5" data-fv="photos">
+              <label className={`fv-mini-btn ${photoBusy ? "opacity-60" : ""}`}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="sr-only"
+                  onChange={(e) => {
+                    void onPhotos(e.target.files);
+                    e.target.value = "";
+                  }}
+                  disabled={photoBusy || photos.length >= MAX_PHOTOS}
+                />
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
+                  <path d="M4 8.5A2.5 2.5 0 016.5 6h1.6l1.2-1.6A1 1 0 0110.1 4h3.8a1 1 0 01.8.4L15.9 6h1.6A2.5 2.5 0 0120 8.5v8A2.5 2.5 0 0117.5 19h-11A2.5 2.5 0 014 16.5v-8z" stroke="currentColor" strokeWidth="1.7" />
+                  <circle cx="12" cy="12.5" r="3.2" stroke="currentColor" strokeWidth="1.7" />
+                </svg>
+                {photoBusy ? "Adding…" : photos.length ? "Add" : "Add photo"}
+              </label>
+              {photoUrls.map((url, i) => (
+                <div key={url} className="fv-thumb !h-11 !w-11">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Photo ${i + 1}`} />
+                  <button type="button" onClick={() => removePhoto(i)} aria-label={`Remove photo ${i + 1}`}>×</button>
+                </div>
+              ))}
+              {!photos.length ? (
+                <>
+                  <PhotoLibraryPicker
+                    compact
+                    value={libraryReference}
+                    onChange={(key) => {
+                      setLibraryReference(key);
+                      setErrors((e) => ({ ...e, photos: undefined }));
+                    }}
+                    context="free_visit"
+                  />
+                </>
+              ) : null}
+            </div>
+          </div>
+        </div>
+        {errors.photos ? <p className="fv-error">{errors.photos}</p> : null}
+
+        {/* When */}
+        <div ref={calendarRef} className="mt-3 scroll-mt-28">
+          {showWhen ? (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="fv-label">Pick a day</span>
+                <button type="button" className="fv-textbtn" onClick={() => setGridOpen((v) => !v)} aria-expanded={gridOpen}>
+                  {gridOpen ? "Fewer dates" : "More dates"}
+                </button>
+              </div>
+              {gridOpen ? (
+                <div className="mt-1.5">
+                  <div className="flex items-center justify-between">
+                    <button type="button" className="fv-nav" onClick={() => setMonth(shiftMonth(month, -1))} disabled={!canGoBack} aria-label="Previous month">‹</button>
+                    <span className="text-[14px] font-semibold text-[#0B1628]" aria-live="polite">{monthLabel(month)}</span>
+                    <button type="button" className="fv-nav" onClick={() => setMonth(shiftMonth(month, 1))} disabled={!canGoForward} aria-label="Next month">›</button>
+                  </div>
+                  <div className="mt-1 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[#94A3B8]" aria-hidden="true">
+                    {WEEKDAYS.map((d, i) => <div key={i}>{d}</div>)}
+                  </div>
+                  <div className="mt-1 grid grid-cols-7 gap-1" role="grid" aria-label={monthLabel(month)}>
+                    {grid.map((ymd, i) => {
+                      if (!ymd) return <div key={`pad-${i}`} />;
+                      const open = ymd >= today && isBookableDay(monthMap?.[ymd]);
+                      const isSelected = ymd === selectedDate;
+                      return (
+                        <button
+                          key={ymd}
+                          type="button"
+                          role="gridcell"
+                          disabled={!open}
+                          aria-selected={isSelected}
+                          aria-label={`${longDate(ymd)}${open ? "" : ", unavailable"}`}
+                          onClick={() => {
+                            pickDate(ymd);
+                            setGridOpen(false);
+                          }}
+                          className={`fv-day fv-day--compact ${isSelected ? "fv-day--selected" : open ? "fv-day--open" : "fv-day--closed"} ${!monthMap ? "fv-shimmer" : ""}`}
+                        >
+                          {Number(ymd.slice(8))}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="fv-strip mt-1.5 pb-1" role="listbox" aria-label="Open days" data-fv="days">
+                  {upcomingDays.length === 0
+                    ? Array.from({ length: 6 }).map((_, i) => <div key={i} className="fv-daypill fv-shimmer" />)
+                    : upcomingDays.map((ymd) => {
+                        const isSelected = ymd === selectedDate;
+                        const [y, m, d] = ymd.split("-").map(Number);
+                        const at = new Date(Date.UTC(y, m - 1, d));
+                        const wd = at.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+                        const mo = at.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+                        return (
+                          <button
+                            key={ymd}
+                            type="button"
+                            role="option"
+                            aria-selected={isSelected}
+                            aria-label={longDate(ymd)}
+                            onClick={() => pickDate(ymd)}
+                            data-booking-date={ymd}
+                            data-booking-date-disabled="false"
+                            className={`fv-daypill ${isSelected ? "fv-daypill--on" : ""}`}
+                          >
+                            <span className="fv-daypill-wd">{wd}</span>
+                            <span className="fv-daypill-d">{d}</span>
+                            <span className="fv-daypill-mo">{mo}</span>
+                          </button>
+                        );
+                      })}
+                </div>
+              )}
+              {monthError[month] ? (
+                <p className="fv-error">
+                  We couldn&rsquo;t load the calendar.{" "}
+                  <button type="button" className="underline" onClick={() => void loadMonth(month, true)}>Try again</button>
+                </p>
+              ) : null}
+              {errors.date ? <p className="fv-error">{errors.date}</p> : null}
+
+              <div ref={timesRef} className={`fv-reveal scroll-mt-28 ${selectedDate ? "fv-reveal--open" : ""}`}>
+                <div>
+                  {selectedDate ? (
+                    <div className="pt-2.5">
+                      {notice ? <p className="fv-notice mb-2" role="alert">{notice}</p> : null}
+                      {!selectedDay ? (
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="fv-slot fv-slot--compact fv-shimmer" />)}
+                        </div>
+                      ) : slotOptions.length ? (
+                        <div className="grid grid-cols-4 gap-1.5" role="radiogroup" aria-label={`Times on ${longDate(selectedDate)}`} data-fv="times">
+                          {slotOptions.map((slot) => {
+                            const isSelected = slot.available && slot.time === selectedTime;
+                            return (
+                              <button
+                                key={slot.time}
+                                type="button"
+                                role="radio"
+                                aria-checked={isSelected}
+                                disabled={!slot.available}
+                                onClick={() => pickTime(slot.time)}
+                                data-booking-time={slot.time}
+                                data-booking-time-available={slot.available ? "true" : "false"}
+                                className={`fv-slot fv-slot--compact ${isSelected ? "fv-slot--selected" : slot.available ? "" : "fv-slot--taken"}`}
+                                aria-label={`${time12(slot.time)}${slot.available ? "" : ", booked"}`}
+                              >
+                                {time12(slot.time)}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-[13px] text-[#64748B]">This day just filled up. Pick another.</p>
+                      )}
+                      {errors.time ? <p className="fv-error">{errors.time}</p> : null}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </>
+          ) : (
+            <button type="button" className="fv-sumrow fv-enter" onClick={() => setWhenOpen(true)} data-fv="when-summary">
+              <span className="fv-sumcheck" aria-hidden="true">✓</span>
+              <span className="min-w-0 flex-1 truncate text-left">
+                {shortDate(selectedDate)} · {time12(selectedTime)}
+              </span>
+              <span className="text-[13px] font-semibold text-[#306EEC]">Change</span>
+            </button>
+          )}
+        </div>
+
+        <div ref={summaryRef} className="scroll-mt-28">
+          <AccessNotice access={access} />
+          {formError ? <p className="fv-error" role="alert">{formError}</p> : null}
+          {!blocked ? (
+            <>
+              <button
+                type="button"
+                className={`fv-cta fv-cta--compact mt-3 w-full ${ready ? "fv-cta--ready" : ""}`}
+                onClick={() => void onBook()}
+                disabled={submitting || access === "checking"}
+                data-fv="book"
+              >
+                {submitting ? (
+                  <><span className="fv-spinner" aria-hidden="true" /> Booking your visit…</>
+                ) : (
+                  <>Book my free visit <span aria-hidden="true">→</span></>
+                )}
+              </button>
+              <p className="mt-2 text-center text-[13px] text-[#64748B]">90 minutes · free · no card needed</p>
+            </>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div id={id} className="fv-card scroll-mt-24" aria-busy={submitting}>

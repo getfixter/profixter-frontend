@@ -83,6 +83,17 @@ async function scrollThrough(page) {
     check("booker starts on the first screen (390px)", s.bookerOnFirstScreen, "");
     check("real availability shown signed out", s.liveCalendar, "");
     check("old start screen removed", s.noStartScreen, "");
+    /*
+     * The booker is the main action, not the whole page: it opens small and
+     * grows only as it is used. 1,007px tall before the compact pass.
+     */
+    const size = await page.evaluate(() => {
+      const card = document.querySelector("#book").getBoundingClientRect();
+      const how = [...document.querySelectorAll("h2")].find((e) => /Book\. We come/.test(e.textContent || ""));
+      return { h: Math.round(card.height), how: how ? Math.round(how.getBoundingClientRect().top + window.scrollY) : 99999 };
+    });
+    check("booker opens compact (< 420px tall at 390px)", size.h < 420, `${size.h}px`);
+    check("'How it works' within about one screen of the top", size.how < 900, `${size.how}px`);
     check("no signup link anywhere on Home", s.noSignupWall, "");
     await ctx.close();
   }

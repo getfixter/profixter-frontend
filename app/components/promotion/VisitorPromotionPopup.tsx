@@ -73,6 +73,8 @@ function targetMatches(popup: PromotionPopup, pathname: string) {
    * purchase already in progress.
    */
   if (pathname.startsWith("/membership")) return false;
+  /* Book holds the plan picker and every booking flow - the same rule applies. */
+  if (pathname === "/book" || pathname.startsWith("/book/")) return false;
   return popup.target === "all_public";
 }
 

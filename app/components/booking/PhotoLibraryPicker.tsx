@@ -23,9 +23,11 @@ type Props = {
   onChange: (key: string) => void;
   /** Where the choice was made, for analytics only. */
   context: "member" | "free_visit" | "one_time" | "full_day";
+  /** A small pill trigger and a slim selected chip, for the homepage booker. */
+  compact?: boolean;
 };
 
-export default function PhotoLibraryPicker({ value, onChange, context }: Props) {
+export default function PhotoLibraryPicker({ value, onChange, context, compact = false }: Props) {
   const [open, setOpen] = useState(false);
   const selected = libraryItem(value);
 
@@ -34,6 +36,31 @@ export default function PhotoLibraryPicker({ value, onChange, context }: Props) 
     trackEvent("booking_library_reference_selected", { reference: key, context });
     window.setTimeout(() => setOpen(false), 140);
   };
+
+  if (compact) {
+    return (
+      <>
+        {selected ? (
+          <span className="inline-flex h-11 max-w-full items-center gap-2 rounded-[12px] border border-[#306EEC]/40 bg-[#F3F7FF] pl-1.5 pr-1 text-[13px] font-semibold text-[#0B1628]" data-library-chip>
+            <LibraryThumb itemKey={selected.key} label={selected.label} className="h-8 w-8 flex-none rounded-[8px]" />
+            <button type="button" onClick={() => setOpen(true)} className="min-w-0 truncate text-left">{selected.label}</button>
+            <button type="button" onClick={() => onChange("")} aria-label="Remove the Profixter example" className="flex h-9 w-9 flex-none items-center justify-center rounded-full text-[18px] leading-none text-[#64748B] hover:bg-white">&times;</button>
+          </span>
+        ) : (
+          <button type="button" onClick={() => setOpen(true)} className="fv-mini-btn" data-library-open>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
+            </svg>
+            Use example
+          </button>
+        )}
+        {open ? <LibrarySheet value={value} onChoose={choose} onClose={() => setOpen(false)} /> : null}
+      </>
+    );
+  }
 
   return (
     <>
