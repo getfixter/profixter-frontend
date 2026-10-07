@@ -1,4 +1,5 @@
 export type AdminTabId =
+  | "overview"
   | "bookings"
   | "users"
   | "subscribed"
@@ -22,6 +23,8 @@ export type AdminTabItem = {
 };
 
 export const ADMIN_TABS: AdminTabItem[] = [
+  /* First, so it is where an admin lands. Never in an employee allow-list below. */
+  { id: "overview",   label: "Overview",   shortLabel: "Overview", description: "Business at a glance" },
   { id: "bookings",   label: "Jobs",       shortLabel: "Jobs",    description: "Daily bookings" },
   { id: "tips",       label: "Tips",       shortLabel: "Tips",    description: "What customers left" },
   { id: "subscribed", label: "Members",    shortLabel: "Members", description: "Active plans" },

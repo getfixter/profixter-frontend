@@ -322,3 +322,35 @@
 .fv-proof > .fv-mini-btn, .fv-proof > button { justify-content: center; width: 100%; }
 .fv-proof:has(.fv-thumb) { display: flex; flex-wrap: wrap; }
 .fv-proof > [data-library-chip] { grid-column: 1 / -1; }
+
+/* ==================================================================== */
+/* Admin Overview (ov-*)                                                 */
+/* ==================================================================== */
+.ov-card {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 18px 40px -30px rgba(11, 22, 40, 0.28);
+  transition: box-shadow 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+.ov-card--click { cursor: pointer; }
+.ov-card--click:hover { border-color: rgba(48, 110, 236, 0.28); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 22px 44px -26px rgba(48, 110, 236, 0.35); transform: translateY(-1px); }
+.ov-card--click:focus-visible { outline: 3px solid rgba(48, 110, 236, 0.35); outline-offset: 2px; }
+.ov-num { font-feature-settings: "lnum"; animation: ov-rise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.ov-skel {
+  background: linear-gradient(90deg, #eef1f6 0%, #f7f9fc 50%, #eef1f6 100%);
+  background-size: 200% 100%; animation: ov-shimmer 1.3s ease-in-out infinite;
+}
+.ov-draw { stroke-dasharray: 2000; stroke-dashoffset: 2000; animation: ov-draw 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.ov-bar { transform-origin: left center; animation: ov-grow 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.ov-drawer { animation: ov-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+@media (min-width: 768px) { .ov-drawer { animation-name: ov-in; } }
+.ov-pin { transition: r 0.15s ease; }
+.ov-data summary { list-style: none; }
+.ov-data summary::-webkit-details-marker { display: none; }
+@keyframes ov-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes ov-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@keyframes ov-draw { to { stroke-dashoffset: 0; } }
+@keyframes ov-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes ov-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes ov-in { from { transform: translateX(32px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .ov-root *, .ov-drawer, .ov-num, .ov-draw, .ov-bar { animation: none !important; transition: none !important; stroke-dashoffset: 0 !important; }
+}
