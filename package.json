@@ -32,7 +32,9 @@
     "test:free-visit-funnel": "node scripts/test_free_visit_funnel.js",
     "test:admin-overview-ui": "node scripts/test_admin_overview_ui.js",
     "test:home-about-ui": "node scripts/test_home_about_ui.js",
-    "test:membership-plans-ui": "node scripts/test_membership_plans_ui.js"
+    "test:membership-plans-ui": "node scripts/test_membership_plans_ui.js",
+    "test:desktop-scale": "node scripts/test_desktop_scale.js",
+    "build:desktop-scale": "node scripts/build_desktop_scale.js"
   },
   "engines": {
     "node": "24.x"
