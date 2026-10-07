@@ -7,8 +7,8 @@
     "ignore-engines": true
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/build_desktop_scale.js && next dev",
+    "build": "node scripts/build_desktop_scale.js && next build",
     "start": "next start -p $PORT",
     "lint": "eslint",
     "test:booking-calendar-availability-ui": "node scripts/test_booking_calendar_availability_ui.js",
