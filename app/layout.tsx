@@ -10,6 +10,7 @@ import "./globals.css";
 import "./free-visit.css";
 /* Last, so its phone-only rules sit after every other stylesheet. */
 import "./mobile-scale.css";
+import "./desktop-scale.css";
 import { DEFAULT_OG_IMAGE, PROFIXTER_STRUCTURED_DATA, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { META_PIXEL_ID } from "@/lib/meta-config";
 import AttributionCapture from "./components/AttributionCapture";

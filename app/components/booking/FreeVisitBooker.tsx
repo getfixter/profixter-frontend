@@ -700,7 +700,7 @@ export default function FreeVisitBooker({
         {errors.note ? <p className="fv-error">{errors.note}</p> : null}
 
         {!note.trim() ? (
-          <div className="fv-strip mt-2" aria-label="Common jobs">
+          <div className="fv-strip fv-strip--wrap mt-2" aria-label="Common jobs">
             {QUICK_TASKS.map((task) => (
               <button key={task} type="button" className="fv-chip shrink-0" onClick={() => addQuickTask(task)}>
                 {task}
