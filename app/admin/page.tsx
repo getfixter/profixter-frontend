@@ -22,6 +22,7 @@ import TipsModule from "@/app/components/admin/TipsModule";
 import PromotionPopupEditor from "@/app/components/admin/PromotionPopupEditor";
 import AdminActivityLog from "@/app/components/admin/AdminActivityLog";
 import OverviewModule from "@/app/components/admin/overview/OverviewModule";
+import OverviewBoundary from "@/app/components/admin/overview/OverviewBoundary";
 import { tabsForUser } from "@/app/components/admin/admin-tabs-config";
 import { toYMDNY } from "@/lib/utils/timezone-helpers";
 import {
@@ -973,7 +974,9 @@ function AdminPageContent() {
           Admin-only twice over: here, and on the server (analytics.read).
         */}
         {active === "overview" && isAdmin ? (
-          <OverviewModule />
+          <OverviewBoundary>
+            <OverviewModule />
+          </OverviewBoundary>
         ) : loading ? (
           <div className="bg-white rounded-xl shadow-lg p-12 text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
