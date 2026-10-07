@@ -11,6 +11,7 @@
  * - the admin lands on Overview; six numbers; charts; map; activity
  * - a number opens its drawer with rows; Escape closes it
  * - the date range refetches with the new range and keeps the frame
+ * - empty, partial or garbage responses never take the admin down
  * - a General Fixter has no Overview tab and never calls /api/admin/overview
  * - nothing overflows sideways at phone, tablet and desktop widths
  */
@@ -28,7 +29,7 @@ function check(name, pass, detail = "") {
   console.log(`${pass ? "PASS" : "FAIL"}  ${name}${detail ? "  :: " + detail : ""}`);
 }
 
-async function open(browser, user, { width = 1440, height = 900 } = {}) {
+async function open(browser, user, { width = 1440, height = 900, answer = null } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, isMobile: width < 700, hasTouch: width < 700 });
   await ctx.addInitScript(() => localStorage.setItem("token", "ui-token"));
   const calls = [];
@@ -41,6 +42,7 @@ async function open(browser, user, { width = 1440, height = 900 } = {}) {
     if (u.pathname.startsWith("/api/admin/overview")) {
       calls.push(u.pathname + u.search);
       if (user.role !== "admin") return json({ message: "Access denied" }, 403);
+      if (answer) return json(answer(u));
       if (u.pathname.endsWith("/map")) return json(FIX.map);
       if (u.pathname.endsWith("/list")) return json(FIX.list);
       return json(u.searchParams.get("range") === "7d" ? FIX.overview7d : FIX.overview);
@@ -99,6 +101,44 @@ async function open(browser, user, { width = 1440, height = 900 } = {}) {
     const m = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth }));
     check(`${label}: no sideways scroll`, m.sw <= width + 1 && m.iw <= width + 1, `scroll ${m.sw}, layout ${m.iw}, device ${width}`);
     await ctx.close();
+  }
+
+  /*
+   * Responses the Overview must survive: an empty list (once crashed the whole
+   * admin), a payload with most sections missing, and garbage from the list and
+   * map endpoints. The admin shell must stay up every time.
+   */
+  {
+    console.log("\n--- unexpected responses ---");
+    const partial = (u) =>
+      u.pathname.endsWith("/map")
+        ? { points: [{ x: "?", y: null }] }
+        : u.pathname.endsWith("/list")
+          ? "nope"
+          : { period: { label: "Last 30 days" }, kpis: { activeMembers: { value: 4 } }, sources: "x", plans: [null, 3], growth: { year: { points: [{}] } } };
+    const cases = [
+      ["an empty list", () => [], "error"],
+      ["a string", () => "<html>Bad gateway</html>", "error"],
+      ["a payload missing most sections", partial, "render"],
+    ];
+    for (const [label, answer, expect] of cases) {
+      const { ctx, page, errors } = await open(browser, OWNER, { answer });
+      await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(1500);
+      const shell = await page.evaluate(() => document.documentElement.id !== "__next_error__" && !!document.querySelector("header, nav"));
+      check(`${label}: admin shell stays up`, shell);
+      if (expect === "error") {
+        check(`${label}: says it couldn't load, with a retry`, (await page.getByText("Overview couldn't load").count()) >= 1 && (await page.getByRole("button", { name: "Try again" }).count()) === 1);
+      } else {
+        const kpis = await page.locator(".ov-num").allInnerTexts();
+        check(`${label}: renders what it has`, kpis.length === 6 && kpis[0] === "4", kpis.join(" | "));
+        await page.click("button[aria-label^='New members']", { timeout: 5000 }).catch(() => {});
+        await page.waitForTimeout(800);
+        check(`${label}: a bad list opens an explained drawer`, (await page.getByText("This list couldn't load.").count()) === 1);
+      }
+      check(`${label}: no page errors`, errors.length === 0, errors.join(" | "));
+      await ctx.close();
+    }
   }
 
   {
