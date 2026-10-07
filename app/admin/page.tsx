@@ -21,6 +21,7 @@ import FixtersModule from "@/app/components/admin/FixtersModule";
 import TipsModule from "@/app/components/admin/TipsModule";
 import PromotionPopupEditor from "@/app/components/admin/PromotionPopupEditor";
 import AdminActivityLog from "@/app/components/admin/AdminActivityLog";
+import OverviewModule from "@/app/components/admin/overview/OverviewModule";
 import { tabsForUser } from "@/app/components/admin/admin-tabs-config";
 import { toYMDNY } from "@/lib/utils/timezone-helpers";
 import {
@@ -913,7 +914,8 @@ function AdminPageContent() {
             </div>
           )}
 
-          <div className="mt-3 grid gap-2 grid-cols-1 md:grid-cols-3">
+          {/* Overview has its own date range; the list search means nothing there. */}
+          <div className={`mt-3 grid gap-2 grid-cols-1 md:grid-cols-3 ${active === "overview" ? "hidden" : ""}`}>
             <div className="relative md:col-span-2">
               <svg
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
@@ -965,7 +967,14 @@ function AdminPageContent() {
       </div>
 
       <div className="max-w-[1400px] mx-auto px-3 pb-8 pt-3 md:px-8 md:py-6">
-        {loading ? (
+        {/*
+          The Overview loads its own numbers from its own endpoint, so it does
+          not wait behind the full user/booking download the other tabs need.
+          Admin-only twice over: here, and on the server (analytics.read).
+        */}
+        {active === "overview" && isAdmin ? (
+          <OverviewModule />
+        ) : loading ? (
           <div className="bg-white rounded-xl shadow-lg p-12 text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
             <p className="mt-4 text-gray-600 font-medium">

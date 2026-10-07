@@ -1,6 +1,7 @@
 // lib/auth-service.ts — FULL FINAL
 import API from "./api";
 import { normalizeUSPhoneE164 } from "./phone";
+import { getAttribution } from "./meta";
 
 export interface Address {
   _id: string;
@@ -194,7 +195,8 @@ export const getCurrentUser = async (): Promise<User> => {
 
 // =================== GOOGLE LOGIN ===================
 export const googleLogin = async (idToken: string): Promise<AuthResponse> => {
-  const response = await API.post<AuthResponse>("/api/auth/google", { idToken });
+  // First-touch attribution rides along; the server stores it only for a new account.
+  const response = await API.post<AuthResponse>("/api/auth/google", { idToken, attribution: getAttribution() });
   return response.data;
 };
 

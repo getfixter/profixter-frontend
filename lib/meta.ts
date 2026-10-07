@@ -115,11 +115,94 @@ export type Attribution = {
   utmTerm?: string;
   fbclid?: string;
   fbclidAt?: number;
+  gclid?: string;
+  /* Meta's ids/names, from the ad's URL parameters ({{campaign.id}}, {{ad.name}}...). */
+  campaignId?: string;
+  adsetId?: string;
+  adsetName?: string;
+  adId?: string;
+  adName?: string;
+  /* ?source= on our own links: the event kiosk QR, referral links. */
+  refSource?: string;
   landingPath?: string;
   referrer?: string;
+  /* The first page this browser ever saw, tagged or not, and when. */
+  firstLandingPath?: string;
+  firstReferrer?: string;
+  firstSeenAt?: number;
+  /* Anonymous browser id; links the account to its first visit record. */
+  visitorId?: string;
 };
 
 const ATTRIBUTION_KEY = "pf_attribution";
+const FIRST_SEEN_KEY = "pf_first_seen";
+const VISITOR_KEY = "pf_vid";
+const VISIT_SENT_KEY = "pf_visit_sent";
+
+const MARKETING_PARAMS: Array<[keyof Attribution, string]> = [
+  ["utmSource", "utm_source"],
+  ["utmCampaign", "utm_campaign"],
+  ["utmContent", "utm_content"],
+  ["utmMedium", "utm_medium"],
+  ["utmTerm", "utm_term"],
+  ["fbclid", "fbclid"],
+  ["gclid", "gclid"],
+  ["campaignId", "campaign_id"],
+  ["adsetId", "adset_id"],
+  ["adsetName", "adset_name"],
+  ["adId", "ad_id"],
+  ["adName", "ad_name"],
+  ["refSource", "source"],
+];
+
+function readJson<T>(key: string): T | null {
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+function visitorId(): string {
+  let id = "";
+  try {
+    id = window.localStorage.getItem(VISITOR_KEY) || "";
+    if (!/^[A-Za-z0-9_-]{12,64}$/.test(id)) {
+      id = `v_${newEventId().replace(/[^A-Za-z0-9]/g, "").slice(0, 32)}`;
+      window.localStorage.setItem(VISITOR_KEY, id);
+    }
+  } catch {
+    /* storage blocked: no id, no visit record - nothing breaks */
+  }
+  return id;
+}
+
+/**
+ * Record this browser's first visit with the server, once.
+ *
+ * It is the "Visitors" step of the admin funnel: anonymous (a random id, the
+ * landing page, the referrer, the tags in the URL), never sent twice from the
+ * same browser, skipped for automation. Fire-and-forget like the rest of this
+ * module.
+ */
+function recordFirstVisit(incoming: Attribution) {
+  try {
+    if (!API_BASE || window.localStorage.getItem(VISIT_SENT_KEY)) return;
+    if ((navigator as Navigator & { webdriver?: boolean }).webdriver) return;
+    const id = visitorId();
+    if (!id) return;
+    window.localStorage.setItem(VISIT_SENT_KEY, "1");
+    void fetch(`${API_BASE}/api/track/visit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitorId: id, ...incoming, landingPath: window.location.pathname, referrer: document.referrer || undefined }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    /* never throws */
+  }
+}
 
 /**
  * Remember where this visitor came from, once.
@@ -138,14 +221,25 @@ export function captureAttribution(): void {
     if (typeof window === "undefined") return;
 
     const params = new URLSearchParams(window.location.search);
-    const incoming: Attribution = {
-      utmSource: params.get("utm_source") || undefined,
-      utmCampaign: params.get("utm_campaign") || undefined,
-      utmContent: params.get("utm_content") || undefined,
-      utmMedium: params.get("utm_medium") || undefined,
-      utmTerm: params.get("utm_term") || undefined,
-      fbclid: params.get("fbclid") || undefined,
-    };
+    const incoming: Attribution = {};
+    for (const [field, param] of MARKETING_PARAMS) {
+      const value = params.get(param);
+      if (value) (incoming as Record<string, string>)[field] = value.slice(0, 300);
+    }
+
+    /*
+     * The very first page, every time it is the first - tagged or not - so a
+     * customer who never clicked an ad still has a landing page and referrer
+     * (that is how Google Organic and Direct are told apart). Separate from
+     * the marketing touch below and, like it, never overwritten.
+     */
+    if (!readJson(FIRST_SEEN_KEY)) {
+      window.localStorage.setItem(
+        FIRST_SEEN_KEY,
+        JSON.stringify({ firstLandingPath: window.location.pathname, firstReferrer: document.referrer || undefined, firstSeenAt: Date.now() })
+      );
+    }
+    recordFirstVisit(incoming);
 
     const hasAny = Object.values(incoming).some(Boolean);
     if (!hasAny) return;
@@ -154,7 +248,7 @@ export function captureAttribution(): void {
     incoming.landingPath = window.location.pathname;
     incoming.referrer = document.referrer || undefined;
 
-    const existing = getAttribution();
+    const existing = readJson<Attribution>(ATTRIBUTION_KEY) || {};
     const existingHasAny = Object.values(existing).some(Boolean);
     if (existingHasAny) return;
 
@@ -164,11 +258,14 @@ export function captureAttribution(): void {
   }
 }
 
+/** Everything known about how this browser arrived: first marketing touch, first page, visitor id. */
 export function getAttribution(): Attribution {
   try {
     if (typeof window === "undefined") return {};
-    const raw = window.localStorage.getItem(ATTRIBUTION_KEY);
-    return raw ? (JSON.parse(raw) as Attribution) : {};
+    const marketing = readJson<Attribution>(ATTRIBUTION_KEY) || {};
+    const first = readJson<Attribution>(FIRST_SEEN_KEY) || {};
+    const id = window.localStorage.getItem(VISITOR_KEY) || undefined;
+    return { ...first, ...marketing, ...(id ? { visitorId: id } : {}) };
   } catch {
     return {};
   }
