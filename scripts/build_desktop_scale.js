@@ -5,6 +5,11 @@
  *   node scripts/build_desktop_scale.js          write the file
  *   node scripts/build_desktop_scale.js --check  fail if it is stale
  *
+ * `npm run build` and `npm run dev` run this first, so a build (local, Vercel
+ * preview or production) always ships CSS made from the source it is building.
+ * The file is still committed, so a plain `next build` works too; --check
+ * (in scripts/test_desktop_scale.js) catches a commit that forgot to refresh it.
+ *
  * Why it is generated: big headings are written as Tailwind utilities with
  * breakpoint jumps (text-[30px] sm:text-[46px] lg:text-[54px]). Each one is a
  * fixed size from its breakpoint up, so a 1024px laptop, a 1366x657 screen at
@@ -110,11 +115,11 @@ function build() {
   const sel = (cls) => `:root[data-surface="site"] .${escape(cls)}`;
   for (const [bp, min] of BREAKPOINTS) {
     const rules = bp ? [] : SHARED.map(([cls, size]) => `  :root[data-surface="site"] ${cls} { font-size: ${fluidType(size)}; }`);
-    for (const [cls, v] of [...type].filter(([, v]) => v.bp === bp).sort((a, b) => a[1].size - b[1].size || a[0].localeCompare(b[0]))) {
+    for (const [cls, v] of [...type].filter(([, v]) => v.bp === bp).sort((a, b) => a[1].size - b[1].size || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))) {
       const value = fluidType(v.size);
       if (value) rules.push(`  ${sel(cls)} { font-size: ${value}; }`);
     }
-    for (const [cls, v] of [...pad].filter(([, v]) => v.bp === bp).sort((a, b) => a[1].px - b[1].px || a[0].localeCompare(b[0]))) {
+    for (const [cls, v] of [...pad].filter(([, v]) => v.bp === bp).sort((a, b) => a[1].px - b[1].px || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))) {
       const value = fluidPad(v.px);
       rules.push(`  ${sel(cls)} { padding-bottom: ${value}; }`);
     }

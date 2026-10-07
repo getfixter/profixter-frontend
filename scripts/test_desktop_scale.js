@@ -5,7 +5,8 @@
  *   node scripts/test_desktop_scale.js [baseUrl]
  *
  * What it pins:
- * - app/desktop-scale.css matches what scripts/build_desktop_scale.js builds
+ * - app/desktop-scale.css matches what scripts/build_desktop_scale.js builds,
+ *   and `npm run build` regenerates it, so a deploy can never ship a stale one
  * - a headline is its designed size from 1440px wide on a normal-height
  *   screen, smaller on a laptop, smaller still at 150% zoom, never larger
  * - phones keep the phone scale (app/mobile-scale.css)
@@ -76,6 +77,9 @@ const probe = (page, cls) => page.evaluate((c) => {
   } catch (e) {
     check("desktop-scale.css is up to date with its generator", false, String(e.stderr || e.message).trim());
   }
+
+  const pkg = require(path.join(__dirname, "..", "package.json"));
+  check("npm run build regenerates it before next build", /^node scripts\/build_desktop_scale\.js && next build$/.test(pkg.scripts.build), pkg.scripts.build);
 
   const browser = await chromium.launch();
 
