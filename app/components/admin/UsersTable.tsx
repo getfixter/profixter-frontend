@@ -27,6 +27,15 @@ interface UsersTableProps {
   onDeleteUser: (user: User, confirmation: string) => Promise<void> | void;
   onRunSubscriptionCleanup: () => Promise<void> | void;
   readOnly?: boolean;
+  /*
+   * Finer than readOnly, for an employee granted All Users but not everything
+   * around it. Each defaults to !readOnly, so the owner's table is unchanged.
+   * The server enforces each one; these only stop showing a button that would 403.
+   */
+  canBlacklist?: boolean;
+  canDelete?: boolean;
+  canFixGhl?: boolean;
+  showCustomerPanels?: boolean;
 }
 
 type FlattenedRow = {
@@ -207,6 +216,10 @@ export default function UsersTable({
   onDeleteUser,
   onRunSubscriptionCleanup,
   readOnly = false,
+  canBlacklist = !readOnly,
+  canDelete = !readOnly,
+  canFixGhl = !readOnly,
+  showCustomerPanels = true,
 }: UsersTableProps) {
   const [planFilter, setPlanFilter] = useState<PlanFilter>('all');
   const [savingCancellationByAddress, setSavingCancellationByAddress] = useState<Record<string, boolean>>({});
@@ -596,7 +609,7 @@ export default function UsersTable({
               <span className="font-semibold text-slate-900">{formatPlanLabel(planFilter)}</span>
             </div>
 
-            {!readOnly && <button
+            {canFixGhl && <button
               type="button"
               onClick={handleRunCleanup}
               disabled={isRunningCleanup}
@@ -740,7 +753,7 @@ export default function UsersTable({
                           >
                             History
                           </button>
-                          {!readOnly && (isBlacklisted && blacklistId ? (
+                          {canBlacklist && (isBlacklisted && blacklistId ? (
                             <button
                               type="button"
                               onClick={() => onUnblacklist(blacklistId)}
@@ -757,7 +770,7 @@ export default function UsersTable({
                               Block
                             </button>
                           ))}
-                          {!readOnly && (
+                          {canDelete && (
                             <button
                               type="button"
                               onClick={() => openDeleteUser(user)}
@@ -898,7 +911,7 @@ export default function UsersTable({
                     View history
                   </button>
 
-                  {!readOnly && (isBlacklisted && blacklistId ? (
+                  {canBlacklist && (isBlacklisted && blacklistId ? (
                     <button
                       type="button"
                       onClick={() => onUnblacklist(blacklistId)}
@@ -916,7 +929,7 @@ export default function UsersTable({
                     </button>
                   ))}
 
-                  {!readOnly && (
+                  {canDelete && (
                     <button
                       type="button"
                       onClick={() => openDeleteUser(user)}
@@ -1008,9 +1021,9 @@ export default function UsersTable({
                 * delivery failure, and checking the history first sends people
                 * looking for a bug that is not there.
                 */}
-              <div className="mb-5 border-b border-slate-200 pb-5">
+              {showCustomerPanels && <div className="mb-5 border-b border-slate-200 pb-5">
                 <SmsConsentPanel userId={historyUser._id} />
-              </div>
+              </div>}
 
               {/*
                 * Every email and text this customer was actually sent, above the
@@ -1018,9 +1031,9 @@ export default function UsersTable({
                 * log - not "what did they do" but "what did we tell them, and did
                 * it arrive" - which is the one support calls start with.
                 */}
-              <div className="mb-5 border-b border-slate-200 pb-5">
+              {showCustomerPanels && <div className="mb-5 border-b border-slate-200 pb-5">
                 <CommunicationHistory userId={historyUser._id} />
-              </div>
+              </div>}
 
               {historyLoading ? (
                 <div className="space-y-3">

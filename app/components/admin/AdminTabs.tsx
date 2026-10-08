@@ -13,7 +13,7 @@ export default function AdminTabs({ active, onChange, tabs = ADMIN_TABS }: Admin
   return (
     <div className="hidden md:block">
       <div className="overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex min-w-max gap-2">
+        <div className="flex min-w-max gap-2" role="tablist" aria-label="Admin sections">
           {tabs.map((tab) => {
             const isActive = active === tab.id;
 
@@ -21,6 +21,9 @@ export default function AdminTabs({ active, onChange, tabs = ADMIN_TABS }: Admin
               <button
                 key={tab.id}
                 type="button"
+                role="tab"
+                aria-selected={isActive}
+                data-tab={tab.id}
                 onClick={() => onChange(tab.id)}
                 className={`rounded-2xl border px-4 py-3 text-left transition-all ${
                   isActive

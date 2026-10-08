@@ -45,9 +45,17 @@ export interface User {
   createdAt?: string;
   updatedAt?: string;
   role?: "customer" | "employee" | "admin";
+  /* Field work: "Fixter" / "General Fixter" do jobs; null is office staff. */
   employeePosition?: "Fixter" | "General Fixter" | null;
+  /* Free text the owner typed ("Marketing Manager"). Display only. */
+  employeeTitle?: string;
+  /* Admin sections the owner switched on (employees only). */
+  adminSections?: string[];
+  /* The owner: every permission, now and later. */
+  isOwner?: boolean;
   isActive?: boolean;
   mustChangePassword?: boolean;
+  /* Computed by the server from field work + sections; what the UI may show. */
   permissions?: string[];
 }
 

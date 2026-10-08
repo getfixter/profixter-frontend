@@ -34,6 +34,7 @@
     "test:home-about-ui": "node scripts/test_home_about_ui.js",
     "test:membership-plans-ui": "node scripts/test_membership_plans_ui.js",
     "test:desktop-scale": "node scripts/test_desktop_scale.js",
+    "test:admin-access-ui": "node scripts/test_admin_access_ui.js",
     "build:desktop-scale": "node scripts/build_desktop_scale.js"
   },
   "engines": {

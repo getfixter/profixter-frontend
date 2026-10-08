@@ -23,10 +23,15 @@ export function getRoleLandingKind(user: User | null | undefined): RoleLandingKi
   return "customer";
 }
 
+/* Fixters start on Jobs; office staff (no field work) on their first allowed section. */
+function staffLandingPath(user: User | null | undefined) {
+  return user?.employeePosition ? "/admin?tab=bookings" : "/admin";
+}
+
 export function getRoleLandingPath(user: User | null | undefined) {
   const kind = getRoleLandingKind(user);
   if (kind === "admin") return "/admin";
-  if (kind === "general_fixter" || kind === "fixter") return "/admin?tab=bookings";
+  if (kind === "general_fixter" || kind === "fixter") return staffLandingPath(user);
   if (kind === "customer") return "/account";
   return "/";
 }
@@ -87,7 +92,7 @@ export function safeReturnPath(value: string | null | undefined) {
 export function getAutomaticEntryPath(user: User | null | undefined) {
   const kind = getRoleLandingKind(user);
   if (kind === "admin") return "/admin";
-  if (kind === "general_fixter" || kind === "fixter") return "/admin?tab=bookings";
+  if (kind === "general_fixter" || kind === "fixter") return staffLandingPath(user);
   if (kind === "customer" && hasActiveMembership(user)) return "/book?visit=membership";
   return "/";
 }
