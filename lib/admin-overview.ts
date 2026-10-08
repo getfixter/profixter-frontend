@@ -23,10 +23,13 @@ export type PlanRow = {
   plan: "basic" | "plus" | "premium" | "elite";
   active: number;
   paying: number;
+  comped: number;
   gifts: number;
   newInPeriod: number;
   canceledInPeriod: number;
+  /* Net of discounts when the MRR came from Stripe. */
   mrrCents: number;
+  fullPriceCents: number;
   share: number | null;
 };
 
@@ -74,12 +77,16 @@ export type Overview = {
   period: OverviewPeriod;
   kpis: {
     totalCustomers: { value: number };
-    activeMembers: { value: number; prev: number; delta: Delta; paying: number; gifts: number };
+    activeMembers: { value: number; prev: number; delta: Delta; paying: number; comped: number; gifts: number };
     newMembers: { value: number; prev: number; delta: Delta };
     cancellations: { value: number; prev: number; delta: Delta; scheduled: number };
     newCustomers: { value: number; prev: number; delta: Delta };
+    /* Revenue excludes sales tax and is net of refunds; collectedCents is the same money with the tax in. */
     revenue: {
       available: boolean;
+      /* True only while the first Stripe backfill runs (once, after a deploy). */
+      syncing: boolean;
+      syncedAt: string | null;
       error: string | null;
       truncated: boolean;
       membershipCents: number;
@@ -89,10 +96,33 @@ export type Overview = {
       otherCents: number;
       refundedCents: number;
       totalCents: number;
+      taxCents: number;
+      collectedCents: number;
       prevTotalCents: number;
+      prevCollectedCents: number;
       delta: Delta;
     };
-    mrr: { cents: number; startCents: number; delta: Delta; payingMembers: number };
+    /*
+     * "stripe": cents is net of the discounts that still apply; fullPriceCents is the same
+     * memberships at list price. "list_price": Stripe did not answer, cents is null.
+     */
+    mrr: {
+      source: "stripe" | "list_price";
+      cents: number | null;
+      fullPriceCents: number;
+      discountCents: number | null;
+      startCents: number | null;
+      delta: Delta;
+      payingMembers: number;
+      compedMembers: number;
+      discountedMembers: number;
+      annualMembers: number;
+      pastDueMembers: number;
+      trialingMembers: number;
+      endingMembers: number;
+      endingCents: number;
+      error: string | null;
+    };
     freeVisits: { booked: number; prevBooked: number; delta: Delta; completed: number; upcoming: number; canceled: number; noShow: number; noShowTracked: boolean };
     conversion: { completed: number; converted: number; rate: number | null; prevRate: number | null };
     oneTime: { booked: number; completed: number; canceled: number; revenueCents: number; converted: number; fullDayBooked: number; fullDayRevenueCents: number };
@@ -207,20 +237,25 @@ const OVERVIEW_SHAPE: Shape = {
   period: { key: "30d", label: "", from: "", to: "", fromYmd: "", toYmd: "", prevFrom: "", prevTo: "", days: 0, timezone: "America/New_York" },
   kpis: {
     totalCustomers: { value: 0 },
-    activeMembers: { value: 0, prev: 0, delta: null, paying: 0, gifts: 0 },
+    activeMembers: { value: 0, prev: 0, delta: null, paying: 0, comped: 0, gifts: 0 },
     newMembers: { value: 0, prev: 0, delta: null },
     cancellations: { value: 0, prev: 0, delta: null, scheduled: 0 },
     newCustomers: { value: 0, prev: 0, delta: null },
     revenue: {
-      available: false, error: null, truncated: false, membershipCents: 0, oneTimeCents: 0, fullDayCents: 0, giftCents: 0,
-      otherCents: 0, refundedCents: 0, totalCents: 0, prevTotalCents: 0, delta: null,
+      available: false, syncing: false, syncedAt: null, error: null, truncated: false, membershipCents: 0, oneTimeCents: 0, fullDayCents: 0,
+      giftCents: 0, otherCents: 0, refundedCents: 0, totalCents: 0, taxCents: 0, collectedCents: 0, prevTotalCents: 0, prevCollectedCents: 0,
+      delta: null,
     },
-    mrr: { cents: 0, startCents: 0, delta: null, payingMembers: 0 },
+    mrr: {
+      source: "list_price", cents: null, fullPriceCents: 0, discountCents: null, startCents: null, delta: null, payingMembers: 0,
+      compedMembers: 0, discountedMembers: 0, annualMembers: 0, pastDueMembers: 0, trialingMembers: 0, endingMembers: 0, endingCents: 0,
+      error: null,
+    },
     freeVisits: { booked: 0, prevBooked: 0, delta: null, completed: 0, upcoming: 0, canceled: 0, noShow: 0, noShowTracked: false },
     conversion: { completed: 0, converted: 0, rate: null, prevRate: null },
     oneTime: { booked: 0, completed: 0, canceled: 0, revenueCents: 0, converted: 0, fullDayBooked: 0, fullDayRevenueCents: 0 },
   },
-  plans: [{ plan: "basic", active: 0, paying: 0, gifts: 0, newInPeriod: 0, canceledInPeriod: 0, mrrCents: 0, share: null }],
+  plans: [{ plan: "basic", active: 0, paying: 0, comped: 0, gifts: 0, newInPeriod: 0, canceledInPeriod: 0, mrrCents: 0, fullPriceCents: 0, share: null }],
   growth: { period: GROWTH_SERIES, year: GROWTH_SERIES },
   revenueSeries: null,
   funnel: { visitors: 0, prevVisitors: 0, visitorsTrackingSince: null, registered: 0, freeVisitBooked: 0, freeVisitCompleted: 0, members: 0 },
@@ -311,18 +346,21 @@ export function normalizeMap(raw: unknown): OverviewMap {
   return m;
 }
 
+/* Every Overview request ends - answered, failed or timed out - so no card can wait forever. */
+export const REQUEST_TIMEOUT_MS = 20000;
+
 export async function getOverview(q: RangeQuery): Promise<Overview> {
-  const res = await API.get<unknown>("/api/admin/overview", { params: q, timeout: 45000 });
+  const res = await API.get<unknown>("/api/admin/overview", { params: q, timeout: REQUEST_TIMEOUT_MS });
   return normalizeOverview(res.data);
 }
 
 export async function getOverviewList(q: RangeQuery & { metric: string; param?: string }): Promise<OverviewList> {
-  const res = await API.get<unknown>("/api/admin/overview/list", { params: q, timeout: 45000 });
+  const res = await API.get<unknown>("/api/admin/overview/list", { params: q, timeout: REQUEST_TIMEOUT_MS });
   return normalizeList(res.data);
 }
 
 export async function getOverviewMap(): Promise<OverviewMap> {
-  const res = await API.get<unknown>("/api/admin/overview/map", { timeout: 45000 });
+  const res = await API.get<unknown>("/api/admin/overview/map", { timeout: REQUEST_TIMEOUT_MS });
   return normalizeMap(res.data);
 }
 
