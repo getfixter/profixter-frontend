@@ -401,6 +401,247 @@ export const handymanServices: SeoPageContent[] = [
     relatedRenovationSlugs: ["bathroom-remodeling"],
     relatedLocationSlugs: ["babylon", "west-babylon", "amityville"],
   },
+  /*
+   * Five task pages added October 2026 for jobs Profixter already sells: each
+   * is on the live One-Time Visit list (and most appear in the Free First Visit
+   * booker). They are the plain searches - "faucet replacement", "ceiling fan
+   * installation" - that a homeowner types long before they have heard of a
+   * handyman membership. Scope lines use only the business's own published
+   * exclusions (large electrical work, plumbing remodels, appliance repair).
+   */
+  {
+    slug: "faucet-replacement",
+    title: "Faucet Replacement",
+    shortTitle: "Faucets",
+    metaTitle: "Faucet Replacement on Long Island | Profixter Handyman",
+    metaDescription:
+      "Kitchen or bathroom faucet dripping, or a new one waiting in the box? Profixter replaces faucets in Nassau and Suffolk homes. $99 One-Time Visit or a handyman membership.",
+    h1: "Faucet replacement for kitchens and bathrooms.",
+    intro:
+      "Profixter replaces kitchen and bathroom faucets, including the one you already bought, and sorts out drips at the faucet.",
+    homeownerNeed: "My faucet drips, or I bought a new one and want it put in.",
+    goodFit: [
+      "Swapping an old kitchen or bathroom faucet for a new one",
+      "Installing a faucet you already bought",
+      "Replacing worn supply lines at the faucet",
+      "Fixing a dripping or leaky faucet",
+    ],
+    notAFit: [
+      "Moving or adding water lines",
+      "Re-piping or a plumbing remodel",
+      "Repairing dishwashers or other appliances",
+    ],
+    prepNotes: [
+      "Have the new faucet and everything that came with it on site.",
+      "Check the new faucet suits your sink: one hole, or three, and the spacing between them.",
+      "Clear the cabinet under the sink and add a photo of the sink and the valves underneath when you book.",
+    ],
+    faq: [
+      {
+        question: "Can you install a faucet I bought myself?",
+        answer: "Yes. Most faucet jobs are exactly that: you choose the faucet, we take the old one out and put the new one in.",
+      },
+      {
+        question: "Can I book this as a One-Time Visit?",
+        answer: "Yes. Faucet replacement is one of the jobs on the One-Time Visit list.",
+      },
+      {
+        question: "What if the shut-off valves under the sink are old?",
+        answer: "Mention it when you book and add a photo. Older valves are common, and it is better to know before the visit than during it.",
+      },
+    ],
+    primaryCta: { label: "Book One-Time Visit", href: "/book?visit=additional" },
+    secondaryCta: { label: "Become a Member", href: "/membership/plans" },
+    tertiaryCta: { label: "Ask Profixter AI", href: "/home-support" },
+    relatedServiceSlugs: ["toilet-repair", "garbage-disposal-replacement", "caulking"],
+    relatedLocationSlugs: ["massapequa", "west-babylon", "lindenhurst"],
+  },
+  {
+    slug: "toilet-repair",
+    title: "Toilet Repair",
+    shortTitle: "Toilets",
+    metaTitle: "Toilet Repair on Long Island: Running Toilets & More | Profixter",
+    metaDescription:
+      "Running toilet, loose handle, weak flush? Profixter handles everyday toilet repairs in Nassau and Suffolk homes. $99 One-Time Visit or a handyman membership.",
+    h1: "Toilet repair for the everyday problems.",
+    intro:
+      "A toilet that runs, a handle that sticks, a seat that won't stay put: the small toilet problems that are easy to live with and better fixed.",
+    homeownerNeed: "My toilet keeps running, or something on it is loose or broken.",
+    goodFit: [
+      "A toilet that keeps running or refilling on its own",
+      "Replacing a fill valve or flapper",
+      "A loose or sticking flush handle",
+      "A loose or broken toilet seat",
+    ],
+    notAFit: [
+      "Sewer or main drain backups",
+      "Moving a toilet to a new spot",
+      "Cesspool or septic problems",
+    ],
+    prepNotes: [
+      "Add a photo of the inside of the tank when you book; it shows which parts are in there.",
+      "If there is water on the floor around the base, say so.",
+      "If you know the toilet's brand or model, note it.",
+    ],
+    faq: [
+      {
+        question: "Why does my toilet keep running?",
+        answer: "Usually a worn flapper or a fill valve that no longer shuts off. Both are common, inexpensive parts to replace.",
+      },
+      {
+        question: "Can I book this as a One-Time Visit?",
+        answer: "Yes. Toilet repair is one of the jobs on the One-Time Visit list.",
+      },
+      {
+        question: "Is a running toilet worth fixing quickly?",
+        answer: "Yes. A toilet that runs all day wastes water constantly, even when you can't hear it.",
+      },
+    ],
+    primaryCta: { label: "Book One-Time Visit", href: "/book?visit=additional" },
+    secondaryCta: { label: "Become a Member", href: "/membership/plans" },
+    tertiaryCta: { label: "Ask Profixter AI", href: "/home-support" },
+    relatedServiceSlugs: ["faucet-replacement", "caulking", "garbage-disposal-replacement"],
+    relatedLocationSlugs: ["seaford", "north-babylon", "bay-shore"],
+  },
+  {
+    slug: "ceiling-fan-installation",
+    title: "Ceiling Fan Installation",
+    shortTitle: "Ceiling Fans",
+    metaTitle: "Ceiling Fan Installation on Long Island | Profixter Handyman",
+    metaDescription:
+      "New ceiling fan, or a light you want swapped for one? Profixter installs ceiling fans in Nassau and Suffolk homes. $99 One-Time Visit or a handyman membership.",
+    h1: "Ceiling fan installation, assembled and balanced.",
+    intro:
+      "Profixter assembles and hangs ceiling fans, swaps old fans for new ones, and replaces light fixtures with fans where the ceiling box can carry one.",
+    homeownerNeed: "I bought a ceiling fan and need it put up.",
+    goodFit: [
+      "Replacing an old ceiling fan with a new one",
+      "Swapping a ceiling light for a fan where the box is rated for a fan",
+      "Assembling and hanging a fan you bought",
+      "Balancing a fan that wobbles",
+    ],
+    notAFit: [
+      "New wiring runs or new switches where none exist",
+      "Panel work",
+      "Appliance repair",
+    ],
+    prepNotes: [
+      "Have the fan, its downrod, mounting bracket and hardware on site.",
+      "Note the ceiling height, especially if it is vaulted or above a stairwell.",
+      "Add a photo of the existing light or fan when you book.",
+    ],
+    faq: [
+      {
+        question: "Can a light fixture be swapped for a ceiling fan?",
+        answer: "Often, yes, as long as the box in the ceiling is rated to hold a fan. A photo when you book helps us check.",
+      },
+      {
+        question: "Can I book this as a One-Time Visit?",
+        answer: "Yes. Ceiling fan installation is one of the jobs on the One-Time Visit list.",
+      },
+      {
+        question: "My fan wobbles. Can that be fixed?",
+        answer: "Usually. Loose mounting, a bent blade holder or unbalanced blades are the common causes, and all can be adjusted.",
+      },
+    ],
+    primaryCta: { label: "Book One-Time Visit", href: "/book?visit=additional" },
+    secondaryCta: { label: "Become a Member", href: "/membership/plans" },
+    tertiaryCta: { label: "Ask Profixter AI", href: "/home-support" },
+    relatedServiceSlugs: ["light-fixture-installation", "tv-mounting", "shelf-and-curtain-rod-installation"],
+    relatedLocationSlugs: ["syosset", "east-northport", "huntington"],
+  },
+  {
+    slug: "garbage-disposal-replacement",
+    title: "Garbage Disposal Replacement",
+    shortTitle: "Garbage Disposals",
+    metaTitle: "Garbage Disposal Replacement on Long Island | Profixter",
+    metaDescription:
+      "Old garbage disposal humming, leaking or dead? Profixter replaces garbage disposals in Nassau and Suffolk homes. $99 One-Time Visit or a handyman membership.",
+    h1: "Garbage disposal replacement under the kitchen sink.",
+    intro:
+      "When a garbage disposal hums, leaks or just stops, replacing the unit is often the simplest fix. Profixter takes the old one out and puts the new one in.",
+    homeownerNeed: "My garbage disposal stopped working and I want it replaced.",
+    goodFit: [
+      "Replacing an old garbage disposal with a new unit",
+      "Installing a disposal you already bought",
+      "Reconnecting the dishwasher drain to the new unit",
+    ],
+    notAFit: [
+      "Adding a disposal where there is no outlet under the sink",
+      "Main drain clogs and backups",
+      "Repairing dishwashers or other appliances",
+    ],
+    prepNotes: [
+      "Have the new disposal on site; similar size and horsepower to the old one makes the swap simplest.",
+      "Clear the cabinet under the sink.",
+      "Add a photo of the space under the sink when you book.",
+    ],
+    faq: [
+      {
+        question: "Can I book this as a One-Time Visit?",
+        answer: "Yes. Garbage disposal replacement is one of the jobs on the One-Time Visit list.",
+      },
+      {
+        question: "Can you install a disposal I bought?",
+        answer: "Yes. Most disposal jobs are exactly that.",
+      },
+      {
+        question: "Does the dishwasher get reconnected?",
+        answer: "Yes, if your dishwasher drains through the disposal, it is reconnected to the new unit.",
+      },
+    ],
+    primaryCta: { label: "Book One-Time Visit", href: "/book?visit=additional" },
+    secondaryCta: { label: "Become a Member", href: "/membership/plans" },
+    tertiaryCta: { label: "Ask Profixter AI", href: "/home-support" },
+    relatedServiceSlugs: ["faucet-replacement", "toilet-repair", "caulking"],
+    relatedLocationSlugs: ["farmingdale", "babylon", "massapequa"],
+  },
+  {
+    slug: "shelf-and-curtain-rod-installation",
+    title: "Shelf, Mirror & Curtain Rod Installation",
+    shortTitle: "Shelves & Curtain Rods",
+    metaTitle: "Shelf, Mirror & Curtain Rod Installation on Long Island | Profixter",
+    metaDescription:
+      "Shelves to put up, a heavy mirror, curtain rods or blinds? Profixter hangs them level and secure in Nassau and Suffolk homes. $99 One-Time Visit or a handyman membership.",
+    h1: "Shelves, mirrors and curtain rods, hung level and secure.",
+    intro:
+      "The jobs that sit in a closet for months: shelves, mirrors, art, curtain rods and blinds, hung level and into studs or the right anchors.",
+    homeownerNeed: "I have shelves, a mirror and curtain rods that need to go up.",
+    goodFit: [
+      "Floating and bracket shelves",
+      "Heavy mirrors and artwork",
+      "Curtain rods and blinds",
+      "Hooks, racks and wall organizers",
+    ],
+    notAFit: [
+      "Built-in cabinetry or custom carpentry projects",
+      "Anything that needs structural changes to the wall",
+    ],
+    prepNotes: [
+      "Have everything you want hung, with its hardware, on site.",
+      "Decide on placement first, or mark it with painter's tape.",
+      "Mention the wall type if you know it: drywall, plaster, brick or tile all take different anchors.",
+    ],
+    faq: [
+      {
+        question: "Can several things be hung in one visit?",
+        answer: "Often, yes: a few shelves, rods and pictures in the same room are a common visit. A member visit can cover several tasks; a One-Time Visit is for one job from the list.",
+      },
+      {
+        question: "Can I book this as a One-Time Visit?",
+        answer: "Yes. Installing shelves and curtain rods are on the One-Time Visit list.",
+      },
+      {
+        question: "Will a heavy mirror hold on plaster or brick?",
+        answer: "Yes, with the right anchors. Tell us the wall type and the item's weight when you book.",
+      },
+    ],
+    primaryCta: { label: "Book One-Time Visit", href: "/book?visit=additional" },
+    secondaryCta: { label: "Become a Member", href: "/membership/plans" },
+    tertiaryCta: { label: "Ask Profixter AI", href: "/home-support" },
+    relatedServiceSlugs: ["tv-mounting", "furniture-assembly", "drywall-repair"],
+    relatedLocationSlugs: ["lindenhurst", "east-northport", "seaford"],
+  },
 ];
 
 export const renovationServices: SeoPageContent[] = [

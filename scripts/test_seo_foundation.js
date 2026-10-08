@@ -114,6 +114,19 @@ const toPath = (url) => url.replace(SITE, "") || "/";
   const multiH1 = Object.entries(pages).filter(([, p]) => h1s(p.html).length !== 1).length;
   check("every sitemap page has exactly one H1", multiH1 === 0, `${multiH1} pages differ`);
 
+  /* ---------------- discovery: IndexNow key, ordinary-intent pages ---------------- */
+  {
+    const key = "fcb86454c853bca4a1bc07419213d129";
+    const keyRes = await get(`/${key}.txt`);
+    const keyBody = keyRes.status === 200 ? (await (await fetch(BASE + `/${key}.txt`)).text()).trim() : "";
+    check("IndexNow key file is served and contains exactly the key", keyBody === key, `status ${keyRes.status}`);
+    for (const slug of ["faucet-replacement", "toilet-repair", "ceiling-fan-installation", "garbage-disposal-replacement", "shelf-and-curtain-rod-installation"]) {
+      check(`sitemap includes /services/${slug}`, urls.includes(`${SITE}/services/${slug}`));
+    }
+    const homeTitle = titleOf(pages["/"].html) || "";
+    check("homepage title leads with ordinary handyman intent and keeps the membership", /^Long Island Handyman/.test(homeTitle) && /Membership/.test(homeTitle), homeTitle);
+  }
+
   /* ---------------- no inherited homepage canonical ---------------- */
   for (const path of ["/signup", "/gift", "/book/free", "/guides"]) {
     const page = pages[path] || (await get(path));
