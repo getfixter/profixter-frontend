@@ -177,6 +177,20 @@ const toPath = (url) => url.replace(SITE, "") || "/";
     check(`no "${label}" in any sitemap page`, hits.length === 0, hits.join(", "));
   }
 
+  /*
+   * Plumbing and electrical handyman work is in scope (owner-confirmed). The
+   * guides must not steer customers away from it with trade-caution language.
+   * Pre-existing service-page copy is out of scope for this rule and unchanged.
+   */
+  {
+    const caution = /licensed (electrician|plumber|trade)|whether a plumber|ask whether .* (plumber|electrician)/i;
+    const hits = Object.entries(pages)
+      .filter(([path]) => path.startsWith("/guides"))
+      .filter(([, p]) => caution.test(visibleText(p.html)))
+      .map(([path]) => path);
+    check("guides carry no plumbing/electrical caution language", hits.length === 0, hits.join(", "));
+  }
+
   /* ---------------- live prices match the published fallbacks ---------------- */
   try {
     const oneTime = await (await fetch(`${API}/api/bookings/one-time/config`)).json();

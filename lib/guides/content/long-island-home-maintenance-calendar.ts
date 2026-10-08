@@ -59,7 +59,7 @@ export const guide: Guide = {
     },
     {
       t: "callout",
-      text: "Some upkeep belongs to a licensed trade: furnace and boiler service, water heater work, electrical panels, and on much of Suffolk, cesspool or septic pumping (much of Suffolk County is unsewered). Book those with the right professional.",
+      text: "Some upkeep belongs to a specialist: furnace and boiler service, and cesspool or septic pumping, which many Suffolk homes need because much of the county is unsewered. Book those with the right professional.",
     },
     {
       t: "checklist",

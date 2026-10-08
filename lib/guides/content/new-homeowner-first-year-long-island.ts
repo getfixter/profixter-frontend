@@ -35,8 +35,8 @@ export const guide: Guide = {
     {
       t: "ol",
       items: [
-        "Split the report into **safety items**, **licensed-trade items** (electrical, plumbing, heating, roof) and **small repairs**.",
-        "Book safety and licensed-trade items first, with the right professionals.",
+        "Split the report into **safety items**, **larger project items** (heating, roof, panel or major plumbing work) and **small repairs**.",
+        "Book safety and larger project items first, with the right professionals.",
         "Group the small repairs by room and book them together. Our [honey-do list guide](/guides/honey-do-list) has a printable template.",
         "Put anything cosmetic on a later list. Live in the house a few months before deciding what to change.",
       ],
@@ -48,7 +48,7 @@ export const guide: Guide = {
         "**Plaster walls** in older homes: mounting shelves and TVs takes different anchors and more time.",
         "**Doors and windows that stick** as the house moves with the seasons.",
         "**Old shut-off valves** that seize when you finally need them.",
-        "**Previous owners' DIY**: work that was never quite finished, or not done to code. Have anything electrical checked by an electrician.",
+        "**Previous owners' DIY**: work that was never quite finished, or not done to code. Have anything that looks unfinished checked before you rely on it.",
       ],
     },
     { t: "h2", text: "The first year: learn the seasons" },

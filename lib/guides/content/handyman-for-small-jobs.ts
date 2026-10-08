@@ -105,7 +105,7 @@ export const guide: Guide = {
         ["One small job, nothing else pending", "A fixed-price single visit, or DIY"],
         ["Five or six jobs that can wait a few weeks", "Bundle them into one longer visit"],
         ["New jobs every few weeks, all year", "A recurring handyman membership"],
-        ["One big job (renovation, new wiring, roof)", "A licensed contractor with a written estimate, not a handyman visit"],
+        ["One big job (renovation, roof, panel upgrade)", "A contractor with a written estimate, not a handyman visit"],
         ["Simple, safe, and you have the tools", "Do it yourself"],
       ],
     },

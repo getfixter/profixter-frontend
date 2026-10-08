@@ -15,7 +15,7 @@ export const guide: Guide = {
   body: [
     {
       t: "answer",
-      text: "Write every job down with a photo and a location, group the list by trade (handyman work, electrician, plumber) and by room, pull out anything urgent or unsafe, and then book the handyman part as **one longer visit** if you have a lot at once, or as **regular short visits** if new jobs keep appearing. A clear list makes a big difference to how much gets done: the handyman spends the time working instead of working out what you meant.",
+      text: "Write every job down with a photo and a location, group the list into handyman jobs and larger project work, and by room, pull out anything urgent or unsafe, and then book the handyman part as **one longer visit** if you have a lot at once, or as **regular short visits** if new jobs keep appearing. A clear list makes a big difference to how much gets done: the handyman spends the time working instead of working out what you meant.",
     },
     { t: "h2", text: "Step 1: Write the list so someone else can price it" },
     {
@@ -39,7 +39,7 @@ export const guide: Guide = {
     { t: "h2", text: "Step 2: Pull out what isn't handyman work" },
     {
       t: "p",
-      text: "Most lists contain one or two items that belong to a licensed trade or a specialist, and booking them into a handyman visit wastes the visit. Typical examples:",
+      text: "Most lists contain one or two items that are really a project or a specialist job, and booking them into a short visit wastes the visit. Typical examples:",
     },
     {
       t: "table",
@@ -49,9 +49,9 @@ export const guide: Guide = {
         ["Patch drywall, touch up paint", "Handyman (a painter for whole rooms)"],
         ["Fix a sticking door, replace a lockset", "Handyman"],
         ["Shelves, curtain rods, mirrors, TV mount", "Handyman"],
-        ["Swap a light fixture or fan; replace a faucet or toilet part", "Handyman if it's a straight swap; an electrician or plumber if wiring or pipes need changing"],
-        ["New outlet or circuit, panel work", "Licensed electrician"],
-        ["Moving or adding plumbing lines, water heater", "Licensed plumber"],
+        ["Swap a light fixture or fan; replace a faucet or toilet part", "Handyman"],
+        ["Panel upgrade or rewiring", "An electrical project, quoted separately"],
+        ["Re-piping or a plumbing remodel", "A plumbing project, quoted separately"],
         ["Appliance that won't run", "Appliance repair service"],
         ["Leaking roof, rotted siding, structural sag", "Contractor with a written estimate"],
       ],
