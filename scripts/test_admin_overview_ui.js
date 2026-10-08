@@ -72,6 +72,17 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
     check("map rendered with pins", (await page.locator("svg[aria-label$='customers on the map'] circle.ov-pin").count()) > 10);
     check("customer funnel and acquisition present", (await page.getByText("Customer funnel").count()) === 1 && (await page.getByText("Customer acquisition").count()) === 1);
     check("unconnected spend is explained, not hidden", (await page.getByText("Connect Meta Ads to add spend").count()) === 1);
+    /* Acquisition: a Meta Ads total with Facebook / Instagram / Other Meta under it, and what Other is. */
+    const metaTotal = await page.locator("tr[data-source-group=meta] td").nth(2).innerText();
+    const fbIg = await Promise.all(["meta_facebook", "meta_instagram"].map((k) => page.locator(`tr[data-source=${k}] td`).nth(2).innerText()));
+    check("Meta Ads total equals Facebook + Instagram + Other Meta", Number(metaTotal) === FIX.overview.sourceGroups[0].registrations && Number(fbIg[0]) + Number(fbIg[1]) <= Number(metaTotal), `${metaTotal} = ${fbIg.join(" + ")} + other`);
+    check("Other says what it is made of", (await page.locator("[data-other-detail]").innerText()).includes("yelp.com"));
+    await page.locator("tr[data-source-group=meta] button").click();
+    await page.waitForTimeout(400);
+    const tree = await page.locator("[role=dialog]").innerText();
+    check("campaigns: an ad with only ids is shown by id, never given a name", tree.includes("ID 52606450943827"), tree.replace(/\s+/g, " ").slice(0, 160));
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
 
     await page.click("button[aria-label^='New members']");
     await page.waitForSelector("[role=dialog] li", { timeout: 10000 }).catch(() => {});

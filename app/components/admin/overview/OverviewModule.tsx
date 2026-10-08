@@ -21,6 +21,8 @@ import {
   ymdLabel,
   type ActivityItem,
   type CampaignNode,
+  type SourceGroup,
+  type SourceRow,
   type Delta,
   type Overview,
   type RangeKey,
@@ -820,11 +822,46 @@ function VisitsCard({ o, onOpen }: { o: Overview; onOpen: OpenList }) {
   );
 }
 
+function SourceCells({ r, revenue }: { r: { visitors: number; registrations: number; freeVisits: number; members: number; conversion: number | null; revenueCents: number }; revenue: boolean }) {
+  return (
+    <>
+      <td className="px-2 py-2.5 text-right text-[14px] tabular-nums text-slate-600">{num(r.visitors)}</td>
+      <td className="px-2 py-2.5 text-right text-[14px] font-semibold tabular-nums text-slate-900">{num(r.registrations)}</td>
+      <td className="px-2 py-2.5 text-right text-[14px] tabular-nums text-slate-600">{num(r.freeVisits)}</td>
+      <td className="px-2 py-2.5 text-right text-[14px] font-semibold tabular-nums text-slate-900">{num(r.members)}</td>
+      <td className="px-2 py-2.5 text-right text-[13px] tabular-nums text-slate-500">{r.conversion === null ? "—" : `${r.conversion}%`}</td>
+      <td className="px-2 py-2.5 text-right text-[14px] tabular-nums text-slate-900">{revenue ? money(r.revenueCents) : "—"}</td>
+    </>
+  );
+}
+
+/*
+ * One line per acquisition source, by first touch. Meta Ads is a total line
+ * with Facebook, Instagram and Other Meta under it: the split comes from the
+ * placement Meta writes into utm_source, never from fbclid alone.
+ */
 function AcquisitionCard({ o, onOpen, setDrawer }: { o: Overview; onOpen: OpenList; setDrawer: (d: DrawerState) => void }) {
-  const rows = [...o.sources].sort((a, b) => b.registrations - a.registrations || b.revenueCents - a.revenueCents);
-  const maxRegs = Math.max(1, ...rows.map((r) => r.registrations));
+  const groups = o.sourceGroups || [];
+  const rows = [...o.sources];
+  const maxRegs = Math.max(1, ...rows.map((r) => r.registrations), ...groups.map((g) => g.registrations));
+  const revenue = o.kpis.revenue.available;
   const openCampaigns = () =>
-    setDrawer({ kind: "custom", title: "Meta Ads campaigns", subtitle: `${o.period.label} · registrations, members and revenue by first touch`, body: <CampaignTree campaigns={o.campaigns} spend={o.spend.connected} onOpen={onOpen} /> });
+    setDrawer({ kind: "custom", title: "Meta Ads campaigns", subtitle: `${o.period.label} · by first touch`, body: <CampaignTree campaigns={o.campaigns} spend={o.spend.connected} onOpen={onOpen} /> });
+  /* Ungrouped sources and group totals, ordered by registrations; a group's members follow it. */
+  type Line = { kind: "group"; g: SourceGroup } | { kind: "source"; r: SourceRow; child: boolean };
+  const tops: Array<{ regs: number; rev: number; lines: Line[] }> = [];
+  for (const g of groups) {
+    const members = rows.filter((r) => r.group === g.key);
+    tops.push({ regs: g.registrations, rev: g.revenueCents, lines: [{ kind: "group", g }, ...members.map((r) => ({ kind: "source" as const, r, child: true }))] });
+  }
+  for (const r of rows.filter((x) => !x.group)) tops.push({ regs: r.registrations, rev: r.revenueCents, lines: [{ kind: "source", r, child: false }] });
+  tops.sort((a, b) => b.regs - a.regs || b.rev - a.rev);
+  const other = (o.otherDetail || []).filter((d) => d.visitors || d.registrations);
+  const bar = (n: number) => (
+    <span className="block h-1.5 w-12 flex-none overflow-hidden rounded-full bg-slate-100">
+      <span className="block h-full rounded-full bg-[#2a78d6]" style={{ width: `${(n / maxRegs) * 100}%` }} />
+    </span>
+  );
   return (
     <Card>
       <SectionTitle aside={<span className="text-[12px] text-slate-400">First touch · {o.period.label}</span>}>Customer acquisition</SectionTitle>
@@ -848,35 +885,48 @@ function AcquisitionCard({ o, onOpen, setDrawer }: { o: Overview; onOpen: OpenLi
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.key} className="border-t border-slate-100">
-                <td className="px-2 py-2.5">
-                  <button
-                    type="button"
-                    onClick={() => (r.key === "meta_ads" ? openCampaigns() : onOpen("source", r.label, { param: r.key }))}
-                    className="flex items-center gap-2 text-left"
-                  >
-                    <span className="block h-1.5 w-12 flex-none overflow-hidden rounded-full bg-slate-100">
-                      <span className="block h-full rounded-full bg-[#2a78d6]" style={{ width: `${(r.registrations / maxRegs) * 100}%` }} />
-                    </span>
-                    <span className="text-[14px] font-semibold text-slate-900 underline-offset-4 hover:underline">{r.label}</span>
-                    {r.share !== null ? <span className="text-[11px] text-slate-400">{Math.round(r.share)}%</span> : null}
-                  </button>
-                </td>
-                <td className="px-2 py-2.5 text-right text-[14px] tabular-nums text-slate-600">{num(r.visitors)}</td>
-                <td className="px-2 py-2.5 text-right text-[14px] font-semibold tabular-nums text-slate-900">{num(r.registrations)}</td>
-                <td className="px-2 py-2.5 text-right text-[14px] tabular-nums text-slate-600">{num(r.freeVisits)}</td>
-                <td className="px-2 py-2.5 text-right text-[14px] font-semibold tabular-nums text-slate-900">{num(r.members)}</td>
-                <td className="px-2 py-2.5 text-right text-[13px] tabular-nums text-slate-500">{r.conversion === null ? "—" : `${r.conversion}%`}</td>
-                <td className="px-2 py-2.5 text-right text-[14px] tabular-nums text-slate-900">{o.kpis.revenue.available ? money(r.revenueCents) : "—"}</td>
-                <td className="px-2 py-2.5 text-right text-[13px] text-slate-400">{r.spendCents === null ? "—" : money(r.spendCents)}</td>
-              </tr>
-            ))}
+            {tops.flatMap((t) => t.lines).map((line) =>
+              line.kind === "group" ? (
+                <tr key={`g-${line.g.key}`} className="border-t border-slate-100" data-source-group={line.g.key}>
+                  <td className="px-2 py-2.5">
+                    <button type="button" onClick={openCampaigns} className="flex items-center gap-2 text-left">
+                      {bar(line.g.registrations)}
+                      <span className="text-[14px] font-bold text-slate-900 underline-offset-4 hover:underline">{line.g.label}</span>
+                      {line.g.share !== null ? <span className="text-[11px] text-slate-400">{Math.round(line.g.share)}%</span> : null}
+                    </button>
+                  </td>
+                  <SourceCells r={line.g} revenue={revenue} />
+                  <td className="px-2 py-2.5 text-right text-[13px] text-slate-400">—</td>
+                </tr>
+              ) : (
+                <tr key={line.r.key} className={line.child ? "" : "border-t border-slate-100"} data-source={line.r.key}>
+                  <td className={`px-2 ${line.child ? "py-1.5" : "py-2.5"}`}>
+                    <button
+                      type="button"
+                      onClick={() => onOpen("source", line.r.label, { param: line.r.key })}
+                      className={`flex items-center gap-2 text-left ${line.child ? "pl-5" : ""}`}
+                    >
+                      {line.child ? <span className="w-12 flex-none text-right text-[12px] text-slate-300">└</span> : bar(line.r.registrations)}
+                      <span className={`${line.child ? "text-[13px] font-medium text-slate-700" : "text-[14px] font-semibold text-slate-900"} underline-offset-4 hover:underline`}>{line.r.label}</span>
+                      {!line.child && line.r.share !== null ? <span className="text-[11px] text-slate-400">{Math.round(line.r.share)}%</span> : null}
+                    </button>
+                  </td>
+                  <SourceCells r={line.r} revenue={revenue} />
+                  <td className="px-2 py-2.5 text-right text-[13px] text-slate-400">{line.r.spendCents === null ? "—" : money(line.r.spendCents)}</td>
+                </tr>
+              )
+            )}
           </tbody>
         </table>
       </div>
-      <p className="mt-3 text-[12px] text-slate-400">
-        Click Meta Ads for campaigns, ad sets and ads. Direct / Unknown is shown, never hidden.
+      {other.length ? (
+        <p className="mt-3 text-[12px] leading-5 text-slate-500" data-other-detail>
+          <span className="font-semibold text-slate-600">Other: </span>
+          {other.map((d) => `${d.origin} ${num(d.visitors)} visitor${d.visitors === 1 ? "" : "s"}${d.registrations ? ` · ${num(d.registrations)} registered` : ""}`).join("; ")}
+        </p>
+      ) : null}
+      <p className="mt-2 text-[12px] leading-5 text-slate-400">
+        First touch: how each browser first found the site, kept through sign-up. Click Meta Ads for campaigns, ad sets and ads. Direct / Unknown is shown, never hidden.
         {o.unmatchedRevenueCents ? ` ${money(o.unmatchedRevenueCents)} of revenue couldn't be matched to a customer.` : ""}
       </p>
     </Card>
@@ -886,17 +936,18 @@ function AcquisitionCard({ o, onOpen, setDrawer }: { o: Overview; onOpen: OpenLi
 function Row({ n, depth, onClick, expanded }: { n: CampaignNode; depth: number; onClick?: () => void; expanded?: boolean }) {
   const cells = (
     <>
-      <span className="truncate text-slate-900">
+      <span className={`truncate ${n.name ? "text-slate-900" : "text-slate-600"}`} title={n.id ? `ID ${n.id}` : undefined}>
         {onClick ? <span className="mr-1 text-slate-400">{expanded ? "▾" : "▸"}</span> : null}
-        {n.name}
+        {n.label}
       </span>
+      <span className="text-right tabular-nums text-slate-500">{n.visitors}</span>
       <span className="text-right tabular-nums text-slate-600">{n.registrations}</span>
       <span className="text-right tabular-nums text-slate-600">{n.freeVisits}</span>
       <span className="text-right tabular-nums text-slate-900">{n.members}</span>
       <span className="text-right tabular-nums text-slate-900">{money(n.revenueCents, { compact: true })}</span>
     </>
   );
-  const cls = `grid w-full grid-cols-[1fr_repeat(4,56px)] items-center gap-1 rounded-[10px] py-2 pr-2 text-left text-[13px] ${depth === 0 ? "font-semibold" : ""}`;
+  const cls = `grid w-full grid-cols-[minmax(0,1fr)_repeat(5,48px)] items-center gap-1 rounded-[10px] py-2 pr-2 text-left text-[13px] ${depth === 0 ? "font-semibold" : ""}`;
   return onClick ? (
     <button type="button" aria-expanded={expanded} className={`${cls} hover:bg-slate-50`} style={{ paddingLeft: 8 + depth * 16 }} onClick={onClick}>
       {cells}
@@ -910,42 +961,47 @@ function Row({ n, depth, onClick, expanded }: { n: CampaignNode; depth: number; 
 
 function CampaignTree({ campaigns, spend, onOpen }: { campaigns: CampaignNode[]; spend: boolean; onOpen: OpenList }) {
   const [open, setOpen] = useState<string | null>(null);
-  if (!campaigns.length) return <p className="pt-4 text-center text-[14px] text-slate-500">No Meta-attributed customers in this period.</p>;
+  if (!campaigns.length) return <p className="pt-4 text-center text-[14px] text-slate-500">No Meta ad traffic in this period.</p>;
+  const anyIdOnly = campaigns.some((c) => !c.name && c.id);
   return (
     <div>
-      <div className="grid grid-cols-[1fr_repeat(4,56px)] gap-1 px-2 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+      <div className="grid grid-cols-[minmax(0,1fr)_repeat(5,48px)] gap-1 px-2 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-400">
         <span>Campaign</span>
+        <span className="text-right">Visit.</span>
         <span className="text-right">Reg.</span>
         <span className="text-right">Free</span>
         <span className="text-right">Memb.</span>
         <span className="text-right">Rev.</span>
       </div>
       {campaigns.map((c) => (
-        <div key={c.name} className="border-t border-slate-100">
-          <Row n={c} depth={0} expanded={open === c.name} onClick={() => setOpen(open === c.name ? null : c.name)} />
-          {open === c.name ? (
+        <div key={c.key} className="border-t border-slate-100">
+          <Row n={c} depth={0} expanded={open === c.key} onClick={() => setOpen(open === c.key ? null : c.key)} />
+          {open === c.key ? (
             <div className="pb-2">
               {(c.adsets || []).map((s) => (
-                <div key={s.name}>
+                <div key={s.key}>
                   <Row n={s} depth={1} />
                   {(s.ads || []).map((a) => (
-                    <Row key={a.name} n={a} depth={2} />
+                    <Row key={a.key} n={a} depth={2} />
                   ))}
                 </div>
               ))}
               {c.plans && Object.keys(c.plans).length ? (
                 <p className="px-2 pt-1 text-[12px] text-slate-500">Plans: {Object.entries(c.plans).map(([p, n]) => `${planLabel(p)} ${n}`).join(" · ")}</p>
               ) : null}
-              <button type="button" onClick={() => onOpen("campaign", `Campaign: ${c.name}`, { param: c.name })} className="mt-1 px-2 text-[12px] font-semibold text-blue-700">
-                See these customers →
-              </button>
+              {c.registrations ? (
+                <button type="button" onClick={() => onOpen("campaign", `Campaign: ${c.label}`, { param: c.key })} className="mt-1 px-2 text-[12px] font-semibold text-blue-700">
+                  See these customers →
+                </button>
+              ) : null}
             </div>
           ) : null}
         </div>
       ))}
       <p className="mt-4 text-[12px] leading-5 text-slate-500">
         {spend ? "" : "Spend, cost per member and ROAS appear once Meta Ads is connected. "}
-        Campaign, ad set and ad names come from each ad&rsquo;s URL parameters.
+        Names and ids come from each ad&rsquo;s URL parameters.
+        {anyIdOnly ? " Where an ad's URL carries only ids, the id is shown; add the name parameters in Ads Manager to see names." : ""}
       </p>
     </div>
   );
