@@ -10,13 +10,14 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { customerHref, planLabel, shortDate, type ListRow } from "@/lib/admin-overview";
+import MaybeLink from "./MaybeLink";
 
 export type DrawerState =
   | { kind: "list"; title: string; subtitle?: string; loading: boolean; error?: string; rows: ListRow[]; showConverted?: boolean }
   | { kind: "custom"; title: string; subtitle?: string; body: ReactNode }
   | null;
 
-export default function OverviewDrawer({ state, onClose }: { state: DrawerState; onClose: () => void }) {
+export default function OverviewDrawer({ state, onClose, linkCustomers = false }: { state: DrawerState; onClose: () => void; linkCustomers?: boolean }) {
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -71,7 +72,7 @@ export default function OverviewDrawer({ state, onClose }: { state: DrawerState;
             <ul className="divide-y divide-slate-100">
               {state.rows.map((r) => (
                 <li key={r.userId + (r.date || "")}>
-                  <a href={customerHref(r.email)} className="flex items-center gap-3 rounded-[12px] px-2 py-3 transition hover:bg-slate-50">
+                  <MaybeLink href={linkCustomers && r.email ? customerHref(r.email) : null} className={`flex items-center gap-3 rounded-[12px] px-2 py-3 ${linkCustomers ? "transition hover:bg-slate-50" : ""}`}>
                     <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-slate-100 text-[13px] font-bold text-slate-600">
                       {(r.name || r.email || "?").trim()[0]?.toUpperCase()}
                     </span>
@@ -90,7 +91,7 @@ export default function OverviewDrawer({ state, onClose }: { state: DrawerState;
                         {state.showConverted && r.converted !== undefined ? (r.converted ? " · became member" : " · not yet") : ""}
                       </span>
                     </span>
-                  </a>
+                  </MaybeLink>
                 </li>
               ))}
             </ul>

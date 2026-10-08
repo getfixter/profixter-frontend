@@ -362,6 +362,8 @@ export interface BookingHistoryEntry {
 }
 
 export type EmployeePosition = "Fixter" | "General Fixter";
+/* null: no field work (office, marketing, sales...). */
+export type FieldWork = EmployeePosition | null;
 export type EmployeeAvailabilityStatus =
   | "Available"
   | "Busy"
@@ -372,12 +374,18 @@ export type EmployeeAvailabilityStatus =
 
 export interface FixterAccount {
   id: string;
+  /* The account's full name; firstName/lastName can be empty on older accounts. */
+  name?: string;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
   role: "employee";
-  employeePosition: EmployeePosition;
+  employeePosition: FieldWork;
+  /* Free text the owner typed. Display only: it grants nothing. */
+  employeeTitle: string;
+  /* Admin sections switched on for this employee (ids from the access registry). */
+  adminSections: string[];
   isActive: boolean;
   mustChangePassword: boolean;
   isDefaultFixter: boolean;
@@ -1353,6 +1361,19 @@ export const getCustomerActivity = async (
   return response.data;
 };
 
+/* The owner's access editor: plain-language sections, grouped. No permission ids. */
+export interface AccessRegistry {
+  groups: Array<{ id: string; label: string }>;
+  sections: Array<{ id: string; group: string; label: string; description: string; requires: string | null }>;
+  positions: EmployeePosition[];
+  includedByPosition: Record<string, string[]>;
+}
+
+export const getAccessRegistry = async (): Promise<AccessRegistry> => {
+  const response = await API.get("/api/admin/fixters/access-registry");
+  return response.data;
+};
+
 export const getFixters = async (): Promise<FixterAccount[]> => {
   const response = await API.get("/api/admin/fixters");
   return response.data.fixters;
@@ -1445,25 +1466,23 @@ export const assignTip = async (
   return response.data.tip;
 };
 
-export const createFixter = async (data: {
+export type EmployeeInput = {
   firstName: string;
   lastName: string;
-  email: string;
   phone: string;
-  employeePosition: EmployeePosition;
-}): Promise<FixterAccount> => {
+  employeePosition: FieldWork;
+  employeeTitle: string;
+  adminSections: string[];
+};
+
+export const createFixter = async (data: EmployeeInput & { email: string }): Promise<FixterAccount> => {
   const response = await API.post("/api/admin/fixters", data);
   return response.data.fixter;
 };
 
 export const updateFixter = async (
   id: string,
-  data: {
-    firstName: string;
-    lastName: string;
-    phone: string;
-    employeePosition: EmployeePosition;
-  }
+  data: EmployeeInput
 ): Promise<FixterAccount> => {
   const response = await API.put(`/api/admin/fixters/${id}`, data);
   return response.data.fixter;

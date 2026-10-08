@@ -24,6 +24,14 @@ import AdminActivityLog from "@/app/components/admin/AdminActivityLog";
 import OverviewModule from "@/app/components/admin/overview/OverviewModule";
 import OverviewBoundary from "@/app/components/admin/overview/OverviewBoundary";
 import { tabsForUser } from "@/app/components/admin/admin-tabs-config";
+import { can, PERM } from "@/lib/admin-access";
+import { getCurrentUser, type User as AuthUser } from "@/lib/auth-service";
+
+/* The parts of a user that decide what Admin shows. */
+function accessKey(u: AuthUser | null | undefined) {
+  if (!u) return "";
+  return JSON.stringify([u.role, u.isActive !== false, [...(u.permissions || [])].sort(), u.employeePosition || null]);
+}
 import { toYMDNY } from "@/lib/utils/timezone-helpers";
 import {
   getAllUsers,
@@ -115,7 +123,7 @@ function AdminPageFallback() {
 }
 
 function AdminPageContent() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, refreshUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -143,14 +151,53 @@ function AdminPageContent() {
     user?.employeePosition === "Fixter" ? "me" : "all"
   );
 
+  /*
+   * What this person may see comes from the server (/api/auth/me): the owner
+   * sees everything; an employee sees the sections the owner switched on plus
+   * their field work. Every API behind a tab checks the same permission.
+   */
   const isAdmin = isAdminUser(user);
-  const isEmployee = isEmployeeUser(user);
+  const isEmployee = isEmployeeUser(user) && user?.isActive !== false;
   const hasWorkspaceAccess = isAdmin || isEmployee;
-  const canAssignBookings = isAdmin || user?.employeePosition === "General Fixter";
-  const allowedTabs = useMemo(
-    () => tabsForUser(isAdmin ? "admin" : user?.role, user?.employeePosition || undefined),
-    [isAdmin, user?.role, user?.employeePosition]
-  );
+  const canAssignBookings = can(user, PERM.BOOKINGS_ASSIGN);
+  const canCustomers = can(user, PERM.CUSTOMERS_MANAGE);
+  const canMembers = can(user, PERM.MEMBERS_READ);
+  const canBookings = can(user, PERM.BOOKINGS_READ);
+  const canBlacklist = can(user, PERM.BLACKLIST_MANAGE);
+  const canLeads = can(user, PERM.LEADS_MANAGE);
+  const allowedTabs = useMemo(() => tabsForUser(user), [user]);
+  const shown = useCallback((id: string) => allowedTabs.some((tab) => tab.id === id), [allowedTabs]);
+
+  /*
+   * Access can change while someone is signed in: the owner flips a section
+   * off. The server refuses at once; this keeps the screen in step. It reads
+   * /api/auth/me when the tab regains focus and every minute, and refreshes
+   * the signed-in user only when their access actually changed - so nothing
+   * reloads for nothing, and a dropped connection never signs anyone out.
+   */
+  const accessKeyRef = useRef("");
+  accessKeyRef.current = accessKey(user);
+  useEffect(() => {
+    if (!user) return;
+    const recheck = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const fresh = await getCurrentUser();
+        if (accessKey(fresh) !== accessKeyRef.current) await refreshUser();
+      } catch (error) {
+        const status = (error as { response?: { status?: number } })?.response?.status;
+        // Disabled or signed out on the server: let the normal sign-out path run.
+        if (status === 401 || status === 403) await refreshUser();
+      }
+    };
+    const timer = window.setInterval(recheck, 60000);
+    window.addEventListener("focus", recheck);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", recheck);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [Boolean(user), refreshUser]);
 
   const handleAdminTabChange = useCallback(
     (tab: string) => {
@@ -167,16 +214,13 @@ function AdminPageContent() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
+      // Only what this person may read: a request they are not allowed would only 403.
       const [usersData, bookingsData, blacklistData, requestsData, assigneesData] =
         await Promise.all([
-          isAdmin
-            ? getAllUsers()
-            : user?.employeePosition === "General Fixter"
-              ? getMembers()
-              : Promise.resolve([]),
-          getAllBookings(assignmentScope),
-          isAdmin ? getBlacklist().catch(() => []) : Promise.resolve([]),
-          isAdmin ? getAllRequests().catch(() => []) : Promise.resolve([]),
+          canCustomers ? getAllUsers() : canMembers ? getMembers() : Promise.resolve([]),
+          canBookings ? getAllBookings(assignmentScope) : Promise.resolve([]),
+          canBlacklist ? getBlacklist().catch(() => []) : Promise.resolve([]),
+          canLeads ? getAllRequests().catch(() => []) : Promise.resolve([]),
           canAssignBookings ? getBookingAssignees().catch(() => []) : Promise.resolve([]),
         ]);
 
@@ -193,13 +237,14 @@ function AdminPageContent() {
           : undefined;
 
       if (status === 403) {
-        alert("Access denied. Admin only.");
-        router.push("/signin");
+        // Most likely the owner just changed this person's access: re-read it, show what is left.
+        showToast("Your access has changed. Showing the sections you can open.");
+        void refreshUser();
       }
     } finally {
       setLoading(false);
     }
-  }, [router, isAdmin, user?.employeePosition, assignmentScope, canAssignBookings]);
+  }, [canCustomers, canMembers, canBookings, canBlacklist, canLeads, assignmentScope, canAssignBookings, showToast, refreshUser]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -721,6 +766,19 @@ function AdminPageContent() {
     );
   }
 
+  if (!allowedTabs.length) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+        <div className="w-full max-w-[420px] rounded-2xl border border-slate-200 bg-white p-6 text-center">
+          <h1 className="text-[20px] font-bold text-slate-900">No Admin sections yet</h1>
+          <p className="mt-2 text-[14px] leading-6 text-slate-600">
+            Your account is set up, but no sections have been switched on for it. Ask the owner to give you access.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const today = todayNY();
   const pendingCount = bookings.filter((booking) => String(booking.status || "").toLowerCase() === "pending").length;
   const confirmedCount = bookings.filter((booking) => String(booking.status || "").toLowerCase() === "confirmed").length;
@@ -973,7 +1031,7 @@ function AdminPageContent() {
           not wait behind the full user/booking download the other tabs need.
           Admin-only twice over: here, and on the server (analytics.read).
         */}
-        {active === "overview" && isAdmin ? (
+        {active === "overview" && shown("overview") ? (
           <OverviewBoundary>
             <OverviewModule />
           </OverviewBoundary>
@@ -993,7 +1051,7 @@ function AdminPageContent() {
               blacklistCount={blacklist.length}
             />
 
-            {active === "users" && (
+            {active === "users" && shown("users") && (
               <UsersTable
                 users={filteredUsers}
                 onSetAddressPlan={handleSetAddressPlan}
@@ -1003,10 +1061,14 @@ function AdminPageContent() {
                 onUnblacklist={handleUnblacklist}
                 onDeleteUser={handleDeleteUser}
                 onRunSubscriptionCleanup={handleRunSubscriptionCleanup}
+                canBlacklist={canBlacklist}
+                canDelete={isAdmin}
+                canFixGhl={isAdmin}
+                showCustomerPanels={canCustomers}
               />
             )}
 
-            {active === "subscribed" && (
+            {active === "subscribed" && shown("subscribed") && (
               <UsersTable
                 users={subscribedUsers}
                 onSetAddressPlan={handleSetAddressPlan}
@@ -1016,11 +1078,15 @@ function AdminPageContent() {
                 onUnblacklist={handleUnblacklist}
                 onDeleteUser={handleDeleteUser}
                 onRunSubscriptionCleanup={handleRunSubscriptionCleanup}
-                readOnly={!isAdmin}
+                readOnly={!canCustomers}
+                canBlacklist={canBlacklist && canCustomers}
+                canDelete={isAdmin}
+                canFixGhl={isAdmin}
+                showCustomerPanels={canCustomers}
               />
             )}
 
-            {active === "requests" && (
+            {active === "requests" && shown("requests") && (
               <RequestsTable
                 requests={filteredRequests}
                 onUpdateStatus={handleUpdateRequestStatus}
@@ -1028,9 +1094,9 @@ function AdminPageContent() {
               />
             )}
 
-            {active === "projects" && <ProjectsModule />}
+            {active === "projects" && shown("projects") && <ProjectsModule />}
 
-            {active === "bookings" && (
+            {active === "bookings" && shown("bookings") && (
               <div className="space-y-6">
                 <div className={showCalendarMobile ? "block" : "hidden md:block"}>
                   <BookingsCalendar
@@ -1060,32 +1126,32 @@ function AdminPageContent() {
               </div>
             )}
 
-            {active === "emails" && <CommunicationsModule />}
+            {active === "emails" && shown("emails") && <CommunicationsModule />}
             {/*
               The contributor screen, for employees. Gated by isEmployee rather
               than by the tab list alone: the tab config decides what is shown,
               this decides what is mounted, and the server decides what either
               of them is allowed to send.
             */}
-            {active === "work-photos" && isEmployee && <FixterWorkPhotos />}
+            {active === "work-photos" && shown("work-photos") && <FixterWorkPhotos />}
 
-            {active === "recent-work" && isAdmin && (
+            {active === "recent-work" && shown("recent-work") && (
               <RecentWorkModule onToast={showToast} searchQuery={q} />
             )}
-            {active === "promotion" && isAdmin && <PromotionPopupEditor />}
-            {active === "activity" && isAdmin && <AdminActivityLog />}
+            {active === "promotion" && shown("promotion") && <PromotionPopupEditor />}
+            {active === "activity" && shown("activity") && <AdminActivityLog />}
 
-            {active === "blacklist" && (
+            {active === "blacklist" && shown("blacklist") && (
               <BlacklistTable
                 blacklist={blacklist}
                 onUnblacklist={handleUnblacklist}
               />
             )}
 
-            {active === "calendar" && <AdminCalendarSettings isAdmin={isAdmin} />}
-            {active === "fixters" && isAdmin && <FixtersModule />}
-            {/* Employees see this too. The API returns only their own tips. */}
-            {active === "tips" && <TipsModule />}
+            {active === "calendar" && shown("calendar") && <AdminCalendarSettings isAdmin={isAdmin} />}
+            {active === "fixters" && shown("fixters") && <FixtersModule />}
+            {/* Fixters see this too. The API returns only their own tips. */}
+            {active === "tips" && shown("tips") && <TipsModule />}
           </>
         )}
       </div>

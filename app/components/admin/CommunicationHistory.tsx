@@ -185,9 +185,11 @@ export default function CommunicationHistory({
         setRecords(data.records || []);
         setError("");
       })
-      .catch(() => {
+      .catch((caught: unknown) => {
         if (cancelled) return;
-        setError("Could not load communication history.");
+        // Message history belongs to Communications; someone without it is told so, not shown a failure.
+        const status = (caught as { response?: { status?: number } })?.response?.status;
+        setError(status === 403 ? "Message history needs Communications access." : "Could not load communication history.");
         setRecords([]);
       });
 

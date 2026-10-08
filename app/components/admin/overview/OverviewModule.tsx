@@ -27,6 +27,9 @@ import {
   type RangeQuery,
 } from "@/lib/admin-overview";
 import { ColumnChart, DataTable, Legend, LineChart, SERIES } from "./charts";
+import { useAuth } from "@/lib/useAuth";
+import { can, PERM } from "@/lib/admin-access";
+import MaybeLink from "./MaybeLink";
 import OverviewDrawer, { type DrawerState } from "./OverviewDrawer";
 import CustomerMap from "./CustomerMap";
 
@@ -159,6 +162,14 @@ function relTime(iso: string) {
 /* ------------------------------------------------------------------ */
 
 export default function OverviewModule() {
+  /*
+   * Overview access is not customer access. The map needs Customer Map, and a
+   * name only links to the customer's record for someone who has All Users.
+   * The server enforces both; this only avoids offering what would be refused.
+   */
+  const { user } = useAuth();
+  const canMap = can(user, PERM.ANALYTICS_MAP);
+  const linkCustomers = can(user, PERM.CUSTOMERS_MANAGE);
   const [query, setQuery] = useState<RangeQuery>({ range: "30d" });
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -200,7 +211,7 @@ export default function OverviewModule() {
       const status = err?.response?.status;
       setError(
         status === 403
-          ? "Overview is available to the main admin account."
+          ? "Your account does not have access to Overview."
           : err?.code === "ECONNABORTED"
             ? "Overview took too long to answer. Try again."
             : "Overview couldn't load. Try again in a moment."
@@ -417,9 +428,11 @@ export default function OverviewModule() {
 
         {/* ======================== Map ================================== */}
         <Card>
-          <SectionTitle>Customer map</SectionTitle>
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,1fr)_260px]">
-            <CustomerMap periodFrom={data.period.from} periodTo={data.period.to} cityFilter={cityFilter} onClearCity={() => setCityFilter(null)} />
+          <SectionTitle>{canMap ? "Customer map" : "Customer areas"}</SectionTitle>
+          <div className={`grid grid-cols-[minmax(0,1fr)] gap-5 ${canMap ? "xl:grid-cols-[minmax(0,1fr)_260px]" : ""}`}>
+            {canMap ? (
+              <CustomerMap periodFrom={data.period.from} periodTo={data.period.to} cityFilter={cityFilter} onClearCity={() => setCityFilter(null)} linkCustomers={linkCustomers} />
+            ) : null}
             <div>
               <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">Top customer areas</div>
               {data.topAreas.length ? (
@@ -450,7 +463,7 @@ export default function OverviewModule() {
 
         {/* ================== Activity + Needs attention ================= */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-4 md:gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-          <ActivityCard items={data.activity} />
+          <ActivityCard items={data.activity} linkCustomers={linkCustomers} />
           {data.attention.length ? (
             <Card>
               <SectionTitle>Needs attention</SectionTitle>
@@ -481,7 +494,7 @@ export default function OverviewModule() {
         </p>
       </div>
 
-      <OverviewDrawer state={drawer} onClose={() => setDrawer(null)} />
+      <OverviewDrawer state={drawer} onClose={() => setDrawer(null)} linkCustomers={linkCustomers} />
     </div>
   );
 }
@@ -938,7 +951,7 @@ function CampaignTree({ campaigns, spend, onOpen }: { campaigns: CampaignNode[];
   );
 }
 
-function ActivityCard({ items }: { items: ActivityItem[] }) {
+function ActivityCard({ items, linkCustomers }: { items: ActivityItem[]; linkCustomers: boolean }) {
   const dot: Record<string, string> = {
     registered: "#86b6ef",
     membership: "#2a78d6",
@@ -954,13 +967,13 @@ function ActivityCard({ items }: { items: ActivityItem[] }) {
         <ul className="space-y-0.5">
           {items.map((a, i) => (
             <li key={`${a.at}-${i}`}>
-              <a href={customerHref(a.ref || a.who)} className="flex items-center gap-3 rounded-[12px] px-2 py-2 hover:bg-slate-50">
+              <MaybeLink href={linkCustomers ? customerHref(a.ref || a.who) : null} className={`flex items-center gap-3 rounded-[12px] px-2 py-2 ${linkCustomers ? "hover:bg-slate-50" : ""}`}>
                 <span className="w-[86px] flex-none text-[12px] tabular-nums text-slate-400">{relTime(a.at)}</span>
                 <span className="h-2 w-2 flex-none rounded-full" style={{ background: dot[a.type] || "#94a3b8" }} />
                 <span className="min-w-0 flex-1 truncate text-[14px] text-slate-800">
                   {a.text} <span className="text-slate-400">· {a.who}</span>
                 </span>
-              </a>
+              </MaybeLink>
             </li>
           ))}
         </ul>

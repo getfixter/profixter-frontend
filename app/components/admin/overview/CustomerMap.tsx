@@ -31,11 +31,14 @@ export default function CustomerMap({
   periodTo,
   cityFilter,
   onClearCity,
+  linkCustomers = false,
 }: {
   periodFrom: string;
   periodTo: string;
   cityFilter: string | null;
   onClearCity: () => void;
+  /* Only someone with All Users gets "View customer". */
+  linkCustomers?: boolean;
 }) {
   const [data, setData] = useState<OverviewMap | null>(null);
   const [error, setError] = useState("");
@@ -156,9 +159,11 @@ export default function CustomerMap({
               <dt className="text-slate-400">Upcoming</dt>
               <dd className="text-slate-700">{shortDate(picked.nextVisit)}</dd>
             </dl>
-            <a href={customerHref(picked.ref)} className="mt-3 inline-flex h-9 items-center rounded-full bg-slate-900 px-4 text-[13px] font-semibold text-white">
-              View customer
-            </a>
+            {linkCustomers ? (
+              <a href={customerHref(picked.ref)} className="mt-3 inline-flex h-9 items-center rounded-full bg-slate-900 px-4 text-[13px] font-semibold text-white">
+                View customer
+              </a>
+            ) : null}
           </div>
         ) : null}
       </div>

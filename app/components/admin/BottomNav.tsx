@@ -92,6 +92,8 @@ export default function BottomNav({ active, onChange, tabs = ADMIN_TABS }: Botto
   return (
     <div className="md:hidden">
       <div
+        role="tablist"
+        aria-label="Admin sections"
         className="flex gap-1.5 overflow-x-auto pb-0.5"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
@@ -101,6 +103,9 @@ export default function BottomNav({ active, onChange, tabs = ADMIN_TABS }: Botto
             <button
               key={tab.id}
               type="button"
+              role="tab"
+              aria-selected={isActive}
+              data-tab={tab.id}
               onClick={() => onChange(tab.id)}
               aria-label={tab.label}
               className={`inline-flex flex-shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] border px-3.5 py-2 transition-all min-w-[60px] ${
