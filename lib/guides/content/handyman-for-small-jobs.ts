@@ -10,7 +10,7 @@ import type { Guide } from "@/lib/guides/types";
 export const guide: Guide = {
   slug: "handyman-for-small-jobs",
   title: "How do you get small jobs done when they're too small for a handyman?",
-  metaTitle: "Handyman for Small Jobs on Long Island: What Actually Works | Profixter",
+  metaTitle: "Handyman for Small Jobs on Long Island: Your Options | Profixter",
   metaDescription:
     "Small repairs are hard to get done because a trip costs the handyman as much as the job. Four ways Long Island homeowners get small jobs done: bundling, a one-time visit, a recurring handyman membership, and doing it yourself.",
   dek: "A loose doorknob, a dripping faucet, two shelves and a ceiling fan: why small jobs are hard to book, and the four ways to actually get them done.",
@@ -22,12 +22,12 @@ export const guide: Guide = {
   body: [
     {
       t: "answer",
-      text: "Small jobs are hard to book because the trip costs a handyman as much as the work, so many charge a minimum or decline. There are four workable answers: **bundle** several jobs into one visit so the minimum is worth it; book a **fixed-price single visit** for one job; if small jobs keep coming, use a **recurring handyman membership** so each one doesn't need its own trip and its own search; or **do it yourself** when it is genuinely simple and safe. Which is right depends on how often your house produces small jobs, not on how small any one job is.",
+      text: "Small jobs are hard to book because the trip costs a handyman nearly as much as the work, so many charge a minimum or don't call back. The usual fix is to **bundle** several jobs into one visit so the minimum is worth paying. For a single job, a **fixed-price visit** avoids surprises. And if you find yourself doing this every few weeks, it may be worth considering an **ongoing handyman membership**, where small jobs go on the next visit instead of each needing its own search and its own minimum. Some jobs you can simply **do yourself**.",
     },
     { t: "h2", text: "Why small jobs are hard to get done" },
     {
       t: "p",
-      text: "For a handyman, every job carries a fixed cost before any work happens: driving to you, parking, carrying tools in, assessing, and driving to the next house. On Long Island that can easily be most of an hour. A 20-minute repair costs them nearly as much time as a 90-minute one, so the price of a small job is mostly the price of showing up.",
+      text: "For a handyman, every job carries a fixed cost before any work happens: driving to you, parking, carrying tools in, looking at the problem, and driving to the next house. A 20-minute repair takes up nearly as much of their day as a 90-minute one, so the price of a small job is mostly the price of showing up.",
     },
     {
       t: "p",
@@ -40,12 +40,12 @@ export const guide: Guide = {
     { t: "h2", text: "What \"small jobs\" usually means in practice" },
     {
       t: "p",
-      text: "Small jobs rarely come one at a time. In Profixter's own records, about half of all visits covered two or more different kinds of work, and about one in five covered three or more. The requests homeowners send us most often mention:",
+      text: "Small jobs rarely come one at a time. When Long Island customers book a Profixter visit, about half ask for two or more different kinds of work, and about one in five for three or more. These are the things they mention most:",
     },
     { t: "component", name: "task-mix" },
     {
       t: "p",
-      text: "The pattern is useful on its own: if your list looks like this table, you are not unusual, and the problem you are solving is less \"one small job\" than \"a steady supply of them\".",
+      text: "If your list looks like this, you're not unusual. The real problem is usually not one small job but a steady supply of them.",
     },
     { t: "h2", text: "Option 1: Bundle the jobs into one visit" },
     {
@@ -75,7 +75,7 @@ export const guide: Guide = {
     { t: "h2", text: "Option 3: A recurring handyman membership" },
     {
       t: "p",
-      text: "A newer model, and the one most homeowners haven't heard of: instead of paying per trip, you pay a monthly fee for ongoing access to the same handyman team, and book visits as jobs come up. It solves the small-job problem from the other side. Because the relationship is already in place, a small job doesn't need its own search, its own quote or its own minimum. You add it to the next visit, or book a visit for it.",
+      text: "If you find yourself bundling every few weeks, there is another model most homeowners haven't heard of. Instead of paying per trip, you pay a monthly fee for ongoing access to the same handyman team and book visits as jobs come up. Because the relationship is already in place, a small job doesn't need its own search, quote or minimum: it goes on the next visit.",
     },
     {
       t: "ul",
@@ -89,7 +89,7 @@ export const guide: Guide = {
       t: "callout",
       tone: "profixter",
       title: "How Profixter's version works",
-      text: "Profixter members on Long Island book 90-minute visits for everyday home tasks with the same local team. There is no monthly visit allowance: you book as often as you need, and your plan sets how many visits you can have booked at the same time (one on Basic, two on Plus and above). Regular visits are booked at least a week ahead; Premium and Elite include Priority Visits for things that can't wait. Plans start at $149 a month, month to month. [See how it works](/handyman-membership) or [compare the plans](/membership/plans).",
+      text: "Profixter members on Long Island book 90-minute visits for everyday home tasks with the same local team. There is no monthly visit allowance: you book as often as you need, and your plan sets how many visits you can have booked at the same time (one on Basic, two on Plus and above). Visits are scheduled from the times available; Premium and Elite include Priority Visits for things that can't wait. Plans start at $149 a month, month to month. [See how it works](/handyman-membership) or [compare the plans](/membership/plans).",
     },
     { t: "h2", text: "Option 4: Do it yourself" },
     {
@@ -119,7 +119,7 @@ export const guide: Guide = {
         },
         {
           q: "How many small jobs fit in one visit?",
-          a: "It depends on the jobs more than the count. As a rough guide, three or four simple tasks fit comfortably in 90 minutes; one tricky one can take the whole time. Our guide to [what fits in a 90-minute visit](/guides/what-fits-in-a-90-minute-handyman-visit) goes through common tasks.",
+          a: "It depends on the jobs more than the count. Often two to four simple tasks fit in 90 minutes; one tricky one can take the whole time. Our guide to [what fits in a 90-minute visit](/guides/what-fits-in-a-90-minute-handyman-visit) goes through common tasks.",
         },
         {
           q: "Is a handyman membership worth it for small jobs?",

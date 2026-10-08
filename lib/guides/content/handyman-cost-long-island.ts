@@ -14,7 +14,7 @@ export const guide: Guide = {
   body: [
     {
       t: "answer",
-      text: "Expect roughly **$60 to $125 an hour** for a handyman in the New York area, with most charging a **minimum of one to two hours, about $75 to $200**, however small the job. Common small jobs in the region typically land between about **$85 and $455** each depending on the task. Long Island sits at the higher end of national ranges because of travel, insurance and the cost of living. There is no reliable single \"Long Island average\": ask every handyman what the minimum covers before you book.",
+      text: "Expect roughly **$60 to $125 an hour** for a handyman in the New York area, with most charging a **minimum of one to two hours, about $75 to $200**, however small the job. Common small jobs in the region typically land between about **$85 and $455** each depending on the task. New York prices tend to run above national averages (HomeGuide estimates about 20% higher). There is no reliable single \"Long Island average\": ask every handyman what the minimum covers before you book.",
     },
     { t: "h2", text: "Hourly rates" },
     {
@@ -47,7 +47,7 @@ export const guide: Guide = {
         ["Door adjustment or repair", "$85–$250", "$75–$220"],
         ["Ceiling fan installation", "$115–$455", "$100–$400"],
       ],
-      note: "Angi publishes a New York City page but not a Long Island one; Long Island prices are generally in the same region. These are total job prices including labor, not hourly rates. Materials are usually extra.",
+      note: "Angi publishes a New York City page but not a Long Island one, so treat these as a rough regional guide. They are total job prices including labor, not hourly rates; materials are usually extra.",
     },
     { t: "h2", text: "What pushes the price up or down" },
     {
@@ -69,7 +69,7 @@ export const guide: Guide = {
         ["Hourly with a minimum", "Time on site, at least the minimum", "One-off jobs with uncertain scope"],
         ["Per-job quote", "A set price agreed per task", "Defined jobs you can describe well"],
         ["Fixed-price visit", "One price for a set visit length", "One small job, no surprises"],
-        ["Ongoing membership", "A monthly fee; visits booked as needed", "Households where small jobs keep coming"],
+        ["Ongoing membership", "A monthly fee; visits booked as needed", "Homes where small jobs keep coming"],
       ],
     },
     {
@@ -79,7 +79,7 @@ export const guide: Guide = {
     { t: "h2", text: "Profixter's prices" },
     {
       t: "p",
-      text: "Published, flat, and the same across Nassau and Suffolk. No hourly billing and no trip fees.",
+      text: "For comparison, these are Profixter's published prices.",
     },
     { t: "component", name: "offers" },
     { t: "component", name: "plan-table" },
@@ -94,10 +94,6 @@ export const guide: Guide = {
         {
           q: "Do handymen charge for an estimate?",
           a: "Some do, some don't. Sending photos and a clear description in advance often gets you a price without a visit for straightforward jobs.",
-        },
-        {
-          q: "Should I tip a handyman?",
-          a: "It isn't expected the way it is in restaurants. Many homeowners tip for exceptional work, a hard job or a quick turnaround.",
         },
       ],
     },

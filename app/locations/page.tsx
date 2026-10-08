@@ -4,18 +4,18 @@ import { ConversionBand, HubHero, SeoPageShell } from "@/app/components/seo/SeoP
 import { serviceAreas } from "@/lib/seo-content";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, SITE_URL } from "@/lib/seo";
 import {
+  COMMUNITIES_PHRASE,
   COMPLETED_VISITS_ROUNDED,
-  COUNTY_SPLIT,
+  COUNTY_SPLIT_PHRASE,
+  CUSTOMERS_ROUNDED,
   DATA_AS_OF,
   DATA_SINCE,
-  HOUSEHOLDS_ROUNDED,
-  TOWNS_SERVED,
   TOWNS_WITH_COMPLETED_WORK,
   TOWN_RECORDS,
 } from "@/lib/profixter-data";
 
 const TITLE = "Where Profixter Works: Handyman Service Across Nassau & Suffolk";
-const DESCRIPTION = `Profixter has completed more than ${COMPLETED_VISITS_ROUNDED} handyman visits in ${TOWNS_SERVED} Long Island towns since ${DATA_SINCE}. Town pages, and every town in Nassau and Suffolk where we have done repeated work.`;
+const DESCRIPTION = `Profixter has completed more than ${COMPLETED_VISITS_ROUNDED} handyman visits in ${COMMUNITIES_PHRASE} since ${DATA_SINCE}. Town pages, and every town in Nassau and Suffolk where we have done repeated work.`;
 
 export const metadata: Metadata = {
   title: { absolute: `${TITLE} | Profixter` },
@@ -44,7 +44,7 @@ const locationsJsonLd = {
   "@type": "ItemList",
   name: "Profixter service areas",
   url: `${SITE_URL}/locations`,
-  itemListElement: serviceAreas.map((area, index) => ({
+  itemListElement: serviceAreas.filter((area) => area.indexable).map((area, index) => ({
     "@type": "ListItem",
     position: index + 1,
     name: `${area.name}, NY`,
@@ -69,14 +69,14 @@ export default function LocationsPage() {
         <HubHero
           eyebrow="Locations"
           title="Handyman help across Nassau and Suffolk."
-          description={`Based in Lindenhurst, Profixter has completed more than ${COMPLETED_VISITS_ROUNDED} visits for about ${HOUSEHOLDS_ROUNDED} households in ${TOWNS_SERVED} Long Island towns since ${DATA_SINCE}: about ${COUNTY_SPLIT.suffolkPercent}% in Suffolk and ${COUNTY_SPLIT.nassauPercent}% in Nassau.`}
+          description={`Based in Lindenhurst, Profixter has completed more than ${COMPLETED_VISITS_ROUNDED} visits for about ${CUSTOMERS_ROUNDED} customers in ${COMMUNITIES_PHRASE} since ${DATA_SINCE}, ${COUNTY_SPLIT_PHRASE}.`}
           primaryCta={{ label: "Book a free first visit", href: "/book/free" }}
           secondaryCta={{ label: "Compare membership plans", href: "/membership/plans" }}
           breadcrumb={{ label: "Locations", href: "/locations" }}
         />
 
         {counties.map((county) => {
-          const areas = serviceAreas.filter((area) => area.county === county);
+          const areas = serviceAreas.filter((area) => area.county === county && area.indexable);
           return (
             <section key={county} className="px-4 py-8 sm:px-6 lg:px-8">
               <div className="mx-auto max-w-[1180px]">
@@ -96,7 +96,7 @@ export default function LocationsPage() {
                         <span className="mt-1 block text-[13px] font-semibold text-[#64748B]">{area.municipality}</span>
                         {record ? (
                           <span className="mt-3 block text-[14px] text-[#334155]">
-                            {record.visits}+ completed visits, {record.households} households
+                            {record.visits}+ completed visits, {record.customers} customers
                           </span>
                         ) : null}
                       </Link>
@@ -118,7 +118,7 @@ export default function LocationsPage() {
         <section className="px-4 pb-4 sm:px-6 lg:px-8">
           <p className="mx-auto max-w-[1180px] text-[12px] text-[#94A3B8]">
             Figures from Profixter&apos;s completed-visit records, {DATA_SINCE} to {DATA_AS_OF}. Town figures are shown
-            only where at least three households are behind them.
+            only where at least three customers are behind them.
           </p>
         </section>
 

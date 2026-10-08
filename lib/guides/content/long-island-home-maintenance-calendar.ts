@@ -33,7 +33,7 @@ export const guide: Guide = {
       items: [
         "Watch for ice dams and drips at ceilings after snow.",
         "Keep pipes in unheated areas (garages, crawl spaces, exterior walls) from freezing.",
-        "**Indoor list season:** this is when people notice what's wrong inside. In Profixter's records, carpentry and trim work and paint touch-ups lead requests in winter.",
+        "**Indoor list season:** with more time inside, this is when the inside list gets noticed: sticking doors, trim, touch-ups.",
         "Check door and window drafts you noticed in the cold and add them to the spring list.",
       ],
     },
@@ -45,7 +45,6 @@ export const guide: Guide = {
         "Walk the outside: fence, deck boards, railings, gate latches, siding and trim after winter storms.",
         "Clean or replace HVAC filters and get cooling serviced before the first hot week.",
         "Re-caulk tubs, showers and sinks; spring is when mildewed caulk gets dealt with.",
-        "In Profixter's records, shelving, curtains and hanging lead spring requests: people are re-arranging rooms.",
       ],
     },
     { t: "h2", text: "Summer (June–August)" },
@@ -53,14 +52,14 @@ export const guide: Guide = {
       t: "ul",
       items: [
         "**Hurricane prep before the peak:** secure loose exterior items, check that gutters and drains are clear, know where your water and electrical shut-offs are.",
-        "Decks, fences and outdoor furniture: summer is when outdoor work peaks in Profixter's requests.",
+        "Decks, fences, gates and outdoor furniture.",
         "Check window screens and door closers.",
         "Look at caulk and grout around tubs and showers before it fails.",
       ],
     },
     {
       t: "callout",
-      text: "Some upkeep belongs to a licensed trade: furnace and boiler service, water heater work, electrical panels, and on much of Suffolk, cesspool or septic pumping (about three quarters of Suffolk County is unsewered). Book those with the right professional.",
+      text: "Some upkeep belongs to a licensed trade: furnace and boiler service, water heater work, electrical panels, and on much of Suffolk, cesspool or septic pumping (much of Suffolk County is unsewered). Book those with the right professional.",
     },
     {
       t: "checklist",
@@ -111,7 +110,7 @@ export const guide: Guide = {
     { t: "h2", text: "Small repairs, all year" },
     {
       t: "p",
-      text: "Seasonal tasks are predictable; the small repairs in between are not. That is what most households find hardest to keep up with. If your list refills every season, a [recurring handyman membership](/handyman-membership) is designed for exactly that; if it's a few times a year, book [a single visit](/book?visit=additional) when you need one.",
+      text: "Seasonal tasks are predictable; the small repairs in between are not. If those show up a few times a year, book [a single visit](/book?visit=additional) when you need one. If your list refills every few weeks, that's what a [recurring handyman membership](/handyman-membership) is for.",
     },
     { t: "component", name: "offers" },
   ],

@@ -10,12 +10,13 @@ import { CUSTOMER_CARE } from "@/lib/fixter";
 import { LICENSE_PHRASE, NOT_HANDYMAN_WORK, OPENING_HOURS, STANDARD_VISIT_MINUTES } from "@/lib/business";
 import { getFullDayOffer, getOneTimeOffer } from "@/lib/offers";
 import {
+  COMMUNITIES_PHRASE,
   COMPLETED_VISITS_ROUNDED,
+  COUNTY_SPLIT_PHRASE,
+  CUSTOMERS_ROUNDED,
   DATA_AS_OF,
   DATA_SINCE,
-  HOUSEHOLDS_ROUNDED,
-  MULTI_TASK_VISIT_PERCENT,
-  TOWNS_SERVED,
+  MULTI_TASK_REQUEST_PHRASE,
 } from "@/lib/profixter-data";
 
 /**
@@ -217,15 +218,15 @@ export default async function HandymanMembershipPage() {
           <p className={P}>
             The honest framing is that a membership converts an unpredictable, per-incident cost into a predictable
             recurring one, and converts a repeated search into a standing relationship. If neither of those is a problem
-            you have, it is not worth paying for. Lists are the norm, not the exception: about {MULTI_TASK_VISIT_PERCENT}%
-            of Profixter visits cover two or more different kinds of job.
+            you have, it is not worth paying for. Lists are the norm, not the exception: in Profixter&apos;s records,{" "}
+            {MULTI_TASK_REQUEST_PHRASE}.
           </p>
 
           <h2 className={H2}>How the Profixter membership works</h2>
           <p className={P}>
             Profixter is a Long Island home-services company based in Lindenhurst, serving homeowners across Nassau and
             Suffolk Counties. Since {DATA_SINCE} it has completed more than {COMPLETED_VISITS_ROUNDED} visits for about{" "}
-            {HOUSEHOLDS_ROUNDED} households in {TOWNS_SERVED} Long Island towns (as of {DATA_AS_OF}). Its handyman
+            {CUSTOMERS_ROUNDED} customers in {COMMUNITIES_PHRASE} (as of {DATA_AS_OF}). Its handyman
             offering is built around a membership rather than one-off dispatch, though a one-time visit is still
             available for people who want exactly one thing done.
           </p>
@@ -244,7 +245,7 @@ export default async function HandymanMembershipPage() {
           <Bullets
             items={[
               "Members book online: choose the home, pick an available date and time, describe the jobs and add photos.",
-              "Regular member visits are booked at least a week ahead, so the schedule can be planned around the whole list.",
+              "Visits are scheduled from the dates and times available, and we aim for the soonest open slot.",
               "Premium includes one Priority Visit a month and Elite two, for things that can't wait for the next regular slot. Priority Visits are subject to availability.",
               "All scheduling is subject to availability. Rescheduling early lets the slot go to another member.",
             ]}
@@ -287,8 +288,8 @@ export default async function HandymanMembershipPage() {
 
           <h2 className={H2}>Where Profixter works</h2>
           <p className={P}>
-            Nassau and Suffolk Counties. About two thirds of completed visits are in Suffolk and one third in Nassau,
-            from the South Shore towns around the Lindenhurst base to the North Shore.{" "}
+            Nassau and Suffolk Counties: of completed visits so far, {COUNTY_SPLIT_PHRASE}, from the South Shore
+            towns around the Lindenhurst base to the North Shore.{" "}
             <Link href="/locations" className={LINK}>
               See the towns we serve
             </Link>

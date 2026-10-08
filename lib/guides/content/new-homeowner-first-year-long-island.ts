@@ -14,7 +14,7 @@ export const guide: Guide = {
   body: [
     {
       t: "answer",
-      text: "In the **first week**, change or re-key the locks, find the water and electrical shut-offs, and test the smoke and CO detectors. In the **first month**, turn the home inspection report into a punch list and clear the small items while they're small. In the **first year**, learn the house through a full cycle of seasons. Long Island homes are older than most (the median Nassau home was built in 1956, the median Suffolk home in 1970), so expect a steady list of small repairs and line up reliable help early.",
+      text: "In the **first week**, change or re-key the locks, find the water and electrical shut-offs, and test the smoke and CO detectors. In the **first month**, turn the home inspection report into a punch list and clear the small items while they're small. In the **first year**, learn the house through a full cycle of seasons. Long Island homes are older than the national average (the median home was built in 1956 in Nassau and 1970 in Suffolk, against 1981 nationally), so expect small repairs and line up reliable help early.",
     },
     { t: "h2", text: "The first week" },
     {
@@ -23,7 +23,7 @@ export const guide: Guide = {
         "**Change or re-key the exterior locks.** You don't know how many keys are out there.",
         "**Find the shut-offs:** main water valve, the electrical panel, and gas if you have it. Label the panel if it isn't.",
         "**Test smoke and carbon monoxide detectors**, and note their age; replace expired units.",
-        "**Know your sewer or septic situation.** About three quarters of Suffolk County is unsewered; if you have a cesspool or septic system, find out where it is and when it was last pumped.",
+        "**Know your sewer or septic situation.** Much of Suffolk County is unsewered; if you have a cesspool or septic system, find out where it is and when it was last pumped.",
         "**Save the inspection report and the seller's disclosures** somewhere you will find them again.",
       ],
     },
@@ -59,7 +59,7 @@ export const guide: Guide = {
     { t: "h2", text: "Line up help before you need it" },
     {
       t: "p",
-      text: "The worst time to find a handyman is when something just broke. In the first months, find one you trust, ideally through a small job, so that when the list grows you have someone to call. New homeowners are one of the groups for whom an ongoing arrangement often makes sense: the first year usually produces a long list, and a [handyman membership](/handyman-membership) handles that list as a series of visits rather than as a search each time. If your list is short, pay per visit.",
+      text: "The worst time to find a handyman is when something just broke. In the first months, find one you trust, ideally through a small job, so that when the list grows you have someone to call. If your first year turns up a long list, an ongoing arrangement such as a [handyman membership](/handyman-membership) can handle it as a series of visits rather than a new search each time. If your list is short, pay per visit.",
     },
     {
       t: "callout",
