@@ -40,6 +40,18 @@ const FAQ = [
     q: "What if the job takes longer than 90 minutes?",
     a: "We can split the work into more than one visit, based on availability.",
   },
+  /*
+   * The bridge from the ordinary problem to the membership, on the page Google
+   * sends "handyman" searches to. Answer first: lists are normal; start with
+   * the free visit; only if small jobs keep coming does membership make sense.
+   * The figure is from the visit records (about half of requests ask for two
+   * or more kinds of work).
+   */
+  {
+    q: "I have a list of small jobs. Where do I start?",
+    a: "Lists are normal: about half of the visit requests we get ask for two or more kinds of work. Start with your free first visit. If small jobs keep coming, a membership lets you book 90-minute visits as often as you need, and your plan sets how many you can have booked at the same time.",
+    link: { href: "/guides/handyman-for-small-jobs", label: "Small jobs: your options" },
+  },
   {
     q: "Where do you work?",
     a: "Nassau and Suffolk counties on Long Island.",
