@@ -68,8 +68,8 @@ export default function ServicesPage() {
 
         <CardGrid
           eyebrow="Service library"
-          title="Common handyman tasks homeowners search for."
-          description="These pages are designed to help you understand scope before you book. Profixter does not offer appliance repair."
+          title="Common handyman jobs we handle."
+          description="What each job involves, what to have ready, and what falls outside a handyman visit. Profixter does not offer appliance repair."
           items={handymanServices.map((service) => ({
             label: service.title,
             href: `/services/${service.slug}`,
@@ -103,6 +103,33 @@ export default function ServicesPage() {
             </Link>
           </div>
         </section>
+
+        {/*
+          The bridge from "one job" to "a list of jobs". Most people arrive here
+          with one task in mind; these are the guides for the person who has
+          several, which is where the membership honestly becomes an option.
+        */}
+        <CardGrid
+          eyebrow="Got more than one job?"
+          title="Several small jobs, one plan."
+          items={[
+            {
+              label: "Getting small jobs done",
+              href: "/guides/handyman-for-small-jobs",
+              body: "Bundle them, book one visit, or set up ongoing help: which fits when the jobs keep coming.",
+            },
+            {
+              label: "Handyman minimum charges",
+              href: "/guides/handyman-minimum-charges",
+              body: "Why a ten-minute repair can cost an hour, and how to stop paying a minimum for every job.",
+            },
+            {
+              label: "How a handyman membership works",
+              href: "/handyman-membership",
+              body: "Plans, prices, what is included, and when paying per visit is the better deal.",
+            },
+          ]}
+        />
 
         <ConversionBand />
       </main>
