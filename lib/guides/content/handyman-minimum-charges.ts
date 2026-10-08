@@ -14,7 +14,7 @@ export const guide: Guide = {
   body: [
     {
       t: "answer",
-      text: "A minimum charge covers the handyman's cost of coming to you at all: travel, setup and the time slot. Cost guides put typical minimums at **one to two hours of labor, roughly $75 to $200**, and most handymen charge at least the first hour however quickly the job is done. You stop paying it repeatedly by **bundling** several jobs into one visit, using a **fixed-price visit** that already includes the trip, or, if small jobs keep coming, an **ongoing arrangement** where visits are part of a monthly fee instead of each carrying its own minimum.",
+      text: "A minimum charge covers the handyman's cost of coming to you at all: travel, setup and the time slot. Cost guides put typical minimums at **one to two hours of labor, roughly $75 to $200**, and most handymen charge at least the first hour however quickly the job is done. You stop paying it repeatedly by **bundling** several jobs into one visit, using a **fixed-price visit** for a single job, or, if small jobs keep coming, an **ongoing arrangement** where visits are part of a monthly fee instead of each carrying its own minimum.",
     },
     { t: "h2", text: "Why minimum charges exist" },
     {
@@ -23,7 +23,7 @@ export const guide: Guide = {
     },
     {
       t: "p",
-      text: "On Long Island, where a trip between towns can take half an hour or more, the trip is a real share of the cost. That is also why some handymen decline small jobs outright or offer a date weeks out, when they will already be nearby.",
+      text: "It is also why some handymen turn small jobs down, or offer a date weeks out when they'll already be in your area.",
     },
     { t: "h2", text: "The structures you'll see" },
     {
@@ -32,10 +32,9 @@ export const guide: Guide = {
       head: ["Structure", "How it works", "Example"],
       rows: [
         ["Minimum hours", "You pay for one or two hours even if the job takes less", "$50/hr with a 2-hour minimum: a one-hour job costs $100 (Thumbtack's example)"],
-        ["Higher first hour", "The first hour is priced above later hours", "A first hour priced well above the hourly rate that follows"],
         ["Flat block", "A set price for up to a fixed time, then hourly", "One Long Island company publishes $190 for up to 2 hours, then $75 per extra hour"],
         ["Trip or service-call fee", "A separate charge for coming out, on top of labor", "Cost guides cite $30–$80 for material runs; some charge per mile beyond a set area"],
-        ["Fixed-price visit", "One price for a defined visit length, travel included", "Profixter's One-Time Visit: a fixed price for up to 90 minutes"],
+        ["Fixed-price visit", "One price for a defined visit length or job", "Profixter's One-Time Visit: a fixed price for up to 90 minutes"],
       ],
       note: "Figures as published by Thumbtack, HomeGuide and the company sites cited below, accessed October 2026. Prices vary by company; always ask what the minimum covers before booking.",
     },
@@ -73,7 +72,7 @@ export const guide: Guide = {
     { t: "h3", text: "2. Use a fixed-price visit" },
     {
       t: "p",
-      text: "A visit priced as a single number, travel included, takes the guesswork out. It suits one defined job. Profixter's One-Time Visit is built this way: one small job from a set list, up to 90 minutes, at one price.",
+      text: "A visit priced as a single number takes the guesswork out, and suits one defined job. Profixter's One-Time Visit is built this way: one small job from a set list, up to 90 minutes, at one price.",
     },
     { t: "h3", text: "3. Move to an ongoing arrangement" },
     {
@@ -84,7 +83,7 @@ export const guide: Guide = {
       t: "callout",
       tone: "profixter",
       title: "How Profixter prices visits",
-      text: "No hourly billing and no separate trip fee. A **One-Time Visit** is one fixed price for up to 90 minutes on one small job from a set list. A **membership** is a monthly fee with 90-minute visits booked as often as you need; your plan sets how many visits you can have booked at the same time. A **Full Day** covers about eight hours. New Nassau and Suffolk customers can start with a free first visit.",
+      text: "A **One-Time Visit** is one fixed price for up to 90 minutes on one small job from a set list. A **membership** is a monthly fee with 90-minute visits booked as often as you need; your plan sets how many visits you can have booked at the same time. A **Full Day** covers about eight hours. New Nassau and Suffolk customers can start with a free first visit.",
     },
     { t: "component", name: "offers" },
   ],

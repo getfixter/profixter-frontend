@@ -53,7 +53,7 @@ export const guide: Guide = {
       t: "ul",
       items: [
         "Replacing bulbs that are hard to reach, and adding plug-in or battery night lights in halls and on stairs.",
-        "Tightening or adding grab bars, stair railings and handrails (secured into framing, not just drywall).",
+        "Tightening loose stair railings, handrails and grab bars (they should be secured into framing, not just drywall).",
         "Fixing doors and locks that stick or are hard to turn.",
         "Replacing smoke and carbon monoxide detectors, and changing batteries.",
         "Re-caulking tubs and showers, and sorting out dripping taps and running toilets (ask whether a plumber is needed).",
@@ -79,13 +79,13 @@ export const guide: Guide = {
     { t: "h2", text: "Per visit or ongoing?" },
     {
       t: "p",
-      text: "If a parent's home needs something done every few weeks, which is common in an older house, a recurring arrangement is often simpler than booking each job separately: one relationship, the same people, and a standing way to get the list done. If it needs attention a couple of times a year, paying per visit is cheaper. The [comparison guide](/guides/handyman-membership-vs-hiring-per-job) has a calculator for your own numbers.",
+      text: "If a parent's home needs something done every few weeks, a recurring arrangement is often simpler than booking each job separately: one relationship, the same people, and a standing way to get the list done. If it needs attention a couple of times a year, paying per visit is cheaper. The [comparison guide](/guides/handyman-membership-vs-hiring-per-job) has a calculator for your own numbers.",
     },
     {
       t: "callout",
       tone: "profixter",
       title: "For families on Long Island",
-      text: "Profixter memberships are per home, so a family member can set one up for a parent's address, book 90-minute visits online with photos and notes, and the same local team comes back each time. You can also [give a membership as a gift](/gift) for a fixed number of months, paid once, with nothing renewing. [How the membership works](/handyman-membership).",
+      text: "If you're arranging help for a parent in Nassau or Suffolk, call us at 631-599-1363 and we'll talk through how visits would work for their home and who we should keep in the loop. You can also [give a membership as a gift](/gift): you choose the plan and the number of months and pay once, nothing renews, and your parent claims it with the link you send. [How the membership works](/handyman-membership).",
     },
     { t: "component", name: "offers" },
   ],

@@ -8,7 +8,9 @@
  *
  * PUBLISHING RULES - keep them when this file is refreshed:
  *  - A town gets figures only when its visits come from at least three
- *    different households. Below that, a town figure describes one home.
+ *    different customers. Below that, a town figure describes one home.
+ *  - "Customers" means distinct customer accounts - that is what the data
+ *    counts. It is not called "households", which the data cannot verify.
  *  - Task shares are keyword classifications of the customer's own request
  *    text, accurate to roughly five points; they are always shown rounded and
  *    described as "requests mentioning".
@@ -21,14 +23,28 @@ export const DATA_SINCE = "August 2025";
 
 /** Completed visits and households, rounded down so the copy never overstates. */
 export const COMPLETED_VISITS_ROUNDED = 800; // 847 exact
-export const HOUSEHOLDS_ROUNDED = 100; // 102 exact
-export const TOWNS_SERVED = 60;
+export const CUSTOMERS_ROUNDED = 100; // 102 distinct customer accounts
+/*
+ * 60 town strings in the data, but one is "(unknown)" and one is a ZIP code
+ * typed as a town, and spellings were cleaned by hand - so the published claim
+ * is the conservative "more than 50 communities", not an exact count.
+ */
+export const COMMUNITIES_PHRASE = "more than 50 Long Island communities";
 export const TOWNS_WITH_FIVE_PLUS_VISITS = 41;
-export const COUNTY_SPLIT = { suffolkPercent: 67, nassauPercent: 33 } as const;
+/*
+ * The county field is inconsistent for a few towns (Laurel Hollow and Woodbury
+ * are tagged Suffolk), so the split is published only as "about two thirds /
+ * one third", which holds either way (571/276 as tagged; ~564/283 by geography).
+ */
+export const COUNTY_SPLIT_PHRASE = "about two thirds in Suffolk and one third in Nassau";
 
-/** About half of visits covered two or more different kinds of job. */
-export const MULTI_TASK_VISIT_PERCENT = 49; // 48.6%
-export const THREE_PLUS_TASK_VISIT_PERCENT = 20; // 19.6%
+/*
+ * In about half of visit requests (48.6%), the customer's own description
+ * mentions two or more different kinds of work; about one in five (19.6%)
+ * mentions three or more. This is what the customer ASKED for before the visit,
+ * read by keyword - so it is always worded as requests, never as work done.
+ */
+export const MULTI_TASK_REQUEST_PHRASE = "about half of visit requests ask for two or more different kinds of work";
 
 /**
  * Share of visit requests mentioning each kind of work (one visit can mention
@@ -49,21 +65,21 @@ export const TASK_MIX: { label: string; percent: number }[] = [
 ];
 
 /**
- * Towns with figures, under the three-household rule. Visit counts are floored
+ * Towns with figures, under the three-customer rule. Visit counts are floored
  * to the nearest five.
  */
-export const TOWN_RECORDS: Record<string, { visits: number; households: number }> = {
-  lindenhurst: { visits: 75, households: 9 },
-  "west-babylon": { visits: 75, households: 3 },
-  syosset: { visits: 65, households: 3 },
-  massapequa: { visits: 35, households: 4 },
-  seaford: { visits: 35, households: 3 },
-  "north-babylon": { visits: 30, households: 4 },
-  "east-northport": { visits: 20, households: 4 },
-  huntington: { visits: 20, households: 3 },
-  farmingdale: { visits: 20, households: 3 },
-  babylon: { visits: 15, households: 4 },
-  "bay-shore": { visits: 15, households: 4 },
+export const TOWN_RECORDS: Record<string, { visits: number; customers: number }> = {
+  lindenhurst: { visits: 75, customers: 9 }, // 75 exact
+  "west-babylon": { visits: 75, customers: 3 }, // 75
+  syosset: { visits: 65, customers: 3 }, // 65
+  massapequa: { visits: 35, customers: 4 }, // 37
+  seaford: { visits: 35, customers: 3 }, // 36
+  "north-babylon": { visits: 30, customers: 4 }, // 30
+  "east-northport": { visits: 20, customers: 4 }, // 23
+  huntington: { visits: 20, customers: 3 }, // 22
+  farmingdale: { visits: 20, customers: 3 }, // 20
+  babylon: { visits: 15, customers: 4 }, // 17
+  "bay-shore": { visits: 15, customers: 4 }, // 17
 };
 
 /** Towns with at least five completed visits, grouped by county, for the locations hub. */

@@ -15,12 +15,12 @@ export const guide: Guide = {
   body: [
     {
       t: "answer",
-      text: "Usually **two to four simple jobs**, or **one involved one**. A light fixture swap, a re-caulked tub and a couple of shelves fit comfortably; a TV mount on brick, a door that needs re-hanging, or a fixture on an old box with tired wiring can each take most of the time. What decides it is less the job than the conditions: parts on hand, the wall behind it, and whether anything has to be bought mid-visit.",
+      text: "Usually **two to four simple jobs**, or **one involved one**. A light fixture swap and a couple of shelves fit comfortably; a TV mount on brick, a door that needs re-hanging, or a fixture on an old box with tired wiring can each take most of the time. What decides it is less the job than the conditions: parts on hand, the wall behind it, and whether anything has to be bought mid-visit.",
     },
     { t: "h2", text: "Typical times for common jobs" },
     {
       t: "p",
-      text: "These are planning ranges for a straightforward job with parts already on site, not quotes. Every house has its own surprises.",
+      text: "These are rough planning ranges from general trade experience, for a straightforward job with parts already on site. They are not quotes or measurements, and every house has its own surprises.",
     },
     {
       t: "table",
@@ -45,9 +45,9 @@ export const guide: Guide = {
     {
       t: "ul",
       items: [
-        "A light fixture swap, a lockset and two shelves.",
-        "A faucet replacement and a running toilet in the same bathroom.",
-        "Drywall patches started first, then curtain rods and a door adjustment while they dry.",
+        "A light fixture swap and a new lockset.",
+        "A running toilet and a loose towel bar in the same bathroom.",
+        "A small drywall patch started first, then curtain rods and a door adjustment while it dries.",
         "A TV mount plus a couple of pictures and a mirror in the same room.",
       ],
     },
@@ -57,7 +57,7 @@ export const guide: Guide = {
       items: [
         "**A missing part.** A store run can take half the visit. Buy the fixture, mount or hardware ahead, or agree who brings what.",
         "**The wrong wall.** Brick, plaster and tile take longer to fix to than drywall.",
-        "**Old house conditions.** Seized valves, undersized electrical boxes and out-of-square frames are common in older Long Island homes.",
+        "**Old house conditions.** Seized valves, undersized electrical boxes and out-of-square frames are common in older homes.",
         "**An unclear request.** Ten minutes spent working out what \"fix the closet\" means is ten minutes not fixing it. A photo of each job helps more than anything else.",
         "**Scope creep.** \"While you're here\" is reasonable, but it competes with the jobs you booked. Put new items on the list for next time.",
       ],

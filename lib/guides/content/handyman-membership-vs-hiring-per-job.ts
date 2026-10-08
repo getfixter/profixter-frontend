@@ -61,7 +61,7 @@ export const guide: Guide = {
     },
     {
       t: "p",
-      text: "Equally, a membership has costs the calculator does understate: you pay in quiet months, and regular visits are booked ahead rather than same-day. If you value flexibility to pay nothing, that matters.",
+      text: "A membership has costs the calculator understates too: you pay in quiet months, and visits depend on the times available. If you'd rather pay nothing when nothing needs doing, that matters.",
     },
     { t: "h2", text: "How Profixter's membership works" },
     {
@@ -69,7 +69,7 @@ export const guide: Guide = {
       items: [
         "**90-minute visits** for everyday home tasks, with the same local team.",
         "**No monthly visit allowance.** Book as often as you need; your plan sets how many visits you can have booked at the same time (one on Basic, two on Plus and above).",
-        "**Booked ahead.** Regular member visits are scheduled at least a week out; Premium and Elite include Priority Visits for things that can't wait.",
+        "**Scheduled from available times.** Premium and Elite include Priority Visits for things that can't wait, subject to availability.",
         "**Month to month.** No long-term contract; annual billing is 12 months for the price of 10.",
         "**Not covered:** appliance repair, whole-room painting, large electrical or plumbing work, renovations. Those are separate.",
       ],

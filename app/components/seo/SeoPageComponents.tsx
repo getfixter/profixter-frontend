@@ -470,17 +470,15 @@ export function LocationDetailPage({
   rating,
   oneTimePrice,
   lowestPlanPrice,
-  taskMix,
   dataAsOf,
 }: {
   area: ServiceAreaContent;
   relatedLinks?: LinkItem[];
-  /** Profixter's own record in this town, only where three or more households are behind it. */
-  record?: { visits: number; households: number } | null;
+  /** Profixter's own record in this town, only where three or more customers are behind it. */
+  record?: { visits: number; customers: number } | null;
   rating?: { rating: number; total: number; url: string } | null;
   oneTimePrice: number;
   lowestPlanPrice: number;
-  taskMix: { label: string; percent: number }[];
   dataAsOf: string;
 }) {
   const paths: { title: string; body: string; href: string; label: string }[] = [
@@ -531,7 +529,7 @@ export function LocationDetailPage({
                     <div className="rounded-[8px] border border-[#D9E4FF] bg-white px-4 py-3 shadow-sm">
                       <dt className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#64748B]">In {area.name}</dt>
                       <dd className="mt-1 text-[15px] font-bold text-[#0B1628]">
-                        {record.visits}+ completed visits for {record.households} households
+                        {record.visits}+ completed visits for {record.customers} customers
                       </dd>
                     </div>
                   ) : null}
@@ -571,19 +569,28 @@ export function LocationDetailPage({
                 </p>
               ) : null}
             </div>
+            {/*
+              Practical, place-specific notes instead of the same data table on
+              every town page: who issues permits here, and when to winterize.
+            */}
             <div className="rounded-[8px] border border-[#DDE5F0] bg-[#FBFCFF] p-5 shadow-sm sm:p-7">
-              <h2 className="text-[23px] font-black text-[#0B1628]">What Long Island homeowners book most</h2>
-              <p className="mt-2 text-[13px] leading-5 text-[#64748B]">
-                Share of Profixter visit requests mentioning each, across Nassau and Suffolk, as of {dataAsOf}.
-              </p>
-              <ul className="mt-4 grid gap-2">
-                {taskMix.slice(0, 6).map((row) => (
-                  <li key={row.label} className="flex items-baseline justify-between gap-4 text-[14px] text-[#334155]">
-                    <span>{row.label}</span>
-                    <span className="font-bold tabular-nums text-[#0B1628]">~{row.percent}%</span>
-                  </li>
-                ))}
-              </ul>
+              <h2 className="text-[23px] font-black text-[#0B1628]">Good to know in {area.name}</h2>
+              <dl className="mt-4 grid gap-4 text-[14px] leading-6">
+                <div>
+                  <dt className="font-bold text-[#0B1628]">Building permits</dt>
+                  <dd className="mt-1 text-[#475569]">{area.permits}</dd>
+                </div>
+                <div>
+                  <dt className="font-bold text-[#0B1628]">Winterizing</dt>
+                  <dd className="mt-1 text-[#475569]">
+                    The first fall freeze here typically arrives {area.freeze} (National Weather Service). Shut off and
+                    drain outdoor faucets before then.{" "}
+                    <Link href="/guides/long-island-home-maintenance-calendar" className="font-semibold text-[#306EEC] underline underline-offset-2">
+                      Seasonal checklist
+                    </Link>
+                  </dd>
+                </div>
+              </dl>
             </div>
           </div>
         </section>

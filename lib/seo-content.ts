@@ -39,6 +39,12 @@ export type ServiceAreaContent = {
   intro: string;
   /** What is specific about the place. Verifiable facts only; no invented detail. */
   localContext: string;
+  /** Who issues building permits there (village vs town). */
+  permits: string;
+  /** When the first fall freeze typically arrives (NWS medians). */
+  freeze: string;
+  /** False keeps the page reachable but noindexed and out of the sitemap. */
+  indexable: boolean;
   /** Nearby towns where Profixter has completed visits (lib/profixter-data.ts). */
   nearby: string[];
 };
@@ -702,24 +708,23 @@ export const renovationServices: SeoPageContent[] = [
 
 /**
  * Town pages: only towns with real Profixter work, each saying something true
- * about that place.
+ * and useful about that place.
  *
- * WHY THIS LIST CHANGED (October 2026)
- * The original eight pages were one template with the town name swapped and
- * lines like "A modern home help platform for West Islip" - exactly the
- * near-duplicate local pages search engines discount. Each entry now carries
- * what is genuinely specific: the municipality it sits in, where it is relative
- * to the Lindenhurst base, the county facts that change how its houses age
- * (Nassau's median home was built in 1956, Suffolk's in 1970; much of Suffolk is
- * unsewered), nearby towns where Profixter has completed work, and - where at
- * least three households are behind it - Profixter's own visit record there
- * (lib/profixter-data.ts).
+ * WHAT A TOWN PAGE MAY SAY (October 2026 final pass)
+ *  - Geography and municipality: which village or town it sits in. These decide
+ *    who issues building permits, which is genuinely useful to a homeowner and
+ *    differs from page to page.
+ *  - When the first fall freeze typically arrives there (National Weather
+ *    Service medians: about November 1 in Suffolk and northern Nassau, about
+ *    November 11 on the Nassau South Shore).
+ *  - Profixter's own record there, only where three or more customers are
+ *    behind it (lib/profixter-data.ts), and nearby towns with completed visits.
+ *  - NOT unsourced claims about the age or style of local housing, and not
+ *    copy that only swaps the town name.
  *
- * A town is added when the business has real work there, not to cover a map.
- * The seven added in this release each have 20+ completed visits from three or
- * more households. The four original towns with thinner records (West Islip,
- * Islip, Copiague, Amityville) keep their pages, which are already indexed, but
- * show no figures.
+ * `indexable: false` keeps a page reachable (it existed before) but out of the
+ * index and the sitemap until there is real work to show there: Copiague and
+ * Islip each have a handful of visits from a single customer.
  */
 export const serviceAreas: ServiceAreaContent[] = [
   {
@@ -727,15 +732,19 @@ export const serviceAreas: ServiceAreaContent[] = [
     name: "Lindenhurst",
     county: "Suffolk County",
     municipality: "Village of Lindenhurst, Town of Babylon",
-    metaTitle: "Handyman in Lindenhurst, NY | Profixter, Based in Lindenhurst",
+    metaTitle: "Handyman in Lindenhurst, NY | Profixter",
     metaDescription:
-      "Profixter is based in Lindenhurst and has completed more visits here than almost anywhere on Long Island. 90-minute handyman visits, a $99 One-Time Visit, or a handyman membership from $149/month.",
-    h1: "Handyman help in Lindenhurst, from a Lindenhurst company.",
+      "Profixter works out of Lindenhurst and has done more visits here than anywhere else on Long Island. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
+    h1: "Handyman help in Lindenhurst.",
     intro:
-      "Profixter is based in Lindenhurst, so this is home ground: the team works here more than anywhere else on Long Island, for single jobs and for members who book visits as their list grows.",
+      "Lindenhurst is where Profixter is based, and it is the town where the team has worked for the most customers - single jobs, free first visits and members who book visits as their list grows.",
     localContext:
-      "Lindenhurst is a South Shore village in the Town of Babylon, on the Great South Bay. Like much of Suffolk, a good share of homes here date from the postwar decades, and South Shore houses see the full force of nor'easters and coastal storms - so loose fence boards, sticking doors, worn caulk and weatherstripping are steady items on local lists.",
+      "Lindenhurst is an incorporated village in the Town of Babylon, on the Great South Bay. Mailing addresses marked Lindenhurst also reach past the village line into unincorporated parts of the town.",
+    permits:
+      "Inside the village, building permits come from the Village of Lindenhurst. Lindenhurst addresses outside the village line go to the Town of Babylon.",
+    freeze: "around November 1",
     nearby: ["West Babylon", "North Babylon", "Babylon", "Amityville", "West Islip"],
+    indexable: true,
   },
   {
     slug: "west-babylon",
@@ -744,13 +753,16 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Babylon",
     metaTitle: "Handyman in West Babylon, NY | Profixter",
     metaDescription:
-      "Handyman visits in West Babylon from a company based next door in Lindenhurst: a $99 One-Time Visit, a free first visit for new customers, or a handyman membership from $149/month.",
-    h1: "Handyman help in West Babylon, from next door in Lindenhurst.",
+      "Handyman visits in West Babylon from a team based next door in Lindenhurst. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
+    h1: "Handyman help in West Babylon.",
     intro:
-      "West Babylon borders Lindenhurst, where Profixter is based, and it is one of the towns the team works in most - mainly for members who book regular visits as small jobs come up.",
+      "West Babylon borders Lindenhurst, where Profixter is based, and it is one of the towns the team works in most often.",
     localContext:
-      "West Babylon is a hamlet in the Town of Babylon, between Lindenhurst and North Babylon. Its housing is mostly single-family homes of Suffolk's postwar building years, the age at which original doors, fixtures and trim start asking for attention.",
+      "West Babylon is an unincorporated hamlet in the Town of Babylon, between Lindenhurst and North Babylon.",
+    permits: "West Babylon is not an incorporated village, so building permits come from the Town of Babylon.",
+    freeze: "around November 1",
     nearby: ["Lindenhurst", "North Babylon", "Babylon", "Deer Park", "Amityville"],
+    indexable: true,
   },
   {
     slug: "north-babylon",
@@ -759,13 +771,15 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Babylon",
     metaTitle: "Handyman in North Babylon, NY | Profixter",
     metaDescription:
-      "Handyman visits in North Babylon from a Town of Babylon company: 90-minute visits, a $99 One-Time Visit, or a handyman membership from $149/month. Free first visit for new customers.",
+      "Handyman visits in North Babylon, a few minutes from Profixter's Lindenhurst base. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
     h1: "Handyman help in North Babylon.",
-    intro:
-      "North Babylon is a few minutes from Profixter's Lindenhurst base, and the team has a steady record of visits here for several households.",
+    intro: "North Babylon is a few minutes from Profixter's base, and the team has a steady record of visits here.",
     localContext:
-      "North Babylon is a hamlet in the Town of Babylon, north of the Montauk Highway towns and close to Belmont Lake State Park. Homes are mostly single-family houses on suburban lots, so lists here tend to mix indoor fixes with fences, gates and decks.",
+      "North Babylon is an unincorporated hamlet in the Town of Babylon, home to Belmont Lake State Park.",
+    permits: "North Babylon is not an incorporated village, so building permits come from the Town of Babylon.",
+    freeze: "around November 1",
     nearby: ["West Babylon", "Lindenhurst", "Babylon", "Deer Park", "West Islip"],
+    indexable: true,
   },
   {
     slug: "babylon",
@@ -774,13 +788,16 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Village of Babylon, Town of Babylon",
     metaTitle: "Handyman in Babylon Village, NY | Profixter",
     metaDescription:
-      "Handyman visits in Babylon from a Town of Babylon company based in Lindenhurst. A $99 One-Time Visit, a free first visit for new customers, or a handyman membership from $149/month.",
+      "Handyman visits in Babylon from a Town of Babylon team based in Lindenhurst. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
     h1: "Handyman help in Babylon.",
-    intro:
-      "Profixter is based in the Town of Babylon, in Lindenhurst, and works in Babylon village regularly - single jobs and ongoing member visits.",
+    intro: "Profixter is based in the Town of Babylon and works in Babylon Village regularly.",
     localContext:
-      "Babylon village sits on the Great South Bay at the heart of the town that shares its name, with many older homes close to the water. Homes near the water take more weather, and worn exterior doors, hardware and caulk show up often on lists near the bay.",
+      "Babylon Village is an incorporated village on the Great South Bay, at the center of the town that shares its name.",
+    permits:
+      "Inside the village, building permits come from the Village of Babylon. Babylon addresses outside the village line go to the Town of Babylon.",
+    freeze: "around November 1",
     nearby: ["West Babylon", "North Babylon", "Lindenhurst", "West Islip", "Amityville"],
+    indexable: true,
   },
   {
     slug: "amityville",
@@ -789,13 +806,16 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Village of Amityville, Town of Babylon",
     metaTitle: "Handyman in Amityville, NY | Profixter",
     metaDescription:
-      "Handyman visits in Amityville from a Town of Babylon company based in Lindenhurst: 90-minute visits, a $99 One-Time Visit, or a membership from $149/month.",
+      "Handyman visits in Amityville from a Town of Babylon team based in Lindenhurst. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
     h1: "Handyman help in Amityville.",
     intro:
-      "Amityville is at the western edge of the Town of Babylon, a short drive from Profixter's Lindenhurst base.",
-    localContext:
-      "Amityville is a South Shore village on the Nassau-Suffolk line, with waterfront streets and many older homes. Profixter has completed visits in Amityville and neighboring Amity Harbor.",
+      "Amityville is at the western edge of the Town of Babylon, a short drive from Profixter's base. The team has completed visits in Amityville and neighboring Amity Harbor.",
+    localContext: "Amityville is an incorporated village on the South Shore, right at the Nassau-Suffolk line.",
+    permits:
+      "Inside the village, building permits come from the Village of Amityville. Amityville addresses outside the village line, including Amity Harbor, go to the Town of Babylon.",
+    freeze: "around November 1",
     nearby: ["Lindenhurst", "West Babylon", "Massapequa", "Babylon"],
+    indexable: true,
   },
   {
     slug: "copiague",
@@ -804,12 +824,14 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Babylon",
     metaTitle: "Handyman in Copiague, NY | Profixter",
     metaDescription:
-      "Handyman visits in Copiague from a company based next door in Lindenhurst: 90-minute visits, a $99 One-Time Visit, or a handyman membership from $149/month.",
+      "Handyman visits in Copiague from a team based next door in Lindenhurst. One-Time Visits from $99 or a handyman membership from $149/month.",
     h1: "Handyman help in Copiague.",
-    intro: "Copiague borders Lindenhurst, where Profixter is based, so it is one of the closest towns the team serves.",
-    localContext:
-      "Copiague is a South Shore hamlet in the Town of Babylon, between Lindenhurst and Amityville, with neighborhoods running down to the bay. Its homes share the age and storm exposure of the rest of the South Shore.",
+    intro: "Copiague borders Lindenhurst, where Profixter is based.",
+    localContext: "Copiague is an unincorporated hamlet in the Town of Babylon, between Lindenhurst and Amityville.",
+    permits: "Copiague is not an incorporated village, so building permits come from the Town of Babylon.",
+    freeze: "around November 1",
     nearby: ["Lindenhurst", "Amityville", "West Babylon", "Babylon"],
+    indexable: false,
   },
   {
     slug: "west-islip",
@@ -818,12 +840,14 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Islip",
     metaTitle: "Handyman in West Islip, NY | Profixter",
     metaDescription:
-      "Handyman visits in West Islip from a Lindenhurst-based company: 90-minute visits, a $99 One-Time Visit, or a handyman membership from $149/month.",
+      "Handyman visits in West Islip, just across the Babylon town line from Profixter's base. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
     h1: "Handyman help in West Islip.",
-    intro: "West Islip sits just east of the Town of Babylon line, a short drive from Profixter's Lindenhurst base.",
-    localContext:
-      "West Islip is a South Shore hamlet in the Town of Islip, on the Great South Bay, with mostly single-family homes. Profixter has completed visits here and throughout the neighboring Babylon towns.",
+    intro: "West Islip sits just east of the Town of Babylon line, a short drive from Profixter's base in Lindenhurst.",
+    localContext: "West Islip is an unincorporated hamlet in the Town of Islip, on the Great South Bay.",
+    permits: "West Islip is not an incorporated village, so building permits come from the Town of Islip.",
+    freeze: "around November 1",
     nearby: ["Babylon", "Bay Shore", "North Babylon", "Lindenhurst"],
+    indexable: true,
   },
   {
     slug: "bay-shore",
@@ -832,13 +856,14 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Islip",
     metaTitle: "Handyman in Bay Shore, NY | Profixter",
     metaDescription:
-      "Handyman visits in Bay Shore: 90-minute visits, a $99 One-Time Visit, or a handyman membership from $149/month, from a Long Island company with a steady record of work here.",
+      "Handyman visits in Bay Shore. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month, from a team with a steady record of work here.",
     h1: "Handyman help in Bay Shore.",
-    intro:
-      "Bay Shore is one of the Town of Islip communities where Profixter works most, for several households on a regular basis.",
-    localContext:
-      "Bay Shore is a South Shore hamlet in the Town of Islip, with a mix of older homes near Main Street and the bay and later suburban streets to the north. Older houses here bring the usual older-house work: doors that need adjusting, fixtures past their best, plaster and trim repairs.",
-    nearby: ["West Islip", "Islip", "Babylon", "Sayville"],
+    intro: "Bay Shore is the Town of Islip community where Profixter has worked for the most customers.",
+    localContext: "Bay Shore is an unincorporated hamlet in the Town of Islip, on the Great South Bay.",
+    permits: "Bay Shore is not an incorporated village, so building permits come from the Town of Islip.",
+    freeze: "around November 1",
+    nearby: ["West Islip", "Babylon", "Sayville", "Brentwood"],
+    indexable: true,
   },
   {
     slug: "islip",
@@ -847,12 +872,14 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Islip",
     metaTitle: "Handyman in Islip, NY | Profixter",
     metaDescription:
-      "Handyman visits in Islip: 90-minute visits, a $99 One-Time Visit, or a handyman membership from $149/month, from a Long Island company working across the Town of Islip.",
+      "Handyman visits in Islip. One-Time Visits from $99 or a handyman membership from $149/month, from a Long Island team that works across the Town of Islip.",
     h1: "Handyman help in Islip.",
-    intro: "Profixter works across the Town of Islip, from West Islip and Bay Shore eastward.",
-    localContext:
-      "Islip hamlet is on the South Shore, in the town of the same name, between Bay Shore and East Islip. Much of Suffolk relies on cesspools and septic systems rather than sewers, so when you buy here it is worth finding out which your street has - that is work for a licensed specialist, not a handyman.",
-    nearby: ["Bay Shore", "West Islip", "Sayville", "Ronkonkoma"],
+    intro: "Profixter works in the Town of Islip, most often in Bay Shore and West Islip.",
+    localContext: "Islip is an unincorporated hamlet on the South Shore, in the town of the same name.",
+    permits: "Islip hamlet is not an incorporated village, so building permits come from the Town of Islip.",
+    freeze: "around November 1",
+    nearby: ["Bay Shore", "West Islip", "Sayville"],
+    indexable: false,
   },
   {
     slug: "massapequa",
@@ -861,13 +888,17 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Oyster Bay",
     metaTitle: "Handyman in Massapequa, NY | Profixter",
     metaDescription:
-      "Handyman visits in Massapequa: 90-minute visits, a $99 One-Time Visit, or a handyman membership from $149/month, from a South Shore company with a steady record of work here.",
+      "Handyman visits in Massapequa, just across the county line from Profixter's base. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
     h1: "Handyman help in Massapequa.",
     intro:
-      "Massapequa is just across the county line from Profixter's base in the Town of Babylon, and one of the Nassau towns where the team works most.",
+      "Massapequa is just across the county line from Profixter's base in the Town of Babylon, and it is the Nassau town where the team has worked for the most customers.",
     localContext:
-      "Massapequa is a South Shore hamlet in the Town of Oyster Bay. Nassau's housing is older than Suffolk's - the county's median home was built in 1956 - and Massapequa's postwar neighborhoods show it: original doors, trim and fixtures that have done seventy years of work.",
+      "Massapequa is an unincorporated hamlet on the Nassau South Shore, in the Town of Oyster Bay. Its neighbor Massapequa Park is a separate incorporated village.",
+    permits:
+      "Massapequa is not an incorporated village, so building permits come from the Town of Oyster Bay. Homes inside the Village of Massapequa Park go to the village instead.",
+    freeze: "around November 11",
     nearby: ["Seaford", "Amityville", "South Farmingdale", "Farmingdale"],
+    indexable: true,
   },
   {
     slug: "seaford",
@@ -876,12 +907,15 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Hempstead",
     metaTitle: "Handyman in Seaford, NY | Profixter",
     metaDescription:
-      "Handyman visits in Seaford: 90-minute visits, a $99 One-Time Visit, or a handyman membership from $149/month, from a Long Island company with a steady record of work here.",
+      "Handyman visits in Seaford. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month, from a team that works here regularly.",
     h1: "Handyman help in Seaford.",
-    intro: "Seaford is one of the South Shore Nassau towns where Profixter works regularly, for several households.",
+    intro: "Seaford is one of the Nassau South Shore towns where Profixter works regularly.",
     localContext:
-      "Seaford is a South Shore hamlet in the Town of Hempstead, between Wantagh and Massapequa, with canal-side streets toward the bay. Like much of Nassau, many homes date from the postwar years.",
+      "Seaford is an unincorporated hamlet on the Nassau South Shore, in the Town of Hempstead, between Wantagh and Massapequa.",
+    permits: "Seaford is not an incorporated village, so building permits come from the Town of Hempstead.",
+    freeze: "around November 11",
     nearby: ["Massapequa", "Wantagh", "Bellmore", "South Farmingdale"],
+    indexable: true,
   },
   {
     slug: "farmingdale",
@@ -890,12 +924,17 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Village of Farmingdale, Town of Oyster Bay",
     metaTitle: "Handyman in Farmingdale, NY | Profixter",
     metaDescription:
-      "Handyman visits in Farmingdale: 90-minute visits, a $99 One-Time Visit, or a handyman membership from $149/month, from a nearby Long Island company.",
+      "Handyman visits in Farmingdale and South Farmingdale. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month.",
     h1: "Handyman help in Farmingdale.",
-    intro: "Farmingdale is a short drive from Profixter's Lindenhurst base, and the team works here and in neighboring South Farmingdale.",
+    intro:
+      "Farmingdale is a short drive west of Profixter's base. The team works here and in neighboring South Farmingdale and Old Bethpage.",
     localContext:
-      "Farmingdale is a village in the Town of Oyster Bay, on the Nassau side of the county line, with older homes around Main Street and suburban streets beyond. Profixter has completed visits in Farmingdale, South Farmingdale and Old Bethpage.",
+      "Farmingdale is an incorporated village in the Town of Oyster Bay, on the Nassau side of the county line. Farmingdale mailing addresses also cover unincorporated areas around the village.",
+    permits:
+      "Inside the village, building permits come from the Village of Farmingdale. Farmingdale and South Farmingdale addresses outside the village line go to the Town of Oyster Bay.",
+    freeze: "in early to mid November",
     nearby: ["South Farmingdale", "Massapequa", "Old Bethpage", "North Babylon"],
+    indexable: true,
   },
   {
     slug: "syosset",
@@ -904,12 +943,14 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Oyster Bay",
     metaTitle: "Handyman in Syosset, NY | Profixter",
     metaDescription:
-      "Handyman visits in Syosset: 90-minute visits, a $99 One-Time Visit, or a handyman membership from $149/month, from a Long Island company that works here regularly.",
+      "Handyman visits in Syosset. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month, from a team that works here regularly.",
     h1: "Handyman help in Syosset.",
-    intro: "Syosset is one of the North Shore Nassau towns where Profixter works most, mainly for members with regular visits.",
-    localContext:
-      "Syosset is a hamlet in the Town of Oyster Bay, inland on the North Shore side of Nassau. Most of Profixter's work here is regular member visits rather than single jobs.",
+    intro: "Syosset is the northern Nassau town where Profixter works most often.",
+    localContext: "Syosset is an unincorporated hamlet in the Town of Oyster Bay, in northern Nassau.",
+    permits: "Syosset is not an incorporated village, so building permits come from the Town of Oyster Bay.",
+    freeze: "around November 1",
     nearby: ["Old Bethpage", "Laurel Hollow", "Huntington", "Glen Head"],
+    indexable: true,
   },
   {
     slug: "huntington",
@@ -918,12 +959,17 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Huntington",
     metaTitle: "Handyman in Huntington, NY | Profixter",
     metaDescription:
-      "Handyman visits in Huntington: 90-minute visits, a $99 One-Time Visit, or a handyman membership from $149/month, from a Long Island company working across the Town of Huntington.",
+      "Handyman visits in Huntington. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month, from a team working across the Town of Huntington.",
     h1: "Handyman help in Huntington.",
-    intro: "Profixter works across the Town of Huntington - Huntington, East Northport, Dix Hills and Commack - for single jobs and regular member visits.",
+    intro:
+      "Profixter works across the Town of Huntington: Huntington itself, East Northport, Dix Hills and Commack.",
     localContext:
-      "Huntington is a North Shore hamlet and town in western Suffolk, with older homes around the village and harbor and later houses inland. Older North Shore homes bring plaster walls, original doors and hardware, which change how long common jobs take.",
+      "Huntington is an unincorporated hamlet on the North Shore of western Suffolk, the center of the Town of Huntington.",
+    permits:
+      "Huntington hamlet is not an incorporated village, so building permits come from the Town of Huntington. Homes inside one of the town's incorporated villages go to that village instead.",
+    freeze: "around November 1",
     nearby: ["East Northport", "Dix Hills", "Commack", "Syosset"],
+    indexable: true,
   },
   {
     slug: "east-northport",
@@ -932,12 +978,16 @@ export const serviceAreas: ServiceAreaContent[] = [
     municipality: "Town of Huntington",
     metaTitle: "Handyman in East Northport, NY | Profixter",
     metaDescription:
-      "Handyman visits in East Northport: 90-minute visits, a $99 One-Time Visit, or a handyman membership from $149/month, from a Long Island company working across the Town of Huntington.",
+      "Handyman visits in East Northport. One-Time Visits from $99, a free first visit for new customers, or a handyman membership from $149/month, from a team working across the Town of Huntington.",
     h1: "Handyman help in East Northport.",
-    intro: "East Northport is one of the Town of Huntington communities where Profixter works regularly, for several households.",
+    intro: "East Northport is one of the Town of Huntington communities where Profixter works regularly.",
     localContext:
-      "East Northport is a hamlet in the Town of Huntington, inland from Northport Harbor, mostly single-family homes on suburban lots. Profixter also works in neighboring Commack, Dix Hills and Huntington.",
+      "East Northport is an unincorporated hamlet in the Town of Huntington, south of the incorporated Village of Northport.",
+    permits:
+      "East Northport is not an incorporated village, so building permits come from the Town of Huntington. Homes inside the Village of Northport go to the village instead.",
+    freeze: "around November 1",
     nearby: ["Huntington", "Commack", "Dix Hills", "Smithtown"],
+    indexable: true,
   },
 ];
 
@@ -975,7 +1025,7 @@ export function getSeoEngineSitemapRoutes() {
       changeFrequency: "monthly" as const,
       priority: 0.72,
     })),
-    ...serviceAreas.map((area) => ({
+    ...serviceAreas.filter((area) => area.indexable).map((area) => ({
       path: `/locations/${area.slug}`,
       changeFrequency: "monthly" as const,
       priority: 0.58,

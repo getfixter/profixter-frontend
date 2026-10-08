@@ -7,13 +7,11 @@ import { plans } from "@/app/data/content";
 import {
   getSeoEngineSitemapRoutes,
   renovationServices,
-  serviceAreas,
 } from "@/lib/seo-content";
 import {
   BRAND_ALTERNATE_NAMES,
   BUSINESS_LOCATION,
   FULL_DAY_FALLBACK,
-  HIC_LICENSE,
   LEGAL_NAME,
   OFFICIAL_PROFILES,
   ONE_TIME_FALLBACK,
@@ -63,12 +61,12 @@ export const DEFAULT_OG_IMAGE = {
   alt: "Profixter home support for Long Island homeowners",
 };
 
-export const LOCAL_SERVICE_AREAS = [
-  "Long Island",
-  "Nassau County",
-  "Suffolk County",
-  ...serviceAreas.map((area) => area.name),
-] as const;
+/*
+ * The two counties, and nothing finer. Listing individual towns added nothing
+ * the counties do not already cover, and implied a footprint town by town that
+ * the visit data does not support everywhere. Town pages describe themselves.
+ */
+export const LOCAL_SERVICE_AREAS = ["Long Island", "Nassau County", "Suffolk County"] as const;
 
 /**
  * The date this release's content changes went live. Pages edited in a release
@@ -191,15 +189,13 @@ export const PROFIXTER_STRUCTURED_DATA = {
         },
       ],
       sameAs: [...OFFICIAL_PROFILES],
-      hasCredential: {
-        "@type": "EducationalOccupationalCredential",
-        credentialCategory: "license",
-        name: `Suffolk County home improvement license ${HIC_LICENSE}`,
-        recognizedBy: {
-          "@type": "GovernmentOrganization",
-          name: "Suffolk County Department of Consumer Affairs",
-        },
-      },
+      /*
+       * No hasCredential. HI-71484 is a Suffolk County license held by the
+       * founder personally, not by Premium Island Homes Inc., so attaching it
+       * to the business entity in markup would overstate it. The visible site
+       * names the license; the markup stays silent until the owner confirms
+       * how it should be represented.
+       */
       /*
        * The brand mark, not the hero photograph.
        *

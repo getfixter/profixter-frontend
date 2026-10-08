@@ -3,7 +3,7 @@ import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import Link from "next/link";
 import RecentWorkSection from "@/app/components/sections/RecentWorkSection";
-import { COMPLETED_VISITS_ROUNDED, DATA_AS_OF, DATA_SINCE, MULTI_TASK_VISIT_PERCENT, TASK_MIX } from "@/lib/profixter-data";
+import { COMPLETED_VISITS_ROUNDED, DATA_AS_OF, DATA_SINCE, MULTI_TASK_REQUEST_PHRASE, TASK_MIX } from "@/lib/profixter-data";
 
 export const metadata: Metadata = {
   /*
@@ -73,8 +73,8 @@ export default function RecentWorkPage() {
           </h2>
           <p className="mt-3 text-[15px] leading-relaxed text-white/60">
             From more than {COMPLETED_VISITS_ROUNDED} completed visits across Nassau and Suffolk since {DATA_SINCE}: the
-            share of visit requests that mention each kind of work. About {MULTI_TASK_VISIT_PERCENT}% of visits cover
-            two or more of them. As of {DATA_AS_OF}.
+            rough share of visit requests that mention each kind of work, read from what customers wrote when they
+            booked. Lists are common: {MULTI_TASK_REQUEST_PHRASE}. As of {DATA_AS_OF}.
           </p>
           <ul className="mt-6 grid gap-2.5">
             {TASK_MIX.map((row) => (

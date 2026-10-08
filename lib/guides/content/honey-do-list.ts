@@ -15,7 +15,7 @@ export const guide: Guide = {
   body: [
     {
       t: "answer",
-      text: "Write every job down with a photo and a location, group the list by trade (handyman work, electrician, plumber) and by room, pull out anything urgent or unsafe, and then book the handyman part as **one longer visit** if you have a lot at once, or as **regular short visits** if new jobs keep appearing. A clear list is the biggest single factor in how much gets done per hour, because the handyman spends the time working instead of discovering the job.",
+      text: "Write every job down with a photo and a location, group the list by trade (handyman work, electrician, plumber) and by room, pull out anything urgent or unsafe, and then book the handyman part as **one longer visit** if you have a lot at once, or as **regular short visits** if new jobs keep appearing. A clear list makes a big difference to how much gets done: the handyman spends the time working instead of working out what you meant.",
     },
     { t: "h2", text: "Step 1: Write the list so someone else can price it" },
     {
@@ -34,7 +34,7 @@ export const guide: Guide = {
     },
     {
       t: "p",
-      text: "That last column matters more than it looks. It is what lets you split the list into a visit now and a visit later instead of waiting until everything is ready.",
+      text: "That last one matters more than it looks. It lets you split the list into a visit now and a visit later, instead of waiting until everything is ready.",
     },
     { t: "h2", text: "Step 2: Pull out what isn't handyman work" },
     {
@@ -49,13 +49,13 @@ export const guide: Guide = {
         ["Patch drywall, touch up paint", "Handyman (a painter for whole rooms)"],
         ["Fix a sticking door, replace a lockset", "Handyman"],
         ["Shelves, curtain rods, mirrors, TV mount", "Handyman"],
-        ["Swap a light fixture or fan; replace a faucet or toilet part", "Ask the company whether it is in scope; some fixture work requires a licensed electrician or plumber"],
+        ["Swap a light fixture or fan; replace a faucet or toilet part", "Handyman if it's a straight swap; an electrician or plumber if wiring or pipes need changing"],
         ["New outlet or circuit, panel work", "Licensed electrician"],
         ["Moving or adding plumbing lines, water heater", "Licensed plumber"],
         ["Appliance that won't run", "Appliance repair service"],
         ["Leaking roof, rotted siding, structural sag", "Contractor with a written estimate"],
       ],
-      note: "On Long Island, electrical and plumbing work done for pay is governed by county and town rules, and they differ between Nassau and Suffolk. A good company tells you up front what it will and won't do, and when a licensed electrician or plumber is required.",
+      note: "When in doubt, ask before you book. A good company tells you up front what it will and won't do.",
     },
     { t: "h2", text: "Step 3: Group by room and by what's needed" },
     {
@@ -76,7 +76,7 @@ export const guide: Guide = {
     },
     {
       t: "p",
-      text: "A long single visit is the most efficient use of a trip. Regular visits are better when the list never really empties, because you stop living with broken things while you wait for the list to be worth a call. That second situation is exactly what a [recurring handyman membership](/handyman-membership) is designed for.",
+      text: "A long single visit is the most efficient use of a trip. Regular visits are better when the list never really empties, because you stop living with broken things while you wait for the list to be worth a call. If that's your house, a [recurring handyman membership](/handyman-membership) is designed for exactly that.",
     },
     { t: "h2", text: "Printable honey-do list" },
     {
@@ -131,7 +131,7 @@ export const guide: Guide = {
     { t: "h2", text: "How Profixter handles lists" },
     {
       t: "p",
-      text: "Profixter's visits are built around lists, not single jobs. In our records about half of all visits covered two or more different kinds of work. If you are in Nassau or Suffolk County you can send the list with photos when you book, and the visit is planned around it.",
+      text: "Lists are normal: about half of the visit requests we get ask for two or more different kinds of work. Profixter member visits are built for that. When you book, you describe the jobs and add photos, so the visit can be planned around your list. A One-Time Visit is the exception: it's for one job from a set list.",
     },
     { t: "component", name: "offers" },
   ],

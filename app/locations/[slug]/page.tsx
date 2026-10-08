@@ -5,7 +5,7 @@ import { getServiceArea, handymanServices, serviceAreas } from "@/lib/seo-conten
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { plans } from "@/app/data/content";
 import { getGoogleRating, getOneTimeOffer } from "@/lib/offers";
-import { DATA_AS_OF, TASK_MIX, TOWN_RECORDS } from "@/lib/profixter-data";
+import { DATA_AS_OF, TOWN_RECORDS } from "@/lib/profixter-data";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -32,6 +32,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     alternates: {
       canonical: `/locations/${area.slug}`,
     },
+    /* Reachable, but not indexed until there is real work to show here. */
+    ...(area.indexable ? {} : { robots: { index: false, follow: true } }),
     openGraph: {
       title: area.metaTitle,
       description: area.metaDescription,
@@ -98,7 +100,6 @@ export default async function LocationPage({ params }: PageProps) {
         rating={rating}
         oneTimePrice={oneTime.priceDollars}
         lowestPlanPrice={Math.min(...plans.map((plan) => plan.price))}
-        taskMix={TASK_MIX}
         dataAsOf={DATA_AS_OF}
       />
     </>

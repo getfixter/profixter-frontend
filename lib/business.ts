@@ -82,16 +82,18 @@ export const OPENING_HOURS = {
 /**
  * Official profiles, for schema.org sameAs.
  *
- * Only profiles the business actually controls. The Google Maps link is the
- * profile's own CID URL. The Instagram account is the official one even though
- * its handle still carries the old name; if it is renamed, change it here and
- * nowhere else. facebook.com/profixter and tiktok.com/@profixter belong to other
- * people and must never be listed.
+ * Only profiles the business controls AND that describe it accurately. The
+ * Google Maps link is the profile's own CID URL.
+ *
+ * Instagram (@mrfixter.ny) is deliberately NOT listed yet: it still carries the
+ * retired Mr.Fixter name and an "Unlimited visits" bio, and sameAs tells
+ * search engines to treat that profile as this business. Add
+ * "https://www.instagram.com/mrfixter.ny/" (or its new handle) once the bio and
+ * name are corrected - a change coordinated with the marketing agency.
+ * facebook.com/profixter and tiktok.com/@profixter belong to other people and
+ * must never be listed.
  */
-export const OFFICIAL_PROFILES = [
-  "https://maps.google.com/?cid=17232690381782599634",
-  "https://www.instagram.com/mrfixter.ny/",
-] as const;
+export const OFFICIAL_PROFILES = ["https://maps.google.com/?cid=17232690381782599634"] as const;
 
 /** Fallbacks for the live offer settings. See lib/offers.ts. */
 export const ONE_TIME_FALLBACK = { priceDollars: 99, minutes: 90 } as const;
@@ -114,7 +116,7 @@ export const SHORT_DESCRIPTION =
 export const NOT_HANDYMAN_WORK = [
   "Appliance repair",
   "Painting entire rooms",
-  "Large electrical work (panels, rewiring, new circuits)",
+  "Large electrical work, such as panels and rewiring",
   "Plumbing remodels and re-piping",
   "Roofing, siding and renovations",
   "Structural work and multi-day projects",

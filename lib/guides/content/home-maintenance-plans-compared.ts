@@ -20,7 +20,7 @@ export const guide: Guide = {
   body: [
     {
       t: "answer",
-      text: "They solve different problems. A **home warranty** pays toward repairing or replacing major systems and appliances when they fail, and excludes general maintenance. A **maintenance subscription** (for example Lowe's HomeCare+) sends someone for a fixed set of upkeep tasks a couple of times a year. An **app or marketplace** connects you with an independent pro per job. A **handyman membership** gives you ongoing access to a handyman team for the everyday list: repairs, installs and fixes. Many households need none of them; some need two.",
+      text: "They solve different problems. A **home warranty** pays toward repairing or replacing major systems and appliances when they fail, and excludes general maintenance. A **maintenance subscription** (for example Lowe's HomeCare+) sends someone for a fixed set of upkeep tasks a couple of times a year. An **app or marketplace** connects you with an independent pro per job. A **handyman membership** gives you ongoing access to a handyman team for the everyday list: repairs, installs and fixes. Many homeowners need none of them; some need two.",
     },
     { t: "h2", text: "Side by side" },
     {
@@ -31,7 +31,7 @@ export const guide: Guide = {
         ["Pays for", "Repair or replacement of covered systems and appliances that fail", "A set list of upkeep tasks", "One job at a time", "Ongoing handyman visits"],
         ["Covers a loose railing, a drywall hole, a new shelf", "No (general maintenance excluded)", "Usually no", "Yes, booked per job", "Yes"],
         ["Covers a broken furnace or fridge", "Yes, if covered and not excluded", "No", "Sometimes, via a specialist", "No (appliance repair excluded)"],
-        ["Who comes", "A contractor the warranty company assigns", "The provider's staff", "Whichever independent pro accepts", "The same team"],
+        ["Who comes", "A contractor the warranty company assigns", "The provider's staff", "Whichever independent pro accepts", "Usually the same team"],
         ["Typical cost", "New York averages about $766–$1,029 a year, plus a service fee per claim (often $65–$125)", "Lowe's HomeCare+: $99 a year at launch", "Per job, plus platform fees on some apps", "Profixter: $149–$499 a month"],
       ],
       note: "Warranty figures from This Old House's New York cost guide (updated June 2026). Lowe's HomeCare+ from Lowe's March 17, 2026 announcement. Prices change; check the provider.",
@@ -49,12 +49,12 @@ export const guide: Guide = {
     { t: "h2", text: "Apps and marketplaces" },
     {
       t: "p",
-      text: "Platforms such as TaskRabbit, Thumbtack and Angi connect you with independent pros per job. They are good for a one-off job and for comparing quotes. Their business models differ: some charge the customer service fees on top of the pro's rate, and some charge pros for leads. Either way, you are usually hiring a different person each time, and the platform rather than the pro owns the relationship.",
+      text: "Platforms such as TaskRabbit, Thumbtack and Angi connect you with independent pros per job. They are good for a one-off job and for comparing quotes. Their business models differ: some charge the customer service fees on top of the pro's rate, and some charge pros for leads. Either way, you are often hiring a different person each time.",
     },
     { t: "h2", text: "Handyman memberships" },
     {
       t: "p",
-      text: "A handyman membership is the newest of the four. You pay monthly for ongoing access to a handyman team and book visits as jobs come up. It doesn't pay for a failed furnace and it isn't a checklist of set tasks: it covers the everyday list of small repairs and installations that every house produces. Plans vary widely between providers in how much time a visit includes, how far ahead you book, what is excluded and whether materials are included, so compare those, not just the monthly price.",
+      text: "With a handyman membership, you pay monthly for ongoing access to a handyman team and book visits as jobs come up. It doesn't pay for a failed furnace and it isn't a checklist of set tasks: it covers the everyday list of small repairs and installations that every house produces. Plans vary widely between providers in how much time a visit includes, how far ahead you book, what is excluded and whether materials are included, so compare those, not just the monthly price.",
     },
     {
       t: "callout",

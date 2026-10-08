@@ -147,7 +147,9 @@ const toPath = (url) => url.replace(SITE, "") || "/";
     check("business: address locality, no street", business.address && business.address.addressLocality === "Lindenhurst" && !business.address.streetAddress);
     check("business: opening hours", Array.isArray(business.openingHoursSpecification) && business.openingHoursSpecification.length > 0);
     check("business: sameAs includes the Google profile", (business.sameAs || []).some((u) => u.includes("maps.google.com")));
-    check("business: license credential names Suffolk County", /Suffolk County/.test(JSON.stringify(business.hasCredential || {})));
+    /* HI-71484 is held by the founder personally; it is named on the page, not attached to the entity. */
+    check("business: no license credential attached to the company entity", !business.hasCredential);
+    check("business: sameAs does not list the old Instagram (bio still says unlimited)", !(business.sameAs || []).some((u) => /instagram/.test(u)));
     check("business: no self-serving aggregateRating", !business.aggregateRating);
   }
   const breadcrumbPages = ["/guides/handyman-for-small-jobs", "/locations/lindenhurst", "/services/tv-mounting", "/handyman-membership"];
@@ -164,6 +166,11 @@ const toPath = (url) => url.replace(SITE, "") || "/";
     [/NY State Licensed|New York State Dept|NYS Department of State|NY HIC/i, "license attributed to New York State"],
     [/licensed in (both )?Nassau/i, "licensed in Nassau"],
     [/\b(first|only) handyman membership\b/i, "first/only claim"],
+    /* Removed in the final accuracy pass: not public policy, or not verifiable. */
+    [/at least a week|week ahead|week out/i, "lead-time policy"],
+    [/no (separate )?trip fees?/i, "no-trip-fee claim"],
+    [/same (prices )?across Nassau and Suffolk/i, "same-price claim"],
+    [/households/i, "households (the data counts customer accounts)"],
   ];
   for (const [re, label] of forbidden) {
     const hits = Object.entries(pages).filter(([, p]) => re.test(visibleText(p.html))).map(([path]) => path);
@@ -198,6 +205,12 @@ const toPath = (url) => url.replace(SITE, "") || "/";
     check(`${path}: one Meta Pixel script, identical to production`, elements === 1 && pixelScript(html) === prodPixel && html.includes(`${INIT_CALL}, '${PIXEL_ID}')`), `${elements} elements`);
     check(`${path}: GTM snippet identical to production`, !!prodGtm && gtmSnippet(html) === prodGtm);
     check(`${path}: noscript pixel and GTM iframe present`, html.includes(`facebook.com/tr?id=${PIXEL_ID}`) && html.includes(`ns.html?id=${GTM_ID}`));
+  }
+
+  /* ---------------- town pages without real work stay out of the index ---------------- */
+  for (const path of ["/locations/copiague", "/locations/islip"]) {
+    const page = await get(path);
+    check(`${path} reachable but noindex, and not in the sitemap`, page.status === 200 && /noindex/.test(robotsOf(page.html) || "") && !urls.includes(SITE + path));
   }
 
   /* ---------------- redirects ---------------- */
