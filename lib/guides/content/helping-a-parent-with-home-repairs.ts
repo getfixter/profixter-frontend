@@ -56,14 +56,14 @@ export const guide: Guide = {
         "Tightening loose stair railings, handrails and grab bars (they should be secured into framing, not just drywall).",
         "Fixing doors and locks that stick or are hard to turn.",
         "Replacing smoke and carbon monoxide detectors, and changing batteries.",
-        "Re-caulking tubs and showers, and sorting out dripping taps and running toilets (ask whether a plumber is needed).",
+        "Re-caulking tubs and showers, and sorting out dripping taps and running toilets.",
         "Securing loose rugs, thresholds and deck boards.",
         "Moving or re-hanging things that are now too high or too low.",
       ],
     },
     {
       t: "callout",
-      text: "Anything involving new electrical wiring, gas, or structural changes to bathrooms or stairs is work for a licensed contractor, not a handyman visit. For home modifications made for a specific mobility or medical need, ask the relevant professional what is right before anything is installed.",
+      text: "Larger electrical or plumbing projects, gas work, and structural changes to bathrooms or stairs are project work, not a handyman visit. For home modifications made for a specific mobility or medical need, ask the relevant professional what is right before anything is installed.",
     },
     { t: "h2", text: "Choosing someone to trust" },
     {

@@ -89,7 +89,7 @@ export const guide: Guide = {
       items: [
         {
           q: "Is it cheaper to hire a handyman or a contractor?",
-          a: "For small repairs, a handyman. Contractors are priced and staffed for larger projects, and many won't take small jobs. For work that requires a licensed electrician or plumber, or permits, hire the licensed trade.",
+          a: "For small repairs, a handyman. Contractors are priced and staffed for larger projects, and many won't take small jobs. For larger projects, such as a panel upgrade, re-piping or anything that needs a permit, hire a contractor for that project.",
         },
         {
           q: "Do handymen charge for an estimate?",
