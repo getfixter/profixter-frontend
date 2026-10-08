@@ -85,8 +85,80 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
     check("range change refetches with range=7d", calls.some((c) => c.includes("range=7d")));
     const after = await page.locator(".ov-num").allInnerTexts();
     check("numbers follow the new range", after[1] === String(FIX.overview7d.kpis.newMembers.value), after.join(" | "));
+    /* Money: net MRR, full price and discount are three separate, labelled numbers. */
+    const mrrText = await page.locator("text=Monthly recurring revenue").first().locator("xpath=ancestor::div[contains(@class,'rounded-[16px]')][1]").innerText();
+    check("MRR shows the net figure", mrrText.includes("$6,525"), mrrText.replace(/\s+/g, " "));
+    check("MRR shows full price and the discount beside it", /Full price \$6,749/.test(mrrText) && /discounts −\$223\.50/.test(mrrText));
+    check("comped and ending memberships are named", /1 comped \(100% off\)/.test(mrrText) && /1 ending \(\$111\.75\)/.test(mrrText));
+    check("active members: paying and comped apart", (await page.getByText(/paying · 1 comped/).count()) >= 1);
+    check("revenue card says the tax is extra", (await page.getByText(/plus \$[\d,.]+ sales tax/).count()) === 1);
+    await page.click("button[aria-label^='Revenue']");
+    await page.waitForTimeout(400);
+    check("revenue drawer: revenue, tax and collected are separate lines", (await page.getByText("Sales tax collected").count()) === 1 && (await page.getByText("Collected, tax included").count()) === 1);
+    await page.keyboard.press("Escape");
+
     check("no page errors", errors.length === 0, errors.join(" | "));
     await ctx.close();
+  }
+
+  /*
+   * The states a phone sees while money is missing or slow. None of them may
+   * leave a skeleton up: each ends in numbers or in a message with Try again.
+   */
+  {
+    console.log("\n--- money states and recovery ---");
+    const withKpis = (patch) => (u) => {
+      if (u.pathname.endsWith("/map")) return FIX.map;
+      if (u.pathname.endsWith("/list")) return FIX.list;
+      const o = JSON.parse(JSON.stringify(FIX.overview));
+      patch(o.kpis);
+      return o;
+    };
+
+    {
+      const { ctx, page, errors } = await open(browser, OWNER, {
+        answer: withKpis((k) => (k.mrr = { source: "list_price", cents: null, fullPriceCents: 674883, discountCents: null, startCents: 674883, delta: null, payingMembers: 27, error: "Recurring revenue is unavailable right now." })),
+      });
+      await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(1200);
+      check("Stripe MRR missing: says so, offers Try again, shows only the list-price figure", (await page.getByText("Recurring revenue is unavailable right now.").count()) === 1 && (await page.getByText(/At full price: \$6,749\/mo/).count()) === 1);
+      check("Stripe MRR missing: the other numbers still show", (await page.locator(".ov-num").count()) === 6);
+      check("no page errors", errors.length === 0, errors.join(" | "));
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open(browser, OWNER, {
+        answer: withKpis((k) => Object.assign(k.revenue, { available: false, syncing: true, error: "Revenue is loading from Stripe for the first time. It will appear in a minute." })),
+      });
+      await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(1200);
+      check("first Stripe sync: revenue says it is loading, members show at once", (await page.getByText("Loading from Stripe…").count()) === 1 && (await page.locator(".ov-num").first().innerText()) === String(FIX.overview.kpis.activeMembers.value));
+      await ctx.close();
+    }
+    {
+      // The first answer fails as a dropped connection would; Try again recovers.
+      let fail = true;
+      const { ctx, page } = await open(browser, OWNER, { answer: (u) => (u.pathname.endsWith("/map") ? FIX.map : u.pathname.endsWith("/list") ? FIX.list : FIX.overview) });
+      await ctx.route(/\/api\/admin\/overview\?/, (route) => (fail ? ((fail = false), route.abort("connectionreset")) : route.fallback()));
+      await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(1200);
+      check("a failed load ends in a message, not a skeleton", (await page.getByText("Overview couldn't load").count()) >= 1 && (await page.locator("[aria-label='Loading overview']").count()) === 0);
+      await page.getByRole("button", { name: "Try again" }).click();
+      await page.waitForSelector(".ov-num", { timeout: 10000 }).catch(() => {});
+      check("Try again loads the numbers", (await page.locator(".ov-num").count()) === 6);
+      await ctx.close();
+    }
+    {
+      const { ctx, page, errors } = await open(browser, OWNER, { width: 390, height: 844 });
+      const t0 = Date.now();
+      await page.goto(`${BASE}/admin`, { waitUntil: "domcontentloaded" });
+      await page.waitForSelector(".ov-num", { timeout: 20000 }).catch(() => {});
+      const ms = Date.now() - t0;
+      check("phone: main numbers appear within 3 seconds", (await page.locator(".ov-num").count()) === 6 && ms < 3000, `${ms}ms`);
+      check("phone: no skeleton left", (await page.locator("[aria-label='Loading overview']").count()) === 0);
+      check("phone: no page errors", errors.length === 0, errors.join(" | "));
+      await ctx.close();
+    }
   }
 
   for (const [label, width, height] of [["phone", 390, 844], ["tablet", 834, 1112], ["desktop", 1440, 900]]) {

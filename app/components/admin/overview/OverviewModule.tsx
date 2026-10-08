@@ -9,7 +9,7 @@
  * range keeps the current frame (dimmed) instead of flashing skeletons.
  */
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   getOverview,
   getOverviewList,
@@ -180,18 +180,47 @@ export default function OverviewModule() {
     }
   }, []);
 
+  /*
+   * Only the latest request may update the page: a slow answer for a range the
+   * admin has already moved away from is dropped. Every request ends (the API
+   * client has a timeout), so the skeleton always gives way to numbers or to
+   * a message with Try again.
+   */
+  const seq = useRef(0);
   const load = useCallback(async (q: RangeQuery) => {
+    const id = ++seq.current;
     setLoading(true);
     setError("");
     try {
-      setData(await getOverview(q));
+      const next = await getOverview(q);
+      if (id === seq.current) setData(next);
     } catch (e) {
-      const status = (e as { response?: { status?: number } })?.response?.status;
-      setError(status === 403 ? "Overview is available to the main admin account." : "Overview couldn't load. Try again in a moment.");
+      if (id !== seq.current) return;
+      const err = e as { response?: { status?: number }; code?: string };
+      const status = err?.response?.status;
+      setError(
+        status === 403
+          ? "Overview is available to the main admin account."
+          : err?.code === "ECONNABORTED"
+            ? "Overview took too long to answer. Try again."
+            : "Overview couldn't load. Try again in a moment."
+      );
     } finally {
-      setLoading(false);
+      if (id === seq.current) setLoading(false);
     }
   }, []);
+
+  /* Right after a deploy, revenue is still arriving from Stripe: check again on its own, a few times. */
+  const syncChecks = useRef(0);
+  const revenueSyncing = !!data?.kpis.revenue.syncing;
+  useEffect(() => {
+    if (!revenueSyncing || syncChecks.current >= 8) return;
+    const t = setTimeout(() => {
+      syncChecks.current += 1;
+      void load(query);
+    }, 15000);
+    return () => clearTimeout(t);
+  }, [revenueSyncing, data, query, load]);
 
   useEffect(() => {
     void load(query);
@@ -290,7 +319,14 @@ export default function OverviewModule() {
             </div>
           ) : null}
         </div>
-        {error ? <p className="mt-3 text-[13px] text-rose-600">{error}</p> : null}
+        {error ? (
+          <p className="mt-3 text-[13px] text-rose-600">
+            {error} Showing the last numbers that loaded.{" "}
+            <button type="button" onClick={() => void load(query)} className="font-semibold underline underline-offset-2">
+              Try again
+            </button>
+          </p>
+        ) : null}
       </header>
 
       <div className={`space-y-4 transition-opacity duration-300 md:space-y-5 ${loading ? "opacity-60" : "opacity-100"}`}>
@@ -299,7 +335,13 @@ export default function OverviewModule() {
           <Kpi
             label="Active members"
             value={num(k.activeMembers.value)}
-            sub={k.activeMembers.gifts ? `${num(k.activeMembers.paying)} paying · ${num(k.activeMembers.gifts)} gift` : `${num(k.activeMembers.paying)} paying`}
+            sub={[
+              `${num(k.activeMembers.paying)} paying`,
+              k.activeMembers.comped ? `${num(k.activeMembers.comped)} comped` : "",
+              k.activeMembers.gifts ? `${num(k.activeMembers.gifts)} gift` : "",
+            ]
+              .filter(Boolean)
+              .join(" · ")}
             delta={<DeltaChip d={k.activeMembers.delta} absolute suffix={`since ${shortDate(data.period.from)}`} />}
             onClick={() => openList("activeMembers", "Active members")}
           />
@@ -318,11 +360,19 @@ export default function OverviewModule() {
             onClick={() => openList("newCustomers", "New customers")}
           />
           <Kpi
-            label="Revenue collected"
+            label="Revenue"
             value={rev.available ? money(rev.totalCents) : "—"}
-            sub={rev.available ? "Memberships + visits, net of refunds" : rev.error || "Unavailable"}
+            sub={
+              rev.available
+                ? rev.taxCents
+                  ? `Net of refunds · plus ${money(rev.taxCents)} sales tax`
+                  : "Memberships + visits, net of refunds"
+                : rev.syncing
+                  ? "Loading from Stripe…"
+                  : rev.error || "Unavailable"
+            }
             delta={rev.available ? <DeltaChip d={rev.delta} /> : undefined}
-            onClick={() => setDrawer({ kind: "custom", title: "Revenue collected", subtitle: data.period.label, body: <RevenueBreakdown o={data} /> })}
+            onClick={() => setDrawer({ kind: "custom", title: "Revenue", subtitle: data.period.label, body: <RevenueBreakdown o={data} /> })}
           />
           <Kpi
             label="Free Visits"
@@ -348,7 +398,7 @@ export default function OverviewModule() {
         {/* ===================== Growth + Revenue ======================== */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-4 md:gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
           <GrowthCard o={data} metric={growthMetric} setMetric={setGrowthMetric} span={growthSpan} setSpan={setGrowthSpan} />
-          <RevenueCard o={data} span={revenueSpan} setSpan={setRevenueSpan} />
+          <RevenueCard o={data} span={revenueSpan} setSpan={setRevenueSpan} onRetry={() => void load(query)} />
         </div>
 
         {/* ====================== Funnel + Plans ========================= */}
@@ -425,7 +475,7 @@ export default function OverviewModule() {
         </div>
 
         <p className="px-1 text-[12px] leading-5 text-slate-400">
-          Members count one membership per home (paid or gift). Revenue is money collected in Stripe, net of refunds, excluding projects and tips. MRR is the monthly list-price run rate of paying memberships (annual ÷ 12). Sources are each customer&rsquo;s first marketing touch. Times are New York.
+          Members count one membership per home (paid or gift). Revenue is successful Stripe payments after coupons, net of refunds, without sales tax, excluding projects and tips. MRR is what active memberships bill per month after the discounts still running, before tax (annual ÷ 12); full price is shown beside it. Sources are each customer&rsquo;s first marketing touch. Times are New York.
         </p>
       </div>
 
@@ -478,16 +528,24 @@ function GrowthCard({
   );
 }
 
-function RevenueCard({ o, span, setSpan }: { o: Overview; span: "period" | "year"; setSpan: (s: "period" | "year") => void }) {
+function RevenueCard({ o, span, setSpan, onRetry }: { o: Overview; span: "period" | "year"; setSpan: (s: "period" | "year") => void; onRetry: () => void }) {
   const rev = o.kpis.revenue;
-  const mrr = o.kpis.mrr;
   const series = o.revenueSeries?.[span];
   const points = series ? series.points.map((p) => ({ label: bucketLabel(p.key, series.granularity), values: [p.membershipCents, p.visitCents] })) : [];
   return (
     <Card>
       <SectionTitle aside={<Seg value={span} options={[{ key: "period", label: "This period" }, { key: "year", label: "12 months" }]} onChange={setSpan} />}>Revenue</SectionTitle>
       {!rev.available ? (
-        <p className="rounded-[14px] bg-slate-50 px-4 py-6 text-center text-[14px] text-slate-500">{rev.error || "Revenue is unavailable right now."}</p>
+        <div className="rounded-[14px] bg-slate-50 px-4 py-6 text-center text-[14px] text-slate-500">
+          <p>{rev.error || "Revenue is unavailable right now."}</p>
+          {rev.syncing ? (
+            <p className="mt-1 text-[12px] text-slate-400">This page checks again by itself.</p>
+          ) : (
+            <button type="button" onClick={onRetry} className="mt-2 font-semibold text-slate-900 underline underline-offset-2">
+              Try again
+            </button>
+          )}
+        </div>
       ) : (
         <>
           <div className="mb-4 grid grid-cols-3 gap-2">
@@ -509,17 +567,56 @@ function RevenueCard({ o, span, setSpan }: { o: Overview; span: "period" | "year
           <DataTable head={["Period", "Membership", "Visits"]} rows={points.map((p) => [p.label, money(p.values[0]), money(p.values[1])])} />
         </>
       )}
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-3 rounded-[16px] bg-slate-50 px-4 py-3">
+      <MrrPanel o={o} onRetry={onRetry} />
+    </Card>
+  );
+}
+
+/*
+ * Three numbers that are never mixed: net MRR (what active memberships bill
+ * per month after the discounts still running), the same memberships at full
+ * price, and the discount between them. From Stripe; if Stripe did not answer,
+ * only the list-price figure is shown, labelled as such.
+ */
+function MrrPanel({ o, onRetry }: { o: Overview; onRetry: () => void }) {
+  const mrr = o.kpis.mrr;
+  if (mrr.source !== "stripe" || mrr.cents === null) {
+    return (
+      <div className="mt-4 rounded-[16px] bg-slate-50 px-4 py-3">
+        <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">Monthly recurring revenue</div>
+        <p className="mt-1 text-[14px] text-slate-600">{mrr.error || "Recurring revenue is unavailable right now."}</p>
+        <p className="mt-1 text-[12px] text-slate-500">
+          At full price: {money(mrr.fullPriceCents)}/mo (before any discounts).{" "}
+          <button type="button" onClick={onRetry} className="font-semibold text-slate-900 underline underline-offset-2">
+            Try again
+          </button>
+        </p>
+      </div>
+    );
+  }
+  const extras = [
+    mrr.compedMembers ? `${num(mrr.compedMembers)} comped (100% off)` : "",
+    mrr.discountedMembers ? `${num(mrr.discountedMembers)} on a discount` : "",
+    mrr.endingMembers ? `${num(mrr.endingMembers)} ending (${money(mrr.endingCents)})` : "",
+    mrr.pastDueMembers ? `${num(mrr.pastDueMembers)} past due` : "",
+  ].filter(Boolean);
+  return (
+    <div className="mt-4 rounded-[16px] bg-slate-50 px-4 py-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">Monthly recurring revenue</div>
           <div className="mt-1 text-[26px] font-bold tracking-[-0.03em] text-slate-900">{money(mrr.cents)}</div>
         </div>
-        <div className="text-right text-[12px] text-slate-500">
-          <DeltaChip d={mrr.delta} absolute format={(n) => money(n)} suffix={`since ${shortDate(o.period.from)}`} />
-          <div className="mt-0.5">{num(mrr.payingMembers)} paying memberships · run rate, not cash</div>
+        <div className="text-right text-[12px] leading-5 text-slate-500">
+          <div>
+            Full price {money(mrr.fullPriceCents)}
+            {mrr.discountCents ? <span className="text-slate-400"> · discounts −{money(mrr.discountCents)}</span> : null}
+          </div>
+          <div>{num(mrr.payingMembers)} paying · after discounts, before tax</div>
         </div>
       </div>
-    </Card>
+      {extras.length ? <p className="mt-2 text-[12px] text-slate-500">{extras.join(" · ")}</p> : null}
+    </div>
   );
 }
 
@@ -550,14 +647,23 @@ function RevenueBreakdown({ o }: { o: Overview }) {
           </div>
         ))}
         <div className="flex justify-between py-3 text-[16px]">
-          <dt className="font-semibold text-slate-900">Total collected</dt>
+          <dt className="font-semibold text-slate-900">Revenue</dt>
           <dd className="font-bold text-slate-900">{money(r.totalCents)}</dd>
+        </div>
+        <div className="flex justify-between py-3 text-[15px]">
+          <dt className="text-slate-600">Sales tax collected</dt>
+          <dd className="font-semibold text-slate-900">{money(r.taxCents)}</dd>
+        </div>
+        <div className="flex justify-between py-3 text-[15px]">
+          <dt className="text-slate-600">Collected, tax included</dt>
+          <dd className="font-semibold text-slate-900">{money(r.collectedCents)}</dd>
         </div>
       </dl>
       <p className="mt-3 text-[13px] leading-5 text-slate-500">
-        Net of {money(r.refundedCents)} refunded. Projects and tips are not included.
+        Successful Stripe payments after coupons, net of {money(r.refundedCents)} refunded. Sales tax is owed to the state, so it is not revenue. Failed payments,
+        projects and tips are not included.
         {r.otherCents ? ` ${money(r.otherCents)} could not be classified and is shown nowhere else.` : ""}
-        {r.truncated ? " Very long range - only the first 5,000 charges were read." : ""}
+        {r.syncedAt ? ` Stripe data as of ${new Date(r.syncedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" })}.` : ""}
       </p>
     </div>
   );
