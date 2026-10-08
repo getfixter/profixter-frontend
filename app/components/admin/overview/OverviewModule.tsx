@@ -363,7 +363,9 @@ export default function OverviewModule() {
             label="Revenue"
             value={rev.available ? money(rev.totalCents) : "—"}
             sub={
-              rev.available
+              rev.available && rev.stale
+                ? `Stripe sync delayed · may miss payments after ${rev.syncedAt ? new Date(rev.syncedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }) : "the last sync"}`
+                : rev.available
                 ? rev.taxCents
                   ? `Net of refunds · plus ${money(rev.taxCents)} sales tax`
                   : "Memberships + visits, net of refunds"
@@ -663,7 +665,7 @@ function RevenueBreakdown({ o }: { o: Overview }) {
         Successful Stripe payments after coupons, net of {money(r.refundedCents)} refunded. Sales tax is owed to the state, so it is not revenue. Failed payments,
         projects and tips are not included.
         {r.otherCents ? ` ${money(r.otherCents)} could not be classified and is shown nowhere else.` : ""}
-        {r.syncedAt ? ` Stripe data as of ${new Date(r.syncedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" })}.` : ""}
+        {r.syncedAt ? ` Stripe data as of ${new Date(r.syncedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" })}${r.stale ? " - the sync is delayed, so recent payments may be missing" : ""}.` : ""}
       </p>
     </div>
   );

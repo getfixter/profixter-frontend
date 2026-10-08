@@ -136,6 +136,13 @@ async function open(browser, user, { width = 1440, height = 900, answer = null }
       await ctx.close();
     }
     {
+      const { ctx, page } = await open(browser, OWNER, { answer: withKpis((k) => Object.assign(k.revenue, { stale: true })) });
+      await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(1200);
+      check("a delayed Stripe sync is flagged on the revenue number, not shown as final", (await page.getByText(/Stripe sync delayed · may miss payments/).count()) === 1);
+      await ctx.close();
+    }
+    {
       // The first answer fails as a dropped connection would; Try again recovers.
       let fail = true;
       const { ctx, page } = await open(browser, OWNER, { answer: (u) => (u.pathname.endsWith("/map") ? FIX.map : u.pathname.endsWith("/list") ? FIX.list : FIX.overview) });
