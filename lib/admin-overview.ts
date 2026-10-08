@@ -40,6 +40,8 @@ export type Series<T> = { granularity: "day" | "week" | "month"; points: T[] };
 export type SourceRow = {
   key: string;
   label: string;
+  /* "meta" for Facebook, Instagram and Other Meta; their total is in sourceGroups. */
+  group: string | null;
   visitors: number;
   registrations: number;
   freeVisits: number;
@@ -53,8 +55,16 @@ export type SourceRow = {
   roas: number | null;
 };
 
+/*
+ * A Meta campaign, ad set or ad. `id` and `name` are separate: name is null
+ * when the ad's URL only carried ids, and `label` then reads "ID <id>".
+ */
 export type CampaignNode = {
-  name: string;
+  key: string;
+  id: string | null;
+  name: string | null;
+  label: string;
+  visitors: number;
   registrations: number;
   freeVisits: number;
   members: number;
@@ -67,6 +77,19 @@ export type CampaignNode = {
   campaignId?: string | null;
   adsets?: CampaignNode[];
   ads?: CampaignNode[];
+};
+
+export type SourceGroup = {
+  key: string;
+  label: string;
+  sources: string[];
+  visitors: number;
+  registrations: number;
+  freeVisits: number;
+  members: number;
+  revenueCents: number;
+  conversion: number | null;
+  share: number | null;
 };
 
 export type ActivityItem = { at: string; type: string; text: string; who: string; userId: string; ref?: string };
@@ -134,6 +157,9 @@ export type Overview = {
   revenueSeries: { period: Series<RevenuePoint>; year: Series<RevenuePoint> } | null;
   funnel: { visitors: number; prevVisitors: number; visitorsTrackingSince: string | null; registered: number; freeVisitBooked: number; freeVisitCompleted: number; members: number };
   sources: SourceRow[];
+  sourceGroups: SourceGroup[];
+  /* What "Other" is made of: referring sites and unknown utm_source values. */
+  otherDetail: Array<{ origin: string; visitors: number; registrations: number }>;
   unmatchedRevenueCents: number;
   campaigns: CampaignNode[];
   spend: { connected: boolean };
@@ -231,7 +257,7 @@ function fill(shape: Shape, raw: unknown): unknown {
 const GROWTH_SERIES: Shape = { granularity: "day", points: [{ key: "", from: "", active: 0, new: 0, canceled: 0, customers: 0 }] };
 const REVENUE_SERIES: Shape = { granularity: "day", points: [{ key: "", from: "", membershipCents: 0, visitCents: 0 }] };
 const SOURCE_SHAPE: Shape = {
-  key: "other", label: "Other", visitors: 0, registrations: 0, freeVisits: 0, members: 0, revenueCents: 0,
+  key: "other", label: "Other", group: null, visitors: 0, registrations: 0, freeVisits: 0, members: 0, revenueCents: 0,
   spendCents: null, conversion: null, share: null, costPerRegistrationCents: null, costPerMemberCents: null, roas: null,
 };
 const OVERVIEW_SHAPE: Shape = {
@@ -262,6 +288,8 @@ const OVERVIEW_SHAPE: Shape = {
   revenueSeries: null,
   funnel: { visitors: 0, prevVisitors: 0, visitorsTrackingSince: null, registered: 0, freeVisitBooked: 0, freeVisitCompleted: 0, members: 0 },
   sources: [SOURCE_SHAPE],
+  sourceGroups: [{ key: "", label: "", sources: [], visitors: 0, registrations: 0, freeVisits: 0, members: 0, revenueCents: 0, conversion: null, share: null }],
+  otherDetail: [{ origin: "", visitors: 0, registrations: 0 }],
   unmatchedRevenueCents: 0,
   campaigns: [],
   spend: { connected: false },
@@ -317,7 +345,7 @@ function normalizeCampaigns(raw: unknown): CampaignNode[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter(isObj).map((c) => {
     const node = fill(
-      { name: "", registrations: 0, freeVisits: 0, members: 0, revenueCents: 0, conversion: null, spendCents: null, roas: null, costPerMemberCents: null },
+      { key: "", id: null, name: null, label: "", visitors: 0, registrations: 0, freeVisits: 0, members: 0, revenueCents: 0, conversion: null, spendCents: null, roas: null, costPerMemberCents: null },
       c
     ) as CampaignNode;
     if ("adsets" in c) node.adsets = normalizeCampaigns(c.adsets);

@@ -91,7 +91,7 @@ export function getFbCookies(): { fbp: string; fbc: string } {
 
   if (!fbc) {
     try {
-      const stored = getAttribution();
+      const stored = getMetaClick();
       if (stored.fbclid) {
         fbc = `fb.1.${stored.fbclidAt || Date.now()}.${stored.fbclid}`;
       }
@@ -116,17 +116,23 @@ export type Attribution = {
   fbclid?: string;
   fbclidAt?: number;
   gclid?: string;
-  /* Meta's ids/names, from the ad's URL parameters ({{campaign.id}}, {{ad.name}}...). */
+  /* Google's app click ids: Google Ads evidence, like gclid. */
+  gbraid?: string;
+  wbraid?: string;
+  /* Meta ids and names from the ad's URL parameters, each in its own field. */
   campaignId?: string;
+  campaignName?: string;
   adsetId?: string;
   adsetName?: string;
   adId?: string;
   adName?: string;
-  /* ?source= on our own links: the event kiosk QR, referral links. */
+  /* ?source= on our acquisition links only: event, qr, referral. */
   refSource?: string;
+  /* ?ref= on a referral-program link: the referring customer's id. */
+  refCode?: string;
   landingPath?: string;
   referrer?: string;
-  /* The first page this browser ever saw, tagged or not, and when. */
+  /* The first page this browser saw and where it came from (= the touch below). */
   firstLandingPath?: string;
   firstReferrer?: string;
   firstSeenAt?: number;
@@ -134,12 +140,50 @@ export type Attribution = {
   visitorId?: string;
 };
 
+/*
+ * Storage keys.
+ * - TOUCH_KEY: the acquisition first touch. Written once, never replaced.
+ * - ATTRIBUTION_KEY: the first fbclid-bearing visit, as before. It now only
+ *   feeds the Meta click fallback (getFbCookies / the Conversions API relay),
+ *   which is deliberately unchanged; it no longer decides acquisition.
+ * - FIRST_SEEN_KEY: the first page ever seen (kept; used to migrate browsers
+ *   that arrived before TOUCH_KEY existed).
+ */
+const TOUCH_KEY = "pf_touch";
 const ATTRIBUTION_KEY = "pf_attribution";
 const FIRST_SEEN_KEY = "pf_first_seen";
 const VISITOR_KEY = "pf_vid";
 const VISIT_SENT_KEY = "pf_visit_sent";
 
-const MARKETING_PARAMS: Array<[keyof Attribution, string]> = [
+/*
+ * ?source= values that are acquisition. Our own buttons also use ?source=
+ * (home, about, start-screen) to say where on the site a click came from:
+ * that is navigation, never how someone found us, so it is ignored here.
+ */
+const ACQUISITION_SOURCES = new Set(["event", "qr", "referral"]);
+
+/* External tags that can make a landing an acquisition touch. */
+const TOUCH_PARAMS: Array<[keyof Attribution, string]> = [
+  ["utmSource", "utm_source"],
+  ["utmMedium", "utm_medium"],
+  ["utmCampaign", "utm_campaign"],
+  ["utmTerm", "utm_term"],
+  ["utmContent", "utm_content"],
+  ["fbclid", "fbclid"],
+  ["gclid", "gclid"],
+  ["gbraid", "gbraid"],
+  ["wbraid", "wbraid"],
+  ["campaignId", "campaign_id"],
+  ["campaignName", "campaign_name"],
+  ["adsetId", "adset_id"],
+  ["adsetName", "adset_name"],
+  ["adId", "ad_id"],
+  ["adName", "ad_name"],
+  ["refCode", "ref"],
+];
+
+/* The pre-October-8 list, kept exactly, for the Meta click record only. */
+const LEGACY_PARAMS: Array<[keyof Attribution, string]> = [
   ["utmSource", "utm_source"],
   ["utmCampaign", "utm_campaign"],
   ["utmContent", "utm_content"],
@@ -178,25 +222,90 @@ function visitorId(): string {
   return id;
 }
 
-/**
- * Record this browser's first visit with the server, once.
- *
- * It is the "Visitors" step of the admin funnel: anonymous (a random id, the
- * landing page, the referrer, the tags in the URL), never sent twice from the
- * same browser, skipped for automation. Fire-and-forget like the rest of this
- * module.
+/* A referrer from another site, or nothing. Our own pages are navigation. */
+function externalReferrer(value: string | undefined | null): string | undefined {
+  if (!value) return undefined;
+  try {
+    const host = new URL(value).hostname.replace(/^www\./, "").toLowerCase();
+    if (!host || host === "localhost" || /(^|\.)profixter\.com$/.test(host) || host === window.location.hostname.replace(/^www\./, "")) {
+      return undefined;
+    }
+    return value.slice(0, 300);
+  } catch {
+    return undefined;
+  }
+}
+
+/* The external acquisition tags on the current URL. Internal ?source= values are dropped. */
+function tagsOnThisUrl(): Attribution {
+  const params = new URLSearchParams(window.location.search);
+  const tags: Attribution = {};
+  for (const [field, param] of TOUCH_PARAMS) {
+    const value = params.get(param);
+    if (value) (tags as Record<string, string>)[field] = value.slice(0, 300);
+  }
+  const source = (params.get("source") || "").trim().toLowerCase();
+  if (ACQUISITION_SOURCES.has(source)) tags.refSource = source;
+  return tags;
+}
+
+const hasExternalEvidence = (a: Attribution | null | undefined) =>
+  !!a &&
+  !!(
+    a.utmSource || a.utmMedium || a.utmCampaign || a.utmTerm || a.utmContent ||
+    a.fbclid || a.gclid || a.gbraid || a.wbraid ||
+    a.campaignId || a.campaignName || a.adsetId || a.adsetName || a.adId || a.adName ||
+    a.refCode || (a.refSource && ACQUISITION_SOURCES.has(String(a.refSource).toLowerCase()))
+  );
+
+/*
+ * A browser that visited before this first-touch record existed: rebuild its
+ * first touch from what it kept. The old record held the first TAGGED visit,
+ * which may have come after an untagged first visit - so it only counts if it
+ * was made on that very first landing (same page, same referrer). Otherwise
+ * the first visit stands, with whatever external referrer it had.
  */
-function recordFirstVisit(incoming: Attribution) {
+function touchFromLegacy(first: { firstLandingPath?: string; firstReferrer?: string; firstSeenAt?: number }): Attribution {
+  const legacy = readJson<Attribution>(ATTRIBUTION_KEY);
+  const sameLanding =
+    legacy &&
+    hasExternalEvidence(legacy) &&
+    (legacy.landingPath || "") === (first.firstLandingPath || "") &&
+    (legacy.referrer || "") === (first.firstReferrer || "");
+  const base: Attribution = {
+    landingPath: first.firstLandingPath,
+    referrer: externalReferrer(first.firstReferrer),
+    firstSeenAt: first.firstSeenAt || Date.now(),
+  };
+  if (!sameLanding || !legacy) return base;
+  const { refSource, ...rest } = legacy;
+  return {
+    ...rest,
+    ...(refSource && ACQUISITION_SOURCES.has(String(refSource).toLowerCase()) ? { refSource: String(refSource).toLowerCase() } : {}),
+    ...base,
+  };
+}
+
+/**
+ * Record this browser's first visit with the server, once: the "Visitors"
+ * step of the admin funnel. Anonymous (a random id, the landing page, the
+ * external referrer, the tags on that first URL), never sent twice from the
+ * same browser, skipped for automation. Fire-and-forget like the rest of this module.
+ */
+function recordFirstVisit(touch: Attribution) {
   try {
     if (!API_BASE || window.localStorage.getItem(VISIT_SENT_KEY)) return;
     if ((navigator as Navigator & { webdriver?: boolean }).webdriver) return;
     const id = visitorId();
     if (!id) return;
     window.localStorage.setItem(VISIT_SENT_KEY, "1");
+    const { firstSeenAt, fbclidAt, ...tags } = touch;
+    void firstSeenAt;
+    void fbclidAt;
     void fetch(`${API_BASE}/api/track/visit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ visitorId: id, ...incoming, landingPath: window.location.pathname, referrer: document.referrer || undefined }),
+      body: JSON.stringify({ visitorId: id, ...tags, landingPath: touch.landingPath || window.location.pathname, referrer: touch.referrer || undefined }),
       keepalive: true,
     }).catch(() => {});
   } catch {
@@ -204,68 +313,96 @@ function recordFirstVisit(incoming: Attribution) {
   }
 }
 
+/* The first fbclid-bearing landing, exactly as before (the Meta click record). */
+function captureMetaClick() {
+  const params = new URLSearchParams(window.location.search);
+  const incoming: Attribution = {};
+  for (const [field, param] of LEGACY_PARAMS) {
+    const value = params.get(param);
+    if (value) (incoming as Record<string, string>)[field] = value.slice(0, 300);
+  }
+  if (!Object.values(incoming).some(Boolean)) return;
+  if (incoming.fbclid) incoming.fbclidAt = Date.now();
+  incoming.landingPath = window.location.pathname;
+  incoming.referrer = document.referrer || undefined;
+  const existing = readJson<Attribution>(ATTRIBUTION_KEY) || {};
+  if (Object.values(existing).some(Boolean)) return;
+  window.localStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(incoming));
+}
+
 /**
- * Remember where this visitor came from, once.
+ * Remember how this browser first found us. TRUE FIRST TOUCH.
  *
- * FIRST TOUCH WINS. A visitor who lands from an ad, wanders to /about and then
- * starts signup has one campaign, not none - and if a later internal page
- * overwrote the record with empty values the campaign would be lost exactly
- * when it starts mattering. So a stored record is never replaced by a visit
- * that carries no parameters of its own.
+ * The first page a browser ever opens here decides its acquisition source:
+ * the external tags on that URL (utm_*, fbclid, gclid, Meta ids and names, our
+ * ?source=event|qr|referral, a referral ?ref=) and the external referrer.
+ * Written once and never replaced - not by a later ad click, not by a direct
+ * visit, not by our own links. A first visit with no tags and no referrer is
+ * Direct, and stays Direct.
  *
  * localStorage rather than a cookie: it is not needed by the server on every
- * request, only at the moment an account is created, when it is sent explicitly.
+ * request, only when an account is created, when it is sent explicitly.
  */
 export function captureAttribution(): void {
   try {
     if (typeof window === "undefined") return;
 
-    const params = new URLSearchParams(window.location.search);
-    const incoming: Attribution = {};
-    for (const [field, param] of MARKETING_PARAMS) {
-      const value = params.get(param);
-      if (value) (incoming as Record<string, string>)[field] = value.slice(0, 300);
-    }
-
-    /*
-     * The very first page, every time it is the first - tagged or not - so a
-     * customer who never clicked an ad still has a landing page and referrer
-     * (that is how Google Organic and Direct are told apart). Separate from
-     * the marketing touch below and, like it, never overwritten.
-     */
-    if (!readJson(FIRST_SEEN_KEY)) {
+    const firstSeen = readJson<{ firstLandingPath?: string; firstReferrer?: string; firstSeenAt?: number }>(FIRST_SEEN_KEY);
+    if (!firstSeen) {
       window.localStorage.setItem(
         FIRST_SEEN_KEY,
         JSON.stringify({ firstLandingPath: window.location.pathname, firstReferrer: document.referrer || undefined, firstSeenAt: Date.now() })
       );
     }
-    recordFirstVisit(incoming);
 
-    const hasAny = Object.values(incoming).some(Boolean);
-    if (!hasAny) return;
+    let touch = readJson<Attribution>(TOUCH_KEY);
+    if (!touch) {
+      if (firstSeen) {
+        touch = touchFromLegacy(firstSeen);
+      } else {
+        const tags = tagsOnThisUrl();
+        touch = {
+          ...tags,
+          ...(tags.fbclid ? { fbclidAt: Date.now() } : {}),
+          landingPath: window.location.pathname,
+          referrer: externalReferrer(document.referrer),
+          firstSeenAt: Date.now(),
+        };
+      }
+      window.localStorage.setItem(TOUCH_KEY, JSON.stringify(touch));
+    }
 
-    if (incoming.fbclid) incoming.fbclidAt = Date.now();
-    incoming.landingPath = window.location.pathname;
-    incoming.referrer = document.referrer || undefined;
-
-    const existing = readJson<Attribution>(ATTRIBUTION_KEY) || {};
-    const existingHasAny = Object.values(existing).some(Boolean);
-    if (existingHasAny) return;
-
-    window.localStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(incoming));
+    recordFirstVisit(touch);
+    captureMetaClick();
   } catch {
     /* private mode, blocked storage - tracking is never load-bearing */
   }
 }
 
-/** Everything known about how this browser arrived: first marketing touch, first page, visitor id. */
+/** How this browser was acquired (its first touch) plus its visitor id - sent once, at registration. */
 export function getAttribution(): Attribution {
   try {
     if (typeof window === "undefined") return {};
-    const marketing = readJson<Attribution>(ATTRIBUTION_KEY) || {};
-    const first = readJson<Attribution>(FIRST_SEEN_KEY) || {};
+    const touch = readJson<Attribution>(TOUCH_KEY);
     const id = window.localStorage.getItem(VISITOR_KEY) || undefined;
-    return { ...first, ...marketing, ...(id ? { visitorId: id } : {}) };
+    if (!touch) return id ? { visitorId: id } : {};
+    return {
+      ...touch,
+      firstLandingPath: touch.landingPath,
+      firstReferrer: touch.referrer,
+      ...(id ? { visitorId: id } : {}),
+    };
+  } catch {
+    return {};
+  }
+}
+
+/* The Meta click (fbclid) the Conversions API falls back on - unchanged behaviour. */
+function getMetaClick(): Pick<Attribution, "fbclid" | "fbclidAt"> {
+  try {
+    if (typeof window === "undefined") return {};
+    const stored = readJson<Attribution>(ATTRIBUTION_KEY) || {};
+    return stored.fbclid ? { fbclid: stored.fbclid, fbclidAt: stored.fbclidAt } : {};
   } catch {
     return {};
   }
@@ -384,7 +521,7 @@ function send(eventName: string, params: Params, options: SendOptions = {}): str
         customData: params,
         fbp,
         fbc,
-        attribution: getAttribution(),
+        attribution: getMetaClick(),
       });
     }
   } catch {
