@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 
 export default function BathroomPage() {
-  redirect("/projects?type=bathroom#estimate");
+  permanentRedirect("/projects?type=bathroom#estimate");
 }

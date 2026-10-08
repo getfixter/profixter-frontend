@@ -547,7 +547,9 @@ section("Routes");
 /* ========================================================================== */
 
 test("the gift landing page exists and is indexable", () => {
-  assert.match(giftPage, /Gift a Membership \| ProFixter/);
+  // Titled as the gift product, with its own canonical (it used to inherit the homepage's).
+  assert.match(giftPage, /Gift a Handyman Membership/);
+  assert.match(giftPage, /canonical: "\/gift"/);
   assert.ok(!/robots/.test(giftPage), "the landing page should be indexable");
 });
 

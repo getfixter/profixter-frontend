@@ -24,6 +24,7 @@ import { trackEvent, trackInitiateCheckout } from "@/lib/analytics";
 import { useSearchParams } from "next/navigation";
 import BookingSection from "@/app/components/sections/BookingSection";
 import VisitTypeNav, { resolveVisitType } from "@/app/components/booking/VisitTypeNav";
+import BookOverview, { BOOK_HEADING } from "@/app/components/booking/BookOverview";
 import GiftCallout from "@/app/components/gift/GiftCallout";
 import { YourFixterRow } from "@/app/components/fixter/YourFixter";
 import BookingsSection from "@/app/components/account/BookingsSection";
@@ -1555,7 +1556,7 @@ function BookExperience() {
       <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
         <Header />
         {nav}
-        <h1 className="sr-only">Book Fixter</h1>
+        <h1 className="sr-only">{BOOK_HEADING}</h1>
         <section className="mx-auto w-full max-w-[640px] px-4 pb-10 pt-5 sm:pt-8">
           <div className="fv-card p-4 sm:p-6">
             <PlansSection picker />
@@ -1675,7 +1676,11 @@ function BookExperience() {
 export default function BookPage() {
   // useSearchParams needs a boundary so the route can still be prerendered.
   return (
-    <Suspense fallback={<AdditionalVisitBooking />}>
+    /*
+     * The fallback is what the served HTML contains. It describes the booking
+     * hub the visitor is about to see, not one tab of it; see BookOverview.
+     */
+    <Suspense fallback={<BookOverview />}>
       <BookExperience />
     </Suspense>
   );

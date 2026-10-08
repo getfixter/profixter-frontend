@@ -20,7 +20,12 @@ import SurfaceMarker from "./components/SurfaceMarker";
 import { SURFACE_SCRIPT } from "@/lib/surface";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+/*
+ * Not preloaded: the mono face appears in a few staff and code-like spots, never
+ * above the fold of a customer page, so it should not compete with the fonts
+ * that are. It still loads wherever it is used.
+ */
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], preload: false });
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -46,6 +51,12 @@ const cormorant = Cormorant_Garamond({
   weight: ["300", "400", "500"],
   style: ["normal", "italic"],
   display: "swap",
+  /*
+   * Not preloaded. Six font files for a face used only on gift surfaces were
+   * being preloaded on every page of the site, ahead of the page's own content.
+   * Gift pages still get it; swap keeps the text visible while it arrives.
+   */
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -57,9 +68,11 @@ export const metadata: Metadata = {
   },
   description:
     "A handyman membership for the repairs, installations and small jobs around your home. First visit free for new Nassau and Suffolk customers.",
-  alternates: {
-    canonical: "/",
-  },
+  /*
+   * No canonical here. A canonical in the root layout is inherited by every
+   * page that does not set its own, which made /gift, /signup and others point
+   * at the homepage. Each indexable page now declares its own; see app/page.tsx.
+   */
   keywords: [
     "Profixter",
     "Long Island handyman",
@@ -108,6 +121,21 @@ export const metadata: Metadata = {
   category: "home services",
   creator: SITE_NAME,
   publisher: SITE_NAME,
+  /*
+   * Search Console and Bing Webmaster Tools ownership, read from the
+   * environment so the tokens are not hard-coded and nothing renders until one
+   * is set. Google is ALREADY verified for the domain through a DNS TXT record
+   * in Cloudflare, which is the preferred method and needs nothing here; these
+   * exist for Bing (msvalidate.01) and as a fallback.
+   */
+  verification: {
+    ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+      ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+      : {}),
+    ...(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+      ? { other: { "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION } }
+      : {}),
+  },
   formatDetection: {
     telephone: true,
     address: false,

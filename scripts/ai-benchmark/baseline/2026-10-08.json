@@ -1,0 +1,584 @@
+{
+ "runDate": "2026-10-08",
+ "location": "Lindenhurst, NY (residential IP) - favourable to Profixter",
+ "note": "Audit baseline. Prompt ids are the audit ids (A1..H2); see prompts.json baselineId for the mapping to the current groups.",
+ "rows": [
+  {
+   "system": "bing",
+   "id": "A1",
+   "ts": "2026-10-08T16:10:07.474Z",
+   "chars": 2017,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": false,
+   "domains": [
+    "api.nextdoor.com",
+    "babylonhandyman.com",
+    "yellowpages.com"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "A2",
+   "ts": "2026-10-08T16:10:45.372Z",
+   "chars": 2756,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": false,
+   "domains": [
+    "angi.com",
+    "bestoflongisland.com"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "A3",
+   "ts": "2026-10-08T16:11:29.051Z",
+   "chars": 2707,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": false,
+   "domains": [
+    "mrhandyman.com",
+    "rrhandy.com"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "B1",
+   "ts": "2026-10-08T16:12:06.775Z",
+   "chars": 1937,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": false,
+   "domains": [
+    "angi.com",
+    "homeadvisor.com"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "C1",
+   "ts": "2026-10-08T16:12:44.372Z",
+   "chars": 4199,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": false,
+   "domains": [
+    "longislandhomemaintenance.com",
+    "mrdoesall.com",
+    "solutionsbysamar.com",
+    "themaintenanceexperts.com"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "C2",
+   "ts": "2026-10-08T16:13:34.209Z",
+   "chars": 4061,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": false,
+   "domains": [
+    "allbetterapp.com",
+    "careandrepair.com",
+    "housecallpro.com",
+    "zarla.com"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "C3",
+   "ts": "2026-10-08T16:14:21.024Z",
+   "chars": 3575,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": true,
+   "recurringQuote": "When things keep breaking around your house, the key is to identify the main problem areas, tackle small repairs promptly, and implement regular maintenance to prevent escalation",
+   "profixterNamed": false,
+   "domains": [
+    "angi.com",
+    "bobvila.com",
+    "diyjoy.com",
+    "familyhandyman.com",
+    "handymantips.org",
+    "rosenberryrooms.com"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "C4",
+   "ts": "2026-10-08T16:14:58.845Z",
+   "chars": 3748,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": true,
+   "recurringQuote": "If they’re solid, schedule recurring maintenance and keep a running task list",
+   "profixterNamed": false,
+   "domains": [
+    "allbetterapp.com",
+    "consumeraffairs.com",
+    "local.yahoo.com",
+    "serviceorca.com"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "D1",
+   "ts": "2026-10-08T16:15:45.596Z",
+   "chars": 3793,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": true,
+   "recurringQuote": "Preventative maintenance (painting, HVAC evaluation, roof assessment)",
+   "profixterNamed": false,
+   "domains": [
+    "cdli.org",
+    "habitatliny.org",
+    "rebuildingtogetherli.org"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "D2",
+   "ts": "2026-10-08T16:16:26.391Z",
+   "chars": 4218,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": true,
+   "recurringQuote": "For ongoing home upkeep in Lindenhurst, you can hire handyman services, recurring house cleaners, or household chore helpers, with local options like Mr",
+   "profixterNamed": false,
+   "domains": [
+    "care.com",
+    "mrhandyman.com",
+    "neighborly.com",
+    "sofi.com",
+    "thumbtack.com"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "E1",
+   "ts": "2026-10-08T16:17:16.225Z",
+   "chars": 2855,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": false,
+   "domains": [
+    "homeadvisor.com",
+    "homeblue.com",
+    "thumbtack.com"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "F1",
+   "ts": "2026-10-08T16:17:59.824Z",
+   "chars": 3855,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": false,
+   "domains": [
+    "kickbackservices.com",
+    "startupbooted.com",
+    "tms-outsource.com"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "G1",
+   "ts": "2026-10-08T16:18:43.486Z",
+   "chars": 2909,
+   "error": null,
+   "membershipIntroduced": true,
+   "membershipQuote": "Yes — handyman subscription services do exist, offering monthly or annual plans that include a set number of repair/maintenance hours you can use as needed",
+   "recurringIntroduced": true,
+   "recurringQuote": "In short: Companies now sell recurring handyman plans where you pay a monthly fee for a bank of service hours, often with rollover and tiered pricing",
+   "profixterNamed": false,
+   "domains": [
+    "handymannow.com",
+    "subscribehandyman.com",
+    "subscriboxer.com"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "G2",
+   "ts": "2026-10-08T16:19:21.027Z",
+   "chars": 3006,
+   "error": null,
+   "membershipIntroduced": true,
+   "membershipQuote": "The two main handyman membership options on Long Island are ProFixter, a local subscription handyman service, and the United Handyman Association’s customer membership, which screens and certifies handymen for homeowners",
+   "recurringIntroduced": true,
+   "recurringQuote": "It is designed for homeowners who want ongoing access to reliable help without searching for a contractor each time something breaks",
+   "profixterNamed": true,
+   "domains": [
+    "local.yahoo.com",
+    "unitedhandymanassociation.org",
+    "yellowpages.com",
+    "yp.com"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "G3",
+   "ts": "2026-10-08T16:20:01.782Z",
+   "chars": 3759,
+   "error": null,
+   "membershipIntroduced": true,
+   "membershipQuote": "Long Island residents can join home maintenance memberships with providers like All Weather, Varsity Home Service, and Tragar Home Services to ensure priority service, regular upkeep, and discounts on repairs",
+   "recurringIntroduced": true,
+   "recurringQuote": "Members receive ongoing inspections and preventive care to avoid costly breakdowns",
+   "profixterNamed": false,
+   "domains": [
+    "allweathertemp.com",
+    "consumervoice.org",
+    "tragar.com",
+    "varsityhomeservice.com"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "H1",
+   "ts": "2026-10-08T16:20:39.456Z",
+   "chars": 1430,
+   "error": null,
+   "membershipIntroduced": true,
+   "membershipQuote": "Handyman Membership for Long Island Homes | Profixter",
+   "recurringIntroduced": true,
+   "recurringQuote": "Profixter offers a unique handyman membership service for Long Island homeowners, providing regular maintenance and small repair services with a …",
+   "profixterNamed": true,
+   "domains": [
+    "alignable.com",
+    "local.yahoo.com",
+    "merriam-webster.com",
+    "profixter.com",
+    "yahoo.com"
+   ]
+  },
+  {
+   "system": "bing",
+   "id": "H2",
+   "ts": "2026-10-08T16:21:16.981Z",
+   "chars": 3135,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": true,
+   "domains": [
+    "gridinsoft.com",
+    "local.yahoo.com",
+    "profixter.com"
+   ]
+  },
+  {
+   "system": "chatgpt",
+   "id": "A1",
+   "ts": "2026-10-08T16:10:07.463Z",
+   "chars": 1745,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": true,
+   "recurringQuote": "Particularly appealing if you have a punch list of several small jobs; they offer one-time visits as well as ongoing maintenance",
+   "profixterNamed": true,
+   "domains": [
+    "apps.mapbox.com",
+    "mapbox.com",
+    "openstreetmap.org"
+   ]
+  },
+  {
+   "system": "chatgpt",
+   "id": "A2",
+   "ts": "2026-10-08T16:10:57.332Z",
+   "chars": 1996,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": true,
+   "recurringQuote": "9 / 54 reviews in Lindenhurst; convenient if you're in western Suffolk and want recurring home-maintenance help",
+   "profixterNamed": true,
+   "domains": [
+    "apps.mapbox.com",
+    "mapbox.com",
+    "openstreetmap.org"
+   ]
+  },
+  {
+   "system": "chatgpt",
+   "id": "A3",
+   "ts": "2026-10-08T16:11:46.723Z",
+   "chars": 2030,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": true,
+   "recurringQuote": "Based in Merrick and serves a large portion of Nassau County; good option for ongoing maintenance and small-to-medium projects",
+   "profixterNamed": false,
+   "domains": [
+    "apps.mapbox.com",
+    "mapbox.com",
+    "openstreetmap.org",
+    "trustindex.io"
+   ]
+  },
+  {
+   "system": "chatgpt",
+   "id": "B1",
+   "ts": "2026-10-08T16:12:36.292Z",
+   "chars": 1353,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": false,
+   "domains": [
+    "apps.mapbox.com",
+    "mapbox.com",
+    "mrhandyman.com",
+    "openstreetmap.org"
+   ]
+  },
+  {
+   "system": "chatgpt",
+   "id": "C1",
+   "ts": "2026-10-08T16:13:27.949Z",
+   "chars": 757,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": false,
+   "domains": []
+  },
+  {
+   "system": "chatgpt",
+   "id": "C2",
+   "ts": "2026-10-08T16:14:16.760Z",
+   "chars": 1510,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": false,
+   "domains": []
+  },
+  {
+   "system": "chatgpt",
+   "id": "C3",
+   "ts": "2026-10-08T16:15:04.522Z",
+   "chars": 1256,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": false,
+   "domains": []
+  },
+  {
+   "system": "chatgpt",
+   "id": "C4",
+   "ts": "2026-10-08T16:15:52.183Z",
+   "chars": 315,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": true,
+   "recurringQuote": "If you're doing this repeatedly, the better move is to find one reliable handyman or a home-maintenance service you can keep on call, rather than starting from scratch every time",
+   "profixterNamed": false,
+   "domains": []
+  },
+  {
+   "system": "chatgpt",
+   "id": "D1",
+   "ts": "2026-10-08T16:27:32.092Z",
+   "chars": 1330,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": true,
+   "recurringQuote": "For a Long Island house, I’d start with these recurring areas:",
+   "profixterNamed": false,
+   "domains": []
+  },
+  {
+   "system": "chatgpt",
+   "id": "D2",
+   "ts": "2026-10-08T16:19:54.800Z",
+   "chars": 1846,
+   "error": null,
+   "membershipIntroduced": true,
+   "membershipQuote": "They specifically advertise a subscription-style approach for keeping up with a household's ongoing repair list",
+   "recurringIntroduced": true,
+   "recurringQuote": "If you mean someone who can come regularly and take care of the ongoing “never-ending house list,” you’ll probably want either a housekeeper/cleaning service or a handyman/home-maintenance service—or one of each",
+   "profixterNamed": true,
+   "domains": [
+    "apps.mapbox.com",
+    "mapbox.com",
+    "openstreetmap.org"
+   ]
+  },
+  {
+   "system": "chatgpt",
+   "id": "E1",
+   "ts": "2026-10-08T16:20:44.541Z",
+   "chars": 1314,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": true,
+   "domains": [
+    "apps.mapbox.com",
+    "mapbox.com",
+    "openstreetmap.org"
+   ]
+  },
+  {
+   "system": "chatgpt",
+   "id": "F1",
+   "ts": "2026-10-08T16:21:34.028Z",
+   "chars": 1644,
+   "error": null,
+   "membershipIntroduced": false,
+   "membershipQuote": "",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": true,
+   "domains": [
+    "apps.mapbox.com",
+    "mapbox.com",
+    "openstreetmap.org"
+   ]
+  },
+  {
+   "system": "chatgpt",
+   "id": "G1",
+   "ts": "2026-10-08T16:22:24.617Z",
+   "chars": 1387,
+   "error": null,
+   "membershipIntroduced": true,
+   "membershipQuote": "Yes — handyman subscriptions are absolutely a thing, and they’re becoming a more common way to handle ongoing home maintenance",
+   "recurringIntroduced": true,
+   "recurringQuote": "Yes — handyman subscriptions are absolutely a thing, and they’re becoming a more common way to handle ongoing home maintenance",
+   "profixterNamed": true,
+   "domains": []
+  },
+  {
+   "system": "chatgpt",
+   "id": "G2",
+   "ts": "2026-10-08T16:23:14.307Z",
+   "chars": 1563,
+   "error": null,
+   "membershipIntroduced": true,
+   "membershipQuote": "If you’re looking for a handyman membership on Long Island, I found a few options worth considering:",
+   "recurringIntroduced": true,
+   "recurringQuote": "TruBlue of North Central Nassau — Merrick: Offers an ongoing Home Maintenance Plan, geared toward recurring/seasonal maintenance and handyman work",
+   "profixterNamed": true,
+   "domains": [
+    "apps.mapbox.com",
+    "mapbox.com",
+    "openstreetmap.org"
+   ]
+  },
+  {
+   "system": "chatgpt",
+   "id": "G3",
+   "ts": "2026-10-08T16:24:03.058Z",
+   "chars": 3281,
+   "error": null,
+   "membershipIntroduced": true,
+   "membershipQuote": "I found several Long Island companies offering some form of recurring home-maintenance membership or maintenance plan",
+   "recurringIntroduced": true,
+   "recurringQuote": "I found several Long Island companies offering some form of recurring home-maintenance membership or maintenance plan",
+   "profixterNamed": true,
+   "domains": [
+    "apps.mapbox.com",
+    "mapbox.com",
+    "openstreetmap.org"
+   ]
+  },
+  {
+   "system": "chatgpt",
+   "id": "H1",
+   "ts": "2026-10-08T16:24:52.928Z",
+   "chars": 1197,
+   "error": null,
+   "membershipIntroduced": true,
+   "membershipQuote": "Monthly handyman memberships, starting at $149/month",
+   "recurringIntroduced": true,
+   "recurringQuote": "Profixter is a Long Island–based handyman and home-maintenance company",
+   "profixterNamed": true,
+   "domains": []
+  },
+  {
+   "system": "chatgpt",
+   "id": "H2",
+   "ts": "2026-10-08T16:25:41.293Z",
+   "chars": 1723,
+   "error": null,
+   "membershipIntroduced": true,
+   "membershipQuote": "Recurring-service model: Their membership is designed for homeowners who have lots of little jobs over time, rather than having to find a new handyman for every project",
+   "recurringIntroduced": true,
+   "recurringQuote": "Recurring-service model: Their membership is designed for homeowners who have lots of little jobs over time, rather than having to find a new handyman for every project",
+   "profixterNamed": true,
+   "domains": [
+    "apps.mapbox.com",
+    "mapbox.com",
+    "openstreetmap.org"
+   ]
+  },
+  {
+   "system": "gemini",
+   "id": "A1",
+   "ts": "2026-10-08T16:28:40.771Z",
+   "chars": 489,
+   "error": null,
+   "membershipIntroduced": true,
+   "membershipQuote": "Subscriptions",
+   "recurringIntroduced": false,
+   "recurringQuote": "",
+   "profixterNamed": false,
+   "domains": [
+    "g.co",
+    "gemini.google"
+   ]
+  }
+ ]
+}

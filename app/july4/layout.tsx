@@ -10,6 +10,12 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/july4",
   },
+  /*
+   * An expired summer promotion, linked from nowhere. It stays reachable for
+   * anyone holding the link, but it is out of the sitemap and out of the index
+   * so search results stop offering a deal that has ended.
+   */
+  robots: { index: false, follow: true },
   openGraph: {
     title: "Long Island Home Maintenance Offer | Profixter Basic",
     description:

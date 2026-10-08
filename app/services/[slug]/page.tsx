@@ -64,6 +64,20 @@ export default async function ServiceDetailPage({ params }: PageProps) {
           ]
         : [];
     }),
+    /*
+     * The two questions people with one small job ask next: is it worth a
+     * visit on its own, and what should it cost.
+     */
+    {
+      label: "Getting small jobs done",
+      href: "/guides/handyman-for-small-jobs",
+      body: "Bundle it, book one visit, or set up ongoing help: which fits when the jobs keep coming.",
+    },
+    {
+      label: "What a handyman costs on Long Island",
+      href: "/guides/handyman-cost-long-island",
+      body: "Hourly rates, minimum charges and typical prices for common jobs.",
+    },
     ...(service.relatedLocationSlugs || []).flatMap((areaSlug) => {
       const area = getServiceArea(areaSlug);
       return area
