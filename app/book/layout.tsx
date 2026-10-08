@@ -6,14 +6,14 @@ export const metadata: Metadata = {
     absolute: "Book a Handyman on Long Island | Profixter",
   },
   description:
-    "Choose a small job, pick a time, add photos, and continue to secure checkout after selecting a slot.",
+    "Book a Profixter handyman visit on Long Island: a $99 One-Time Visit for one small job (up to 90 minutes), a $499 Full Day, member visits from $149/month, or a free first visit for new Nassau and Suffolk customers.",
   alternates: {
     canonical: "/book",
   },
   openGraph: {
     title: "Book a Handyman on Long Island | Profixter",
     description:
-      "Choose the task, date, time, notes, and photos before checkout for a focused Profixter handyman visit.",
+      "A $99 One-Time Visit, a $499 Full Day, member visits from $149/month, or a free first visit for new customers. Nassau and Suffolk.",
     url: absoluteUrl("/book"),
     type: "website",
     images: [DEFAULT_OG_IMAGE],
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Book a Handyman on Long Island | Profixter",
     description:
-      "Book a focused Profixter visit for one approved Long Island handyman task.",
+      "A $99 One-Time Visit, a $499 Full Day, or member visits from $149/month. Nassau and Suffolk.",
     images: [DEFAULT_OG_IMAGE.url],
   },
 };

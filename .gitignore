@@ -41,3 +41,6 @@ lib.zip
 /screenshots
 
 .vercel
+
+# AI benchmark run output (answers + screenshots); results go in reports, not git
+.ai-benchmark-runs/

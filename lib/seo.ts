@@ -9,6 +9,19 @@ import {
   renovationServices,
   serviceAreas,
 } from "@/lib/seo-content";
+import {
+  BRAND_ALTERNATE_NAMES,
+  BUSINESS_LOCATION,
+  FULL_DAY_FALLBACK,
+  HIC_LICENSE,
+  LEGAL_NAME,
+  OFFICIAL_PROFILES,
+  ONE_TIME_FALLBACK,
+  OPENING_HOURS,
+  SHORT_DESCRIPTION,
+} from "@/lib/business";
+import { PUBLIC_CONTACT_EMAIL } from "@/lib/contact";
+import { getGuideSitemapRoutes } from "@/lib/guides";
 
 export const SITE_URL = "https://www.profixter.com";
 
@@ -43,7 +56,8 @@ export const PROFIXTER_LOGO = {
 };
 
 export const DEFAULT_OG_IMAGE = {
-  url: "/images/hero-bg.webp",
+  /* A real 1200x630 JPEG (about 1/10 the weight of the 5760px hero it is cut from). */
+  url: "/images/og-default.jpg",
   width: 1200,
   height: 630,
   alt: "Profixter home support for Long Island homeowners",
@@ -56,52 +70,79 @@ export const LOCAL_SERVICE_AREAS = [
   ...serviceAreas.map((area) => area.name),
 ] as const;
 
-export const PUBLIC_SITEMAP_ROUTES = [
-  { path: "/", changeFrequency: "weekly", priority: 1 },
-  { path: "/membership", changeFrequency: "weekly", priority: 0.98 },
-  { path: "/book", changeFrequency: "weekly", priority: 0.94 },
-  { path: "/projects", changeFrequency: "weekly", priority: 0.94 },
+/**
+ * The date this release's content changes went live. Pages edited in a release
+ * carry it as their sitemap lastmod; bump it when you edit those pages again.
+ */
+export const CONTENT_RELEASE_DATE = "2026-10-08";
+
+type SitemapRoute = {
+  path: string;
+  changeFrequency: "daily" | "weekly" | "monthly" | "yearly";
+  priority: number;
+  /**
+   * When the page's content last really changed (YYYY-MM-DD).
+   *
+   * The sitemap used to stamp every URL with the time of the request, so every
+   * page claimed to have changed every time it was fetched. Search engines learn
+   * to ignore a lastmod that is always "now", which throws away the one signal
+   * that tells them a page is worth recrawling. These dates come from the git
+   * history of each page and move only when the page does.
+   */
+  updated: string;
+};
+
+export const PUBLIC_SITEMAP_ROUTES: readonly SitemapRoute[] = [
+  { path: "/", changeFrequency: "weekly", priority: 1, updated: "2026-10-06" },
+  /* The prices, with their own canonical since this release. */
+  { path: "/membership/plans", changeFrequency: "weekly", priority: 0.98, updated: CONTENT_RELEASE_DATE },
+  /* The category explainer and the canonical "how Profixter membership works". */
+  { path: "/handyman-membership", changeFrequency: "monthly", priority: 0.96, updated: CONTENT_RELEASE_DATE },
+  { path: "/membership", changeFrequency: "weekly", priority: 0.9, updated: "2026-09-20" },
+  { path: "/book", changeFrequency: "weekly", priority: 0.94, updated: CONTENT_RELEASE_DATE },
+  /*
+   * The free first visit has its own booker and its own canonical, and was
+   * missing from the sitemap entirely.
+   */
+  { path: "/book/free", changeFrequency: "monthly", priority: 0.9, updated: "2026-10-06" },
+  { path: "/projects", changeFrequency: "weekly", priority: 0.9, updated: "2026-10-06" },
   /* Proof of work, and the page most likely to answer "are these people any good". */
-  { path: "/recent-work", changeFrequency: "weekly", priority: 0.92 },
-  { path: "/kitchen-bathroom", changeFrequency: "monthly", priority: 0.9 },
+  { path: "/recent-work", changeFrequency: "weekly", priority: 0.88, updated: CONTENT_RELEASE_DATE },
+  { path: "/kitchen-bathroom", changeFrequency: "monthly", priority: 0.86, updated: "2026-10-06" },
+  /* Homeowner guides: the problem-first entry points. */
+  ...getGuideSitemapRoutes(),
+  { path: "/home-support", changeFrequency: "monthly", priority: 0.7, updated: "2026-08-13" },
+  { path: "/about", changeFrequency: "monthly", priority: 0.8, updated: CONTENT_RELEASE_DATE },
+  { path: "/communities", changeFrequency: "monthly", priority: 0.7, updated: "2026-10-06" },
   /*
-   * Both were reachable and indexable but absent from the sitemap: /membership/plans
-   * is where the prices are, and /handyman-membership is the explainer that
-   * defines the product category.
+   * A real product with its own funnel. It now has server-rendered content and
+   * its own canonical; until this release it was an empty shell pointing at /.
    */
-  { path: "/membership/plans", changeFrequency: "weekly", priority: 0.9 },
-  { path: "/handyman-membership", changeFrequency: "monthly", priority: 0.88 },
-  { path: "/home-support", changeFrequency: "weekly", priority: 0.82 },
-  { path: "/about", changeFrequency: "monthly", priority: 0.8 },
-  { path: "/communities", changeFrequency: "monthly", priority: 0.72 },
+  { path: "/gift", changeFrequency: "monthly", priority: 0.72, updated: CONTENT_RELEASE_DATE },
+  { path: "/membership/loyalty", changeFrequency: "monthly", priority: 0.66, updated: "2026-09-14" },
   /*
-   * Reachable, indexable and linked from the footer, but absent from the
-   * sitemap - so discovery depended entirely on Google following a link.
-   * /gift is a product with its own funnel, and /membership/loyalty answers
-   * "what do I get for staying", which is a question people search.
+   * /july4 is gone from here. It was an expired $0 summer promotion linked from
+   * nowhere; it stays reachable for anyone holding the link, marked noindex.
    */
-  { path: "/gift", changeFrequency: "monthly", priority: 0.7 },
-  { path: "/membership/loyalty", changeFrequency: "monthly", priority: 0.7 },
-  { path: "/july4", changeFrequency: "monthly", priority: 0.62 },
-  ...getSeoEngineSitemapRoutes(),
-  { path: "/careers", changeFrequency: "yearly", priority: 0.35 },
-  { path: "/partnerships", changeFrequency: "monthly", priority: 0.45 },
-  { path: "/privacy", changeFrequency: "yearly", priority: 0.25 },
-  { path: "/terms", changeFrequency: "yearly", priority: 0.25 },
-  { path: "/communication-consent", changeFrequency: "yearly", priority: 0.2 },
+  ...getSeoEngineSitemapRoutes().map((route) => ({ ...route, updated: CONTENT_RELEASE_DATE })),
+  { path: "/careers", changeFrequency: "yearly", priority: 0.35, updated: "2026-08-13" },
+  { path: "/partnerships", changeFrequency: "monthly", priority: 0.45, updated: "2026-08-13" },
+  { path: "/privacy", changeFrequency: "yearly", priority: 0.25, updated: "2026-09-13" },
+  { path: "/terms", changeFrequency: "yearly", priority: 0.25, updated: "2026-09-14" },
+  { path: "/communication-consent", changeFrequency: "yearly", priority: 0.2, updated: "2026-09-14" },
   /*
    * In the sitemap so a carrier reviewer's crawler can find it without being
    * handed the URL. Low priority because no customer is searching for it; it
    * exists to be verifiable, not to rank.
    */
-  { path: "/sms-consent-example", changeFrequency: "yearly", priority: 0.2 },
+  { path: "/sms-consent-example", changeFrequency: "yearly", priority: 0.2, updated: "2026-09-14" },
   /*
    * The sign-up form is the page A2P vetting has to be able to fetch: it is
    * where SMS consent is collected. It used to be disallowed in robots.txt,
    * which told a reviewer's crawler not to request it at all.
    */
-  { path: "/signup", changeFrequency: "monthly", priority: 0.3 },
-] as const;
+  { path: "/signup", changeFrequency: "monthly", priority: 0.3, updated: "2026-09-14" },
+];
 
 export function absoluteUrl(path = "/") {
   return `${SITE_URL}${path === "/" ? "" : path}`;
@@ -119,8 +160,46 @@ export const PROFIXTER_STRUCTURED_DATA = {
       "@type": ["LocalBusiness", "HomeAndConstructionBusiness"],
       "@id": `${SITE_URL}/#business`,
       name: SITE_NAME,
+      /*
+       * Identity, from lib/business.ts. legalName and alternateName let a search
+       * engine reconcile "Profixter", the Google profile's "ProFixter Handyman"
+       * and the registered company as one business.
+       */
+      legalName: LEGAL_NAME,
+      alternateName: [...BRAND_ALTERNATE_NAMES],
+      description: SHORT_DESCRIPTION,
       url: SITE_URL,
       telephone: BUSINESS_PHONE_E164,
+      email: PUBLIC_CONTACT_EMAIL,
+      /*
+       * Town and ZIP, never the street: true whether the Google profile keeps
+       * its street address visible or becomes a service-area listing.
+       */
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: BUSINESS_LOCATION.locality,
+        addressRegion: BUSINESS_LOCATION.region,
+        postalCode: BUSINESS_LOCATION.postalCode,
+        addressCountry: BUSINESS_LOCATION.country,
+      },
+      openingHoursSpecification: [
+        {
+          "@type": "OpeningHoursSpecification",
+          dayOfWeek: OPENING_HOURS.days.map((day) => `https://schema.org/${day}`),
+          opens: OPENING_HOURS.opens,
+          closes: OPENING_HOURS.closes,
+        },
+      ],
+      sameAs: [...OFFICIAL_PROFILES],
+      hasCredential: {
+        "@type": "EducationalOccupationalCredential",
+        credentialCategory: "license",
+        name: `Suffolk County home improvement license ${HIC_LICENSE}`,
+        recognizedBy: {
+          "@type": "GovernmentOrganization",
+          name: "Suffolk County Department of Consumer Affairs",
+        },
+      },
       /*
        * The brand mark, not the hero photograph.
        *
@@ -136,7 +215,9 @@ export const PROFIXTER_STRUCTURED_DATA = {
       priceRange: "$$",
       areaServed: schemaServiceAreas,
       knowsAbout: [
-        "Monthly home maintenance membership",
+        "Handyman membership",
+        "Recurring handyman service",
+        "Small home repairs",
         "Home maintenance",
         "Handyman visits",
         "Home Support AI",
@@ -158,8 +239,25 @@ export const PROFIXTER_STRUCTURED_DATA = {
           {
             "@type": "Offer",
             name: CORE_PRODUCTS[1].title,
-            url: `${SITE_URL}${CORE_PRODUCTS[1].href}`,
-            price: "99.00",
+            description: `One handyman visit of up to ${ONE_TIME_FALLBACK.minutes} minutes, no membership needed.`,
+            url: `${SITE_URL}/book?visit=additional`,
+            price: ONE_TIME_FALLBACK.priceDollars.toFixed(2),
+            priceCurrency: "USD",
+          },
+          {
+            "@type": "Offer",
+            name: "Full Day handyman visit",
+            description: `About ${FULL_DAY_FALLBACK.hours} hours of handyman work in one day.`,
+            url: `${SITE_URL}/book?visit=full-day`,
+            price: FULL_DAY_FALLBACK.priceDollars.toFixed(2),
+            priceCurrency: "USD",
+          },
+          {
+            "@type": "Offer",
+            name: "Free first visit",
+            description: "A free 90-minute first visit for new Nassau and Suffolk customers, one per home.",
+            url: `${SITE_URL}/book/free`,
+            price: "0.00",
             priceCurrency: "USD",
           },
           {
@@ -240,8 +338,9 @@ export const PROFIXTER_STRUCTURED_DATA = {
       offers: {
         "@type": "Offer",
         name: "One-Time Handyman Visit",
-        url: `${SITE_URL}/book`,
-        price: "99.00",
+        description: `One handyman visit of up to ${ONE_TIME_FALLBACK.minutes} minutes, no membership needed.`,
+        url: `${SITE_URL}/book?visit=additional`,
+        price: ONE_TIME_FALLBACK.priceDollars.toFixed(2),
         priceCurrency: "USD",
       },
     },

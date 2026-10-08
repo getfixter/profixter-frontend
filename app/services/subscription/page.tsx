@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 
 export default function SubscriptionPage() {
-  redirect("/membership");
+  /* "Subscription" is a question about the category; the explainer answers it. */
+  permanentRedirect("/handyman-membership");
 }

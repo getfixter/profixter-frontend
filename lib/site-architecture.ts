@@ -186,4 +186,10 @@ export const FOOTER_SEO_LINKS = [
    * every page and does not move.
    */
   { label: "What we do", href: "/recent-work" },
+  /*
+   * The homeowner guides: problem-first answers (small jobs, minimum charges,
+   * costs, seasonal upkeep). One hub link, not a list of articles - the guides
+   * link to each other and to the membership in context.
+   */
+  { label: "Homeowner guides", href: "/guides" },
 ] as const;

@@ -3,6 +3,7 @@ import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import MembershipCtaLink from "@/app/components/membership/MembershipCtaLink";
 import type { CtaLink, SeoPageContent, ServiceAreaContent } from "@/lib/seo-content";
+import { breadcrumbJsonLd } from "@/lib/breadcrumbs";
 
 type LinkItem = {
   label: string;
@@ -84,6 +85,12 @@ export function SeoPageShell({ children }: { children: React.ReactNode }) {
 
 export function Breadcrumbs({ items }: { items: LinkItem[] }) {
   return (
+    <>
+    {/* The visible trail and its BreadcrumbList markup always travel together. */}
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(items)) }}
+    />
     <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-[12px] font-bold text-[#64748B]">
       <Link href="/" className="transition hover:text-[#306EEC]">
         Home
@@ -97,6 +104,7 @@ export function Breadcrumbs({ items }: { items: LinkItem[] }) {
         </span>
       ))}
     </nav>
+    </>
   );
 }
 
@@ -458,14 +466,48 @@ export function DetailPage({
 export function LocationDetailPage({
   area,
   relatedLinks = [],
+  record,
+  rating,
+  oneTimePrice,
+  lowestPlanPrice,
+  taskMix,
+  dataAsOf,
 }: {
   area: ServiceAreaContent;
   relatedLinks?: LinkItem[];
+  /** Profixter's own record in this town, only where three or more households are behind it. */
+  record?: { visits: number; households: number } | null;
+  rating?: { rating: number; total: number; url: string } | null;
+  oneTimePrice: number;
+  lowestPlanPrice: number;
+  taskMix: { label: string; percent: number }[];
+  dataAsOf: string;
 }) {
+  const paths: { title: string; body: string; href: string; label: string }[] = [
+    {
+      title: "One small job",
+      body: `A One-Time Visit: $${oneTimePrice} for up to 90 minutes on one small job from a set list. No membership.`,
+      href: "/book?visit=additional",
+      label: "Book a One-Time Visit",
+    },
+    {
+      title: "A list that keeps coming back",
+      body: `A handyman membership from $${lowestPlanPrice}/month: 90-minute visits booked as often as you need, with the same local team.`,
+      href: "/membership/plans",
+      label: "Compare plans",
+    },
+    {
+      title: "New to Profixter",
+      body: "A free first 90-minute visit for new Nassau and Suffolk customers, one per home.",
+      href: "/book/free",
+      label: "Book a free first visit",
+    },
+  ];
+
   return (
     <SeoPageShell>
       <main>
-        <section className="px-4 pb-10 pt-3 sm:px-6 sm:pb-11 lg:px-8">
+        <section className="px-4 pb-8 pt-3 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-[1180px]">
             <Breadcrumbs
               items={[
@@ -475,7 +517,7 @@ export function LocationDetailPage({
             />
             <div className="max-w-[880px]">
               <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
-                {area.county}
+                {area.municipality} · {area.county}
               </div>
               <h1 className="mt-4 text-[32px] font-black leading-[0.96] tracking-[-0.04em] text-[#0B1628] sm:text-[46px] sm:leading-[0.92] sm:tracking-[-0.05em]">
                 {area.h1}
@@ -483,53 +525,114 @@ export function LocationDetailPage({
               <p className="mt-5 max-w-[720px] text-[15px] font-medium leading-7 text-[#475569] sm:text-[18px] sm:leading-8">
                 {area.intro}
               </p>
-              <p className="mt-4 max-w-[680px] rounded-[8px] border border-[#D9E4FF] bg-white px-4 py-3 text-[14px] font-bold leading-6 text-[#334155] shadow-sm">
-                {area.localNote}
-              </p>
+              {record || rating ? (
+                <dl className="mt-6 flex flex-wrap gap-3">
+                  {record ? (
+                    <div className="rounded-[8px] border border-[#D9E4FF] bg-white px-4 py-3 shadow-sm">
+                      <dt className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#64748B]">In {area.name}</dt>
+                      <dd className="mt-1 text-[15px] font-bold text-[#0B1628]">
+                        {record.visits}+ completed visits for {record.households} households
+                      </dd>
+                    </div>
+                  ) : null}
+                  {rating ? (
+                    <div className="rounded-[8px] border border-[#D9E4FF] bg-white px-4 py-3 shadow-sm">
+                      <dt className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#64748B]">On Google</dt>
+                      <dd className="mt-1 text-[15px] font-bold text-[#0B1628]">
+                        {rating.rating.toFixed(1)} stars from {rating.total} reviews
+                        {rating.url ? (
+                          <>
+                            {" "}
+                            <a href={rating.url} rel="noopener" className="font-semibold text-[#306EEC] underline underline-offset-2">
+                              Read them
+                            </a>
+                          </>
+                        ) : null}
+                      </dd>
+                    </div>
+                  ) : null}
+                </dl>
+              ) : null}
+              {record ? (
+                <p className="mt-2 text-[12px] text-[#94A3B8]">Visit record since August 2025, as of {dataAsOf}.</p>
+              ) : null}
             </div>
           </div>
         </section>
 
-        <section className="px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
-          <div className="mx-auto grid max-w-[1180px] gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-            <div>
-              <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
-                Local path
-              </div>
-              <h2 className="mt-3 text-[26px] font-black leading-tight tracking-[-0.035em] text-[#0B1628] sm:text-[36px]">
-                What Profixter offers in {area.name}.
-              </h2>
-              <p className="mt-4 text-[15px] leading-7 text-[#64748B] sm:text-[16px]">
-                Choose the path that matches the job: ongoing Membership, one small handyman visit, or a renovation estimate for larger work.
-              </p>
+        <section className="px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mx-auto grid max-w-[1180px] gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+            <div className="rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-sm sm:p-7">
+              <h2 className="text-[23px] font-black text-[#0B1628]">About {area.name}</h2>
+              <p className="mt-3 text-[15px] leading-7 text-[#334155] sm:text-[16px]">{area.localContext}</p>
+              {area.nearby.length ? (
+                <p className="mt-4 text-[14px] leading-6 text-[#64748B]">
+                  Nearby, Profixter has also completed visits in {area.nearby.join(", ")}.
+                </p>
+              ) : null}
             </div>
-            <div className="grid gap-3">
-              {area.homeownerPaths.map((item) => (
+            <div className="rounded-[8px] border border-[#DDE5F0] bg-[#FBFCFF] p-5 shadow-sm sm:p-7">
+              <h2 className="text-[23px] font-black text-[#0B1628]">What Long Island homeowners book most</h2>
+              <p className="mt-2 text-[13px] leading-5 text-[#64748B]">
+                Share of Profixter visit requests mentioning each, across Nassau and Suffolk, as of {dataAsOf}.
+              </p>
+              <ul className="mt-4 grid gap-2">
+                {taskMix.slice(0, 6).map((row) => (
+                  <li key={row.label} className="flex items-baseline justify-between gap-4 text-[14px] text-[#334155]">
+                    <span>{row.label}</span>
+                    <span className="font-bold tabular-nums text-[#0B1628]">~{row.percent}%</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section className="px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-[1180px]">
+            <h2 className="text-[26px] font-black leading-tight tracking-[-0.035em] text-[#0B1628] sm:text-[34px]">
+              Getting help in {area.name}
+            </h2>
+            <div className="mt-6 grid gap-3 md:grid-cols-3">
+              {paths.map((path) => (
                 <div
-                  key={item}
-                  className="flex gap-3 rounded-[8px] border border-[#DDE5F0] bg-white p-5 text-[14px] font-semibold leading-6 text-[#334155] shadow-[0_16px_46px_rgba(15,23,42,0.045)]"
+                  key={path.title}
+                  className="flex flex-col rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-[0_16px_46px_rgba(15,23,42,0.045)]"
                 >
-                  <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#E8F8EE] text-[#16834B]">
-                    <CheckIcon />
-                  </span>
-                  {item}
+                  <h3 className="text-[17px] font-black text-[#0B1628]">{path.title}</h3>
+                  <p className="mt-2 flex-1 text-[14px] leading-6 text-[#64748B]">{path.body}</p>
+                  <Link href={path.href} className="mt-4 inline-flex items-center gap-2 text-[14px] font-black text-[#306EEC]">
+                    {path.label}
+                    <ArrowIcon />
+                  </Link>
                 </div>
               ))}
             </div>
+            <p className="mt-5 text-[14px] leading-6 text-[#64748B]">
+              Larger work (kitchens, bathrooms, roofing, siding) runs as a separate{" "}
+              <Link href="/projects" className="font-semibold text-[#306EEC] underline underline-offset-2">
+                project estimate
+              </Link>
+              . Not sure which you need? Read{" "}
+              <Link href="/guides/handyman-for-small-jobs" className="font-semibold text-[#306EEC] underline underline-offset-2">
+                getting small jobs done
+              </Link>{" "}
+              and{" "}
+              <Link href="/guides/handyman-cost-long-island" className="font-semibold text-[#306EEC] underline underline-offset-2">
+                what a handyman costs on Long Island
+              </Link>
+              .
+            </p>
           </div>
         </section>
 
         {relatedLinks.length ? (
-          <CardGrid
-            eyebrow="Popular paths"
-            title={`Useful starting points for ${area.name} homeowners.`}
-            items={relatedLinks}
-          />
+          <CardGrid eyebrow="Common jobs" title="Common handyman jobs, and what each one involves." items={relatedLinks} />
         ) : null}
 
         <ConversionBand
           title={`Start with the right Profixter path in ${area.name}.`}
-          description="Membership is the priority for ongoing home care. Book Handyman is for one listed small task. Renovation Estimate is for larger project work."
+          description="One small job: a One-Time Visit. A running list: a membership. Larger work: a project estimate."
         />
       </main>
     </SeoPageShell>

@@ -27,6 +27,7 @@ import { hasActiveMembership } from "@/lib/auth-routing";
 import Link from "next/link";
 import { membershipFaqJsonLd } from "@/app/data/membership-faq";
 import { absoluteUrl } from "@/lib/seo";
+import PlanComparisonTable from "@/app/components/membership/PlanComparisonTable";
 
 export default function MembershipPlansPage() {
   const { user } = useAuth();
@@ -87,6 +88,32 @@ export default function MembershipPlansPage() {
 
         {/* The one plan comparison in the product. No duplicate plan data. */}
         <PlansSection hideCancellationUi hideIntro />
+
+        {/*
+          The same plans, flat. The cards above show one plan at a time, so on
+          their own they put a single price in the HTML; this puts the whole
+          ladder, annual prices included, where a reader comparing on a wide
+          screen - or a crawler - can see it without a tap.
+        */}
+        <PlanComparisonTable />
+
+        <section className="px-4 pb-4 sm:px-6 lg:px-8">
+          <p className="mx-auto max-w-[1180px] text-[15px] leading-[1.6] text-[#6E6E73]">
+            New to the idea?{" "}
+            <Link href="/handyman-membership" className="font-semibold text-[#306EEC] underline underline-offset-2">
+              How a handyman membership works
+            </Link>
+            , and{" "}
+            <Link href="/guides/handyman-membership-vs-hiring-per-job" className="font-semibold text-[#306EEC] underline underline-offset-2">
+              when hiring per job is the better deal
+            </Link>
+            . Only need one thing done?{" "}
+            <Link href="/book?visit=additional" className="font-semibold text-[#306EEC] underline underline-offset-2">
+              Book a One-Time Visit
+            </Link>
+            .
+          </p>
+        </section>
 
         {/*
           No gift band here. Somebody comparing four prices for their own house

@@ -397,7 +397,7 @@ export default function GiftPurchaseClient() {
   if (optionsState === "off") {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6">
-        <h1 className="text-2xl font-semibold text-[#313234] sm:text-3xl">Gift memberships</h1>
+        <h2 className="text-2xl font-semibold text-[#313234] sm:text-3xl">Gift memberships</h2>
         <p className="mx-auto mt-3 max-w-md text-[15px] text-[#6A6D71]">
           Gift memberships are not available just yet. In the meantime, a ProFixter membership can
           be started at any time.
@@ -415,7 +415,7 @@ export default function GiftPurchaseClient() {
   if (optionsState === "error") {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6">
-        <h1 className="text-2xl font-semibold text-[#313234]">We could not load gift options</h1>
+        <h2 className="text-2xl font-semibold text-[#313234]">We could not load gift options</h2>
         <p className="mx-auto mt-3 max-w-md text-[15px] text-[#6A6D71]">
           Something went wrong on our side. Please try again in a moment.
         </p>
@@ -444,9 +444,9 @@ export default function GiftPurchaseClient() {
 
     return (
       <div className="mx-auto max-w-2xl px-4 py-14 sm:px-6">
-        <h1 className="text-[26px] font-semibold leading-tight text-[#313234] sm:text-[34px]">
+        <h2 className="text-[26px] font-semibold leading-tight text-[#313234] sm:text-[34px]">
           Give someone a ProFixter membership
-        </h1>
+        </h2>
         <p className="mt-3 text-[15px] leading-relaxed text-[#6A6D71] sm:text-base">
           A professional handyman at their home
           {shortest && longest ? `, for ${shortest} to ${longest} months` : ""}. You pay once. They
@@ -509,9 +509,9 @@ export default function GiftPurchaseClient() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
       <header className="mb-7">
-        <h1 className="text-[26px] font-semibold leading-tight text-[#313234] sm:text-[32px]">
+        <h2 className="text-[26px] font-semibold leading-tight text-[#313234] sm:text-[32px]">
           Gift a Membership
-        </h1>
+        </h2>
         <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-[#6A6D71]">
           Choose a plan and how long it runs, tell us who it is for, and we will send
           them a beautiful digital gift.

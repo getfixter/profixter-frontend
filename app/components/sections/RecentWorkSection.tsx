@@ -92,6 +92,7 @@ export default function RecentWorkSection({
   showHeading = true,
 }: RecentWorkSectionProps) {
   const isPreview = variant === "preview";
+  const HeadingTag = isPreview ? "h2" : "h1";
   /*
    * Six on the homepage, not eight.
    *
@@ -226,12 +227,16 @@ export default function RecentWorkSection({
               {eyebrow}
             </span>
           </div>
-          <h2
+          {/*
+            The full gallery is a page of its own, so its heading is the page's
+            H1. The homepage preview keeps an H2 under the homepage's own H1.
+          */}
+          <HeadingTag
             id="recent-work-heading"
             className="mb-3 text-[26px] font-extrabold leading-[1.08] tracking-[-0.03em] text-white sm:text-[36px]"
           >
             {heading}
-          </h2>
+          </HeadingTag>
           <p className="mx-auto max-w-[600px] text-[15px] leading-relaxed text-white/48 sm:text-[17px]">
             {subheading}
           </p>

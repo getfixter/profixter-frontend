@@ -59,7 +59,12 @@ const nextConfig: NextConfig = {
       { source: "/remodeling", destination: "/projects#bathroom", permanent: true },
       { source: "/kitchen", destination: "/projects#kitchen", permanent: true },
       { source: "/services/general-contractor", destination: "/projects", permanent: true },
-      { source: "/on-demand", destination: "/book", permanent: false },
+      /*
+       * Retired for good: /book has been the booking page for months. Permanent
+       * so search engines move any remaining signal across; the destination
+       * and any query string are unchanged.
+       */
+      { source: "/on-demand", destination: "/book", permanent: true },
 
       /*
        * Extra Visit, Full Day Fixter and Priority Visit are named products in
