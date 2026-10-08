@@ -113,7 +113,7 @@ export default async function GiftPage() {
             </ul>
 
             {plans.length ? (
-              <div className="mt-8 overflow-x-auto rounded-[12px] border border-[#E0E6F5] bg-white">
+              <div className="relative mt-8 overflow-x-auto rounded-[12px] border border-[#E0E6F5] bg-white">
                 <table className="w-full border-collapse text-left text-[15px]">
                   <caption className="sr-only">Gift membership prices by plan and length</caption>
                   <thead>

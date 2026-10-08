@@ -223,6 +223,34 @@ const toPath = (url) => url.replace(SITE, "") || "/";
     check(`${path} ad landing redirect unchanged (307, keeps query)`, res.status === 307 && /utm_campaign=1234567/.test(res.location || ""), `${res.status} -> ${res.location}`);
   }
 
+  /* ---------------- phone layout width ----------------
+   * A mobile browser widens its layout viewport to fit anything that escapes
+   * the page width, and then everything renders zoomed out and taps miss. The
+   * comparison table's screen-reader labels once did exactly that (459px at
+   * 390px). Measured as innerWidth in a real mobile context, because
+   * scrollWidth - innerWidth reads 0 once the viewport has already grown.
+   */
+  {
+    const { chromium } = require("playwright");
+    const browser = await chromium.launch();
+    const ctx = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+    });
+    const page = await ctx.newPage();
+    const wide = [];
+    const phonePaths = ["/", "/membership/plans", "/handyman-membership", "/book", "/gift", "/recent-work", "/guides", "/locations", ...urls.map(toPath).filter((p) => p.startsWith("/guides/") || p.startsWith("/locations/"))];
+    for (const path of [...new Set(phonePaths)]) {
+      await page.goto(BASE + path, { waitUntil: "networkidle" }).catch(() => {});
+      const width = await page.evaluate(() => window.innerWidth);
+      if (width !== 390) wide.push(`${path}=${width}`);
+    }
+    check("every checked page keeps a 390px layout on a phone (nothing escapes the page width)", wide.length === 0, wide.join(", "));
+    await browser.close();
+  }
+
   const failed = results.filter((r) => !r.pass);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
   process.exit(failed.length ? 1 : 0);

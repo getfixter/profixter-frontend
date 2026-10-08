@@ -98,7 +98,7 @@ function OffersBlock({ oneTime, fullDay }: { oneTime: OneTimeOffer; fullDay: Ful
 
 function TaskMixBlock() {
   return (
-    <div className="my-8 overflow-x-auto rounded-[12px] border border-[#DDE5F0] bg-white">
+    <div className="relative my-8 overflow-x-auto rounded-[12px] border border-[#DDE5F0] bg-white">
       <table className="w-full border-collapse text-left text-[15px]">
         <caption className="px-4 pt-4 text-left text-[13px] leading-5 text-[#64748B]">
           Rough share of Profixter visit requests that mention each kind of work, read by keyword from what customers
@@ -203,7 +203,7 @@ function Block({ block, oneTime, fullDay }: { block: GuideBlock; oneTime: OneTim
     case "table":
       return (
         <div className="my-7">
-          <div className="overflow-x-auto rounded-[12px] border border-[#DDE5F0] bg-white">
+          <div className="relative overflow-x-auto rounded-[12px] border border-[#DDE5F0] bg-white">
             <table className="w-full min-w-[520px] border-collapse text-left text-[14.5px] leading-6">
               <caption className="sr-only">{block.caption}</caption>
               <thead>

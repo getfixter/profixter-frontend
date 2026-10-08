@@ -45,7 +45,13 @@ export default function PlanComparisonTable({
         </Heading>
         <p className="mt-3 max-w-[68ch] text-[15px] leading-[1.6] text-[#6E6E73] sm:text-[16px]">{intro}</p>
 
-        <div className="mt-6 overflow-x-auto rounded-[12px] border border-[#E3E8F1] bg-white">
+        {/*
+          `relative` is load-bearing: the screen-reader-only labels in the cells
+          are absolutely positioned, and without a positioned ancestor they
+          escape this scroll box and widen the whole page on a phone (it
+          rendered 459px wide at 390px, and taps landed in the wrong place).
+        */}
+        <div className="relative mt-6 overflow-x-auto rounded-[12px] border border-[#E3E8F1] bg-white">
           <table className="w-full min-w-[640px] border-collapse text-left text-[14px] sm:text-[15px]">
             <caption className="sr-only">
               Profixter handyman membership plans: monthly and annual prices and what each plan includes
