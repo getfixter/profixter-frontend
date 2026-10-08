@@ -95,7 +95,7 @@ const WAYS = [
  * this website belongs to that company - will look for it.
  */
 const TRUST: Array<[string, string]> = [
-  ["Licensed", "NY HIC HI-71484, held by Premium Island Homes Inc."],
+  ["Licensed", "Suffolk County home improvement license HI-71484"],
   ["Insured", "Covered for work inside your home."],
   ["Local", "Based near Babylon, serving Nassau and Suffolk."],
   ["Same team", "The people who come back already know your house."],

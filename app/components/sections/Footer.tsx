@@ -183,7 +183,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
             * has to become more legalistic to carry it.
             */}
           <p className="text-[13px] text-[#4A5568]">
-            &copy; 2026 Premium Island Homes Inc., d/b/a ProFixter. All rights reserved. &middot; NY State Licensed HI-71484
+            &copy; 2026 Premium Island Homes Inc., d/b/a ProFixter. All rights reserved. &middot; Suffolk County Licensed HI-71484
           </p>
           {!compact ? <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
             {TRUST_BADGES.map((item) => (

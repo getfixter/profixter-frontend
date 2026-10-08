@@ -30,7 +30,7 @@ const FAQS = [
   },
   {
     q: "Do you handle permits?",
-    a: "Yes. We are licensed NY State Home Improvement Contractor HI-71484 and we handle the permit process. Plumbing and electrical work requires permits in most Long Island municipalities. We pull them, coordinate with inspectors, and make sure every phase passes. This is non-negotiable - it protects you legally and protects your home's resale value.",
+    a: "Yes. We are licensed under Suffolk County home improvement license HI-71484 and we handle the permit process. Plumbing and electrical work requires permits in most Long Island municipalities. We pull them, coordinate with inspectors, and make sure every phase passes. This is non-negotiable - it protects you legally and protects your home's resale value.",
   },
   {
     q: "Do you do design, or do I need to hire a designer?",
@@ -50,7 +50,7 @@ const FAQS = [
   },
   {
     q: "Are you licensed and insured?",
-    a: "Yes. NY State Licensed Home Improvement Contractor HI-71484, verifiable through the NYS Department of State. Fully insured for property damage and general liability. We provide proof of insurance before any work begins - always. Don't hire a contractor who can't hand you a COI immediately.",
+    a: "Yes. Suffolk County home improvement license HI-71484, verifiable through Suffolk County Consumer Affairs. Fully insured for property damage and general liability. We provide proof of insurance before any work begins - always. Don't hire a contractor who can't hand you a COI immediately.",
   },
   {
     q: "What tile brands and materials do you work with?",
@@ -326,7 +326,7 @@ export default function RemodelingPage() {
                       <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   ),
-                  label: "NY State Home Improvement Contractor",
+                  label: "Suffolk County Home Improvement License",
                   strong: "HI-71484",
                 },
                 {
@@ -724,7 +724,7 @@ export default function RemodelingPage() {
                   </div>
                   {[
                     "Same crew · every project",
-                    "Licensed NY HI-71484",
+                    "Suffolk County Licensed HI-71484",
                     "Fully insured",
                     "No sub-contractors",
                     "Waterproofed properly",
@@ -894,7 +894,7 @@ export default function RemodelingPage() {
                 },
                 {
                   headline: "NY Licensed. Fully Insured. Verifiable.",
-                  body: "HI-71484 is verifiable through the NYS Department of State in 30 seconds. Proof of insurance provided before any work begins. Permits pulled on every project.",
+                  body: "HI-71484 is verifiable through Suffolk County Consumer Affairs online. Proof of insurance provided before any work begins. Permits pulled on every project.",
                   accent: "#16A34A",
                 },
                 {
