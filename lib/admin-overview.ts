@@ -86,6 +86,8 @@ export type Overview = {
       available: boolean;
       /* True only while the first Stripe backfill runs (once, after a deploy). */
       syncing: boolean;
+      /* The Stripe sync has not succeeded for 30+ minutes: recent payments may be missing. */
+      stale: boolean;
       syncedAt: string | null;
       error: string | null;
       truncated: boolean;
@@ -242,7 +244,7 @@ const OVERVIEW_SHAPE: Shape = {
     cancellations: { value: 0, prev: 0, delta: null, scheduled: 0 },
     newCustomers: { value: 0, prev: 0, delta: null },
     revenue: {
-      available: false, syncing: false, syncedAt: null, error: null, truncated: false, membershipCents: 0, oneTimeCents: 0, fullDayCents: 0,
+      available: false, syncing: false, stale: false, syncedAt: null, error: null, truncated: false, membershipCents: 0, oneTimeCents: 0, fullDayCents: 0,
       giftCents: 0, otherCents: 0, refundedCents: 0, totalCents: 0, taxCents: 0, collectedCents: 0, prevTotalCents: 0, prevCollectedCents: 0,
       delta: null,
     },
