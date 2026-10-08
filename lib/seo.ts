@@ -190,6 +190,12 @@ export const PROFIXTER_STRUCTURED_DATA = {
       ],
       sameAs: [...OFFICIAL_PROFILES],
       /*
+       * Stated on the site itself (About page and team section: "I founded
+       * Profixter..."). Connects the person assistants already associate with
+       * the business to the entity, without adding any new claim.
+       */
+      founder: { "@type": "Person", name: "Taras Bandura", jobTitle: "General Manager" },
+      /*
        * No hasCredential. HI-71484 is a Suffolk County license held by the
        * founder personally, not by Premium Island Homes Inc., so attaching it
        * to the business entity in markup would overstate it. The visible site
