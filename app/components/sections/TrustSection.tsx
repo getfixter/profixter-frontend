@@ -98,7 +98,7 @@ function CredentialsCard() {
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <span className="text-[11px] leading-relaxed text-white/45">
-            License verifiable · New York State Dept. of State
+            License verifiable · Suffolk County Consumer Affairs
           </span>
         </div>
       </div>

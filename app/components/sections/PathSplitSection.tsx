@@ -134,7 +134,7 @@ export default function PathSplitSection() {
         {/* ── Trust bar ── */}
         <div className="mt-7 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
           {[
-            "NY State Licensed · HI-71484",
+            "Suffolk County Licensed · HI-71484",
             "Fully Insured",
             "4.9 Google Rating",
             "9+ Years on Long Island",

@@ -124,7 +124,7 @@ const TRADES = [
 const REASONS = [
   {
     title: "Licensed and insured",
-    body: "Profixter operates under NY State Home Improvement Contractor license HI-71484 and carries insurance for the work.",
+    body: "Profixter operates under Suffolk County home improvement license HI-71484 and carries insurance for the work.",
   },
   {
     title: "A Long Island company",
@@ -291,7 +291,7 @@ export default function KitchenBathroomPage() {
             </div>
 
             <ul className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[11px] font-semibold text-white/55 sm:mt-10 sm:gap-x-8 sm:text-[13px]">
-              {["NY State Licensed HI-71484", "Fully insured", "Long Island based"].map((item) => (
+              {["Suffolk County Licensed HI-71484", "Fully insured", "Long Island based"].map((item) => (
                 <li key={item} className="flex items-center gap-2.5">
                   <span aria-hidden="true" className="h-1 w-1 rounded-full bg-[#D4A574]" />
                   {item}

@@ -117,7 +117,7 @@ export default function SmsConsentExamplePage() {
           <span className="font-semibold">ProFixter</span> is operated by{" "}
           <span className="font-semibold">Premium Island Homes Inc.</span>
           <br />
-          NY State Home Improvement Contractor licence{" "}
+          Suffolk County home improvement licence{" "}
           <span className="font-semibold">HI-71484</span> &middot; Nassau and Suffolk Counties, New York
         </p>
 

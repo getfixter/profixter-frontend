@@ -18,7 +18,7 @@ const PROOF_STATS = [
   },
   {
     value: "Licensed",
-    label: "NY State Home Improvement Contractor · HI-71484",
+    label: "Suffolk County Home Improvement License · HI-71484",
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -282,7 +282,7 @@ export default function RoofingSection() {
         <div className="mt-7 sm:mt-8 rounded-[8px] border border-white/[0.07] bg-white/[0.03] px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
             {[
-              "NY State Licensed · HI-71484",
+              "Suffolk County Licensed · HI-71484",
               "Fully Insured",
               "Up to 50-yr warranty",
               "Financing available",

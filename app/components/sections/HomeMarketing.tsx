@@ -34,7 +34,7 @@ const STEPS = [
 ];
 
 const FACTS: Array<[string, string]> = [
-  ["Licensed", "NY HIC HI-71484"],
+  ["Licensed", "Suffolk County HI-71484"],
   ["Insured", "For in-home work"],
   ["Serving", "Nassau & Suffolk"],
 ];

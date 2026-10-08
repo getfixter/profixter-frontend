@@ -8,7 +8,7 @@ const STATS = [
   { value: "5.0", label: "Google Rating" },
   { value: "9+", label: "Years on Long Island" },
   { value: "$0", label: "Estimates - ever" },
-  { value: "HI-71484", label: "NY State Licensed" },
+  { value: "HI-71484", label: "Suffolk County Licensed" },
 ];
 
 function ChevronIcon({ open }: { open: boolean }) {

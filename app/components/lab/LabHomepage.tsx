@@ -503,7 +503,7 @@ export default function LabHomepage() {
           </Lede>
           <dl className="mt-6 grid grid-cols-1 gap-px overflow-hidden rounded-[8px] border border-[#E5E5EA] bg-[#E5E5EA] sm:grid-cols-3">
             {[
-              ["Licensed", "NY HIC HI-71484"],
+              ["Licensed", "Suffolk County HI-71484"],
               ["Insured", "For in-home work"],
               ["Serving", "Nassau & Suffolk"],
             ].map(([k, v]) => (
