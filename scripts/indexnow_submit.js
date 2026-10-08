@@ -11,7 +11,9 @@
  * this is the fastest legitimate way to get new and changed pages re-crawled.
  *
  * Submit after a deploy that adds or materially changes pages - not on a
- * schedule, and not for pages that did not change. Google does not use IndexNow;
+ * schedule, and not for pages that did not change. If Node's fetch is reset by
+ * the endpoint (seen October 2026), the same JSON body POSTed with curl works.
+ * Google does not use IndexNow;
  * Google picks up the sitemap from robots.txt (or Search Console).
  */
 const SITE = "https://www.profixter.com";
