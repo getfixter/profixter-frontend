@@ -53,6 +53,9 @@ export type SourceRow = {
   costPerRegistrationCents: number | null;
   costPerMemberCents: number | null;
   roas: number | null;
+  /* Spend / first-time paying customers (members or paid visits) in the period. */
+  cacCents?: number | null;
+  newPayingCustomers?: number;
 };
 
 /*
@@ -73,6 +76,7 @@ export type CampaignNode = {
   spendCents: number | null;
   roas: number | null;
   costPerMemberCents: number | null;
+  cacCents?: number | null;
   plans?: Record<string, number>;
   campaignId?: string | null;
   adsets?: CampaignNode[];
@@ -90,6 +94,10 @@ export type SourceGroup = {
   revenueCents: number;
   conversion: number | null;
   share: number | null;
+  spendCents?: number | null;
+  cacCents?: number | null;
+  roas?: number | null;
+  newPayingCustomers?: number;
 };
 
 export type ActivityItem = { at: string; type: string; text: string; who: string; userId: string; ref?: string };
@@ -162,7 +170,17 @@ export type Overview = {
   otherDetail: Array<{ origin: string; visitors: number; registrations: number }>;
   unmatchedRevenueCents: number;
   campaigns: CampaignNode[];
-  spend: { connected: boolean };
+  spend: {
+    connected: boolean;
+    /* BackEnd utils/analytics/metaAdSpend status reason: ok, not_configured, token_missing_ads_read... */
+    status?: string | null;
+    lastSuccessAt?: string | null;
+    totalCents?: number | null;
+    currency?: string | null;
+    stale?: boolean;
+    partial?: boolean;
+    newPayingCustomers?: number;
+  };
   topAreas: Array<{ city: string; customers: number; members: number; newInPeriod: number }>;
   activity: ActivityItem[];
   attention: AttentionItem[];
