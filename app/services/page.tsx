@@ -6,7 +6,7 @@ import {
   HubHero,
   SeoPageShell,
 } from "@/app/components/seo/SeoPageComponents";
-import { handymanServices, membershipBenefits } from "@/lib/seo-content";
+import { FREE_VISIT_CTA, handymanServices, membershipBenefits } from "@/lib/seo-content";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -60,8 +60,8 @@ export default function ServicesPage() {
         <HubHero
           eyebrow="Handyman services"
           title="Small home tasks, handled through the right Profixter path."
-          description="Browse common handyman services, then choose what fits: become a Member for ongoing help, book one $99 One-Time Visit, or move larger work into a renovation estimate."
-          primaryCta={{ label: "Book One-Time Visit", href: "/book" }}
+          description="Browse common handyman services, then choose what fits: new customers start with a free first visit, book one $99 One-Time Visit for a single job, become a Member for ongoing help, or move larger work into a renovation estimate."
+          primaryCta={FREE_VISIT_CTA}
           secondaryCta={{ label: "Become a Member", href: "/membership/plans" }}
           breadcrumb={{ label: "Services", href: "/services" }}
         />
