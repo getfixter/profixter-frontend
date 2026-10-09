@@ -264,6 +264,52 @@ const toPath = (url) => url.replace(SITE, "") || "/";
     check(`${path} ad landing redirect unchanged (307, keeps query)`, res.status === 307 && /utm_campaign=1234567/.test(res.location || ""), `${res.status} -> ${res.location}`);
   }
 
+  /* ---------------- funnel CTAs on service and town pages ----------------
+   * A bare /book is Book Fixter - the plan picker for a non-member - so every
+   * link that says "One-Time" must carry ?visit=additional, and the free first
+   * visit comes before it. (The header's plain "Book" link is navigation and
+   * rightly opens /book.)
+   */
+  {
+    const anchors = (html) =>
+      [...html.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)].map((m) => ({
+        href: m[1].replace(/&amp;/g, "&"),
+        text: m[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+      }));
+    const ctaProblems = (html) => {
+      const links = anchors(html);
+      const free = links.findIndex((a) => a.href === "/book/free");
+      const oneTime = links.filter((a) => /one-time/i.test(a.text));
+      const firstOneTime = links.findIndex((a) => /one-time/i.test(a.text));
+      const wrong = oneTime.filter((a) => a.href !== "/book?visit=additional").map((a) => `${a.text} -> ${a.href}`);
+      return { free, firstOneTime, wrong, oneTimeCount: oneTime.length };
+    };
+    const servicePaths = urls.map(toPath).filter((p) => /^\/services\/[^/]+$/.test(p));
+    const bad = [];
+    for (const path of servicePaths) {
+      const r = ctaProblems(pages[path].html);
+      if (r.free < 0 || !r.oneTimeCount || r.free > r.firstOneTime || r.wrong.length) bad.push(`${path} (free ${r.free}, one-time ${r.firstOneTime}, wrong ${r.wrong.join("; ")})`);
+    }
+    check(`every service page offers the free visit first, and its One-Time links open ?visit=additional (${servicePaths.length} pages)`, servicePaths.length > 5 && bad.length === 0, bad.join(", "));
+    const hub = ctaProblems(pages["/services"].html);
+    check("/services hub: leads with the free visit; no One-Time link to a bare /book", hub.free >= 0 && hub.wrong.length === 0, hub.wrong.join("; "));
+    const town = ctaProblems(pages["/locations/massapequa"].html);
+    check("town page: free visit offered before One-Time", town.free >= 0 && town.free < town.firstOneTime && town.wrong.length === 0, `${town.free} / ${town.firstOneTime}`);
+  }
+
+  /* ---------------- homepage FAQPage, one viewport tag ---------------- */
+  {
+    const faq = jsonLd(pages["/"].html).find((b) => b.ok && b.data["@type"] === "FAQPage");
+    const questions = faq ? faq.data.mainEntity || [] : [];
+    const text = visibleText(pages["/"].html);
+    const unseen = questions.filter((q) => !text.includes(q.name.replace(/&/g, "&")) || !text.includes(q.acceptedAnswer.text.slice(0, 40)));
+    check("homepage FAQPage markup lists the questions the page shows", questions.length >= 5 && unseen.length === 0, `${questions.length} questions, ${unseen.length} not visible: ${unseen.map((q) => q.name).join(" | ")}`);
+    for (const path of ["/", "/book/free", "/services/tv-mounting", "/membership/plans"]) {
+      const count = (pages[path].html.match(/<meta name="viewport"/g) || []).length;
+      check(`${path}: exactly one viewport meta tag`, count === 1, `${count}`);
+    }
+  }
+
   /* ---------------- phone layout width ----------------
    * A mobile browser widens its layout viewport to fit anything that escapes
    * the page width, and then everything renders zoomed out and taps miss. The
