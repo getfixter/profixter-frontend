@@ -3,6 +3,8 @@ import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import Link from "next/link";
 import RecentWorkSection from "@/app/components/sections/RecentWorkSection";
+import { getRecentWorkPhotos } from "@/lib/offers";
+import { SITE_URL } from "@/lib/seo";
 import { COMPLETED_VISITS_ROUNDED, DATA_AS_OF, DATA_SINCE, MULTI_TASK_REQUEST_PHRASE, TASK_MIX } from "@/lib/profixter-data";
 
 export const metadata: Metadata = {
@@ -37,9 +39,40 @@ export const metadata: Metadata = {
  * question is one people ask deliberately. The homepage carries a six-tile
  * sample; this is where the rest lives, with the category filter.
  */
-export default function RecentWorkPage() {
+/* The captioned photos are re-read hourly for the structured data below. */
+export const revalidate = 3600;
+
+export default async function RecentWorkPage() {
+  /*
+   * The gallery itself renders in the browser; this gives search engines and
+   * assistants the same photographs as data in the served HTML - each with the
+   * caption an admin wrote for it - so "what does this company actually do"
+   * has an answer that does not depend on running the page's scripts.
+   */
+  const photos = await getRecentWorkPhotos(undefined, 48);
+  const galleryJsonLd = photos.length
+    ? {
+        "@context": "https://schema.org",
+        "@type": "ImageGallery",
+        name: "Profixter recent work",
+        url: `${SITE_URL}/recent-work`,
+        provider: { "@id": `${SITE_URL}/#business` },
+        associatedMedia: photos.map((photo) => ({
+          "@type": "ImageObject",
+          contentUrl: photo.imageUrl,
+          thumbnailUrl: photo.thumbUrl,
+          name: photo.title,
+          caption: photo.caption,
+          width: photo.width,
+          height: photo.height,
+        })),
+      }
+    : null;
   return (
     <main className="min-h-screen bg-[#060C18]">
+      {galleryJsonLd ? (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(galleryJsonLd) }} />
+      ) : null}
       <Header />
       <RecentWorkSection
         variant="full"

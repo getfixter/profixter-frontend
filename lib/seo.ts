@@ -91,7 +91,7 @@ type SitemapRoute = {
 };
 
 export const PUBLIC_SITEMAP_ROUTES: readonly SitemapRoute[] = [
-  { path: "/", changeFrequency: "weekly", priority: 1, updated: "2026-10-06" },
+  { path: "/", changeFrequency: "weekly", priority: 1, updated: CONTENT_RELEASE_DATE },
   /* The prices, with their own canonical since this release. */
   { path: "/membership/plans", changeFrequency: "weekly", priority: 0.98, updated: CONTENT_RELEASE_DATE },
   /* The category explainer and the canonical "how Profixter membership works". */

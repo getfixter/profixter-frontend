@@ -127,6 +127,20 @@ const toPath = (url) => url.replace(SITE, "") || "/";
     check("homepage title leads with ordinary handyman intent and keeps the membership", /^Long Island Handyman/.test(homeTitle) && /Membership/.test(homeTitle), homeTitle);
   }
 
+  /* ---------------- titles, images, plumbing intent (phase 3) ---------------- */
+  {
+    /* Bing Site Scan flags titles over 70 characters; keep every sitemap page under it. */
+    const long = Object.entries(pages)
+      .map(([path, p]) => [path, (titleOf(p.html) || "").replace(/&amp;/g, "&").replace(/&#x27;/g, "'")])
+      .filter(([, t]) => t.length > 70);
+    check("every sitemap page title is 70 characters or fewer", long.length === 0, long.map(([p, t]) => `${p} (${t.length})`).join(", "));
+    check("sitemap includes /services/handyman-plumbing", urls.includes(`${SITE}/services/handyman-plumbing`));
+    const gallery = jsonLd(pages["/recent-work"].html).find((b) => b.ok && b.data["@type"] === "ImageGallery");
+    const media = gallery ? gallery.data.associatedMedia || [] : [];
+    check("/recent-work publishes captioned ImageObjects", media.length > 0 && media.every((m) => m.caption && m.contentUrl), `${media.length} images`);
+    check("sitemap lists Recent Work images", /<image:image>/.test(sm.html));
+  }
+
   /* ---------------- no inherited homepage canonical ---------------- */
   for (const path of ["/signup", "/gift", "/book/free", "/guides"]) {
     const page = pages[path] || (await get(path));
@@ -268,7 +282,7 @@ const toPath = (url) => url.replace(SITE, "") || "/";
     });
     const page = await ctx.newPage();
     const wide = [];
-    const phonePaths = ["/", "/membership/plans", "/handyman-membership", "/book", "/gift", "/recent-work", "/guides", "/locations", ...urls.map(toPath).filter((p) => p.startsWith("/guides/") || p.startsWith("/locations/"))];
+    const phonePaths = ["/", "/membership/plans", "/handyman-membership", "/book", "/gift", "/recent-work", "/guides", "/locations", ...urls.map(toPath).filter((p) => p.startsWith("/guides/") || p.startsWith("/locations/") || p.startsWith("/services/"))];
     for (const path of [...new Set(phonePaths)]) {
       await page.goto(BASE + path, { waitUntil: "networkidle" }).catch(() => {});
       const width = await page.evaluate(() => window.innerWidth);

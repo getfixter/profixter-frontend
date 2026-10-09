@@ -10,7 +10,7 @@ import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME } from "@/lib/seo";
  * answers the question honestly is the one worth retrieving. The brand case is
  * made further down the page, after the category is explained.
  */
-const TITLE = "What Is a Handyman Membership? | Profixter Long Island";
+const TITLE = "What Is a Handyman Membership (or Subscription)? | Profixter";
 const DESCRIPTION =
   "A handyman membership is a monthly subscription for ongoing home repairs and maintenance instead of hiring per job. How it works, when it beats one-off hiring, when it does not, and how Profixter runs one on Long Island.";
 

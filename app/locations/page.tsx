@@ -14,7 +14,7 @@ import {
   TOWN_RECORDS,
 } from "@/lib/profixter-data";
 
-const TITLE = "Where Profixter Works: Handyman Service Across Nassau & Suffolk";
+const TITLE = "Handyman Service Across Nassau & Suffolk";
 const DESCRIPTION = `Profixter has completed more than ${COMPLETED_VISITS_ROUNDED} handyman visits in ${COMMUNITIES_PHRASE} since ${DATA_SINCE}. Town pages, and every town in Nassau and Suffolk where we have done repeated work.`;
 
 export const metadata: Metadata = {
