@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import HomePageClient from "@/app/components/home/HomePageClient";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME } from "@/lib/seo";
+import { HOME_FAQ } from "@/lib/home-faq";
 
 /**
  * The homepage's own canonical and its search snippet.
@@ -52,6 +53,26 @@ export const metadata: Metadata = {
   },
 };
 
+/*
+ * FAQPage markup for the questions the homepage actually shows, built from the
+ * same list HomeLanding renders so the two cannot drift apart. Answers are the
+ * visible text; the "see also" links stay on the page only.
+ */
+const FAQ_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: HOME_FAQ.map((item) => ({
+    "@type": "Question",
+    name: item.q,
+    acceptedAnswer: { "@type": "Answer", text: item.a },
+  })),
+};
+
 export default function HomePage() {
-  return <HomePageClient />;
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON_LD) }} />
+      <HomePageClient />
+    </>
+  );
 }
