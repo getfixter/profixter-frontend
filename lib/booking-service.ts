@@ -132,6 +132,8 @@ export interface Booking {
   county: string;
   note: string;
   images: string[];
+  /** Set by the server when the booking is created; tells a paid Full Day from a One-Time Visit. */
+  bookingType?: "membership_visit" | "one_time_handyman_visit" | "full_day_visit";
 }
 
 export interface BookingDetailUpdateData {
