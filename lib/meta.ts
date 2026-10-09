@@ -596,11 +596,24 @@ export function trackLead(params: Params = {}, opts: ConversionOptions = {}): st
  * visit has always pushed.
  */
 export function trackSchedule(params: Params = {}, opts: ConversionOptions = {}): string {
-  return send("Schedule", params, {
+  const id = send("Schedule", params, {
     server: opts.relay !== false,
     dataLayerEvent: "free_visit_booked",
     eventId: opts.eventId,
   });
+  /*
+   * TRANSITION SWITCH. A booked free visit used to be reported as a Lead.
+   * Until the live campaigns are confirmed not to optimise on that Lead (or on
+   * a custom conversion filtering content_name / status from it), the legacy
+   * Lead keeps firing exactly as before, alongside Schedule, so ad delivery
+   * sees no change. Set NEXT_PUBLIC_META_LEGACY_FREE_VISIT_LEAD=false to
+   * retire it once the campaign audit (BackEnd meta_campaign_audit) is clean.
+   * Its own event id, and no second dataLayer push.
+   */
+  if (process.env.NEXT_PUBLIC_META_LEGACY_FREE_VISIT_LEAD !== "false") {
+    send("Lead", { ...params, lead_type: "free_visit_legacy" }, { server: opts.relay !== false, dataLayerEvent: undefined });
+  }
+  return id;
 }
 
 /** A paid membership has started. `value` is the amount actually charged. */

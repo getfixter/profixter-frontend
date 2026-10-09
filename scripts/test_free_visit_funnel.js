@@ -334,13 +334,34 @@ async function finishSignupSteps(page) {
 
     /* Meta: one Lead per person, the booking is Schedule. */
     const fbq = await fbqLog(page);
-    const leads = fbq.filter((c) => c[0] === "track" && c[1] === "Lead");
+    const allLeads = fbq.filter((c) => c[0] === "track" && c[1] === "Lead");
+    /*
+     * The transition switch (NEXT_PUBLIC_META_LEGACY_FREE_VISIT_LEAD, on unless
+     * "false") keeps the old free-visit Lead alongside Schedule until the live
+     * campaigns are confirmed not to depend on it. It is marked
+     * lead_type "free_visit_legacy" and is the only extra Lead allowed.
+     */
+    const legacyOn = process.env.NEXT_PUBLIC_META_LEGACY_FREE_VISIT_LEAD !== "false";
+    const legacy = allLeads.filter((l) => l[2]?.lead_type === "free_visit_legacy");
+    const leads = allLeads.filter((l) => l[2]?.lead_type !== "free_visit_legacy");
     const schedules = fbq.filter((c) => c[0] === "track" && c[1] === "Schedule");
     check("cold booker: exactly one Lead, and it is the account", leads.length === 1 && leads[0][2]?.lead_type === "account" && leads[0][2]?.content_name === "account_created", JSON.stringify(leads.map((l) => l[2])));
+    check(
+      legacyOn ? "transition: the legacy free-visit Lead still fires once, with its old content_name and status" : "legacy free-visit Lead is retired",
+      legacyOn
+        ? legacy.length === 1 && legacy[0][2]?.content_name === "free_first_visit" && legacy[0][2]?.status === "free_visit_booked"
+        : legacy.length === 0,
+      JSON.stringify(legacy.map((l) => l[2]))
+    );
     check("cold booker: the booking is one Schedule with an eventID", schedules.length === 1 && !!schedules[0][3]?.eventID && schedules[0][2]?.content_name === "free_first_visit", JSON.stringify(schedules));
     const relayed = state.relays.filter((r) => r.eventName === "Schedule");
     check("Schedule is relayed to the server with the same event id", relayed.length === 1 && relayed[0].eventId === schedules[0]?.[3]?.eventID, JSON.stringify(state.relays.map((r) => [r.eventName, r.eventId])));
-    check("the account Lead is not relayed from the browser (registration sends it)", !state.relays.some((r) => r.eventName === "Lead"));
+    const leadRelays = state.relays.filter((r) => r.eventName === "Lead");
+    check(
+      "the account Lead is not relayed from the browser (registration sends it); only the legacy Lead is, as before",
+      legacyOn ? leadRelays.length === 1 && leadRelays[0].eventId === legacy[0]?.[3]?.eventID : leadRelays.length === 0,
+      JSON.stringify(leadRelays)
+    );
     const custom = fbq.filter((c) => c[0] === "trackCustom").map((c) => c[1]);
     check("date, time and photo taps no longer reach Meta", !custom.some((n) => /^free_visit_/.test(n)), custom.join(","));
     const dl = await dlLog(page);
