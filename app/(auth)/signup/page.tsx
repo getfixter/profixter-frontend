@@ -12,7 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { register } from "@/lib/auth-service";
-import { getRoleLandingPath, safeReturnPath } from "@/lib/auth-routing";
+import { getRoleLandingPath, hasActiveMembership, safeReturnPath } from "@/lib/auth-routing";
 import { useAuth } from "@/lib/useAuth";
 import { extractUSNationalPhoneDigits, isValidUSNationalPhoneDigits } from "@/lib/phone";
 import { trackEvent } from "@/lib/analytics";
@@ -683,8 +683,26 @@ export default function SignUpPage() {
         new URLSearchParams(window.location.search).get("next")
       );
       const landingPath = getRoleLandingPath(verifiedUser);
+      /*
+       * No ?next: a new customer lands on the free-visit booker, the thing
+       * they can use today. It used to be /membership, a heavier booking UI
+       * that forced a reload. /book/free handles every case itself: it books
+       * the free visit, sends a member to their calendar, and offers a
+       * One-Time Visit or a plan to a home that has already had its free
+       * visit. A plan or promo carried into signup still goes to /membership,
+       * where PlansSection picks it up.
+       */
+      const planPending = (() => {
+        try {
+          return Boolean(sessionStorage.getItem("pendingCheckoutPlan"));
+        } catch {
+          return false;
+        }
+      })();
+      const customerLanding =
+        hasActiveMembership(verifiedUser) || checkoutPromo || planPending ? "/membership" : "/book/free";
       router.replace(
-        returnPath || (landingPath === "/account" ? "/membership" : landingPath)
+        returnPath || (landingPath === "/account" ? customerLanding : landingPath)
       );
     } catch (err: unknown) {
       const errorResponse = err as { response?: { data?: { message?: string } }; message?: string };
