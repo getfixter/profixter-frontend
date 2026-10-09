@@ -199,12 +199,54 @@ const dl = (page) => page.evaluate(() => window.__dl || []);
     await ctx.close();
   }
 
+  /* ---------------- an estimate request is a typed Lead ---------------- */
+  {
+    /*
+     * The estimate endpoint and the server relay are answered in the browser:
+     * no estimate is created and nothing reaches the Conversions API.
+     */
+    const relays = [];
+    const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "GET,POST,OPTIONS" };
+    const { ctx, page } = await open(browser, "/projects", {
+      setup: async (c) => {
+        await c.route("**/api/estimates", (r) =>
+          r.request().method() === "OPTIONS"
+            ? r.fulfill({ status: 204, headers: cors })
+            : r.fulfill({ status: 201, contentType: "application/json", headers: cors, body: JSON.stringify({ ok: true }) })
+        );
+        await c.route("**/api/track/**", (r) => {
+          if (r.request().method() === "POST" && r.request().url().includes("/api/track/meta")) {
+            relays.push(JSON.parse(r.request().postData() || "{}"));
+          }
+          return r.fulfill({ status: 204, headers: cors });
+        });
+      },
+    });
+    await page.keyboard.press("Escape"); // the promotion popup, if it opened
+    const form = page.locator("#estimate form");
+    const inputs = form.locator("input");
+    await inputs.nth(0).fill("Test Person");
+    await inputs.nth(1).fill("6315550134");
+    await inputs.nth(2).fill("test@example.com");
+    await form.locator('input[placeholder="Street, city, state, ZIP"]').fill("12 Main St, Massapequa, NY 11758");
+    await form.locator("textarea").first().fill("Bathroom remodel, about 8 by 10, new tub and tile.");
+    await form.locator('button[type="submit"]').click();
+    await page.waitForTimeout(1500);
+    const leads = (await calls(page)).filter((c) => c[0] === "track" && c[1] === "Lead");
+    check("an estimate request fires one Lead", leads.length === 1, `${leads.length}`);
+    check("the estimate Lead carries lead_type renovation_estimate", leads[0]?.[2]?.lead_type === "renovation_estimate", JSON.stringify(leads[0]?.[2]));
+    check("the estimate Lead carries an eventID", Boolean(leads[0]?.[3]?.eventID), "");
+    const relay = relays.find((r) => r.eventName === "Lead");
+    check("the relayed estimate Lead has the same id and lead_type", relay && relay.eventId === leads[0]?.[3]?.eventID && relay.customData?.lead_type === "renovation_estimate", JSON.stringify(relay || {}));
+    await ctx.close();
+  }
+
   /* ---------------- no stray conversions anywhere ---------------- */
-  for (const path of ["/", "/about", "/membership/plans", "/book", "/signup"]) {
+  for (const path of ["/", "/about", "/membership/plans", "/book", "/book/free", "/signup"]) {
     const { ctx, page } = await open(browser, path);
     const fbq = await calls(page);
     const conversions = fbq.filter(
-      (c) => c[0] === "track" && ["Lead", "Subscribe", "Purchase"].includes(c[1])
+      (c) => c[0] === "track" && ["Lead", "Schedule", "Subscribe", "Purchase"].includes(c[1])
     );
     check(
       `${path}: no conversion fires just from loading the page`,
