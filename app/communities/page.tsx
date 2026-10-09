@@ -241,7 +241,10 @@ export default function CommunitiesPage() {
       }
 
       // Meta Lead: only after the server accepted the request.
-      trackLead({ content_name: "community_partnership" }, { dataLayerEvent: null });
+      trackLead(
+        { content_name: "community_partnership", lead_type: "community_partnership" },
+        { dataLayerEvent: null }
+      );
       setStatus("success");
       setMessage("Thank you - we received your request. We’ll reach out shortly.");
       setMessage(SUCCESS_MESSAGE);

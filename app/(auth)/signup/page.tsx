@@ -667,7 +667,7 @@ export default function SignUpPage() {
        * Conversions API with the same id and better data than the page has.
        */
       trackLead(
-        { content_name: "account_created", status: "new_account" },
+        { content_name: "account_created", status: "new_account", lead_type: "account" },
         { eventId: leadEventId, relay: false }
       );
       const checkoutPromo =

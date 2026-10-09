@@ -138,7 +138,7 @@ export default function ProjectInquiryForm() {
       trackEvent("project_inquiry_submitted", { service: form.scope, page: PAGE_ID });
       // Meta Lead: only after the server accepted the request.
       trackLead(
-        { content_name: "kitchen_bathroom_inquiry", content_category: form.scope },
+        { content_name: "kitchen_bathroom_inquiry", content_category: form.scope, lead_type: "renovation_estimate" },
         { dataLayerEvent: null }
       );
       setStatus("success");

@@ -17,7 +17,7 @@ import {
   type AvailabilityVisit,
 } from "@/lib/booking-service";
 import { compressImage } from "@/lib/compressImage";
-import { trackLead } from "@/lib/meta";
+import { trackSchedule } from "@/lib/meta";
 import { getRoleLandingPath } from "@/lib/auth-routing";
 import {
   buildAvailabilityCacheKey,
@@ -1203,16 +1203,18 @@ if (next?.date) {
       );
 
       /*
-       * Lead - the free first visit, which is the other way a stranger becomes
-       * a customer we can reach.
+       * Schedule - the free first visit has been booked.
+       *
+       * Not a Lead: the Lead was this customer's account being created, and a
+       * second one for the same person doubled every cold booker.
        *
        * Fired here, after createBooking has resolved, so it describes a booking
        * the server actually accepted rather than a tap on a button. A slot that
        * was taken a second earlier throws and this line is never reached.
        *
-       * Only for the FREE FIRST visit. A member booking their fourth visit of
-       * the month is not a lead, and counting it as one would teach the ad
-       * account to optimise for people who are already paying us.
+       * Only for the FREE FIRST visit. A member booking another visit is not a
+       * new customer, and counting it would teach the ad account to optimise
+       * for people who are already paying us.
        *
        * The relay is left on, unlike the signup and checkout events: there is
        * no server-side hook that knows a free visit was booked, so this is the
@@ -1220,7 +1222,7 @@ if (next?.date) {
        * identity from their session rather than from anything sent here.
        */
       if (freeFirstVisitAvailable) {
-        trackLead({
+        trackSchedule({
           content_name: "free_first_visit",
           status: "free_visit_booked",
           booking_reference: String(bookingResult.booking.bookingNumber || ""),

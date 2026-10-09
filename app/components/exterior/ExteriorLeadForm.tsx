@@ -110,7 +110,7 @@ export default function ExteriorLeadForm({ defaultProject, accentLabel }: Props)
 
       // Meta Lead: only after the server accepted the request.
       trackLead(
-        { content_name: "exterior_estimate", content_category: form.projectType },
+        { content_name: "exterior_estimate", content_category: form.projectType, lead_type: "renovation_estimate" },
         { dataLayerEvent: null }
       );
       setStatus("success");
