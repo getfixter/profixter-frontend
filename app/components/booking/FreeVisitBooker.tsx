@@ -38,7 +38,7 @@ import {
 } from "@/lib/booking-calendar-availability";
 import { compressImage } from "@/lib/compressImage";
 import { trackEvent } from "@/lib/analytics";
-import { trackLead } from "@/lib/meta";
+import { trackSchedule } from "@/lib/meta";
 import { hasActiveMembership } from "@/lib/auth-routing";
 import { libraryLabel } from "@/lib/booking-library";
 import {
@@ -544,7 +544,11 @@ export default function FreeVisitBooker({
       });
 
       const reference = String(result?.booking?.bookingNumber || "");
-      trackLead({
+      /*
+       * Schedule, not a second Lead: the Lead was this person's account,
+       * created a minute ago on /signup.
+       */
+      trackSchedule({
         content_name: "free_first_visit",
         status: "free_visit_booked",
         booking_reference: reference,

@@ -69,7 +69,10 @@ export default function MembershipCallbackForm({
     if (result.ok) {
       trackEvent("membership_callback_requested", { placement: "home_hero" });
       // Meta Lead: only after the server accepted the request.
-      trackLead({ content_name: "membership_callback" }, { dataLayerEvent: null });
+      trackLead(
+        { content_name: "membership_callback", lead_type: "membership_callback" },
+        { dataLayerEvent: null }
+      );
       setPhase("done");
       return;
     }

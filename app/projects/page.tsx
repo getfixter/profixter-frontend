@@ -315,7 +315,7 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
       }
       // Meta Lead: only after the server accepted the request.
       trackLead(
-        { content_name: "project_estimate", content_category: form.service },
+        { content_name: "project_estimate", content_category: form.service, lead_type: "renovation_estimate" },
         { dataLayerEvent: null }
       );
       setStatus("success");

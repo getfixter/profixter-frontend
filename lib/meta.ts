@@ -532,7 +532,7 @@ function send(eventName: string, params: Params, options: SendOptions = {}): str
 }
 
 /* ------------------------------------------------------------------ */
-/* The five events                                                     */
+/* The conversion and funnel events                                    */
 /* ------------------------------------------------------------------ */
 
 /** Step 1 of signup: the visitor has given us a verified home address. */
@@ -566,14 +566,39 @@ type ConversionOptions = {
 /**
  * The event the ad account optimises against.
  *
- * Fired for an account being created AND for a free first visit being booked,
- * because both are the same thing commercially: a new customer we can reach.
+ * One Lead per person: the account being created, plus the estimate and
+ * partnership forms. Every caller passes `lead_type` ("account",
+ * "renovation_estimate", "community_partnership") so a custom conversion can
+ * be built per kind in Events Manager.
+ *
+ * A free first visit used to fire a second Lead for the same person minutes
+ * after signup, which doubled every cold booker. It is Schedule now (below).
+ *
+ * The default dataLayer name is kept as it always was, because GTM may be
+ * listening for it; it is not a description of the Meta event.
  */
 export function trackLead(params: Params = {}, opts: ConversionOptions = {}): string {
   return send("Lead", params, {
     server: opts.relay !== false,
     dataLayerEvent:
       opts.dataLayerEvent === undefined ? "free_visit_booked" : opts.dataLayerEvent || undefined,
+    eventId: opts.eventId,
+  });
+}
+
+/**
+ * A free first visit has been booked: Meta's standard Schedule.
+ *
+ * Relayed to the server with the same event id, exactly like a Lead from a
+ * free-visit screen used to be: no server handler reports a booking by itself,
+ * so the relay is the only path to the Conversions API, and the shared id is
+ * what lets Meta collapse the pair. Its dataLayer name is the one the free
+ * visit has always pushed.
+ */
+export function trackSchedule(params: Params = {}, opts: ConversionOptions = {}): string {
+  return send("Schedule", params, {
+    server: opts.relay !== false,
+    dataLayerEvent: "free_visit_booked",
     eventId: opts.eventId,
   });
 }
