@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Cormorant_Garamond, Geist, Geist_Mono, Montserrat } from "next/font/google";
 import Script from "next/script";
@@ -58,6 +58,22 @@ const cormorant = Cormorant_Garamond({
    */
   preload: false,
 });
+
+/*
+ * The viewport, declared the way Next expects.
+ *
+ * It used to be a literal <meta name="viewport"> in <head>. Next also emits
+ * its own default viewport tag whenever the layout exports none, so every page
+ * shipped two. Declared here, Next renders exactly one, and a page that
+ * exports its own viewport (/event sets a darker theme color) overrides these
+ * values instead of adding a second tag.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0B1628",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -167,8 +183,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/* Customer page or staff tool, decided before paint - see lib/surface.ts. */}
         <script dangerouslySetInnerHTML={{ __html: SURFACE_SCRIPT }} />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#0B1628" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Profixter" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
