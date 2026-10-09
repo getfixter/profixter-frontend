@@ -38,7 +38,7 @@ import {
 } from "@/lib/booking-calendar-availability";
 import { compressImage } from "@/lib/compressImage";
 import { trackEvent } from "@/lib/analytics";
-import { trackSchedule } from "@/lib/meta";
+import { getAttribution, trackSchedule } from "@/lib/meta";
 import { hasActiveMembership } from "@/lib/auth-routing";
 import { libraryLabel } from "@/lib/booking-library";
 import {
@@ -55,6 +55,9 @@ const FREE_VISIT_SERVICE = "Labor Only";
 const RESUME_PATH = "/book/free";
 const MAX_PHOTOS = 10;
 const MONTHS_AHEAD = 4;
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+/* sessionStorage: the out-of-area state has been counted for this tab. */
+const OUT_OF_AREA_SHOWN_KEY = "pf_out_of_area_shown";
 
 const QUICK_TASKS = [
   "Mount a TV",
@@ -414,6 +417,13 @@ export default function FreeVisitBooker({
   const photoOk = photos.length > 0 || !!libraryReference;
   const ready = noteOk && photoOk && !!selectedDate && selectedSlotOpen;
   const blocked = access === "member" || access === "used" || access === "outside" || access === "no-address";
+  const waitlist = useMemo(
+    () => ({
+      zip: String(user?.addresses?.find((a) => String(a._id) === String(addressId))?.zip || ""),
+      email: String(user?.email || ""),
+    }),
+    [user, addressId]
+  );
 
   /* --- interactions ----------------------------------------------- */
   const onNoteChange = (value: string) => {
@@ -895,7 +905,7 @@ export default function FreeVisitBooker({
         </div>
 
         <div ref={summaryRef} className="scroll-mt-28">
-          <AccessNotice access={access} />
+          <AccessNotice access={access} waitlist={waitlist} />
           {formError ? <p className="fv-error" role="alert">{formError}</p> : null}
           {!blocked ? (
             <>
@@ -1084,7 +1094,7 @@ export default function FreeVisitBooker({
 
       {/* 4. Summary + the one button */}
       <section ref={summaryRef} className="fv-step fv-step--last scroll-mt-28" aria-label="Your visit">
-        <AccessNotice access={access} />
+        <AccessNotice access={access} waitlist={waitlist} />
         <div className={`fv-reveal ${selectedDate && selectedSlotOpen ? "fv-reveal--open" : ""}`}>
           <div>
             {selectedDate && selectedSlotOpen ? (
@@ -1160,7 +1170,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 /** What a signed-in customer who cannot have the free visit sees instead of a button that would fail. */
-function AccessNotice({ access }: { access: Access }) {
+function AccessNotice({ access, waitlist }: { access: Access; waitlist: { zip: string; email: string } }) {
   if (access === "member") {
     return (
       <div className="fv-panel" data-fv-access="member">
@@ -1187,6 +1197,7 @@ function AccessNotice({ access }: { access: Access }) {
       <div className="fv-panel" data-fv-access="outside">
         <p className="font-semibold text-[#0B1628]">We&rsquo;re not in your area yet.</p>
         <p className="mt-1 text-[14px] text-[#5b6577]">Profixter serves Nassau and Suffolk counties on Long Island.</p>
+        <OutOfAreaWaitlist zip={waitlist.zip} defaultEmail={waitlist.email} />
       </div>
     );
   }
@@ -1199,4 +1210,140 @@ function AccessNotice({ access }: { access: Access }) {
     );
   }
   return null;
+}
+
+type WaitlistState = "idle" | "sending" | "done";
+
+/*
+ * Out of area: leave an email instead of hitting a dead end.
+ *
+ * Email only. There is deliberately no phone field and no SMS box here - the
+ * one place SMS consent is collected is /signup, which carriers review. The
+ * checkbox starts unticked and must be ticked: the server refuses the request
+ * without consentEmail, and absence is never consent.
+ *
+ * The browser only reports the step to analytics (out_of_area_shown once per
+ * tab, out_of_area_waitlist on success). Neither is a Meta conversion: a
+ * household we cannot serve is not a lead to optimise for.
+ */
+function OutOfAreaWaitlist({ zip, defaultEmail }: { zip: string; defaultEmail: string }) {
+  const [email, setEmail] = useState(defaultEmail);
+  const [consent, setConsent] = useState(false);
+  const [state, setState] = useState<WaitlistState>("idle");
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(OUT_OF_AREA_SHOWN_KEY)) return;
+      sessionStorage.setItem(OUT_OF_AREA_SHOWN_KEY, "1");
+    } catch {
+      /* blocked storage: count it anyway */
+    }
+    trackEvent("out_of_area_shown", { source: "free_visit_booker" });
+  }, []);
+
+  useEffect(() => {
+    if (!email && defaultEmail) setEmail(defaultEmail);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultEmail]);
+
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const value = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      setMessage("Enter a valid email address.");
+      return;
+    }
+    if (!consent) {
+      setMessage("Tick the box so we can email you.");
+      return;
+    }
+    setState("sending");
+    setMessage("");
+    const { visitorId, ...attribution } = getAttribution();
+    try {
+      const res = await fetch(`${API_BASE}/api/service-area/waitlist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: value,
+          zip,
+          consentEmail: true,
+          source: "free_visit_booker",
+          ...(visitorId ? { visitorId } : {}),
+          ...(Object.keys(attribution).length ? { attribution } : {}),
+        }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { ok?: boolean; code?: string };
+      if (res.ok && body?.ok !== false) {
+        setState("done");
+        trackEvent("out_of_area_waitlist", { source: "free_visit_booker" });
+        return;
+      }
+      setState("idle");
+      if (res.status === 429) {
+        setMessage("Too many tries just now. Please try again later.");
+      } else if (body?.code === "INVALID_EMAIL") {
+        setMessage("Enter a valid email address.");
+      } else if (body?.code === "CONSENT_REQUIRED") {
+        setMessage("Tick the box so we can email you.");
+      } else if (body?.code === "IN_SERVICE_AREA") {
+        setMessage("Good news: we already serve that ZIP. Reload this page to book, or call or text 631-599-1363.");
+      } else {
+        setMessage("We couldn't save that just now. Please try again.");
+      }
+    } catch {
+      setState("idle");
+      setMessage("We couldn't reach our server. Check your connection and try again.");
+    }
+  };
+
+  if (state === "done") {
+    return (
+      <p className="mt-4 text-[14px] font-semibold text-[#0B1628]" role="status" data-fv-waitlist="done">
+        Thanks. We&rsquo;ll email you when Profixter starts serving your area.
+      </p>
+    );
+  }
+
+  return (
+    <form className="mt-4 grid gap-3" onSubmit={(e) => void submit(e)} noValidate data-fv-waitlist="form">
+      <label className="grid gap-1.5">
+        <span className="fv-label">Tell me when you serve my area</span>
+        <input
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          className="fv-input"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (message) setMessage("");
+          }}
+          placeholder="you@example.com"
+          data-fv-waitlist="email"
+        />
+      </label>
+      <label className="flex items-start gap-2.5 text-[14px] leading-5 text-[#3b4658]">
+        <input
+          type="checkbox"
+          className="mt-0.5 h-4 w-4 shrink-0"
+          checked={consent}
+          onChange={(e) => {
+            setConsent(e.target.checked);
+            if (message) setMessage("");
+          }}
+          required
+          data-fv-waitlist="consent"
+        />
+        <span>Email me when Profixter starts serving my area</span>
+      </label>
+      {message ? (
+        <p className="fv-error !mt-0" role="alert" data-fv-waitlist="message">{message}</p>
+      ) : null}
+      <button type="submit" className="fv-cta w-full" disabled={state === "sending"} data-fv-waitlist="submit">
+        {state === "sending" ? "Saving…" : "Notify me"}
+      </button>
+    </form>
+  );
 }
