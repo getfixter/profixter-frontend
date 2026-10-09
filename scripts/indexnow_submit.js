@@ -2,7 +2,7 @@
  * Tell Bing (and the other IndexNow engines) which Profixter URLs changed.
  *
  *   node scripts/indexnow_submit.js                 # every URL in the live sitemap
- *   node scripts/indexnow_submit.js --recent 1      # sitemap URLs whose lastmod is within 1 day
+ *   node scripts/indexnow_submit.js --recent 0      # sitemap URLs dated today (1 = today or yesterday)
  *   node scripts/indexnow_submit.js /guides /gift   # just these paths
  *
  * IndexNow is the open protocol Bing, Yandex, Seznam and Naver accept URL
@@ -11,7 +11,8 @@
  * key and nothing else. Bing's index also feeds Copilot and ChatGPT's search, so
  * this is the fastest legitimate way to get new and changed pages re-crawled.
  *
- * AUTOMATIC: .github/workflows/indexnow.yml runs `--recent 1` after every
+ * AUTOMATIC: .github/workflows/indexnow.yml runs `--recent 0` (content dated
+ * the deploy day; bump CONTENT_RELEASE_DATE in lib/seo.ts when pages change) after every
  * successful production deployment Vercel reports to GitHub. Because sitemap
  * lastmod is each page's real content date (lib/seo.ts), that submits exactly
  * the pages whose content changed in that release - not the whole site, and
@@ -61,9 +62,14 @@ async function post(body) {
   let urlList;
   const recentAt = args.indexOf("--recent");
   if (recentAt >= 0) {
+    /*
+     * Calendar dates, not a rolling 24 hours: sitemap lastmod is a content
+     * DATE (midnight UTC), so "--recent 1" means "dated today or yesterday".
+     */
     const days = Number(args[recentAt + 1] || 1);
-    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-    urlList = (await sitemapEntries()).filter((e) => e.loc && e.lastmod && new Date(e.lastmod).getTime() >= cutoff).map((e) => e.loc);
+    const today = new Date().toISOString().slice(0, 10);
+    const cutoff = new Date(Date.parse(`${today}T00:00:00Z`) - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    urlList = (await sitemapEntries()).filter((e) => e.loc && e.lastmod && e.lastmod.slice(0, 10) >= cutoff).map((e) => e.loc);
   } else if (args.length) {
     urlList = args.map((p) => (p.startsWith("http") ? p : SITE + p));
   } else {

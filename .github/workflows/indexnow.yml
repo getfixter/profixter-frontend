@@ -1,7 +1,7 @@
 # After each successful PRODUCTION deployment (Vercel reports deployments to
 # GitHub), tell Bing and the other IndexNow engines which pages changed.
 #
-# Submits only sitemap URLs whose lastmod is within the last day - the pages
+# Submits only sitemap URLs whose lastmod is the deploy day - the pages
 # whose content actually changed in this release (see scripts/indexnow_submit.js).
 # It reads the public site and posts to the public IndexNow API; it needs no
 # secrets, cannot affect the deployment, and a failure here never blocks a release.
@@ -28,4 +28,6 @@ jobs:
           node-version: 20
       # Give the CDN a moment to serve the new sitemap before reading it.
       - run: sleep 60
-      - run: node scripts/indexnow_submit.js --recent 1
+      # --recent 0: only pages whose content date (lib/seo.ts) is the deploy day,
+      # so routine redeploys do not resubmit pages that did not change.
+      - run: node scripts/indexnow_submit.js --recent 0
