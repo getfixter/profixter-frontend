@@ -158,3 +158,69 @@ export const SKIP_REASON_LABEL: Record<string, string> = {
 export function pct(value: number | null | undefined) {
   return value === null || value === undefined ? "—" : `${Math.round(value * 100)}%`;
 }
+
+/* Growth agents - mirror BackEnd routes/adminGrowth.js (/agents, /findings). */
+
+export type AgentRunView = {
+  id: string;
+  startedAt: string;
+  status: "running" | "succeeded" | "failed" | "budget_stopped" | "skipped";
+  skipReason: string | null;
+  costCents: number;
+  turns: number;
+  tools: number;
+  findings: number;
+  actions: number;
+  summary: string;
+  error: string | null;
+};
+
+export type AgentView = {
+  name: string;
+  label: string;
+  schedule: string;
+  budgetCents: number;
+  allowedActions: string[];
+  monthCostCents: number;
+  monthRuns: number;
+  openFindings: number;
+  runs: AgentRunView[];
+};
+
+export type AgentsStatus = { enabled: boolean; dailyBudgetCents: number; agents: AgentView[] };
+
+export type AgentFindingView = {
+  id: string;
+  agent: string;
+  kind: string;
+  severity: "info" | "low" | "medium" | "high";
+  title: string;
+  detail: string;
+  expectedImpact: string;
+  evidence: unknown;
+  body: string;
+  target: string;
+  status: string;
+  seenCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function getAgents(): Promise<AgentsStatus> {
+  const res = await API.get("/api/admin/growth/agents");
+  const d = res.data || {};
+  return { enabled: Boolean(d.enabled), dailyBudgetCents: Number(d.dailyBudgetCents) || 0, agents: Array.isArray(d.agents) ? d.agents : [] };
+}
+
+export async function getFindings(status = "open"): Promise<AgentFindingView[]> {
+  const res = await API.get(`/api/admin/growth/findings?status=${encodeURIComponent(status)}&limit=60`);
+  return Array.isArray(res.data?.findings) ? res.data.findings : [];
+}
+
+export async function setFindingStatus(id: string, status: "acknowledged" | "dismissed" | "resolved") {
+  await API.post(`/api/admin/growth/findings/${encodeURIComponent(id)}/status`, { status });
+}
+
+export async function runAgentNow(name: string, mode: "daily" | "weekly" = "daily") {
+  await API.post(`/api/admin/growth/agents/${encodeURIComponent(name)}/run`, { mode });
+}

@@ -29,6 +29,7 @@ import {
 } from "@/lib/admin-growth";
 import { useAuth } from "@/lib/useAuth";
 import { isAdminUser } from "@/lib/auth-routing";
+import AgentsPanel from "./AgentsPanel";
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <section className={`rounded-[22px] border border-slate-200/70 bg-white p-5 md:p-6 ${className}`}>{children}</section>;
@@ -444,6 +445,7 @@ export default function GrowthModule() {
             <PoliciesCard policies={data.policies} owner={owner} onMode={changeMode} busy={busy} />
           </div>
           <ActivityCard recent={data.queue.recent} shadow={data.queue.shadow} />
+          <AgentsPanel owner={owner} />
         </>
       ) : null}
     </div>
