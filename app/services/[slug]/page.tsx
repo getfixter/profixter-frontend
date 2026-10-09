@@ -7,6 +7,24 @@ import {
   handymanServices,
 } from "@/lib/seo-content";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { getOneTimeOffer, getRecentWorkPhotos, type RecentWorkPhoto } from "@/lib/offers";
+
+/* Photos and the One-Time price are read live, hourly. */
+export const revalidate = 3600;
+
+/*
+ * Which Recent Work photos belong on which service page. Most service slugs are
+ * also gallery categories; plumbing photos are filed under general handyman
+ * work, so the plumbing pages pick them out by what the caption describes.
+ */
+async function photosFor(slug: string): Promise<RecentWorkPhoto[]> {
+  const plumbing = /sink|faucet|vanity|toilet|drain|disposal/i;
+  if (slug === "handyman-plumbing" || slug === "faucet-replacement") {
+    return (await getRecentWorkPhotos("general-handyman")).filter((p) => plumbing.test(`${p.title} ${p.caption}`));
+  }
+  if (slug === "ceiling-fan-installation") return [];
+  return getRecentWorkPhotos(slug);
+}
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -50,6 +68,8 @@ export default async function ServiceDetailPage({ params }: PageProps) {
   const { slug } = await params;
   const service = getHandymanService(slug);
   if (!service) notFound();
+
+  const [photos, oneTime] = await Promise.all([photosFor(slug), getOneTimeOffer()]);
 
   const relatedLinks = [
     ...(service.relatedServiceSlugs || []).flatMap((relatedSlug) => {
@@ -112,10 +132,11 @@ export default async function ServiceDetailPage({ params }: PageProps) {
         offers: {
           "@type": "Offer",
           name: "One-Time Handyman Visit",
-          price: "99.00",
+          price: oneTime.priceDollars.toFixed(2),
           priceCurrency: "USD",
-          url: `${SITE_URL}/book`,
+          url: `${SITE_URL}/book?visit=additional`,
         },
+        ...(photos.length ? { image: photos.slice(0, 8).map((photo) => photo.imageUrl) } : {}),
       },
       {
         "@type": "FAQPage",
@@ -137,7 +158,7 @@ export default async function ServiceDetailPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd) }}
       />
-      <DetailPage content={service} type="service" relatedLinks={relatedLinks} />
+      <DetailPage content={service} type="service" relatedLinks={relatedLinks} photos={photos} />
     </>
   );
 }

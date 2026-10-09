@@ -3,7 +3,7 @@ import type { Guide } from "@/lib/guides/types";
 export const guide: Guide = {
   slug: "handyman-minimum-charges",
   title: "Why do handymen have minimum charges, and how do you avoid paying them over and over?",
-  metaTitle: "Handyman Minimum Charges & Trip Fees Explained (Long Island) | Profixter",
+  metaTitle: "Handyman Minimum Charges & Trip Fees Explained | Profixter",
   metaDescription:
     "Most handymen charge a minimum of one to two hours, roughly $75 to $200, however short the job. Why minimums exist, the common structures, and three ways to stop paying one for every small repair.",
   dek: "Why a ten-minute repair can cost the same as an hour, the pricing structures you'll meet, and how to stop paying a minimum for every small job.",

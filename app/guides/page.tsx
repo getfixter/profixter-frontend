@@ -5,7 +5,7 @@ import { GUIDES, GUIDE_CATEGORY_LABELS } from "@/lib/guides";
 import type { Guide } from "@/lib/guides/types";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, SITE_URL } from "@/lib/seo";
 
-const TITLE = "Homeowner Guides: Small Repairs, Handyman Costs & Home Upkeep | Profixter";
+const TITLE = "Homeowner Guides: Small Repairs & Handyman Costs | Profixter";
 const DESCRIPTION =
   "Straight answers for Long Island homeowners: getting small jobs done, handyman minimum charges and costs, honey-do lists, home maintenance by season, and when a handyman membership does and doesn't make sense.";
 

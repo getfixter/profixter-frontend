@@ -265,10 +265,13 @@ export function DetailPage({
   content,
   type,
   relatedLinks = [],
+  photos = [],
 }: {
   content: SeoPageContent;
   type: "service" | "renovation";
   relatedLinks?: LinkItem[];
+  /** Captioned Recent Work photos of this kind of job, if any are published. */
+  photos?: { id: string; title: string; caption: string; thumbUrl: string; width: number; height: number }[];
 }) {
   const detailLabel = type === "service" ? "Services" : "Renovations";
   const detailHref = type === "service" ? "/services" : "/renovations";
@@ -447,6 +450,41 @@ export function DetailPage({
             </div>
           </div>
         </section>
+
+        {/*
+          Real photographs of this kind of job, from the Recent Work library,
+          captioned by an admin. Nothing renders when none are published.
+        */}
+        {photos.length ? (
+          <section aria-labelledby="service-photos" className="px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
+            <div className="mx-auto max-w-[1180px]">
+              <h2 id="service-photos" className="text-[26px] font-black leading-tight tracking-[-0.035em] text-[#0B1628] sm:text-[32px]">
+                Recent work: {content.shortTitle}
+              </h2>
+              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {photos.slice(0, 8).map((photo) => (
+                  <figure key={photo.id} className="min-w-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.thumbUrl}
+                      alt={photo.title}
+                      width={photo.width || 960}
+                      height={photo.height || 1280}
+                      loading="lazy"
+                      decoding="async"
+                      className="aspect-[3/4] w-full rounded-[8px] border border-[#DDE5F0] object-cover"
+                    />
+                    <figcaption className="mt-2 text-[13px] leading-5 text-[#64748B]">{photo.caption}</figcaption>
+                  </figure>
+                ))}
+              </div>
+              <Link href="/recent-work" className="mt-5 inline-flex items-center gap-2 text-[14px] font-black text-[#306EEC]">
+                See all recent work
+                <ArrowIcon />
+              </Link>
+            </div>
+          </section>
+        ) : null}
 
         {relatedLinks.length ? (
           <CardGrid

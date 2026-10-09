@@ -3,7 +3,7 @@ import type { Guide } from "@/lib/guides/types";
 export const guide: Guide = {
   slug: "handyman-membership-vs-hiring-per-job",
   title: "Handyman membership or hiring per job: which costs less?",
-  metaTitle: "Handyman Membership vs Hiring Per Job: Calculator & Honest Comparison | Profixter",
+  metaTitle: "Handyman Membership vs Paying Per Job: Calculator | Profixter",
   metaDescription:
     "A handyman membership only saves money if small jobs keep coming. Use the calculator to compare a monthly membership with paying per visit, and see when hiring per job is clearly the better deal.",
   dek: "The honest arithmetic, a calculator for your own numbers, and the cases where a membership is the wrong choice.",

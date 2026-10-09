@@ -9,7 +9,7 @@ import type { Guide } from "@/lib/guides/types";
 export const guide: Guide = {
   slug: "home-maintenance-plans-compared",
   title: "Handyman membership, home warranty, or a maintenance subscription: what's the difference?",
-  metaTitle: "Handyman Membership vs Home Warranty vs Maintenance Subscription | Profixter",
+  metaTitle: "Handyman Membership vs Home Warranty: What Each Covers | Profixter",
   metaDescription:
     "Four products that sound alike and do different jobs: a home warranty pays for failed systems and appliances, a maintenance subscription like Lowe's HomeCare+ does set upkeep tasks, apps match you with a different pro each time, and a handyman membership covers your running repair list.",
   dek: "Four products that sound similar and cover very different things, so you can buy the one that matches your problem.",

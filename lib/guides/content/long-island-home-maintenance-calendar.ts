@@ -3,7 +3,7 @@ import type { Guide } from "@/lib/guides/types";
 export const guide: Guide = {
   slug: "long-island-home-maintenance-calendar",
   title: "A Long Island home maintenance calendar, season by season",
-  metaTitle: "Long Island Home Maintenance Checklist by Season (Printable) | Profixter",
+  metaTitle: "Long Island Home Maintenance Checklist by Season | Profixter",
   metaDescription:
     "What to do to a Long Island house each season: shutting off outdoor faucets before the first freeze (around November 1 in Suffolk), storm prep for nor'easter and hurricane season, gutters, and the small repairs that show up each time of year.",
   dek: "Timed to Long Island's actual weather: first freeze, nor'easters, hurricane season, and the small repairs each season tends to bring.",

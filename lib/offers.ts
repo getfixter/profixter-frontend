@@ -84,3 +84,28 @@ export async function getGoogleRating(): Promise<GoogleRating | null> {
   if (!json?.ok || !(rating > 0) || !(total > 0)) return null;
   return { rating, total, url: String(json.googleUrl || "") };
 }
+
+export type RecentWorkPhoto = {
+  id: string;
+  title: string;
+  caption: string;
+  category: string;
+  thumbUrl: string;
+  imageUrl: string;
+  width: number;
+  height: number;
+};
+
+/**
+ * Published Recent Work photos, read on the server from the same public feed
+ * the gallery uses. Only captioned photos are returned: an uncaptioned photo
+ * says nothing a search engine or an assistant can use, and the gallery
+ * already shows it. Fails quietly to an empty list.
+ */
+export async function getRecentWorkPhotos(category?: string, limit = 24): Promise<RecentWorkPhoto[]> {
+  const query = new URLSearchParams({ limit: String(limit) });
+  if (category) query.set("category", category);
+  const json = await getJson(`/api/recent-work?${query.toString()}`);
+  const photos = Array.isArray(json?.photos) ? (json.photos as RecentWorkPhoto[]) : [];
+  return photos.filter((photo) => photo && photo.caption && photo.imageUrl);
+}

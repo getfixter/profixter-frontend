@@ -453,7 +453,7 @@ export const handymanServices: SeoPageContent[] = [
     primaryCta: { label: "Book One-Time Visit", href: "/book?visit=additional" },
     secondaryCta: { label: "Become a Member", href: "/membership/plans" },
     tertiaryCta: { label: "Ask Profixter AI", href: "/home-support" },
-    relatedServiceSlugs: ["toilet-repair", "garbage-disposal-replacement", "caulking"],
+    relatedServiceSlugs: ["handyman-plumbing", "toilet-repair", "garbage-disposal-replacement"],
     relatedLocationSlugs: ["massapequa", "west-babylon", "lindenhurst"],
   },
   {
@@ -500,7 +500,7 @@ export const handymanServices: SeoPageContent[] = [
     primaryCta: { label: "Book One-Time Visit", href: "/book?visit=additional" },
     secondaryCta: { label: "Become a Member", href: "/membership/plans" },
     tertiaryCta: { label: "Ask Profixter AI", href: "/home-support" },
-    relatedServiceSlugs: ["faucet-replacement", "caulking", "garbage-disposal-replacement"],
+    relatedServiceSlugs: ["handyman-plumbing", "faucet-replacement", "garbage-disposal-replacement"],
     relatedLocationSlugs: ["seaford", "north-babylon", "bay-shore"],
   },
   {
@@ -593,7 +593,7 @@ export const handymanServices: SeoPageContent[] = [
     primaryCta: { label: "Book One-Time Visit", href: "/book?visit=additional" },
     secondaryCta: { label: "Become a Member", href: "/membership/plans" },
     tertiaryCta: { label: "Ask Profixter AI", href: "/home-support" },
-    relatedServiceSlugs: ["faucet-replacement", "toilet-repair", "caulking"],
+    relatedServiceSlugs: ["handyman-plumbing", "faucet-replacement", "toilet-repair"],
     relatedLocationSlugs: ["farmingdale", "babylon", "massapequa"],
   },
   {
@@ -641,6 +641,66 @@ export const handymanServices: SeoPageContent[] = [
     tertiaryCta: { label: "Ask Profixter AI", href: "/home-support" },
     relatedServiceSlugs: ["tv-mounting", "furniture-assembly", "drywall-repair"],
     relatedLocationSlugs: ["lindenhurst", "east-northport", "seaford"],
+  },
+  /*
+   * The plumbing side of handyman work, as one page. Search Console shows
+   * "handyman plumber near me" among the real queries reaching the site, and
+   * these jobs are already sold (faucets, toilets, disposals on the One-Time
+   * list; sink drain and supply hookups and vanity/faucet installs in Recent
+   * Work). Scope lines use only the business's published exclusions.
+   */
+  {
+    slug: "handyman-plumbing",
+    title: "Handyman Plumbing Repairs",
+    shortTitle: "Plumbing Repairs",
+    metaTitle: "Handyman Plumbing Repairs on Long Island | Profixter",
+    metaDescription:
+      "Dripping faucet, running toilet, dead garbage disposal, leaky sink connection? Profixter handles everyday plumbing repairs in Nassau and Suffolk homes. $99 One-Time Visit or a handyman membership.",
+    h1: "Everyday plumbing repairs, from your handyman.",
+    intro:
+      "The plumbing jobs that come up in every house: a faucet that drips, a toilet that keeps running, a disposal that stopped, a sink connection that leaks. Profixter handles them as part of a normal handyman visit.",
+    homeownerNeed: "I have a small plumbing problem and don't want to wait for a big job to be worth someone's time.",
+    goodFit: [
+      "Replacing or repairing kitchen and bathroom faucets",
+      "Running toilets, fill valves, flappers, handles and seats",
+      "Replacing a garbage disposal and reconnecting the dishwasher drain",
+      "Sink drain traps and supply lines under the sink",
+      "Installing a vanity and faucet",
+      "Re-caulking tubs, showers and sinks",
+    ],
+    notAFit: [
+      "Re-piping or a plumbing remodel",
+      "Moving or adding water lines",
+      "Sewer or main drain backups",
+      "Repairing dishwashers or other appliances",
+    ],
+    prepNotes: [
+      "Add a photo of the fixture and of the pipes or valves around it when you book.",
+      "If you have bought a new faucet, toilet part or disposal, have it on site.",
+      "Clear the cabinet under the sink so the work area is reachable.",
+    ],
+    faq: [
+      {
+        question: "Can a handyman visit cover more than one plumbing job?",
+        answer:
+          "A member's 90-minute visit can cover several tasks, for example a dripping faucet and a running toilet in the same bathroom. A One-Time Visit is for one job from the list.",
+      },
+      {
+        question: "Can I book plumbing repairs as a One-Time Visit?",
+        answer:
+          "Yes. Faucet replacement, toilet repair and garbage disposal replacement are all on the One-Time Visit list.",
+      },
+      {
+        question: "What if the problem turns out to be bigger?",
+        answer:
+          "Re-piping, moving water lines or a plumbing remodel is project work, quoted separately rather than handled in a 90-minute visit.",
+      },
+    ],
+    primaryCta: { label: "Book One-Time Visit", href: "/book?visit=additional" },
+    secondaryCta: { label: "Become a Member", href: "/membership/plans" },
+    tertiaryCta: { label: "Ask Profixter AI", href: "/home-support" },
+    relatedServiceSlugs: ["faucet-replacement", "toilet-repair", "garbage-disposal-replacement", "caulking"],
+    relatedLocationSlugs: ["lindenhurst", "massapequa", "syosset"],
   },
 ];
 
