@@ -50,7 +50,7 @@ const DEPARTMENTS = [
     title: "One-Time Service",
     description:
       "Need one small fix now? Book a $99 One-Time Visit.",
-    href: "/book",
+    href: "/book?visit=additional",
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />

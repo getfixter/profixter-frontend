@@ -2,7 +2,7 @@ import Link from "next/link";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import MembershipCtaLink from "@/app/components/membership/MembershipCtaLink";
-import type { CtaLink, SeoPageContent, ServiceAreaContent } from "@/lib/seo-content";
+import { FREE_VISIT_CTA, ONE_TIME_CTA, type CtaLink, type SeoPageContent, type ServiceAreaContent } from "@/lib/seo-content";
 import { breadcrumbJsonLd } from "@/lib/breadcrumbs";
 
 type LinkItem = {
@@ -218,13 +218,17 @@ export function CardGrid({
 export function ConversionBand({
   title = "Choose the right Profixter path.",
   description = "Membership is best for ongoing home care. One-Time Visit is best for one small task. Renovation Estimate is best for larger work.",
+  freeVisitFirst = false,
 }: {
   title?: string;
   description?: string;
+  /** Handyman and town pages: lead with the free first visit, the step a new visitor can take. */
+  freeVisitFirst?: boolean;
 }) {
   const links: CtaLink[] = [
+    ...(freeVisitFirst ? [FREE_VISIT_CTA] : []),
     { label: "Become a Member", href: "/membership/plans" },
-    { label: "Book One-Time Visit", href: "/book?visit=additional" },
+    ONE_TIME_CTA,
     { label: "Request Renovation Estimate", href: "/projects#estimate" },
   ];
 
@@ -243,7 +247,7 @@ export function ConversionBand({
               {description}
             </p>
           </div>
-          <div className="grid gap-2.5 sm:grid-cols-3 lg:grid-cols-1">
+          <div className={`grid gap-2.5 lg:grid-cols-1 ${links.length === 4 ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
             {links.map((link) => (
               <SmartCtaLink
                 key={link.href}
@@ -280,7 +284,7 @@ export function DetailPage({
       ? [
           {
             title: "Best first step",
-            body: "Book a $99 One-Time Visit when the task is specific, small, and on the approved service list.",
+            body: "New to Profixter? Your first visit is free: up to 90 minutes of handyman work, one per home, no card needed. After that, book a $99 One-Time Visit when the task is specific, small, and on the approved service list.",
           },
           {
             title: "Better long-term answer",
@@ -495,7 +499,7 @@ export function DetailPage({
           />
         ) : null}
 
-        <ConversionBand />
+        <ConversionBand freeVisitFirst={type === "service"} />
       </main>
     </SeoPageShell>
   );
@@ -519,7 +523,14 @@ export function LocationDetailPage({
   lowestPlanPrice: number;
   dataAsOf: string;
 }) {
+  /* The free first visit leads: it is the step a new visitor can take today. */
   const paths: { title: string; body: string; href: string; label: string }[] = [
+    {
+      title: "New to Profixter",
+      body: "A free first 90-minute visit for new Nassau and Suffolk customers, one per home.",
+      href: "/book/free",
+      label: "Book a free first visit",
+    },
     {
       title: "One small job",
       body: `A One-Time Visit: $${oneTimePrice} for up to 90 minutes on one small job from a set list. No membership.`,
@@ -531,12 +542,6 @@ export function LocationDetailPage({
       body: `A handyman membership from $${lowestPlanPrice}/month: 90-minute visits booked as often as you need, with the same local team.`,
       href: "/membership/plans",
       label: "Compare plans",
-    },
-    {
-      title: "New to Profixter",
-      body: "A free first 90-minute visit for new Nassau and Suffolk customers, one per home.",
-      href: "/book/free",
-      label: "Book a free first visit",
     },
   ];
 
@@ -677,7 +682,8 @@ export function LocationDetailPage({
 
         <ConversionBand
           title={`Start with the right Profixter path in ${area.name}.`}
-          description="One small job: a One-Time Visit. A running list: a membership. Larger work: a project estimate."
+          description="New here: your first visit is free. One small job: a One-Time Visit. A running list: a membership. Larger work: a project estimate."
+          freeVisitFirst
         />
       </main>
     </SeoPageShell>
