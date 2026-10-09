@@ -286,32 +286,45 @@ function part(p: VisibilityPart | undefined) {
   return p && p.available ? p : null;
 }
 
+type ReviewsPart = VisibilityPart & { rating?: number | null; totalNow?: number; velocityPer30Days?: number | null };
+type RankPart = VisibilityPart & { top3Share?: number; avgRank?: number; change?: number | null; checks?: number };
+type AiPart = VisibilityPart & { profixterNamedShare?: number; profixterCitedShare?: number; membershipUnpromptedShare?: number };
+type SearchPart = VisibilityPart & { windowDays?: number; current?: { clicks?: number; impressions?: number }; change?: { clicksPct?: number | null } };
+
+/* Field names mirror BackEnd utils/visibility/{googleReviews,localRank,aiVisibility,searchConsole}.js summaries. */
 function VisibilityCard({ data }: { data: CommandCenter["visibility"] }) {
   if (!data) return null;
-  const reviews = part(data.reviews) as (VisibilityPart & { total?: number; rating?: number; per30Days?: number }) | null;
-  const rank = part(data.localRank) as (VisibilityPart & { top3Share?: number; averageRank?: number }) | null;
-  const ai = part(data.aiVisibility) as (VisibilityPart & { namedShare?: number; citedShare?: number }) | null;
-  const search = part(data.search) as (VisibilityPart & { clicks?: number; impressions?: number }) | null;
+  const reviews = part(data.reviews) as ReviewsPart | null;
+  const rank = part(data.localRank) as RankPart | null;
+  const ai = part(data.aiVisibility) as AiPart | null;
+  const search = part(data.search) as SearchPart | null;
+  const reason = (p: VisibilityPart | undefined) => (p?.reason === "disabled" ? "not switched on" : p?.reason || "not connected");
   const tiles: Array<{ label: string; value: string; sub: string }> = [
     {
       label: "Google reviews",
-      value: reviews?.total !== undefined ? String(reviews.total) : "—",
-      sub: reviews ? `${reviews.rating ?? "—"}★${reviews.per30Days !== undefined ? ` · +${reviews.per30Days} per 30 days` : ""}` : data.reviews?.reason || "not connected",
+      value: reviews?.totalNow !== undefined ? String(reviews.totalNow) : "—",
+      sub: reviews
+        ? `${reviews.rating ?? "—"}★${reviews.velocityPer30Days != null ? ` · ${reviews.velocityPer30Days >= 0 ? "+" : ""}${reviews.velocityPer30Days} per 30 days` : ""}`
+        : reason(data.reviews),
     },
     {
       label: "Map pack (top 3)",
       value: rank ? pct(rank.top3Share ?? null) : "—",
-      sub: rank ? `average position ${rank.averageRank ?? "—"}` : data.localRank?.reason || "not connected",
+      sub: rank
+        ? `average position ${rank.avgRank ?? "—"}${rank.change ? ` · ${rank.change > 0 ? "up" : "down"} ${Math.abs(rank.change)}` : ""}`
+        : reason(data.localRank),
     },
     {
       label: "AI answers naming us",
-      value: ai ? pct(ai.namedShare ?? null) : "—",
-      sub: ai ? `cited ${pct(ai.citedShare ?? null)}` : data.aiVisibility?.reason || "not connected",
+      value: ai ? pct(ai.profixterNamedShare ?? null) : "—",
+      sub: ai ? `site cited ${pct(ai.profixterCitedShare ?? null)} · membership raised ${pct(ai.membershipUnpromptedShare ?? null)}` : reason(data.aiVisibility),
     },
     {
-      label: "Search clicks (28d)",
-      value: search?.clicks !== undefined ? String(search.clicks) : "—",
-      sub: search ? `${search.impressions ?? "—"} impressions` : data.search?.reason || "not connected",
+      label: `Search clicks (${search?.windowDays || 28}d)`,
+      value: search?.current?.clicks !== undefined ? String(search.current.clicks) : "—",
+      sub: search
+        ? `${search.current?.impressions ?? "—"} impressions${search.change?.clicksPct != null ? ` · ${search.change.clicksPct > 0 ? "+" : ""}${search.change.clicksPct}% clicks` : ""}`
+        : reason(data.search),
     },
   ];
   return (
@@ -326,6 +339,7 @@ function VisibilityCard({ data }: { data: CommandCenter["visibility"] }) {
           </div>
         ))}
       </div>
+      <p className="mt-3 text-[12px] text-slate-400">AI answers are sampled through the AI providers&rsquo; APIs, which can differ from what the consumer apps show.</p>
     </Card>
   );
 }
