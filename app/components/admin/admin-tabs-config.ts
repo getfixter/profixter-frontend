@@ -4,6 +4,7 @@ import { can, doesFieldWork, PERM, type Permission } from "@/lib/admin-access";
 
 export type AdminTabId =
   | "overview"
+  | "growth"
   | "bookings"
   | "users"
   | "subscribed"
@@ -40,6 +41,7 @@ export type AdminTabItem = {
 export const ADMIN_TABS: AdminTabItem[] = [
   /* First, so it is where the owner lands. */
   { id: "overview",   label: "Overview",   shortLabel: "Overview", description: "Business at a glance", permission: PERM.ANALYTICS_READ },
+  { id: "growth",     label: "Growth",     shortLabel: "Growth", description: "Automations, capacity, approvals", permission: PERM.ANALYTICS_READ },
   { id: "bookings",   label: "Jobs",       shortLabel: "Jobs",    description: "Daily bookings", permission: PERM.BOOKINGS_READ },
   { id: "tips",       label: "Tips",       shortLabel: "Tips",    description: "What customers left", permission: PERM.TIPS_READ },
   { id: "subscribed", label: "Members",    shortLabel: "Members", description: "Active plans", permission: PERM.MEMBERS_READ },
