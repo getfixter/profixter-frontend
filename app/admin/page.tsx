@@ -23,6 +23,7 @@ import PromotionPopupEditor from "@/app/components/admin/PromotionPopupEditor";
 import AdminActivityLog from "@/app/components/admin/AdminActivityLog";
 import OverviewModule from "@/app/components/admin/overview/OverviewModule";
 import OverviewBoundary from "@/app/components/admin/overview/OverviewBoundary";
+import GrowthModule from "@/app/components/admin/growth/GrowthModule";
 import { tabsForUser } from "@/app/components/admin/admin-tabs-config";
 import { can, PERM } from "@/lib/admin-access";
 import { getCurrentUser, type User as AuthUser } from "@/lib/auth-service";
@@ -974,7 +975,7 @@ function AdminPageContent() {
           )}
 
           {/* Overview has its own date range; the list search means nothing there. */}
-          <div className={`mt-3 grid gap-2 grid-cols-1 md:grid-cols-3 ${active === "overview" ? "hidden" : ""}`}>
+          <div className={`mt-3 grid gap-2 grid-cols-1 md:grid-cols-3 ${active === "overview" || active === "growth" ? "hidden" : ""}`}>
             <div className="relative md:col-span-2">
               <svg
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
@@ -1034,6 +1035,10 @@ function AdminPageContent() {
         {active === "overview" && shown("overview") ? (
           <OverviewBoundary>
             <OverviewModule />
+          </OverviewBoundary>
+        ) : active === "growth" && shown("growth") ? (
+          <OverviewBoundary>
+            <GrowthModule />
           </OverviewBoundary>
         ) : loading ? (
           <div className="bg-white rounded-xl shadow-lg p-12 text-center">
