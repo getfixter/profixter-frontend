@@ -150,8 +150,18 @@ export default function ConfirmationClient() {
   useEffect(() => {
     if (!sessionId) return;
 
-    const key = "profixter_purchase_fired";
-    if (sessionStorage.getItem(key)) return;
+    /*
+     * One guard per checkout, not per browser session. A single session-wide
+     * flag meant a second membership bought in the same tab (another home,
+     * say) never reported at all; keyed by the Stripe session, a reload of
+     * this confirmation still cannot fire twice.
+     */
+    const key = `profixter_purchase_fired_${sessionId}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+    } catch {
+      /* Blocked storage: fire; Meta dedupes on the server's event id. */
+    }
 
     (async () => {
       try {
@@ -184,7 +194,11 @@ export default function ConfirmationClient() {
             relay: false,
           }
         );
-        sessionStorage.setItem(key, "1");
+        try {
+          sessionStorage.setItem(key, "1");
+        } catch {
+          /* see above */
+        }
       } catch {
         // no fake purchase
       }
