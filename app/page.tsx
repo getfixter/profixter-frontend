@@ -45,6 +45,11 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     images: [DEFAULT_OG_IMAGE.url],
   },
+  /* Gridinsoft domain-ownership check; it only looks at the homepage. */
+  other: {
+    "gridinsoft-key":
+      "y6sco6rdbtvl1pk3f4gtfitfqd5ovg3o57dhag4ludnhixov36qy0d1l2g3joz6f",
+  },
 };
 
 export default function HomePage() {
