@@ -12,8 +12,14 @@
  * - validation, refresh, ineligible, out-of-area and member states adapt
  * - a plan chosen before signup survives it and opens a confirmation, then checkout
  *
- * Account, booking and checkout endpoints are faked in the browser, so the run
- * creates no account, no booking and no Stripe session. The calendar and the
+ * - Meta: a cold booker sends ONE Lead (the account) and one Schedule (the
+ *   booking, relayed with the same event id); UI taps never reach Meta
+ * - out of area: the email-only waitlist form, every server answer
+ * - plain /signup (no ?next) lands on the free-visit booker
+ *
+ * Account, booking, checkout, waitlist and tracking endpoints are faked in the
+ * browser, so the run creates no account, no booking, no Stripe session, no
+ * waitlist row and no Meta event (fbq is a recorder). The calendar and the
  * service-area check are the real public endpoints.
  */
 const { chromium } = require("playwright");
@@ -65,7 +71,10 @@ function makeUser({ member = false } = {}) {
  * the real API with CORS added, so a local build on any port can read it.
  */
 async function fakeApi(ctx, opts = {}) {
-  const state = { bookingPosts: [], checkoutPosts: [], registerPosts: 0, bookingQueue: opts.bookingQueue || [] };
+  const state = {
+    bookingPosts: [], checkoutPosts: [], registerPosts: 0, bookingQueue: opts.bookingQueue || [],
+    relays: [], waitlistPosts: [], waitlistQueue: opts.waitlistQueue || [],
+  };
   const user = makeUser(opts);
   await ctx.route((url) => url.href.startsWith(API), async (route) => {
     const req = route.request();
@@ -80,6 +89,18 @@ async function fakeApi(ctx, opts = {}) {
     if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
     const authed = (req.headers()["authorization"] || "") === `Bearer ${TOKEN}`;
 
+    /* Never reaches the real API: the Meta relay, the visit beacon, the waitlist. */
+    if (p === "/api/track/meta" && req.method() === "POST") {
+      state.relays.push(JSON.parse(req.postData() || "{}"));
+      return route.fulfill({ status: 204, headers: cors });
+    }
+    if (p.startsWith("/api/track/")) return route.fulfill({ status: 204, headers: cors });
+    if (p === "/api/service-area/waitlist" && req.method() === "POST") {
+      state.waitlistPosts.push(JSON.parse(req.postData() || "{}"));
+      const next = state.waitlistQueue.shift() || { status: 201, body: { ok: true } };
+      if (next.abort) return route.abort("failed");
+      return json(next.status, next.body);
+    }
     if (p === "/api/auth/register" && req.method() === "POST") { state.registerPosts++; return json(201, { token: TOKEN, user }); }
     if (p === "/api/auth/me") return authed ? json(200, user) : json(401, { message: "no" });
     if (p === "/api/bookings/next") {
@@ -138,6 +159,31 @@ async function newContext(browser, { signedIn = false, ...opts } = {}) {
       if (signedIn) localStorage.setItem("token", token);
     } catch {}
   }, [TOKEN, signedIn]);
+  /*
+   * fbq and the dataLayer, recorded. Defining fbq first makes the pixel
+   * snippet bail out, so nothing reaches Meta. Calls are also kept in
+   * sessionStorage, so they survive the reloads and navigations of a funnel.
+   */
+  await ctx.addInitScript(() => {
+    const keep = (key, entry) => {
+      try {
+        const list = JSON.parse(sessionStorage.getItem(key) || "[]");
+        list.push(entry);
+        sessionStorage.setItem(key, JSON.stringify(list));
+      } catch {}
+    };
+    window.fbq = function (...args) { keep("__test_fbq", args); };
+    window._fbq = window.fbq;
+    window.fbq.queue = [];
+    window.fbq.loaded = true;
+    window.fbq.version = "2.0";
+    window.dataLayer = window.dataLayer || [];
+    const push = window.dataLayer.push.bind(window.dataLayer);
+    window.dataLayer.push = function (...items) {
+      items.forEach((item) => item && item.event && keep("__test_dl", item));
+      return push(...items);
+    };
+  });
   const state = await fakeApi(ctx, opts);
   const page = await ctx.newPage();
   const errors = [];
@@ -146,6 +192,9 @@ async function newContext(browser, { signedIn = false, ...opts } = {}) {
   if (process.env.FUNNEL_DEBUG) page.on("request", (r) => { if (r.url().startsWith(API) && r.method() !== "OPTIONS") console.log("      ->", r.method(), r.url().replace(API, "").slice(0, 90)); });
   return { ctx, page, state, errors };
 }
+
+const fbqLog = (page) => page.evaluate(() => JSON.parse(sessionStorage.getItem("__test_fbq") || "[]"));
+const dlLog = (page) => page.evaluate(() => JSON.parse(sessionStorage.getItem("__test_dl") || "[]"));
 
 async function buildVisit(page, { photo = true } = {}) {
   await page.fill('[data-fv="note"]', "The bathroom faucet drips and a towel bar fell off");
@@ -167,18 +216,22 @@ async function buildVisit(page, { photo = true } = {}) {
 
 async function completeSignup(page, { zip = "11758" } = {}) {
   // Step 1: address. Use the manual entry the field offers when lookup fails.
-  await page.fill("#pf-address", "12 Main St");
-  await page.waitForTimeout(900);
-  /*
-   * Where Google lookup works (production), real suggestions open over the
-   * button. Close them and use the field's own manual entry, so the run never
-   * depends on which real address Google happens to suggest.
-   */
-  await page.keyboard.press("Escape");
-  await page.locator("h1, h2").first().click().catch(() => {});
-  await page.waitForTimeout(300);
-  const fallback = page.locator("[data-auth-fallback]");
-  if (await fallback.count()) await fallback.click();
+  // A build without a Maps key renders the manual form straight away.
+  await page.waitForSelector('#pf-address, [aria-label="Street address"]', { timeout: 15000 });
+  if (await page.locator("#pf-address").count()) {
+    await page.fill("#pf-address", "12 Main St");
+    await page.waitForTimeout(900);
+    /*
+     * Where Google lookup works (production), real suggestions open over the
+     * button. Close them and use the field's own manual entry, so the run never
+     * depends on which real address Google happens to suggest.
+     */
+    await page.keyboard.press("Escape");
+    await page.locator("h1, h2").first().click().catch(() => {});
+    await page.waitForTimeout(300);
+    const fallback = page.locator("[data-auth-fallback]");
+    if (await fallback.count()) await fallback.click();
+  }
   if (await page.locator('[aria-label="Street address"]').count()) {
     await page.fill('[aria-label="Street address"]', "12 Main St");
     await page.fill('[aria-label="City"]', "Massapequa");
@@ -278,6 +331,35 @@ async function finishSignupSteps(page) {
     const draftLeft = await page.evaluate(() => sessionStorage.getItem("pf_free_visit_draft"));
     check("draft is cleared once booked", !draftLeft);
     check("no page errors in the whole funnel", errors.length === 0, errors.join(" | "));
+
+    /* Meta: one Lead per person, the booking is Schedule. */
+    const fbq = await fbqLog(page);
+    const leads = fbq.filter((c) => c[0] === "track" && c[1] === "Lead");
+    const schedules = fbq.filter((c) => c[0] === "track" && c[1] === "Schedule");
+    check("cold booker: exactly one Lead, and it is the account", leads.length === 1 && leads[0][2]?.lead_type === "account" && leads[0][2]?.content_name === "account_created", JSON.stringify(leads.map((l) => l[2])));
+    check("cold booker: the booking is one Schedule with an eventID", schedules.length === 1 && !!schedules[0][3]?.eventID && schedules[0][2]?.content_name === "free_first_visit", JSON.stringify(schedules));
+    const relayed = state.relays.filter((r) => r.eventName === "Schedule");
+    check("Schedule is relayed to the server with the same event id", relayed.length === 1 && relayed[0].eventId === schedules[0]?.[3]?.eventID, JSON.stringify(state.relays.map((r) => [r.eventName, r.eventId])));
+    check("the account Lead is not relayed from the browser (registration sends it)", !state.relays.some((r) => r.eventName === "Lead"));
+    const custom = fbq.filter((c) => c[0] === "trackCustom").map((c) => c[1]);
+    check("date, time and photo taps no longer reach Meta", !custom.some((n) => /^free_visit_/.test(n)), custom.join(","));
+    const dl = await dlLog(page);
+    check("the dataLayer still gets the free-visit funnel steps", ["free_visit_date_selected", "free_visit_time_selected", "free_visit_booked"].every((n) => dl.some((e) => e.event === n)));
+    await ctx.close();
+  }
+
+  /* 1b. Plain /signup, no ?next: the new customer lands on the free-visit booker. */
+  {
+    console.log("\n--- plain /signup lands on the free-visit booker ---");
+    const { ctx, page } = await newContext(browser);
+    await page.goto(BASE + "/signup", { waitUntil: "networkidle" });
+    await completeSignup(page);
+    await finishSignupSteps(page);
+    await page.click('button[type="submit"]');
+    await page.waitForURL((u) => u.pathname === "/book/free", { timeout: 15000 }).catch(() => {});
+    check("signup without ?next goes to /book/free", new URL(page.url()).pathname === "/book/free", page.url());
+    await page.waitForSelector('[data-fv="book"]', { timeout: 10000 }).catch(() => {});
+    check("/book/free offers the eligible new customer the booker", (await page.locator('[data-fv="book"]').count()) === 1);
     await ctx.close();
   }
 
@@ -343,6 +425,59 @@ async function finishSignupSteps(page) {
     await page.goto(BASE + "/book/free", { waitUntil: "networkidle" });
     await page.waitForSelector('[data-fv-access="outside"]', { timeout: 10000 }).catch(() => {});
     check("outside: no promise, plain explanation", (await page.locator('[data-fv-access="outside"]').count()) === 1 && (await page.locator('[data-fv="book"]').count()) === 0);
+    await ctx.close();
+  }
+  {
+    console.log("\n--- out of area: email waitlist ---");
+    const { ctx, page, state } = await newContext(browser, {
+      signedIn: true,
+      next: { freeFirstVisitAvailable: false, introVisitStatus: "available", introVisitServiceable: false, hasSubscription: false },
+      waitlistQueue: [
+        { status: 400, body: { ok: false, code: "IN_SERVICE_AREA" } },
+        { status: 429, body: { ok: false } },
+        { abort: true },
+        { status: 201, body: { ok: true } },
+      ],
+    });
+    await page.goto(BASE + "/book/free", { waitUntil: "networkidle" });
+    await page.waitForSelector('[data-fv-waitlist="form"]', { timeout: 10000 }).catch(() => {});
+    const form = page.locator('[data-fv-waitlist="form"]');
+    check("waitlist: offered instead of a dead end", (await form.count()) === 1);
+    check("waitlist: email only - no phone field, no SMS wording", (await form.locator('input[type="tel"]').count()) === 0 && !/sms|text message/i.test(await form.innerText()));
+    check("waitlist: box starts unticked", !(await page.isChecked('[data-fv-waitlist="consent"]')));
+    check("waitlist: box says exactly what it is for", (await form.innerText()).includes("Email me when Profixter starts serving my area"));
+    check("waitlist: the account email is prefilled", (await page.inputValue('[data-fv-waitlist="email"]')) === "test@example.com");
+    const message = () => page.locator('[data-fv-waitlist="message"]').innerText().catch(() => "");
+    const submit = async () => { await page.click('[data-fv-waitlist="submit"]'); await page.waitForTimeout(700); };
+
+    await submit();
+    check("waitlist: unticked box blocks the request", /tick the box/i.test(await message()) && state.waitlistPosts.length === 0, await message());
+    await page.fill('[data-fv-waitlist="email"]', "not-an-email");
+    await page.check('[data-fv-waitlist="consent"]');
+    await submit();
+    check("waitlist: a bad email is caught before sending", /valid email/i.test(await message()) && state.waitlistPosts.length === 0, await message());
+    await page.fill('[data-fv-waitlist="email"]', "pat@example.com");
+    await submit();
+    check("waitlist: IN_SERVICE_AREA is explained", /already serve/i.test(await message()), await message());
+    await submit();
+    check("waitlist: 429 says try again later", /try again later/i.test(await message()), await message());
+    await submit();
+    check("waitlist: a network failure is shown inline", /reach our server/i.test(await message()), await message());
+    await submit();
+    await page.waitForSelector('[data-fv-waitlist="done"]', { timeout: 5000 }).catch(() => {});
+    check("waitlist: success shows a calm confirmation", (await page.locator('[data-fv-waitlist="done"]').count()) === 1);
+
+    const body = state.waitlistPosts[state.waitlistPosts.length - 1] || {};
+    check("waitlist: POST carries email, ZIP, consent and source", body.email === "pat@example.com" && body.zip === "11758" && body.consentEmail === true && body.source === "free_visit_booker", JSON.stringify(body));
+    check("waitlist: POST carries no phone and no SMS consent", !("phone" in body) && !Object.keys(body).some((k) => /sms/i.test(k)));
+
+    await page.reload({ waitUntil: "networkidle" });
+    await page.waitForTimeout(1200);
+    const dl = await dlLog(page);
+    check("out_of_area_shown is recorded once per tab, not per render", dl.filter((e) => e.event === "out_of_area_shown").length === 1, String(dl.filter((e) => e.event === "out_of_area_shown").length));
+    const fbq = await fbqLog(page);
+    check("out_of_area_waitlist reaches the dataLayer and Meta as a custom event", dl.filter((e) => e.event === "out_of_area_waitlist").length === 1 && fbq.filter((c) => c[0] === "trackCustom" && c[1] === "out_of_area_waitlist").length === 1);
+    check("out of area: never a Meta Lead or Schedule", !fbq.some((c) => c[0] === "track" && (c[1] === "Lead" || c[1] === "Schedule")));
     await ctx.close();
   }
   {
