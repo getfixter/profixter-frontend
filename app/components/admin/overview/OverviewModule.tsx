@@ -867,7 +867,12 @@ function AcquisitionCard({ o, onOpen, setDrawer }: { o: Overview; onOpen: OpenLi
       <SectionTitle aside={<span className="text-[12px] text-slate-400">First touch · {o.period.label}</span>}>Customer acquisition</SectionTitle>
       {!o.spend.connected ? (
         <p className="mb-4 rounded-[14px] bg-blue-50/70 px-4 py-3 text-[13px] text-blue-900">
-          Customer attribution is active. Connect Meta Ads to add spend, cost per customer and ROAS.
+          {SPEND_STATUS_TEXT[o.spend.status || "not_configured"] || SPEND_STATUS_TEXT.not_configured}
+        </p>
+      ) : o.spend.partial || o.spend.stale ? (
+        <p className="mb-4 rounded-[14px] bg-amber-50 px-4 py-3 text-[13px] text-amber-900">
+          {o.spend.partial ? "Spend history starts partway through this period, so cost figures here are understated. " : ""}
+          {o.spend.stale ? "Spend has not refreshed recently; the last few days may be missing." : ""}
         </p>
       ) : null}
       <div className="-mx-2 overflow-x-auto">
@@ -882,6 +887,12 @@ function AcquisitionCard({ o, onOpen, setDrawer }: { o: Overview; onOpen: OpenLi
               <th className="px-2 pb-2 text-right">Conv.</th>
               <th className="px-2 pb-2 text-right">Revenue</th>
               <th className="px-2 pb-2 text-right">Spend</th>
+              {o.spend.connected ? (
+                <>
+                  <th className="px-2 pb-2 text-right" title="Spend divided by first-time paying customers (members or paid visits)">CAC</th>
+                  <th className="px-2 pb-2 text-right" title="Attributed revenue divided by spend">ROAS</th>
+                </>
+              ) : null}
             </tr>
           </thead>
           <tbody>
@@ -896,7 +907,7 @@ function AcquisitionCard({ o, onOpen, setDrawer }: { o: Overview; onOpen: OpenLi
                     </button>
                   </td>
                   <SourceCells r={line.g} revenue={revenue} />
-                  <td className="px-2 py-2.5 text-right text-[13px] text-slate-400">—</td>
+                  <SpendCells r={line.g} connected={o.spend.connected} strong />
                 </tr>
               ) : (
                 <tr key={line.r.key} className={line.child ? "" : "border-t border-slate-100"} data-source={line.r.key}>
@@ -912,7 +923,7 @@ function AcquisitionCard({ o, onOpen, setDrawer }: { o: Overview; onOpen: OpenLi
                     </button>
                   </td>
                   <SourceCells r={line.r} revenue={revenue} />
-                  <td className="px-2 py-2.5 text-right text-[13px] text-slate-400">{line.r.spendCents === null ? "—" : money(line.r.spendCents)}</td>
+                  <SpendCells r={line.r} connected={o.spend.connected} />
                 </tr>
               )
             )}
@@ -933,7 +944,37 @@ function AcquisitionCard({ o, onOpen, setDrawer }: { o: Overview; onOpen: OpenLi
   );
 }
 
-function Row({ n, depth, onClick, expanded }: { n: CampaignNode; depth: number; onClick?: () => void; expanded?: boolean }) {
+const SPEND_STATUS_TEXT: Record<string, string> = {
+  not_configured: "Customer attribution is active. Connect Meta Ads to add spend, cost per customer and ROAS.",
+  token_missing: "Meta Ads spend is switched on but no access token is configured.",
+  token_invalid: "Meta Ads spend could not be read: the access token is no longer valid. Generate a new one in Business Settings.",
+  token_missing_ads_read: "Meta Ads spend could not be read: the token lacks the ads_read permission on the ad account.",
+  rate_limited: "Meta is rate-limiting spend reads; the next sync will retry.",
+  meta_unavailable: "Meta's API was unavailable at the last sync; it will retry.",
+};
+
+type SpendFields = { spendCents?: number | null; cacCents?: number | null; roas?: number | null };
+
+/* Spend, then CAC and ROAS once Meta Ads is connected. A dash means unknown, never zero. */
+function SpendCells({ r, connected, strong = false }: { r: SpendFields; connected: boolean; strong?: boolean }) {
+  const tone = strong ? "font-semibold text-slate-900" : "text-slate-600";
+  const cell = (known: boolean) => `px-2 py-2.5 text-right text-[13px] ${known ? tone : "text-slate-400"}`;
+  return (
+    <>
+      <td className={cell(r.spendCents != null)}>{r.spendCents == null ? "—" : money(r.spendCents)}</td>
+      {connected ? (
+        <>
+          <td className={cell(r.cacCents != null)}>{r.cacCents == null ? "—" : money(r.cacCents)}</td>
+          <td className={cell(r.roas != null)}>{r.roas == null ? "—" : `${r.roas.toFixed(1)}×`}</td>
+        </>
+      ) : null}
+    </>
+  );
+}
+
+const TREE_COLS = { base: "grid-cols-[minmax(0,1fr)_repeat(5,48px)]", spend: "grid-cols-[minmax(0,1fr)_repeat(7,48px)]" };
+
+function Row({ n, depth, onClick, expanded, spend = false }: { n: CampaignNode; depth: number; onClick?: () => void; expanded?: boolean; spend?: boolean }) {
   const cells = (
     <>
       <span className={`truncate ${n.name ? "text-slate-900" : "text-slate-600"}`} title={n.id ? `ID ${n.id}` : undefined}>
@@ -945,9 +986,15 @@ function Row({ n, depth, onClick, expanded }: { n: CampaignNode; depth: number; 
       <span className="text-right tabular-nums text-slate-600">{n.freeVisits}</span>
       <span className="text-right tabular-nums text-slate-900">{n.members}</span>
       <span className="text-right tabular-nums text-slate-900">{money(n.revenueCents, { compact: true })}</span>
+      {spend ? (
+        <>
+          <span className="text-right tabular-nums text-slate-600">{n.spendCents == null ? "—" : money(n.spendCents, { compact: true })}</span>
+          <span className="text-right tabular-nums text-slate-600">{n.cacCents == null ? "—" : money(n.cacCents, { compact: true })}</span>
+        </>
+      ) : null}
     </>
   );
-  const cls = `grid w-full grid-cols-[minmax(0,1fr)_repeat(5,48px)] items-center gap-1 rounded-[10px] py-2 pr-2 text-left text-[13px] ${depth === 0 ? "font-semibold" : ""}`;
+  const cls = `grid w-full ${spend ? TREE_COLS.spend : TREE_COLS.base} items-center gap-1 rounded-[10px] py-2 pr-2 text-left text-[13px] ${depth === 0 ? "font-semibold" : ""}`;
   return onClick ? (
     <button type="button" aria-expanded={expanded} className={`${cls} hover:bg-slate-50`} style={{ paddingLeft: 8 + depth * 16 }} onClick={onClick}>
       {cells}
@@ -965,24 +1012,30 @@ function CampaignTree({ campaigns, spend, onOpen }: { campaigns: CampaignNode[];
   const anyIdOnly = campaigns.some((c) => !c.name && c.id);
   return (
     <div>
-      <div className="grid grid-cols-[minmax(0,1fr)_repeat(5,48px)] gap-1 px-2 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+      <div className={`grid ${spend ? TREE_COLS.spend : TREE_COLS.base} gap-1 px-2 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-400`}>
         <span>Campaign</span>
         <span className="text-right">Visit.</span>
         <span className="text-right">Reg.</span>
         <span className="text-right">Free</span>
         <span className="text-right">Memb.</span>
         <span className="text-right">Rev.</span>
+        {spend ? (
+          <>
+            <span className="text-right">Spend</span>
+            <span className="text-right">CAC</span>
+          </>
+        ) : null}
       </div>
       {campaigns.map((c) => (
         <div key={c.key} className="border-t border-slate-100">
-          <Row n={c} depth={0} expanded={open === c.key} onClick={() => setOpen(open === c.key ? null : c.key)} />
+          <Row n={c} depth={0} spend={spend} expanded={open === c.key} onClick={() => setOpen(open === c.key ? null : c.key)} />
           {open === c.key ? (
             <div className="pb-2">
               {(c.adsets || []).map((s) => (
                 <div key={s.key}>
-                  <Row n={s} depth={1} />
+                  <Row n={s} depth={1} spend={spend} />
                   {(s.ads || []).map((a) => (
-                    <Row key={a.key} n={a} depth={2} />
+                    <Row key={a.key} n={a} depth={2} spend={spend} />
                   ))}
                 </div>
               ))}
