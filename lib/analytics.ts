@@ -15,12 +15,24 @@ function pushDataLayer(event: string, params?: EventParams) {
   window.dataLayer.push({ event, ...(params || {}) });
 }
 
+/*
+ * The few product events that are also worth sending to Meta.
+ *
+ * Every trackEvent used to be mirrored to fbq('trackCustom'), so Meta received
+ * each date tap, time tap and photo added - dozens of custom events per visit
+ * that no campaign optimises on, burying the funnel steps that matter. The
+ * dataLayer still receives every event exactly as before; Meta now receives
+ * only these. Conversions (Lead, Schedule, Subscribe, Purchase) and StartSignup
+ * are sent from lib/meta.ts, never from here.
+ */
+const META_CUSTOM_EVENTS = new Set(["plan_selected", "out_of_area_waitlist"]);
+
 export function trackEvent(event: string, params?: EventParams) {
   if (typeof window === "undefined") return;
 
   pushDataLayer(event, params);
 
-  if (typeof window.fbq === "function") {
+  if (META_CUSTOM_EVENTS.has(event) && typeof window.fbq === "function") {
     window.fbq("trackCustom", event, params || {});
   }
 }
