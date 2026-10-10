@@ -3,11 +3,11 @@
 /**
  * Profixter HQ - the Growth office.
  *
- * One screen: a little 3D office with three AI workers (Lumi, Rover, Echo).
+ * One screen: a little knight-order guild hall with three AI knights (Lumi, Rover, Echo).
  * Getting around is meant to be obvious:
  *  - drag to look around, pinch (or scroll) to zoom, 🏠 to go back,
  *  - the dock at the bottom: Home, the three robots, Results, Requests, More,
- *  - tap a robot (or its name) to talk to it; ✕, "Back to the office", a tap
+ *  - tap a knight (or its name) to talk to it; ✕, "Back to the hall", a tap
  *    on the room, swiping the panel down, or the phone's Back button closes it.
  *
  * Robots speak in plain words first; every item can be copied as a complete
@@ -17,6 +17,7 @@
  */
 import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
+import { Cinzel } from "next/font/google";
 import { useAuth } from "@/lib/useAuth";
 import { isAdminUser } from "@/lib/auth-routing";
 import { getOffice, type OfficeState, type RobotKey } from "@/lib/office";
@@ -25,6 +26,9 @@ import { RequestsPanel, ResultsPanel, RobotPanel, ago, type RobotTab } from "./O
 import { CopyButton, ToastProvider } from "./Talk";
 import { ROBOT_LOOKS, ROBOT_ORDER, STATUS_LIGHT } from "./office-layout";
 import styles from "./office.module.css";
+
+/** The order's lettering: a classic engraved serif for titles only. */
+const knightFont = Cinzel({ subsets: ["latin"], weight: ["700"], variable: "--font-knight", display: "swap" });
 
 const OfficeScene = dynamic(() => import("./OfficeScene"), { ssr: false, loading: () => null });
 
@@ -163,7 +167,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
       setError(null);
     } catch (e) {
       const status = (e as { response?: { status?: number } })?.response?.status;
-      setError(status === 401 || status === 403 ? "You don't have access to the Growth office." : "The office couldn't load. I'll try again in a minute.");
+      setError(status === 401 || status === 403 ? "You don't have access to the Growth hall." : "The hall couldn't load. I'll try again in a minute.");
     }
   }, []);
 
@@ -276,7 +280,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
     <div className={styles.fallback}>
       <div style={{ maxWidth: 420 }}>
         <div style={{ fontSize: 40 }}>🤖🤖🤖</div>
-        <div style={{ fontWeight: 900, fontSize: 18, marginTop: 8 }}>The 3D office can&rsquo;t start on this device.</div>
+        <div style={{ fontWeight: 900, fontSize: 18, marginTop: 8 }}>The 3D hall can&rsquo;t start on this device.</div>
         <div className={styles.muted} style={{ marginTop: 6 }}>
           Everything still works - use the buttons at the bottom.
         </div>
@@ -287,7 +291,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
   return (
     <div
       ref={stage}
-      className={`${styles.stage} ${night ? styles.stageNight : ""} ${full ? styles.fullscreen : ""}`}
+      className={`${styles.stage} ${knightFont.variable} ${night ? styles.stageNight : ""} ${full ? styles.fullscreen : ""}`}
       style={full && typeof document !== "undefined" && !document.fullscreenElement ? { position: "fixed", inset: 0, zIndex: 1000 } : undefined}
     >
       {office && gl ? (
@@ -312,7 +316,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
         <div className={styles.fallback}>
           <div>
             <div style={{ fontSize: 34 }}>🔧</div>
-            <div style={{ fontWeight: 900, marginTop: 6 }}>Opening the office…</div>
+            <div style={{ fontWeight: 900, marginTop: 6 }}>Opening the hall…</div>
           </div>
         </div>
       ) : null}
@@ -336,7 +340,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
             <span className={styles.brandMark} style={office && !office.agentsEnabled ? { filter: "grayscale(1)" } : undefined}>
               P
             </span>
-            Profixter HQ <span className={styles.brandSub}>{office ? (office.agentsEnabled ? "· team at work" : "· team off") : ""}</span>
+            Profixter HQ <span className={styles.brandSub}>{office ? (office.agentsEnabled ? "· the order is at work" : "· the order is resting") : ""}</span>
           </div>
           {office && error ? <span className={styles.chip}>⚠️ Showing data from {ago(office.generatedAt)}</span> : null}
         </div>
@@ -362,14 +366,14 @@ function Office({ onClassic }: { onClassic?: () => void }) {
         {/* ---------------- hint ---------------- */}
         {hint && office && !panel ? (
           <button type="button" className={styles.hint} onClick={dismissHint}>
-            👆 Drag to look around · 🤏 pinch to zoom · tap a robot to talk
+            👆 Drag to look around · 🤏 pinch to zoom · tap a knight to talk
           </button>
         ) : null}
 
         {/* ---------------- the dock ---------------- */}
         {office && !(panel && narrow) ? (
           <nav className={styles.dock} aria-label="Office">
-            <button type="button" className={`${styles.dockBtn} ${moved ? styles.dockBtnGlow : ""}`} onClick={goHome} aria-label="Home - see the whole office">
+            <button type="button" className={`${styles.dockBtn} ${moved ? styles.dockBtnGlow : ""}`} onClick={goHome} aria-label="Home - see the whole hall">
               <span className={styles.dockIcon}>🏠</span>
               <span className={styles.dockLabel}>Home</span>
             </button>
@@ -386,8 +390,10 @@ function Office({ onClassic }: { onClassic?: () => void }) {
                   onClick={() => (on ? closePanel() : openPanel({ type: "robot", key: k, tab: "now" }))}
                   aria-label={`${look.name}: ${r?.statusText || ""}`}
                 >
-                  <span className={styles.dockAvatar} style={{ background: look.body }}>
-                    {look.name[0]}
+                  <span className={styles.dockAvatarWrap}>
+                    <span className={styles.dockAvatar} style={{ background: look.body }}>
+                      {look.name[0]}
+                    </span>
                     <span className={styles.dockDot} style={{ background: STATUS_LIGHT[r?.status || "waiting"] }} />
                     {r?.status === "needs_you" ? <span className={styles.dockAsk}>?</span> : null}
                   </span>
@@ -402,7 +408,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
             </button>
             <button type="button" className={`${styles.dockBtn} ${requests ? styles.dockBtnAsk : ""}`} onClick={() => openPanel({ type: "requests" })}>
               <span className={styles.dockIcon}>
-                📌{requests ? <span className={styles.dockBadge}>{requests}</span> : null}
+                📜{requests ? <span className={styles.dockBadge}>{requests}</span> : null}
               </span>
               <span className={styles.dockLabel}>Requests</span>
             </button>
@@ -416,7 +422,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
         {menu ? (
           <div className={styles.menu} role="menu">
             <button type="button" className={styles.menuItem} onClick={() => (setMenu(false), setHelp(true))}>
-              ❓ How to use the office
+              ❓ How to use the hall
             </button>
             <div className={styles.menuItem} style={{ cursor: "default" }}>
               <CopyButton text={office?.explained?.chatgpt} label="Copy business report for ChatGPT" primary />
@@ -433,20 +439,20 @@ function Office({ onClassic }: { onClassic?: () => void }) {
         ) : null}
 
         {help ? (
-          <div className={styles.helpCard} role="dialog" aria-label="How to use the office">
-            <div className={styles.helpTitle}>How to use the office</div>
+          <div className={styles.helpCard} role="dialog" aria-label="How to use the hall">
+            <div className={styles.helpTitle}>How to use the hall</div>
             <ul className={styles.helpList}>
               <li>
                 <b>👆 Drag</b> to look around. <b>🤏 Pinch</b> (or scroll) to zoom.
               </li>
               <li>
-                <b>🏠 Home</b> shows the whole office again.
+                <b>🏠 Home</b> shows the whole hall again.
               </li>
               <li>
-                <b>Tap a robot</b> (or its name) to see what it&rsquo;s doing. Its <b>Settings</b> tab is where you pause it or teach it.
+                <b>Tap a knight</b> (or its name) to see what it&rsquo;s doing. Its <b>Settings</b> tab is where you pause it or teach it.
               </li>
               <li>
-                <b>📌 Requests</b>: questions waiting for your yes or no.
+                <b>📜 Requests</b>: questions waiting for your yes or no.
               </li>
               <li>
                 <b>📊 Results</b>: how many homeowners booked, and what the team costs.
@@ -455,7 +461,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
                 <b>✨ Copy for ChatGPT</b> on any card copies the full story - paste it into ChatGPT and ask for advice.
               </li>
               <li>
-                Close a panel with <b>✕</b>, <b>Back to the office</b>, your phone&rsquo;s <b>Back</b> button, or a tap on the room.
+                Close a panel with <b>✕</b>, <b>Back to the hall</b>, your phone&rsquo;s <b>Back</b> button, or a tap on the floor.
               </li>
             </ul>
             <button type="button" className={styles.btn} onClick={() => setHelp(false)}>

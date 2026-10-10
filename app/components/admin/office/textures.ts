@@ -143,120 +143,58 @@ export type DisplayData = {
   available: boolean;
 };
 
-/** The results wall display: the one number that matters, drawn large. */
+/** The results tapestry: the one number that matters, inked on parchment. */
 export function drawResultsDisplay(c: HTMLCanvasElement, d: DisplayData, flash = false) {
   const g = c.getContext("2d")!;
   const W = c.width;
   const H = c.height;
-  const grad = g.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, flash ? "#1F5A4A" : "#132042");
-  grad.addColorStop(1, flash ? "#123C33" : "#0B1530");
-  g.fillStyle = grad;
+  // the embroidered cloth
+  g.fillStyle = flash ? "#2F5A2E" : "#6E1E24";
   g.fillRect(0, 0, W, H);
-  // scanlines
-  g.fillStyle = "rgba(255,255,255,0.025)";
-  for (let y = 0; y < H; y += 6) g.fillRect(0, y, W, 2);
-  g.fillStyle = "#8FB3FF";
-  g.font = "700 30px system-ui, -apple-system, Segoe UI, sans-serif";
+  g.strokeStyle = "#D9B45A";
+  g.lineWidth = 6;
+  g.strokeRect(9, 9, W - 18, H - 18);
+  // the parchment panel
+  const grad = g.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, W / 1.4);
+  grad.addColorStop(0, "#F7EBCD");
+  grad.addColorStop(1, "#E3CB98");
+  g.fillStyle = grad;
+  g.fillRect(24, 24, W - 48, H - 48);
+  g.strokeStyle = "rgba(110,60,30,0.45)";
+  g.lineWidth = 2;
+  g.strokeRect(32, 32, W - 64, H - 64);
+  const serif = "Georgia, 'Times New Roman', serif";
+  g.fillStyle = "#7A1F24";
+  g.font = "700 30px " + serif;
   g.textAlign = "left";
-  g.fillText("FIRST FREE VISITS", 34, 58);
+  g.fillText("FIRST FREE VISITS", 48, 74);
   if (!d.available) {
-    g.fillStyle = "#C9D3EA";
-    g.font = "800 120px system-ui, sans-serif";
-    g.fillText("—", 34, 196);
-    g.font = "600 26px system-ui, sans-serif";
-    g.fillText("Data unavailable right now", 34, 250);
+    g.fillStyle = "#4A3020";
+    g.font = "700 110px " + serif;
+    g.fillText("—", 48, 196);
+    g.font = "italic 600 26px " + serif;
+    g.fillText("Not known right now", 48, 250);
     return;
   }
-  g.fillStyle = "#7DFFC8";
-  g.font = "800 150px system-ui, -apple-system, Segoe UI, sans-serif";
+  g.fillStyle = "#2E1C12";
+  g.font = "700 140px " + serif;
   const big = String(d.last7 ?? "—");
-  g.fillText(big, 30, 200);
+  g.fillText(big, 44, 205);
   const bigW = g.measureText(big).width;
-  g.fillStyle = "#D7E3FF";
-  g.font = "600 30px system-ui, sans-serif";
-  g.fillText("this week", 50 + bigW, 150);
+  g.fillStyle = "#5A3A22";
+  g.font = "italic 600 30px " + serif;
+  g.fillText("this week", 66 + bigW, 150);
   if (d.prev7 != null && d.last7 != null) {
     const diff = d.last7 - d.prev7;
-    g.fillStyle = diff > 0 ? "#7DFFC8" : diff < 0 ? "#FF9DA0" : "#AFC0E6";
-    g.fillText(diff === 0 ? "same as last week" : `${diff > 0 ? "▲" : "▼"} ${Math.abs(diff)} vs last week`, 50 + bigW, 196);
+    g.fillStyle = diff > 0 ? "#2F6B33" : diff < 0 ? "#8E2A26" : "#5A3A22";
+    g.font = "700 28px " + serif;
+    g.fillText(diff === 0 ? "same as last week" : `${diff > 0 ? "▲" : "▼"} ${Math.abs(diff)} vs last week`, 66 + bigW, 196);
   }
-  g.fillStyle = "#AFC0E6";
-  g.font = "600 28px system-ui, sans-serif";
-  g.fillText(`Last 30 days: ${d.last30 ?? "—"}`, 34, 262);
+  g.fillStyle = "#5A3A22";
+  g.font = "600 26px " + serif;
+  g.fillText(`Last 30 days: ${d.last30 ?? "—"}`, 48, 256);
   g.textAlign = "right";
-  g.fillStyle = "#5E79B8";
-  g.font = "600 22px system-ui, sans-serif";
-  g.fillText("tap for results ›", W - 30, 262);
-}
-
-/** The floating holo-screen each robot works on. */
-export function drawHolo(c: HTMLCanvasElement, kind: "visibility" | "outreach" | "conversation", color: string, t: number, active: boolean) {
-  const g = c.getContext("2d")!;
-  const W = c.width;
-  const H = c.height;
-  g.clearRect(0, 0, W, H);
-  g.fillStyle = "rgba(20,40,80,0.35)";
-  roundRect(g, 4, 4, W - 8, H - 8, 18);
-  g.fill();
-  g.strokeStyle = color;
-  g.globalAlpha = 0.9;
-  g.lineWidth = 4;
-  roundRect(g, 4, 4, W - 8, H - 8, 18);
-  g.stroke();
-  g.globalAlpha = 1;
-  g.fillStyle = color;
-  if (kind === "visibility") {
-    // a search bar and growing bars
-    g.globalAlpha = 0.85;
-    roundRect(g, 22, 22, W - 44, 26, 13);
-    g.fill();
-    g.globalAlpha = 1;
-    for (let i = 0; i < 6; i++) {
-      const h = 30 + ((Math.sin(t * (active ? 1.6 : 0.4) + i) + 1) / 2) * 60 + i * 6;
-      g.fillRect(28 + i * 30, H - 22 - h, 20, h);
-    }
-  } else if (kind === "outreach") {
-    // a little map with pulsing pins
-    g.globalAlpha = 0.5;
-    g.beginPath();
-    g.ellipse(W / 2, H / 2 + 6, W / 2.6, H / 4.4, -0.15, 0, Math.PI * 2);
-    g.fill();
-    g.globalAlpha = 1;
-    const pins = [
-      [0.3, 0.55],
-      [0.48, 0.45],
-      [0.62, 0.6],
-      [0.75, 0.48],
-    ];
-    pins.forEach(([x, y], i) => {
-      const r = 6 + (active ? Math.max(0, Math.sin(t * 2 + i * 1.3)) * 6 : 0);
-      g.beginPath();
-      g.arc(x * W, y * H, r, 0, Math.PI * 2);
-      g.fill();
-    });
-  } else {
-    // chat bubbles
-    const bubbles = [
-      [24, 28, 120],
-      [W - 24 - 100, 72, 100],
-      [24, 116, 140],
-    ];
-    bubbles.forEach(([x, y, w], i) => {
-      g.globalAlpha = i === Math.floor(t * (active ? 1.2 : 0.3)) % 3 ? 1 : 0.55;
-      roundRect(g, x, y, w, 30, 15);
-      g.fill();
-    });
-    g.globalAlpha = 1;
-  }
-}
-
-function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  g.beginPath();
-  g.moveTo(x + r, y);
-  g.arcTo(x + w, y, x + w, y + h, r);
-  g.arcTo(x + w, y + h, x, y + h, r);
-  g.arcTo(x, y + h, x, y, r);
-  g.arcTo(x, y, x + w, y, r);
-  g.closePath();
+  g.fillStyle = "#8A6A44";
+  g.font = "italic 600 22px " + serif;
+  g.fillText("tap for results ›", W - 46, 256);
 }
