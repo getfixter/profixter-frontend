@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The panels that open over the office: a robot (Now / Work / Settings),
+ * The panels that open over the hall: a knight (Now / Work / Settings),
  * the results board, and Requests (approvals and notes). Every item speaks
  * in plain words first (RobotSays), with "More details" for the technical
  * view and "Copy for ChatGPT" for a complete brief. Every button calls a real
@@ -98,7 +98,7 @@ export function Sheet({
       <div className={styles.sheetBody}>{children}</div>
       <div className={styles.sheetFoot}>
         <button type="button" className={styles.backBtn} onClick={onClose}>
-          ← Back to the office
+          ← Back to the hall
         </button>
       </div>
     </aside>
@@ -115,7 +115,7 @@ function Head({ color, initial, title, sub, onClose }: { color: string; initial:
         <div className={styles.sheetTitle}>{title}</div>
         <div className={styles.sheetSub}>{sub}</div>
       </div>
-      <button type="button" className={styles.close} onClick={onClose} aria-label="Close and go back to the office">
+      <button type="button" className={styles.close} onClick={onClose} aria-label="Close and go back to the hall">
         ✕
       </button>
     </div>

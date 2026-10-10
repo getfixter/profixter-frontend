@@ -172,7 +172,7 @@ export default function CameraRig({
       let x = pos[0];
       let z = pos[2];
       if (panel === "bottom") {
-        const shift = (size.height * 0.25) / (zoom * SQUASH); // keep the robot in the top part of the screen
+        const shift = (size.height * 0.19) / (zoom * SQUASH); // keep the knight in the top part of the screen, below the top bar
         x -= UP.x * shift;
         z -= UP.z * shift;
       } else if (panel === "right") {
@@ -201,12 +201,25 @@ export default function CameraRig({
 }
 
 /** A tappable label floating over something in the room. */
-export function SceneChip({ position, label, onClick, tone = "plain" }: { position: Vec3; label: string; onClick: () => void; tone?: "plain" | "ask" }) {
+export function SceneChip({
+  position,
+  label,
+  onClick,
+  tone = "plain",
+  wideOnly = false,
+}: {
+  position: Vec3;
+  label: string;
+  onClick: () => void;
+  tone?: "plain" | "ask";
+  /** Hidden on phones (where the dock already has the same button). */
+  wideOnly?: boolean;
+}) {
   return (
     <Html position={position} center zIndexRange={[15, 0]}>
       <button
         type="button"
-        className={`${styles.sceneChip} ${tone === "ask" ? styles.sceneChipAsk : ""}`}
+        className={`${styles.sceneChip} ${tone === "ask" ? styles.sceneChipAsk : ""} ${wideOnly ? styles.wideOnly : ""}`}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();

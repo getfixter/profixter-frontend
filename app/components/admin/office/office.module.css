@@ -1263,3 +1263,244 @@ button.nameTag {
     max-height: 80%;
   }
 }
+
+/* =================== v3: the knight order =================== */
+.stage {
+  background: radial-gradient(120% 90% at 50% 8%, #fbf3e4 0%, #f0e2c9 45%, #e2cfb0 100%);
+}
+.stageNight {
+  background: radial-gradient(120% 90% at 50% 8%, #2c2a52 0%, #1f1f42 50%, #15152f 100%) !important;
+}
+.brand,
+.sheetTitle,
+.helpTitle,
+.kpiNum {
+  font-family: var(--font-knight), Georgia, "Times New Roman", serif;
+  letter-spacing: 0.01em;
+}
+.brandMark {
+  /* a little shield */
+  width: 24px;
+  height: 27px;
+  border-radius: 0;
+  background: linear-gradient(160deg, #2f5bea, #1e3a9e);
+  clip-path: polygon(0 0, 100% 0, 100% 62%, 50% 100%, 0 62%);
+  color: #e8c15a;
+  font-weight: 900;
+  padding-bottom: 4px;
+}
+.dockAvatar,
+.avatar,
+.talkAvatar {
+  clip-path: polygon(0 0, 100% 0, 100% 64%, 50% 100%, 0 64%);
+  border-radius: 6px 6px 0 0 !important;
+  padding-bottom: 6px;
+  box-shadow: none;
+}
+.dockAvatar {
+  border-top: 3px solid #e8c15a;
+}
+.dockAvatarWrap {
+  position: relative;
+  display: inline-grid;
+}
+.dock {
+  background: linear-gradient(180deg, rgba(255, 251, 242, 0.97), rgba(247, 238, 222, 0.97));
+  box-shadow: 0 0 0 2px rgba(232, 193, 90, 0.55), 0 4px 0 rgba(60, 40, 20, 0.12), 0 18px 36px -18px rgba(40, 30, 20, 0.6);
+}
+.dockIcon {
+  background: #f1e6d2;
+}
+.sheet {
+  background: linear-gradient(180deg, rgba(255, 252, 244, 0.98), rgba(250, 243, 230, 0.98));
+  box-shadow: 0 0 0 2px rgba(232, 193, 90, 0.45), 0 30px 60px -24px rgba(40, 30, 20, 0.55);
+}
+.sectionTitle {
+  color: #9a7a3e;
+}
+.nameTag {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(232, 193, 90, 0.8), 0 6px 16px -6px rgba(30, 30, 60, 0.35);
+}
+
+@media (max-width: 720px) {
+  .bubble {
+    max-width: 150px;
+    font-size: 11.5px;
+  }
+}
+
+@media (max-width: 720px) {
+  .wideOnly {
+    display: none !important;
+  }
+}
+
+/* =================== v4: the medieval palette (oak, oxblood, gold, parchment) =================== */
+.stage {
+  background: radial-gradient(120% 90% at 50% 8%, #f6e9cf 0%, #e8d3ad 50%, #cfb487 100%);
+  box-shadow: inset 0 0 0 2px rgba(150, 110, 50, 0.35);
+}
+.stageNight {
+  background: radial-gradient(120% 90% at 50% 8%, #3a2a22 0%, #241913 55%, #160f0b 100%) !important;
+}
+.brand,
+.kpiButton,
+.chip,
+.sceneChip,
+.nameTag,
+.menu,
+.helpCard,
+.dock {
+  background: linear-gradient(180deg, #fffaf0, #f6ead2) !important;
+  color: #3a2418 !important;
+}
+.brand,
+.kpiButton,
+.sceneChip,
+.nameTag {
+  box-shadow: 0 0 0 1.5px rgba(201, 160, 74, 0.9), 0 8px 18px -10px rgba(40, 25, 10, 0.6) !important;
+}
+.kpiIcon,
+.dockIcon {
+  background: #efdfbd !important;
+}
+.kpiLabel,
+.brandSub,
+.dockLabel,
+.muted,
+.sheetSub,
+.talkMeta {
+  color: #7a5a3a !important;
+}
+.sectionTitle {
+  color: #8a5a2a !important;
+}
+.sheetTitle,
+.helpTitle,
+.talkAsk,
+.statValue,
+.bigNum {
+  color: #3a1e14 !important;
+}
+.btn {
+  background: #5b3a22;
+  color: #fff8e8;
+}
+.btnSoft {
+  background: #efdfbd !important;
+  color: #3a2418 !important;
+}
+.btnGood {
+  background: #3f6b3a !important;
+  color: #fff8e8 !important;
+}
+.btnGhost {
+  color: #7a1f24 !important;
+  box-shadow: inset 0 0 0 2px #e2cfa6 !important;
+}
+.tab {
+  background: #efdfbd;
+  color: #5a3a22;
+}
+.tabOn {
+  background: #7a1f24 !important;
+  color: #fff3dc !important;
+}
+.backBtn {
+  background: #7a1f24;
+  color: #fff3dc;
+  font-family: var(--font-knight), Georgia, serif;
+  letter-spacing: 0.02em;
+}
+.close {
+  background: #efdfbd !important;
+  color: #5a3a22 !important;
+}
+.hint {
+  background: rgba(58, 36, 24, 0.9) !important;
+  color: #fff3dc;
+}
+.copyBtn {
+  background: #efdfbd;
+  color: #3a2418;
+}
+.copyBtnPrimary {
+  background: linear-gradient(180deg, #e2c071, #b98e33) !important;
+  color: #2e1c12 !important;
+}
+.copied {
+  background: #3a2418 !important;
+  color: #fff3dc !important;
+}
+.talk,
+.card,
+.stat {
+  background: #fffcf5 !important;
+  box-shadow: 0 0 0 1px rgba(160, 120, 60, 0.22) !important;
+  color: #2e1c12;
+}
+.talkBubble {
+  background: #f6ecd6 !important;
+  color: #2e1c12 !important;
+}
+.talkDetails,
+.pre {
+  background: #f8f0dd !important;
+  color: #3a2418 !important;
+}
+.preview {
+  background: #fbf3e1 !important;
+  border-left-color: #7a1f24 !important;
+  color: #2e1c12 !important;
+}
+.bubble {
+  background: #fffaf0;
+  color: #3a2418;
+  box-shadow: 0 0 0 1px rgba(201, 160, 74, 0.7), 0 6px 18px -6px rgba(40, 25, 10, 0.5);
+}
+.bubbleAsk {
+  background: #f8e3ad;
+  color: #5a3300;
+}
+.bubbleError {
+  background: #f3d2cc;
+  color: #7a1f24;
+}
+.askOrb {
+  /* a wax seal with a question */
+  background: radial-gradient(circle at 35% 30%, #d0413c, #8e1f22) !important;
+  border-color: #e2c071 !important;
+  box-shadow: 0 6px 14px -4px rgba(120, 20, 20, 0.6) !important;
+}
+.barFill {
+  background: linear-gradient(90deg, #7a1f24, #c9a04a) !important;
+}
+.bar {
+  background: #ecdcbc !important;
+}
+.dockBtnOn {
+  background: #efdfbd !important;
+}
+.dockSep {
+  background: #e2cfa6 !important;
+}
+.textarea,
+.input {
+  border-color: #e2cfa6 !important;
+  background: #fffdf8 !important;
+  color: #2e1c12 !important;
+}
+.textarea:focus {
+  border-color: #7a1f24 !important;
+}
+.sheet {
+  background: linear-gradient(180deg, #fffaf0, #f6ead2) !important;
+}
+.sheetFoot {
+  background: #f6ead2 !important;
+  border-top-color: #e2cfa6 !important;
+}
+.toast {
+  background: linear-gradient(180deg, #4f7f43, #3f6b3a) !important;
+}

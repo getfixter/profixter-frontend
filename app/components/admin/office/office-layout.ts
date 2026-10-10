@@ -23,10 +23,12 @@ export function behindDesk(desk: Vec3, distance = 0.92): Vec3 {
 export type RobotLook = {
   key: RobotKey;
   name: string;
+  title: string; // the knight title shown to the owner
   body: string;
   bodyDark: string;
   accent: string;
-  eye: string;
+  eye: string; // skin tone
+  hair: string;
   desk: Vec3;
   seat: Vec3;
   bed: Vec3; // where it naps
@@ -42,41 +44,50 @@ export const ROBOT_LOOKS: Record<RobotKey, RobotLook> = {
   visibility: {
     key: "visibility",
     name: "Lumi",
-    body: "#5FD3B5",
-    bodyDark: "#2FA78A",
-    accent: "#FFD45C",
-    eye: "#B8FFF0",
+    title: "Knight of Visibility",
+    body: "#3E7D4F", // vert: forest green
+    bodyDark: "#2C5A38",
+    accent: "#D9B45A",
+    eye: "#E8C9A8", // skin
+    hair: "#C9893F", // copper
+
     desk: LUMI_DESK,
     seat: behindDesk(LUMI_DESK),
-    bed: [-4.1, 0, -1.55],
-    hobby: [-4.05, 0, 3.55], // the big plant by the window... of search results
-    hobbyLabel: "watering the plant",
+    bed: [-4.0, 0, -1.45],
+    hobby: [-3.85, 0, 1.75], // the great bookcase
+    hobbyLabel: "reading at the bookcase",
   },
   outreach: {
     key: "outreach",
     name: "Rover",
-    body: "#FF8A6B",
-    bodyDark: "#E0603F",
-    accent: "#3E5CFF",
-    eye: "#FFF1D6",
+    title: "Knight of Outreach",
+    body: "#A8322D", // gules: crimson
+    bodyDark: "#7A2420",
+    accent: "#D9B45A",
+    eye: "#D9A07A", // skin
+    hair: "#5A3A22", // chestnut, with a beard
+
     desk: ROVER_DESK,
     seat: behindDesk(ROVER_DESK),
-    bed: [-2.3, 0, -4.15],
-    hobby: [3.1, 0, -4.05], // the window
-    hobbyLabel: "looking out the window",
+    bed: [-2.15, 0, -4.1],
+    hobby: [3.45, 0, -4.05], // the arched window
+    hobbyLabel: "scouting from the window",
   },
   conversation: {
     key: "conversation",
     name: "Echo",
-    body: "#A98BFF",
-    bodyDark: "#7C5CF0",
-    accent: "#FF7BB0",
-    eye: "#EEE6FF",
+    title: "Knight of Communication",
+    body: "#5E3C8C", // purpure: royal purple
+    bodyDark: "#43296A",
+    accent: "#D9B45A",
+    eye: "#8D5A3B", // skin
+    hair: "#1F1712", // black
+
     desk: ECHO_DESK,
     seat: behindDesk(ECHO_DESK),
-    bed: [-3.95, 0, -3.85],
-    hobby: [-3.85, 0, 2.2], // the coffee machine
-    hobbyLabel: "making coffee",
+    bed: [-3.65, 0, -3.95],
+    hobby: [0.2, 0, -0.55], // the command table
+    hobbyLabel: "checking the command table",
   },
 };
 
@@ -84,13 +95,27 @@ export const ROBOT_ORDER: RobotKey[] = ["visibility", "outreach", "conversation"
 
 /** Shared idle spots every robot may wander to. */
 export const IDLE_SPOTS: Vec3[] = [
-  [-1.0, 0, -3.6], // in front of the results display
-  [3.1, 0, -4.05], // window
-  [-3.85, 0, 2.2], // coffee
-  [0.4, 0, 3.4], // middle of the room
+  [-3.55, 0, -2.75], // warming up by the hearth
+  [3.45, 0, -4.05], // the arched window
+  [-3.75, 0, 3.35], // tea at the sideboard
+  [0.6, 0, 3.1], // the middle of the hall
+  [-1.95, 0, -0.55], // the far side of the command table
 ];
 
 export const PALETTE = {
+  stone: "#E7DAC2",
+  stoneDark: "#B8A27F",
+  gold: "#E8C15A",
+  goldDark: "#B8902E",
+  royal: "#2F5BEA",
+  royalDark: "#1E3A9E",
+  steel: "#DCE3EC",
+  steelDark: "#9DA8BA",
+  leather: "#7A5233",
+  oak: "#9A6A3E",
+  oakDark: "#6E4527",
+  parchment: "#F2E4C2",
+  ember: "#FF9A3C",
   floor: "#E9C99B",
   floorDark: "#D2AE7C",
   base: "#2A3350",
@@ -115,10 +140,11 @@ export const PALETTE = {
 };
 
 export const STATUS_LIGHT: Record<string, string> = {
-  working: "#35E07F",
-  needs_you: "#FFB21F",
-  error: "#FF5A5F",
-  waiting: "#7CC4FF",
+  // the jewel on each helm: emerald, amber, ruby, sapphire, pewter
+  working: "#3FBF6A",
+  needs_you: "#F2A71B",
+  error: "#D6383E",
+  waiting: "#4F86D9",
   paused: "#8C94A8",
   off: "#8C94A8",
 };
