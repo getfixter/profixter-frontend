@@ -310,60 +310,8 @@ export async function decidePlaybook(key: string, decision: "approve" | "retire"
 }
 
 /* ------------------------------------------------------------------ */
-/* Outreach (postal mail) and conversations                            */
+/* Conversations                                                       */
 /* ------------------------------------------------------------------ */
-
-export type MailWaveView = {
-  key: string;
-  name: string;
-  status: "draft" | "approved" | "exported" | "mailed" | "cancelled";
-  targetZips: string[];
-  size: number;
-  format: string;
-  copy: { headline: string; body: string; callToAction: string };
-  rationale: string;
-  estimatedCostCents: number;
-  createdBy: string;
-  approvedBy: string | null;
-  createdAt: string;
-  mailedAt: string | null;
-  results: { registrations: number; firstFreeVisits: number } | null;
-};
-
-export type OutreachView = {
-  audience: {
-    synced: number;
-    eligible: number;
-    mailableNow: number;
-    excluded: Record<string, number>;
-    byCounty: Record<string, number>;
-    topZips: Array<{ city: string; zip: string; eligible: number }>;
-  };
-  waves: MailWaveView[];
-  costPerPieceCents: number;
-};
-
-export async function getOutreach(): Promise<OutreachView> {
-  const res = await API.get("/api/admin/growth/outreach");
-  return res.data;
-}
-
-export async function decideWave(key: string, decision: "approve" | "cancel" | "mailed", note = "") {
-  await API.post(`/api/admin/growth/outreach/waves/${encodeURIComponent(key)}/${decision}`, { note });
-}
-
-/** Downloads the print vendor's CSV (names, addresses, personal URLs) and marks the wave exported. */
-export async function exportWave(key: string) {
-  const res = await API.post(`/api/admin/growth/outreach/waves/${encodeURIComponent(key)}/export`, {}, { responseType: "blob" });
-  const url = URL.createObjectURL(res.data as Blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `profixter-${key}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-}
 
 export type ConversationView = {
   id: string;
