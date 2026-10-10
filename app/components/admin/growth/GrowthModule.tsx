@@ -34,7 +34,6 @@ import { isAdminUser } from "@/lib/auth-routing";
 import AgentsPanel from "./AgentsPanel";
 import HealthStrip from "./HealthStrip";
 import PlaybooksPanel from "./PlaybooksPanel";
-import OutreachPanel from "./OutreachPanel";
 import ConversationsPanel from "./ConversationsPanel";
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -525,7 +524,6 @@ export default function GrowthModule() {
           </div>
           <ActivityCard recent={data.queue.recent} shadow={data.queue.shadow} />
           <ConversationsPanel />
-          <OutreachPanel owner={owner} />
           <AgentsPanel owner={owner} />
           <PlaybooksPanel owner={owner} />
         </>
