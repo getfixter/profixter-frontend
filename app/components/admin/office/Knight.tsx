@@ -6,7 +6,7 @@
  * animations), and the goblins he battles.
  *
  * Every knight shares one model and one skeleton; only the surcoat texture
- * differs (Rover red, Lumi green, Echo purple). What he does comes ONLY from
+ * differs (Leonidas red, Odysseus green, Marcus Aurelius purple). What he does comes ONLY from
  * the real status of his agent:
  *
  *   working   -> a duel at his post: a goblin appears and they fight
@@ -18,6 +18,10 @@
  *   paused/off-> dozes on a bench by the hearth
  *   celebrate -> a victory cheer (only for a REAL new first free visit)
  *   tapped    -> waves hello
+ *   report    -> after a REAL finished shift he has not yet "delivered", he
+ *                walks to the foot of King Arthur's throne, stands before him
+ *                with his report (a scroll), then returns (no AI call - the
+ *                shift record is the trigger)
  */
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
@@ -25,7 +29,7 @@ import { Html, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 import type { RobotKey, RobotStatus } from "@/lib/office";
-import { HUB, IDLE_SPOTS, STATUS_LIGHT, type RobotLook, type Vec3 } from "./office-layout";
+import { HUB, IDLE_SPOTS, REPORT_SPOTS, STATUS_LIGHT, THRONE, type RobotLook, type Vec3 } from "./office-layout";
 import styles from "./office.module.css";
 
 export const KNIGHT_URL = "/3d/hall/knight-v1.glb";
@@ -33,7 +37,7 @@ export const GOBLIN_URL = "/3d/hall/goblin-v1.glb";
 const SURCOAT: Partial<Record<RobotKey, string>> = {
   visibility: "/3d/hall/knight-lumi-v1.webp",
   conversation: "/3d/hall/knight-echo-v1.webp",
-  // outreach (Rover) wears the model's own red-cross surcoat
+  // outreach (Leonidas) wears the model's own red-cross surcoat
 };
 
 useGLTF.preload(KNIGHT_URL, false, true);
@@ -45,7 +49,7 @@ const SPEED = 1.15;
 /** Real proportions, shown a little larger than life so they read well on a phone. */
 const SIZE = 1.3;
 
-type Activity = "work" | "train" | "ask" | "confused" | "sleep" | "visit";
+type Activity = "work" | "train" | "ask" | "confused" | "sleep" | "visit" | "report";
 type Plan = { activity: Activity; spot: Vec3; until: number; emoji?: string };
 
 /** Where a knight stands at his post, and where his opponent (dummy or goblin) stands. */
@@ -138,9 +142,15 @@ export type KnightProps = {
   onSelect: () => void;
   onAsk: () => void;
   registry?: MutableRefObject<Partial<Record<RobotKey, Vec3>>>;
+  /** A finished shift he has not reported to Arthur yet. */
+  report?: boolean;
+  onReported?: () => void;
 };
 
-function planFor(status: RobotStatus, look: RobotLook, now: number, previous: Plan | null, knightSpot: Vec3): Plan {
+const REPORT_HOLD = 5.5;
+
+function planFor(status: RobotStatus, look: RobotLook, now: number, previous: Plan | null, knightSpot: Vec3, report: boolean): Plan {
+  if (report && (status === "waiting" || status === "needs_you")) return { activity: "report", spot: REPORT_SPOTS[look.key], until: Infinity, emoji: "📜" };
   if (status === "working") return { activity: "work", spot: knightSpot, until: Infinity };
   if (status === "needs_you") return { activity: "ask", spot: knightSpot, until: Infinity };
   if (status === "error") return { activity: "confused", spot: knightSpot, until: Infinity };
@@ -157,7 +167,7 @@ function planFor(status: RobotStatus, look: RobotLook, now: number, previous: Pl
   return { activity: "visit", spot: pick.spot, until: now + 6 + Math.random() * 5, emoji: pick.emoji };
 }
 
-export default function Knight({ look, status, statusText, waiting, celebrate, reduced, selected, onSelect, onAsk, registry }: KnightProps) {
+export default function Knight({ look, status, statusText, waiting, celebrate, reduced, selected, onSelect, onAsk, registry, report = false, onReported }: KnightProps) {
   const gltf = useGLTF(KNIGHT_URL, false, true);
   const { knight: knightSpot, enemy: enemySpot } = useMemo(() => postSpots(look.desk), [look.desk]);
 
@@ -261,9 +271,13 @@ export default function Knight({ look, status, statusText, waiting, celebrate, r
   useEffect(() => {
     if (selected) greetPending.current = true;
   }, [selected]);
+  const reportedAt = useRef(0);
+  const reportDone = useRef(false);
   useEffect(() => {
     plan.current = null;
-  }, [status]);
+    reportedAt.current = 0;
+    reportDone.current = false;
+  }, [status, report]);
 
   useFrame((state, delta) => {
     const t = state.clock.elapsedTime;
@@ -273,7 +287,7 @@ export default function Knight({ look, status, statusText, waiting, celebrate, r
 
     // --- brain -----------------------------------------------------------
     if (!plan.current || t > plan.current.until) {
-      const next = planFor(status, look, t, plan.current, knightSpot);
+      const next = planFor(status, look, t, plan.current, knightSpot, report && !reportDone.current);
       plan.current = next;
       const first = !placed.current;
       placed.current = true;
@@ -283,7 +297,7 @@ export default function Knight({ look, status, statusText, waiting, celebrate, r
       } else if (dist(pos.current, next.spot) > 0.05) {
         path.current = dist(pos.current, next.spot) > 2.4 ? [HUB, next.spot] : [next.spot];
       }
-      setEmoji(next.activity === "visit" ? next.emoji || null : null);
+      setEmoji(next.activity === "visit" || next.activity === "report" ? next.emoji || null : null);
       if (next.activity === "work") duelStart.current = t;
     }
     const p = plan.current!;
@@ -308,6 +322,14 @@ export default function Knight({ look, status, statusText, waiting, celebrate, r
       }
     }
     const arrived = !moving;
+    if (p.activity === "report" && arrived) {
+      if (!reportedAt.current) reportedAt.current = t;
+      else if (t - reportedAt.current > REPORT_HOLD && !reportDone.current) {
+        reportDone.current = true;
+        plan.current = null; // back to his post next frame
+        onReported?.();
+      }
+    }
     const greeting = t < greetUntil.current && p.activity !== "sleep" && p.activity !== "work";
     const atPost = arrived && (p.activity === "work" || p.activity === "train");
     if (atPost !== fighting && p.activity === "work") setFighting(atPost);
@@ -318,6 +340,7 @@ export default function Knight({ look, status, statusText, waiting, celebrate, r
       let want = CAMERA_YAW;
       if (atPost && !greeting) want = Math.atan2(enemySpot[0] - pos.current[0], enemySpot[2] - pos.current[2]);
       else if (p.activity === "visit") want = CAMERA_YAW + Math.sin(t * 0.4) * 0.3;
+      else if (p.activity === "report" && !greeting) want = Math.atan2(THRONE[0] - pos.current[0], THRONE[2] - pos.current[2]);
       yaw.current = lerpAngle(yaw.current, want, Math.min(1, dt * 5));
     }
     r.position.set(pos.current[0], p.activity === "sleep" && arrived ? 0.02 : 0, pos.current[2]);
@@ -337,7 +360,8 @@ export default function Knight({ look, status, statusText, waiting, celebrate, r
       const sinceCut = trainAt.current - t;
       clip = sinceCut > 0 && sinceCut < 1.5 ? "slash" : "idle";
       if (clip === "slash" && current.current !== "slash") dummyHit.current = t + 0.55;
-    } else if (p.activity === "ask") clip = "wave";
+    } else if (p.activity === "report") clip = t - reportedAt.current < 1.6 ? "wave" : "idle";
+    else if (p.activity === "ask") clip = "wave";
     else if (p.activity === "confused") clip = "confused";
     else if (p.activity === "sleep") clip = "doze";
     play(clip, clip === "walk" || current.current === "walk" ? 0.25 : 0.35);

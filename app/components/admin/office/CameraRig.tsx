@@ -39,8 +39,8 @@ export default function CameraRig({
   dragged,
   onMoved,
 }: {
-  positions: MutableRefObject<Partial<Record<RobotKey, Vec3>>>;
-  follow: RobotKey | null;
+  positions: MutableRefObject<Partial<Record<RobotKey | "arthur", Vec3>>>;
+  follow: RobotKey | "arthur" | null;
   panel: "bottom" | "right" | null;
   reduced: boolean;
   api: MutableRefObject<CameraApi | null>;
@@ -54,7 +54,7 @@ export default function CameraRig({
   const target = useRef({ x: 0, z: 0, f: 1 });
   const current = useRef({ x: 0, z: 0, f: 1 });
   const moved = useRef(false);
-  const following = useRef<RobotKey | null>(follow);
+  const following = useRef<RobotKey | "arthur" | null>(follow);
   const onMovedRef = useRef(onMoved);
   const baseRef = useRef(baseZoom);
 

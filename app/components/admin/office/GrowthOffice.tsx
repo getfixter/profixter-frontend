@@ -3,10 +3,12 @@
 /**
  * Profixter HQ - the Growth office.
  *
- * One screen: a little knight-order guild hall with three AI knights (Lumi, Rover, Echo).
+ * One screen: the council hall. King Arthur (the owner's AI manager) on his
+ * throne, and three heroes: Odysseus (search), Leonidas (outreach) and
+ * Marcus Aurelius (conversations).
  * Getting around is meant to be obvious:
  *  - drag to look around, pinch (or scroll) to zoom, 🏠 to go back,
- *  - the dock at the bottom: Home, the three robots, Results, Requests, More,
+ *  - the dock at the bottom: Home, King Arthur, the three heroes, Results, Requests, More,
  *  - tap a knight (or its name) to talk to it; ✕, "Back to the hall", a tap
  *    on the room, swiping the panel down, or the phone's Back button closes it.
  *
@@ -20,11 +22,12 @@ import dynamic from "next/dynamic";
 import { Cinzel } from "next/font/google";
 import { useAuth } from "@/lib/useAuth";
 import { isAdminUser } from "@/lib/auth-routing";
-import { getOffice, type OfficeState, type RobotKey } from "@/lib/office";
-import type { CameraApi, SceneTarget } from "./OfficeScene";
+import { getCouncil, getOffice, type OfficeState, type RobotKey } from "@/lib/office";
+import type { CameraApi, CouncilView, SceneTarget } from "./OfficeScene";
+import { CouncilPanel, ReportCopy, type CouncilTab } from "./CouncilPanel";
 import { RequestsPanel, ResultsPanel, RobotPanel, ago, type RobotTab } from "./OfficePanels";
 import { CopyButton, ToastProvider } from "./Talk";
-import { ROBOT_LOOKS, ROBOT_ORDER, STATUS_LIGHT } from "./office-layout";
+import { ARTHUR_LOOK, ROBOT_LOOKS, ROBOT_ORDER, STATUS_LIGHT } from "./office-layout";
 import styles from "./office.module.css";
 
 /** The order's lettering: a classic engraved serif for titles only. */
@@ -36,7 +39,12 @@ const POLL_MS = 60 * 1000;
 const SEEN_KEY = "profixter:office:lastBookingSeen";
 const HINT_KEY = "profixter:office:hinted:v2";
 
-type Panel = { type: "robot"; key: RobotKey; tab: RobotTab } | { type: "results" } | { type: "requests"; robot?: RobotKey } | null;
+type Panel =
+  | { type: "robot"; key: RobotKey; tab: RobotTab }
+  | { type: "council"; tab: CouncilTab }
+  | { type: "results" }
+  | { type: "requests"; robot?: RobotKey }
+  | null;
 
 function storage(key: string, value?: string) {
   try {
@@ -82,6 +90,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
   const { user } = useAuth();
   const owner = isAdminUser(user);
   const [office, setOffice] = useState<OfficeState | null>(null);
+  const [council, setCouncil] = useState<CouncilView>(null);
   const [error, setError] = useState<string | null>(null);
   const [panel, setPanelState] = useState<Panel>(null);
   const [celebrate, setCelebrate] = useState(false);
@@ -165,6 +174,9 @@ function Office({ onClassic }: { onClassic?: () => void }) {
       const data = await getOffice(fresh);
       setOffice(data);
       setError(null);
+      getCouncil()
+        .then((c) => setCouncil({ thinking: c.thinking, decisions: c.counts.decisions }))
+        .catch(() => setCouncil(null));
     } catch (e) {
       const status = (e as { response?: { status?: number } })?.response?.status;
       setError(status === 401 || status === 403 ? "You don't have access to the Growth hall." : "The hall couldn't load. I'll try again in a minute.");
@@ -242,7 +254,8 @@ function Office({ onClassic }: { onClassic?: () => void }) {
         if (panel) closePanel();
         return;
       }
-      if (t.type === "robot") openPanel({ type: "robot", key: t.key, tab: "now" });
+      if (t.type === "arthur") openPanel({ type: "council", tab: t.tab || "talk" });
+      else if (t.type === "robot") openPanel({ type: "robot", key: t.key, tab: "now" });
       else if (t.type === "desk") openPanel({ type: "robot", key: t.key, tab: "work" });
       else if (t.type === "results") openPanel({ type: "results" });
       else openPanel({ type: "requests", robot: t.robot });
@@ -258,7 +271,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
   };
 
   const refresh = useCallback(() => load(true), [load]);
-  const selected = panel?.type === "robot" ? panel.key : null;
+  const selected = panel?.type === "robot" ? panel.key : panel?.type === "council" ? ("arthur" as const) : null;
   const night = hour < 6 || hour >= 20;
   const f = office?.kpis?.firstFreeVisits;
   const diff = f && f.last7 != null && f.prev7 != null ? f.last7 - f.prev7 : null;
@@ -299,6 +312,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
           <SceneBoundary fallback={fallback}>
             <OfficeScene
               office={office}
+              council={council}
               selected={selected}
               celebrate={celebrate}
               reduced={reduced}
@@ -366,7 +380,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
         {/* ---------------- hint ---------------- */}
         {hint && office && !panel ? (
           <button type="button" className={styles.hint} onClick={dismissHint}>
-            👆 Drag to look around · 🤏 pinch to zoom · tap a knight to talk
+            👆 Drag to look around · 🤏 pinch to zoom · tap 👑 Arthur to talk
           </button>
         ) : null}
 
@@ -378,6 +392,20 @@ function Office({ onClassic }: { onClassic?: () => void }) {
               <span className={styles.dockLabel}>Home</span>
             </button>
             <span className={styles.dockSep} />
+            <button
+              type="button"
+              className={`${styles.dockBtn} ${styles.dockArthur} ${selected === "arthur" ? styles.dockBtnOn : ""} ${council?.decisions ? styles.dockBtnAsk : ""}`}
+              onClick={() => (selected === "arthur" ? closePanel() : openPanel({ type: "council", tab: council?.decisions ? "decisions" : "talk" }))}
+              aria-label={`King Arthur${council?.decisions ? `: ${council.decisions} decisions for you` : ""}`}
+            >
+              <span className={styles.dockAvatarWrap}>
+                <span className={styles.dockAvatar} style={{ background: ARTHUR_LOOK.body }}>
+                  👑
+                </span>
+                {council?.decisions ? <span className={styles.dockBadge}>{council.decisions}</span> : null}
+              </span>
+              <span className={styles.dockLabel}>Arthur</span>
+            </button>
             {ROBOT_ORDER.map((k) => {
               const r = office.robots.find((x) => x.key === k);
               const look = ROBOT_LOOKS[k];
@@ -397,12 +425,12 @@ function Office({ onClassic }: { onClassic?: () => void }) {
                     <span className={styles.dockDot} style={{ background: STATUS_LIGHT[r?.status || "waiting"] }} />
                     {r?.status === "needs_you" ? <span className={styles.dockAsk}>?</span> : null}
                   </span>
-                  <span className={styles.dockLabel}>{look.name}</span>
+                  <span className={styles.dockLabel}>{look.name.split(" ")[0]}</span>
                 </button>
               );
             })}
             <span className={styles.dockSep} />
-            <button type="button" className={styles.dockBtn} onClick={() => openPanel({ type: "results" })}>
+            <button type="button" className={`${styles.dockBtn} ${styles.dockResults}`} onClick={() => openPanel({ type: "results" })}>
               <span className={styles.dockIcon}>📊</span>
               <span className={styles.dockLabel}>Results</span>
             </button>
@@ -425,7 +453,13 @@ function Office({ onClassic }: { onClassic?: () => void }) {
               ❓ How to use the hall
             </button>
             <div className={styles.menuItem} style={{ cursor: "default" }}>
-              <CopyButton text={office?.explained?.chatgpt} label="Copy business report for ChatGPT" primary />
+              <ReportCopy scope="pending" label="Copy All for ChatGPT" primary version={0} />
+            </div>
+            <div className={styles.menuItem} style={{ cursor: "default" }}>
+              <ReportCopy scope="full" label="Copy full status report" version={0} />
+            </div>
+            <div className={styles.menuItem} style={{ cursor: "default" }}>
+              <CopyButton text={office?.explained?.chatgpt} label="Copy business results for ChatGPT" />
             </div>
             <button type="button" className={styles.menuItem} onClick={toggleFull}>
               {full ? "⤡ Exit full screen" : "⤢ Full screen"}
@@ -449,10 +483,13 @@ function Office({ onClassic }: { onClassic?: () => void }) {
                 <b>🏠 Home</b> shows the whole hall again.
               </li>
               <li>
-                <b>Tap a knight</b> (or its name) to see what it&rsquo;s doing. Its <b>Settings</b> tab is where you pause it or teach it.
+                <b>👑 King Arthur</b> is your AI manager. Talk to him in plain words: he gives the heroes tasks, recommends what to approve and tells you what matters. He can&rsquo;t approve, spend, message customers or book visits - only you can.
               </li>
               <li>
-                <b>⚔️ Fighting a goblin</b> = a real work shift is running. <b>Practising on a straw dummy</b> = waiting for the next shift. <b>Waving</b> = something needs your answer. <b>Dozing by the fire</b> = paused.
+                <b>Tap a hero</b> (or its name) to see what it&rsquo;s doing. Its <b>Settings</b> tab is where you pause it or teach it.
+              </li>
+              <li>
+                <b>⚔️ Fighting a goblin</b> = a real work shift is running. <b>📜 Walking to the throne</b> = delivering the report of a shift that just finished. <b>Practising on a straw dummy</b> = waiting for the next shift. <b>Waving</b> = something needs your answer. <b>Dozing by the fire</b> = paused.
               </li>
               <li>
                 <b>📜 Requests</b>: questions waiting for your yes or no.
@@ -461,7 +498,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
                 <b>📊 Results</b>: how many homeowners booked, and what the team costs.
               </li>
               <li>
-                <b>✨ Copy for ChatGPT</b> on any card copies the full story - paste it into ChatGPT and ask for advice.
+                <b>✨ Copy for ChatGPT</b> on any card copies the full story - paste it into ChatGPT and ask for advice. <b>✨ Copy All</b> (in Arthur&rsquo;s chamber or ⋯ More) copies every open decision at once.
               </li>
               <li>
                 Close a panel with <b>✕</b>, <b>Back to the hall</b>, your phone&rsquo;s <b>Back</b> button, or a tap on the floor.
@@ -484,7 +521,16 @@ function Office({ onClassic }: { onClassic?: () => void }) {
       ) : null}
 
       {/* ---------------- panels ---------------- */}
-      {panel?.type === "robot" ? (
+      {panel?.type === "council" ? (
+        <CouncilPanel
+          owner={owner}
+          tab={panel.tab}
+          onTab={(tab) => setPanelState({ type: "council", tab })}
+          onClose={closePanel}
+          onChanged={refresh}
+          onOpenRequests={() => openPanel({ type: "requests" })}
+        />
+      ) : panel?.type === "robot" ? (
         <RobotPanel
           robotKey={panel.key}
           tab={panel.tab}

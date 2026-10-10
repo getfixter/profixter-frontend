@@ -19,6 +19,7 @@ import * as THREE from "three";
 import type { OfficeState, RobotKey } from "@/lib/office";
 import Robot from "./Robot";
 import Knight, { postSpots } from "./Knight";
+import Arthur, { Throne } from "./Arthur";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { PALETTE, ROBOT_LOOKS, ROBOT_ORDER, type Vec3 } from "./office-layout";
 import { drawResultsDisplay, cloudTexture } from "./textures";
@@ -32,11 +33,16 @@ export type SceneTarget =
   | { type: "desk"; key: RobotKey }
   | { type: "results" }
   | { type: "approvals"; robot?: RobotKey }
+  | { type: "arthur"; tab?: "talk" | "decisions" | "tasks" }
   | { type: "empty" };
+
+/** What the hall shows about King Arthur - from the council's real records. */
+export type CouncilView = { thinking: boolean; decisions: number } | null;
 
 type Props = {
   office: OfficeState;
-  selected: RobotKey | null;
+  council: CouncilView;
+  selected: RobotKey | "arthur" | null;
   celebrate: boolean;
   reduced: boolean;
   active: boolean;
@@ -63,8 +69,9 @@ const HEARTH_Z = -2.75;
 const BOARD_Z = -0.75;
 const TABLE: Vec3 = [-0.9, 0, -1.2];
 
-export default function OfficeScene({ office, selected, celebrate, reduced, active, panel, cameraApi, onMoved, onTap }: Props) {
-  const positions = useRef<Partial<Record<RobotKey, Vec3>>>({});
+export default function OfficeScene({ office, council, selected, celebrate, reduced, active, panel, cameraApi, onMoved, onTap }: Props) {
+  const positions = useRef<Partial<Record<RobotKey | "arthur", Vec3>>>({});
+  const reports = useReports(office);
   const dragged = useRef(0);
   const [hour, setHour] = useState(nyHour);
   useEffect(() => {
@@ -154,6 +161,22 @@ export default function OfficeScene({ office, selected, celebrate, reduced, acti
       <Topiary position={[4.4, 0, 4.25]} />
       <Topiary position={[4.45, 0, 0.6]} scale={0.8} />
 
+      <Throne seated={!council?.thinking && !council?.decisions} onTap={() => onTap({ type: "arthur" })} />
+      <ModelBoundary fallback={null}>
+        <Suspense fallback={null}>
+          <Arthur
+            thinking={Boolean(council?.thinking)}
+            decisions={council?.decisions || 0}
+            celebrate={celebrate}
+            reduced={reduced}
+            selected={selected === "arthur"}
+            registry={positions}
+            onSelect={() => onTap({ type: "arthur" })}
+            onAsk={() => onTap({ type: "arthur", tab: "decisions" })}
+          />
+        </Suspense>
+      </ModelBoundary>
+
       {ROBOT_ORDER.map((key) => {
         const look = ROBOT_LOOKS[key];
         const state = office.robots.find((r) => r.key === key);
@@ -173,6 +196,8 @@ export default function OfficeScene({ office, selected, celebrate, reduced, acti
                     registry: positions,
                     onSelect: () => onTap({ type: "robot", key }),
                     onAsk: () => onTap({ type: "approvals", robot: key }),
+                    report: reports.pending[key],
+                    onReported: () => reports.done(key),
                   };
                   // The real knight; the drawn one stands in while the model downloads (or if it ever fails).
                   return (
@@ -189,6 +214,46 @@ export default function OfficeScene({ office, selected, celebrate, reduced, acti
       })}
     </Canvas>
   );
+}
+
+/**
+ * Which heroes still have a finished shift to "deliver" to King Arthur: the
+ * last real shift succeeded within the last day and this device has not shown
+ * that delivery yet. Purely from records already loaded - no extra calls.
+ */
+const REPORTED_KEY = "profixter:office:reported:";
+function useReports(office: OfficeState) {
+  const [seen, setSeen] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const out: Record<string, string> = {};
+    for (const k of ROBOT_ORDER) {
+      try {
+        out[k] = window.localStorage.getItem(REPORTED_KEY + k) || "";
+      } catch {
+        out[k] = "";
+      }
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- browser storage, read after mount
+    setSeen(out);
+  }, []);
+  const pending = {} as Record<RobotKey, boolean>;
+  for (const r of office.robots) {
+    const last = r.lastRun;
+    pending[r.key] = Boolean(
+      last && last.status === "succeeded" && new Date(office.generatedAt).getTime() - new Date(last.at).getTime() < 24 * 3600 * 1000 && seen[r.key] !== undefined && seen[r.key] !== last.at
+    );
+  }
+  const done = (key: RobotKey) => {
+    const at = office.robots.find((r) => r.key === key)?.lastRun?.at;
+    if (!at) return;
+    try {
+      window.localStorage.setItem(REPORTED_KEY + key, at);
+    } catch {
+      /* private mode: he may report again next visit */
+    }
+    setSeen((s) => ({ ...s, [key]: at }));
+  };
+  return { pending, done };
 }
 
 function tap(fn: () => void) {
