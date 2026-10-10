@@ -30,6 +30,7 @@ import {
 import { useAuth } from "@/lib/useAuth";
 import { isAdminUser } from "@/lib/auth-routing";
 import AgentsPanel from "./AgentsPanel";
+import HealthStrip from "./HealthStrip";
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <section className={`rounded-[22px] border border-slate-200/70 bg-white p-5 md:p-6 ${className}`}>{children}</section>;
@@ -419,6 +420,8 @@ export default function GrowthModule() {
       </div>
 
       {error ? <div className="rounded-[14px] bg-rose-50 px-4 py-3 text-[14px] text-rose-700">{error}</div> : null}
+
+      <HealthStrip capacity={data?.capacity || null} />
 
       {data?.alerts.length ? (
         <div className="space-y-2">

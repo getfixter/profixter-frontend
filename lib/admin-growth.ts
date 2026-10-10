@@ -184,10 +184,22 @@ export type AgentView = {
   monthCostCents: number;
   monthRuns: number;
   openFindings: number;
+  nextRunAt: string | null;
+  lastSuccessAt: string | null;
   runs: AgentRunView[];
 };
 
-export type AgentsStatus = { enabled: boolean; dailyBudgetCents: number; agents: AgentView[] };
+export type AgentsStatus = {
+  enabled: boolean;
+  keyConfigured: boolean;
+  dailyBudgetCents: number;
+  monthlyBudgetCents: number;
+  spentTodayCents: number;
+  spentThisMonthCents: number;
+  costNote: string;
+  secrets: { loaded: string[]; lastLoadAt: string | null; error: string | null } | null;
+  agents: AgentView[];
+};
 
 export type AgentFindingView = {
   id: string;
@@ -209,7 +221,17 @@ export type AgentFindingView = {
 export async function getAgents(): Promise<AgentsStatus> {
   const res = await API.get("/api/admin/growth/agents");
   const d = res.data || {};
-  return { enabled: Boolean(d.enabled), dailyBudgetCents: Number(d.dailyBudgetCents) || 0, agents: Array.isArray(d.agents) ? d.agents : [] };
+  return {
+    enabled: Boolean(d.enabled),
+    keyConfigured: Boolean(d.keyConfigured),
+    dailyBudgetCents: Number(d.dailyBudgetCents) || 0,
+    monthlyBudgetCents: Number(d.monthlyBudgetCents) || 0,
+    spentTodayCents: Number(d.spentTodayCents) || 0,
+    spentThisMonthCents: Number(d.spentThisMonthCents) || 0,
+    costNote: String(d.costNote || ""),
+    secrets: d.secrets || null,
+    agents: Array.isArray(d.agents) ? d.agents : [],
+  };
 }
 
 export async function getFindings(status = "open"): Promise<AgentFindingView[]> {

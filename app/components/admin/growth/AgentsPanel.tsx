@@ -120,8 +120,13 @@ export default function AgentsPanel({ owner }: { owner: boolean }) {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-[18px] font-bold tracking-[-0.02em] text-slate-900 md:text-[20px]">Agents</h2>
           <span className={`rounded-full px-2.5 py-1 text-[12px] font-semibold ${status.enabled ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
-            {status.enabled ? `On · daily cap ${money(status.dailyBudgetCents)}` : "Off - needs AGENTS_ENABLED and a Claude API key"}
+            {status.enabled ? "Running on schedule" : status.keyConfigured ? "Off (AGENTS_ENABLED)" : "Waiting for the Claude API key"}
           </span>
+        </div>
+        <div className="mb-4 text-[13px] text-slate-600">
+          Spent {money(status.spentTodayCents)} today (cap {money(status.dailyBudgetCents)}) and {money(status.spentThisMonthCents)} this month (cap{" "}
+          {money(status.monthlyBudgetCents)}). <span className="text-slate-400">{status.costNote}</span>
+          {status.secrets?.error ? <span className="block text-amber-700">Secret store: {status.secrets.error}</span> : null}
         </div>
         {error ? <p className="mb-3 text-[13px] text-rose-700">{error}</p> : null}
         <div className="grid gap-3 lg:grid-cols-3">
@@ -131,6 +136,9 @@ export default function AgentsPanel({ owner }: { owner: boolean }) {
               <div key={a.name} className="rounded-[16px] bg-slate-50 p-4">
                 <div className="text-[15px] font-semibold text-slate-900">{a.label}</div>
                 <div className="mt-0.5 text-[12px] text-slate-500">{a.schedule}</div>
+                <div className="mt-1 text-[12px] text-slate-600">
+                  Last success: {a.lastSuccessAt ? when(a.lastSuccessAt) : "none yet"} · Next: {a.nextRunAt ? when(a.nextRunAt) : "-"}
+                </div>
                 <div className="mt-2 text-[12px] text-slate-600">
                   This month: {a.monthRuns} run{a.monthRuns === 1 ? "" : "s"}, {money(a.monthCostCents)} · up to {money(a.budgetCents)} a run
                 </div>
