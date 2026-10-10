@@ -24,6 +24,7 @@ import AdminActivityLog from "@/app/components/admin/AdminActivityLog";
 import OverviewModule from "@/app/components/admin/overview/OverviewModule";
 import OverviewBoundary from "@/app/components/admin/overview/OverviewBoundary";
 import GrowthModule from "@/app/components/admin/growth/GrowthModule";
+import GrowthOffice from "@/app/components/admin/office/GrowthOffice";
 import { tabsForUser } from "@/app/components/admin/admin-tabs-config";
 import { can, PERM } from "@/lib/admin-access";
 import { getCurrentUser, type User as AuthUser } from "@/lib/auth-service";
@@ -1038,7 +1039,7 @@ function AdminPageContent() {
           </OverviewBoundary>
         ) : active === "growth" && shown("growth") ? (
           <OverviewBoundary>
-            <GrowthModule />
+            <GrowthTab />
           </OverviewBoundary>
         ) : loading ? (
           <div className="bg-white rounded-xl shadow-lg p-12 text-center">
@@ -1172,4 +1173,43 @@ export default function AdminPage() {
       <AdminPageContent />
     </Suspense>
   );
+}
+
+/**
+ * Growth opens on the office (the game view); the classic Command Center is
+ * one tap away and remembered per browser.
+ */
+function GrowthTab() {
+  const [classic, setClassic] = useState(false);
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- browser-only state, read after mount
+      setClassic(window.localStorage.getItem("profixter:growth:view") === "classic");
+    } catch {
+      /* storage blocked */
+    }
+  }, []);
+  const choose = (next: boolean) => {
+    setClassic(next);
+    try {
+      window.localStorage.setItem("profixter:growth:view", next ? "classic" : "office");
+    } catch {
+      /* storage blocked */
+    }
+  };
+  if (classic) {
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={() => choose(false)}
+          className="mb-3 inline-flex h-10 items-center gap-2 rounded-[12px] bg-slate-900 px-4 text-[13px] font-semibold text-white"
+        >
+          🤖 Back to the office
+        </button>
+        <GrowthModule />
+      </div>
+    );
+  }
+  return <GrowthOffice onClassic={() => choose(true)} />;
 }
