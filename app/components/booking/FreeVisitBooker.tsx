@@ -38,7 +38,7 @@ import {
 } from "@/lib/booking-calendar-availability";
 import { compressImage } from "@/lib/compressImage";
 import { trackEvent } from "@/lib/analytics";
-import { getAttribution, trackSchedule } from "@/lib/meta";
+import { getAttribution, trackSchedule, trackStep } from "@/lib/meta";
 import { hasActiveMembership } from "@/lib/auth-routing";
 import { libraryLabel } from "@/lib/booking-library";
 import {
@@ -416,6 +416,23 @@ export default function FreeVisitBooker({
   const noteOk = wordCount(note) >= 3;
   const photoOk = photos.length > 0 || !!libraryReference;
   const ready = noteOk && photoOk && !!selectedDate && selectedSlotOpen;
+
+  /* --- funnel steps (anonymous, once per browser per day) --------- */
+  const stepsSent = useRef<Set<string>>(new Set());
+  const step = useCallback((name: Parameters<typeof trackStep>[0]) => {
+    if (stepsSent.current.has(name)) return;
+    stepsSent.current.add(name);
+    trackStep(name);
+  }, []);
+  useEffect(() => {
+    if (access === "anonymous" || access === "eligible") step("booking_page_view");
+  }, [access, step]);
+  useEffect(() => {
+    if (note.trim() || selectedDate) step("booker_started");
+  }, [note, selectedDate, step]);
+  useEffect(() => {
+    if (selectedSlotOpen) step("slot_selected");
+  }, [selectedSlotOpen, step]);
   const blocked = access === "member" || access === "used" || access === "outside" || access === "no-address";
   const waitlist = useMemo(
     () => ({
@@ -608,6 +625,7 @@ export default function FreeVisitBooker({
       });
       await savePhotos(photos);
       trackEvent("free_visit_signup_started", { date: selectedDate, time: selectedTime });
+      step("signup_view");
       router.push(`/signup?next=${encodeURIComponent(RESUME_PATH)}&intent=free-visit`);
       return;
     }

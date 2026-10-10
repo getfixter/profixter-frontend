@@ -4,8 +4,9 @@
  * Growth Command Center - what the growth system is doing, and whether the
  * business can take more customers.
  *
- * Read top to bottom in thirty seconds: alerts, how full the calendar is,
- * what needs the owner, how far each automation is trusted, and what came of
+ * Read top to bottom in thirty seconds: the number-one metric (new first
+ * free-visit bookings) and where homeowners drop out, alerts, how full the
+ * calendar is, what needs the owner, how far each automation is trusted, and what came of
  * it. Money and the funnel stay on the Overview tab so there is one definition
  * of revenue and conversion. Everything here comes from
  * /api/admin/growth/summary; deciding (approve, decline, trust level) is
@@ -26,12 +27,15 @@ import {
   type GrowthMode,
   type GrowthPolicyView,
   type VisibilityPart,
+  type Acquisition,
 } from "@/lib/admin-growth";
 import { useAuth } from "@/lib/useAuth";
 import { isAdminUser } from "@/lib/auth-routing";
 import AgentsPanel from "./AgentsPanel";
 import HealthStrip from "./HealthStrip";
 import PlaybooksPanel from "./PlaybooksPanel";
+import OutreachPanel from "./OutreachPanel";
+import ConversationsPanel from "./ConversationsPanel";
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <section className={`rounded-[22px] border border-slate-200/70 bg-white p-5 md:p-6 ${className}`}>{children}</section>;
@@ -78,6 +82,73 @@ function actionOutcome(a: GrowthActionView) {
 }
 
 /* ------------------------------------------------------------------ */
+
+const FUNNEL_STEPS: Array<{ key: keyof Acquisition["funnel30"]; label: string }> = [
+  { key: "booking_page_view", label: "Saw the booker" },
+  { key: "booker_started", label: "Started" },
+  { key: "slot_selected", label: "Picked a time" },
+  { key: "signup_view", label: "Went to sign up" },
+  { key: "firstFreeVisits", label: "Booked a first free visit" },
+];
+
+function change(now: number | null, before: number | null) {
+  if (now == null || before == null) return null;
+  const d = now - before;
+  return { d, text: `${d > 0 ? "+" : ""}${d} vs prior` };
+}
+
+/** The number-one metric: new first free-visit bookings, and where homeowners drop out. */
+function AcquisitionCard({ data }: { data: Acquisition | null | undefined }) {
+  if (!data) return null;
+  const f = data.firstFreeVisits;
+  const c7 = change(f.last7, f.prev7);
+  const c30 = change(f.last30, f.prev30);
+  const top = Math.max(1, ...FUNNEL_STEPS.map((s) => Number(data.funnel30[s.key]) || 0));
+  const sources = [...data.bySource30].filter((s) => s.freeVisits).sort((a, b) => b.freeVisits - a.freeVisits).slice(0, 6);
+  return (
+    <Card>
+      <Title aside={data.costPerFirstFreeVisitCents != null ? <Pill tone="blue">${(data.costPerFirstFreeVisitCents / 100).toFixed(0)} ad spend per first free visit</Pill> : null}>
+        New first free-visit bookings
+      </Title>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { label: "Last 7 days", v: f.last7, c: c7 },
+            { label: "Last 30 days", v: f.last30, c: c30 },
+          ].map((t) => (
+            <div key={t.label} className="rounded-[14px] bg-slate-50 p-4">
+              <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">{t.label}</div>
+              <div className="mt-2 text-[40px] font-bold leading-none tracking-[-0.03em] text-slate-900">{t.v ?? "—"}</div>
+              {t.c ? <div className={`mt-1 text-[12px] font-semibold ${t.c.d > 0 ? "text-emerald-700" : t.c.d < 0 ? "text-rose-700" : "text-slate-500"}`}>{t.c.text}</div> : null}
+            </div>
+          ))}
+          <div className="col-span-2 text-[12px] text-slate-500">
+            {sources.length ? `Where they came from (30d): ${sources.map((s) => `${s.label} ${s.freeVisits}`).join(" · ")}` : "No first free visits in the last 30 days."}
+          </div>
+        </div>
+        <div>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">Booking funnel, last 30 days</div>
+          <div className="mt-3 space-y-2">
+            {FUNNEL_STEPS.map((s) => {
+              const v = data.funnel30[s.key];
+              const n = typeof v === "number" ? v : null;
+              return (
+                <div key={s.key} className="flex items-center gap-3 text-[13px]">
+                  <span className="w-40 flex-none text-slate-600">{s.label}</span>
+                  <span className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                    <span className="absolute inset-y-0 left-0 rounded-full bg-blue-600" style={{ width: `${n ? Math.max(2, Math.round((n / top) * 100)) : 0}%` }} />
+                  </span>
+                  <span className="w-12 flex-none text-right font-semibold text-slate-700">{n ?? "—"}</span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[12px] text-slate-400">Funnel steps are counted since {data.funnel30.trackingSince}, once per browser per day.</p>
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 function CapacityCard({ data }: { data: CommandCenter["capacity"] }) {
   const u = data.utilization ?? null;
@@ -130,6 +201,9 @@ function PendingCard({ items, owner, onDecide, busy }: { items: GrowthActionView
             <li key={a.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <div className="text-[15px] font-semibold text-slate-900">{a.summary}</div>
+                {a.preview ? (
+                  <div className="mt-2 whitespace-pre-wrap rounded-[12px] bg-slate-50 px-3 py-2 text-[13px] text-slate-800 ring-1 ring-slate-200">{a.preview}</div>
+                ) : null}
                 <div className="mt-0.5 text-[13px] text-slate-500">
                   {a.rationale}
                   {a.heldReason === "daily_limit" ? " Held: today's limit for this automation was reached." : ""}
@@ -439,6 +513,7 @@ export default function GrowthModule() {
 
       {data ? (
         <>
+          <AcquisitionCard data={data.acquisition} />
           <div className="grid gap-4 lg:grid-cols-2">
             <CapacityCard data={data.capacity} />
             <PendingCard items={data.queue.pending} owner={owner} onDecide={decide} busy={busy} />
@@ -449,6 +524,8 @@ export default function GrowthModule() {
             <PoliciesCard policies={data.policies} owner={owner} onMode={changeMode} busy={busy} />
           </div>
           <ActivityCard recent={data.queue.recent} shadow={data.queue.shadow} />
+          <ConversationsPanel />
+          <OutreachPanel owner={owner} />
           <AgentsPanel owner={owner} />
           <PlaybooksPanel owner={owner} />
         </>
