@@ -189,6 +189,7 @@ export type CouncilState = {
   tasks: CouncilTask[];
   decisions: CouncilDecision[];
   history: CouncilDecision[];
+  mission: { guidance: string; version: number; history: Array<{ version: number; guidance: string; by: string; at: string; note: string }> };
   counts: { decisions: number; info: number; tasks: number };
 };
 
@@ -205,6 +206,17 @@ export async function sendToArthur(message: string) {
 export async function resolveCouncilDecision(id: string, choice: "confirm" | "reject" | "done", note = "") {
   const res = await API.post(`/api/admin/growth/office/council/decisions/${id}/resolve`, { choice, note });
   return res.data as { ok: boolean; saved: { version: number } | null };
+}
+
+/** King Arthur's standing mission (versioned guidance; the fixed safety rules always win). */
+export async function saveMission(guidance: string) {
+  const res = await API.put("/api/admin/growth/office/council/mission", { guidance });
+  return res.data as { version: number; guidance: string; unchanged?: boolean };
+}
+
+export async function restoreMission(version: number) {
+  const res = await API.post("/api/admin/growth/office/council/mission/rollback", { version });
+  return res.data as { version: number; guidance: string };
 }
 
 export async function cancelCouncilTask(id: string) {

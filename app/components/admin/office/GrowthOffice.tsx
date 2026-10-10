@@ -5,7 +5,7 @@
  *
  * One screen: the council hall. King Arthur (the owner's AI manager) on his
  * throne, and three heroes: Odysseus (search), Leonidas (outreach) and
- * Marcus Aurelius (conversations).
+ * Marcus (conversations).
  * Getting around is meant to be obvious:
  *  - drag to look around, pinch (or scroll) to zoom, 🏠 to go back,
  *  - the dock at the bottom: Home, King Arthur, the three heroes, Results, Requests, More,
@@ -425,7 +425,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
                     <span className={styles.dockDot} style={{ background: STATUS_LIGHT[r?.status || "waiting"] }} />
                     {r?.status === "needs_you" ? <span className={styles.dockAsk}>?</span> : null}
                   </span>
-                  <span className={styles.dockLabel}>{look.name.split(" ")[0]}</span>
+                  <span className={styles.dockLabel}>{look.name}</span>
                 </button>
               );
             })}

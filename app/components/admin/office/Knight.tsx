@@ -6,7 +6,7 @@
  * animations), and the goblins he battles.
  *
  * Every knight shares one model and one skeleton; only the surcoat texture
- * differs (Leonidas red, Odysseus green, Marcus Aurelius purple). What he does comes ONLY from
+ * differs (Leonidas red, Odysseus green, Marcus purple). What he does comes ONLY from
  * the real status of his agent:
  *
  *   working   -> a duel at his post: a goblin appears and they fight
