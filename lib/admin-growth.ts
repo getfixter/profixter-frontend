@@ -22,6 +22,8 @@ export type GrowthActionView = {
   lastError: string | null;
   result: { reason: string | null; to: string | null } | null;
   verification: string | null;
+  /** What the owner approves: the exact reply text, page wording or playbook. */
+  preview?: string | null;
 };
 
 export type GrowthPolicyView = {
@@ -71,6 +73,23 @@ export type VisibilitySummary = {
   collectors?: Array<{ name: string; enabled: boolean; configured: boolean; lastSuccessAt: string | null; lastError: string | null }>;
 };
 
+/* Filled by BackEnd/utils/growth/commandCenter.js acquisitionView(). */
+export type Acquisition = {
+  firstFreeVisits: { last7: number | null; prev7: number | null; last30: number | null; prev30: number | null };
+  visitors30: number | null;
+  registrations30: number | null;
+  bySource30: Array<{ key: string; label: string; visitors: number; registrations: number; freeVisits: number }>;
+  funnel30: {
+    booking_page_view?: number;
+    booker_started?: number;
+    slot_selected?: number;
+    signup_view?: number;
+    firstFreeVisits: number | null;
+    trackingSince: string;
+  };
+  costPerFirstFreeVisitCents: number | null;
+};
+
 export type CommandCenter = {
   generatedAt: string;
   engineEnabled: boolean;
@@ -88,6 +107,7 @@ export type CommandCenter = {
   waitlist: { waiting: number; last30Days: number; topZips: Array<{ zip: string; count: number; county: string | null }> };
   alerts: GrowthAlert[];
   visibility?: VisibilitySummary;
+  acquisition?: Acquisition | null;
 };
 
 function normalize(raw: Partial<CommandCenter> | null | undefined): CommandCenter {
@@ -109,6 +129,7 @@ function normalize(raw: Partial<CommandCenter> | null | undefined): CommandCente
     waitlist: r.waitlist || { waiting: 0, last30Days: 0, topZips: [] },
     alerts: r.alerts || [],
     visibility: r.visibility,
+    acquisition: r.acquisition || null,
   };
 }
 
@@ -149,6 +170,10 @@ export const STATUS_LABEL: Record<string, string> = {
 
 export const SKIP_REASON_LABEL: Record<string, string> = {
   already_member: "already became a member",
+  profixter_customer: "already a Profixter customer - answer from Profixter",
+  homeowner_wrote_again: "the homeowner wrote again",
+  already_answered: "someone already answered",
+  opted_out: "opted out",
   unsubscribed: "unsubscribed from email",
   not_marketable: "not a customer we email",
   reminded_recently: "reminded in the last 30 days",
@@ -282,4 +307,78 @@ export async function getPlaybookPreview(key: string): Promise<{ subject: string
 
 export async function decidePlaybook(key: string, decision: "approve" | "retire", note = "") {
   await API.post(`/api/admin/growth/playbooks/${encodeURIComponent(key)}/${decision}`, { note });
+}
+
+/* ------------------------------------------------------------------ */
+/* Outreach (postal mail) and conversations                            */
+/* ------------------------------------------------------------------ */
+
+export type MailWaveView = {
+  key: string;
+  name: string;
+  status: "draft" | "approved" | "exported" | "mailed" | "cancelled";
+  targetZips: string[];
+  size: number;
+  format: string;
+  copy: { headline: string; body: string; callToAction: string };
+  rationale: string;
+  estimatedCostCents: number;
+  createdBy: string;
+  approvedBy: string | null;
+  createdAt: string;
+  mailedAt: string | null;
+  results: { registrations: number; firstFreeVisits: number } | null;
+};
+
+export type OutreachView = {
+  audience: {
+    synced: number;
+    eligible: number;
+    mailableNow: number;
+    excluded: Record<string, number>;
+    byCounty: Record<string, number>;
+    topZips: Array<{ city: string; zip: string; eligible: number }>;
+  };
+  waves: MailWaveView[];
+  costPerPieceCents: number;
+};
+
+export async function getOutreach(): Promise<OutreachView> {
+  const res = await API.get("/api/admin/growth/outreach");
+  return res.data;
+}
+
+export async function decideWave(key: string, decision: "approve" | "cancel" | "mailed", note = "") {
+  await API.post(`/api/admin/growth/outreach/waves/${encodeURIComponent(key)}/${decision}`, { note });
+}
+
+/** Downloads the print vendor's CSV (names, addresses, personal URLs) and marks the wave exported. */
+export async function exportWave(key: string) {
+  const res = await API.post(`/api/admin/growth/outreach/waves/${encodeURIComponent(key)}/export`, {}, { responseType: "blob" });
+  const url = URL.createObjectURL(res.data as Blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `profixter-${key}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+export type ConversationView = {
+  id: string;
+  status: "needs_reply" | "reply_proposed" | "replied" | "escalated" | "closed" | "opted_out";
+  intent: string | null;
+  summary: string | null;
+  channel: string;
+  firstName: string;
+  town: string;
+  escalationReason: string | null;
+  lastInboundAt: string | null;
+  messages: Array<{ direction: "inbound" | "outbound"; by: string; body: string; at: string }>;
+};
+
+export async function getConversations(): Promise<{ threads: ConversationView[]; enabled: boolean }> {
+  const res = await API.get("/api/admin/growth/conversations");
+  return res.data;
 }

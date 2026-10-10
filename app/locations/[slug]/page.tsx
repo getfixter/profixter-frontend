@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { LocationDetailPage } from "@/app/components/seo/SeoPageComponents";
 import { getServiceArea, handymanServices, serviceAreas } from "@/lib/seo-content";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { withSeoOverride } from "@/lib/seo-overrides";
 import { plans } from "@/app/data/content";
 import { getGoogleRating, getOneTimeOffer } from "@/lib/offers";
 import { DATA_AS_OF, TOWN_RECORDS } from "@/lib/profixter-data";
@@ -21,7 +22,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const area = getServiceArea(slug);
+  const area = await withSeoOverride(getServiceArea(slug), `/locations/${slug}`);
   if (!area) return {};
 
   return {
@@ -53,7 +54,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function LocationPage({ params }: PageProps) {
   const { slug } = await params;
-  const area = getServiceArea(slug);
+  const area = await withSeoOverride(getServiceArea(slug), `/locations/${slug}`);
   if (!area) notFound();
 
   const [rating, oneTime] = await Promise.all([getGoogleRating(), getOneTimeOffer()]);

@@ -644,3 +644,27 @@ export function trackPurchase(
 export function trackPhoneClick(params: Params = {}): string {
   return send("Contact", params, { dataLayerEvent: "phone_click" });
 }
+
+export type FunnelStepName = "booking_page_view" | "booker_started" | "slot_selected" | "signup_view";
+
+/**
+ * One anonymous step of the free-visit funnel (booking page -> started -> slot
+ * chosen -> sign-up), counted once per browser per step per day on the server.
+ * Fire-and-forget; skipped for automation and when storage is blocked.
+ */
+export function trackStep(step: FunnelStepName): void {
+  try {
+    if (!API_BASE) return;
+    if ((navigator as Navigator & { webdriver?: boolean }).webdriver) return;
+    const id = visitorId();
+    if (!id) return;
+    void fetch(`${API_BASE}/api/track/step`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitorId: id, step }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    /* never throws */
+  }
+}

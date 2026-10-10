@@ -7,6 +7,7 @@ import {
   handymanServices,
 } from "@/lib/seo-content";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { withSeoOverride } from "@/lib/seo-overrides";
 import { getOneTimeOffer, getRecentWorkPhotos, type RecentWorkPhoto } from "@/lib/offers";
 
 /* Photos and the One-Time price are read live, hourly. */
@@ -36,7 +37,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const service = getHandymanService(slug);
+  const service = await withSeoOverride(getHandymanService(slug), `/services/${slug}`);
   if (!service) return {};
 
   return {
@@ -66,7 +67,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ServiceDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const service = getHandymanService(slug);
+  const service = await withSeoOverride(getHandymanService(slug), `/services/${slug}`);
   if (!service) notFound();
 
   const [photos, oneTime] = await Promise.all([photosFor(slug), getOneTimeOffer()]);
