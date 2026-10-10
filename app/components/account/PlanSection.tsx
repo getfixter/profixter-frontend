@@ -13,11 +13,26 @@ import {
   acceptSubscriptionRetentionOffer,
   getSubscriptionActionErrorMessage,
   getLoyaltyStatus,
+  submitCancellationFeedback,
+  type CancellationReason,
   type LoyaltyStatus,
   type ManagedSubscription,
   type RetentionOfferDebug,
 } from "@/lib/subscription-service";
 import LoyaltyBenefitsPanel from "./LoyaltyBenefitsPanel";
+
+/* Plain words, in the customer's voice. Order: most common reasons first. */
+const CANCELLATION_REASONS: Array<{ value: CancellationReason; label: string }> = [
+  { value: "not_using_enough", label: "Not using it enough" },
+  { value: "price", label: "Too expensive" },
+  { value: "list_done", label: "My list is done for now" },
+  { value: "scheduling", label: "Hard to get a time" },
+  { value: "service_quality", label: "Not happy with the work" },
+  { value: "moving", label: "Moving" },
+  { value: "switching", label: "Using someone else" },
+  { value: "temporary", label: "Just taking a break" },
+  { value: "other", label: "Something else" },
+];
 import ManagePlanModal from "./ManagePlanModal";
 import GiftMembershipSection from "./GiftMembershipSection";
 import GiftEntryPoint from "./GiftEntryPoint";
@@ -282,8 +297,15 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
    * not that clicking Cancel produces a coupon.
    */
   const [cancelMode, setCancelMode] = useState<
-    "checking" | "progress" | "offer" | "confirm" | "accepted"
+    "checking" | "progress" | "offer" | "confirm" | "accepted" | "feedback"
   >("confirm");
+  /*
+   * Optional "why?" AFTER the cancellation is scheduled - never a step in
+   * front of it. Skipping is one tap and sends nothing.
+   */
+  const [feedbackReason, setFeedbackReason] = useState<CancellationReason | null>(null);
+  const [feedbackNote, setFeedbackNote] = useState("");
+  const [sendingFeedback, setSendingFeedback] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [acceptingRetention, setAcceptingRetention] = useState(false);
   const [retentionError, setRetentionError] = useState("");
@@ -564,8 +586,10 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
         )
       );
       setNotice(result.message || "Cancellation scheduled successfully.");
-      setCancelTarget(null);
       setRetentionDebug(null);
+      setFeedbackReason(null);
+      setFeedbackNote("");
+      setCancelMode("feedback");
     } catch (err: unknown) {
       setError(getSubscriptionActionErrorMessage(err));
     } finally {
@@ -1131,7 +1155,79 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="text-center">
-              {cancelMode === "checking" ? (
+              {cancelMode === "feedback" ? (
+                <>
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#ECFDF3] text-xl font-extrabold text-[#166534]">
+                    ✓
+                  </div>
+                  <h3 className="text-2xl font-extrabold tracking-[-0.02em] text-[#313234]">Your cancellation is scheduled</h3>
+                  <p className="mx-auto mt-3 max-w-[360px] text-sm leading-relaxed text-[#6A6D71]">
+                    Your membership stays active until the end of this billing period. If you have a moment, what&apos;s
+                    the main reason you&apos;re leaving? It&apos;s optional, and it helps us improve.
+                  </p>
+                  <div className="mt-5 flex flex-wrap justify-center gap-2" role="radiogroup" aria-label="Main reason for cancelling">
+                    {CANCELLATION_REASONS.map((r) => (
+                      <button
+                        key={r.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={feedbackReason === r.value}
+                        onClick={() => setFeedbackReason(r.value)}
+                        className={`rounded-full px-3.5 py-2 text-sm font-semibold transition ${
+                          feedbackReason === r.value
+                            ? "bg-[#306EEC] text-white"
+                            : "border border-[#D1D5DB] bg-white text-[#313234] hover:bg-[#F9FAFB]"
+                        }`}
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+                  {feedbackReason ? (
+                    <textarea
+                      value={feedbackNote}
+                      onChange={(e) => setFeedbackNote(e.target.value.slice(0, 500))}
+                      rows={3}
+                      placeholder="Anything you'd like to add? (optional)"
+                      className="mt-4 w-full rounded-[8px] border border-[#D1D5DB] px-3 py-2 text-sm text-[#313234] outline-none focus:border-[#306EEC]"
+                    />
+                  ) : null}
+                  <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      disabled={!feedbackReason || sendingFeedback}
+                      onClick={async () => {
+                        if (!feedbackReason || !cancelTarget?.addressId) return;
+                        setSendingFeedback(true);
+                        try {
+                          await submitCancellationFeedback({ addressId: cancelTarget.addressId, category: feedbackReason, note: feedbackNote });
+                          setNotice("Cancellation scheduled. Thank you for telling us why.");
+                        } catch {
+                          /* Feedback is optional; failing to save it must not alarm anyone. */
+                        } finally {
+                          setSendingFeedback(false);
+                          setCancelTarget(null);
+                          setCancelMode("confirm");
+                        }
+                      }}
+                      className="h-[46px] rounded-[8px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-50"
+                    >
+                      {sendingFeedback ? "Sending..." : "Send"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={sendingFeedback}
+                      onClick={() => {
+                        setCancelTarget(null);
+                        setCancelMode("confirm");
+                      }}
+                      className="h-[46px] rounded-[8px] border border-[#D1D5DB] bg-white font-extrabold text-[#313234] transition hover:bg-[#F9FAFB]"
+                    >
+                      Skip
+                    </button>
+                  </div>
+                </>
+              ) : cancelMode === "checking" ? (
                 <div className="py-4">
                   <div className="mx-auto mb-5 h-10 w-10 animate-spin rounded-full border-2 border-[#D7E0F5] border-t-[#306EEC]" />
                   <h3 className="text-xl font-extrabold text-[#313234]">

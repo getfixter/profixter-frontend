@@ -239,6 +239,30 @@ export async function cancelSubscription(params: {
   return response.data;
 }
 
+export type CancellationReason =
+  | "price"
+  | "not_using_enough"
+  | "list_done"
+  | "moving"
+  | "scheduling"
+  | "service_quality"
+  | "switching"
+  | "temporary"
+  | "other";
+
+/** Optional feedback after a cancellation is already scheduled. */
+export async function submitCancellationFeedback(params: {
+  addressId: string;
+  category: CancellationReason;
+  note?: string;
+}): Promise<{ ok: boolean }> {
+  const response = await API.post<{ ok: boolean }>(
+    `/api/subscriptions/manage/address/${params.addressId}/cancellation-feedback`,
+    { category: params.category, note: params.note || "" }
+  );
+  return response.data;
+}
+
 export async function requestSubscriptionRetentionOffer(params: {
   addressId: string;
 }): Promise<RetentionOfferResponse> {

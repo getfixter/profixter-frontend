@@ -31,6 +31,7 @@ import { useAuth } from "@/lib/useAuth";
 import { isAdminUser } from "@/lib/auth-routing";
 import AgentsPanel from "./AgentsPanel";
 import HealthStrip from "./HealthStrip";
+import PlaybooksPanel from "./PlaybooksPanel";
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <section className={`rounded-[22px] border border-slate-200/70 bg-white p-5 md:p-6 ${className}`}>{children}</section>;
@@ -449,6 +450,7 @@ export default function GrowthModule() {
           </div>
           <ActivityCard recent={data.queue.recent} shadow={data.queue.shadow} />
           <AgentsPanel owner={owner} />
+          <PlaybooksPanel owner={owner} />
         </>
       ) : null}
     </div>
