@@ -246,3 +246,40 @@ export async function setFindingStatus(id: string, status: "acknowledged" | "dis
 export async function runAgentNow(name: string, mode: "daily" | "weekly" = "daily") {
   await API.post(`/api/admin/growth/agents/${encodeURIComponent(name)}/run`, { mode });
 }
+
+/* Email playbooks - mirror BackEnd routes/adminGrowth.js (/playbooks). */
+
+export type PlaybookView = {
+  id: string;
+  key: string;
+  name: string;
+  segment: string;
+  segmentLabel: string;
+  purpose: string;
+  measure: string;
+  subject: string;
+  status: "draft" | "approved" | "retired";
+  version: number;
+  approvedVersion: number | null;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  createdBy: string;
+  statusNote: string;
+  updatedAt: string;
+  copyProblems: string[];
+  sends: Record<string, number>;
+};
+
+export async function getPlaybooks(): Promise<PlaybookView[]> {
+  const res = await API.get("/api/admin/growth/playbooks");
+  return Array.isArray(res.data?.playbooks) ? res.data.playbooks : [];
+}
+
+export async function getPlaybookPreview(key: string): Promise<{ subject: string; html: string }> {
+  const res = await API.get(`/api/admin/growth/playbooks/${encodeURIComponent(key)}/preview`);
+  return { subject: String(res.data?.subject || ""), html: String(res.data?.html || "") };
+}
+
+export async function decidePlaybook(key: string, decision: "approve" | "retire", note = "") {
+  await API.post(`/api/admin/growth/playbooks/${encodeURIComponent(key)}/${decision}`, { note });
+}
