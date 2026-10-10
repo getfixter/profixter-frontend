@@ -12,13 +12,15 @@
  * The scene is display-only: it draws what GrowthOffice hands it and reports
  * taps (a knight, a station, the results tapestry, the decree board).
  */
-import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
-import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
+import { Component, Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from "react";
+import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { PerformanceMonitor, RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 import type { OfficeState, RobotKey } from "@/lib/office";
 import Robot from "./Robot";
-import { PALETTE, ROBOT_LOOKS, ROBOT_ORDER, DESK_YAW, type Vec3 } from "./office-layout";
+import Knight, { postSpots } from "./Knight";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { PALETTE, ROBOT_LOOKS, ROBOT_ORDER, type Vec3 } from "./office-layout";
 import { drawResultsDisplay, cloudTexture } from "./textures";
 import { archSkyTexture, ashlarTexture, bannerTexture, beamTexture, flagstoneTexture, mapTexture, rugTexture } from "./hallTextures";
 import CameraRig, { SceneChip, type CameraApi } from "./CameraRig";
@@ -72,13 +74,15 @@ export default function OfficeScene({ office, selected, celebrate, reduced, acti
   const night = hour < 6 || hour >= 20;
   const evening = hour >= 17 || hour < 7;
   const total = office.approvals?.total || 0;
-  // Phones that cannot keep up get a lower resolution automatically (and it comes back when they can).
+  // Phones that cannot keep up get a lower resolution and no shadows automatically (both come back when they can).
   const [dpr, setDpr] = useState(1.6);
+  const [shadows, setShadows] = useState(true);
 
   return (
     <Canvas
       orthographic
       dpr={dpr}
+      shadows={shadows}
       frameloop={active ? "always" : "never"}
       gl={{ antialias: true, powerPreference: "high-performance", alpha: true }}
       camera={{ position: [12, 10.5, 12], zoom: 40, near: 0.1, far: 100 }}
@@ -88,12 +92,39 @@ export default function OfficeScene({ office, selected, celebrate, reduced, acti
       }}
       style={{ touchAction: "none" }}
     >
-      <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(1.6)} flipflops={3} onFallback={() => setDpr(1)} />
+      <PerformanceMonitor
+        onDecline={() => {
+          setDpr(1);
+          setShadows(false);
+        }}
+        onIncline={() => setDpr(1.6)}
+        flipflops={3}
+        onFallback={() => {
+          setDpr(1);
+          setShadows(false);
+        }}
+      />
       <CameraRig positions={positions} follow={selected} panel={panel} reduced={reduced} api={cameraApi} dragged={dragged} onMoved={onMoved} />
+      <Reflections />
       {/* warm, period light: sunlight through the windows by day, candles and the hearth by night */}
-      <hemisphereLight args={[night ? "#6B5A7A" : "#FFE6C2", night ? "#2A1A12" : "#8A5E3A", night ? 0.45 : 0.95]} />
-      <directionalLight position={[7, 11, 4]} intensity={night ? 0.22 : 1.1} color={evening ? "#FFB774" : "#FFE2B0"} />
-      <ambientLight intensity={night ? 0.2 : 0.28} color="#FFE3C0" />
+      <hemisphereLight args={[night ? "#6B5A7A" : "#FFE6C2", night ? "#2A1A12" : "#8A5E3A", night ? 0.45 : 0.85]} />
+      <directionalLight
+        position={[7, 11, 4]}
+        intensity={night ? 0.25 : 1.25}
+        color={evening ? "#FFB774" : "#FFE2B0"}
+        castShadow={shadows}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-camera-left={-8}
+        shadow-camera-right={8}
+        shadow-camera-top={8}
+        shadow-camera-bottom={-8}
+        shadow-camera-near={1}
+        shadow-camera-far={30}
+        shadow-bias={-0.0008}
+        shadow-normalBias={0.02}
+      />
+      <ambientLight intensity={night ? 0.2 : 0.24} color="#FFE3C0" />
       <Candelabra position={[TABLE[0] + 1.25, 0, TABLE[2] - 0.95]} night={night} reduced={reduced} />
       {evening
         ? ROBOT_ORDER.map((k) => {
@@ -116,7 +147,7 @@ export default function OfficeScene({ office, selected, celebrate, reduced, acti
       />
       <WallClock />
       <CommandTable reduced={reduced} />
-      <RestingCushions />
+      <HearthBenches />
       <Bookcase />
       <Sideboard />
       <ArmorStand />
@@ -128,21 +159,31 @@ export default function OfficeScene({ office, selected, celebrate, reduced, acti
         const state = office.robots.find((r) => r.key === key);
         return (
           <group key={key}>
-            <Station look={look.key} position={look.desk} lit={evening} replies={key === "conversation" ? office.conversationsEnabled : undefined} reduced={reduced} onTap={() => onTap({ type: "desk", key })} />
-            {state ? (
-              <Robot
-                look={look}
-                status={state.status}
-                statusText={state.statusText}
-                waiting={state.waiting}
-                celebrate={celebrate}
-                reduced={reduced}
-                selected={selected === key}
-                registry={positions}
-                onSelect={() => onTap({ type: "robot", key })}
-                onAsk={() => onTap({ type: "approvals", robot: key })}
-              />
-            ) : null}
+            <KnightPost look={look.key} position={look.desk} lit={evening} replies={key === "conversation" ? office.conversationsEnabled : undefined} reduced={reduced} onTap={() => onTap({ type: "desk", key })} />
+            {state
+              ? (() => {
+                  const props = {
+                    look,
+                    status: state.status,
+                    statusText: state.statusText,
+                    waiting: state.waiting,
+                    celebrate,
+                    reduced,
+                    selected: selected === key,
+                    registry: positions,
+                    onSelect: () => onTap({ type: "robot", key }),
+                    onAsk: () => onTap({ type: "approvals", robot: key }),
+                  };
+                  // The real knight; the drawn one stands in while the model downloads (or if it ever fails).
+                  return (
+                    <ModelBoundary fallback={<Robot {...props} />}>
+                      <Suspense fallback={<Robot {...props} />}>
+                        <Knight {...props} />
+                      </Suspense>
+                    </ModelBoundary>
+                  );
+                })()
+              : null}
           </group>
         );
       })}
@@ -255,17 +296,17 @@ function Hall({ hour, night, reduced }: { hour: number; night: boolean; reduced:
         <meshStandardMaterial color="#6E5A45" roughness={0.9} />
       </mesh>
       {/* flagstone floor */}
-      <mesh rotation-x={-Math.PI / 2}>
+      <mesh rotation-x={-Math.PI / 2} receiveShadow>
         <planeGeometry args={[10, 10]} />
         <meshStandardMaterial map={floor} roughness={0.85} />
       </mesh>
 
       {/* stone walls */}
-      <mesh position={[0, 1.8, -5.15]}>
+      <mesh position={[0, 1.8, -5.15]} receiveShadow>
         <boxGeometry args={[10.3, 3.6, 0.3]} />
         <meshStandardMaterial map={wallBack} roughness={0.92} />
       </mesh>
-      <mesh position={[-5.15, 1.8, 0]}>
+      <mesh position={[-5.15, 1.8, 0]} receiveShadow>
         <boxGeometry args={[0.3, 3.6, 10.3]} />
         <meshStandardMaterial map={wallLeft} roughness={0.92} />
       </mesh>
@@ -702,31 +743,26 @@ function Candelabra({ position, night, reduced }: { position: Vec3; night: boole
   );
 }
 
-function RestingCushions() {
-  const colors = ["#3E7D4F", "#A8322D", "#5E3C8C"]; // each knight rests on its own colours
+/** Wooden benches by the hearth, where resting knights doze. */
+function HearthBenches() {
   const beds = ROBOT_ORDER.map((k) => ROBOT_LOOKS[k].bed);
   return (
     <group>
-      {/* a soft fur rug in front of the hearth */}
-      <mesh position={[-3.45, 0.008, -2.85]} rotation-x={-Math.PI / 2}>
+      {/* a fur rug in front of the hearth */}
+      <mesh position={[-3.45, 0.008, -2.85]} rotation-x={-Math.PI / 2} receiveShadow>
         <circleGeometry args={[1.55, 40]} />
-        <meshStandardMaterial color="#EFE6D8" roughness={1} />
+        <meshStandardMaterial color="#D8CBB6" roughness={1} />
       </mesh>
       {beds.map((p, i) => (
-        <group key={i} position={[p[0], 0, p[2]]}>
-          <RoundedBox args={[0.95, 0.2, 0.95]} radius={0.09} smoothness={3} position={[0, 0.1, 0]}>
-            <meshStandardMaterial color={colors[i]} roughness={0.9} />
-          </RoundedBox>
-          {/* gold tassels */}
-          {[
-            [-0.45, -0.45],
-            [0.45, -0.45],
-            [-0.45, 0.45],
-            [0.45, 0.45],
-          ].map(([x, z], j) => (
-            <mesh key={j} position={[x, 0.12, z]}>
-              <sphereGeometry args={[0.04, 8, 6]} />
-              <meshStandardMaterial color={PALETTE.gold} />
+        <group key={i} position={[p[0], 0, p[2]]} rotation-y={Math.PI / 4}>
+          <mesh position={[0, 0.44, -0.05]} castShadow receiveShadow>
+            <boxGeometry args={[0.9, 0.08, 0.42]} />
+            <meshStandardMaterial color={PALETTE.oak} roughness={0.7} />
+          </mesh>
+          {[-0.36, 0.36].map((x) => (
+            <mesh key={x} position={[x, 0.2, -0.05]} castShadow>
+              <boxGeometry args={[0.08, 0.4, 0.36]} />
+              <meshStandardMaterial color={PALETTE.oakDark} roughness={0.8} />
             </mesh>
           ))}
         </group>
@@ -869,7 +905,12 @@ function Topiary({ position, scale = 1 }: { position: Vec3; scale?: number }) {
 /* The knights' stations                                               */
 /* ------------------------------------------------------------------ */
 
-function Station({
+/**
+ * A knight's post: a banner standard in his colours, a weapon rack and a
+ * sanded practice ring where he trains - and where goblins appear while a
+ * real shift is running.
+ */
+function KnightPost({
   look,
   position,
   lit,
@@ -885,198 +926,145 @@ function Station({
   onTap: () => void;
 }) {
   const color = ROBOT_LOOKS[look].body;
+  const flag = useRef<THREE.Mesh>(null);
+  const spots = useMemo(() => postSpots(position), [position]);
+  useFrame(({ clock }) => {
+    if (flag.current && !reduced) flag.current.rotation.y = Math.sin(clock.elapsedTime * 1.4 + position[0]) * 0.16;
+  });
+  // the standard stands behind the ring, the rack beside it
+  const back: Vec3 = [position[0] - 0.75, 0, position[2] - 0.75];
+  const side: Vec3 = [position[0] - 1.1, 0, position[2] + 0.55];
   return (
-    <group position={position} rotation-y={DESK_YAW} {...tap(onTap)}>
-      <mesh position={[0, 0.004, 0]} rotation-x={-Math.PI / 2}>
-        <planeGeometry args={[1.9, 1.1]} />
-        <meshBasicMaterial color="#3B2A1A" transparent opacity={0.13} depthWrite={false} />
+    <group {...tap(onTap)}>
+      {/* the sanded practice ring */}
+      <mesh position={[position[0], 0.007, position[2]]} rotation-x={-Math.PI / 2} receiveShadow>
+        <circleGeometry args={[1.25, 40]} />
+        <meshStandardMaterial color="#CDB58C" roughness={1} />
       </mesh>
-      {/* oak desk */}
-      <RoundedBox args={[1.7, 0.1, 0.9]} radius={0.04} smoothness={3} position={[0, 0.72, 0]}>
-        <meshStandardMaterial color={PALETTE.oak} roughness={0.6} />
-      </RoundedBox>
-      {[
-        [-0.75, -0.36],
-        [0.75, -0.36],
-        [-0.75, 0.36],
-        [0.75, 0.36],
-      ].map(([x, z], i) => (
-        <mesh key={i} position={[x, 0.34, z]}>
-          <boxGeometry args={[0.08, 0.68, 0.08]} />
+      <mesh position={[position[0], 0.009, position[2]]} rotation-x={-Math.PI / 2}>
+        <ringGeometry args={[1.18, 1.26, 48]} />
+        <meshStandardMaterial color={color} roughness={0.9} />
+      </mesh>
+      {/* banner standard */}
+      <group position={back}>
+        <mesh position={[0, 1.15, 0]} castShadow>
+          <cylinderGeometry args={[0.035, 0.04, 2.3, 8]} />
+          <meshStandardMaterial color={PALETTE.oakDark} roughness={0.8} />
+        </mesh>
+        <mesh position={[0, 2.33, 0]}>
+          <coneGeometry args={[0.05, 0.14, 8]} />
+          <meshStandardMaterial color={PALETTE.gold} metalness={0.6} roughness={0.3} />
+        </mesh>
+        <mesh position={[0, 2.05, 0]} rotation-z={Math.PI / 2}>
+          <cylinderGeometry args={[0.018, 0.018, 0.62, 6]} />
           <meshStandardMaterial color={PALETTE.oakDark} />
         </mesh>
-      ))}
-      {/* the knight's colours hang from the front */}
-      <mesh position={[0, 0.5, 0.46]}>
-        <boxGeometry args={[1.5, 0.42, 0.02]} />
-        <meshStandardMaterial color={color} roughness={0.85} />
-      </mesh>
-      <mesh position={[0, 0.69, 0.475]}>
-        <boxGeometry args={[1.52, 0.05, 0.02]} />
-        <meshStandardMaterial color={PALETTE.gold} metalness={0.4} roughness={0.4} />
-      </mesh>
-      {[-0.45, 0, 0.45].map((x) => (
-        <mesh key={x} position={[x, 0.27, 0.465]} rotation-z={Math.PI / 4}>
-          <boxGeometry args={[0.12, 0.12, 0.02]} />
-          <meshStandardMaterial color={color} roughness={0.85} />
+        <mesh ref={flag} position={[0, 1.66, 0.01]} castShadow>
+          <planeGeometry args={[0.56, 0.78]} />
+          <meshStandardMaterial color={color} side={THREE.DoubleSide} roughness={0.85} />
         </mesh>
-      ))}
-      {/* a lantern (glows in the evening) */}
-      <group position={[0.68, 0.77, -0.28]}>
-        <mesh position={[0, 0.12, 0]}>
-          <boxGeometry args={[0.14, 0.2, 0.14]} />
-          <meshStandardMaterial color="#FFE6A8" emissive="#FFB648" emissiveIntensity={lit ? 1.7 : 0.9} transparent opacity={0.9} />
+        <mesh position={[0, 1.66, 0.016]}>
+          <planeGeometry args={[0.1, 0.62]} />
+          <meshStandardMaterial color="#F2EAD8" side={THREE.DoubleSide} />
         </mesh>
-        <mesh position={[0, 0.25, 0]}>
-          <coneGeometry args={[0.1, 0.08, 4]} />
-          <meshStandardMaterial color={PALETTE.goldDark} metalness={0.25} />
+        <mesh position={[0, 1.78, 0.017]}>
+          <planeGeometry args={[0.4, 0.1]} />
+          <meshStandardMaterial color="#F2EAD8" side={THREE.DoubleSide} />
         </mesh>
       </group>
-      <StationProps look={look} replies={replies} reduced={reduced} />
+      {/* weapon rack with two spare swords and a shield */}
+      <group position={side} rotation-y={Math.PI / 4}>
+        {[-0.32, 0.32].map((x) => (
+          <mesh key={x} position={[x, 0.55, 0]} castShadow>
+            <boxGeometry args={[0.06, 1.1, 0.06]} />
+            <meshStandardMaterial color={PALETTE.oakDark} roughness={0.8} />
+          </mesh>
+        ))}
+        <mesh position={[0, 0.95, 0]} castShadow>
+          <boxGeometry args={[0.72, 0.06, 0.08]} />
+          <meshStandardMaterial color={PALETTE.oak} roughness={0.8} />
+        </mesh>
+        {[-0.14, 0.14].map((x) => (
+          <group key={x} position={[x, 0.55, 0.05]}>
+            <mesh castShadow>
+              <boxGeometry args={[0.035, 0.85, 0.008]} />
+              <meshStandardMaterial color="#D9DEE6" metalness={0.85} roughness={0.28} />
+            </mesh>
+            <mesh position={[0, 0.45, 0]}>
+              <boxGeometry args={[0.18, 0.02, 0.03]} />
+              <meshStandardMaterial color={PALETTE.gold} metalness={0.6} roughness={0.35} />
+            </mesh>
+          </group>
+        ))}
+        <mesh position={[0, 0.42, 0.12]} rotation-x={-0.25} castShadow>
+          <cylinderGeometry args={[0.24, 0.24, 0.04, 20]} />
+          <meshStandardMaterial color={color} roughness={0.7} />
+        </mesh>
+        <mesh position={[0, 0.42, 0.145]} rotation-x={-0.25 + Math.PI / 2}>
+          <torusGeometry args={[0.24, 0.02, 6, 24]} />
+          <meshStandardMaterial color="#8C939E" metalness={0.7} roughness={0.35} />
+        </mesh>
+      </group>
+      {/* a lantern on a post (glows in the evening) */}
+      <group position={[spots.knight[0] - 0.5, 0, spots.knight[2] + 0.5]}>
+        <mesh position={[0, 0.55, 0]} castShadow>
+          <cylinderGeometry args={[0.025, 0.03, 1.1, 8]} />
+          <meshStandardMaterial color="#2E2A28" roughness={0.6} />
+        </mesh>
+        <mesh position={[0, 1.18, 0]}>
+          <boxGeometry args={[0.16, 0.22, 0.16]} />
+          <meshStandardMaterial color="#FFE6A8" emissive="#FFB648" emissiveIntensity={lit ? 1.7 : 0.9} transparent opacity={0.9} />
+        </mesh>
+        <mesh position={[0, 1.33, 0]}>
+          <coneGeometry args={[0.12, 0.1, 4]} />
+          <meshStandardMaterial color="#2E2A28" />
+        </mesh>
+      </group>
+      {/* Echo's messenger candle: lit only while live replies are switched on */}
+      {replies !== undefined ? (
+        <group position={[side[0] + 0.55, 0, side[2] - 0.75]}>
+          <mesh position={[0, 0.35, 0]}>
+            <cylinderGeometry args={[0.05, 0.08, 0.7, 10]} />
+            <meshStandardMaterial color={PALETTE.goldDark} metalness={0.4} roughness={0.4} />
+          </mesh>
+          <mesh position={[0, 0.8, 0]}>
+            <cylinderGeometry args={[0.035, 0.035, 0.2, 10]} />
+            <meshStandardMaterial color="#FFF6E3" />
+          </mesh>
+          {replies ? <Flame position={[0, 0.95, 0]} scale={0.6} reduced={reduced} phase={5} /> : null}
+        </group>
+      ) : null}
     </group>
   );
 }
 
-function StationProps({ look, replies, reduced }: { look: RobotKey; replies?: boolean; reduced: boolean }) {
-  const crystal = useRef<THREE.MeshStandardMaterial>(null);
-  const flag = useRef<THREE.Mesh>(null);
-  const map = useMemo(() => (look === "outreach" ? mapTexture() : null), [look]);
-  useEffect(() => () => map?.dispose(), [map]);
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    if (crystal.current) crystal.current.emissiveIntensity = 1.1 + (reduced ? 0 : Math.sin(t * 2) * 0.5);
-    if (flag.current && !reduced) flag.current.rotation.y = Math.sin(t * 1.6) * 0.18;
-  });
+/** Image-based reflections so steel and mail look like metal (no download: a generated room). */
+function Reflections() {
+  const { gl, scene } = useThree();
+  useEffect(() => {
+    const pm = new THREE.PMREMGenerator(gl);
+    const env = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = env;
+    (scene as THREE.Scene & { environmentIntensity?: number }).environmentIntensity = 0.45;
+    return () => {
+      scene.environment = null;
+      env.dispose();
+      pm.dispose();
+    };
+  }, [gl, scene]);
+  return null;
+}
 
-  if (look === "visibility") {
-    // Lumi's library desk: books, an open tome, an inkwell and a candle
-    return (
-      <>
-        {[0, 1, 2].map((i) => (
-          <mesh key={i} position={[-0.5, 0.8 + i * 0.07, -0.05]} rotation-y={i * 0.15}>
-            <boxGeometry args={[0.36, 0.06, 0.26]} />
-            <meshStandardMaterial color={["#2F5BEA", "#B3262E", "#3F8F5A"][i]} roughness={0.7} />
-          </mesh>
-        ))}
-        <group position={[0.05, 0.79, 0.12]} rotation-y={0.1}>
-          {[-1, 1].map((s) => (
-            <mesh key={s} position={[s * 0.13, 0.01, 0]} rotation-z={s * -0.12}>
-              <boxGeometry args={[0.26, 0.02, 0.32]} />
-              <meshStandardMaterial color={PALETTE.parchment} roughness={0.95} />
-            </mesh>
-          ))}
-        </group>
-        {/* an inkwell with a quill, and a candle */}
-        <group position={[0.36, 0.77, 0.12]}>
-          <mesh position={[0, 0.04, 0]}>
-            <cylinderGeometry args={[0.05, 0.06, 0.08, 12]} />
-            <meshStandardMaterial color="#1E1A18" roughness={0.3} />
-          </mesh>
-          <mesh position={[0.02, 0.16, 0]} rotation-z={-0.35}>
-            <cylinderGeometry args={[0.006, 0.006, 0.22, 6]} />
-            <meshStandardMaterial color="#F4EEE2" />
-          </mesh>
-          <mesh position={[0.06, 0.25, 0]} rotation-z={-0.35} scale={[0.35, 1, 0.12]}>
-            <sphereGeometry args={[0.07, 10, 8]} />
-            <meshStandardMaterial color="#F4EEE2" />
-          </mesh>
-        </group>
-        <group position={[0.4, 0.77, -0.22]}>
-          <mesh position={[0, 0.02, 0]}>
-            <cylinderGeometry args={[0.06, 0.07, 0.04, 12]} />
-            <meshStandardMaterial color={PALETTE.goldDark} metalness={0.3} roughness={0.4} />
-          </mesh>
-          <mesh position={[0, 0.12, 0]}>
-            <cylinderGeometry args={[0.03, 0.03, 0.18, 10]} />
-            <meshStandardMaterial color="#FFF6E3" />
-          </mesh>
-          <Flame position={[0, 0.25, 0]} scale={0.5} reduced={reduced} phase={4} />
-        </group>
-      </>
-    );
+/** If a model ever fails to load, the drawn knight takes its place. */
+class ModelBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
   }
-  if (look === "outreach") {
-    // Rover's map table: the parchment map, scrolls, a compass and a pennant
-    return (
-      <>
-        <mesh position={[-0.1, 0.775, 0.02]} rotation-x={-Math.PI / 2}>
-          <planeGeometry args={[1.0, 0.62]} />
-          <meshStandardMaterial map={map} roughness={0.95} />
-        </mesh>
-        {[
-          [0.55, 0.06],
-          [0.6, 0.2],
-        ].map(([x, z], i) => (
-          <mesh key={i} position={[x, 0.82, z]} rotation-x={Math.PI / 2} rotation-z={0.3 + i * 0.5}>
-            <cylinderGeometry args={[0.04, 0.04, 0.34, 10]} />
-            <meshStandardMaterial color={PALETTE.parchment} />
-          </mesh>
-        ))}
-        <mesh position={[0.32, 0.79, -0.25]}>
-          <cylinderGeometry args={[0.08, 0.08, 0.03, 18]} />
-          <meshStandardMaterial color={PALETTE.gold} metalness={0.3} roughness={0.3} />
-        </mesh>
-        {/* banner standard beside the table */}
-        <group position={[1.05, 0, -0.35]}>
-          <mesh position={[0, 0.85, 0]}>
-            <cylinderGeometry args={[0.03, 0.03, 1.7, 8]} />
-            <meshStandardMaterial color={PALETTE.oakDark} />
-          </mesh>
-          <mesh position={[0, 1.74, 0]}>
-            <sphereGeometry args={[0.05, 10, 8]} />
-            <meshStandardMaterial color={PALETTE.gold} metalness={0.3} />
-          </mesh>
-          <mesh ref={flag} position={[0.22, 1.5, 0]}>
-            <planeGeometry args={[0.42, 0.3]} />
-            <meshStandardMaterial color={ROBOT_LOOKS.outreach.body} side={THREE.DoubleSide} roughness={0.8} />
-          </mesh>
-        </group>
-      </>
-    );
+  componentDidCatch(error: unknown) {
+    console.warn("Knight model failed, using the drawn knight:", error);
   }
-  // Echo's messenger desk: letter rack, sealed letters, a brass horn and the
-  // messenger's candle - lit only while live replies are switched on.
-  return (
-    <>
-      <group position={[-0.45, 0.77, -0.22]}>
-        <mesh position={[0, 0.2, 0]}>
-          <boxGeometry args={[0.55, 0.4, 0.2]} />
-          <meshStandardMaterial color={PALETTE.oakDark} />
-        </mesh>
-        {[0, 1].map((r) =>
-          [0, 1, 2].map((c) => (
-            <mesh key={`${r}${c}`} position={[-0.17 + c * 0.17, 0.12 + r * 0.17, 0.08]}>
-              <boxGeometry args={[0.13, 0.12, 0.06]} />
-              <meshStandardMaterial color={(r + c) % 2 ? PALETTE.parchment : "#2A1C16"} />
-            </mesh>
-          ))
-        )}
-      </group>
-      {[0, 1].map((i) => (
-        <mesh key={i} position={[0.05, 0.785 + i * 0.015, 0.18]} rotation-y={0.3 * i}>
-          <boxGeometry args={[0.26, 0.012, 0.18]} />
-          <meshStandardMaterial color={PALETTE.parchment} />
-        </mesh>
-      ))}
-      <mesh position={[0.05, 0.8, 0.18]}>
-        <circleGeometry args={[0.03, 12]} />
-        <meshStandardMaterial color="#B3262E" />
-      </mesh>
-      <mesh position={[0.28, 0.82, 0.05]} rotation-z={Math.PI / 2} rotation-y={0.4}>
-        <coneGeometry args={[0.07, 0.3, 14, 1, true]} />
-        <meshStandardMaterial color={PALETTE.gold} metalness={0.3} roughness={0.3} side={THREE.DoubleSide} />
-      </mesh>
-      <group position={[0.45, 0.77, -0.2]}>
-        <mesh position={[0, 0.02, 0]}>
-          <cylinderGeometry args={[0.06, 0.07, 0.04, 12]} />
-          <meshStandardMaterial color={PALETTE.goldDark} metalness={0.3} roughness={0.4} />
-        </mesh>
-        <mesh position={[0, 0.11, 0]}>
-          <cylinderGeometry args={[0.03, 0.03, 0.16, 10]} />
-          <meshStandardMaterial color="#FFF6E3" />
-        </mesh>
-        {replies ? <Flame position={[0, 0.23, 0]} scale={0.55} reduced={reduced} phase={5} /> : null}
-      </group>
-    </>
-  );
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
 }

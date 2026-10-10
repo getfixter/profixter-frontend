@@ -452,6 +452,9 @@ function Office({ onClassic }: { onClassic?: () => void }) {
                 <b>Tap a knight</b> (or its name) to see what it&rsquo;s doing. Its <b>Settings</b> tab is where you pause it or teach it.
               </li>
               <li>
+                <b>⚔️ Fighting a goblin</b> = a real work shift is running. <b>Practising on a straw dummy</b> = waiting for the next shift. <b>Waving</b> = something needs your answer. <b>Dozing by the fire</b> = paused.
+              </li>
+              <li>
                 <b>📜 Requests</b>: questions waiting for your yes or no.
               </li>
               <li>
