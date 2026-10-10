@@ -17,11 +17,11 @@
  * Everything per-frame lives in refs (no React state), so a frame costs a few
  * matrix updates.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { Html, RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
-import type { RobotStatus } from "@/lib/office";
+import type { RobotKey, RobotStatus } from "@/lib/office";
 import { HUB, IDLE_SPOTS, STATUS_LIGHT, type RobotLook, type Vec3 } from "./office-layout";
 import { drawHolo } from "./textures";
 import styles from "./office.module.css";
@@ -66,9 +66,11 @@ export type RobotProps = {
   selected: boolean;
   onSelect: () => void;
   onAsk: () => void;
+  /** Where each robot is right now (the camera follows the selected one). */
+  registry?: MutableRefObject<Partial<Record<RobotKey, Vec3>>>;
 };
 
-export default function Robot({ look, status, statusText, waiting, celebrate, reduced, selected, onSelect, onAsk }: RobotProps) {
+export default function Robot({ look, status, statusText, waiting, celebrate, reduced, selected, onSelect, onAsk, registry }: RobotProps) {
   const root = useRef<THREE.Group>(null);
   const body = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
@@ -225,6 +227,7 @@ export default function Robot({ look, status, statusText, waiting, celebrate, re
     if (asking) hover += Math.abs(Math.sin(t * 3.2)) * 0.12 * amp;
     if (happy) hover += Math.abs(Math.sin(t * 7 + phase)) * 0.4 * amp;
     r.position.set(pos.current[0], hover, pos.current[2]);
+    if (registry) registry.current[look.key] = pos.current;
     r.rotation.y = yaw.current + (happy ? t * 4 * amp : 0);
 
     if (shadow.current) {
@@ -501,10 +504,20 @@ export default function Robot({ look, status, statusText, waiting, celebrate, re
             {showBubble ? (
               <div className={`${styles.bubble} ${status === "error" ? styles.bubbleError : status === "needs_you" ? styles.bubbleAsk : ""}`}>{statusText}</div>
             ) : null}
-            <div className={styles.nameTag} style={{ ["--accent" as string]: look.body }}>
+            <button
+              type="button"
+              className={styles.nameTag}
+              style={{ ["--accent" as string]: look.body, pointerEvents: "auto" }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect();
+              }}
+              aria-label={`Talk to ${look.name}`}
+            >
               <span className={styles.dot} style={{ background: light }} />
               {look.name}
-            </div>
+            </button>
           </div>
         </Html>
       </group>
