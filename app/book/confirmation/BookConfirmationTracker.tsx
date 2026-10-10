@@ -96,7 +96,15 @@ export default function BookConfirmationTracker({
         {
           value: explicit ?? price ?? 0,
           currency: currency || priceCurrency || "USD",
-          content_name: kind,
+          /*
+           * Transition: a Full Day used to be labelled one_time_visit. Until the
+           * campaigns are verified, paid visits keep that label (so a custom
+           * conversion filtering on it still counts them) and the real kind
+           * travels in visit_type. The legacy switch off sends the real name.
+           */
+          content_name:
+            process.env.NEXT_PUBLIC_META_LEGACY_FREE_VISIT_LEAD !== "false" && kind !== "paid_visit" ? "one_time_visit" : kind,
+          visit_type: kind,
           content_type: "product",
           booking_id: bookingId || undefined,
         },

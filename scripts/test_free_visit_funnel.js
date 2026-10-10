@@ -363,7 +363,11 @@ async function finishSignupSteps(page) {
       JSON.stringify(leadRelays)
     );
     const custom = fbq.filter((c) => c[0] === "trackCustom").map((c) => c[1]);
-    check("date, time and photo taps no longer reach Meta", !custom.some((n) => /^free_visit_/.test(n)), custom.join(","));
+    check(
+      legacyOn ? "transition: funnel taps still reach Meta as custom events, as before" : "date, time and photo taps no longer reach Meta",
+      legacyOn ? custom.some((n) => /^free_visit_/.test(n)) : !custom.some((n) => /^free_visit_/.test(n)),
+      custom.join(",")
+    );
     const dl = await dlLog(page);
     check("the dataLayer still gets the free-visit funnel steps", ["free_visit_date_selected", "free_visit_time_selected", "free_visit_booked"].every((n) => dl.some((e) => e.event === n)));
     await ctx.close();
