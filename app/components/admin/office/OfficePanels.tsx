@@ -105,7 +105,7 @@ export function Sheet({
   );
 }
 
-function Head({ color, initial, title, sub, onClose }: { color: string; initial: string; title: string; sub: string; onClose: () => void }) {
+export function Head({ color, initial, title, sub, onClose }: { color: string; initial: string; title: string; sub: string; onClose: () => void }) {
   return (
     <div className={styles.sheetHead}>
       <div className={styles.avatar} style={{ background: color }}>
@@ -122,7 +122,7 @@ function Head({ color, initial, title, sub, onClose }: { color: string; initial:
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className={styles.section}>
       <div className={styles.sectionTitle}>{title}</div>
@@ -466,7 +466,7 @@ function RobotSettings({ d, owner, onChanged }: { d: RobotDetail; owner: boolean
           <div style={{ fontWeight: 800 }}>{s.paused ? `${name} is paused.` : `${name} is on.`}</div>
           <div className={styles.muted}>
             This month {name} used {money(s.monthCostCents)} of AI time.
-            {d.robot.key === "conversation" ? " Pausing Echo also stops it from drafting replies." : ""}
+            {d.robot.key === "conversation" ? " Pausing Marcus Aurelius also stops him drafting replies." : ""}
           </div>
           {owner ? (
             <div className={styles.btnRow}>

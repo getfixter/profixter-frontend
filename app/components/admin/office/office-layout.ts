@@ -43,8 +43,8 @@ const ECHO_DESK: Vec3 = [2.55, 0, 1.95];
 export const ROBOT_LOOKS: Record<RobotKey, RobotLook> = {
   visibility: {
     key: "visibility",
-    name: "Lumi",
-    title: "Knight of Visibility",
+    name: "Odysseus",
+    title: "The Explorer · search",
     body: "#3E7D4F", // vert: forest green
     bodyDark: "#2C5A38",
     accent: "#D9B45A",
@@ -59,8 +59,8 @@ export const ROBOT_LOOKS: Record<RobotKey, RobotLook> = {
   },
   outreach: {
     key: "outreach",
-    name: "Rover",
-    title: "Knight of Outreach",
+    name: "Leonidas",
+    title: "The Vanguard · outreach",
     body: "#A8322D", // gules: crimson
     bodyDark: "#7A2420",
     accent: "#D9B45A",
@@ -75,8 +75,8 @@ export const ROBOT_LOOKS: Record<RobotKey, RobotLook> = {
   },
   conversation: {
     key: "conversation",
-    name: "Echo",
-    title: "Knight of Communication",
+    name: "Marcus Aurelius",
+    title: "The Messenger · conversations",
     body: "#5E3C8C", // purpure: royal purple
     bodyDark: "#43296A",
     accent: "#D9B45A",
@@ -92,6 +92,20 @@ export const ROBOT_LOOKS: Record<RobotKey, RobotLook> = {
 };
 
 export const ROBOT_ORDER: RobotKey[] = ["visibility", "outreach", "conversation"];
+
+/**
+ * King Arthur's throne stands against the back wall, between the results
+ * tapestry and the windows, turned a little toward the camera. Heroes come to
+ * the foot of the dais to deliver a report after a real shift.
+ */
+export const THRONE: Vec3 = [-0.15, 0, -4.25];
+export const THRONE_YAW = 0.35;
+export const ARTHUR_LOOK = { name: "King Arthur", title: "High King · your council manager", body: "#24418F", accent: "#E8C15A" };
+export const REPORT_SPOTS: Record<RobotKey, Vec3> = {
+  visibility: [-1.05, 0, -2.75],
+  outreach: [-0.45, 0, -2.55],
+  conversation: [-0.75, 0, -3.3],
+};
 
 /** Shared idle spots every robot may wander to. */
 export const IDLE_SPOTS: Vec3[] = [

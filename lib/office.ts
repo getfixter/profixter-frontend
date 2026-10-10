@@ -144,3 +144,79 @@ export function errorMessage(e: unknown, fallback: string): { message: string; p
   const data = (e as { response?: { data?: { message?: string; problems?: string[] } } })?.response?.data;
   return { message: data?.message || fallback, problems: data?.problems || [] };
 }
+
+/* ------------------------------------------------------------------ */
+/* The council (BackEnd/utils/council, routes/adminGrowth.js)          */
+/* ------------------------------------------------------------------ */
+
+export type CouncilAction = { type: string; ref: string; label: string; ok: boolean };
+export type CouncilMessage = { id: string; role: "owner" | "arthur"; kind: "chat" | "briefing"; text: string; actions: CouncilAction[]; at: string };
+export type TaskStatus = "received" | "assigned" | "in_progress" | "completed" | "blocked" | "verified" | "not_verified" | "cancelled";
+export type CouncilTask = {
+  id: string;
+  agent: "visibility" | "outreach" | "conversion";
+  hero: string;
+  instruction: string;
+  why: string;
+  origin: "owner" | "arthur";
+  status: TaskStatus;
+  result: { summary: string; at: string } | null;
+  verification: { verdict: string; note: string; by: string; at: string } | null;
+  history: Array<{ at: string; status: string; by: string; note: string }>;
+  createdAt: string;
+  updatedAt: string;
+};
+export type CouncilDecision = {
+  id: string;
+  category: "routine" | "info" | "decision" | "uncertain";
+  subject: string;
+  simple: string;
+  detail: string;
+  agent: string | null;
+  hero: string | null;
+  recommendation: { choice: string; reason: string } | null;
+  refs: Array<{ kind: string; id: string }>;
+  guidance: { agent: string; text: string; previous: string; baseVersion: number } | null;
+  status: "open" | "resolved" | "superseded";
+  resolution: { choice: string; by: string; at: string; note?: string } | null;
+  at: string;
+  createdAt: string;
+};
+export type CouncilState = {
+  enabled: boolean;
+  thinking: boolean;
+  messages: CouncilMessage[];
+  tasks: CouncilTask[];
+  decisions: CouncilDecision[];
+  history: CouncilDecision[];
+  counts: { decisions: number; info: number; tasks: number };
+};
+
+export async function getCouncil(): Promise<CouncilState> {
+  const res = await API.get("/api/admin/growth/office/council");
+  return res.data;
+}
+
+export async function sendToArthur(message: string) {
+  const res = await API.post("/api/admin/growth/office/council/chat", { message });
+  return res.data as { id: string };
+}
+
+export async function resolveCouncilDecision(id: string, choice: "confirm" | "reject" | "done", note = "") {
+  const res = await API.post(`/api/admin/growth/office/council/decisions/${id}/resolve`, { choice, note });
+  return res.data as { ok: boolean; saved: { version: number } | null };
+}
+
+export async function cancelCouncilTask(id: string) {
+  await API.post(`/api/admin/growth/office/council/tasks/${id}/cancel`, {});
+}
+
+export async function verifyCouncilTask(id: string, verdict: "verified" | "not_verified", note = "") {
+  await API.post(`/api/admin/growth/office/council/tasks/${id}/verify`, { verdict, note });
+}
+
+/** "Copy All for ChatGPT" (pending) or the full status report - built from records on the server. */
+export async function getCouncilReport(scope: "pending" | "full"): Promise<{ text: string; count: number; generatedAt: string }> {
+  const res = await API.get(`/api/admin/growth/office/council/report?scope=${scope}`);
+  return res.data;
+}
