@@ -12,6 +12,8 @@
  *              saved only when the owner confirms them here.
  *   Tasks      every instruction with its real state: received, waiting for
  *              the next shift, working, done (waiting for a check), checked.
+ *   Mission    his standing mission (owner guidance): read it, edit it, or
+ *              restore any earlier version. The fixed safety rules always win.
  *
  * "✨ Copy All for ChatGPT" and "Copy full status report" are built by the
  * server from records (no AI call) and prepared as soon as the panel opens,
@@ -24,6 +26,8 @@ import {
   getCouncil,
   getCouncilReport,
   resolveCouncilDecision,
+  restoreMission,
+  saveMission,
   sendToArthur,
   verifyCouncilTask,
   type CouncilAction,
@@ -38,7 +42,7 @@ import { ARTHUR_LOOK, ROBOT_LOOKS } from "./office-layout";
 import { CopyButton, copyText, useToast } from "./Talk";
 import styles from "./office.module.css";
 
-export type CouncilTab = "talk" | "decisions" | "tasks";
+export type CouncilTab = "talk" | "decisions" | "tasks" | "mission";
 
 const ROBOT_OF: Record<string, RobotKey> = { visibility: "visibility", outreach: "outreach", conversion: "conversation", conversation: "conversation" };
 
@@ -86,7 +90,7 @@ const SUGGESTIONS = [
 ];
 
 const INTRO =
-  "Boss, I'm King Arthur, your council manager. I read everything Odysseus, Leonidas and Marcus Aurelius do, tell you what matters, recommend what to approve, and give them tasks. I can't approve, spend money, message customers, book visits or change ads, prices or rules - those stay yours. What would you like to know?";
+  "Boss, I'm King Arthur, your council manager. I read everything Odysseus, Leonidas and Marcus do, tell you what matters, recommend what to approve, and give them tasks. I can't approve, spend money, message customers, book visits or change ads, prices or rules - those stay yours. What would you like to know?";
 
 function Crown({ size = 34 }: { size?: number }) {
   return (
@@ -269,6 +273,7 @@ export function CouncilPanel({
           ["talk", "Talk"],
           ["decisions", `Decisions${counts?.decisions ? ` · ${counts.decisions}` : ""}`],
           ["tasks", `Tasks${counts?.tasks ? ` · ${counts.tasks}` : ""}`],
+          ["mission", "Mission"],
         ] as Array<[CouncilTab, string]>
       ).map(([k, label]) => (
         <button key={k} type="button" className={`${styles.tab} ${tab === k ? styles.tabOn : ""}`} onClick={() => onTab(k)}>
@@ -335,6 +340,8 @@ export function CouncilPanel({
             </Section>
           ) : null}
         </>
+      ) : tab === "mission" ? (
+        <MissionTab data={data} owner={owner} busy={busy === "mission"} act={act} />
       ) : (
         <>
           <Section title={activeTasks.length ? `In progress (${activeTasks.length})` : "In progress"}>
@@ -356,6 +363,109 @@ export function CouncilPanel({
         </>
       )}
     </Sheet>
+  );
+}
+
+function MissionTab({
+  data,
+  owner,
+  busy,
+  act,
+}: {
+  data: CouncilState;
+  owner: boolean;
+  busy: boolean;
+  act: (id: string, label: string, fn: () => Promise<unknown>) => void;
+}) {
+  const m = data.mission;
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(m.guidance);
+  const [problems, setProblems] = useState<string[]>([]);
+  const save = () =>
+    act("mission", "Saved - a new version of the mission.", async () => {
+      setProblems([]);
+      try {
+        await saveMission(text);
+        setEditing(false);
+      } catch (e) {
+        const er = errorMessage(e, "That can't be saved.");
+        setProblems(er.problems);
+        throw e;
+      }
+    });
+  const current = m.history.find((h) => h.version === m.version);
+  return (
+    <>
+      <Section title={m.version ? `King Arthur's mission · version ${m.version}` : "King Arthur's mission"}>
+        <div className={styles.card}>
+          {editing ? (
+            <>
+              <textarea className={styles.composerInput} style={{ width: "100%", minHeight: 220 }} value={text} maxLength={1500} onChange={(e) => setText(e.target.value)} />
+              {problems.length ? (
+                <ul className={styles.problem}>
+                  {problems.map((p) => (
+                    <li key={p}>{p}</li>
+                  ))}
+                </ul>
+              ) : null}
+              <div className={styles.btnRow} style={{ marginTop: 8 }}>
+                <button type="button" className={`${styles.btn} ${styles.btnGood}`} disabled={busy || !text.trim()} onClick={save}>
+                  Save as a new version
+                </button>
+                <button type="button" className={`${styles.btn} ${styles.btnSoft}`} onClick={() => (setEditing(false), setText(m.guidance), setProblems([]))}>
+                  Cancel
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className={styles.talkSay}>{m.guidance || "No mission set. King Arthur follows only his fixed rules."}</div>
+              {current ? (
+                <div className={styles.muted} style={{ marginTop: 8 }}>
+                  Saved by {current.by} · {when(current.at)}
+                  {current.note ? ` · ${current.note}` : ""}
+                </div>
+              ) : null}
+              {owner ? (
+                <div className={styles.btnRow} style={{ marginTop: 10 }}>
+                  <button type="button" className={`${styles.btn} ${styles.btnSoft}`} onClick={() => (setText(m.guidance), setEditing(true))}>
+                    Edit the mission
+                  </button>
+                </div>
+              ) : null}
+            </>
+          )}
+          <div className={styles.muted} style={{ marginTop: 10, fontSize: 12.5 }}>
+            The mission steers what King Arthur works on. It can never remove a safety rule: he still cannot approve, spend money, contact customers, change prices or touch ads.
+          </div>
+        </div>
+      </Section>
+      {m.history.length > 1 ? (
+        <Section title="Earlier versions">
+          {m.history
+            .filter((h) => h.version !== m.version)
+            .map((h) => (
+              <div key={h.version} className={styles.card}>
+                <div className={styles.talkMeta}>
+                  Version {h.version} · {h.by} · {when(h.at)}
+                </div>
+                <div className={styles.preview}>{h.guidance || "(empty)"}</div>
+                {owner ? (
+                  <button
+                    type="button"
+                    className={`${styles.btn} ${styles.btnSoft}`}
+                    style={{ marginTop: 8 }}
+                    disabled={busy}
+                    onClick={() => act("mission", `Restored version ${h.version}.`, () => restoreMission(h.version))}
+                  >
+                    Restore this version
+                  </button>
+                ) : null}
+              </div>
+            ))}
+        </Section>
+      ) : null}
+    </>
   );
 }
 

@@ -75,7 +75,7 @@ export const ROBOT_LOOKS: Record<RobotKey, RobotLook> = {
   },
   conversation: {
     key: "conversation",
-    name: "Marcus Aurelius",
+    name: "Marcus",
     title: "The Messenger · conversations",
     body: "#5E3C8C", // purpure: royal purple
     bodyDark: "#43296A",
