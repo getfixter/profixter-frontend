@@ -32,7 +32,14 @@ export function trackEvent(event: string, params?: EventParams) {
 
   pushDataLayer(event, params);
 
-  if (META_CUSTOM_EVENTS.has(event) && typeof window.fbq === "function") {
+  /*
+   * Transition: until the live campaigns are verified not to use them (custom
+   * conversions or audiences built on these events), every event still reaches
+   * Meta as before. NEXT_PUBLIC_META_LEGACY_FREE_VISIT_LEAD=false ends both
+   * legacy behaviours together (see trackSchedule in lib/meta.ts).
+   */
+  const legacy = process.env.NEXT_PUBLIC_META_LEGACY_FREE_VISIT_LEAD !== "false";
+  if ((legacy || META_CUSTOM_EVENTS.has(event)) && typeof window.fbq === "function") {
     window.fbq("trackCustom", event, params || {});
   }
 }
