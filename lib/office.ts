@@ -1,6 +1,10 @@
 import API from "./api";
 
-/* Types mirror BackEnd/utils/growth/office.js - keep the two in step. */
+/* Types mirror BackEnd/utils/growth/office.js and explain.js - keep them in step. */
+
+/** Two levels for everything: what the robot says (simple) and a full brief to paste into ChatGPT. */
+export type Simple = { say: string; ask?: string | null; details?: string[]; pendingSimple?: boolean };
+export type Explained = { simple: Simple; chatgpt: string };
 
 export type RobotKey = "visibility" | "outreach" | "conversation";
 export type RobotStatus = "working" | "needs_you" | "paused" | "off" | "error" | "waiting";
@@ -48,6 +52,7 @@ export type OfficeState = {
   approvals: { actions: number; playbooks: number; drafts: number; notes: number; total: number };
   lastFirstFreeVisitAt: string | null;
   report: { headline: string; at: string } | null;
+  explained?: Explained;
 };
 
 export type Capability = { label: string; state: "on" | "off" | "approval" | "never"; note: string };
@@ -69,11 +74,12 @@ export type RobotDetail = {
     error: string;
     findings: number;
     actions: number;
-  }>;
-  findings: Array<{ id: string; kind: string; severity: string; title: string; detail: string; at: string }>;
+  } & Partial<Explained>>;
+  findings: Array<{ id: string; kind: string; severity: string; title: string; detail: string; at: string } & Partial<Explained>>;
   results: Array<{ id: string; title: string; at: string; verification: string | null }>;
   learned: Array<{ key: string; content: string; at: string }>;
-  mistakes: Array<{ at: string; what: string; detail: string }>;
+  mistakes: Array<{ at: string; what: string; detail: string } & Partial<Explained>>;
+  explained?: Explained;
   teach: {
     teachable: boolean;
     agent: string | null;
@@ -82,6 +88,7 @@ export type RobotDetail = {
     history: Array<{ version: number; guidance: string; by: string; at: string; note: string }>;
     fixedRules: string;
     note: string;
+    explained?: Explained;
   };
 };
 
@@ -95,6 +102,8 @@ export type ApprovalItem = {
   at: string;
   risk?: string;
   severity?: string;
+  simple?: Simple;
+  chatgpt?: string;
 };
 
 export async function getOffice(fresh = false): Promise<OfficeState> {

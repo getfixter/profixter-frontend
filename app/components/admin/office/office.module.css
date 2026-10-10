@@ -790,3 +790,476 @@
   color: #c2353b;
   font-weight: 900;
 }
+
+/* =================== v2: navigation, talk, copy =================== */
+
+/* the dock */
+.dock {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 0 rgba(30, 30, 60, 0.08), 0 18px 36px -18px rgba(30, 30, 60, 0.6);
+  max-width: calc(100% - 16px);
+  z-index: 31;
+}
+.dockBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 52px;
+  padding: 4px 6px 2px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: #2a3150;
+  cursor: pointer;
+  transition: transform 120ms ease, background 120ms ease;
+}
+.dockBtn:active {
+  transform: scale(0.94);
+}
+.dockBtnOn {
+  background: #eef1ff;
+}
+.dockBtnAsk .dockIcon {
+  animation: orb 1.6s ease-in-out infinite;
+}
+.dockBtnGlow .dockIcon {
+  box-shadow: 0 0 0 3px #ffd45c;
+}
+.dockIcon {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  background: #f4efe7;
+}
+.dockAvatar {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 900;
+  font-size: 17px;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.14);
+}
+.dockDot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 99px;
+  border: 2px solid #fff;
+}
+.dockAsk,
+.dockBadge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: #ff9d1c;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+  border: 2px solid #fff;
+}
+.dockLabel {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #4a5170;
+  line-height: 1.1;
+}
+.dockSep {
+  width: 1px;
+  align-self: stretch;
+  margin: 6px 3px;
+  background: #ece5da;
+}
+@media (max-width: 720px) {
+  .dock {
+    left: 6px;
+    right: 6px;
+    transform: none;
+    justify-content: space-between;
+    padding: 5px 4px;
+    gap: 0;
+  }
+  .dockBtn {
+    min-width: 0;
+    flex: 1;
+    padding: 3px 1px 1px;
+  }
+  .dockIcon,
+  .dockAvatar {
+    width: 34px;
+    height: 34px;
+  }
+  .dockSep {
+    margin: 6px 1px;
+  }
+}
+
+/* the menu and help card */
+.menu {
+  position: absolute;
+  right: 12px;
+  bottom: 84px;
+  z-index: 32;
+  min-width: 250px;
+  padding: 6px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 20px 40px -18px rgba(30, 30, 60, 0.6), 0 0 0 1px rgba(120, 90, 60, 0.1);
+  animation: pop 200ms ease-out both;
+}
+.menuItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #1d2340;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+}
+.menuItem:hover {
+  background: #f6f2ec;
+}
+.helpCard {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 40;
+  width: min(420px, calc(100% - 24px));
+  padding: 18px;
+  border-radius: 24px;
+  background: #fffdf9;
+  box-shadow: 0 30px 60px -20px rgba(30, 25, 60, 0.6);
+  color: #1d2340;
+}
+.helpTitle {
+  font-weight: 900;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+.helpList {
+  margin: 0 0 14px;
+  padding-left: 18px;
+  list-style: disc;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.helpList li + li {
+  margin-top: 5px;
+}
+
+/* the hint sits above the dock */
+.hint {
+  bottom: 92px !important;
+  border: 0;
+  cursor: pointer;
+}
+
+/* chips floating over things in the room */
+.sceneChip {
+  border: 0;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #1d2340;
+  font-weight: 900;
+  font-size: 12.5px;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(30, 30, 60, 0.08), 0 8px 18px -8px rgba(30, 30, 60, 0.5);
+}
+.sceneChipAsk {
+  background: linear-gradient(180deg, #ffd56b, #ffb02e);
+  color: #4a2c00;
+  animation: orb 1.8s ease-in-out infinite;
+}
+button.nameTag {
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 30px;
+}
+
+/* sheets: handle, footer */
+.handleZone {
+  display: none;
+}
+.sheetFoot {
+  display: none;
+}
+@media (max-width: 720px) {
+  .sheet {
+    max-height: 64%;
+  }
+  .handleZone {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0 0;
+    touch-action: none;
+  }
+  .handle {
+    width: 44px;
+    height: 5px;
+    border-radius: 99px;
+    background: #d9cfc1;
+  }
+  .sheetFoot {
+    display: block;
+    padding: 8px 12px 10px;
+    border-top: 1px solid #efe7db;
+    background: rgba(255, 252, 247, 0.98);
+  }
+}
+.backBtn {
+  width: 100%;
+  height: 46px;
+  border: 0;
+  border-radius: 14px;
+  background: #1d2340;
+  color: #fff;
+  font-weight: 900;
+  font-size: 15px;
+  cursor: pointer;
+}
+.close {
+  width: 42px !important;
+  height: 42px !important;
+  font-size: 18px !important;
+}
+
+/* a robot talking */
+.talk {
+  border-radius: 18px;
+  background: #fff;
+  padding: 12px;
+  box-shadow: 0 0 0 1px rgba(120, 90, 60, 0.09);
+}
+.talk + .talk {
+  margin-top: 10px;
+}
+.talkCompact {
+  padding: 10px;
+}
+.talkRow {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.talkAvatar {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 900;
+  font-size: 15px;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.12);
+}
+.talkBubble {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  border-radius: 4px 16px 16px 16px;
+  background: #f6f3ee;
+  color: #1d2340;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.talkMeta {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #9a8f80;
+  margin-bottom: 3px;
+}
+.talkSay {
+  white-space: pre-wrap;
+}
+.talkAsk {
+  margin-top: 8px;
+  font-weight: 900;
+  font-size: 15.5px;
+}
+.talkPending {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #8a8fa6;
+  font-style: italic;
+}
+.talkButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding-left: 44px;
+}
+.talkButtons .btn {
+  height: 42px;
+  font-size: 14px;
+}
+.talkDetails {
+  margin-top: 10px;
+  margin-left: 44px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #faf7f2;
+  font-size: 13px;
+  color: #3a3f58;
+  line-height: 1.45;
+}
+.btnGhost {
+  background: transparent !important;
+  color: #4b55c4 !important;
+  box-shadow: inset 0 0 0 2px #dfe3ff;
+}
+@media (max-width: 720px) {
+  .talkButtons,
+  .talkDetails {
+    padding-left: 0;
+    margin-left: 0;
+  }
+}
+
+/* copying */
+.copyRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.copyBtn {
+  height: 34px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 11px;
+  background: #f1ece4;
+  color: #3a3f58;
+  font-weight: 800;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.copyBtnPrimary {
+  background: linear-gradient(180deg, #19c37d, #10a46a);
+  color: #fff;
+}
+.copied {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 110px;
+  margin: 0 auto;
+  width: max-content;
+  z-index: 2000;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: #1d2340;
+  color: #fff;
+  font-weight: 900;
+  font-size: 14px;
+  box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.5);
+  animation: pop 220ms ease-out both;
+}
+
+.statusStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 2px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #3a3f58;
+}
+.fieldLabel {
+  display: block;
+  font-weight: 900;
+  margin-bottom: 6px;
+  color: #1d2340;
+}
+.input {
+  width: 100%;
+  height: 42px;
+  margin-top: 8px;
+  border-radius: 12px;
+  border: 2px solid #e8dfd2;
+  padding: 0 12px;
+  font-size: 14px;
+  font-family: inherit;
+}
+@media (max-width: 720px) {
+  .sheetHead {
+    padding: 6px 14px 8px;
+    gap: 10px;
+  }
+  .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    font-size: 17px;
+  }
+  .sheetTitle {
+    font-size: 17px;
+  }
+  .sheetSub {
+    font-size: 12px;
+  }
+  .tabs {
+    padding: 0 12px 8px;
+  }
+  .tab {
+    height: 34px;
+  }
+  .sheetBody {
+    padding: 2px 12px 14px;
+  }
+  .talk {
+    padding: 10px;
+  }
+  .talkAvatar {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+  }
+  .talkBubble {
+    font-size: 14.5px;
+  }
+  .talkAsk {
+    font-size: 15px;
+  }
+}
+@media (max-width: 720px) {
+  .sheetTall {
+    max-height: 80%;
+  }
+}

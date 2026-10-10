@@ -9,16 +9,25 @@
  * The scene is display-only: it draws what GrowthOffice hands it and reports
  * taps (a robot, a desk, the results display, the approvals board).
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
 import { RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 import type { OfficeState, RobotKey } from "@/lib/office";
 import Robot from "./Robot";
 import { PALETTE, ROBOT_LOOKS, ROBOT_ORDER, DESK_YAW, type Vec3 } from "./office-layout";
 import { cloudTexture, drawResultsDisplay, plankTexture, skyTexture } from "./textures";
+import CameraRig, { SceneChip, type CameraApi } from "./CameraRig";
 
-export type SceneTarget = { type: "robot"; key: RobotKey } | { type: "desk"; key: RobotKey } | { type: "results" } | { type: "approvals"; robot?: RobotKey };
+export type SceneTarget =
+  | { type: "robot"; key: RobotKey }
+  | { type: "desk"; key: RobotKey }
+  | { type: "results" }
+  | { type: "approvals"; robot?: RobotKey }
+  | { type: "empty" };
+
+
+export type { CameraApi };
 
 type Props = {
   office: OfficeState;
@@ -26,6 +35,10 @@ type Props = {
   celebrate: boolean;
   reduced: boolean;
   active: boolean;
+  /** A panel covers part of the screen: "bottom" on phones, "right" on wide screens. */
+  panel: "bottom" | "right" | null;
+  cameraApi: MutableRefObject<CameraApi | null>;
+  onMoved: (moved: boolean) => void;
   onTap: (t: SceneTarget) => void;
 };
 
@@ -38,7 +51,9 @@ function nyTime(d = new Date()) {
   return { h: h % 24, m };
 }
 
-export default function OfficeScene({ office, selected, celebrate, reduced, active, onTap }: Props) {
+export default function OfficeScene({ office, selected, celebrate, reduced, active, panel, cameraApi, onMoved, onTap }: Props) {
+  const positions = useRef<Partial<Record<RobotKey, Vec3>>>({});
+  const dragged = useRef(0);
   const [hour, setHour] = useState(nyHour);
   useEffect(() => {
     const id = window.setInterval(() => setHour(nyHour()), 5 * 60 * 1000);
@@ -54,10 +69,13 @@ export default function OfficeScene({ office, selected, celebrate, reduced, acti
       frameloop={active ? "always" : "never"}
       gl={{ antialias: true, powerPreference: "high-performance", alpha: true }}
       camera={{ position: [12, 10.5, 12], zoom: 40, near: 0.1, far: 100 }}
-      onPointerMissed={() => (document.body.style.cursor = "")}
-      style={{ touchAction: "manipulation" }}
+      onPointerMissed={() => {
+        document.body.style.cursor = "";
+        if (dragged.current < 10) onTap({ type: "empty" });
+      }}
+      style={{ touchAction: "none" }}
     >
-      <FitCamera />
+      <CameraRig positions={positions} follow={selected} panel={panel} reduced={reduced} api={cameraApi} dragged={dragged} onMoved={onMoved} />
       <hemisphereLight args={[night ? "#9FB4FF" : "#FFF6E6", night ? "#3A3150" : "#C9B08A", night ? 0.55 : 1.05]} />
       <directionalLight position={[6, 11, 5]} intensity={night ? 0.35 : 1.25} color={evening ? "#FFD2A6" : "#FFFFFF"} />
       <ambientLight intensity={night ? 0.25 : 0.35} />
@@ -71,6 +89,13 @@ export default function OfficeScene({ office, selected, celebrate, reduced, acti
       <Room hour={hour} night={night} />
       <ResultsDisplay office={office} celebrate={celebrate} onTap={() => onTap({ type: "results" })} />
       <ApprovalsBoard total={office.approvals?.total || 0} onTap={() => onTap({ type: "approvals" })} />
+      <SceneChip position={[-1.55, 3.05, -4.85]} label="📊 Results" onClick={() => onTap({ type: "results" })} />
+      <SceneChip
+        position={[-4.85, 2.75, 0.4]}
+        label={`📌 Requests${office.approvals?.total ? ` · ${office.approvals.total}` : ""}`}
+        tone={office.approvals?.total ? "ask" : "plain"}
+        onClick={() => onTap({ type: "approvals" })}
+      />
       <WallClock />
       <Lounge />
       <CoffeeCorner />
@@ -91,6 +116,7 @@ export default function OfficeScene({ office, selected, celebrate, reduced, acti
                 celebrate={celebrate}
                 reduced={reduced}
                 selected={selected === key}
+                registry={positions}
                 onSelect={() => onTap({ type: "robot", key })}
                 onAsk={() => onTap({ type: "approvals", robot: key })}
               />
@@ -100,59 +126,6 @@ export default function OfficeScene({ office, selected, celebrate, reduced, acti
       })}
     </Canvas>
   );
-}
-
-/**
- * Keep the diorama framed at any screen size. On a tall phone the office is
- * shown larger than the screen is wide and a horizontal swipe pans along it.
- */
-function FitCamera() {
-  const { camera, size, gl } = useThree();
-  const pan = useRef(0);
-  const portrait = size.height > size.width * 1.1;
-  const apply = useCallback(() => {
-    const cam = camera as THREE.OrthographicCamera;
-    cam.zoom = portrait ? Math.min(size.width / 8.7, size.height / 12.2) : Math.min(size.width / 14.6, size.height / 11);
-    // screen-right in world space for this camera is (1, 0, -1) / sqrt 2
-    const rx = pan.current / Math.SQRT2;
-    cam.position.set(12 + rx, 10.5, 12 - rx);
-    cam.lookAt(rx, portrait ? 0.05 : 0.4, -rx);
-    cam.updateProjectionMatrix();
-  }, [camera, portrait, size.width, size.height]);
-  useEffect(() => {
-    pan.current = 0;
-    apply();
-  }, [apply]);
-  useEffect(() => {
-    if (!portrait) return;
-    const el = gl.domElement;
-    let startX: number | null = null;
-    let startPan = 0;
-    const down = (e: PointerEvent) => {
-      startX = e.clientX;
-      startPan = pan.current;
-    };
-    const move = (e: PointerEvent) => {
-      if (startX == null) return;
-      const cam = camera as THREE.OrthographicCamera;
-      pan.current = Math.max(-3, Math.min(3, startPan - (e.clientX - startX) / cam.zoom));
-      apply();
-    };
-    const up = () => {
-      startX = null;
-    };
-    el.addEventListener("pointerdown", down);
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-    window.addEventListener("pointercancel", up);
-    return () => {
-      el.removeEventListener("pointerdown", down);
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", up);
-    };
-  }, [gl, camera, portrait, apply]);
-  return null;
 }
 
 function tap(fn: () => void) {
