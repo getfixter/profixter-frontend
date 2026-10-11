@@ -80,7 +80,8 @@ export default function OfficeScene({ office, council, selected, celebrate, redu
   }, []);
   const night = hour < 6 || hour >= 20;
   const evening = hour >= 17 || hour < 7;
-  const total = office.approvals?.total || 0;
+  // ONE RULE: the decree board and the Requests chip never alert - the one badge is King Arthur's.
+  const total = 0;
   // Phones that cannot keep up get a lower resolution and no shadows automatically (both come back when they can).
   const [dpr, setDpr] = useState(1.6);
   const [shadows, setShadows] = useState(true);
@@ -147,8 +148,8 @@ export default function OfficeScene({ office, council, selected, celebrate, redu
       <SceneChip position={[TAPESTRY_X, 3.2, -4.85]} label="📊 Results" onClick={() => onTap({ type: "results" })} />
       <SceneChip
         position={[-4.85, 2.5, BOARD_Z]}
-        label={`📜 Requests${total ? ` · ${total}` : ""}`}
-        tone={total ? "ask" : "plain"}
+        label="📜 Requests"
+        tone="plain"
         wideOnly
         onClick={() => onTap({ type: "approvals" })}
       />

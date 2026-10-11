@@ -23,6 +23,8 @@ export type RobotState = {
   monthCostCents: number;
   guidanceVersion: number;
   liveReplies?: boolean;
+  /** Where this knight's pending work stands. Never a notification: the one inbox is King Arthur's. */
+  work?: { inDecisions: number; beingWorkedOn: number; arthurReviewing: number };
 };
 
 export type OfficeState = {
@@ -54,7 +56,18 @@ export type OfficeState = {
     conversations30: { total: number; qualified: number };
   };
   costs: { todayCents: number; monthCents: number; dailyCapCents: number; monthlyCapCents: number };
-  approvals: { actions: number; playbooks: number; drafts: number; notes: number; total: number };
+  approvals: {
+    actions: number;
+    playbooks: number;
+    drafts: number;
+    notes: number;
+    total: number;
+    /** The only number that may notify: decisions in King Arthur's inbox that need the owner now. */
+    needsYou?: number;
+    beingWorkedOn?: number;
+    arthurReviewing?: number;
+    pending?: number;
+  };
   lastFirstFreeVisitAt: string | null;
   explained?: Explained;
 };

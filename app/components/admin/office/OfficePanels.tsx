@@ -250,13 +250,23 @@ function RobotNow({ d, light, onOpenRequests, onTab }: { d: RobotDetail; light: 
         robot={d.robot.key}
         simple={d.explained?.simple}
         chatgpt={d.explained?.chatgpt}
-        actions={s.waiting > 0 ? [{ label: `See what's waiting (${s.waiting})`, tone: "yes", onClick: onOpenRequests }] : []}
         meta={`${STATUS_WORDS[s.status] || ""}`}
       />
       <div className={styles.statusStrip}>
         <span className={styles.dot} style={{ background: light }} /> {s.statusText}
         {d.schedule.length ? <span className={styles.muted}> · works {d.schedule.join(", ")}</span> : null}
       </div>
+      {s.work && s.work.inDecisions + s.work.beingWorkedOn + s.work.arthurReviewing > 0 ? (
+        <div className={styles.workStrip}>
+          {s.work.beingWorkedOn ? <span>🛠 {s.work.beingWorkedOn} being worked on</span> : null}
+          {s.work.arthurReviewing ? <span>👑 {s.work.arthurReviewing} with King Arthur for review</span> : null}
+          {s.work.inDecisions ? (
+            <button type="button" className={styles.linkBtn} onClick={onOpenRequests}>
+              {s.work.inDecisions} ready - in King Arthur&rsquo;s Decisions
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <Section title="My last shift">
         {lastRun ? (
@@ -744,11 +754,11 @@ export function ResultsPanel({ office, onClose, onOpenRequests }: { office: Offi
         </div>
       </Section>
 
-      {office.approvals.total + office.approvals.notes > 0 ? (
-        <Section title="Waiting for you">
+      {(office.approvals.needsYou ?? 0) > 0 ? (
+        <Section title="Needs you">
           <div className={styles.card}>
             <div>
-              {office.approvals.total} {office.approvals.total === 1 ? "question" : "questions"} · {office.approvals.notes} {office.approvals.notes === 1 ? "note" : "notes"}
+              {office.approvals.needsYou} {office.approvals.needsYou === 1 ? "decision" : "decisions"} in King Arthur&rsquo;s Decisions
             </div>
             <div className={styles.btnRow}>
               <button type="button" className={styles.btn} onClick={onOpenRequests}>
