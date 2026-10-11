@@ -84,13 +84,13 @@ const ACTION_WORDS: Record<string, string> = {
 
 const SUGGESTIONS = [
   "What needs my decision today?",
-  "What did the team do this week?",
-  "Which hero is closest to getting us a new free-visit booking?",
-  "Ask Leonidas to research one new way to reach homeowners.",
+  "What marketing is ready for me to publish?",
+  "Where are we weakest on Google and Maps?",
+  "Ask Leonidas for this week's Instagram and Facebook posts.",
 ];
 
 const INTRO =
-  "Boss, I'm King Arthur, your council manager. I read everything Odysseus, Leonidas and Marcus do, tell you what matters, recommend what to approve, and give them tasks. I can't approve, spend money, message customers, book visits or change ads, prices or rules - those stay yours. What would you like to know?";
+  "Boss, I'm King Arthur, your marketing director. I lead Odysseus (search and visibility), Leonidas (social and community) and Marcus (re-engagement): I set priorities, check their drafts, give them tasks and bring you what is ready. I can't approve, spend money, message customers, book visits or change ads, prices or rules - those stay yours. What would you like to know?";
 
 function Crown({ size = 34 }: { size?: number }) {
   return (
@@ -288,7 +288,7 @@ export function CouncilPanel({
       onClose={onClose}
       label="King Arthur's council"
       tall
-      head={<Head color={ARTHUR_LOOK.body} initial="👑" title="King Arthur" sub={data?.thinking ? "Thinking…" : "Your council manager · simple English"} onClose={onClose} />}
+      head={<Head color={ARTHUR_LOOK.body} initial="👑" title="King Arthur" sub={data?.thinking ? "Thinking…" : "Marketing Director · simple English"} onClose={onClose} />}
       tabs={tabs}
     >
       <div className={styles.copyAllBar}>

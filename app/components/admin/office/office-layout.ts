@@ -44,7 +44,7 @@ export const ROBOT_LOOKS: Record<RobotKey, RobotLook> = {
   visibility: {
     key: "visibility",
     name: "Odysseus",
-    title: "The Explorer · search",
+    title: "Search & visibility",
     body: "#3E7D4F", // vert: forest green
     bodyDark: "#2C5A38",
     accent: "#D9B45A",
@@ -60,7 +60,7 @@ export const ROBOT_LOOKS: Record<RobotKey, RobotLook> = {
   outreach: {
     key: "outreach",
     name: "Leonidas",
-    title: "The Vanguard · outreach",
+    title: "Social & community",
     body: "#A8322D", // gules: crimson
     bodyDark: "#7A2420",
     accent: "#D9B45A",
@@ -76,7 +76,7 @@ export const ROBOT_LOOKS: Record<RobotKey, RobotLook> = {
   conversation: {
     key: "conversation",
     name: "Marcus",
-    title: "The Messenger · conversations",
+    title: "Customer re-engagement",
     body: "#5E3C8C", // purpure: royal purple
     bodyDark: "#43296A",
     accent: "#D9B45A",
@@ -100,7 +100,7 @@ export const ROBOT_ORDER: RobotKey[] = ["visibility", "outreach", "conversation"
  */
 export const THRONE: Vec3 = [-0.15, 0, -4.25];
 export const THRONE_YAW = 0.35;
-export const ARTHUR_LOOK = { name: "King Arthur", title: "High King · your council manager", body: "#24418F", accent: "#E8C15A" };
+export const ARTHUR_LOOK = { name: "King Arthur", title: "Marketing Director", body: "#24418F", accent: "#E8C15A" };
 export const REPORT_SPOTS: Record<RobotKey, Vec3> = {
   visibility: [-1.05, 0, -2.75],
   outreach: [-0.45, 0, -2.55],
