@@ -197,14 +197,34 @@ export type CouncilDecision = {
   at: string;
   createdAt: string;
 };
+/** One decision on the board: numbered 1..N from top to bottom; id never changes. */
+export type BoardItem = Omit<CouncilDecision, "status" | "at"> & {
+  number: number;
+  section: "needs_you" | "being_worked_on" | "history";
+  sectionTitle: string;
+  type: string;
+  status: string;
+  recordStatus: string;
+  at: string;
+  brief: string;
+  copy: string;
+};
+export type DecisionBoard = {
+  generatedAt: string;
+  sections: Array<{ key: "needs_you" | "being_worked_on" | "history"; title: string; items: BoardItem[] }>;
+  counts: { badge: number; needsYou: number; decisions: number; info: number; beingWorkedOn: number; history: number };
+};
+
 export type CouncilState = {
   enabled: boolean;
   thinking: boolean;
   messages: CouncilMessage[];
   tasks: CouncilTask[];
   archived?: Array<{ kind: "task" | "note" | "record"; id: string; title: string; archive: ArchiveInfo | null }>;
-  decisions: CouncilDecision[];
-  history: CouncilDecision[];
+  /** THE single source of the Decisions tab and every copy: sections, order and numbers from the server. */
+  board: DecisionBoard;
+  /** "Copy All for ChatGPT", built from this same board in the same response - never out of step with the screen. */
+  copyAll?: { text: string; count: number; waiting: number };
   mission: { guidance: string; version: number; history: Array<{ version: number; guidance: string; by: string; at: string; note: string }> };
   counts: { decisions: number; info: number; tasks: number; waiting?: number };
 };

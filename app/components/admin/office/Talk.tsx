@@ -7,7 +7,7 @@
  * for ChatGPT. The briefs are built on the server from real records (and
  * already have personal details and secrets removed).
  */
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 import type { RobotKey, Simple } from "@/lib/office";
 import { ROBOT_LOOKS } from "./office-layout";
 import styles from "./office.module.css";
@@ -18,17 +18,20 @@ const ToastContext = createContext<(msg: string) => void>(() => {});
 export const useToast = () => useContext(ToastContext);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [msg, setMsg] = useState<string | null>(null);
+  // Each toast has its own id, so copying twice in a row keeps the second "Copied!" for its full time.
+  const [msg, setMsg] = useState<{ text: string; id: number } | null>(null);
+  const seq = useRef(0);
   const show = useCallback((m: string) => {
-    setMsg(m);
-    window.setTimeout(() => setMsg((cur) => (cur === m ? null : cur)), 1800);
+    const id = ++seq.current;
+    setMsg({ text: m, id });
+    window.setTimeout(() => setMsg((cur) => (cur?.id === id ? null : cur)), 1800);
   }, []);
   return (
     <ToastContext.Provider value={show}>
       {children}
       {msg ? (
-        <div className={styles.copied} role="status" aria-live="polite">
-          ✓ {msg}
+        <div key={msg.id} className={styles.copied} role="status" aria-live="polite">
+          ✓ {msg.text}
         </div>
       ) : null}
     </ToastContext.Provider>

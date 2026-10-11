@@ -34,7 +34,7 @@ import {
   sendToArthur,
   verifyCouncilTask,
   type CouncilAction,
-  type CouncilDecision,
+  type BoardItem,
   type CouncilState,
   type CouncilTask,
   type RobotKey,
@@ -114,58 +114,55 @@ function Crown({ size = 34 }: { size?: number }) {
   );
 }
 
-function decisionBrief(d: CouncilDecision) {
-  return [
-    `# ${d.subject}`,
-    `- Record ID: ${d.id} (King Arthur's council)`,
-    `- Kind: ${d.category === "uncertain" ? "unclear - he needs facts or my view" : d.category === "info" ? "information" : "a decision only I can make"}`,
-    d.hero ? `- Concerns: ${d.hero}` : null,
-    `- Filed: ${when(d.createdAt)} (New York) · updated ${when(d.at)}`,
-    `- In his words: ${d.simple || "(none)"}`,
-    d.recommendation ? `- His recommendation: ${CHOICE_WORDS[d.recommendation.choice] || d.recommendation.choice}. Reason: ${d.recommendation.reason}` : null,
-    d.detail ? `- Details and evidence: ${d.detail}` : null,
-    d.guidance ? `- Exact change - BEFORE: ${d.guidance.previous || "(no guidance)"}\n- Exact change - AFTER: ${d.guidance.text}` : null,
-    "",
-    "King Arthur is my AI manager. He cannot approve anything; his recommendation is not my approval. Please explain this simply, point out problems, and tell me what you would do. Do not assume I approve anything.",
-  ]
-    .filter((x) => x !== null)
-    .join("\n");
-}
-
 /** A copy button for a server-built report, prepared before the tap so copying works on phones. */
-export function ReportCopy({ scope, label, primary, version }: { scope: "pending" | "full"; label: string; primary?: boolean; version: number }) {
+export function ReportCopy({
+  scope,
+  label,
+  primary,
+  version,
+  preset,
+}: {
+  scope: "pending" | "full";
+  label: string;
+  primary?: boolean;
+  /** Changes whenever the board changes, so a fetched report is never older than the screen. */
+  version: number | string;
+  /** Text built from the very board on screen (same server response): used as is. */
+  preset?: { text: string; count: number } | null;
+}) {
   const toast = useToast();
-  const [text, setText] = useState<string | null>(null);
-  const [count, setCount] = useState<number | null>(null);
+  const [fetched, setFetched] = useState<{ text: string; count: number } | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const text = preset?.text ?? fetched?.text ?? null;
   useEffect(() => {
+    if (preset) return;
     let alive = true;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- re-prepare when the council changes
     setState("loading");
     getCouncilReport(scope)
       .then((r) => {
         if (!alive) return;
-        setText(r.text);
-        setCount(r.count);
+        setFetched({ text: r.text, count: r.count });
         setState("ready");
       })
       .catch(() => alive && setState("error"));
     return () => {
       alive = false;
     };
-  }, [scope, version]);
+  }, [scope, version, preset]);
   return (
     <button
       type="button"
       className={`${styles.copyBtn} ${primary ? styles.copyBtnPrimary : ""} ${primary ? styles.copyAll : ""}`}
-      disabled={state === "loading" && !text}
+      disabled={!text && state === "loading"}
       onClick={async (e) => {
         e.stopPropagation();
         let t = text;
         if (!t) {
           try {
-            t = (await getCouncilReport(scope)).text;
-            setText(t);
+            const r = await getCouncilReport(scope);
+            t = r.text;
+            setFetched({ text: r.text, count: r.count });
           } catch {
             toast("Couldn't prepare the report - try again");
             return;
@@ -176,8 +173,7 @@ export function ReportCopy({ scope, label, primary, version }: { scope: "pending
       }}
     >
       {primary ? "✨ " : "⧉ "}
-      {state === "loading" && !text ? "Preparing…" : label}
-      {primary && count != null ? ` (${count})` : ""}
+      {!preset && state === "loading" && !text ? "Preparing…" : label}
     </button>
   );
 }
@@ -274,11 +270,9 @@ export function CouncilPanel({
     }
   };
 
-  // Only what needs the owner NOW is in the inbox; everything being worked on waits apart, without a badge.
-  const isParked = (d: CouncilDecision) => d.inbox === "waiting" || d.inbox === "review";
-  const decisions = (data?.decisions || []).filter((d) => (d.category === "decision" || d.category === "uncertain") && !isParked(d));
-  const info = (data?.decisions || []).filter((d) => d.category === "info" && !isParked(d));
-  const parked = (data?.decisions || []).filter(isParked);
+  // The board comes from the server already grouped, ordered and numbered - shown exactly as given.
+  const board = data?.board;
+  const parkedCount = board?.counts.beingWorkedOn || 0;
   const activeTasks = (data?.tasks || []).filter((t) => !["verified", "not_verified", "cancelled"].includes(t.status));
   const closedTasks = (data?.tasks || []).filter((t) => ["verified", "not_verified", "cancelled"].includes(t.status));
   const archived = data?.archived || [];
@@ -310,8 +304,8 @@ export function CouncilPanel({
       tabs={tabs}
     >
       <div className={styles.copyAllBar}>
-        <ReportCopy scope="pending" label="Copy All for ChatGPT" primary version={version} />
-        <ReportCopy scope="full" label="Copy full status report" version={version} />
+        <ReportCopy scope="pending" label="Copy All for ChatGPT" primary version={`${version}:${data?.board?.generatedAt || ""}`} preset={data?.copyAll || null} />
+        <ReportCopy scope="full" label="Copy full status report" version={`${version}:${data?.board?.generatedAt || ""}`} />
       </div>
       {err ? <div className={styles.problem}>{err}</div> : null}
       {done ? <div className={styles.ok}>{done}</div> : null}
@@ -319,10 +313,12 @@ export function CouncilPanel({
         <div className={styles.muted}>Opening the council chamber…</div>
       ) : tab === "talk" ? (
         <TalkTab data={data} owner={owner} replying={replying} draft={draft} setDraft={setDraft} send={send} sending={busy === "send"} listEnd={listEnd} />
-      ) : tab === "decisions" ? (
+      ) : tab === "decisions" && board ? (
         <>
-          <Section title={decisions.length ? `Needs your decision (${decisions.length})` : "Needs your decision"}>
-            {decisions.length === 0 ? (
+          {board.sections.map((sec) =>
+            sec.key === "needs_you" ? (
+          <Section key={sec.key} title={sec.items.length ? `${sec.title} (${sec.items.length})` : sec.title}>
+            {sec.items.length === 0 ? (
               <div className={`${styles.card} ${styles.allClear}`}>
                 <div className={styles.allClearIcon} aria-hidden>
                   ✓
@@ -330,48 +326,45 @@ export function CouncilPanel({
                 <div>
                   <b>Nothing needs you right now.</b>
                   <div className={styles.muted}>
-                    {parked.length ? `King Arthur and the knights are working on ${parked.length} thing${parked.length === 1 ? "" : "s"} - they come back here only when they are ready for you.` : "King Arthur and the knights keep working. You will see it here when they need you."}
+                    {parkedCount ? `King Arthur and the knights are working on ${parkedCount} thing${parkedCount === 1 ? "" : "s"} - they come back here only when they are ready for you.` : "King Arthur and the knights keep working. You will see it here when they need you."}
                   </div>
                 </div>
               </div>
             ) : (
-              decisions.map((d) => <DecisionCard key={d.id} d={d} owner={owner} busy={busy === d.id} act={act} onOpenRequests={onOpenRequests} onAnswer={(text) => (onTab("talk"), setDraft(text))} />)
+              sec.items.map((d) => <DecisionCard key={d.id} d={d} owner={owner} busy={busy === d.id} act={act} onOpenRequests={onOpenRequests} onAnswer={(text) => (onTab("talk"), setDraft(text))} />)
             )}
-            {!owner && decisions.length ? <div className={styles.muted}>Only the owner can decide these.</div> : null}
+            {!owner && sec.items.length ? <div className={styles.muted}>Only the owner can decide these.</div> : null}
           </Section>
-          <Section title={info.length ? `Good to know (${info.length})` : "Good to know"}>
-            {info.length === 0 ? (
-              <div className={styles.card}>
-                <span className={styles.muted}>No news from King Arthur right now.</span>
-              </div>
-            ) : (
-              info.map((d) => <DecisionCard key={d.id} d={d} owner={owner} busy={busy === d.id} act={act} onOpenRequests={onOpenRequests} onAnswer={(text) => (onTab("talk"), setDraft(text))} />)
-            )}
-          </Section>
-          {parked.length ? (
-            <Section title={`Being worked on (${parked.length}) - nothing for you to do`}>
-              {parked.map((d) => (
-                <WaitingCard key={d.id} d={d} owner={owner} busy={busy === d.id} act={act} />
-              ))}
-            </Section>
-          ) : null}
-          {data.history.length ? (
-            <Section title="Completed and history (last 14 days)">
-              <div className={styles.card}>
-                <ul className={styles.list}>
-                  {data.history.map((d) => (
-                    <li key={d.id}>
-                      <b>{d.subject}</b>{" "}
-                      <span className={styles.muted}>
-                        · {d.resolution?.choice === "archived" ? `archived by ${d.resolution.by}` : d.resolution?.choice === "confirmed" ? "you said yes" : d.resolution?.choice === "rejected" ? "you said no" : d.resolution?.choice === "handled" ? (d.resolution.by === "King Arthur" ? "Arthur handled it" : "you marked it handled") : d.resolution?.choice === "merged" ? "duplicate merged" : d.status === "superseded" ? "decided elsewhere" : d.resolution?.choice || d.status}{" "}
-                        · {ago(d.at)}
-                      </span>
-                    </li>
+            ) : sec.key === "being_worked_on" ? (
+              sec.items.length ? (
+                <Section key={sec.key} title={`${sec.title} (${sec.items.length}) - nothing for you to do`}>
+                  {sec.items.map((d) => (
+                    <WaitingCard key={d.id} d={d} owner={owner} busy={busy === d.id} act={act} />
                   ))}
-                </ul>
-              </div>
-            </Section>
-          ) : null}
+                </Section>
+              ) : null
+            ) : sec.items.length ? (
+              <Section key={sec.key} title={`${sec.title} (last 14 days)`}>
+                <div className={styles.card}>
+                  <ul className={styles.historyList}>
+                    {sec.items.map((d) => (
+                      <li key={d.id}>
+                        <span className={styles.numChip}>#{d.number}</span>
+                        <span style={{ minWidth: 0 }}>
+                          <b>{d.subject}</b>
+                          <span className={styles.muted}>
+                            {" "}
+                            · {d.status.replace(/^Closed - /, "")} · {ago(d.at)}
+                          </span>
+                        </span>
+                        <CopyButton text={d.copy} label="Copy" />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </Section>
+            ) : null
+          )}
         </>
       ) : tab === "mission" ? (
         <MissionTab data={data} owner={owner} busy={busy === "mission"} act={act} />
@@ -664,7 +657,7 @@ function DecisionCard({
   onOpenRequests,
   onAnswer,
 }: {
-  d: CouncilDecision;
+  d: BoardItem;
   owner: boolean;
   busy: boolean;
   act: (id: string, label: string, fn: () => Promise<unknown>) => void;
@@ -742,7 +735,7 @@ function DecisionCard({
         <Crown />
         <div className={styles.talkBubble}>
           <div className={styles.talkMeta}>
-            {label}
+            <span className={styles.numChip}>#{d.number}</span> {label}
             {d.hero ? ` · ${d.hero}` : ""} · {ago(d.at)}
           </div>
           <div className={styles.talkSay}>{d.simple || d.subject}</div>
@@ -768,7 +761,7 @@ function DecisionCard({
       </div>
       {open ? <div className={styles.talkDetails}>{details}</div> : null}
       <div className={styles.copyRow}>
-        <CopyButton text={decisionBrief(d)} label="Copy for ChatGPT" primary />
+        <CopyButton text={d.copy} label={`Copy #${d.number} for ChatGPT`} primary />
         <CopyButton text={d.simple || d.subject} label="Copy simple" />
       </div>
     </div>
@@ -776,7 +769,7 @@ function DecisionCard({
 }
 
 /** Something King Arthur or a knight is working on - shown, never badged; it returns to the inbox when ready. */
-function WaitingCard({ d, owner, busy, act }: { d: CouncilDecision; owner: boolean; busy: boolean; act: (id: string, label: string, fn: () => Promise<unknown>) => void }) {
+function WaitingCard({ d, owner, busy, act }: { d: BoardItem; owner: boolean; busy: boolean; act: (id: string, label: string, fn: () => Promise<unknown>) => void }) {
   const [open, setOpen] = useState(false);
   const w = d.waiting;
   const status =
@@ -791,7 +784,9 @@ function WaitingCard({ d, owner, busy, act }: { d: CouncilDecision; owner: boole
       <div className={styles.waitingRow}>
         <span className={`${styles.waitingDot} ${d.inbox === "review" ? styles.waitingDotReview : ""}`} aria-hidden />
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div className={styles.waitingTitle}>{d.subject}</div>
+          <div className={styles.waitingTitle}>
+            <span className={styles.numChip}>#{d.number}</span> {d.subject}
+          </div>
           <div className={styles.muted} style={{ fontSize: 13 }}>
             {status}
             {back && d.inbox !== "review" ? ` · back by ${back} at the latest` : ""}
@@ -808,8 +803,12 @@ function WaitingCard({ d, owner, busy, act }: { d: CouncilDecision; owner: boole
           {open ? "Hide details" : "More details"}
         </button>
       </div>
+      <div className={styles.copyRow}>
+        <CopyButton text={d.copy} label={`Copy #${d.number}`} />
+      </div>
       {open ? (
         <div className={styles.talkDetails}>
+          <div className={styles.muted} style={{ marginBottom: 6 }}>Record {d.id}</div>
           {d.simple ? <div style={{ marginBottom: 6 }}>{d.simple}</div> : null}
           {d.recommendation?.reason ? (
             <div style={{ marginBottom: 6 }}>
