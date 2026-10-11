@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/immutability -- three.js objects (mixers, bones, materials) are driven per frame by design */
 
 /**
- * King Arthur on his throne - the owner's AI council manager.
+ * King Arthur on his throne - the Kingdom's AI marketing director.
  *
  * His own sculpted, rigged model; the crown, the royal cloak and Excalibur
  * are added here. What he does comes ONLY from real records:
