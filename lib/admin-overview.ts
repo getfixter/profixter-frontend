@@ -108,7 +108,19 @@ export type Overview = {
   period: OverviewPeriod;
   kpis: {
     totalCustomers: { value: number };
-    activeMembers: { value: number; prev: number; delta: Delta; paying: number; comped: number; gifts: number };
+    /* paying + comped + gifts + manual + notBilling = value; stripeOnly bills in Stripe with no member record. */
+    activeMembers: {
+      value: number;
+      prev: number;
+      delta: Delta;
+      paying: number;
+      comped: number;
+      gifts: number;
+      manual?: number;
+      notBilling?: number;
+      stripeOnly?: { count: number; paying: number; netCents: number } | null;
+      reconciled?: boolean | null;
+    };
     newMembers: { value: number; prev: number; delta: Delta };
     cancellations: { value: number; prev: number; delta: Delta; scheduled: number };
     newCustomers: { value: number; prev: number; delta: Delta };
