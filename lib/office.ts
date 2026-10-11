@@ -97,6 +97,8 @@ export type RobotDetail = {
 };
 
 export type ApprovalItem = {
+  /** Set when King Arthur parked it while a knight works on it - listed, but not the owner's to act on now. */
+  waiting?: { inbox: string; reason: string; since: string | null } | null;
   kind: "action" | "playbook" | "draft" | "note";
   id: string;
   robot: RobotKey | null;
@@ -185,6 +187,10 @@ export type CouncilDecision = {
   refs: Array<{ kind: string; id: string }>;
   guidance: { agent: string; text: string; previous: string; baseVersion: number } | null;
   archiveRequest?: { kind: string; id: string; reason: string; category: string } | null;
+  /** needs_you = the owner's inbox (and badge); waiting / review = being worked on. */
+  inbox?: "needs_you" | "waiting" | "review";
+  waiting?: { kind: "knight" | "owner" | null; reason: string; taskId: string | null; since: string; until: string } | null;
+  inboxHistory?: Array<{ at: string; to: string; by: string; note: string }>;
   archive?: ArchiveInfo | null;
   status: "open" | "resolved" | "superseded";
   resolution: { choice: string; by: string; at: string; note?: string } | null;
@@ -200,7 +206,7 @@ export type CouncilState = {
   decisions: CouncilDecision[];
   history: CouncilDecision[];
   mission: { guidance: string; version: number; history: Array<{ version: number; guidance: string; by: string; at: string; note: string }> };
-  counts: { decisions: number; info: number; tasks: number };
+  counts: { decisions: number; info: number; tasks: number; waiting?: number };
 };
 
 export async function getCouncil(): Promise<CouncilState> {
@@ -227,6 +233,16 @@ export async function saveMission(guidance: string) {
 export async function restoreMission(version: number) {
   const res = await API.post("/api/admin/growth/office/council/mission/rollback", { version });
   return res.data as { version: number; guidance: string };
+}
+
+/** "Wait - remind me when ready": out of the inbox; nothing approved, dismissed or stopped. */
+export async function deferDecision(id: string) {
+  const res = await API.post(`/api/admin/growth/office/council/decisions/${id}/wait`, {});
+  return res.data as { inbox: string; waiting: { until: string } };
+}
+
+export async function bringBackDecision(id: string) {
+  await API.post(`/api/admin/growth/office/council/decisions/${id}/bring-back`, {});
 }
 
 /** Restore anything King Arthur archived. */

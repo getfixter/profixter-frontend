@@ -804,7 +804,9 @@ export function RequestsPanel({ robot, owner, onClose, onChanged }: { robot?: Ro
   };
 
   const filter = (x: ApprovalItem) => !only || x.robot === only;
-  const items = (data?.items || []).filter(filter);
+  const all = (data?.items || []).filter(filter);
+  const items = all.filter((x) => !x.waiting);
+  const parked = all.filter((x) => x.waiting);
   const notes = (data?.notes || []).filter(filter);
 
   const technical = (x: ApprovalItem) => (
@@ -918,7 +920,22 @@ export function RequestsPanel({ robot, owner, onClose, onChanged }: { robot?: Ro
             )}
             {!owner && items.length ? <div className={styles.muted}>Only the owner can answer these.</div> : null}
           </Section>
-          <Section title={notes.length ? `Notes from the robots (${notes.length})` : "Notes from the robots"}>
+          {parked.length ? (
+            <Section title={`Being worked on (${parked.length}) - nothing for you to do yet`}>
+              {parked.map((x) => (
+                <RobotSays
+                  key={`${x.kind}:${x.id}`}
+                  robot={x.robot}
+                  meta={x.waiting?.inbox === "review" ? "King Arthur is reviewing the new version" : `Being improved · ${x.waiting?.reason || "a knight is on it"}`}
+                  simple={x.simple || { say: x.title }}
+                  chatgpt={x.chatgpt}
+                  details={technical(x)}
+                  compact
+                />
+              ))}
+            </Section>
+          ) : null}
+          <Section title={notes.length ? `Notes from the knights (${notes.length})` : "Notes from the knights"}>
             {notes.length === 0 ? (
               <div className={styles.card}>
                 <span className={styles.muted}>No notes right now.</span>

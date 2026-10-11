@@ -21,7 +21,9 @@
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  bringBackDecision,
   cancelCouncilTask,
+  deferDecision,
   errorMessage,
   getCouncil,
   getCouncilReport,
@@ -272,8 +274,11 @@ export function CouncilPanel({
     }
   };
 
-  const decisions = (data?.decisions || []).filter((d) => d.category === "decision" || d.category === "uncertain");
-  const info = (data?.decisions || []).filter((d) => d.category === "info");
+  // Only what needs the owner NOW is in the inbox; everything being worked on waits apart, without a badge.
+  const isParked = (d: CouncilDecision) => d.inbox === "waiting" || d.inbox === "review";
+  const decisions = (data?.decisions || []).filter((d) => (d.category === "decision" || d.category === "uncertain") && !isParked(d));
+  const info = (data?.decisions || []).filter((d) => d.category === "info" && !isParked(d));
+  const parked = (data?.decisions || []).filter(isParked);
   const activeTasks = (data?.tasks || []).filter((t) => !["verified", "not_verified", "cancelled"].includes(t.status));
   const closedTasks = (data?.tasks || []).filter((t) => ["verified", "not_verified", "cancelled"].includes(t.status));
   const archived = data?.archived || [];
@@ -318,8 +323,16 @@ export function CouncilPanel({
         <>
           <Section title={decisions.length ? `Needs your decision (${decisions.length})` : "Needs your decision"}>
             {decisions.length === 0 ? (
-              <div className={styles.card}>
-                <span className={styles.muted}>Nothing waits for your decision from King Arthur right now. Items without his view are still in 📜 Requests.</span>
+              <div className={`${styles.card} ${styles.allClear}`}>
+                <div className={styles.allClearIcon} aria-hidden>
+                  ✓
+                </div>
+                <div>
+                  <b>Nothing needs you right now.</b>
+                  <div className={styles.muted}>
+                    {parked.length ? `King Arthur and the knights are working on ${parked.length} thing${parked.length === 1 ? "" : "s"} - they come back here only when they are ready for you.` : "King Arthur and the knights keep working. You will see it here when they need you."}
+                  </div>
+                </div>
               </div>
             ) : (
               decisions.map((d) => <DecisionCard key={d.id} d={d} owner={owner} busy={busy === d.id} act={act} onOpenRequests={onOpenRequests} onAnswer={(text) => (onTab("talk"), setDraft(text))} />)
@@ -335,8 +348,15 @@ export function CouncilPanel({
               info.map((d) => <DecisionCard key={d.id} d={d} owner={owner} busy={busy === d.id} act={act} onOpenRequests={onOpenRequests} onAnswer={(text) => (onTab("talk"), setDraft(text))} />)
             )}
           </Section>
+          {parked.length ? (
+            <Section title={`Being worked on (${parked.length}) - nothing for you to do`}>
+              {parked.map((d) => (
+                <WaitingCard key={d.id} d={d} owner={owner} busy={busy === d.id} act={act} />
+              ))}
+            </Section>
+          ) : null}
           {data.history.length ? (
-            <Section title="Decided and handled (last 14 days)">
+            <Section title="Completed and history (last 14 days)">
               <div className={styles.card}>
                 <ul className={styles.list}>
                   {data.history.map((d) => (
@@ -667,12 +687,23 @@ function DecisionCard({
     } else if (ref?.kind === "playbook") {
       buttons.push({ label: "Yes, use it", tone: "yes", onClick: () => act(d.id, "Done - the email is approved.", () => decidePlaybook(ref.id, "approve")) });
       buttons.push({ label: "Not now", tone: "no", onClick: () => act(d.id, "OK - retired.", () => decidePlaybook(ref.id, "retire", "Not now")) });
-    } else if (ref?.kind === "note" || ref?.kind === "draft") {
+    } else if (ref?.kind === "note") {
+      // a hero's note: "Got it" files it as seen; "Not useful" dismisses that note - no task is touched
       buttons.push({ label: "Got it", tone: "yes", onClick: () => act(d.id, "Got it.", () => setFindingStatus(ref.id, "acknowledged")) });
-      buttons.push({ label: "Not useful", tone: "no", onClick: () => act(d.id, "Removed.", () => setFindingStatus(ref.id, "dismissed")) });
+      buttons.push({ label: "Not useful", tone: "no", onClick: () => act(d.id, "Dismissed.", () => setFindingStatus(ref.id, "dismissed")) });
+    } else if (ref?.kind === "draft") {
+      // a draft is content work: "Not useful" dismisses Arthur's recommendation only - the draft stays in Requests
+      buttons.push({ label: "Got it", tone: "yes", onClick: () => act(d.id, "Got it.", () => setFindingStatus(ref.id, "acknowledged")) });
+      buttons.push({ label: "Not useful", tone: "no", onClick: () => act(d.id, "Dismissed - the draft stays in Requests.", () => resolveCouncilDecision(d.id, "reject")) });
+    } else if (d.category === "info") {
+      buttons.push({ label: "Got it", tone: "yes", onClick: () => act(d.id, "Got it.", () => resolveCouncilDecision(d.id, "done")) });
+      buttons.push({ label: "Not useful", tone: "no", onClick: () => act(d.id, "Dismissed.", () => resolveCouncilDecision(d.id, "reject")) });
     } else {
-      if (d.category !== "info") buttons.push({ label: "Answer Arthur", tone: "plain", onClick: () => onAnswer(`About "${d.subject}": `) });
-      buttons.push({ label: d.category === "info" ? "Got it" : "Mark handled", tone: d.category === "info" ? "yes" : "no", onClick: () => act(d.id, "Noted.", () => resolveCouncilDecision(d.id, "done")) });
+      buttons.push({ label: "Answer Arthur", tone: "plain", onClick: () => onAnswer(`About "${d.subject}": `) });
+      buttons.push({ label: "Mark handled", tone: "no", onClick: () => act(d.id, "Noted.", () => resolveCouncilDecision(d.id, "done")) });
+    }
+    if (d.category !== "info") {
+      buttons.push({ label: "Wait · remind me when ready", tone: "plain", onClick: () => act(d.id, "Set aside - it comes back when it is ready.", () => deferDecision(d.id)) });
     }
   }
   const details: ReactNode = (
@@ -740,6 +771,61 @@ function DecisionCard({
         <CopyButton text={decisionBrief(d)} label="Copy for ChatGPT" primary />
         <CopyButton text={d.simple || d.subject} label="Copy simple" />
       </div>
+    </div>
+  );
+}
+
+/** Something King Arthur or a knight is working on - shown, never badged; it returns to the inbox when ready. */
+function WaitingCard({ d, owner, busy, act }: { d: CouncilDecision; owner: boolean; busy: boolean; act: (id: string, label: string, fn: () => Promise<unknown>) => void }) {
+  const [open, setOpen] = useState(false);
+  const w = d.waiting;
+  const status =
+    d.inbox === "review"
+      ? "Ready - King Arthur is reviewing the new version"
+      : w?.kind === "owner"
+      ? "You asked to be reminded when it is ready"
+      : `Waiting for ${d.hero || "a knight"} - ${w?.reason || "the work is being improved"}`;
+  const back = w?.until ? new Date(w.until).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" }) : null;
+  return (
+    <div className={`${styles.talk} ${styles.waitingCard}`}>
+      <div className={styles.waitingRow}>
+        <span className={`${styles.waitingDot} ${d.inbox === "review" ? styles.waitingDotReview : ""}`} aria-hidden />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div className={styles.waitingTitle}>{d.subject}</div>
+          <div className={styles.muted} style={{ fontSize: 13 }}>
+            {status}
+            {back && d.inbox !== "review" ? ` · back by ${back} at the latest` : ""}
+          </div>
+        </div>
+      </div>
+      <div className={styles.talkButtons}>
+        {owner ? (
+          <button type="button" disabled={busy} className={`${styles.btn} ${styles.btnSoft}`} onClick={() => act(d.id, "Back in your inbox.", () => bringBackDecision(d.id))}>
+            Bring it back now
+          </button>
+        ) : null}
+        <button type="button" className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setOpen(!open)} aria-expanded={open}>
+          {open ? "Hide details" : "More details"}
+        </button>
+      </div>
+      {open ? (
+        <div className={styles.talkDetails}>
+          {d.simple ? <div style={{ marginBottom: 6 }}>{d.simple}</div> : null}
+          {d.recommendation?.reason ? (
+            <div style={{ marginBottom: 6 }}>
+              <b>King Arthur:</b> {d.recommendation.reason}
+            </div>
+          ) : null}
+          <ol className={styles.timeline}>
+            {(d.inboxHistory || []).map((h, i) => (
+              <li key={i}>
+                <b>{h.to === "needs_you" ? "In your inbox" : h.to === "review" ? "Arthur reviewing" : "Being worked on"}</b> · {when(h.at)}
+                {h.note ? <div className={styles.muted}>{h.note}</div> : null}
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
     </div>
   );
 }
