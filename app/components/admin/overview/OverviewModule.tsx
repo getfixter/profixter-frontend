@@ -352,6 +352,11 @@ export default function OverviewModule() {
               `${num(k.activeMembers.paying)} paying`,
               k.activeMembers.comped ? `${num(k.activeMembers.comped)} comped` : "",
               k.activeMembers.gifts ? `${num(k.activeMembers.gifts)} gift` : "",
+              k.activeMembers.manual ? `${num(k.activeMembers.manual)} granted (no Stripe)` : "",
+              k.activeMembers.notBilling ? `${num(k.activeMembers.notBilling)} not billing in Stripe` : "",
+              k.activeMembers.stripeOnly?.count
+                ? `+${num(k.activeMembers.stripeOnly.count)} Stripe sub${k.activeMembers.stripeOnly.count === 1 ? "" : "s"} with no member record (in MRR)`
+                : "",
             ]
               .filter(Boolean)
               .join(" · ")}
