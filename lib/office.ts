@@ -151,7 +151,9 @@ export function errorMessage(e: unknown, fallback: string): { message: string; p
 
 export type CouncilAction = { type: string; ref: string; label: string; ok: boolean };
 export type CouncilMessage = { id: string; role: "owner" | "arthur"; kind: "chat" | "briefing"; text: string; actions: CouncilAction[]; at: string };
-export type TaskStatus = "received" | "assigned" | "in_progress" | "completed" | "blocked" | "verified" | "not_verified" | "cancelled";
+export type TaskStatus = "received" | "assigned" | "in_progress" | "completed" | "blocked" | "verified" | "not_verified" | "cancelled" | "archived";
+/** An archive never deletes: who archived it, when, why, and the state it came from. */
+export type ArchiveInfo = { by: string; at: string; reason: string; category: string; previousStatus: string; restoredBy?: string; restoredAt?: string };
 export type CouncilTask = {
   id: string;
   agent: "visibility" | "outreach" | "conversion";
@@ -163,6 +165,7 @@ export type CouncilTask = {
   result: { summary: string; at: string } | null;
   verification: { verdict: string; note: string; by: string; at: string } | null;
   history: Array<{ at: string; status: string; by: string; note: string }>;
+  archive?: ArchiveInfo | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -177,6 +180,8 @@ export type CouncilDecision = {
   recommendation: { choice: string; reason: string } | null;
   refs: Array<{ kind: string; id: string }>;
   guidance: { agent: string; text: string; previous: string; baseVersion: number } | null;
+  archiveRequest?: { kind: string; id: string; reason: string; category: string } | null;
+  archive?: ArchiveInfo | null;
   status: "open" | "resolved" | "superseded";
   resolution: { choice: string; by: string; at: string; note?: string } | null;
   at: string;
@@ -187,6 +192,7 @@ export type CouncilState = {
   thinking: boolean;
   messages: CouncilMessage[];
   tasks: CouncilTask[];
+  archived?: Array<{ kind: "task" | "note" | "record"; id: string; title: string; archive: ArchiveInfo | null }>;
   decisions: CouncilDecision[];
   history: CouncilDecision[];
   mission: { guidance: string; version: number; history: Array<{ version: number; guidance: string; by: string; at: string; note: string }> };
@@ -217,6 +223,12 @@ export async function saveMission(guidance: string) {
 export async function restoreMission(version: number) {
   const res = await API.post("/api/admin/growth/office/council/mission/rollback", { version });
   return res.data as { version: number; guidance: string };
+}
+
+/** Restore anything King Arthur archived. */
+export async function restoreArchived(kind: string, id: string) {
+  const res = await API.post(`/api/admin/growth/office/council/archive/${kind}/${id}/restore`, {});
+  return res.data as { restored: boolean; status: string };
 }
 
 export async function cancelCouncilTask(id: string) {

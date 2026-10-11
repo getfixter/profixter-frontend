@@ -26,6 +26,7 @@ import {
   getCouncil,
   getCouncilReport,
   resolveCouncilDecision,
+  restoreArchived,
   restoreMission,
   saveMission,
   sendToArthur,
@@ -55,6 +56,14 @@ const TASK_WORDS: Record<string, { label: string; tone: "wait" | "work" | "done"
   verified: { label: "Checked ✓", tone: "done" },
   not_verified: { label: "Not good enough", tone: "bad" },
   cancelled: { label: "Cancelled", tone: "off" },
+  archived: { label: "Archived", tone: "off" },
+};
+
+const ARCHIVE_WHY: Record<string, string> = {
+  business_management: "outside the marketing mission",
+  duplicate: "a duplicate",
+  stale: "untouched for 30+ days",
+  owner: "you said yes",
 };
 
 const CHOICE_WORDS: Record<string, string> = {
@@ -80,6 +89,9 @@ const ACTION_WORDS: Record<string, string> = {
   "decision.info": "ℹ️ Noted for you",
   "decision.routine": "✓ Handled",
   "shift.started": "⚔️ Extra shift",
+  "archive.done": "🗄 Archived",
+  "archive.requested": "🗄 Asked you to archive",
+  "archive.refused": "✋ Kept",
 };
 
 const SUGGESTIONS = [
@@ -264,6 +276,7 @@ export function CouncilPanel({
   const info = (data?.decisions || []).filter((d) => d.category === "info");
   const activeTasks = (data?.tasks || []).filter((t) => !["verified", "not_verified", "cancelled"].includes(t.status));
   const closedTasks = (data?.tasks || []).filter((t) => ["verified", "not_verified", "cancelled"].includes(t.status));
+  const archived = data?.archived || [];
 
   const counts = data?.counts;
   const tabs = (
@@ -330,7 +343,7 @@ export function CouncilPanel({
                     <li key={d.id}>
                       <b>{d.subject}</b>{" "}
                       <span className={styles.muted}>
-                        · {d.resolution?.choice === "confirmed" ? "you saved it" : d.resolution?.choice === "rejected" ? "you said no" : d.resolution?.choice === "handled" ? (d.resolution.by === "King Arthur" ? "Arthur handled it" : "you marked it handled") : d.resolution?.choice === "merged" ? "duplicate merged" : d.status === "superseded" ? "decided elsewhere" : d.resolution?.choice || d.status}{" "}
+                        · {d.resolution?.choice === "archived" ? `archived by ${d.resolution.by}` : d.resolution?.choice === "confirmed" ? "you said yes" : d.resolution?.choice === "rejected" ? "you said no" : d.resolution?.choice === "handled" ? (d.resolution.by === "King Arthur" ? "Arthur handled it" : "you marked it handled") : d.resolution?.choice === "merged" ? "duplicate merged" : d.status === "superseded" ? "decided elsewhere" : d.resolution?.choice || d.status}{" "}
                         · {ago(d.at)}
                       </span>
                     </li>
@@ -357,6 +370,30 @@ export function CouncilPanel({
             <Section title="Finished (last 14 days)">
               {closedTasks.map((t) => (
                 <TaskCard key={t.id} t={t} owner={owner} busy={busy === t.id} act={act} />
+              ))}
+            </Section>
+          ) : null}
+          {archived.length ? (
+            <Section title={`Archived by King Arthur (${archived.length}) - nothing is deleted`}>
+              {archived.map((a) => (
+                <div key={`${a.kind}:${a.id}`} className={styles.card}>
+                  <div className={styles.talkMeta}>
+                    {a.kind === "task" ? "Task" : a.kind === "note" ? "Hero note" : "Council record"} · {ARCHIVE_WHY[a.archive?.category || ""] || a.archive?.category} · {a.archive?.by} · {ago(a.archive?.at)}
+                  </div>
+                  <div className={styles.talkSay}>{a.title}</div>
+                  {a.archive?.reason ? <div className={styles.muted} style={{ marginTop: 4 }}>Why: {a.archive.reason}</div> : null}
+                  {owner ? (
+                    <button
+                      type="button"
+                      className={`${styles.btn} ${styles.btnSoft}`}
+                      style={{ marginTop: 8 }}
+                      disabled={busy === a.id}
+                      onClick={() => act(a.id, "Restored.", () => restoreArchived(a.kind, a.id))}
+                    >
+                      Restore
+                    </button>
+                  ) : null}
+                </div>
               ))}
             </Section>
           ) : null}
@@ -618,7 +655,10 @@ function DecisionCard({
   const ref = d.refs[0];
   const buttons: Array<{ label: string; tone: "yes" | "no" | "plain"; onClick: () => void }> = [];
   if (owner) {
-    if (d.guidance) {
+    if (d.archiveRequest) {
+      buttons.push({ label: "Yes, archive it", tone: "yes", onClick: () => act(d.id, "Archived - you can restore it any time.", () => resolveCouncilDecision(d.id, "confirm")) });
+      buttons.push({ label: "Keep it", tone: "no", onClick: () => act(d.id, "OK - kept.", () => resolveCouncilDecision(d.id, "reject")) });
+    } else if (d.guidance) {
       buttons.push({ label: "Save this guidance", tone: "yes", onClick: () => act(d.id, "Saved - a new guidance version.", () => resolveCouncilDecision(d.id, "confirm")) });
       buttons.push({ label: "No thanks", tone: "no", onClick: () => act(d.id, "OK - nothing changed.", () => resolveCouncilDecision(d.id, "reject")) });
     } else if (ref?.kind === "action") {
