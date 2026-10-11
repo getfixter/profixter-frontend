@@ -275,7 +275,6 @@ function Office({ onClassic }: { onClassic?: () => void }) {
   const night = hour < 6 || hour >= 20;
   const f = office?.kpis?.firstFreeVisits;
   const diff = f && f.last7 != null && f.prev7 != null ? f.last7 - f.prev7 : null;
-  const requests = office ? office.approvals.total : 0;
 
   const confetti = useMemo(
     () =>
@@ -423,7 +422,6 @@ function Office({ onClassic }: { onClassic?: () => void }) {
                       {look.name[0]}
                     </span>
                     <span className={styles.dockDot} style={{ background: STATUS_LIGHT[r?.status || "waiting"] }} />
-                    {r?.status === "needs_you" ? <span className={styles.dockAsk}>?</span> : null}
                   </span>
                   <span className={styles.dockLabel}>{look.name}</span>
                 </button>
@@ -434,10 +432,8 @@ function Office({ onClassic }: { onClassic?: () => void }) {
               <span className={styles.dockIcon}>📊</span>
               <span className={styles.dockLabel}>Results</span>
             </button>
-            <button type="button" className={`${styles.dockBtn} ${requests ? styles.dockBtnAsk : ""}`} onClick={() => openPanel({ type: "requests" })}>
-              <span className={styles.dockIcon}>
-                📜{requests ? <span className={styles.dockBadge}>{requests}</span> : null}
-              </span>
+            <button type="button" className={styles.dockBtn} onClick={() => openPanel({ type: "requests" })}>
+              <span className={styles.dockIcon}>📜</span>
               <span className={styles.dockLabel}>Requests</span>
             </button>
             <button type="button" className={styles.dockBtn} onClick={() => setMenu((m) => !m)} aria-expanded={menu}>
@@ -492,7 +488,7 @@ function Office({ onClassic }: { onClassic?: () => void }) {
                 <b>⚔️ Fighting a goblin</b> = a real work shift is running. <b>📜 Walking to the throne</b> = delivering the report of a shift that just finished. <b>Practising on a straw dummy</b> = waiting for the next shift. <b>Waving</b> = something needs your answer. <b>Dozing by the fire</b> = paused.
               </li>
               <li>
-                <b>📜 Requests</b>: questions waiting for your yes or no.
+                <b>👑 King Arthur&rsquo;s badge</b> is the only alert: it appears only when something needs you now. <b>📜 Requests</b> lists every draft and proposal with where it stands - no alerts there.
               </li>
               <li>
                 <b>📊 Results</b>: how many homeowners booked, and what the team costs.
