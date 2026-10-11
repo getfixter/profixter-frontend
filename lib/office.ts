@@ -39,7 +39,12 @@ export type OfficeState = {
       slot_selected?: number;
       signup_view?: number;
       firstFreeVisits: number | null;
-      trackingSince: string;
+      /** One window for every step: the last 30 days, or the days since page tracking began. */
+      since?: string;
+      through?: string;
+      days?: number;
+      trackingSince: string | null;
+      fullWindow?: boolean;
     } | null;
     visitors30: number | null;
     registrations30: number | null;
@@ -51,7 +56,6 @@ export type OfficeState = {
   costs: { todayCents: number; monthCents: number; dailyCapCents: number; monthlyCapCents: number };
   approvals: { actions: number; playbooks: number; drafts: number; notes: number; total: number };
   lastFirstFreeVisitAt: string | null;
-  report: { headline: string; at: string } | null;
   explained?: Explained;
 };
 

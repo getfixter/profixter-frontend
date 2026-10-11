@@ -671,7 +671,7 @@ export function ResultsPanel({ office, onClose, onOpenRequests }: { office: Offi
         )}
       </div>
 
-      <Section title="From looking to booking (30 days)">
+      <Section title={funnel?.days && !funnel.fullWindow ? `From looking to booking (last ${funnel.days} day${funnel.days === 1 ? "" : "s"})` : "From looking to booking (30 days)"}>
         <div className={styles.card}>
           {funnel ? (
             <>
@@ -689,7 +689,8 @@ export function ResultsPanel({ office, onClose, onOpenRequests }: { office: Offi
                 );
               })}
               <div className={styles.muted} style={{ marginTop: 8 }}>
-                Counting started {funnel.trackingSince}.
+                {funnel.since && funnel.through ? `Every step counts the same days: ${funnel.since} to ${funnel.through}.` : null}
+                {funnel.fullWindow === false ? ` Page tracking began ${funnel.trackingSince}, so this is too early to judge rates.` : null}
               </div>
             </>
           ) : (
@@ -758,14 +759,6 @@ export function ResultsPanel({ office, onClose, onOpenRequests }: { office: Offi
         </Section>
       ) : null}
 
-      {office.report ? (
-        <Section title="Monday report">
-          <div className={styles.card}>
-            <div style={{ fontWeight: 800 }}>{office.report.headline}</div>
-            <div className={styles.muted}>{when(office.report.at)}</div>
-          </div>
-        </Section>
-      ) : null}
     </Sheet>
   );
 }
