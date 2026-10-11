@@ -1750,3 +1750,66 @@ button.nameTag {
     padding: 0 4px;
   }
 }
+
+/* =================== the owner's inbox: only what needs them now =================== */
+.allClear {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: linear-gradient(180deg, #f3fbf1, #fffdf6) !important;
+  box-shadow: inset 0 0 0 1px #cfe6c7;
+}
+.allClearIcon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #3f6b3a;
+  color: #fff8e8;
+  font-weight: 900;
+}
+.waitingCard {
+  background: #fbf7ee !important;
+  box-shadow: inset 0 0 0 1px #eadfc6 !important;
+}
+.waitingRow {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.waitingTitle {
+  font-weight: 800;
+  color: #3a2418;
+  font-size: 14.5px;
+  line-height: 1.35;
+}
+.waitingDot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: #c9a04a;
+  box-shadow: 0 0 0 4px rgba(201, 160, 74, 0.18);
+  animation: waitPulse 2.4s ease-in-out infinite;
+}
+.waitingDotReview {
+  background: #24418f;
+  box-shadow: 0 0 0 4px rgba(36, 65, 143, 0.16);
+}
+@keyframes waitPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .waitingDot {
+    animation: none;
+  }
+}
