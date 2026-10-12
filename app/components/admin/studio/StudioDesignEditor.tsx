@@ -9,6 +9,7 @@ import DesignPanel, { Messages } from "@/app/components/studio/DesignPanel";
 import { useStudioEngine } from "@/app/components/studio/useStudioEngine";
 import { preparePhoto } from "@/app/components/studio/photoPrep";
 import { StatusBadge, inputClass } from "./StudioAdmin";
+import { exampleById } from "@/lib/studio/examples";
 
 const card = "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5";
 const label = "grid gap-1 text-xs font-bold uppercase tracking-wide text-slate-500";
@@ -29,6 +30,7 @@ export default function StudioDesignEditor({ id, onClose }: { id: string; onClos
   const [notice, setNotice] = useState<{ kind: "ok" | "err" | "info"; text: string } | null>(null);
   const [proposal, setProposal] = useState<any>(null);
   const [dirty, setDirty] = useState(false);
+  const [verified, setVerified] = useState(false);
   const photoLoaded = useRef<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { stageRefs, engine, snap, error: engineError } = useStudioEngine(catalog);
@@ -51,9 +53,14 @@ export default function StudioDesignEditor({ id, onClose }: { id: string; onClos
   useEffect(() => {
     const e = engine();
     const ph = data?.design?.photo;
-    if (!e || !snap || !ph || photoLoaded.current === ph.url) return;
-    photoLoaded.current = ph.url;
-    e.loadPhoto(apiUrl(ph.url), { state: data.design.state || null }).then(() => setView(data.design.state ? "result" : "photo")).catch((er: any) => setNotice({ kind: "err", text: er.message }));
+    const scene = !ph ? exampleById(data?.design?.exampleScene) : null;
+    if (!e || !snap || (!ph && !scene)) return;
+    const key = ph ? ph.url : `example:${scene!.id}`;
+    if (photoLoaded.current === key) return;
+    photoLoaded.current = key;
+    // a request made on the example bathroom opens on that example (the customer sent no photo)
+    const job = ph ? e.loadPhoto(apiUrl(ph.url), { state: data.design.state || null }) : e.loadExample(scene, { design: data.design.state?.design || null });
+    job.then(() => setView(data.design.state ? "result" : "photo")).catch((er: any) => setNotice({ kind: "err", text: er.message }));
   }, [engine, snap, data]);
 
   useEffect(() => { if (snap?.last?.at) setStamp(snap.last.at); }, [snap?.last?.at]);
@@ -80,7 +87,7 @@ export default function StudioDesignEditor({ id, onClose }: { id: string; onClos
     setBusy("Saving…");
     try {
       const state = e?.getState();
-      const r = await adminStudio.saveDesign(id, { ...(state ? { state } : {}), projectType, customer, note });
+      const r = await adminStudio.saveDesign(id, { ...(state ? { state } : {}), projectType, customer, note, ...(verified ? { measureSource: "verified" } : {}) });
       const blob = state ? await e.previewBlob() : null;
       if (blob) await adminStudio.uploadPreview(id, blob).catch(() => {});
       apply(r);
@@ -223,7 +230,9 @@ export default function StudioDesignEditor({ id, onClose }: { id: string; onClos
 
           {m ? (
             <div className={card}>
-              <h3 className="mb-1 text-lg font-bold text-slate-900">Verified measurements</h3>
+              <h3 className="mb-1 text-lg font-bold text-slate-900">Measurements</h3>
+              <p className={`mb-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${d.measureSource === "verified" ? "bg-emerald-100 text-emerald-700" : d.measureSource === "customer" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-800"}`} data-testid="studio-measure-source">{d.measureLabel}</p>
+              {d.exampleScene && !d.photo ? <p className="mb-2 text-sm text-amber-800">Designed on the example bathroom - the customer sent no photo. Add a photo of their bathroom when you visit.</p> : null}
               <p className="mb-3 text-sm text-slate-500">Inches, measured on site. The picture and the price update when you leave a field.</p>
               <div className="grid grid-cols-2 gap-3">
                 {[["facingWidth", "Facing wall width"], ["sideLength", "Side wall length"], ["rimHeight", "Old rim height"], ["markHeight", "Upper dot height"]].map(([k, l]) => (
@@ -238,6 +247,7 @@ export default function StudioDesignEditor({ id, onClose }: { id: string; onClos
                   <label key={k} className="flex items-center gap-2"><input type="checkbox" checked={m[k]} onChange={(e) => { engine()?.setMeasure({ [k]: e.target.checked }); markDirty(); }} /> {k === "leftWall" ? "Wall on left" : "Wall on right"}</label>
                 ))}
               </div>
+              <label className="mt-3 flex items-center gap-2 text-sm font-semibold text-slate-800"><input type="checkbox" checked={verified} onChange={(e) => { setVerified(e.target.checked); markDirty(); }} data-testid="studio-verified" /> Measured on site: mark these measurements verified when I save</label>
               <Messages list={snap?.messages.measure} className="mt-3" />
             </div>
           ) : null}

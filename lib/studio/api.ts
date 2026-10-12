@@ -24,7 +24,9 @@ export type PublicCatalog = {
   version: string;
 };
 
-export type PublicQuote = { complete: boolean; totalCents: number | null; display: string | null; message: string; includes: string[] };
+/** Always an estimate. `basis` says whether it rests on the standard example size or the customer's measurements. */
+export type PublicQuote = { complete: boolean; totalCents: number | null; display: string | null; label: string | null; basis: string | null; message: string; includes: string[] };
+export type MeasureSource = "standard" | "customer";
 
 class StudioError extends Error {
   status: number;
@@ -53,9 +55,9 @@ async function req<T>(path: string, init: RequestInit & { token?: string } = {})
 
 export const publicStudio = {
   catalog: () => req<PublicCatalog>("/api/studio/catalog"),
-  create: (projectType: string) => req<{ id: string; token: string }>("/api/studio/designs", { method: "POST", body: JSON.stringify({ projectType }) }),
-  get: (id: string, token: string) => req<{ id: string; status: string; projectType: string; state: StudioState; photo: { url: string; width: number; height: number } | null; submittedAt: string | null }>(`/api/studio/designs/${id}`, { token }),
-  save: (id: string, token: string, body: { state?: StudioState; projectType?: string }) => req<{ ok: true }>(`/api/studio/designs/${id}`, { method: "PUT", token, body: JSON.stringify(body) }),
+  create: (projectType: string, extra: { exampleScene?: string | null; measureSource?: MeasureSource } = {}) => req<{ id: string; token: string }>("/api/studio/designs", { method: "POST", body: JSON.stringify({ projectType, ...extra }) }),
+  get: (id: string, token: string) => req<{ id: string; status: string; projectType: string; state: StudioState; exampleScene: string | null; measureSource: MeasureSource; photo: { url: string; width: number; height: number } | null; submittedAt: string | null }>(`/api/studio/designs/${id}`, { token }),
+  save: (id: string, token: string, body: { state?: StudioState; projectType?: string; exampleScene?: string | null; measureSource?: MeasureSource }) => req<{ ok: true }>(`/api/studio/designs/${id}`, { method: "PUT", token, body: JSON.stringify(body) }),
   uploadPhoto: (id: string, token: string, file: Blob) => {
     const f = new FormData();
     f.append("photo", file, "photo.jpg");
@@ -66,7 +68,7 @@ export const publicStudio = {
     f.append("preview", blob, "preview.jpg");
     return req<{ ok: true }>(`/api/studio/designs/${id}/preview`, { method: "POST", token, body: f });
   },
-  quote: (design: unknown, projectType: string) => req<PublicQuote>("/api/studio/quote", { method: "POST", body: JSON.stringify({ design, projectType }) }),
+  quote: (design: unknown, projectType: string, measureSource: MeasureSource = "standard") => req<PublicQuote>("/api/studio/quote", { method: "POST", body: JSON.stringify({ design, projectType, measureSource }) }),
   submit: (id: string, token: string, body: Record<string, unknown>) => req<{ ok: true; reference?: string; alreadySubmitted?: boolean }>(`/api/studio/designs/${id}/submit`, { method: "POST", token, body: JSON.stringify(body) }),
   remove: (id: string, token: string) => req<{ ok: true }>(`/api/studio/designs/${id}`, { method: "DELETE", token }),
 };

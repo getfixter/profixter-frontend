@@ -90,7 +90,7 @@ export default function StudioAdmin() {
                 {d.thumb ? <img src={apiUrl(d.thumb)} alt="" className="h-full w-full object-cover" /> : null}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2"><StatusBadge status={d.status} /><span className="text-xs text-slate-400">{d.origin === "public" ? "Website" : "Staff"}</span></div>
+                <div className="flex items-center justify-between gap-2"><StatusBadge status={d.status} /><span className="text-xs text-slate-400">{d.origin === "public" ? "Website" : "Staff"}{d.exampleScene ? " · example, no photo" : ""}{d.measureSource === "standard" ? " · not measured" : d.measureSource === "verified" ? " · measured" : ""}</span></div>
                 <div className="mt-1 truncate font-bold text-slate-900">{d.customer?.name || "No name yet"}</div>
                 <div className="truncate text-sm text-slate-500">{[d.customer?.phone, d.customer?.zip].filter(Boolean).join(" · ") || "—"}</div>
                 <div className="mt-1 flex items-center justify-between text-sm">
