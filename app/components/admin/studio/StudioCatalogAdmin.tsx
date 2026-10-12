@@ -134,6 +134,10 @@ function ProductEditor({ initial, fields, onClose }: { initial: any; fields: any
     } finally { setBusy(false); }
   }
   async function status(s: string) {
+    if (s === "published") {
+      const missing = [p.pricing?.priceCents == null ? "no price (designs using it will show \"Price confirmed after review.\")" : "", !p.assets?.photos?.length ? "no product photo" : ""].filter(Boolean);
+      if (missing.length && !window.confirm(`This product has ${missing.join(" and ")}. Customers will see it once published. Publish anyway?`)) return;
+    }
     setBusy(true);
     try { const r = await adminStudio.setStatus(p._id, s); setP(r.product); setMsg({ kind: "ok", text: s === "published" ? "Published: customers can choose it now." : s === "draft" ? "Unpublished." : "Archived. Designs that used it keep working." }); }
     catch (e: any) { setMsg({ kind: "err", text: e.message }); } finally { setBusy(false); }
