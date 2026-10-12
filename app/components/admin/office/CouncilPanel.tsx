@@ -53,10 +53,10 @@ const TASK_WORDS: Record<string, { label: string; tone: "wait" | "work" | "done"
   received: { label: "Received", tone: "wait" },
   assigned: { label: "Waiting for the next shift", tone: "wait" },
   in_progress: { label: "Working on it", tone: "work" },
-  completed: { label: "Done · waiting for a check", tone: "work" },
+  completed: { label: "Reported done · not checked yet", tone: "work" },
   blocked: { label: "Blocked", tone: "bad" },
   verified: { label: "Checked ✓", tone: "done" },
-  not_verified: { label: "Not good enough", tone: "bad" },
+  not_verified: { label: "Not good enough · sent back", tone: "bad" },
   cancelled: { label: "Cancelled", tone: "off" },
   archived: { label: "Archived", tone: "off" },
 };
