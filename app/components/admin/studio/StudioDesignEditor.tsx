@@ -130,7 +130,7 @@ export default function StudioDesignEditor({ id, onClose }: { id: string; onClos
   const m = snap?.design?.measure;
 
   return (
-    <div className="space-y-4" data-testid="studio-editor">
+    <div className="min-w-0 space-y-4" data-testid="studio-editor">
       <div className={`${card} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
         <div className="min-w-0">
           <button type="button" onClick={onClose} className="text-sm font-bold text-blue-600">← All designs</button>
@@ -159,7 +159,7 @@ export default function StudioDesignEditor({ id, onClose }: { id: string; onClos
       {engineError ? <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{engineError}</p> : null}
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="space-y-3">
+        <div className="min-w-0 space-y-3">
           <div className={card}>
             <div className="mb-3 flex flex-wrap items-center gap-2">
               {(["photo", "result", "compare"] as const).map((v) => (
@@ -204,7 +204,7 @@ export default function StudioDesignEditor({ id, onClose }: { id: string; onClos
           ) : null}
         </div>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <div className={card}>
             <h3 className="mb-3 text-lg font-bold text-slate-900">Customer</h3>
             <div className="grid gap-3 sm:grid-cols-2">
