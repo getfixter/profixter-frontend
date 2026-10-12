@@ -383,6 +383,7 @@ function Pricing() {
         <div className="grid gap-3 sm:grid-cols-[200px_1fr]">
           <label className={lab}>Max employee discount (%)<input className={inputClass} inputMode="decimal" value={pr.maxDiscountPercent} onChange={(e) => upd("maxDiscountPercent", Number(e.target.value))} /></label>
           <label className={lab}>Customer price note<input className={inputClass} value={pr.disclaimer} onChange={(e) => upd("disclaimer", e.target.value)} /></label>
+          <label className={`${lab} sm:col-span-2`}>Privacy note (shown where customers add a photo and send a request)<textarea className={`${inputClass} min-h-[70px]`} value={pr.privacyNote || ""} onChange={(e) => upd("privacyNote", e.target.value)} data-testid="privacy-note-input" /></label>
         </div>
       </div>
       <button type="button" className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white" onClick={save} data-testid="pricing-save">Save prices</button>
