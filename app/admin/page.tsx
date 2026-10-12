@@ -16,6 +16,8 @@ import BookingsCalendar from "@/app/components/admin/BookingsCalendar";
 import BlacklistTable from "@/app/components/admin/BlacklistTable";
 import CommunicationsModule from "../components/admin/CommunicationsModule";
 import RequestsTable from "@/app/components/admin/RequestsTable";
+import StudioAdmin from "@/app/components/admin/studio/StudioAdmin";
+import StudioCatalogAdmin from "@/app/components/admin/studio/StudioCatalogAdmin";
 import ProjectsModule from "@/app/components/admin/ProjectsModule";
 import FixtersModule from "@/app/components/admin/FixtersModule";
 import TipsModule from "@/app/components/admin/TipsModule";
@@ -1145,6 +1147,8 @@ function AdminPageContent() {
               <RecentWorkModule onToast={showToast} searchQuery={q} />
             )}
             {active === "promotion" && shown("promotion") && <PromotionPopupEditor />}
+            {active === "studio" && shown("studio") && <StudioAdmin />}
+            {active === "studio-catalog" && shown("studio-catalog") && <StudioCatalogAdmin />}
             {active === "activity" && shown("activity") && <AdminActivityLog />}
 
             {active === "blacklist" && shown("blacklist") && (

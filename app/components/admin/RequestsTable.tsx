@@ -2,6 +2,7 @@
 
 import React from "react";
 import type { RequestLead } from "@/lib/admin-service";
+import OpenInStudio from "@/app/components/admin/studio/OpenInStudio";
 
 interface RequestsTableProps {
   requests: RequestLead[];
@@ -133,6 +134,7 @@ export default function RequestsTable({
                 ) : null}
                 <div>
                   <strong>Source:</strong> {request.sourcePage || "-"}
+                  {request.sourcePage === "/shower-studio" ? <OpenInStudio leadId={String(request._id)} /> : null}
                 </div>
                 <div>
                   <strong>Created:</strong> {formatDate(request.createdAt)}

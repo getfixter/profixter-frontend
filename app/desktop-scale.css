@@ -23,6 +23,7 @@
   :root[data-surface="site"] .pb-20 { padding-bottom: clamp(48px, 8.89vh, 80px); }
   :root[data-surface="site"] .py-20 { padding-bottom: clamp(48px, 8.89vh, 80px); }
   :root[data-surface="site"] .pb-24 { padding-bottom: clamp(58px, 10.67vh, 96px); }
+  :root[data-surface="site"] .py-24 { padding-bottom: clamp(58px, 10.67vh, 96px); }
   :root[data-surface="site"] .pb-28 { padding-bottom: clamp(67px, 12.44vh, 112px); }
   :root[data-surface="site"] .pb-32 { padding-bottom: clamp(77px, 14.22vh, 128px); }
 }

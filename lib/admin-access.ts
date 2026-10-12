@@ -28,6 +28,9 @@ export const PERM = {
   PROMOTION_MANAGE: "promotion.manage",
   BLACKLIST_MANAGE: "blacklist.manage",
   ACTIVITY_READ: "activity.read",
+  STUDIO_SELL: "studio.sell",
+  STUDIO_PRICE_ADJUST: "studio.priceAdjust",
+  STUDIO_CATALOG: "studio.catalog",
 } as const;
 
 export type Permission = (typeof PERM)[keyof typeof PERM];
