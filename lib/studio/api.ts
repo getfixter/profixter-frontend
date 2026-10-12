@@ -132,6 +132,37 @@ export const adminStudio = {
   removeAdjustment: (id: string, adjId: string) => unwrap<any>(API.delete(`/api/admin/studio/designs/${id}/adjustments/${adjId}`)),
   proposal: (id: string) => unwrap<{ projectId: string; projectNumber: string; estimateId: string; estimateNumber: string; total: number; next: string }>(API.post(`/api/admin/studio/designs/${id}/proposal`, {})),
   deleteDesign: (id: string) => unwrap<{ ok: true }>(API.delete(`/api/admin/studio/designs/${id}`)),
+  copyManufacturerPhoto: (id: string, url: string) => unwrap<{ product: any }>(API.post(`/api/admin/studio/products/${id}/media/copy`, { url }, { timeout: 60000 })),
+  sourceReviewed: (id: string) => unwrap<{ product: any }>(API.post(`/api/admin/studio/products/${id}/source/reviewed`, {})),
+};
+
+/** Manufacturer catalogs (Swan, ...) in Admin -> Studio Catalog -> Manufacturers. */
+const M = (key: string) => `/api/admin/studio/manufacturers/${encodeURIComponent(key)}`;
+export const adminManufacturers = {
+  list: () => unwrap<{ manufacturers: any[]; groups: { key: string; label: string }[] }>(API.get("/api/admin/studio/manufacturers")),
+  get: (key: string) => unwrap<any>(API.get(M(key))),
+  update: (key: string, body: any) => unwrap<any>(API.put(M(key), body)),
+  imports: (key: string) => unwrap<{ imports: any[] }>(API.get(`${M(key)}/imports`)),
+  importDetail: (key: string, id: string) => unwrap<{ import: any }>(API.get(`${M(key)}/imports/${id}`)),
+  preview: (key: string, file: File) => {
+    const f = new FormData();
+    f.append("file", file);
+    return unwrap<{ import: any }>(API.post(`${M(key)}/imports`, f, { timeout: 180000 }));
+  },
+  apply: (key: string, id: string, groups: string[] | null) => unwrap<{ import: any }>(API.post(`${M(key)}/imports/${id}/apply`, { groups }, { timeout: 60000 })),
+  series: (key: string, q: Record<string, string> = {}) => unwrap<{ series: any[] }>(API.get(`${M(key)}/series`, { params: q })),
+  items: (key: string, q: Record<string, string> = {}) => unwrap<{ total: number; page: number; per: number; items: any[] }>(API.get(`${M(key)}/items`, { params: q })),
+  item: (key: string, part: string) => unwrap<any>(API.get(`${M(key)}/items/${encodeURIComponent(part)}`)),
+  addToStudio: (key: string, partNumbers: string[]) => unwrap<{ added: any[]; skipped: { partNumber: string; reason: string }[] }>(API.post(`${M(key)}/add-to-studio`, { partNumbers }, { timeout: 60000 })),
+  linkCheck: (key: string) => unwrap<{ started: boolean }>(API.post(`${M(key)}/link-check`, {})),
+  setColor: (key: string, code: string, hex: string | null) => unwrap<{ colors: any[] }>(API.put(`${M(key)}/colors/${code}`, { hex })),
+  uploadColorAsset: (key: string, code: string, file: File, extra: Record<string, string>) => {
+    const f = new FormData();
+    f.append("file", file);
+    for (const [k, v] of Object.entries(extra)) f.append(k, v);
+    return unwrap<{ colors: any[]; appliedToProducts?: number }>(API.post(`${M(key)}/colors/${code}/assets`, f, { timeout: 60000 }));
+  },
+  removeColorAsset: (key: string, code: string, kind: "swatch" | "texture") => unwrap<{ colors: any[] }>(API.delete(`${M(key)}/colors/${code}/assets/${kind}`)),
 };
 
 export const money = (cents: number | null | undefined) =>

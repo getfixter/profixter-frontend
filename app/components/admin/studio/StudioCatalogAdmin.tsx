@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { adminStudio, apiUrl, money } from "@/lib/studio/api";
 import { inputClass } from "./StudioAdmin";
+import StudioManufacturersAdmin, { ManufacturerImage } from "./StudioManufacturersAdmin";
 
 const card = "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5";
 const lab = "grid gap-1 text-xs font-bold uppercase tracking-wide text-slate-500";
@@ -16,7 +17,8 @@ const toCents = (s: string) => (String(s).trim() === "" ? null : Math.round(Numb
 
 /** Admin -> Studio Catalog: products, visual assets, compatibility data and every Studio price. */
 export default function StudioCatalogAdmin() {
-  const [tab, setTab] = useState<"products" | "pricing" | "review">("products");
+  const [tab, setTab] = useState<"products" | "manufacturers" | "pricing" | "review">("products");
+  const [openSku, setOpenSku] = useState<string | null>(null);
   return (
     <div className="space-y-5">
       <div className={`${card} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
@@ -24,30 +26,48 @@ export default function StudioCatalogAdmin() {
           <h2 className="text-2xl font-bold text-slate-900">Studio Catalog</h2>
           <p className="mt-1 text-sm text-slate-500">What customers can choose in the Shower Studio, how it is drawn, what fits with what, and what it costs. Changes go live on save; quoted designs keep their prices.</p>
         </div>
-        <div className="flex gap-2">
-          {(["products", "pricing", "review"] as const).map((t) => (
-            <button key={t} type="button" onClick={() => setTab(t)} className={`rounded-full px-3.5 py-1.5 text-sm font-semibold ${tab === t ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"}`}>
-              {t === "products" ? "Products" : t === "pricing" ? "Prices & packages" : "Completeness"}
+        <div className="flex flex-wrap gap-2">
+          {(["products", "manufacturers", "pricing", "review"] as const).map((t) => (
+            <button key={t} type="button" onClick={() => setTab(t)} className={`rounded-full px-3.5 py-1.5 text-sm font-semibold ${tab === t ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"}`} data-testid={`catalog-tab-${t}`}>
+              {t === "products" ? "Products" : t === "manufacturers" ? "Manufacturers" : t === "pricing" ? "Prices & packages" : "Completeness"}
             </button>
           ))}
         </div>
       </div>
-      {tab === "products" ? <Products /> : tab === "pricing" ? <Pricing /> : <Review />}
+      {tab === "products" ? <Products openSku={openSku} onOpened={() => setOpenSku(null)} /> : tab === "manufacturers" ? <StudioManufacturersAdmin onOpenProduct={(sku) => { setOpenSku(sku); setTab("products"); }} /> : tab === "pricing" ? <Pricing /> : <Review />}
     </div>
   );
 }
 
 // ===================================================================== products
-function Products() {
+function Products({ openSku, onOpened }: { openSku?: string | null; onOpened?: () => void }) {
   const [list, setList] = useState<any[] | null>(null);
   const [fields, setFields] = useState<any>(null);
   const [cat, setCat] = useState("wall");
   const [editing, setEditing] = useState<any>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [q, setQ] = useState("");
+  const [origin, setOrigin] = useState<"all" | "own" | "manufacturer">("all");
   const load = useCallback(() => adminStudio.products().then((r) => setList(r.products)).catch((e) => setMsg(e.message)), []);
   useEffect(() => { load(); adminStudio.fields().then((r) => setFields(r.categories)).catch(() => {}); }, [load]);
+  useEffect(() => {
+    if (!openSku) return;
+    let live = true;
+    adminStudio.products().then((r) => {
+      if (!live) return;
+      const p = r.products.find((x: any) => x.sku === openSku);
+      if (p) { setCat(p.category); setEditing(p); }
+      onOpened?.();
+    }).catch(() => {});
+    return () => { live = false; };
+  }, [openSku, onOpened]);
 
-  const rows = useMemo(() => (list || []).filter((p) => p.category === cat), [list, cat]);
+  const rows = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    return (list || []).filter((p) => p.category === cat
+      && (origin === "all" || (origin === "manufacturer" ? Boolean(p.source?.manufacturer) : !p.source?.manufacturer))
+      && (!term || [p.name, p.sku, p.model, p.manufacturer, p.colorName].some((x) => String(x || "").toLowerCase().includes(term))));
+  }, [list, cat, q, origin]);
   async function move(i: number, dir: -1 | 1) {
     const ids = rows.map((p) => p._id);
     const j = i + dir;
@@ -71,6 +91,12 @@ function Products() {
           <button type="button" className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white" onClick={() => setEditing({ category: cat, type: fields?.[cat]?.[0]?.id, engine: {}, specs: [], sources: [], pricing: { priceCents: null, installCents: 0 }, isPublic: true, visualStatus: "illustrative" })} data-testid="catalog-add">Add product</button>
         </div>
       </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <input className={`${inputClass} max-w-xs py-2`} placeholder="Search name, SKU, model, color" value={q} onChange={(e) => setQ(e.target.value)} />
+        {(["all", "own", "manufacturer"] as const).map((o) => (
+          <button key={o} type="button" onClick={() => setOrigin(o)} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${origin === o ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"}`}>{o === "all" ? "All" : o === "own" ? "Added by hand" : "From manufacturers"}</button>
+        ))}
+      </div>
       {msg ? <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">{msg}</p> : null}
       {!list ? <p className="text-slate-500">Loading…</p> : rows.length === 0 ? <div className={`${card} text-center text-slate-500`}>No products in this category.</div> : (
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
@@ -80,10 +106,18 @@ function Products() {
                 <button type="button" aria-label="Move up" className="px-1 text-slate-400 hover:text-slate-800" onClick={() => move(i, -1)}>▲</button>
                 <button type="button" aria-label="Move down" className="px-1 text-slate-400 hover:text-slate-800" onClick={() => move(i, 1)}>▼</button>
               </div>
-              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100">{p.assets.photos[0]?.url ? <img src={apiUrl(p.assets.photos[0].url)} alt="" className="h-full w-full object-cover" /> : null}</div>
+              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100">{p.assets.photos[0]?.url ? <img src={apiUrl(p.assets.photos[0].url)} alt="" className="h-full w-full object-cover" /> : p.externalMedia?.find((m: any) => m.kind === "photo") ? <ManufacturerImage url={p.externalMedia.find((m: any) => m.kind === "photo").url} w={120} className="h-full w-full object-contain" /> : null}</div>
               <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setEditing(p)}>
                 <div className="truncate font-bold text-slate-900">{p.name} {p.featured ? <span className="text-amber-500">★</span> : null}</div>
-                <div className="truncate text-xs text-slate-500">{p.sku} · {p.manufacturer} {p.model}</div>
+                <div className="truncate text-xs text-slate-500">{p.sku} · {p.manufacturer} {p.model}{p.colorName ? ` · ${p.colorName}` : ""}</div>
+                {p.source?.manufacturer ? (
+                  <div className="mt-0.5 flex flex-wrap gap-1 text-[11px]">
+                    <span className="text-slate-500">List {money(p.source.listPriceCents)}{p.pricing?.costCents != null ? ` · cost ${money(p.pricing.costCents)}` : ""}</span>
+                    {p.compatibility?.status !== "reviewed" ? <span className="rounded-full bg-amber-100 px-1.5 font-bold text-amber-800">Compatibility unverified</span> : null}
+                    {p.source.pendingReview?.length ? <span className="rounded-full bg-red-100 px-1.5 font-bold text-red-700">{p.source.pendingReview.length} change(s) to review</span> : null}
+                    {p.source.unitSku ? <span className="rounded-full bg-slate-100 px-1.5 font-bold text-slate-600">Part of {p.source.unitSku}</span> : null}
+                  </div>
+                ) : null}
               </button>
               <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${STATUS_TONE[p.status]}`}>{p.status}</span>
               <span className="w-24 text-right text-sm font-semibold text-slate-900">{p.pricing?.priceCents == null ? <span className="text-amber-600">No price</span> : money(p.pricing.priceCents)}</span>
@@ -123,7 +157,8 @@ function ProductEditor({ initial, fields, onClose }: { initial: any; fields: any
       const body = {
         sku: p.sku, category: p.category, type: p.type, name: p.name, manufacturer: p.manufacturer, model: p.model, description: p.description, colorName: p.colorName,
         engine: p.engine, specs: p.specs, sources: p.sources, visualStatus: p.visualStatus, isPublic: p.isPublic, featured: p.featured, sortOrder: p.sortOrder,
-        pricing: { priceCents: p.pricing?.priceCents ?? null, installCents: p.pricing?.installCents || 0, internalNote: p.pricing?.internalNote || "" },
+        pricing: { priceCents: p.pricing?.priceCents ?? null, costCents: p.pricing?.costCents ?? null, installCents: p.pricing?.installCents || 0, internalNote: p.pricing?.internalNote || "" },
+        ...(p.compatibility ? { compatibility: { status: p.compatibility.status, note: p.compatibility.note || "" } } : {}),
       };
       const r = creating ? await adminStudio.createProduct(body) : await adminStudio.updateProduct(p._id, body);
       setP(r.product);
@@ -134,7 +169,7 @@ function ProductEditor({ initial, fields, onClose }: { initial: any; fields: any
     } finally { setBusy(false); }
   }
   async function status(s: string) {
-    if (s === "published") {
+    if (s === "published" && !p.source?.manufacturer) {
       const missing = [p.pricing?.priceCents == null ? "no price (designs using it will show \"Price confirmed after review.\")" : "", !p.assets?.photos?.length ? "no product photo" : ""].filter(Boolean);
       if (missing.length && !window.confirm(`This product has ${missing.join(" and ")}. Customers will see it once published. Publish anyway?`)) return;
     }
@@ -149,6 +184,14 @@ function ProductEditor({ initial, fields, onClose }: { initial: any; fields: any
     catch (e: any) { setMsg({ kind: "err", text: e.message }); } finally { setBusy(false); }
   }
   const [tex, setTex] = useState({ widthIn: "12", heightIn: "12" });
+  const fromMfr = Boolean(p.source?.manufacturer);
+  const mfrPhotos = (p.externalMedia || []).filter((m: any) => m.kind === "photo");
+  const mfrDocs = (p.externalMedia || []).filter((m: any) => m.kind !== "photo" && m.kind !== "video");
+  async function takePhoto(url: string) {
+    setBusy(true);
+    try { const r = await adminStudio.copyManufacturerPhoto(p._id, url); setP(r.product); setMsg({ kind: "ok", text: "Photo added to the product (copied and optimized)." }); }
+    catch (e: any) { setMsg({ kind: "err", text: e.message }); } finally { setBusy(false); }
+  }
 
   return (
     <div className="space-y-4" data-testid="product-editor">
@@ -168,6 +211,33 @@ function ProductEditor({ initial, fields, onClose }: { initial: any; fields: any
       {msg ? <p className={`rounded-xl px-4 py-3 text-sm ${msg.kind === "err" ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-800"}`} role="status">{msg.text}</p> : null}
       {!creating && p.issues?.length ? (
         <ul className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">{p.issues.map((i: any, k: number) => <li key={k}>{i.level === "error" ? "⛔" : i.level === "warn" ? "⚠️" : "ℹ️"} {i.message}</li>)}</ul>
+      ) : null}
+
+      {fromMfr ? (
+        <div className={`${card} border-blue-100 bg-blue-50/40`} data-testid="product-source">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="text-sm text-slate-700">
+              <div className="font-bold text-slate-900">From the {p.manufacturer} catalog</div>
+              <div>Part {p.source.partNumber} · model {p.source.modelNumber} · {p.source.seriesName}</div>
+              <div>Manufacturer availability: <b>{p.source.availability || "active"}</b>{p.source.unitSku ? <> · integral walls of unit <b>{p.source.unitSku}</b> (published, hidden and archived with it)</> : null}</div>
+            </div>
+            <div className="text-right text-sm">
+              <div className="text-xs font-bold uppercase text-slate-500">Manufacturer list price</div>
+              <div className="text-lg font-bold text-slate-900">{money(p.source.listPriceCents)}</div>
+              <div className="text-xs text-slate-500">{p.source.listPriceEffective ? `effective ${p.source.listPriceEffective}` : ""}</div>
+            </div>
+          </div>
+          {p.source.pendingReview?.length ? (
+            <div className="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <b>Manufacturer changes since you last reviewed:</b>
+              <ul className="mt-1 list-disc pl-5">{p.source.pendingReview.map((r: any, i: number) => <li key={i}>{r.message}</li>)}</ul>
+              <button type="button" className={`${btn} mt-2`} disabled={busy} onClick={async () => { try { setP((await adminStudio.sourceReviewed(p._id)).product); } catch (e: any) { setMsg({ kind: "err", text: e.message }); } }}>Mark as reviewed</button>
+            </div>
+          ) : null}
+          {p.source.approximations?.length ? (
+            <details className="mt-3 text-sm text-slate-600"><summary className="cursor-pointer font-bold text-slate-700">How the designer approximates it ({p.source.approximations.length})</summary><ul className="mt-1 list-disc pl-5">{p.source.approximations.map((a: string, i: number) => <li key={i}>{a}</li>)}</ul></details>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="grid gap-4 xl:grid-cols-2">
@@ -193,11 +263,24 @@ function ProductEditor({ initial, fields, onClose }: { initial: any; fields: any
             </div>
           </div>
           <h4 className="mb-3 mt-5 font-bold text-slate-900">Price</h4>
+          {fromMfr ? <p className="mb-3 text-xs text-slate-500">The list price is the manufacturer&rsquo;s published price, not your cost. Imports never change your cost or selling price. Customers only ever see a total.</p> : null}
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Price ($) - blank = not priced" error={errors["pricing.priceCents"]}><input className={inputClass} inputMode="decimal" value={toDollars(p.pricing?.priceCents)} onChange={(e) => set("pricing", { ...p.pricing, priceCents: toCents(e.target.value) })} data-testid="product-price" /></Field>
+            {fromMfr ? <Field label="Manufacturer list price"><input className={`${inputClass} bg-slate-50`} value={p.source.listPriceCents == null ? "" : toDollars(p.source.listPriceCents)} readOnly /></Field> : null}
+            <Field label="Material cost ($) - your cost, internal" error={errors["pricing.costCents"]}><input className={inputClass} inputMode="decimal" value={toDollars(p.pricing?.costCents)} onChange={(e) => set("pricing", { ...p.pricing, costCents: toCents(e.target.value) })} data-testid="product-cost" /></Field>
+            <Field label={fromMfr ? "Selling price ($) - required to publish" : "Price ($) - blank = not priced"} error={errors["pricing.priceCents"]}><input className={inputClass} inputMode="decimal" value={toDollars(p.pricing?.priceCents)} onChange={(e) => set("pricing", { ...p.pricing, priceCents: toCents(e.target.value) })} data-testid="product-price" /></Field>
             <Field label="Installation adder ($)"><input className={inputClass} inputMode="decimal" value={toDollars(p.pricing?.installCents)} onChange={(e) => set("pricing", { ...p.pricing, installCents: toCents(e.target.value) ?? 0 })} /></Field>
             <label className={`${lab} sm:col-span-2`}>Internal note (staff only)<input className={inputClass} value={p.pricing?.internalNote || ""} onChange={(e) => set("pricing", { ...p.pricing, internalNote: e.target.value })} /></label>
           </div>
+          {fromMfr && !p.source.unitSku ? (
+            <>
+              <h4 className="mb-1 mt-5 font-bold text-slate-900">Compatibility</h4>
+              <p className="mb-2 text-xs text-slate-500">The price file does not say which bases, walls and doors go together. Check the manufacturer&rsquo;s drawings, set the fit limits on the right, then mark it reviewed. Required to publish.</p>
+              <div className="grid gap-3 sm:grid-cols-[200px_1fr]">
+                <label className={lab}>Status<select className={inputClass} value={p.compatibility?.status || "unverified"} onChange={(e) => set("compatibility", { ...(p.compatibility || {}), status: e.target.value })} data-testid="product-compat"><option value="unverified">Unverified</option><option value="reviewed">Reviewed by me</option></select></label>
+                <label className={lab}>Note<input className={inputClass} value={p.compatibility?.note || ""} placeholder="e.g. pairs with SR-3260 bases per the drawing" onChange={(e) => set("compatibility", { ...(p.compatibility || {}), note: e.target.value })} /></label>
+              </div>
+            </>
+          ) : null}
         </div>
 
         <div className={card}>
@@ -212,6 +295,20 @@ function ProductEditor({ initial, fields, onClose }: { initial: any; fields: any
       {!creating ? (
         <div className={card}>
           <h4 className="mb-3 font-bold text-slate-900">Photos and texture</h4>
+          {fromMfr && (mfrPhotos.length || mfrDocs.length) ? (
+            <div className="mb-4 rounded-xl bg-slate-50 p-3">
+              <p className="text-sm text-slate-700"><b>Manufacturer images</b>: previews from {p.manufacturer}&rsquo;s site, not shown to customers. &ldquo;Use&rdquo; copies one into this product once you have confirmed image rights (Manufacturers → Image rights).</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {mfrPhotos.map((m: any) => (
+                  <div key={m.url} className="w-28">
+                    <div className="h-28 w-28 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200"><ManufacturerImage url={m.url} w={240} className="h-full w-full object-contain" /></div>
+                    <button type="button" className="mt-1 w-full text-xs font-bold text-blue-700" disabled={busy} onClick={() => takePhoto(m.url)}>Use</button>
+                  </div>
+                ))}
+              </div>
+              {mfrDocs.length ? <div className="mt-2 flex flex-wrap gap-3 text-xs">{mfrDocs.map((m: any) => <a key={m.url} href={m.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" className="font-semibold text-blue-700 underline">{m.kind === "drawing" ? "Technical drawing" : m.kind === "installGuide" ? "Installation guide" : m.kind === "model3d" ? "3D model" : "CAD file"}</a>)}</div> : null}
+            </div>
+          ) : null}
           <div className="flex flex-wrap gap-3">
             {p.assets.photos.map((ph: any) => (
               <div key={ph.assetId} className="relative h-28 w-28 overflow-hidden rounded-xl bg-slate-100">
