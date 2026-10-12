@@ -1033,7 +1033,8 @@ function AdminPageContent() {
         {/*
           The Overview loads its own numbers from its own endpoint, so it does
           not wait behind the full user/booking download the other tabs need.
-          Admin-only twice over: here, and on the server (analytics.read).
+          Admin-only twice over: here, and on the server (analytics.read for
+          Overview, growth.read for Growth - two separate sections).
         */}
         {active === "overview" && shown("overview") ? (
           <OverviewBoundary>
