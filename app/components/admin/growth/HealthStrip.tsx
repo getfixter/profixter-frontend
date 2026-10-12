@@ -7,11 +7,17 @@
  * Numbers come from the same endpoints as the Overview (last 30 days) and the
  * Growth summary, so there is one definition of each. Anything not connected
  * says so instead of showing a zero.
+ *
+ * Growth and Overview are separate sections. Someone with Growth but not
+ * Overview gets only the Growth tiles (calendar, AI operations): the business
+ * tiles are Overview data, which the server would refuse them anyway.
  */
 
 import { useEffect, useState } from "react";
 import { getOverview, money, num, type Overview } from "@/lib/admin-overview";
 import { getAgents, pct, type AgentsStatus, type CapacityOutlook } from "@/lib/admin-growth";
+import { can, PERM } from "@/lib/admin-access";
+import { useAuth } from "@/lib/useAuth";
 
 function Tile({ label, value, sub, tone = "slate" }: { label: string; value: string; sub: string; tone?: "slate" | "green" | "amber" }) {
   const ring = tone === "green" ? "ring-emerald-200" : tone === "amber" ? "ring-amber-200" : "ring-slate-200/70";
@@ -30,13 +36,15 @@ function deltaText(d: { abs: number } | null | undefined) {
 }
 
 export default function HealthStrip({ capacity }: { capacity: CapacityOutlook | null }) {
+  const { user } = useAuth();
+  const showOverview = can(user, PERM.ANALYTICS_READ);
   const [o, setO] = useState<Overview | null>(null);
   const [agents, setAgents] = useState<AgentsStatus | null>(null);
 
   useEffect(() => {
-    getOverview({ range: "30d" }).then(setO).catch(() => setO(null));
+    if (showOverview) getOverview({ range: "30d" }).then(setO).catch(() => setO(null));
     getAgents().then(setAgents).catch(() => setAgents(null));
-  }, []);
+  }, [showOverview]);
 
   const k = o?.kpis;
   const spend = o?.spend;
@@ -44,26 +52,30 @@ export default function HealthStrip({ capacity }: { capacity: CapacityOutlook | 
   const cac = spend?.connected && spend.totalCents != null && newPaying ? Math.round(spend.totalCents / newPaying) : null;
 
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
-      <Tile
-        label="New paying customers"
-        value={newPaying != null ? num(newPaying) : k ? num(k.newMembers.value) : "—"}
-        sub={k ? `${num(k.newMembers.value)} new member${k.newMembers.value === 1 ? "" : "s"} · 30 days` : "loading"}
-        tone="green"
-      />
-      <Tile label="Active members" value={k ? num(k.activeMembers.value) : "—"} sub={k ? deltaText(k.newMembers.delta) : "loading"} />
-      <Tile label="MRR" value={k?.mrr.cents != null ? money(k.mrr.cents) : "—"} sub={k?.mrr.source === "stripe" ? "net of discounts, from Stripe" : "list price"} />
-      <Tile
-        label="Free visit → member"
-        value={k?.conversion.rate != null ? `${Math.round(k.conversion.rate)}%` : "—"}
-        sub={k ? `${k.conversion.converted} of ${k.conversion.completed} completed visits` : "loading"}
-      />
-      <Tile
-        label="Cost per new customer"
-        value={cac != null ? money(cac) : "—"}
-        sub={spend?.connected ? "Meta spend ÷ new paying customers" : "Ad spend not connected yet"}
-        tone={spend?.connected ? "slate" : "amber"}
-      />
+    <div className={`grid grid-cols-2 gap-3 ${showOverview ? "md:grid-cols-4 xl:grid-cols-7" : ""}`}>
+      {showOverview && (
+        <>
+          <Tile
+            label="New paying customers"
+            value={newPaying != null ? num(newPaying) : k ? num(k.newMembers.value) : "—"}
+            sub={k ? `${num(k.newMembers.value)} new member${k.newMembers.value === 1 ? "" : "s"} · 30 days` : "loading"}
+            tone="green"
+          />
+          <Tile label="Active members" value={k ? num(k.activeMembers.value) : "—"} sub={k ? deltaText(k.newMembers.delta) : "loading"} />
+          <Tile label="MRR" value={k?.mrr.cents != null ? money(k.mrr.cents) : "—"} sub={k?.mrr.source === "stripe" ? "net of discounts, from Stripe" : "list price"} />
+          <Tile
+            label="Free visit → member"
+            value={k?.conversion.rate != null ? `${Math.round(k.conversion.rate)}%` : "—"}
+            sub={k ? `${k.conversion.converted} of ${k.conversion.completed} completed visits` : "loading"}
+          />
+          <Tile
+            label="Cost per new customer"
+            value={cac != null ? money(cac) : "—"}
+            sub={spend?.connected ? "Meta spend ÷ new paying customers" : "Ad spend not connected yet"}
+            tone={spend?.connected ? "slate" : "amber"}
+          />
+        </>
+      )}
       <Tile
         label="Calendar, next 21 days"
         value={capacity?.utilization != null ? pct(capacity.utilization) : "—"}

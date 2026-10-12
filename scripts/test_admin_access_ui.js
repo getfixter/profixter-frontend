@@ -18,6 +18,8 @@
  * - access removed while signed in: the tab goes on the next check
  * - the Employees editor: title, field work, switches, Select all / Clear all,
  *   Customer Map needing Overview, and exactly those ids sent on save
+ * - Overview and Growth are separate: all four combinations, by tab, typed
+ *   URL and API call (Growth alone never asks for Overview numbers)
  * - the editor fits a phone and a desktop without sideways scrolling
  */
 const { chromium } = require("playwright");
@@ -41,6 +43,7 @@ const REGISTRY = {
   sections: [
     { id: "overview", group: "business", label: "Overview", description: "Business performance", requires: null },
     { id: "customer-map", group: "business", label: "Customer Map", description: "Customer locations", requires: "overview" },
+    { id: "growth", group: "business", label: "Growth", description: "Growth automations", requires: null },
     { id: "members", group: "business", label: "Members", description: "Memberships", requires: null },
     { id: "customers", group: "business", label: "All Users", description: "Customer accounts", requires: null },
     { id: "leads", group: "business", label: "Leads", description: "Estimate requests", requires: null },
@@ -64,6 +67,8 @@ const PEOPLE = {
   overview: emp("olive", ["analytics.read"]),
   photos: emp("pat", ["recentWork.manage"]),
   both: emp("bo", ["analytics.read", "analytics.map", "recentWork.manage"]),
+  growth: emp("gus", ["growth.read"]),
+  overviewGrowth: emp("ova", ["analytics.read", "growth.read"]),
   zero: emp("zed", []),
   disabled: emp("dee", ["analytics.read"], { isActive: false }),
   fixter: emp("fred", ["bookings.read", "bookings.write", "tips.read"], { employeePosition: "Fixter", employeeTitle: "" }),
@@ -74,6 +79,7 @@ const PEOPLE = {
 const API_PERMISSION = [
   [/^\/api\/admin\/overview\/map/, "analytics.map"],
   [/^\/api\/admin\/overview/, "analytics.read"],
+  [/^\/api\/admin\/growth/, "growth.read"],
   [/^\/api\/admin\/users(\/|$)/, "customers.manage"],
   [/^\/api\/admin\/members/, "members.read"],
   [/^\/api\/admin\/requests/, "leads.manage"],
@@ -89,9 +95,13 @@ const API_PERMISSION = [
   [/^\/api\/admin\/fixters/, "owner"],
 ];
 
-async function open(browser, who, { width = 1440, height = 900, mutate } = {}) {
+async function open(browser, who, { width = 1440, height = 900, mutate, growthView = "classic" } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, isMobile: width < 700, hasTouch: width < 700 });
-  await ctx.addInitScript(() => localStorage.setItem("token", "ui-token"));
+  // Growth's classic Command Center: the view that shows the health strip (Overview numbers).
+  await ctx.addInitScript((view) => {
+    localStorage.setItem("token", "ui-token");
+    localStorage.setItem("profixter:growth:view", view);
+  }, growthView);
   const state = { me: JSON.parse(JSON.stringify(PEOPLE[who])), refused: [], saved: null };
   if (mutate) mutate(state);
   await ctx.route(/\/api\//, async (route) => {
@@ -117,6 +127,8 @@ async function open(browser, who, { width = 1440, height = 900, mutate } = {}) {
         return json({ fixter: { id: "new", ...state.saved.body } }, req.method() === "POST" ? 201 : 200);
       }
       if (u.pathname === "/api/admin/overview") return json({ period: { key: "30d", label: "Last 30 days", from: "2026-09-08T04:00:00Z", to: "2026-10-08T04:00:00Z", fromYmd: "2026-09-08", toYmd: "2026-10-07" }, kpis: {} });
+      // Growth summary "unavailable": the Command Center still draws its health strip.
+      if (u.pathname === "/api/admin/growth/summary") return json({ message: "unavailable" }, 503);
       if (u.pathname === "/api/admin/recent-work") return json({ photos: [], counts: {} });
       if (u.pathname === "/api/admin/activity-log/summary") return json({ usersDeleted: 0, leadsDeleted: 0, projectsDeleted: 0 });
       return json([]);
@@ -152,9 +164,11 @@ async function selectedTab(page) {
 
   console.log("\n--- who sees what ---");
   const EXPECT = {
-    owner: { has: ["Overview", "Jobs", "All Users", "Projects", "Leads", "Communications", "Recent Work", "Blacklist", "Schedule", "Employees", "Activity Log"], not: ["Work Photos"] },
-    overview: { has: ["Overview"], not: ["Jobs", "All Users", "Recent Work", "Employees", "Tips"] },
-    photos: { has: ["Recent Work"], not: ["Overview", "Jobs", "All Users", "Employees", "Work Photos"] },
+    owner: { has: ["Overview", "Growth", "Jobs", "All Users", "Projects", "Leads", "Communications", "Recent Work", "Blacklist", "Schedule", "Employees", "Activity Log"], not: ["Work Photos"] },
+    overview: { has: ["Overview"], not: ["Growth", "Jobs", "All Users", "Recent Work", "Employees", "Tips"] },
+    growth: { has: ["Growth"], not: ["Overview", "Jobs", "All Users", "Recent Work", "Employees", "Tips"] },
+    overviewGrowth: { has: ["Overview", "Growth"], not: ["Jobs", "All Users", "Recent Work", "Employees"] },
+    photos: { has: ["Recent Work"], not: ["Overview", "Growth", "Jobs", "All Users", "Employees", "Work Photos"] },
     both: { has: ["Overview", "Recent Work"], not: ["Jobs", "All Users", "Employees", "Members"] },
     fixter: { has: ["Jobs", "Tips", "Work Photos"], not: ["Overview", "Members", "Schedule", "Employees", "All Users"] },
     general: { has: ["Jobs", "Tips", "Work Photos", "Members", "Schedule"], not: ["Overview", "Employees", "All Users"] },
@@ -173,7 +187,16 @@ async function selectedTab(page) {
   }
 
   console.log("\n--- typed URLs ---");
-  for (const [who, tab, expectTitle] of [["overview", "users", "Overview"], ["photos", "overview", null], ["photos", "fixters", null], ["fixter", "overview", null]]) {
+  for (const [who, tab, expectTitle] of [
+    ["overview", "users", "Overview"],
+    ["overview", "growth", "Overview"],
+    ["growth", "overview", null],
+    ["photos", "overview", null],
+    ["photos", "growth", null],
+    ["photos", "fixters", null],
+    ["fixter", "overview", null],
+    ["fixter", "growth", null],
+  ]) {
     const { ctx, page, state } = await open(browser, who);
     await page.goto(`${BASE}/admin?tab=${tab}`, { waitUntil: "networkidle" });
     await page.waitForTimeout(1200);
@@ -181,6 +204,37 @@ async function selectedTab(page) {
     check(`${who} typing ?tab=${tab}: not shown, nothing requested`, state.refused.length === 0 && landed !== tab, `landed on ${landed}; refused: ${state.refused.join(", ")}`);
     if (expectTitle) check(`${who}: lands on ${expectTitle} instead`, (await page.getByRole("heading", { name: expectTitle }).count()) >= 1);
     await ctx.close();
+  }
+
+  console.log("\n--- Overview and Growth, the four combinations ---");
+  for (const [who, ov, gr] of [["overview", true, false], ["growth", false, true], ["overviewGrowth", true, true], ["photos", false, false]]) {
+    for (const tab of ["overview", "growth"]) {
+      const { ctx, page, state } = await open(browser, who);
+      const calls = [];
+      page.on("request", (r) => { const u = new URL(r.url()); if (/^\/api\/admin\/(overview|growth)/.test(u.pathname)) calls.push(u.pathname); });
+      await page.goto(`${BASE}/admin?tab=${tab}`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(1500);
+      const landed = await selectedTab(page);
+      const allowed = tab === "overview" ? ov : gr;
+      const askedOverview = calls.some((c) => c.startsWith("/api/admin/overview"));
+      const askedGrowth = calls.some((c) => c.startsWith("/api/admin/growth"));
+      check(
+        `${who} (Overview ${ov ? "ON" : "OFF"}, Growth ${gr ? "ON" : "OFF"}) ?tab=${tab}: ${allowed ? "opens" : "not shown"}, asks only for what it holds`,
+        (allowed ? landed === tab : landed !== tab) && state.refused.length === 0 && (ov || !askedOverview) && (gr || !askedGrowth),
+        `landed ${landed}; calls ${[...new Set(calls)].join(", ")}; refused ${state.refused.join(", ")}`
+      );
+      if (tab === "growth" && allowed) {
+        // With Overview the strip still loads the Overview numbers; without it, only the Growth tiles show.
+        const mrr = await page.getByText("MRR", { exact: true }).count();
+        const calendar = await page.getByText("Calendar, next 21 days", { exact: true }).count();
+        check(
+          `${who}: Growth health strip ${ov ? "still loads" : "leaves out"} the Overview numbers`,
+          ov ? askedOverview : !askedOverview && mrr === 0 && calendar >= 1,
+          `overview asked ${askedOverview}, MRR tiles ${mrr}, calendar tiles ${calendar}`
+        );
+      }
+      await ctx.close();
+    }
   }
 
   console.log("\n--- edges ---");
@@ -232,6 +286,8 @@ async function selectedTab(page) {
     check(`${label}: Customer Map waits for Overview`, await mapSwitch.isDisabled());
     await dialog.getByRole("switch", { name: "Overview" }).click();
     check(`${label}: Customer Map available once Overview is on`, !(await mapSwitch.isDisabled()));
+    const growthSwitch = dialog.getByRole("switch", { name: "Growth" });
+    check(`${label}: Growth is its own switch, off by default, not tied to Overview`, (await growthSwitch.count()) === 1 && (await growthSwitch.getAttribute("aria-checked")) === "false" && !(await growthSwitch.isDisabled()));
     await mapSwitch.click();
     await dialog.getByRole("switch", { name: "Recent Work / Photos" }).click();
     // Select all, then Clear all, then back to the three we want.
