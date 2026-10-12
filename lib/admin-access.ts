@@ -13,6 +13,7 @@ import { isAdminUser } from "./auth-routing";
 export const PERM = {
   ANALYTICS_READ: "analytics.read",
   ANALYTICS_MAP: "analytics.map",
+  GROWTH_READ: "growth.read",
   BOOKINGS_READ: "bookings.read",
   BOOKINGS_WRITE: "bookings.write",
   BOOKINGS_ASSIGN: "bookings.assign",
