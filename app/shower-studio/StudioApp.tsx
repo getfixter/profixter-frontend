@@ -279,7 +279,7 @@ export default function StudioApp() {
                   {panel === "photo" ? (
                     <div className="grid gap-2">
                       <input ref={fileRef} type="file" accept="image/*,.heic,.heif" capture="environment" className="hidden" onChange={(e) => onPhoto(e.target.files?.[0])} data-testid="photo-input" />
-                      <p className="m-0 text-[13px] leading-relaxed text-[#475569]">Stand outside the tub and fit the whole tub area in the photo. Your photo is private: only you and the Profixter team can see it, and camera location data is removed.</p>
+                      <p className="m-0 text-[13px] leading-relaxed text-[#475569]">Stand outside the tub and fit the whole tub area in the photo. {cat.privacyNote || "Your photo is private: only you and the Profixter team can see it, and camera location data is removed."}</p>
                       <div className="flex flex-wrap gap-2">
                         <button type="button" className={secondary} disabled={uploading || !mine} onClick={() => fileRef.current?.click()}>{source === "photo" ? "Use a different photo" : "Take or upload a photo"}</button>
                         {source === "photo" ? <button type="button" className={secondary} onClick={backToExample}>Back to the example</button> : null}
@@ -314,6 +314,7 @@ export default function StudioApp() {
             {step === "request" && (
               <RequestForm
                 quote={quote}
+                privacyNote={cat.privacyNote}
                 onBack={() => go("result")}
                 onSubmit={async (form) => {
                   let m = mine;
@@ -420,7 +421,7 @@ function PriceCard({ quote, disclaimer }: { quote: PublicQuote | null; disclaime
   );
 }
 
-function RequestForm({ quote, onBack, onSubmit }: { quote: PublicQuote | null; onBack: () => void; onSubmit: (f: Record<string, unknown>) => Promise<void> }) {
+function RequestForm({ quote, privacyNote, onBack, onSubmit }: { quote: PublicQuote | null; privacyNote?: string; onBack: () => void; onSubmit: (f: Record<string, unknown>) => Promise<void> }) {
   const [f, setF] = useState({ name: "", email: "", phone: "", zip: "", address: "", contactPref: "phone", notes: "", consent: false, website: "" });
   const [busy, setBusy] = useState(false);
   const [errs, setErrs] = useState<Record<string, string>>({});
@@ -475,6 +476,7 @@ function RequestForm({ quote, onBack, onSubmit }: { quote: PublicQuote | null; o
           <span>Profixter may contact me by phone, text or email about this request.</span>
         </label>
         {errs.consent ? <span className="text-[12.5px] text-[#A3261B]">{errs.consent}</span> : null}
+        {privacyNote ? <p className="m-0 text-[12.5px] leading-relaxed text-[#64748B]" data-testid="privacy-note">{privacyNote}</p> : null}
         <p className="m-0 text-[13px] text-[#475569]" data-testid="request-price">{quote?.complete ? <>Estimated total in your request: <b>{quote.display}</b></> : PRICE_PENDING}</p>
         {msg ? <p className="m-0 rounded-xl bg-[#FDECEB] px-3 py-2 text-[13.5px] text-[#A3261B]">{msg}</p> : null}
         <div className="mt-2 flex gap-2">

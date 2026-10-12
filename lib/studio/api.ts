@@ -20,6 +20,10 @@ export type PublicCatalog = {
   catalog: EngineCatalog;
   projectTypes: { key: string; label: string; includes: string }[];
   disclaimer: string;
+  /** owner-editable privacy note (Admin -> Studio Catalog -> Prices & packages) */
+  privacyNote?: string;
+  /** false while the public Studio is switched off (dark launch) */
+  enabled?: boolean;
   packages: { key: string; name: string; description: string; skus: string[] }[];
   version: string;
 };
