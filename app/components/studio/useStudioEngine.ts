@@ -72,6 +72,8 @@ export function useStudioEngine(catalog: any) {
         });
         // local development and the local demo only: lets browser tests drive the engine directly
         if (process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_STUDIO_DEMO === "1") (window as any).__studioEngine = engineRef.current;
+        // development only: synthetic test photos for the photo workflow
+        if (process.env.NODE_ENV !== "production") import("@/lib/studio/engine/lab.js").then((m) => { (window as any).__studioLab = m; }).catch(() => {});
         engineRef.current.emit(); // first snapshot, so the UI knows the engine is ready
         setLoaded(true);
       } catch (e: any) {

@@ -13,9 +13,9 @@ import { Spinner } from "./ui";
  * view: "result" (the design), "photo" (the photo with its outline handles, for
  * adjusting), "compare" (before/after slider; photos only).
  */
-export default function Stage({ refs: { glRef, beforeRef, afterRef, svgRef, loupeRef }, view, ready, busy, engine, snap, stamp, focusAcc, onFocusAcc, onTapEmpty, children, interactive = true }: {
+export default function Stage({ refs: { glRef, beforeRef, afterRef, svgRef, loupeRef }, view, ready, busy, engine, snap, stamp, focusAcc, onFocusAcc, onTapEmpty, children, interactive = true, label = "Your bathroom design" }: {
   refs: StageRefs; view: "result" | "photo" | "compare"; ready: boolean; busy?: string | null; engine: () => any; snap: any; stamp: number;
-  focusAcc?: string | null; onFocusAcc?: (k: string | null) => void; onTapEmpty?: () => void; children?: React.ReactNode; interactive?: boolean;
+  focusAcc?: string | null; onFocusAcc?: (k: string | null) => void; onTapEmpty?: () => void; children?: React.ReactNode; interactive?: boolean; label?: string;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState<{ w: number; h: number } | null>(null);
@@ -109,7 +109,7 @@ export default function Stage({ refs: { glRef, beforeRef, afterRef, svgRef, loup
       <div className="relative" style={fit ? { width: fit.w, height: fit.h } : { width: "100%", aspectRatio: `${img.w} / ${img.h}`, maxHeight: "100%" }}>
         {/* the design */}
         <div className={view === "result" ? "absolute inset-0" : "hidden"}>
-          <canvas ref={afterRef} className="block h-full w-full rounded-[18px] shadow-[0_18px_50px_rgba(28,27,25,0.18)]" data-studio-after />
+          <canvas ref={afterRef} className="block h-full w-full rounded-[18px] shadow-[0_18px_50px_rgba(28,27,25,0.18)]" data-studio-after role="img" aria-label={label} />
           <div className={`absolute inset-0 ${showHandles ? "touch-none" : ""}`} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
             style={{ cursor: drag ? "grabbing" : "default" }} data-testid="stage-surface">
             {showHandles ? (
