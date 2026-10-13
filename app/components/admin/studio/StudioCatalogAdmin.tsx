@@ -34,6 +34,7 @@ export default function StudioCatalogAdmin() {
               {t === "products" ? "Products" : t === "manufacturers" ? "Manufacturers" : t === "pricing" ? "Prices & packages" : "Completeness"}
             </button>
           ))}
+          <a href="/shower-studio/preview" target="_blank" rel="noopener" className="rounded-full bg-blue-50 px-3.5 py-1.5 text-sm font-semibold text-blue-700 ring-1 ring-blue-200" data-testid="owner-preview-link">Owner preview ↗</a>
         </div>
       </div>
       {tab === "products" ? <Products openSku={openSku} onOpened={() => setOpenSku(null)} manufacturer={mfrFilter} /> : tab === "manufacturers" ? <StudioManufacturersAdmin onOpenProduct={(sku) => { setOpenSku(sku); setTab("products"); }} onOpenCatalog={(m) => { setMfrFilter(m); setTab("products"); }} /> : tab === "pricing" ? <Pricing /> : <Review />}

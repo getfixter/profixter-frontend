@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { publicStudio, localDesign, apiUrl, type PublicCatalog, type PublicQuote, type MeasureSource } from "@/lib/studio/api";
+import { previewStudio, publicStudio, localDesign, apiUrl, type PublicCatalog, type PublicQuote, type MeasureSource } from "@/lib/studio/api";
 import { EXAMPLE_SCENES, STANDARD_SIZE } from "@/lib/studio/examples";
 import { trackLead } from "@/lib/meta";
 import StudioStage from "@/app/components/studio/StudioStage";
@@ -41,15 +41,21 @@ const input = "min-h-[48px] w-full rounded-xl border border-[#C5CBD8] bg-white p
  */
 /** Set only by the owner's local demo (BackEnd/scripts/studio_demo_env.js --demo); never on the live site. */
 const DEMO = process.env.NEXT_PUBLIC_STUDIO_DEMO === "1";
-function DemoBanner() {
+function DemoBanner({ preview }: { preview?: boolean }) {
   return (
     <div className="mb-4 rounded-2xl bg-[#0B1628] px-4 py-2.5 text-center text-[12.5px] font-semibold text-white" data-testid="demo-banner">
-      DEMO · sample products and demo prices · requests stay on this computer
+      {preview ? "OWNER PREVIEW · demo products and demo prices · nothing is saved or sent" : "DEMO · sample products and demo prices · requests stay on this computer"}
     </div>
   );
 }
 
-export default function StudioApp() {
+/**
+ * `preview`: the owner's live preview on profixter.com - the same customer
+ * flow against /api/studio-preview (owner only on the server, demo catalog and
+ * DEMO prices). Nothing is saved: no design, no photo upload, no request, no
+ * analytics event; the photo stays in this browser.
+ */
+export default function StudioApp({ preview = false }: { preview?: boolean } = {}) {
   const [cat, setCat] = useState<PublicCatalog | null>(null);
   const [catError, setCatError] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("start");
@@ -75,6 +81,10 @@ export default function StudioApp() {
 
   // ---------------------------------------------------------------- catalog + anything saved in this browser
   useEffect(() => {
+    if (preview) {
+      previewStudio.catalog().then(setCat).catch((e) => setCatError(e.status === 403 ? "This preview is for the Profixter owner account only." : e.message));
+      return;
+    }
     publicStudio.catalog().then(setCat).catch((e) => setCatError(e.message));
     const m = localDesign.get();
     if (m) {
@@ -84,7 +94,7 @@ export default function StudioApp() {
         if (d.state || d.photo) setResumable(d);
       }).catch(() => localDesign.clear());
     }
-  }, []);
+  }, [preview]);
   useEffect(() => { if (snap?.last?.at) setStamp(snap.last.at); }, [snap?.last?.at]);
 
   // ---------------------------------------------------------------- draw the picture once the engine exists
@@ -115,7 +125,7 @@ export default function StudioApp() {
   }, [designKey, projectType, measureSource, mine, snap?.ready, submitted, engine]);
   useEffect(() => {
     if (!snap?.design?.baseId) return;
-    const t = window.setTimeout(() => { publicStudio.quote(snap.design, projectType, measureSource).then(setQuote).catch(() => setQuote(null)); }, 400);
+    const t = window.setTimeout(() => { (preview ? previewStudio.quote : publicStudio.quote)(snap.design, projectType, measureSource).then(setQuote).catch(() => setQuote(null)); }, 400);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [designKey, projectType, measureSource]);
@@ -130,6 +140,7 @@ export default function StudioApp() {
     setStep("customize");
     setPending({ kind: k });
     window.scrollTo({ top: 0 });
+    if (preview) { setSubmitted(null); return; }
     try {
       if (mine && !submitted) await publicStudio.remove(mine.id, mine.token).catch(() => {});
       const created = await publicStudio.create(pt, { exampleScene: SCENE.id, measureSource: "standard" });
@@ -171,10 +182,16 @@ export default function StudioApp() {
   }
 
   async function onPhoto(file?: File | null) {
-    if (!file || !mine) return;
+    if (!file || (!mine && !preview)) return;
     setUploading(true);
     try {
       const blob = await preparePhoto(file);
+      if (preview) {
+        await engine()?.loadPhoto(URL.createObjectURL(blob));
+        setSource("photo");
+        return;
+      }
+      if (!mine) return;
       const r = await publicStudio.uploadPhoto(mine.id, mine.token, blob);
       await engine()?.loadPhoto(apiUrl(r.photo.url));
       setSource("photo");
@@ -205,7 +222,7 @@ export default function StudioApp() {
 
   return (
     <div className="mx-auto max-w-6xl px-4">
-      {DEMO ? <DemoBanner /> : null}
+      {DEMO || preview ? <DemoBanner preview={preview} /> : null}
       {step !== "start" && !submitted ? (
         <nav aria-label="Steps" className="mb-4 flex gap-1.5 overflow-x-auto">
           {STEPS.map((s, i) => (
@@ -221,7 +238,7 @@ export default function StudioApp() {
       {engineError ? <p className="mb-4 rounded-xl bg-[#FDECEB] px-4 py-3 text-[14px] text-[#A3261B]">{engineError} You can still request a free design consultation by phone.</p> : null}
 
       {submitted ? (
-        <Done reference={submitted.reference} onNew={startOver} />
+        <Done reference={submitted.reference} onNew={startOver} preview={preview} />
       ) : (
         <div className={step === "start" ? "" : "grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]"}>
           {/* the picture: always mounted (the engine draws into it) */}
@@ -292,7 +309,7 @@ export default function StudioApp() {
                       <input ref={fileRef} type="file" accept="image/*,.heic,.heif" capture="environment" className="hidden" onChange={(e) => onPhoto(e.target.files?.[0])} data-testid="photo-input" />
                       <p className="m-0 text-[13px] leading-relaxed text-[#475569]">Stand outside the tub and fit the whole tub area in the photo. {cat.privacyNote || "Your photo is private: only you and the Profixter team can see it, and camera location data is removed."}</p>
                       <div className="flex flex-wrap gap-2">
-                        <button type="button" className={secondary} disabled={uploading || !mine} onClick={() => fileRef.current?.click()}>{source === "photo" ? "Use a different photo" : "Take or upload a photo"}</button>
+                        <button type="button" className={secondary} disabled={uploading || (!mine && !preview)} onClick={() => fileRef.current?.click()}>{source === "photo" ? "Use a different photo" : "Take or upload a photo"}</button>
                         {source === "photo" ? <button type="button" className={secondary} onClick={backToExample}>Back to the example</button> : null}
                       </div>
                       {source === "photo" && snap?.ready ? (
@@ -328,6 +345,12 @@ export default function StudioApp() {
                 privacyNote={cat.privacyNote}
                 onBack={() => go("result")}
                 onSubmit={async (form) => {
+                  if (preview) {
+                    const r = await previewStudio.submit({ ...form, state: engine()?.getState(), projectType, measureSource, exampleScene: source === "example" ? SCENE.id : null, photo: source === "photo" });
+                    setSubmitted({ reference: r.reference });
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    return;
+                  }
                   let m = mine;
                   if (!m) {
                     const created = await publicStudio.create(projectType, { exampleScene: source === "example" ? SCENE.id : null, measureSource });
@@ -336,8 +359,8 @@ export default function StudioApp() {
                   }
                   const state = engine()?.getState();
                   if (state) await publicStudio.save(m.id, m.token, { state, projectType, measureSource, ...(source === "example" ? { exampleScene: SCENE.id } : {}) });
-                  const preview = await engine()?.previewBlob();
-                  if (preview) await publicStudio.uploadPreview(m.id, m.token, preview).catch(() => {});
+                  const previewImg = await engine()?.previewBlob();
+                  if (previewImg) await publicStudio.uploadPreview(m.id, m.token, previewImg).catch(() => {});
                   const r = await publicStudio.submit(m.id, m.token, form);
                   try { trackLead({ content_name: "Shower Studio", content_category: "bathroom" }, { dataLayerEvent: null }); } catch { /* analytics never blocks */ }
                   setSubmitted({ reference: r.reference });
@@ -531,13 +554,14 @@ function Start({ canResume, onBegin, onResume, onNew }: { canResume: boolean; on
   );
 }
 
-function Done({ reference, onNew }: { reference?: string; onNew: () => void }) {
+function Done({ reference, onNew, preview }: { reference?: string; onNew: () => void; preview?: boolean }) {
   return (
     <div className="mx-auto max-w-xl rounded-3xl bg-white p-8 text-center shadow-[0_8px_30px_rgba(11,22,40,0.06)]" data-testid="request-done">
       <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#E8F6EE] text-[28px]" aria-hidden>✓</div>
       <h2 className="mt-4 text-[26px] font-bold text-[#0B1628]">We have your design</h2>
       <p className="mt-2 text-[15px] leading-relaxed text-[#475569]">Thank you! A Profixter designer will contact you to confirm the details and schedule a free measurement. Nothing is booked yet.</p>
       {reference ? <p className="mt-3 text-[13px] text-[#64748B]">Reference: <b>{reference}</b></p> : null}
+      {preview ? <p className="mt-3 rounded-xl bg-[#F1F5FF] px-3 py-2 text-[13px] text-[#334155]" data-testid="preview-not-sent">Owner preview: this request was checked like a real one, but nothing was saved or sent.</p> : null}
       <button type="button" className={`${secondary} mt-6`} onClick={onNew}>Design another bathroom</button>
     </div>
   );
