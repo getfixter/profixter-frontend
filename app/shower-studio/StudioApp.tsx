@@ -39,6 +39,16 @@ const input = "min-h-[48px] w-full rounded-xl border border-[#C5CBD8] bg-white p
  * Starts on an example bathroom at a standard size: no photo, no measuring,
  * no account. A photo and real measurements are optional extras.
  */
+/** Set only by the owner's local demo (BackEnd/scripts/studio_demo_env.js --demo); never on the live site. */
+const DEMO = process.env.NEXT_PUBLIC_STUDIO_DEMO === "1";
+function DemoBanner() {
+  return (
+    <div className="mb-4 rounded-2xl bg-[#0B1628] px-4 py-2.5 text-center text-[12.5px] font-semibold text-white" data-testid="demo-banner">
+      DEMO · sample products and demo prices · requests stay on this computer
+    </div>
+  );
+}
+
 export default function StudioApp() {
   const [cat, setCat] = useState<PublicCatalog | null>(null);
   const [catError, setCatError] = useState<string | null>(null);
@@ -195,6 +205,7 @@ export default function StudioApp() {
 
   return (
     <div className="mx-auto max-w-6xl px-4">
+      {DEMO ? <DemoBanner /> : null}
       {step !== "start" && !submitted ? (
         <nav aria-label="Steps" className="mb-4 flex gap-1.5 overflow-x-auto">
           {STEPS.map((s, i) => (
@@ -501,7 +512,7 @@ function Start({ canResume, onBegin, onResume, onNew }: { canResume: boolean; on
         </div>
       ) : null}
       <div className="mx-auto mt-8 grid max-w-2xl gap-4 sm:grid-cols-2">
-        {([["shower", "Walk-in shower", "Replace a tub or an old shower with a walk-in shower."], ["tub", "Bathtub", "A new acrylic bathtub with matching walls."]] as const).map(([k, title, sub]) => (
+        {([["shower", "Walk-in shower", "Replace a tub or an old shower with a walk-in shower."], ["tub", "Bathtub", "A new bathtub with matching walls."]] as const).map(([k, title, sub]) => (
           <button key={k} type="button" onClick={() => onBegin(k)} data-testid={`start-${k}`}
             className="group overflow-hidden rounded-3xl bg-white text-left shadow-[0_8px_30px_rgba(11,22,40,0.08)] ring-1 ring-[#DDE3EE] transition hover:ring-2 hover:ring-[#306EEC]">
             <div className="relative h-44 overflow-hidden bg-[#EEF2F8] sm:h-52">

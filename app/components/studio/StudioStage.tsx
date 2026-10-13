@@ -31,7 +31,7 @@ export default function StudioStage({
   /** smaller picture (phones, while choosing options) */
   compact?: boolean;
 }) {
-  const maxH = compact ? "max-h-[34vh] sm:max-h-[58vh]" : "max-h-[58vh]";
+  const maxH = compact ? "max-h-[34vh] sm:max-h-[40vh] lg:max-h-[58vh]" : "max-h-[58vh]";
   const cmpBefore = useRef<HTMLCanvasElement>(null);
   const cmpAfter = useRef<HTMLCanvasElement>(null);
   const [split, setSplit] = useState(50);

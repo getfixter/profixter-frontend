@@ -44,3 +44,6 @@ lib.zip
 
 # AI benchmark run output (answers + screenshots); results go in reports, not git
 .ai-benchmark-runs/
+
+# local Shower Studio demo build
+/.next-studio-demo/
