@@ -4,6 +4,7 @@
 import { useMemo, useState } from "react";
 import { autoFix, plumbingHand } from "@/lib/studio/engine/compat.js";
 import ProductArt, { type ArtKind } from "../ProductArt";
+import { useEscape } from "./useEscape";
 import { Icon, T } from "./ui";
 import { usePriceDeltas, deltaText, type PriceApi, type Candidate } from "./usePriceDeltas";
 import type { EngineSnapshot } from "../useStudioEngine";
@@ -274,7 +275,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   return (
     <div className="studio-fade">
       <h3 className="text-[18px] font-semibold leading-tight tracking-[-0.01em] text-[#1C1B19] sm:text-[20px]">{title}</h3>
-      {hint ? <p className="mt-0.5 text-[13px] text-[#8C867C]">{hint}</p> : null}
+      {hint ? <p className="studio-hint mt-0.5 text-[13px] text-[#8C867C]">{hint}</p> : null}
       <div className="mt-3 sm:mt-4">{children}</div>
     </div>
   );
@@ -464,6 +465,7 @@ function PlumbingDiagram({ side, tub }: { side: "left" | "right"; tub: boolean }
 }
 
 function Details({ value, onClose }: { value: { item: any; art: ArtKind } | null; onClose: () => void }) {
+  useEscape(Boolean(value), onClose);
   if (!value) return null;
   const it = value.item;
   const rows: [string, string][] = [

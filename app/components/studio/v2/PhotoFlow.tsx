@@ -3,6 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRef } from "react";
 import { PHOTO_ACCEPT } from "../photoPrep";
+import { useEscape } from "./useEscape";
 import { Icon, Spinner, btn } from "./ui";
 
 export type PhotoStep = "choose" | "working" | "confirm" | "adjust" | "plumbing";
@@ -16,6 +17,7 @@ export function PhotoSource({ open, onClose, onFile, onExample, error, privacyNo
   open: boolean; onClose: () => void; onFile: (f: File, via: "camera" | "library") => void; onExample: () => void; error?: string | null; privacyNote?: string; hasPhoto: boolean;
 }) {
   const cam = useRef<HTMLInputElement>(null), lib = useRef<HTMLInputElement>(null);
+  useEscape(open, onClose);
   if (!open) return null;
   const pick = (via: "camera" | "library") => (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -56,7 +58,6 @@ function PhotoTip() {
       <rect x="98" y="76" width="124" height="26" rx="6" fill="#ECE7DF" />
       <circle cx="112" cy="56" r="4" fill="#A47A3E" />
       <rect x="60" y="8" width="200" height="106" rx="10" fill="none" stroke="#1C1B19" strokeWidth="2.5" strokeDasharray="8 6" />
-      <text x="160" y="118" textAnchor="middle" fontSize="0" />
     </svg>
   );
 }

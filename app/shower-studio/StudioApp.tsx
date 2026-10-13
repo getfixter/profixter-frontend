@@ -13,6 +13,7 @@ import FullPreview from "@/app/components/studio/v2/FullPreview";
 import { PhotoSource, PhotoSteps, type PhotoStep } from "@/app/components/studio/v2/PhotoFlow";
 import { Icon, DemoTag, btn, input, money0, FONT, T, Spinner } from "@/app/components/studio/v2/ui";
 import ProductArt from "@/app/components/studio/ProductArt";
+import { useEscape } from "@/app/components/studio/v2/useEscape";
 
 /**
  * The customer Shower Studio: choose (shower or tub) -> customize -> review ->
@@ -104,6 +105,7 @@ export default function StudioApp({ preview = false }: { preview?: boolean } = {
     if (!loaded || !e || !pending) return;
     const job = pending;
     setPending(null);
+    e.audience = "customer";
     (async () => {
       try {
         if (job.photoUrl) { await e.loadPhoto(apiUrl(job.photoUrl), { state: job.state || null }); e.setSimpleMarks(true); }
@@ -269,7 +271,8 @@ export default function StudioApp({ preview = false }: { preview?: boolean } = {
               ) : (
                 <Stage refs={stageRefs} view={view} ready={Boolean(snap?.ready)} busy={photoStep === "working" ? "Preparing your photo…" : snap?.busy} engine={engine} snap={snap} stamp={stamp}
                   focusAcc={focusAcc} onFocusAcc={(k) => { setFocusAcc(k); setCategory("extras"); if (sheet === "mini") setSheet("half"); }}
-                  onTapEmpty={() => setSheet((s) => (s === "full" ? "half" : s))} interactive={step === "design" && !photoStep}>
+                  onTapEmpty={() => setSheet((s) => (s === "full" ? "half" : s === "half" ? "mini" : "half"))} interactive={step === "design" && !photoStep}
+                  label={describe(snap, kind, source)}>
                   {snap?.ready ? <span className="pointer-events-none absolute bottom-2 left-2 max-w-[calc(100%-16px)] truncate rounded-full bg-white/85 px-2.5 py-1 text-[11.5px] font-medium text-[#5F5A52] shadow-sm backdrop-blur" data-testid="picture-badge">{caption}</span> : null}
                   {snap?.canUndoMove && step === "design" && !photoStep ? (
                     <button type="button" onClick={() => showChanges(engine()?.undoMove() || [])} className="absolute right-2 top-2 inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-white/92 px-3 text-[13px] font-semibold shadow ring-1 ring-black/5" data-testid="undo-move"><Icon name="undo" className="h-4 w-4" />Undo move</button>
@@ -282,14 +285,19 @@ export default function StudioApp({ preview = false }: { preview?: boolean } = {
             {!submitted ? (
               <aside className={`studio-sheet relative z-10 flex shrink-0 flex-col rounded-t-[28px] bg-[#FBFAF8] shadow-[0_-12px_40px_rgba(28,27,25,0.10)] lg:h-auto lg:w-[460px] lg:rounded-none lg:border-l lg:border-[#E7E1D8] lg:shadow-none xl:w-[500px] ${sheet === "full" ? "h-[80dvh]" : sheet === "half" ? "h-[50dvh]" : "h-auto"}`}
                 data-sheet={sheet} aria-label="Design choices">
-                <button type="button" className="flex h-6 w-full shrink-0 items-center justify-center lg:hidden" onClick={() => setSheet((s) => (s === "mini" ? "half" : s === "half" ? "full" : "half"))}
-                  aria-label={sheet === "full" ? "Show more of the picture" : "Show more choices"} data-testid="sheet-handle">
-                  <span className="h-1.5 w-10 rounded-full bg-[#D6CFC3]" />
-                </button>
+                <SheetHandle sheet={sheet} setSheet={setSheet} />
                 {step === "design" && !inPhoto ? (
-                  <nav className="grid shrink-0 grid-cols-6 gap-0.5 px-2 lg:px-4 lg:pt-4" role="tablist" aria-label="What to choose">
+                  <nav className="grid shrink-0 grid-cols-6 gap-0.5 px-2 lg:px-4 lg:pt-4" role="tablist" aria-label="What to choose"
+                    onKeyDown={(ev) => {
+                      if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return;
+                      const i = TABS.findIndex((t) => t.id === category);
+                      const n = TABS[(i + (ev.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length];
+                      pickCategory(n.id);
+                      (ev.currentTarget.querySelector(`[data-testid="tab-${n.id}"]`) as HTMLElement | null)?.focus();
+                      ev.preventDefault();
+                    }}>
                     {TABS.map((t) => (
-                      <button key={t.id} type="button" role="tab" aria-selected={category === t.id} onClick={() => pickCategory(t.id)} data-testid={`tab-${t.id}`}
+                      <button key={t.id} type="button" role="tab" aria-selected={category === t.id} tabIndex={category === t.id ? 0 : -1} onClick={() => pickCategory(t.id)} data-testid={`tab-${t.id}`}
                         className={`flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-2xl text-[11.5px] font-semibold transition ${category === t.id ? "bg-[#1C1B19] text-white" : "text-[#5F5A52] hover:bg-black/5"}`}>
                         <Icon name={t.id === "base" && kind === "tub" ? "tub" : t.icon} className="h-[22px] w-[22px]" />{t.id === "base" && kind === "tub" ? "Tub" : t.label}
                       </button>
@@ -371,6 +379,41 @@ export default function StudioApp({ preview = false }: { preview?: boolean } = {
 }
 
 // ------------------------------------------------------------------ pieces
+/** A sentence describing the picture, for screen readers. */
+function describe(snap: any, kind: Kind, source: "example" | "photo") {
+  const c = snap?.current || {};
+  if (!c.base) return source === "photo" ? "Your bathroom photo" : "Example bathroom";
+  const parts = [
+    `${source === "photo" ? "Your bathroom" : "Example bathroom"} with a new ${kind === "tub" ? "bathtub" : "walk-in shower"}`,
+    c.finish ? `${c.finish.family?.label || c.finish.label}${c.finish.variant?.color ? ` in ${c.finish.variant.color}` : ""} walls` : "",
+    c.fixture ? `${c.fixture.family?.label || c.fixture.label}` : "",
+    c.enclosure ? `${c.enclosure.family?.label || c.enclosure.label}` : "no door",
+    snap?.design?.plumbing?.wall && snap.design.plumbing.wall !== "facing" ? `faucet on the ${snap.design.plumbing.wall} wall` : "",
+    snap?.design?.accessories?.length ? `${snap.design.accessories.length} extra${snap.design.accessories.length > 1 ? "s" : ""}` : "",
+  ].filter(Boolean);
+  return parts.join(", ") + ".";
+}
+
+/** The sheet's grab handle: tap to step through the sizes, or swipe up / down. */
+function SheetHandle({ sheet, setSheet }: { sheet: Sheet; setSheet: (fn: (s: Sheet) => Sheet) => void }) {
+  const y0 = useRef<number | null>(null);
+  const up = (s: Sheet): Sheet => (s === "mini" ? "half" : "full");
+  const down = (s: Sheet): Sheet => (s === "full" ? "half" : "mini");
+  return (
+    <button type="button" className="flex h-7 w-full shrink-0 touch-none items-center justify-center lg:hidden"
+      onPointerDown={(e) => { y0.current = e.clientY; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); }}
+      onPointerUp={(e) => {
+        const dy = y0.current == null ? 0 : e.clientY - y0.current;
+        y0.current = null;
+        if (dy < -24) setSheet(up); else if (dy > 24) setSheet(down); else setSheet((s) => (s === "full" ? "half" : up(s)));
+      }}
+      onKeyDown={(e) => { if (e.key === "ArrowUp") setSheet(up); if (e.key === "ArrowDown") setSheet(down); }}
+      aria-label={sheet === "full" ? "Show more of the picture" : "Show more choices"} data-testid="sheet-handle">
+      <span className="h-1.5 w-10 rounded-full bg-[#D6CFC3]" />
+    </button>
+  );
+}
+
 function StudioStyles() {
   return (
     <style>{`
@@ -381,6 +424,7 @@ function StudioStyles() {
       .studio-fade { animation: studioFade .28s cubic-bezier(.2,.7,.2,1) both; }
       .studio-rise { animation: studioRise .32s cubic-bezier(.2,.7,.2,1) both; }
       .studio-sheet { transition: height .32s cubic-bezier(.2,.7,.2,1); }
+      @media (max-height: 720px) and (max-width: 1023px) { .studio-sheet[data-sheet="half"] { height: 58dvh; } .studio-hint { display: none; } }
       @media (min-width: 1024px) { .studio-sheet { height: auto !important; } }
       @media (prefers-reduced-motion: reduce) { .studio-fade, .studio-rise { animation: none; } .studio-sheet { transition: none; } }
     `}</style>
@@ -495,6 +539,7 @@ function Review({ snap, catalog, quote, disclaimer, source, demo, onEdit }: { sn
 }
 
 function MeasureSheet({ snap, measureSource, onApply, onStandard, onClose }: { snap: any; measureSource: MeasureSource; onApply: (m: any) => void; onStandard: () => void; onClose: () => void }) {
+  useEscape(true, onClose);
   const m = snap.design.measure;
   const [v, setV] = useState({ facingWidth: String(m.facingWidth), sideLength: String(m.sideLength), rimHeight: String(m.rimHeight) });
   const field = (k: keyof typeof v, label: string, hint: string) => (
