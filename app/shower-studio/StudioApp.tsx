@@ -7,7 +7,8 @@ import { previewStudio, publicStudio, localDesign, apiUrl, type PublicCatalog, t
 import { EXAMPLE_SCENES, STANDARD_SIZE } from "@/lib/studio/examples";
 import { trackLead } from "@/lib/meta";
 import StudioStage from "@/app/components/studio/StudioStage";
-import DesignPanel, { Messages } from "@/app/components/studio/DesignPanel";
+import Configurator, { money0, type SectionId } from "@/app/components/studio/Configurator";
+import { Messages } from "@/app/components/studio/DesignPanel";
 import { useStudioEngine } from "@/app/components/studio/useStudioEngine";
 import { preparePhoto } from "@/app/components/studio/photoPrep";
 
@@ -18,13 +19,6 @@ const STEPS: { id: Exclude<Step, "start">; label: string }[] = [
   { id: "result", label: "Design & price" },
   { id: "request", label: "Request" },
 ];
-const CUSTOM_TABS = [
-  { id: "walls", label: "Walls" },
-  { id: "base", label: "Base" },
-  { id: "fixture", label: "Faucet" },
-  { id: "door", label: "Door" },
-  { id: "extras", label: "Extras" },
-] as const;
 const SCENE = EXAMPLE_SCENES[0];
 const PRICE_PENDING = "Price confirmed after review.";
 
@@ -69,7 +63,7 @@ export default function StudioApp({ preview = false }: { preview?: boolean } = {
   const [panel, setPanel] = useState<null | "measure" | "photo">(null);
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [tab, setTab] = useState<(typeof CUSTOM_TABS)[number]["id"]>("walls");
+  const [section, setSection] = useState<SectionId | null>("walls");
   const [quote, setQuote] = useState<PublicQuote | null>(null);
   const [submitted, setSubmitted] = useState<{ reference?: string } | null>(null);
   const { stageRefs, engine, snap, error: engineError, loaded } = useStudioEngine(cat?.catalog || null);
@@ -240,10 +234,10 @@ export default function StudioApp({ preview = false }: { preview?: boolean } = {
       {submitted ? (
         <Done reference={submitted.reference} onNew={startOver} preview={preview} />
       ) : (
-        <div className={step === "start" ? "" : "grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]"}>
+        <div className={step === "start" ? "" : "grid gap-5 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-8"}>
           {/* the picture: always mounted (the engine draws into it) */}
           <section className={step === "start" ? "hidden" : step === "customize" ? "sticky top-14 z-10 -mx-4 bg-[#F8FAFF] px-4 pb-2 lg:top-28 lg:mx-0 lg:self-start lg:px-0" : "lg:sticky lg:top-28 lg:self-start"}>
-            <div className="relative rounded-3xl bg-white p-2 shadow-[0_8px_30px_rgba(11,22,40,0.06)] sm:p-3">
+            <div className="relative mx-auto w-full max-w-full rounded-3xl sm:w-fit bg-white p-2 shadow-[0_8px_30px_rgba(11,22,40,0.06)] sm:p-3">
               <StudioStage
                 {...stageRefs} view={view} compact={step === "customize"} className={snap?.ready ? "" : "hidden"}
                 busy={uploading ? "Preparing your photo…" : panel === "photo" ? null : snap?.busy}
@@ -252,9 +246,9 @@ export default function StudioApp({ preview = false }: { preview?: boolean } = {
               />
               {!snap?.ready ? <div className="grid aspect-[3/4] max-h-[34vh] w-full place-items-center rounded-2xl bg-[#EEF2F8] text-[14px] text-[#64748B] sm:max-h-[58vh]">Preparing your design…</div> : null}
               {snap?.ready ? (
-                <span className={`pointer-events-none absolute left-4 rounded-full bg-white/90 px-2.5 py-1 text-[11.5px] font-semibold text-[#0B1628] shadow ${view === "compare" ? "bottom-16" : "top-4"}`} data-testid="picture-badge">
-                  {source === "example" ? "Example bathroom" : "Your photo"} · {measureSource === "customer" ? "your measurements" : "standard 60″ × 30″ size"}
-                </span>
+                <p className="m-0 mt-1 truncate text-center text-[11.5px] font-semibold text-[#0B1628] sm:text-[12px]" data-testid="picture-badge">
+                  {source === "example" ? "Example bathroom (illustration)" : "Your photo (preview)"} · {measureSource === "customer" ? "your measurements" : "standard 60″ × 30″"}
+                </p>
               ) : null}
             </div>
           </section>
@@ -263,7 +257,7 @@ export default function StudioApp({ preview = false }: { preview?: boolean } = {
             {step === "start" && <Start canResume={Boolean(resumable)} onBegin={begin} onResume={resume} onNew={startOver} />}
 
             {step === "customize" && (
-              <Panel title={kind === "tub" ? "Design your new bathtub" : "Design your walk-in shower"} sub="Tap any option. The picture and the price update right away.">
+              <Panel title={kind === "tub" ? "Design your new bathtub" : "Design your walk-in shower"} sub="Open a section and tap an option. The picture and the price change as you go.">
                 <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-[#EEF2F8] p-1" role="group" aria-label="Shower or bathtub">
                   {(["shower", "tub"] as const).map((k) => (
                     <button key={k} type="button" aria-pressed={kind === k} onClick={() => chooseKind(k)} data-testid={`kind-${k}`} disabled={!snap?.ready}
@@ -281,15 +275,12 @@ export default function StudioApp({ preview = false }: { preview?: boolean } = {
                     </select>
                   </label>
                 ) : null}
-                <div className="-mx-1 mb-4 flex gap-1.5 overflow-x-auto px-1" role="tablist">
-                  {CUSTOM_TABS.map((t) => (
-                    <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
-                      className={`min-h-[40px] shrink-0 rounded-full px-4 text-[14px] font-semibold ${tab === t.id ? "bg-[#0B1628] text-white" : "bg-white text-[#475569]"}`}>{t.label}</button>
-                  ))}
-                </div>
-                {snap?.ready ? <DesignPanel snap={snap} engine={engine} section={tab} onChanged={showChanges} /> : <p className="text-[14px] text-[#64748B]">Preparing the options…</p>}
-                <Messages list={snap?.messages.design.filter((m) => m.kind === "err")} className="mt-4" />
-                <PriceStrip quote={quote} />
+                {snap?.ready ? (
+                  <Configurator snap={snap} engine={engine} catalog={cat.catalog} kind={kind} projectType={projectType} demo={preview || DEMO}
+                    priceApi={preview ? previewStudio.quoteOptions : publicStudio.quoteOptions} open={section} setOpen={setSection}
+                    onChanged={showChanges} onReview={() => go("result")} />
+                ) : <p className="text-[14px] text-[#64748B]">Preparing the options…</p>}
+                <TotalBar quote={quote} demo={preview || DEMO} onReview={() => go("result")} disabled={!snap?.ready || Boolean(snap?.busy)} />
 
                 <div className="mt-5 grid gap-2 rounded-2xl border border-dashed border-[#C5CBD8] p-4">
                   <p className="m-0 text-[13px] font-semibold text-[#0B1628]">Optional</p>
@@ -413,8 +404,8 @@ function MeasurePanel({ snap, measureSource, onApply, onStandard }: { snap: any;
   return (
     <div className="grid gap-2 rounded-xl bg-[#F8FAFF] p-3">
       <div className="grid gap-2 sm:grid-cols-3">
-        {field("facingWidth", "Width of the faucet wall")}
-        {field("sideLength", "Length of the tub")}
+        {field("facingWidth", "Back wall, side to side")}
+        {field("sideLength", "Depth, back wall to the front edge")}
         {field("rimHeight", "Height of the tub edge")}
       </div>
       <Messages list={snap.messages.measure} />
@@ -427,13 +418,21 @@ function MeasurePanel({ snap, measureSource, onApply, onStandard }: { snap: any;
   );
 }
 
-function PriceStrip({ quote }: { quote: PublicQuote | null }) {
-  if (!quote) return null;
+const totalText = (q: PublicQuote | null) => (q?.complete && q.totalCents != null ? money0(q.totalCents) : PRICE_PENDING);
+function TotalBar({ quote, demo, onReview, disabled }: { quote: PublicQuote | null; demo?: boolean; onReview: () => void; disabled?: boolean }) {
   return (
-    <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl bg-[#0B1628] px-4 py-3 text-white">
-      <span className="text-[13px] text-white/70">{quote.complete ? "Estimated total" : "Price"}</span>
-      <span className="text-right text-[17px] font-bold" data-testid="price-strip">{quote.complete ? quote.display : PRICE_PENDING}</span>
-    </div>
+    <>
+      <div className="h-24 lg:hidden" aria-hidden />
+      <div className="fixed inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] z-40 mx-auto max-w-xl lg:static lg:inset-auto lg:mx-0 lg:mt-5 lg:max-w-none">
+        <div className="flex items-center gap-3 rounded-2xl bg-[#0B1628] py-2 pl-4 pr-2 text-white shadow-[0_12px_32px_rgba(11,22,40,0.28)]">
+          <span className="min-w-0 flex-1">
+            <span className="block text-[11.5px] font-semibold uppercase tracking-wide text-white/60">{demo ? "Demo estimate" : quote?.complete ? "Estimated total" : "Price"}</span>
+            <span className="block truncate text-[18px] font-bold leading-tight" data-testid="price-strip">{quote ? totalText(quote) : "…"}</span>
+          </span>
+          <button type="button" onClick={onReview} disabled={disabled} className="min-h-[44px] shrink-0 rounded-xl bg-[#306EEC] px-4 text-[15px] font-semibold text-white disabled:opacity-50" data-testid="total-review">Review →</button>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -441,7 +440,7 @@ function PriceCard({ quote, disclaimer }: { quote: PublicQuote | null; disclaime
   return (
     <div className="rounded-2xl border border-[#DDE3EE] bg-[#F8FAFF] p-5" data-testid="price-card">
       <div className="text-[13px] font-semibold uppercase tracking-wide text-[#64748B]" data-testid="price-label">{quote?.complete ? quote.label : "Price"}</div>
-      <div className="mt-1 text-[32px] font-bold leading-tight text-[#0B1628]" data-testid="price-total">{quote?.complete ? quote.display : PRICE_PENDING}</div>
+      <div className="mt-1 text-[32px] font-bold leading-tight text-[#0B1628]" data-testid="price-total">{totalText(quote)}</div>
       {quote?.complete ? <p className="mt-2 text-[13px] font-semibold text-[#334155]" data-testid="price-basis">{quote.basis}</p> : null}
       <p className="mt-1 text-[13px] leading-relaxed text-[#475569]">{quote?.complete ? disclaimer : "Some prices for this design are still being set; our team confirms your price after a quick review."}</p>
       {quote?.includes?.length ? (
@@ -511,7 +510,7 @@ function RequestForm({ quote, privacyNote, onBack, onSubmit }: { quote: PublicQu
         </label>
         {errs.consent ? <span className="text-[12.5px] text-[#A3261B]">{errs.consent}</span> : null}
         {privacyNote ? <p className="m-0 text-[12.5px] leading-relaxed text-[#64748B]" data-testid="privacy-note">{privacyNote}</p> : null}
-        <p className="m-0 text-[13px] text-[#475569]" data-testid="request-price">{quote?.complete ? <>Estimated total in your request: <b>{quote.display}</b></> : PRICE_PENDING}</p>
+        <p className="m-0 text-[13px] text-[#475569]" data-testid="request-price">{quote?.complete ? <>Estimated total in your request: <b>{totalText(quote)}</b></> : PRICE_PENDING}</p>
         {msg ? <p className="m-0 rounded-xl bg-[#FDECEB] px-3 py-2 text-[13.5px] text-[#A3261B]">{msg}</p> : null}
         <div className="mt-2 flex gap-2">
           <button type="button" className={secondary} onClick={onBack}>Back</button>

@@ -73,6 +73,8 @@ export const publicStudio = {
     return req<{ ok: true }>(`/api/studio/designs/${id}/preview`, { method: "POST", token, body: f });
   },
   quote: (design: unknown, projectType: string, measureSource: MeasureSource = "standard") => req<PublicQuote>("/api/studio/quote", { method: "POST", body: JSON.stringify({ design, projectType, measureSource }) }),
+  /** Totals (cents, or null when a price is not set) for several candidate designs: the price difference on each option. */
+  quoteOptions: (designs: unknown[], projectType: string) => req<{ totals: (number | null)[] }>("/api/studio/quote/options", { method: "POST", body: JSON.stringify({ designs, projectType }) }),
   submit: (id: string, token: string, body: Record<string, unknown>) => req<{ ok: true; reference?: string; alreadySubmitted?: boolean }>(`/api/studio/designs/${id}/submit`, { method: "POST", token, body: JSON.stringify(body) }),
   remove: (id: string, token: string) => req<{ ok: true }>(`/api/studio/designs/${id}`, { method: "DELETE", token }),
 };
@@ -101,6 +103,7 @@ export const previewStudio = {
   catalog: () => unwrap<PublicCatalog & { preview?: boolean }>(API.get("/api/studio-preview/catalog")),
   quote: (design: unknown, projectType: string, measureSource: MeasureSource = "standard") => unwrap<PublicQuote>(API.post("/api/studio-preview/quote", { design, projectType, measureSource })),
   submit: (body: Record<string, unknown>) => unwrap<{ ok: true; preview: true; reference?: string }>(API.post("/api/studio-preview/submit", body)),
+  quoteOptions: (designs: unknown[], projectType: string) => unwrap<{ totals: (number | null)[] }>(API.post("/api/studio-preview/quote/options", { designs, projectType })),
 };
 
 export const adminStudio = {

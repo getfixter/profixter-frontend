@@ -31,7 +31,8 @@ export default function StudioStage({
   /** smaller picture (phones, while choosing options) */
   compact?: boolean;
 }) {
-  const maxH = compact ? "max-h-[34vh] sm:max-h-[40vh] lg:max-h-[58vh]" : "max-h-[58vh]";
+  // the whole picture is always shown (never cropped): limited by height, width follows its proportions
+  const maxH = compact ? "max-h-[30vh] sm:max-h-[40vh] lg:max-h-[72vh]" : "max-h-[60vh] lg:max-h-[72vh]";
   const cmpBefore = useRef<HTMLCanvasElement>(null);
   const cmpAfter = useRef<HTMLCanvasElement>(null);
   const [split, setSplit] = useState(50);
@@ -52,8 +53,9 @@ export default function StudioStage({
       <div className={view === "result" ? "block" : "hidden"}>
         <div className="relative mx-auto w-fit max-w-full leading-[0]">
           <canvas ref={afterRef} className={`block h-auto ${maxH} w-auto max-w-full rounded-2xl`} data-studio-after />
-          <span className="pointer-events-none absolute bottom-2 left-2 right-2 rounded-lg bg-black/60 px-2 py-1 text-[11px] leading-tight text-white">{illustrativeNote}</span>
         </div>
+        {/* below the picture, not on it: nothing covers the design */}
+        <p className={`mx-auto mt-2 max-w-md text-center text-[11.5px] leading-snug text-[#64748B] ${compact ? "hidden lg:block" : ""}`}>{illustrativeNote}</p>
       </div>
       <div className={view === "compare" ? "block" : "hidden"}>
         <div className="relative mx-auto w-fit max-w-full leading-[0]">

@@ -1,8 +1,11 @@
 /**
  * Example bathrooms for the public Studio: a customer can design without a
- * photo or a tape measure. Each example is a real, licensed photo whose
- * alcove has been marked once (wall corners, valve, showerhead) at a standard
- * 60" × 30" size. Every screen that shows it says it is an example.
+ * photo or a tape measure. Every screen that shows one says it is an example.
+ *
+ * The first is the default: an original illustration of a whole 60" × 30" tub
+ * alcove seen from the front (BackEnd/scripts/build_studio_example_scene.js
+ * draws it and computes its marks exactly). The photo scene stays so designs
+ * saved on it still open.
  *
  * The id must also exist in BackEnd/utils/studio/examples.js.
  */
@@ -17,10 +20,26 @@ export type ExampleScene = {
   points: { valve: [number, number]; head: [number, number] };
   /** objects in the example photo that would not stay (towel, soap): circles [x, y, r] */
   removeCircles: [number, number, number][];
-  measure: { facingWidth: number; sideLength: number; rimHeight: number; leftWall: boolean; rightWall: boolean };
+  measure: { facingWidth: number; sideLength: number; rimHeight: number; markHeight?: number; leftWall: boolean; rightWall: boolean };
 };
 
 export const EXAMPLE_SCENES: ExampleScene[] = [
+  {
+    id: "example-alcove-1",
+    label: "Example bathroom",
+    src: "/studio/example-alcove.jpg",
+    width: 1080,
+    height: 1350,
+    credit: "Example bathroom: a Profixter illustration, not a photo of a real home.",
+    marks: {
+      wallTL: [195, 307], wallTR: [885, 307], wallBL: [195, 963], wallBR: [885, 963],
+      leftRim: [[177, 978], [100, 1042]], rightRim: [[903, 978], [980, 1042]],
+      leftTop: [[177, 288], [100, 205]], rightTop: [[903, 288], [980, 205]],
+    },
+    points: { valve: [333, 744], head: [333, 261] },
+    removeCircles: [],
+    measure: { facingWidth: 60, sideLength: 30, rimHeight: 15, markHeight: 72, leftWall: true, rightWall: true },
+  },
   {
     id: "example-bathroom-1",
     label: "Example bathroom",
@@ -40,5 +59,6 @@ export const EXAMPLE_SCENES: ExampleScene[] = [
   },
 ];
 
-export const STANDARD_SIZE = { facingWidth: 30, sideLength: 60, rimHeight: 15 };
+/** The default example's size ("standard 60″ × 30″"), used when a customer goes back from their own measurements. */
+export const STANDARD_SIZE = { facingWidth: 60, sideLength: 30, rimHeight: 15, leftWall: true, rightWall: true };
 export const exampleById = (id?: string | null) => EXAMPLE_SCENES.find((s) => s.id === id) || null;
