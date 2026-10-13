@@ -93,6 +93,16 @@ const unwrap = async <T,>(p: Promise<{ data: T }>) => {
   catch (e: any) { throw new StudioError(e?.response?.data?.message || e?.message || "Request failed", e?.response?.status || 0, e?.response?.data?.errors); }
 };
 
+/**
+ * The owner's live preview of the customer Studio (/shower-studio/preview):
+ * owner-only on the server, demo catalog and DEMO prices, nothing saved or sent.
+ */
+export const previewStudio = {
+  catalog: () => unwrap<PublicCatalog & { preview?: boolean }>(API.get("/api/studio-preview/catalog")),
+  quote: (design: unknown, projectType: string, measureSource: MeasureSource = "standard") => unwrap<PublicQuote>(API.post("/api/studio-preview/quote", { design, projectType, measureSource })),
+  submit: (body: Record<string, unknown>) => unwrap<{ ok: true; preview: true; reference?: string }>(API.post("/api/studio-preview/submit", body)),
+};
+
 export const adminStudio = {
   fields: () => unwrap<{ categories: Record<string, { id: string; label: string; fields: any[] }[]> }>(API.get("/api/admin/studio/catalog/fields")),
   products: (q: Record<string, string> = {}) => unwrap<{ products: any[] }>(API.get("/api/admin/studio/products", { params: q })),

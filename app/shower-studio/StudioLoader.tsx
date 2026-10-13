@@ -10,6 +10,7 @@ const StudioApp = dynamic(() => import("./StudioApp"), {
   ),
 });
 
-export default function StudioLoader() {
-  return <StudioApp />;
+/** `preview`: the owner's live preview (demo catalog, nothing saved or sent). */
+export default function StudioLoader({ preview = false }: { preview?: boolean }) {
+  return <StudioApp preview={preview} />;
 }
