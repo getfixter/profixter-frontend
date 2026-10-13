@@ -12,6 +12,10 @@
 export type ExampleScene = {
   id: string;
   label: string;
+  /** a modelled room (drawn by the engine for any alcove size) instead of an image */
+  model?: boolean;
+  /** the modelled room's default plumbing wall */
+  plumbing?: "left" | "right";
   src: string;
   width: number;
   height: number;
@@ -24,6 +28,20 @@ export type ExampleScene = {
 };
 
 export const EXAMPLE_SCENES: ExampleScene[] = [
+  {
+    id: "studio-room-1",
+    label: "Example bathroom",
+    model: true,
+    plumbing: "left",
+    src: "",
+    width: 1080,
+    height: 1350,
+    credit: "Example bathroom: a Profixter 3D illustration, not a photo of a real home.",
+    marks: {},
+    points: { valve: [0, 0], head: [0, 0] },
+    removeCircles: [],
+    measure: { facingWidth: 60, sideLength: 30, rimHeight: 15, markHeight: 72, leftWall: true, rightWall: true },
+  },
   {
     id: "example-alcove-1",
     label: "Example bathroom",

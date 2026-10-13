@@ -1,5 +1,3 @@
-import Header from "@/app/components/sections/Header";
-import Footer from "@/app/components/sections/Footer";
 import StudioLoader from "../StudioLoader";
 
 /**
@@ -9,13 +7,5 @@ import StudioLoader from "../StudioLoader";
  * from the shower-studio layout.
  */
 export default function ShowerStudioPreviewPage() {
-  return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-[#F8FAFF] pb-28 pt-24 sm:pt-28">
-        <StudioLoader preview />
-      </main>
-      <Footer compact />
-    </>
-  );
+  return <StudioLoader preview />;
 }

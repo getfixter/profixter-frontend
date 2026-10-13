@@ -25,13 +25,13 @@ export default function ProductArt({ item, kind, className = "", label = true }:
   const photo = item?.photo ? apiUrl(item.photo) : null;
   const swatch = useMemo(() => {
     if (kind !== "finish" || !item || typeof window === "undefined") return "";
-    try { return swatchDataUrl(item, 24, 160); } catch { return ""; }
+    try { return swatchDataUrl(item, 30, 240); } catch { return ""; }
   }, [kind, item]);
-  if (photo) return <div className={`relative overflow-hidden bg-[#EEF2F8] ${className}`}><img src={photo} alt="" className="h-full w-full object-cover" loading="lazy" /></div>;
+  if (photo) return <div className={`relative overflow-hidden bg-[#ECE7DF] ${className}`}><img src={photo} alt="" className="h-full w-full object-cover" loading="lazy" /></div>;
   return (
-    <div className={`relative overflow-hidden bg-gradient-to-b from-[#F6F8FC] to-[#E9EEF6] ${className}`} aria-hidden>
-      <svg viewBox="0 0 160 120" className="h-full w-full" preserveAspectRatio="xMidYMid meet">{draw(kind, item, swatch)}</svg>
-      {label && kind !== "none" ? <span className="absolute bottom-1.5 left-1.5 rounded bg-white/85 px-1.5 py-[1px] text-[9.5px] font-semibold uppercase tracking-wide text-[#64748B]">Illustration</span> : null}
+    <div className={`relative overflow-hidden bg-gradient-to-b from-[#F8F6F2] to-[#ECE7DF] ${className}`} aria-hidden>
+      <svg viewBox="0 0 160 120" className="h-full w-full" preserveAspectRatio={kind === "finish" ? "xMidYMid slice" : "xMidYMid meet"}>{draw(kind, item, swatch)}</svg>
+      {label && kind !== "none" ? <span className="absolute bottom-1.5 right-1.5 rounded-full bg-white/80 px-1.5 py-[1px] text-[9px] font-medium tracking-wide text-[#8C867C] backdrop-blur">Illustration</span> : null}
     </div>
   );
 }
@@ -41,16 +41,16 @@ function draw(kind: ArtKind, it: any, swatch: string): React.ReactNode {
     return <g><rect x="40" y="18" width="80" height="84" rx="6" fill="none" stroke="#B8C2D3" strokeWidth="2" strokeDasharray="6 5" /><text x="80" y="66" textAnchor="middle" fontSize="12" fill="#64748B" fontFamily="sans-serif">Open</text></g>;
   }
   if (kind === "finish") {
-    // a shower corner: back wall and left wall in the finish's own pattern and colour
+    // a piece of the wall at true pattern scale, softly lit from above
     const id = `sw-${String(it.id).replace(/\W/g, "")}`;
     return (
       <g>
-        <defs><pattern id={id} patternUnits="userSpaceOnUse" width="96" height="96"><image href={swatch} width="96" height="96" preserveAspectRatio="none" /></pattern></defs>
-        <polygon points="18,6 52,20 52,98 18,114" fill={`url(#${id})`} />
-        <polygon points="18,6 52,20 52,98 18,114" fill="#000" opacity="0.12" />
-        <rect x="52" y="20" width="92" height="78" fill={`url(#${id})`} />
-        <polygon points="18,114 52,98 144,98 156,114" fill={shade(css(it.color), 0.92)} />
-        <line x1="52" y1="20" x2="52" y2="98" stroke="#000" strokeOpacity="0.15" />
+        <defs>
+          <pattern id={id} patternUnits="userSpaceOnUse" width="80" height="80"><image href={swatch} width="80" height="80" preserveAspectRatio="none" /></pattern>
+          <linearGradient id={`${id}-l`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity="0.18" /><stop offset="1" stopColor="#000" stopOpacity="0.10" /></linearGradient>
+        </defs>
+        <rect x="0" y="0" width="160" height="120" fill={`url(#${id})`} />
+        <rect x="0" y="0" width="160" height="120" fill={`url(#${id}-l)`} />
       </g>
     );
   }
