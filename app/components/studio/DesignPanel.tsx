@@ -55,7 +55,7 @@ function familiesOf(list: any[]) {
   const at = new Map<string, number>();
   for (const x of list) {
     const key = x.family?.key || `sku:${x.id}`;
-    if (!at.has(key)) { at.set(key, out.length); out.push({ key, name: x.family?.name || x.name, items: [] }); }
+    if (!at.has(key)) { at.set(key, out.length); out.push({ key, name: x.family?.label || x.family?.name || x.name, items: [] }); }
     out[at.get(key)!].items.push(x);
   }
   return out;

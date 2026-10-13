@@ -137,6 +137,7 @@ export const adminStudio = {
   proposal: (id: string) => unwrap<{ projectId: string; projectNumber: string; estimateId: string; estimateNumber: string; total: number; next: string }>(API.post(`/api/admin/studio/designs/${id}/proposal`, {})),
   deleteDesign: (id: string) => unwrap<{ ok: true }>(API.delete(`/api/admin/studio/designs/${id}`)),
   copyManufacturerPhoto: (id: string, url: string) => unwrap<{ product: any }>(API.post(`/api/admin/studio/products/${id}/media/copy`, { url }, { timeout: 60000 })),
+  orderPhotos: (id: string, assetIds: string[]) => unwrap<{ product: any }>(API.post(`/api/admin/studio/products/${id}/assets/order`, { assetIds })),
   sourceReviewed: (id: string) => unwrap<{ product: any }>(API.post(`/api/admin/studio/products/${id}/source/reviewed`, {})),
 };
 

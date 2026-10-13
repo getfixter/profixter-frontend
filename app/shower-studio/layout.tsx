@@ -7,7 +7,7 @@ import { absoluteUrl, SITE_NAME } from "@/lib/seo";
  */
 const TITLE = "Shower Studio: Design Your New Shower | Profixter";
 const DESCRIPTION =
-  "Upload a photo of your bathtub or shower, choose acrylic walls, bases, doors and accessories, see the new look and an estimated price, and request installation.";
+  "Upload a photo of your bathtub or shower, choose wall panels, bases, doors and accessories, see the new look and an estimated price, and request installation.";
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },
