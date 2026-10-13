@@ -41,7 +41,7 @@ function sizeOf(d: any) {
 const fileSize = (b: number) => (b > 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.round(b / 1024)} KB`);
 
 /** Admin -> Studio Catalog -> Manufacturers. */
-export default function StudioManufacturersAdmin({ onOpenProduct }: { onOpenProduct?: (sku: string) => void }) {
+export default function StudioManufacturersAdmin({ onOpenProduct, onOpenCatalog }: { onOpenProduct?: (sku: string) => void; onOpenCatalog?: (manufacturer: string) => void }) {
   const [list, setList] = useState<any[] | null>(null);
   const [key, setKey] = useState<string>("swan");
   const [view, setView] = useState<"browse" | "import" | "colors" | "rights">("browse");
@@ -83,7 +83,7 @@ export default function StudioManufacturersAdmin({ onOpenProduct }: { onOpenProd
           <button type="button" className="mt-3 w-full rounded-xl bg-amber-50 px-4 py-2 text-left text-sm text-amber-900" onClick={() => setView("import")}>A price file preview is waiting for your confirmation ({m.pendingImport.fileName}). Review it →</button>
         ) : null}
       </div>
-      {view === "browse" ? (empty ? <EmptyState onImport={() => setView("import")} /> : <Browse mkey={key} groups={m.counts.groups} onOpenProduct={onOpenProduct} onChanged={load} />) : null}
+      {view === "browse" ? (empty ? <EmptyState onImport={() => setView("import")} /> : <Browse mkey={key} name={m.name} groups={m.counts.groups} onOpenProduct={onOpenProduct} onOpenCatalog={onOpenCatalog} onChanged={load} />) : null}
       {view === "import" ? <ImportPanel mkey={key} m={m} onDone={load} /> : null}
       {view === "colors" ? <ColorsPanel mkey={key} /> : null}
       {view === "rights" ? <RightsPanel mkey={key} m={m} onChanged={load} /> : null}
@@ -106,8 +106,10 @@ function EmptyState({ onImport }: { onImport: () => void }) {
 }
 
 // ===================================================================== browse
-function Browse({ mkey, groups, onOpenProduct, onChanged }: { mkey: string; groups: any[]; onOpenProduct?: (sku: string) => void; onChanged: () => void }) {
+function Browse({ mkey, name, groups, onOpenProduct, onOpenCatalog, onChanged }: { mkey: string; name: string; groups: any[]; onOpenProduct?: (sku: string) => void; onOpenCatalog?: (m: string) => void; onChanged: () => void }) {
   const [group, setGroup] = useState<string>(groups[0]?.key || "walls");
+  const [bulk, setBulk] = useState(false);
+  const [designer, setDesigner] = useState("");
   const [q, setQ] = useState("");
   const [availability, setAvailability] = useState("current");
   const [series, setSeries] = useState<any[] | null>(null);
@@ -119,7 +121,7 @@ function Browse({ mkey, groups, onOpenProduct, onChanged }: { mkey: string; grou
     let live = true;
     const t = setTimeout(async () => {
       if (q.trim()) {
-        const r = await adminManufacturers.items(mkey, { q: q.trim(), availability, per: "120" });
+        const r = await adminManufacturers.items(mkey, { q: q.trim(), availability, per: "120", ...(designer ? { designer } : {}) });
         if (live) { setSearchItems(r.items); }
       } else {
         setSearchItems(null);
@@ -128,12 +130,20 @@ function Browse({ mkey, groups, onOpenProduct, onChanged }: { mkey: string; grou
       }
     }, q ? 300 : 0);
     return () => { live = false; clearTimeout(t); };
-  }, [mkey, group, q, availability]);
+  }, [mkey, group, q, availability, designer]);
 
-  if (detail) return <VariantDetail mkey={mkey} part={detail} onBack={() => setDetail(null)} onOpenProduct={onOpenProduct} onChanged={onChanged} />;
-  if (openSeries && !q.trim()) return <SeriesView mkey={mkey} series={openSeries} availability={availability} onBack={() => setOpenSeries(null)} onDetail={setDetail} onChanged={onChanged} />;
+  if (bulk) return <BulkAdd mkey={mkey} name={name} onClose={() => { setBulk(false); onChanged(); }} onOpenCatalog={onOpenCatalog} />;
+  if (detail) return <VariantDetail mkey={mkey} part={detail} onBack={() => setDetail(null)} onPick={setDetail} onOpenProduct={onOpenProduct} onChanged={onChanged} />;
+  if (openSeries && !q.trim()) return <SeriesView mkey={mkey} series={openSeries} availability={availability} designer={designer} onBack={() => setOpenSeries(null)} onDetail={setDetail} onChanged={onChanged} />;
   return (
     <div className="space-y-3">
+      <div className={`${card} flex flex-col gap-3 border-blue-200 bg-gradient-to-r from-blue-50 to-white sm:flex-row sm:items-center sm:justify-between`}>
+        <div>
+          <div className="font-bold text-slate-900">Bring {name} into your Studio</div>
+          <p className="text-sm text-slate-600">Add one product from its page, or every product the designer can draw at once. Everything arrives as a private draft with no selling price.</p>
+        </div>
+        <button type="button" className={`${primary} shrink-0 px-5 py-3`} onClick={() => setBulk(true)} data-testid="mfr-bulk-open">Add eligible products to Studio</button>
+      </div>
       <div className={`${card} space-y-3`}>
         <input className={inputClass} placeholder="Search by model or part number (e.g. MTMK72-3450, SR-3260) or name" value={q} onChange={(e) => setQ(e.target.value)} data-testid="mfr-search" />
         <div className="flex flex-wrap items-center gap-2">
@@ -149,6 +159,11 @@ function Browse({ mkey, groups, onOpenProduct, onChanged }: { mkey: string; grou
             <option value="discontinued">Discontinued</option>
             <option value="unlisted">No longer listed</option>
             <option value="all">Everything</option>
+          </select>
+          <select className={`${inputClass} w-auto py-1.5 text-sm`} value={designer} onChange={(e) => setDesigner(e.target.value)} aria-label="Designer support" data-testid="mfr-designer-filter">
+            <option value="">Drawable or not</option>
+            <option value="supported">Drawable in the designer</option>
+            <option value="unsupported">Catalog only (not drawable)</option>
           </select>
         </div>
       </div>
@@ -173,9 +188,9 @@ function Browse({ mkey, groups, onOpenProduct, onChanged }: { mkey: string; grou
 }
 
 /** One series: its models (sizes / drain sides) with their colors as selectable chips. */
-function SeriesView({ mkey, series, availability, onBack, onDetail, onChanged }: { mkey: string; series: any; availability: string; onBack: () => void; onDetail: (p: string) => void; onChanged: () => void }) {
+function SeriesView({ mkey, series, availability, designer, onBack, onDetail, onChanged }: { mkey: string; series: any; availability: string; designer: string; onBack: () => void; onDetail: (p: string) => void; onChanged: () => void }) {
   const [items, setItems] = useState<any[] | null>(null);
-  const reload = useCallback(() => adminManufacturers.items(mkey, { series: series.key, availability, per: "200" }).then((r) => setItems(r.items)), [mkey, series.key, availability]);
+  const reload = useCallback(() => adminManufacturers.items(mkey, { series: series.key, availability, per: "200", ...(designer ? { designer } : {}) }).then((r) => setItems(r.items)), [mkey, series.key, availability, designer]);
   useEffect(() => { reload(); }, [reload]);
   return (
     <div className="space-y-3">
@@ -200,11 +215,12 @@ function ItemList({ items, onDetail, mkey, onChanged, grouped = true }: { items:
     return [...m.values()];
   }, [items, grouped]);
   const toggle = (p: string) => setSel((s) => { const n = new Set(s); if (n.has(p)) n.delete(p); else n.add(p); return n; });
-  async function add() {
+  async function add(parts: string[] = [...sel]) {
     setBusy(true); setResult(null);
-    try { const r = await adminManufacturers.addToStudio(mkey, [...sel]); setResult(r); setSel(new Set()); onChanged(); }
+    try { const r = await adminManufacturers.addToStudio(mkey, parts); setResult(r); setSel(new Set()); onChanged(); }
     catch (e: any) { setResult({ error: e.message }); } finally { setBusy(false); }
   }
+  const sellable = (it: any) => it.availability === "active" || it.availability === "special-order";
   return (
     <div className="space-y-3 pb-20">
       {result ? (
@@ -226,6 +242,14 @@ function ItemList({ items, onDetail, mkey, onChanged, grouped = true }: { items:
                   <div className="font-bold text-slate-900">{v0.modelNumber} <span className="font-normal text-slate-500">{sizeOf(v0.dims)}{v0.configuration ? ` · ${v0.configuration} drain` : ""}</span></div>
                   <div className="line-clamp-1 text-xs text-slate-500">{v0.seriesName}</div>
                 </button>
+                {(() => {
+                  const open = variants.filter((it) => drawable && !it.studioSku && sellable(it));
+                  return open.length ? (
+                    <button type="button" className={`${btn} float-right ml-2 border-blue-300 text-blue-700`} disabled={busy} onClick={() => add(open.map((it) => it.partNumber))} data-testid="mfr-model-add">
+                      {open.length === 1 ? "Add to Studio" : `Add all ${open.length} colors`}
+                    </button>
+                  ) : variants.some((it) => it.studioSku) ? <span className="float-right ml-2 rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-700">In Studio</span> : null;
+                })()}
                 <div className="mt-1 text-xs">
                   {drawable ? <span className="text-emerald-700">Drawable in the designer ({v0.designer.category === "base" ? (v0.designer.type === "tub" ? "tub" : "shower base") : v0.designer.category === "wall" ? "wall kit" : v0.designer.type})</span> : <span className="text-slate-500">Catalog only: {v0.designer.reason}</span>}
                 </div>
@@ -234,7 +258,7 @@ function ItemList({ items, onDetail, mkey, onChanged, grouped = true }: { items:
             <div className="mt-3 flex flex-wrap gap-2">
               {variants.map((it) => {
                 const inStudio = Boolean(it.studioSku);
-                const selectable = drawable && !inStudio && (it.availability === "active" || it.availability === "special-order");
+                const selectable = drawable && !inStudio && sellable(it);
                 const on = sel.has(it.partNumber);
                 return (
                   <label key={it.partNumber} className={`flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl px-3 py-1.5 text-sm ring-1 ${on ? "bg-blue-50 ring-blue-400" : "bg-white ring-slate-200"} ${!selectable ? "cursor-default opacity-80" : ""}`} data-testid={`mfr-variant-${it.partNumber}`}>
@@ -256,7 +280,7 @@ function ItemList({ items, onDetail, mkey, onChanged, grouped = true }: { items:
           <div className="mx-auto flex max-w-5xl items-center gap-3">
             <span className="text-sm text-slate-700"><b>{sel.size}</b> selected</span>
             <button type="button" className={btn} onClick={() => setSel(new Set())}>Clear</button>
-            <button type="button" className={`${primary} ml-auto`} disabled={busy} onClick={add} data-testid="mfr-add">{busy ? "Adding…" : "Add to Studio as drafts"}</button>
+            <button type="button" className={`${primary} ml-auto`} disabled={busy} onClick={() => add()} data-testid="mfr-add">{busy ? "Adding…" : "Add to Studio as drafts"}</button>
           </div>
         </div>
       ) : null}
@@ -264,10 +288,106 @@ function ItemList({ items, onDetail, mkey, onChanged, grouped = true }: { items:
   );
 }
 
-function VariantDetail({ mkey, part, onBack, onOpenProduct, onChanged }: { mkey: string; part: string; onBack: () => void; onOpenProduct?: (sku: string) => void; onChanged: () => void }) {
+/** "Add eligible products to Studio": preview per category, choose, confirm, follow progress. */
+function BulkAdd({ mkey, name, onClose, onOpenCatalog }: { mkey: string; name: string; onClose: () => void; onOpenCatalog?: (m: string) => void }) {
+  const [pv, setPv] = useState<any>(null);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [chosen, setChosen] = useState<Set<string>>(new Set());
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const loadAll = useCallback(async () => {
+    try {
+      const [p, j] = await Promise.all([adminManufacturers.eligible(mkey), adminManufacturers.bulkJobs(mkey)]);
+      setPv(p); setJobs(j.jobs);
+      setChosen((c) => (c.size ? c : new Set(p.groups.filter((g: any) => g.new > 0).map((g: any) => g.key))));
+    } catch (e: any) { setErr(e.message); }
+  }, [mkey]);
+  useEffect(() => { loadAll(); }, [loadAll]);
+  const running = jobs.find((j) => j.status === "running");
+  useEffect(() => {
+    if (!running) return;
+    const t = setInterval(loadAll, 1500);
+    return () => clearInterval(t);
+  }, [running, loadAll]);
+  async function start(groups: string[]) {
+    const n = (pv?.groups || []).filter((g: any) => groups.includes(g.key)).reduce((s: number, g: any) => s + g.new, 0);
+    if (!window.confirm(`Add ${n.toLocaleString()} ${name} products to your Studio as PRIVATE DRAFTS?\n\nNo selling prices are set, nothing is published, and ${name} images stay Admin previews.`)) return;
+    setBusy(true); setErr(null);
+    try { await adminManufacturers.startBulkAdd(mkey, groups); await loadAll(); } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
+  }
+  const last = jobs[0];
+  const sel = (pv?.groups || []).filter((g: any) => chosen.has(g.key));
+  const count = sel.reduce((s: number, g: any) => s + g.new, 0);
+  return (
+    <div className="space-y-4" data-testid="mfr-bulk">
+      <div className={card}>
+        <button type="button" className="text-sm font-bold text-blue-600" onClick={onClose}>← Back to the library</button>
+        <h3 className="mt-1 text-xl font-bold text-slate-900">Add eligible {name} products to Studio</h3>
+        <p className="mt-1 text-sm text-slate-600">Every product the designer can draw and {name} still sells. They arrive as <b>private drafts</b>: no selling price, compatibility unverified, {name} images visible to you only. Nothing reaches customers until you set prices, add photos you may use, review and publish each one.</p>
+      </div>
+      {err ? <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{err}</p> : null}
+      {running ? (
+        <div className={card} data-testid="mfr-bulk-progress">
+          <div className="font-bold text-slate-900">Adding products… {running.processed.toLocaleString()} of {running.total.toLocaleString()}</div>
+          <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-100"><div className="h-full bg-blue-600 transition-all" style={{ width: `${running.total ? Math.round((running.processed / running.total) * 100) : 100}%` }} /></div>
+          <p className="mt-2 text-xs text-slate-500">You can leave this page; it keeps going. If it stops, start it again: products already added are skipped.</p>
+        </div>
+      ) : last && last.status !== "running" ? (
+        <div className={`rounded-xl px-4 py-3 text-sm ${last.status === "done" ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"}`} role="status" data-testid="mfr-bulk-result">
+          {last.status === "done" ? <>Last run ({new Date(last.finishedAt || last.updatedAt).toLocaleString()}): <b>{last.added.toLocaleString()} products added</b>{last.companions ? ` (incl. walls of ${last.companions} one-piece units)` : ""}{last.skipped ? `, ${last.skipped} skipped` : ""} in {Math.round((last.durationMs || 0) / 100) / 10}s.</> : <>Last run {last.status}: {last.error || ""} <button type="button" className="font-bold underline" onClick={() => start(last.groups)}>Continue</button></>}
+          {last.status === "done" && onOpenCatalog ? <button type="button" className="ml-2 font-bold underline" onClick={() => onOpenCatalog(mkey)}>Review them in Products</button> : null}
+        </div>
+      ) : null}
+      {!pv ? <p className="text-slate-500">Checking the catalog…</p> : (
+        <div className={card}>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[["Eligible", pv.totals.eligible], ["New to add", pv.totals.new], ["Already in Studio", pv.totals.alreadyInStudio], ["Stay in the library", pv.totals.unsupported + pv.totals.notSold]].map(([l, v]) => (
+              <div key={l as string} className="rounded-xl bg-slate-50 p-3"><div className="text-[11px] font-bold uppercase text-slate-500">{l}</div><div className="text-xl font-bold text-slate-900">{Number(v).toLocaleString()}</div></div>
+            ))}
+          </div>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
+              <thead><tr className="text-left text-[11px] uppercase text-slate-500"><th className="py-1 pr-2" /><th className="py-1 pr-2">Category</th><th className="py-1 pr-2 text-right">New</th><th className="py-1 pr-2 text-right">In Studio</th><th className="py-1 pr-2 text-right">Not drawable</th><th className="py-1 pr-2 text-right">Missing specs</th><th className="py-1 text-right">No usable photo link</th></tr></thead>
+              <tbody>
+                {pv.groups.map((g: any) => (
+                  <tr key={g.key} className="border-t border-slate-100 align-top">
+                    <td className="py-2 pr-2">{g.new ? <input type="checkbox" aria-label={`Add ${g.label}`} checked={chosen.has(g.key)} onChange={(e) => setChosen((c) => { const n = new Set(c); if (e.target.checked) n.add(g.key); else n.delete(g.key); return n; })} data-testid={`mfr-bulk-group-${g.key}`} /> : null}</td>
+                    <td className="py-2 pr-2">
+                      <div className="font-semibold text-slate-800">{g.label}</div>
+                      {g.unsupported ? <details className="text-xs text-slate-500"><summary className="cursor-pointer">Why {g.unsupported} stay in the library</summary><ul className="mt-1 list-disc pl-4">{Object.entries(g.unsupportedReasons).map(([r, n]) => <li key={r}>{n as number}: {r}</li>)}</ul></details> : null}
+                      {g.units ? <div className="text-xs text-slate-500">{g.units} one-piece units (their walls are added with them)</div> : null}
+                      {g.specialOrder ? <div className="text-xs text-violet-700">{g.specialOrder} special order</div> : null}
+                    </td>
+                    <td className="py-2 pr-2 text-right font-bold">{g.new.toLocaleString()}</td>
+                    <td className="py-2 pr-2 text-right">{g.alreadyInStudio.toLocaleString()}</td>
+                    <td className="py-2 pr-2 text-right">{(g.unsupported + g.notSold).toLocaleString()}</td>
+                    <td className="py-2 pr-2 text-right">{g.missingSpecs.toLocaleString()}</td>
+                    <td className="py-2 text-right">{g.noPhoto.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ul className="mt-3 space-y-1 text-xs text-slate-500">
+            <li>Compatibility: every new product starts <b>unverified</b>; wall kits use an assumed trim-to-fit range. The editor shows what each one fits.</li>
+            <li>Missing specs: something the drawing needs is not in the price file (e.g. threshold width, rim height, pattern size); the preview uses an estimate and asks you to check it.</li>
+            <li>{pv.linkChecked ? "Photo links as of the last link check." : "Photo links not checked yet (Image rights & links → Check links)."} Image rights: {pv.imageRights === "approved" ? "confirmed" : "unconfirmed - images stay Admin previews"}.</li>
+          </ul>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button type="button" className={`${primary} px-5 py-3`} disabled={busy || Boolean(running) || !count} onClick={() => start([...chosen])} data-testid="mfr-bulk-start">{running ? "Adding…" : count ? `Add ${count.toLocaleString()} products as private drafts` : "Nothing new to add"}</button>
+            <span className="text-xs text-slate-500">Safe to repeat: products already in the Studio are never duplicated, and your prices are never changed.</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VariantDetail({ mkey, part, onBack, onPick, onOpenProduct, onChanged }: { mkey: string; part: string; onBack: () => void; onPick?: (part: string) => void; onOpenProduct?: (sku: string) => void; onChanged: () => void }) {
   const [d, setD] = useState<any>(null);
   const [big, setBig] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
   const load = useCallback(() => adminManufacturers.item(mkey, part).then(setD).catch((e) => setMsg(e.message)), [mkey, part]);
   useEffect(() => { load(); }, [load]);
   if (!d) return <p className="text-slate-500">{msg || "Loading…"}</p>;
@@ -275,6 +395,16 @@ function VariantDetail({ mkey, part, onBack, onOpenProduct, onChanged }: { mkey:
   const photos = it.media.filter((m: any) => m.kind === "photo");
   const docs = it.media.filter((m: any) => m.kind !== "photo");
   const canAdd = d.designer.supported && !d.product && (it.availability === "active" || it.availability === "special-order");
+  async function addThis() {
+    setAdding(true); setMsg(null);
+    try {
+      const r = await adminManufacturers.addToStudio(mkey, [it.partNumber]);
+      onChanged();
+      if (r.added.length && onOpenProduct) return onOpenProduct(r.added[0].sku);
+      setMsg(r.added.length ? "Added to your Studio catalog as a private draft." : r.skipped[0]?.reason || null);
+      load();
+    } catch (e: any) { setMsg(e.message); } finally { setAdding(false); }
+  }
   return (
     <div className="space-y-4" data-testid="mfr-detail">
       <div className={card}>
@@ -294,14 +424,28 @@ function VariantDetail({ mkey, part, onBack, onOpenProduct, onChanged }: { mkey:
             <div className="text-xs text-slate-500">{it.listPriceEffective ? `effective ${it.listPriceEffective} · ` : ""}not your cost</div>
           </div>
         </div>
-        {d.product ? (
-          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-900">
-            In your Studio catalog ({d.product.status}) · your price {d.product.priceCents == null ? "not set" : money(d.product.priceCents)} · cost {d.product.costCents == null ? "not set" : money(d.product.costCents)}
-            {onOpenProduct ? <button type="button" className="ml-auto font-bold underline" onClick={() => onOpenProduct(it.studioSku)}>Open product</button> : null}
-          </div>
-        ) : canAdd ? (
-          <button type="button" className={`${primary} mt-3`} onClick={async () => { try { const r = await adminManufacturers.addToStudio(mkey, [it.partNumber]); setMsg(r.added.length ? "Added to your Studio catalog as a draft with no price." : r.skipped[0]?.reason); load(); onChanged(); } catch (e: any) { setMsg(e.message); } }} data-testid="mfr-detail-add">Add to Studio as a draft</button>
-        ) : null}
+        <div className="mt-4" data-testid="mfr-detail-action">
+          {d.product ? (
+            <div className="flex flex-col gap-3 rounded-2xl bg-emerald-50 px-4 py-3 sm:flex-row sm:items-center">
+              <div className="text-sm text-emerald-900">
+                <div className="font-bold">✓ Already in Studio</div>
+                <div>{d.product.status === "published" ? "Published" : d.product.status === "archived" ? "Archived" : "Private draft"} · your price {d.product.priceCents == null ? "not set" : money(d.product.priceCents)} · cost {d.product.costCents == null ? "not set" : money(d.product.costCents)}</div>
+              </div>
+              {onOpenProduct ? <button type="button" className={`${primary} sm:ml-auto`} onClick={() => onOpenProduct(it.studioSku)} data-testid="mfr-detail-open">Open in editor</button> : null}
+            </div>
+          ) : canAdd ? (
+            <div className="flex flex-col gap-3 rounded-2xl bg-blue-50 px-4 py-3 sm:flex-row sm:items-center">
+              <p className="text-sm text-blue-900">Creates a <b>private draft</b> with {it.modelNumber}&rsquo;s specifications, size and color. No selling price is set. The editor opens next.</p>
+              <button type="button" className={`${primary} px-6 py-3 text-base sm:ml-auto`} disabled={adding} onClick={addThis} data-testid="mfr-detail-add">{adding ? "Adding…" : "Add to Studio"}</button>
+            </div>
+          ) : !d.designer.supported ? (
+            <div className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900" data-testid="mfr-detail-unsupported">
+              <b>Not available in the designer.</b> {d.designer.reason} It stays in the Manufacturer Library with its specifications and list price.
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-700"><b>Can&rsquo;t be added:</b> the manufacturer lists it as {AVAIL[it.availability]?.label.toLowerCase()}.</div>
+          )}
+        </div>
         {msg ? <p className="mt-2 text-sm text-slate-700" role="status">{msg}</p> : null}
       </div>
 
@@ -362,7 +506,7 @@ function VariantDetail({ mkey, part, onBack, onOpenProduct, onChanged }: { mkey:
           </div>
           <div className={card}>
             <h4 className="font-bold text-slate-900">Other colors of this model</h4>
-            <div className="mt-2 flex flex-wrap gap-2">{d.variants.map((v: any) => <span key={v.partNumber} className={`rounded-lg px-2 py-1 text-xs ring-1 ${v.partNumber === it.partNumber ? "bg-blue-50 ring-blue-300" : "ring-slate-200"}`}>{v.color?.name || v.partNumber} · {money(v.listPriceCents)}{v.inStudio ? " · in Studio" : ""}</span>)}</div>
+            <div className="mt-2 flex flex-wrap gap-2">{d.variants.map((v: any) => <button type="button" key={v.partNumber} disabled={v.partNumber === it.partNumber} onClick={() => onPick?.(v.partNumber)} data-testid={`mfr-detail-variant-${v.partNumber}`} className={`min-h-[36px] rounded-lg px-2 py-1 text-xs ring-1 ${v.partNumber === it.partNumber ? "bg-blue-50 font-bold ring-blue-300" : "ring-slate-200 hover:ring-blue-300"}`}>{v.color?.name || v.partNumber} · {money(v.listPriceCents)}{v.inStudio ? " · in Studio" : ""}</button>)}</div>
             {it.priceHistory?.length > 1 ? (
               <>
                 <h4 className="mt-4 font-bold text-slate-900">List price history</h4>
