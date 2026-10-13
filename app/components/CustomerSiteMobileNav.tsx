@@ -15,6 +15,8 @@ type NavItem = {
 
 const hiddenPathPrefixes = [
   "/admin",
+  // Shower Studio is a full-screen design app with its own controls along the bottom.
+  "/shower-studio",
   // The event kiosk is a full-screen booth display with exactly one action.
   "/event",
   // Document signing is a focused ceremony. The site nav is fixed to the bottom

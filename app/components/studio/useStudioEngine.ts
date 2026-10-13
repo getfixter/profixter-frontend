@@ -19,6 +19,13 @@ export type EngineSnapshot = {
   current: any;
   canUndoMask: boolean;
   hasMasks: boolean;
+  canUndoMove?: boolean;
+  canUndoMarks?: boolean;
+  activeMark?: string | null;
+  photoCheck?: { ok: boolean; reasons?: string[] } | null;
+  blocked?: string | null;
+  model?: boolean;
+  dragging?: string | null;
 };
 export type Msg = { kind: "ok" | "warn" | "err" | "info"; text: string; field?: string };
 
@@ -54,12 +61,17 @@ export function useStudioEngine(catalog: any) {
         const probe = document.createElement("canvas");
         if (!probe.getContext("webgl2") && !probe.getContext("webgl")) throw new Error("This browser can't draw 3D previews (WebGL is off).");
         const { StudioEngine } = await import("@/lib/studio/engine/controller.js");
-        if (cancelled || !glRef.current || !beforeRef.current || !afterRef.current || !svgRef.current) return;
+        // the canvases may mount later (e.g. after a start screen): wait for them
+        const mounted = () => Boolean(glRef.current && beforeRef.current && afterRef.current && svgRef.current);
+        while (!cancelled && !mounted()) await new Promise((r) => setTimeout(r, 60));
+        if (cancelled) return;
         engineRef.current = new StudioEngine({
           els: { gl: glRef.current, before: beforeRef.current, after: afterRef.current, svg: svgRef.current, loupe: loupeRef.current },
           catalog: structuredClone(catalog),
           onChange: ((s: EngineSnapshot) => setSnap({ ...s })) as any,
         });
+        // local development and the local demo only: lets browser tests drive the engine directly
+        if (process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_STUDIO_DEMO === "1") (window as any).__studioEngine = engineRef.current;
         engineRef.current.emit(); // first snapshot, so the UI knows the engine is ready
         setLoaded(true);
       } catch (e: any) {

@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 const StudioApp = dynamic(() => import("./StudioApp"), {
   ssr: false,
   loading: () => (
-    <div className="mx-auto max-w-3xl px-4 py-24 text-center text-[#475569]">Loading the Shower Studio…</div>
+    <div className="grid min-h-[100dvh] place-items-center bg-[#F3F0EB] text-[15px] text-[#5F5A52]">Loading the Shower Studio…</div>
   ),
 });
 

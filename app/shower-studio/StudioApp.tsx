@@ -1,54 +1,52 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { previewStudio, publicStudio, localDesign, apiUrl, type PublicCatalog, type PublicQuote, type MeasureSource } from "@/lib/studio/api";
 import { EXAMPLE_SCENES, STANDARD_SIZE } from "@/lib/studio/examples";
 import { trackLead } from "@/lib/meta";
-import StudioStage from "@/app/components/studio/StudioStage";
-import Configurator, { money0, type SectionId } from "@/app/components/studio/Configurator";
-import { Messages } from "@/app/components/studio/DesignPanel";
 import { useStudioEngine } from "@/app/components/studio/useStudioEngine";
 import { preparePhoto } from "@/app/components/studio/photoPrep";
+import Stage from "@/app/components/studio/v2/Stage";
+import Chooser, { type Category } from "@/app/components/studio/v2/Chooser";
+import FullPreview from "@/app/components/studio/v2/FullPreview";
+import { PhotoSource, PhotoSteps, type PhotoStep } from "@/app/components/studio/v2/PhotoFlow";
+import { Icon, DemoTag, btn, input, money0, FONT, T, Spinner } from "@/app/components/studio/v2/ui";
+import ProductArt from "@/app/components/studio/ProductArt";
 
-type Step = "start" | "customize" | "result" | "request";
+/**
+ * The customer Shower Studio: choose (shower or tub) -> customize -> review ->
+ * request. A full-screen app with its own design language: on phones the
+ * picture fills the top and the choices live in a bottom sheet that can be
+ * collapsed so the picture grows; on tablets in landscape and desktops the
+ * picture sits beside a side panel. No photo, measurement or account needed.
+ *
+ * `preview`: the owner's live preview - the same flow against
+ * /api/studio-preview (owner only on the server, demo catalog, DEMO prices).
+ * Nothing is saved on the server and nothing is sent; a draft stays in this
+ * browser tab only.
+ */
+type Step = "start" | "design" | "review" | "request";
 type Kind = "shower" | "tub";
-const STEPS: { id: Exclude<Step, "start">; label: string }[] = [
-  { id: "customize", label: "Customize" },
-  { id: "result", label: "Design & price" },
-  { id: "request", label: "Request" },
-];
+type Sheet = "mini" | "half" | "full";
 const SCENE = EXAMPLE_SCENES[0];
 const PRICE_PENDING = "Price confirmed after review.";
-
-const btn = "inline-flex min-h-[48px] items-center justify-center rounded-full px-6 text-[15px] font-semibold transition disabled:opacity-50";
-const primary = `${btn} bg-[#306EEC] text-white hover:bg-[#2558c9]`;
-const secondary = `${btn} border border-[#C5CBD8] bg-white text-[#0B1628] hover:border-[#306EEC]`;
-const link = "text-[14px] font-semibold text-[#306EEC] underline-offset-2 hover:underline";
-const input = "min-h-[48px] w-full rounded-xl border border-[#C5CBD8] bg-white px-3 text-[16px] text-[#0B1628] outline-none focus:border-[#306EEC] focus:ring-2 focus:ring-[#306EEC]/20";
-
-/**
- * The public Shower Studio: Start -> Customize -> Design & price -> Request.
- * Starts on an example bathroom at a standard size: no photo, no measuring,
- * no account. A photo and real measurements are optional extras.
- */
 /** Set only by the owner's local demo (BackEnd/scripts/studio_demo_env.js --demo); never on the live site. */
 const DEMO = process.env.NEXT_PUBLIC_STUDIO_DEMO === "1";
-function DemoBanner({ preview }: { preview?: boolean }) {
-  return (
-    <div className="mb-4 rounded-2xl bg-[#0B1628] px-4 py-2.5 text-center text-[12.5px] font-semibold text-white" data-testid="demo-banner">
-      {preview ? "OWNER PREVIEW · demo products and demo prices · nothing is saved or sent" : "DEMO · sample products and demo prices · requests stay on this computer"}
-    </div>
-  );
-}
+const PREVIEW_DRAFT = "profixter:studio-preview:draft";
 
-/**
- * `preview`: the owner's live preview on profixter.com - the same customer
- * flow against /api/studio-preview (owner only on the server, demo catalog and
- * DEMO prices). Nothing is saved: no design, no photo upload, no request, no
- * analytics event; the photo stays in this browser.
- */
+const TABS: { id: Category; label: string; icon: string }[] = [
+  { id: "walls", label: "Walls", icon: "walls" },
+  { id: "base", label: "Base", icon: "base" },
+  { id: "fixture", label: "Faucet", icon: "faucet" },
+  { id: "door", label: "Door", icon: "door" },
+  { id: "extras", label: "Extras", icon: "extras" },
+  { id: "layout", label: "Room", icon: "layout" },
+];
+
+const readDraft = () => { try { return JSON.parse(sessionStorage.getItem(PREVIEW_DRAFT) || "null"); } catch { return null; } };
+const writeDraft = (v: any) => { try { if (v) sessionStorage.setItem(PREVIEW_DRAFT, JSON.stringify(v)); else sessionStorage.removeItem(PREVIEW_DRAFT); } catch { /* private mode: no draft */ } };
+
 export default function StudioApp({ preview = false }: { preview?: boolean } = {}) {
   const [cat, setCat] = useState<PublicCatalog | null>(null);
   const [catError, setCatError] = useState<string | null>(null);
@@ -60,23 +58,32 @@ export default function StudioApp({ preview = false }: { preview?: boolean } = {
   const [source, setSource] = useState<"example" | "photo">("example");
   const [measureSource, setMeasureSource] = useState<MeasureSource>("standard");
   const [pending, setPending] = useState<null | { kind: Kind; design?: any; photoUrl?: string; state?: any }>(null);
-  const [panel, setPanel] = useState<null | "measure" | "photo">(null);
-  const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [section, setSection] = useState<SectionId | null>("walls");
+  const [category, setCategory] = useState<Category>("walls");
+  const [sheet, setSheet] = useState<Sheet>("half");
   const [quote, setQuote] = useState<PublicQuote | null>(null);
   const [submitted, setSubmitted] = useState<{ reference?: string } | null>(null);
+  const [fullOpen, setFullOpen] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
+  const [photoErr, setPhotoErr] = useState<string | null>(null);
+  const [photoStep, setPhotoStep] = useState<PhotoStep | null>(null);
+  const [rotating, setRotating] = useState(false);
+  const [measureOpen, setMeasureOpen] = useState(false);
+  const [focusAcc, setFocusAcc] = useState<string | null>(null);
+  const lastPhoto = useRef<{ file: File; rotate: number } | null>(null);
   const { stageRefs, engine, snap, error: engineError, loaded } = useStudioEngine(cat?.catalog || null);
-  const fileRef = useRef<HTMLInputElement>(null);
   const [stamp, setStamp] = useState(0);
+  const demo = preview || DEMO;
 
   const toast = useCallback((t: string) => { setNotice(t); window.setTimeout(() => setNotice((n) => (n === t ? null : n)), 5200); }, []);
-  const showChanges = (changes: string[]) => { if (changes?.length) toast(changes.join(" ")); };
+  const showChanges = useCallback((changes: string[]) => { if (changes?.length) toast(changes.join(" ")); }, [toast]);
 
   // ---------------------------------------------------------------- catalog + anything saved in this browser
   useEffect(() => {
     if (preview) {
       previewStudio.catalog().then(setCat).catch((e) => setCatError(e.status === 403 ? "This preview is for the Profixter owner account only." : e.message));
+      const d = readDraft();
+      if (d?.design) setResumable({ preview: true, projectType: d.projectType, state: { design: d.design } });
       return;
     }
     publicStudio.catalog().then(setCat).catch((e) => setCatError(e.message));
@@ -99,7 +106,7 @@ export default function StudioApp({ preview = false }: { preview?: boolean } = {
     setPending(null);
     (async () => {
       try {
-        if (job.photoUrl) await e.loadPhoto(apiUrl(job.photoUrl), { state: job.state || null });
+        if (job.photoUrl) { await e.loadPhoto(apiUrl(job.photoUrl), { state: job.state || null }); e.setSimpleMarks(true); }
         else await e.loadExample(SCENE, { kind: job.kind === "tub" ? "tub" : "pan", design: job.design || null });
       } catch (er: any) {
         toast(er?.message || "The picture could not be prepared on this device.");
@@ -110,16 +117,17 @@ export default function StudioApp({ preview = false }: { preview?: boolean } = {
   // ---------------------------------------------------------------- auto-save and the live price
   const designKey = useMemo(() => (snap?.design ? JSON.stringify(snap.design) : ""), [snap?.design]);
   useEffect(() => {
-    if (!mine || !snap?.ready || submitted) return;
+    if (!snap?.ready || submitted) return;
     const t = window.setTimeout(() => {
+      if (preview) { if (source === "example") writeDraft({ projectType, design: engine()?.S.design }); return; }
       const state = engine()?.getState();
-      if (state) publicStudio.save(mine.id, mine.token, { state, projectType, measureSource }).catch(() => {});
-    }, 1500);
+      if (mine && state) publicStudio.save(mine.id, mine.token, { state, projectType, measureSource }).catch(() => {});
+    }, 1200);
     return () => window.clearTimeout(t);
-  }, [designKey, projectType, measureSource, mine, snap?.ready, submitted, engine]);
+  }, [designKey, projectType, measureSource, mine, snap?.ready, submitted, engine, preview, source]);
   useEffect(() => {
     if (!snap?.design?.baseId) return;
-    const t = window.setTimeout(() => { (preview ? previewStudio.quote : publicStudio.quote)(snap.design, projectType, measureSource).then(setQuote).catch(() => setQuote(null)); }, 400);
+    const t = window.setTimeout(() => { (preview ? previewStudio.quote : publicStudio.quote)(snap.design, projectType, measureSource).then(setQuote).catch(() => setQuote(null)); }, 250);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [designKey, projectType, measureSource]);
@@ -131,10 +139,10 @@ export default function StudioApp({ preview = false }: { preview?: boolean } = {
     setProjectType(pt);
     setSource("example");
     setMeasureSource("standard");
-    setStep("customize");
+    setCategory("walls"); setSheet("half"); setPhotoStep(null);
+    setStep("design");
     setPending({ kind: k });
-    window.scrollTo({ top: 0 });
-    if (preview) { setSubmitted(null); return; }
+    if (preview) { setSubmitted(null); writeDraft(null); return; }
     try {
       if (mine && !submitted) await publicStudio.remove(mine.id, mine.token).catch(() => {});
       const created = await publicStudio.create(pt, { exampleScene: SCENE.id, measureSource: "standard" });
@@ -154,15 +162,16 @@ export default function StudioApp({ preview = false }: { preview?: boolean } = {
     setKind(d.projectType === "tub-replacement" ? "tub" : "shower");
     setMeasureSource(d.measureSource || "standard");
     setSource(d.photo ? "photo" : "example");
-    setStep("customize");
+    setStep("design"); setSheet("half"); setCategory("walls");
     if (d.photo) setPending({ kind: "shower", photoUrl: d.photo.url, state: d.state });
     else setPending({ kind: d.projectType === "tub-replacement" ? "tub" : "shower", design: d.state?.design || null });
   }
 
   async function startOver() {
-    if (mine && !submitted) await publicStudio.remove(mine.id, mine.token).catch(() => {});
-    localDesign.clear();
-    setMine(null); setResumable(null); setSubmitted(null); setQuote(null); setPanel(null);
+    if (mine && !submitted && !preview) await publicStudio.remove(mine.id, mine.token).catch(() => {});
+    if (!preview) localDesign.clear();
+    writeDraft(null);
+    setMine(null); setResumable(null); setSubmitted(null); setQuote(null); setPhotoStep(null);
     setStep("start");
   }
 
@@ -175,286 +184,351 @@ export default function StudioApp({ preview = false }: { preview?: boolean } = {
     showChanges(changes || []);
   }
 
-  async function onPhoto(file?: File | null) {
-    if (!file || (!mine && !preview)) return;
-    setUploading(true);
+  async function takePhoto(file: File, rotate = 0) {
+    setPhotoOpen(false); setPhotoErr(null);
+    setPhotoStep("working"); setSheet("half");
     try {
-      const blob = await preparePhoto(file);
-      if (preview) {
-        await engine()?.loadPhoto(URL.createObjectURL(blob));
-        setSource("photo");
-        return;
+      const blob = await preparePhoto(file, { rotate });
+      lastPhoto.current = { file, rotate };
+      let url: string;
+      if (preview) url = URL.createObjectURL(blob);
+      else {
+        if (!mine) throw new Error("Please check your connection and try again.");
+        const r = await publicStudio.uploadPhoto(mine.id, mine.token, blob);
+        url = apiUrl(r.photo.url);
       }
-      if (!mine) return;
-      const r = await publicStudio.uploadPhoto(mine.id, mine.token, blob);
-      await engine()?.loadPhoto(apiUrl(r.photo.url));
+      const e = engine();
+      await e?.loadPhoto(url);
+      e?.setSimpleMarks(true);
+      e?.setActiveMark("wallBL");
       setSource("photo");
-    } catch (e: any) {
-      toast(e.message || "That photo could not be used. Please try another.");
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
-    }
+      setPhotoStep("confirm");
+    } catch (er: any) {
+      setPhotoStep(null);
+      setPhotoErr(er?.message || "That photo could not be used. Please try another.");
+      setPhotoOpen(true);
+    } finally { setRotating(false); }
   }
 
   async function backToExample() {
-    setSource("example");
-    setPanel(null);
-    if (mine) await publicStudio.save(mine.id, mine.token, { exampleScene: SCENE.id }).catch(() => {});
-    await engine()?.loadExample(SCENE, { design: engine()?.S.design });
+    setPhotoOpen(false); setPhotoStep(null); setSource("example"); setPhotoErr(null);
+    if (mine && !preview) await publicStudio.save(mine.id, mine.token, { exampleScene: SCENE.id }).catch(() => {});
+    const d = engine()?.S.design;
+    const design = d ? { ...structuredClone(d), measure: { ...d.measure, ...STANDARD_SIZE }, plumbing: { wall: d.plumbing?.wall === "right" ? "right" : "left" } } : null;
+    setMeasureSource("standard");
+    await engine()?.loadExample(SCENE, { kind: kind === "tub" ? "tub" : "pan", design });
   }
 
-  const go = (s: Step) => { setStep(s); window.scrollTo({ top: 0, behavior: "smooth" }); };
-  const view: "photo" | "result" | "compare" = panel === "photo" && source === "photo" ? "photo" : step === "result" ? "compare" : "result";
+  const go = (s: Step) => { setStep(s); setFullOpen(false); setSheet(s === "request" ? "full" : "half"); };
+  const pickCategory = (c: Category) => { setCategory(c); if (sheet === "mini") setSheet("half"); };
 
-  if (catError) return <Shell><p className="text-[#A3261B]">The Shower Studio is unavailable right now: {catError}</p></Shell>;
-  if (!cat) return <Shell><p className="text-[#475569]">Loading…</p></Shell>;
+  // ---------------------------------------------------------------- what the picture shows
+  const view: "photo" | "result" | "compare" = photoStep === "confirm" || photoStep === "adjust" ? "photo" : step === "review" && source === "photo" ? "compare" : "result";
+  const caption = source === "example"
+    ? `Example bathroom · ${measureSource === "customer" ? "your size" : `standard ${snap?.design?.measure?.facingWidth ?? 60}″ × ${snap?.design?.measure?.sideLength ?? 30}″`} · illustration`
+    : "Your photo · preview";
+
+  if (catError) return <Plain><p className="text-[16px] text-[#9A3412]">The Shower Studio is unavailable right now: {catError}</p></Plain>;
+  if (!cat) return <Plain><Spinner className="mx-auto h-7 w-7 text-[#1C1B19]" /><p className="mt-3 text-[#5F5A52]">Loading the Studio…</p></Plain>;
   if (!cat.catalog.finishes.length || !cat.catalog.bases.length) {
-    return <Shell><h1 className="text-[30px] font-bold text-[#0B1628]">Shower Studio is coming soon</h1><p className="mt-3 text-[#475569]">Call us and we&rsquo;ll design your new shower with you.</p></Shell>;
+    return <Plain><h1 className="text-[30px] font-semibold text-[#1C1B19]">Shower Studio is coming soon</h1><p className="mt-3 text-[#5F5A52]">Call us and we&rsquo;ll design your new shower with you.</p></Plain>;
   }
-  const idx = STEPS.findIndex((s) => s.id === step);
+
+  const total = quote?.complete && quote.totalCents != null ? money0(quote.totalCents) : quote ? PRICE_PENDING : "…";
+  const inPhoto = Boolean(photoStep);
 
   return (
-    <div className="mx-auto max-w-6xl px-4">
-      {DEMO || preview ? <DemoBanner preview={preview} /> : null}
-      {step !== "start" && !submitted ? (
-        <nav aria-label="Steps" className="mb-4 flex gap-1.5 overflow-x-auto">
-          {STEPS.map((s, i) => (
-            <button key={s.id} type="button" onClick={() => go(s.id)} aria-current={i === idx ? "step" : undefined} disabled={!snap?.ready}
-              className={`flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold ${i === idx ? "bg-[#306EEC] text-white" : i < idx ? "bg-[#E3ECFD] text-[#2558c9]" : "bg-white text-[#94A3B8]"}`}>
-              <span className={`grid h-5 w-5 place-items-center rounded-full text-[11px] ${i === idx ? "bg-white/25" : i < idx ? "bg-[#306EEC] text-white" : "bg-[#EEF2F8]"}`}>{i < idx ? "✓" : i + 1}</span>{s.label}
-            </button>
-          ))}
-        </nav>
-      ) : null}
-
-      {notice ? <div role="status" className="fixed inset-x-4 bottom-24 z-50 mx-auto max-w-md rounded-2xl bg-[#0B1628] px-4 py-3 text-[14px] text-white shadow-2xl">{notice}</div> : null}
-      {engineError ? <p className="mb-4 rounded-xl bg-[#FDECEB] px-4 py-3 text-[14px] text-[#A3261B]">{engineError} You can still request a free design consultation by phone.</p> : null}
-
-      {submitted ? (
-        <Done reference={submitted.reference} onNew={startOver} preview={preview} />
+    <div className="studio-root" style={{ ...FONT, background: T.bg, color: T.ink }}>
+      <StudioStyles />
+      {step === "start" ? (
+        <Start canResume={Boolean(resumable)} onBegin={begin} onResume={resume} onNew={startOver} demo={demo} preview={preview} submitted={Boolean(submitted && !preview)} />
       ) : (
-        <div className={step === "start" ? "" : "grid gap-5 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-8"}>
-          {/* the picture: always mounted (the engine draws into it) */}
-          <section className={step === "start" ? "hidden" : step === "customize" ? "sticky top-14 z-10 -mx-4 bg-[#F8FAFF] px-4 pb-2 lg:top-28 lg:mx-0 lg:self-start lg:px-0" : "lg:sticky lg:top-28 lg:self-start"}>
-            <div className="relative mx-auto w-full max-w-full rounded-3xl sm:w-fit bg-white p-2 shadow-[0_8px_30px_rgba(11,22,40,0.06)] sm:p-3">
-              <StudioStage
-                {...stageRefs} view={view} compact={step === "customize"} className={snap?.ready ? "" : "hidden"}
-                busy={uploading ? "Preparing your photo…" : panel === "photo" ? null : snap?.busy}
-                renderStamp={stamp} drawCompare={(b, a) => engine()?.drawCompare(b, a)}
-                illustrativeNote={source === "example" ? "Example bathroom at a standard size - not a picture of your home." : "Illustrative preview of your bathroom. Exact fit is confirmed on site."}
-              />
-              {!snap?.ready ? <div className="grid aspect-[3/4] max-h-[34vh] w-full place-items-center rounded-2xl bg-[#EEF2F8] text-[14px] text-[#64748B] sm:max-h-[58vh]">Preparing your design…</div> : null}
-              {snap?.ready ? (
-                <p className="m-0 mt-1 truncate text-center text-[11.5px] font-semibold text-[#0B1628] sm:text-[12px]" data-testid="picture-badge">
-                  {source === "example" ? "Example bathroom (illustration)" : "Your photo (preview)"} · {measureSource === "customer" ? "your measurements" : "standard 60″ × 30″"}
-                </p>
-              ) : null}
+        <div className="fixed inset-0 flex flex-col" style={{ height: "100dvh", background: T.bg }}>
+          {/* top bar */}
+          <header className="relative z-20 flex h-14 shrink-0 items-center gap-2 px-2 sm:px-4" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+            <button type="button" className="grid h-11 w-11 place-items-center rounded-full hover:bg-black/5" aria-label={step === "design" ? "Back to start" : "Back"} onClick={() => (step === "design" ? setStep("start") : go(step === "request" ? "review" : "design"))} data-testid="back">
+              <Icon name="arrowLeft" className="h-5 w-5" />
+            </button>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2"><span className="truncate text-[15px] font-semibold tracking-[-0.01em]">Shower Studio</span>{demo ? <DemoTag /> : null}</div>
+              <Steps step={step} />
             </div>
-          </section>
+            <button type="button" onClick={() => setFullOpen(true)} disabled={!snap?.ready} className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-white px-3.5 text-[14px] font-semibold shadow-sm ring-1 ring-black/5 transition hover:ring-black/20 disabled:opacity-40" data-testid="open-preview">
+              <Icon name="expand" className="h-[18px] w-[18px]" /><span>Preview</span>
+            </button>
+          </header>
+          {demo ? <div className="z-10 shrink-0 truncate bg-[#FFF1D6] px-4 py-1 text-center text-[11.5px] font-semibold text-[#7A4F00]" data-testid="demo-banner">{preview ? <>OWNER PREVIEW · DEMO prices<span className="hidden sm:inline"> and demo products</span> · nothing is saved or sent</> : <>DEMO · sample products and DEMO prices<span className="hidden sm:inline"> · requests stay on this computer</span></>}</div> : null}
+          {notice ? <div role="status" className="studio-rise pointer-events-none fixed inset-x-4 top-[72px] z-[80] mx-auto max-w-md rounded-2xl bg-[#1C1B19] px-4 py-3 text-[14px] leading-snug text-white shadow-2xl">{notice}</div> : null}
 
-          <section className={step === "start" ? "" : "min-w-0"}>
-            {step === "start" && <Start canResume={Boolean(resumable)} onBegin={begin} onResume={resume} onNew={startOver} />}
+          <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+            {/* the picture */}
+            <main className="relative min-h-0 flex-1 px-3 pb-2 pt-1 sm:px-5 lg:p-6" aria-label="Your bathroom">
+              {engineError ? <p className="absolute inset-x-4 top-2 z-10 rounded-2xl bg-[#FBEDE7] px-4 py-3 text-[14px] text-[#9A3412]">{engineError} You can still request a free design consultation by phone.</p> : null}
+              {submitted ? (
+                <div className="grid h-full place-items-center"><Done reference={submitted.reference} onNew={startOver} preview={preview} /></div>
+              ) : (
+                <Stage refs={stageRefs} view={view} ready={Boolean(snap?.ready)} busy={photoStep === "working" ? "Preparing your photo…" : snap?.busy} engine={engine} snap={snap} stamp={stamp}
+                  focusAcc={focusAcc} onFocusAcc={(k) => { setFocusAcc(k); setCategory("extras"); if (sheet === "mini") setSheet("half"); }}
+                  onTapEmpty={() => setSheet((s) => (s === "full" ? "half" : s))} interactive={step === "design" && !photoStep}>
+                  {snap?.ready ? <span className="pointer-events-none absolute bottom-2 left-2 max-w-[calc(100%-16px)] truncate rounded-full bg-white/85 px-2.5 py-1 text-[11.5px] font-medium text-[#5F5A52] shadow-sm backdrop-blur" data-testid="picture-badge">{caption}</span> : null}
+                  {snap?.canUndoMove && step === "design" && !photoStep ? (
+                    <button type="button" onClick={() => showChanges(engine()?.undoMove() || [])} className="absolute right-2 top-2 inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-white/92 px-3 text-[13px] font-semibold shadow ring-1 ring-black/5" data-testid="undo-move"><Icon name="undo" className="h-4 w-4" />Undo move</button>
+                  ) : null}
+                </Stage>
+              )}
+            </main>
 
-            {step === "customize" && (
-              <Panel title={kind === "tub" ? "Design your new bathtub" : "Design your walk-in shower"} sub="Open a section and tap an option. The picture and the price change as you go.">
-                <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-[#EEF2F8] p-1" role="group" aria-label="Shower or bathtub">
-                  {(["shower", "tub"] as const).map((k) => (
-                    <button key={k} type="button" aria-pressed={kind === k} onClick={() => chooseKind(k)} data-testid={`kind-${k}`} disabled={!snap?.ready}
-                      className={`min-h-[44px] rounded-xl text-[14.5px] font-semibold ${kind === k ? "bg-white text-[#0B1628] shadow" : "text-[#475569]"}`}>
-                      {k === "shower" ? "Walk-in shower" : "Bathtub"}
-                    </button>
-                  ))}
-                </div>
-                {kind === "shower" ? (
-                  <label className="mb-4 flex items-center justify-between gap-3 text-[13.5px] text-[#475569]">
-                    <span>What&rsquo;s there now?</span>
-                    <select className="min-h-[40px] rounded-xl border border-[#C5CBD8] bg-white px-3 text-[14px] text-[#0B1628]" value={projectType} onChange={(e) => setProjectType(e.target.value)} data-testid="replacing">
-                      <option value="tub-to-shower">A bathtub</option>
-                      <option value="shower-replacement">An old shower</option>
-                    </select>
-                  </label>
+            {/* the controls: a sheet on phones, a side panel on large screens */}
+            {!submitted ? (
+              <aside className={`studio-sheet relative z-10 flex shrink-0 flex-col rounded-t-[28px] bg-[#FBFAF8] shadow-[0_-12px_40px_rgba(28,27,25,0.10)] lg:h-auto lg:w-[460px] lg:rounded-none lg:border-l lg:border-[#E7E1D8] lg:shadow-none xl:w-[500px] ${sheet === "full" ? "h-[80dvh]" : sheet === "half" ? "h-[50dvh]" : "h-auto"}`}
+                data-sheet={sheet} aria-label="Design choices">
+                <button type="button" className="flex h-6 w-full shrink-0 items-center justify-center lg:hidden" onClick={() => setSheet((s) => (s === "mini" ? "half" : s === "half" ? "full" : "half"))}
+                  aria-label={sheet === "full" ? "Show more of the picture" : "Show more choices"} data-testid="sheet-handle">
+                  <span className="h-1.5 w-10 rounded-full bg-[#D6CFC3]" />
+                </button>
+                {step === "design" && !inPhoto ? (
+                  <nav className="grid shrink-0 grid-cols-6 gap-0.5 px-2 lg:px-4 lg:pt-4" role="tablist" aria-label="What to choose">
+                    {TABS.map((t) => (
+                      <button key={t.id} type="button" role="tab" aria-selected={category === t.id} onClick={() => pickCategory(t.id)} data-testid={`tab-${t.id}`}
+                        className={`flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-2xl text-[11.5px] font-semibold transition ${category === t.id ? "bg-[#1C1B19] text-white" : "text-[#5F5A52] hover:bg-black/5"}`}>
+                        <Icon name={t.id === "base" && kind === "tub" ? "tub" : t.icon} className="h-[22px] w-[22px]" />{t.id === "base" && kind === "tub" ? "Tub" : t.label}
+                      </button>
+                    ))}
+                  </nav>
                 ) : null}
-                {snap?.ready ? (
-                  <Configurator snap={snap} engine={engine} catalog={cat.catalog} kind={kind} projectType={projectType} demo={preview || DEMO}
-                    priceApi={preview ? previewStudio.quoteOptions : publicStudio.quoteOptions} open={section} setOpen={setSection}
-                    onChanged={showChanges} onReview={() => go("result")} />
-                ) : <p className="text-[14px] text-[#64748B]">Preparing the options…</p>}
-                <TotalBar quote={quote} demo={preview || DEMO} onReview={() => go("result")} disabled={!snap?.ready || Boolean(snap?.busy)} />
-
-                <div className="mt-5 grid gap-2 rounded-2xl border border-dashed border-[#C5CBD8] p-4">
-                  <p className="m-0 text-[13px] font-semibold text-[#0B1628]">Optional</p>
-                  <button type="button" className={`${link} text-left`} onClick={() => setPanel(panel === "measure" ? null : "measure")} data-testid="open-measure">
-                    {measureSource === "customer" ? "Change my measurements" : "I know my measurements"}
-                  </button>
-                  {panel === "measure" && snap ? (
-                    <MeasurePanel snap={snap} measureSource={measureSource}
-                      onApply={(m) => { const ch = engine()?.setMeasure(m); setMeasureSource("customer"); showChanges(ch || []); }}
-                      onStandard={() => { engine()?.setMeasure({ ...STANDARD_SIZE }); setMeasureSource("standard"); }} />
-                  ) : null}
-                  <button type="button" className={`${link} text-left`} onClick={() => setPanel(panel === "photo" ? null : "photo")} data-testid="open-photo">
-                    {source === "photo" ? "My photo: adjust or change it" : "Try it on a photo of my bathroom"}
-                  </button>
-                  {panel === "photo" ? (
-                    <div className="grid gap-2">
-                      <input ref={fileRef} type="file" accept="image/*,.heic,.heif" capture="environment" className="hidden" onChange={(e) => onPhoto(e.target.files?.[0])} data-testid="photo-input" />
-                      <p className="m-0 text-[13px] leading-relaxed text-[#475569]">Stand outside the tub and fit the whole tub area in the photo. {cat.privacyNote || "Your photo is private: only you and the Profixter team can see it, and camera location data is removed."}</p>
-                      <div className="flex flex-wrap gap-2">
-                        <button type="button" className={secondary} disabled={uploading || (!mine && !preview)} onClick={() => fileRef.current?.click()}>{source === "photo" ? "Use a different photo" : "Take or upload a photo"}</button>
-                        {source === "photo" ? <button type="button" className={secondary} onClick={backToExample}>Back to the example</button> : null}
-                      </div>
-                      {source === "photo" && snap?.ready ? (
-                        <>
-                          <p className="m-0 rounded-xl bg-[#F1F5FF] p-3 text-[13px] leading-relaxed text-[#334155]"><b>Check the blue dots</b> on the corners of the wall you&rsquo;re facing. Drag any that are off; they snap into place.</p>
-                          <Messages list={snap.messages.mark} />
-                          <div className="flex flex-wrap gap-2">
-                            <button type="button" className={secondary} onClick={() => engine()?.startTap4()}>Tap the 4 corners</button>
-                            <button type="button" className={snap.tool === "tapRemove" ? primary : secondary} onClick={() => engine()?.setTool(snap.tool === "tapRemove" ? "marks" : "tapRemove")}>{snap.tool === "tapRemove" ? "Done removing" : "Remove an item"}</button>
-                            {snap.canUndoMask ? <button type="button" className={secondary} onClick={() => engine()?.undoMask()}>Undo</button> : null}
-                            <button type="button" className={primary} onClick={() => setPanel(null)} data-testid="photo-done">Done</button>
-                          </div>
-                        </>
-                      ) : null}
-                    </div>
-                  ) : null}
+                <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-4 lg:px-6 ${sheet === "mini" ? "hidden lg:block" : ""}`} data-testid="sheet-body">
+                  {photoStep ? (
+                    <PhotoSteps step={photoStep} snap={snap} engine={engine} rotating={rotating}
+                      onYes={() => setPhotoStep("plumbing")} onAdjust={() => { engine()?.setActiveMark("wallBL"); setPhotoStep("adjust"); }}
+                      onDoneAdjust={() => setPhotoStep("plumbing")}
+                      onRotate={() => { const l = lastPhoto.current; if (l) { setRotating(true); takePhoto(l.file, (l.rotate + 90) % 360); } }}
+                      onReplace={() => setPhotoOpen(true)} onExample={backToExample}
+                      onPlumbing={(w) => showChanges(engine()?.setPlumbing(w) || [])}
+                      onFinish={() => { setPhotoStep(null); setCategory("walls"); }} />
+                  ) : step === "design" && snap?.ready ? (
+                    <Chooser category={category} snap={snap} engine={engine} catalog={cat.catalog} projectType={projectType} kind={kind}
+                      priceApi={preview ? previewStudio.quoteOptions : publicStudio.quoteOptions} onChanged={showChanges} onCategory={setCategory}
+                      onOpenPhoto={() => { setPhotoErr(null); setPhotoOpen(true); }} onOpenMeasure={() => setMeasureOpen(true)} onKind={chooseKind} setProjectType={setProjectType} source={source}
+                      focusAcc={focusAcc} setFocusAcc={setFocusAcc} />
+                  ) : step === "design" ? (
+                    <div className="grid gap-3" aria-hidden><div className="h-6 w-2/3 animate-pulse rounded-full bg-[#ECE7DF]" /><div className="grid grid-cols-2 gap-3">{[0, 1, 2, 3].map((i) => <div key={i} className="aspect-[4/3] animate-pulse rounded-[20px] bg-[#ECE7DF]" />)}</div></div>
+                  ) : step === "review" ? (
+                    <Review snap={snap} catalog={cat.catalog} quote={quote} disclaimer={cat.disclaimer} source={source} demo={demo} onEdit={(c) => { setCategory(c); go("design"); }} />
+                  ) : (
+                    <RequestForm quote={quote} privacyNote={cat.privacyNote} demo={demo}
+                      onSubmit={async (form) => {
+                        if (preview) {
+                          const r = await previewStudio.submit({ ...form, state: engine()?.getState(), projectType, measureSource, exampleScene: source === "example" ? SCENE.id : null, photo: source === "photo" });
+                          setSubmitted({ reference: r.reference });
+                          writeDraft(null);
+                          return;
+                        }
+                        let m = mine;
+                        if (!m) {
+                          const created = await publicStudio.create(projectType, { exampleScene: source === "example" ? SCENE.id : null, measureSource });
+                          m = { id: created.id, token: created.token, startedAt: Date.now() };
+                          localDesign.set(m); setMine(m);
+                        }
+                        const state = engine()?.getState();
+                        if (state) await publicStudio.save(m.id, m.token, { state, projectType, measureSource, ...(source === "example" ? { exampleScene: SCENE.id } : {}) });
+                        const previewImg = await engine()?.previewBlob();
+                        if (previewImg) await publicStudio.uploadPreview(m.id, m.token, previewImg).catch(() => {});
+                        const r = await publicStudio.submit(m.id, m.token, form);
+                        try { trackLead({ content_name: "Shower Studio", content_category: "bathroom" }, { dataLayerEvent: null }); } catch { /* analytics never blocks */ }
+                        setSubmitted({ reference: r.reference });
+                      }} />
+                  )}
                 </div>
-                <Nav onBack={() => go("start")} onNext={() => go("result")} nextLabel="View design & price" nextDisabled={!snap?.ready || Boolean(snap?.busy)} />
-              </Panel>
-            )}
-
-            {step === "result" && (
-              <Panel title={kind === "tub" ? "Your new bathtub" : "Your new walk-in shower"} sub="Slide to compare before and after.">
-                <PriceCard quote={quote} disclaimer={cat.disclaimer} />
-                {source === "example" ? <p className="mt-3 rounded-xl bg-[#F1F5FF] px-3 py-2 text-[13px] text-[#334155]" data-testid="example-note">This is an <b>example bathroom</b>, not a picture of your home. We confirm sizes and fit with a free in-home measurement.</p> : null}
-                <Nav onBack={() => go("customize")} onNext={() => go("request")} nextLabel="Request installation" />
-              </Panel>
-            )}
-
-            {step === "request" && (
-              <RequestForm
-                quote={quote}
-                privacyNote={cat.privacyNote}
-                onBack={() => go("result")}
-                onSubmit={async (form) => {
-                  if (preview) {
-                    const r = await previewStudio.submit({ ...form, state: engine()?.getState(), projectType, measureSource, exampleScene: source === "example" ? SCENE.id : null, photo: source === "photo" });
-                    setSubmitted({ reference: r.reference });
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                    return;
-                  }
-                  let m = mine;
-                  if (!m) {
-                    const created = await publicStudio.create(projectType, { exampleScene: source === "example" ? SCENE.id : null, measureSource });
-                    m = { id: created.id, token: created.token, startedAt: Date.now() };
-                    localDesign.set(m); setMine(m);
-                  }
-                  const state = engine()?.getState();
-                  if (state) await publicStudio.save(m.id, m.token, { state, projectType, measureSource, ...(source === "example" ? { exampleScene: SCENE.id } : {}) });
-                  const previewImg = await engine()?.previewBlob();
-                  if (previewImg) await publicStudio.uploadPreview(m.id, m.token, previewImg).catch(() => {});
-                  const r = await publicStudio.submit(m.id, m.token, form);
-                  try { trackLead({ content_name: "Shower Studio", content_category: "bathroom" }, { dataLayerEvent: null }); } catch { /* analytics never blocks */ }
-                  setSubmitted({ reference: r.reference });
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-              />
-            )}
-          </section>
+                {/* running total + next action, always visible */}
+                {step !== "request" && !photoStep ? (
+                  <footer className="flex shrink-0 items-center gap-3 border-t border-[#ECE6DD] bg-[#FBFAF8] px-4 py-3 lg:px-6" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-[#8C867C]">{demo ? "Demo estimate" : quote?.complete ? "Estimated total" : "Price"}</div>
+                      <div className={`truncate font-semibold tabular-nums tracking-[-0.01em] text-[#1C1B19] ${quote && !quote.complete ? "text-[14px]" : "text-[22px] leading-tight"}`} data-testid="price-strip">{total}</div>
+                    </div>
+                    {step === "design" ? (
+                      <button type="button" className={`${btn.primary} min-h-[50px] px-5`} onClick={() => go("review")} disabled={!snap?.ready || Boolean(snap?.busy)} data-testid="total-review">Review<Icon name="arrowRight" className="h-5 w-5" /></button>
+                    ) : (
+                      <button type="button" className={`${btn.primary} min-h-[50px] px-5`} onClick={() => go("request")} data-testid="go-request">Request installation</button>
+                    )}
+                  </footer>
+                ) : null}
+              </aside>
+            ) : null}
+          </div>
         </div>
       )}
-      {step !== "start" && source === "example" ? <p className="mt-6 text-center text-[11.5px] text-[#94A3B8]">{SCENE.credit}</p> : null}
+
+      <FullPreview open={fullOpen} onClose={() => setFullOpen(false)} engine={engine} stamp={stamp} hasPhoto={source === "photo"} caption={caption} />
+      <PhotoSource open={photoOpen} onClose={() => setPhotoOpen(false)} onFile={(f) => takePhoto(f)} onExample={backToExample} error={photoErr} privacyNote={cat.privacyNote} hasPhoto={source === "photo"} />
+      {measureOpen && snap ? (
+        <MeasureSheet snap={snap} measureSource={measureSource} onClose={() => setMeasureOpen(false)}
+          onApply={(m) => { const ch = engine()?.setMeasure(m); setMeasureSource("customer"); showChanges(ch || []); setMeasureOpen(false); }}
+          onStandard={() => { engine()?.setMeasure({ ...STANDARD_SIZE }); setMeasureSource("standard"); setMeasureOpen(false); }} />
+      ) : null}
     </div>
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
-  return <div className="mx-auto max-w-3xl px-4 py-16 text-center">{children}</div>;
-}
-
-function Panel({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
+// ------------------------------------------------------------------ pieces
+function StudioStyles() {
   return (
-    <div className="rounded-3xl bg-white p-5 shadow-[0_8px_30px_rgba(11,22,40,0.06)] sm:p-6">
-      <h2 className="text-[22px] font-bold leading-tight text-[#0B1628] sm:text-[26px]">{title}</h2>
-      {sub ? <p className="mt-1.5 text-[14.5px] leading-relaxed text-[#475569]">{sub}</p> : null}
-      <div className="mt-5">{children}</div>
-    </div>
+    <style>{`
+      .studio-root { -webkit-tap-highlight-color: transparent; }
+      .studio-root button { -webkit-touch-callout: none; }
+      @keyframes studioFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+      @keyframes studioRise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+      .studio-fade { animation: studioFade .28s cubic-bezier(.2,.7,.2,1) both; }
+      .studio-rise { animation: studioRise .32s cubic-bezier(.2,.7,.2,1) both; }
+      .studio-sheet { transition: height .32s cubic-bezier(.2,.7,.2,1); }
+      @media (min-width: 1024px) { .studio-sheet { height: auto !important; } }
+      @media (prefers-reduced-motion: reduce) { .studio-fade, .studio-rise { animation: none; } .studio-sheet { transition: none; } }
+    `}</style>
   );
 }
 
-function Nav({ onBack, onNext, nextLabel = "Continue", nextDisabled }: { onBack?: () => void; onNext?: () => void; nextLabel?: string; nextDisabled?: boolean }) {
+function Plain({ children }: { children: React.ReactNode }) {
+  return <div className="grid min-h-[100dvh] place-items-center px-6 text-center" style={{ ...FONT, background: T.bg }}><div>{children}</div></div>;
+}
+
+function Steps({ step }: { step: Step }) {
+  const all: [Step, string][] = [["design", "Design"], ["review", "Review"], ["request", "Request"]];
+  const i = all.findIndex(([s]) => s === step);
   return (
-    <div className="mt-6 flex gap-2">
-      {onBack ? <button type="button" className={secondary} onClick={onBack}>Back</button> : null}
-      {onNext ? <button type="button" className={`${primary} flex-1`} onClick={onNext} disabled={nextDisabled}>{nextLabel}</button> : null}
+    <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-[#8C867C]" aria-label={`Step ${i + 1} of 3`}>
+      {all.map(([s, l], k) => (
+        <span key={s} className={`flex items-center gap-1.5 ${k === i ? "font-semibold text-[#1C1B19]" : ""}`}>{k > 0 ? <span className="h-px w-3 bg-[#D6CFC3]" aria-hidden /> : null}{l}</span>
+      ))}
     </div>
   );
 }
 
-function MeasurePanel({ snap, measureSource, onApply, onStandard }: { snap: any; measureSource: MeasureSource; onApply: (m: any) => void; onStandard: () => void }) {
+function Start({ canResume, onBegin, onResume, onNew, demo, preview, submitted }: { canResume: boolean; onBegin: (k: Kind) => void; onResume: () => void; onNew: () => void; demo: boolean; preview: boolean; submitted: boolean }) {
+  return (
+    <div className="min-h-[100dvh]" style={{ background: "linear-gradient(180deg,#F6F3EE 0%,#EEE9E1 100%)" }}>
+      {demo ? <div className="bg-[#FFF1D6] px-4 py-1.5 text-center text-[12px] font-semibold text-[#7A4F00]" data-testid="demo-banner">{preview ? "OWNER PREVIEW · demo products and DEMO prices · nothing is saved or sent" : "DEMO · sample products and DEMO prices · requests stay on this computer"}</div> : null}
+      <div className="mx-auto max-w-5xl px-5 pb-16 pt-8 sm:pt-14">
+        <div className="flex items-center gap-2 text-[13px] font-semibold tracking-[0.02em] text-[#5F5A52]">
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#1C1B19] text-white"><Icon name="sparkle" className="h-4 w-4" /></span>
+          Shower Studio <span className="font-normal text-[#8C867C]">by Profixter</span>
+        </div>
+        <h1 className="mt-6 max-w-2xl text-[38px] font-semibold leading-[1.05] tracking-[-0.025em] text-[#1C1B19] sm:text-[56px]">Design your new shower or bath.</h1>
+        <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-[#5F5A52]">Choose walls, a base, a faucet and a door, see it come together, and get an estimate. No photo, measuring or account needed.</p>
+        {submitted ? <p className="mt-6 max-w-xl rounded-2xl bg-white px-4 py-3 text-[14px] text-[#1C1B19] ring-1 ring-[#E7E1D8]">We already have your last design. Start a new one any time.</p> : null}
+        {canResume ? (
+          <div className="mt-7 flex max-w-xl flex-wrap items-center gap-3 rounded-[22px] bg-white p-3 pl-4 ring-1 ring-[#E7E1D8]">
+            <span className="min-w-0 flex-1 text-[15px] font-medium">You have a design in progress.</span>
+            <button type="button" className={btn.small} onClick={onNew}>Start new</button>
+            <button type="button" className={`${btn.primary} min-h-[44px] px-5 text-[15px]`} onClick={onResume} data-testid="resume">Continue</button>
+          </div>
+        ) : null}
+        <div className="mt-9 grid gap-4 sm:grid-cols-2 sm:gap-5">
+          {([["shower", "Walk-in shower", "Replace a tub or an old shower.", "/studio/start-shower.jpg"], ["tub", "Bathtub", "A new tub with matching walls.", "/studio/start-tub.jpg"]] as const).map(([k, title, sub, src]) => (
+            <button key={k} type="button" onClick={() => onBegin(k)} data-testid={`start-${k}`}
+              className="group relative overflow-hidden rounded-[28px] bg-white text-left shadow-[0_20px_50px_rgba(28,27,25,0.10)] ring-1 ring-black/5 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_26px_60px_rgba(28,27,25,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A47A3E]">
+              <div className="relative aspect-[4/3] overflow-hidden bg-[#ECE7DF] sm:aspect-[5/4]">
+                <img src={src} alt="" className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.03]" />
+                <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[11.5px] font-medium text-[#5F5A52] backdrop-blur">Illustration</span>
+              </div>
+              <div className="flex items-center gap-3 p-5">
+                <div className="min-w-0 flex-1"><div className="text-[21px] font-semibold tracking-[-0.01em] text-[#1C1B19]">{title}</div><p className="mt-0.5 text-[14px] text-[#8C867C]">{sub}</p></div>
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#1C1B19] text-white transition group-hover:translate-x-0.5"><Icon name="arrowRight" className="h-5 w-5" /></span>
+              </div>
+            </button>
+          ))}
+        </div>
+        <ol className="mt-10 grid gap-3 text-[14px] text-[#5F5A52] sm:grid-cols-4">
+          {["Choose shower or tub", "Pick finishes and extras", "Review your design and price", "Request a free measurement"].map((t, i) => (
+            <li key={t} className="flex items-center gap-3 rounded-2xl bg-white/60 px-4 py-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-[13px] font-semibold text-[#1C1B19] ring-1 ring-[#E7E1D8]">{i + 1}</span>{t}</li>
+          ))}
+        </ol>
+        <p className="mt-8 text-[12.5px] text-[#8C867C]">Pictures are illustrations. Want to see it in your own bathroom? Add a photo any time while you design.</p>
+      </div>
+    </div>
+  );
+}
+
+function Review({ snap, catalog, quote, disclaimer, source, demo, onEdit }: { snap: any; catalog: any; quote: PublicQuote | null; disclaimer: string; source: "example" | "photo"; demo: boolean; onEdit: (c: Category) => void }) {
+  const cur = snap?.current || {};
+  const d = snap?.design;
+  const accs = (d?.accessories || []).map((a: any) => (catalog.accessories || []).find((x: any) => x.id === a.productId)).filter(Boolean);
+  const rows: { c: Category; label: string; item: any; art: any; text: string }[] = [
+    { c: "walls", label: "Walls", item: cur.finish, art: "finish", text: [cur.finish?.family?.label || cur.finish?.label, cur.finish?.variant?.color].filter(Boolean).join(" · ") },
+    { c: "base", label: cur.base?.kind === "tub" ? "Bathtub" : "Shower base", item: cur.base, art: "base", text: [cur.base?.family?.label || cur.base?.label, cur.base?.variant?.color].filter(Boolean).join(" · ") },
+    { c: "fixture", label: "Faucet & shower", item: cur.fixture, art: "fixture", text: cur.fixture?.family?.label || cur.fixture?.label || "" },
+    { c: "door", label: "Door", item: cur.enclosure, art: cur.enclosure ? "enclosure" : "none", text: cur.enclosure ? [cur.enclosure.family?.label || cur.enclosure.label, cur.enclosure.variant?.color].filter(Boolean).join(" · ") : "None" },
+    { c: "extras", label: "Extras", item: accs[0], art: accs.length ? "accessory" : "none", text: accs.length ? accs.map((a: any) => a.family?.label || a.label).join(", ") : "None" },
+  ];
+  return (
+    <div className="studio-fade grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5">
+      <div>
+        <h3 className="text-[22px] font-semibold tracking-[-0.01em]">Your design</h3>
+        <p className="mt-1 text-[14px] text-[#8C867C]">{source === "photo" ? "Slide the picture to compare before and after." : "Tap Preview to see it full screen."}</p>
+      </div>
+      <ul className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2">
+        {rows.map((r) => (
+          <li key={r.c}>
+            <button type="button" onClick={() => onEdit(r.c)} className="flex w-full items-center gap-3 rounded-[18px] bg-white p-2.5 pr-3 text-left ring-1 ring-[#E7E1D8] transition hover:ring-[#1C1B19]/30">
+              <ProductArt kind={r.art} item={r.item} label={false} className="h-14 w-14 shrink-0 rounded-[12px]" />
+              <span className="min-w-0 flex-1"><span className="block text-[12px] font-semibold uppercase tracking-[0.08em] text-[#8C867C]">{r.label}</span><span className="block truncate text-[15px] font-medium">{r.text}</span></span>
+              <span className="text-[13px] font-semibold text-[#5F5A52]">Change</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="rounded-[22px] bg-[#1C1B19] p-5 text-white" data-testid="price-card">
+        <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-white/60" data-testid="price-label">{quote?.complete ? quote.label : "Price"}{demo ? <DemoTag /> : null}</div>
+        <div className="mt-1 text-[34px] font-semibold tabular-nums tracking-[-0.02em]" data-testid="price-total">{quote?.complete && quote.totalCents != null ? money0(quote.totalCents) : PRICE_PENDING}</div>
+        {quote?.complete ? <p className="mt-1 text-[13px] text-white/75" data-testid="price-basis">{quote.basis}</p> : null}
+        <p className="mt-2 text-[13px] leading-relaxed text-white/65">{quote?.complete ? disclaimer : "Some prices for this design are still being set; our team confirms your price after a quick review."}</p>
+        {quote?.includes?.length ? (
+          <details className="mt-3 text-[13.5px] text-white/85">
+            <summary className="cursor-pointer font-semibold">What&rsquo;s included</summary>
+            <ul className="mt-2 list-disc pl-5">{quote.includes.map((l, i) => <li key={i}>{l}</li>)}</ul>
+          </details>
+        ) : null}
+      </div>
+      {source === "example" ? <p className="rounded-2xl bg-white px-4 py-3 text-[13.5px] leading-relaxed text-[#5F5A52] ring-1 ring-[#E7E1D8]" data-testid="example-note">This is an <b className="text-[#1C1B19]">example bathroom</b>, not a picture of your home. We confirm sizes and fit with a free in-home measurement.</p> : null}
+      <p className="text-[12px] text-[#8C867C]">Not a contract. Nothing is booked until Profixter measures and you approve the proposal.</p>
+    </div>
+  );
+}
+
+function MeasureSheet({ snap, measureSource, onApply, onStandard, onClose }: { snap: any; measureSource: MeasureSource; onApply: (m: any) => void; onStandard: () => void; onClose: () => void }) {
   const m = snap.design.measure;
   const [v, setV] = useState({ facingWidth: String(m.facingWidth), sideLength: String(m.sideLength), rimHeight: String(m.rimHeight) });
-  const field = (k: keyof typeof v, label: string) => (
-    <label className="grid gap-1 text-[12.5px] text-[#475569]">{label}
+  const field = (k: keyof typeof v, label: string, hint: string) => (
+    <label className="grid gap-1.5"><span className="text-[14px] font-semibold text-[#1C1B19]">{label}</span>
       <span className="relative">
-        <input className={`${input} pr-14`} inputMode="decimal" value={v[k]} onChange={(e) => setV({ ...v, [k]: e.target.value })} data-testid={`m-${k}`} />
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-[#94A3B8]">inches</span>
+        <input className={`${input} pr-16`} inputMode="decimal" value={v[k]} onChange={(e) => setV({ ...v, [k]: e.target.value })} data-testid={`m-${k}`} />
+        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[13px] text-[#8C867C]">inches</span>
       </span>
+      <span className="text-[12.5px] text-[#8C867C]">{hint}</span>
     </label>
   );
   return (
-    <div className="grid gap-2 rounded-xl bg-[#F8FAFF] p-3">
-      <div className="grid gap-2 sm:grid-cols-3">
-        {field("facingWidth", "Back wall, side to side")}
-        {field("sideLength", "Depth, back wall to the front edge")}
-        {field("rimHeight", "Height of the tub edge")}
-      </div>
-      <Messages list={snap.messages.measure} />
-      <p className="m-0 text-[12px] text-[#64748B]">Your measurements are used to choose products that fit and to estimate the price. The picture stays an illustration.</p>
-      <div className="flex flex-wrap gap-2">
-        <button type="button" className={primary} data-testid="apply-measure" onClick={() => onApply({ facingWidth: Number(v.facingWidth), sideLength: Number(v.sideLength), rimHeight: Number(v.rimHeight) })}>Use my measurements</button>
-        {measureSource === "customer" ? <button type="button" className={secondary} onClick={onStandard}>Back to the standard size</button> : null}
-      </div>
-    </div>
-  );
-}
-
-const totalText = (q: PublicQuote | null) => (q?.complete && q.totalCents != null ? money0(q.totalCents) : PRICE_PENDING);
-function TotalBar({ quote, demo, onReview, disabled }: { quote: PublicQuote | null; demo?: boolean; onReview: () => void; disabled?: boolean }) {
-  return (
-    <>
-      <div className="h-24 lg:hidden" aria-hidden />
-      <div className="fixed inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] z-40 mx-auto max-w-xl lg:static lg:inset-auto lg:mx-0 lg:mt-5 lg:max-w-none">
-        <div className="flex items-center gap-3 rounded-2xl bg-[#0B1628] py-2 pl-4 pr-2 text-white shadow-[0_12px_32px_rgba(11,22,40,0.28)]">
-          <span className="min-w-0 flex-1">
-            <span className="block text-[11.5px] font-semibold uppercase tracking-wide text-white/60">{demo ? "Demo estimate" : quote?.complete ? "Estimated total" : "Price"}</span>
-            <span className="block truncate text-[18px] font-bold leading-tight" data-testid="price-strip">{quote ? totalText(quote) : "…"}</span>
-          </span>
-          <button type="button" onClick={onReview} disabled={disabled} className="min-h-[44px] shrink-0 rounded-xl bg-[#306EEC] px-4 text-[15px] font-semibold text-white disabled:opacity-50" data-testid="total-review">Review →</button>
+    <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/45 sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label="Your measurements" onClick={onClose}>
+      <div className="studio-rise max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-[28px] bg-[#FBFAF8] p-5 sm:rounded-[28px]" onClick={(e) => e.stopPropagation()} style={{ ...FONT, paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}>
+        <div className="flex items-start justify-between gap-3">
+          <div><h2 className="text-[21px] font-semibold">Your measurements</h2><p className="mt-1 text-[14px] text-[#5F5A52]">Optional. They make the estimate closer; we measure exactly before any work.</p></div>
+          <button type="button" onClick={onClose} aria-label="Close" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-black/5"><Icon name="close" className="h-5 w-5" /></button>
+        </div>
+        <div className="mt-4 grid gap-4">
+          {field("facingWidth", "Back wall, side to side", "The long wall behind the tub, from one corner to the other.")}
+          {field("sideLength", "Depth, back wall to the front edge", "From the back wall to the outside edge of the tub.")}
+          {field("rimHeight", "Height of the tub edge", "From the floor to the top of the tub's edge.")}
+        </div>
+        {snap.messages.measure?.length ? <p className="mt-3 rounded-2xl bg-[#FBEDE7] px-4 py-2.5 text-[13.5px] text-[#9A3412]">{snap.messages.measure[0].text}</p> : null}
+        <div className="mt-5 grid gap-2">
+          <button type="button" className={btn.primary} data-testid="apply-measure" onClick={() => onApply({ facingWidth: Number(v.facingWidth), sideLength: Number(v.sideLength), rimHeight: Number(v.rimHeight) })}>Use my measurements</button>
+          {measureSource === "customer" ? <button type="button" className={btn.ghost} onClick={onStandard}>Back to the standard size</button> : null}
         </div>
       </div>
-    </>
-  );
-}
-
-function PriceCard({ quote, disclaimer }: { quote: PublicQuote | null; disclaimer: string }) {
-  return (
-    <div className="rounded-2xl border border-[#DDE3EE] bg-[#F8FAFF] p-5" data-testid="price-card">
-      <div className="text-[13px] font-semibold uppercase tracking-wide text-[#64748B]" data-testid="price-label">{quote?.complete ? quote.label : "Price"}</div>
-      <div className="mt-1 text-[32px] font-bold leading-tight text-[#0B1628]" data-testid="price-total">{totalText(quote)}</div>
-      {quote?.complete ? <p className="mt-2 text-[13px] font-semibold text-[#334155]" data-testid="price-basis">{quote.basis}</p> : null}
-      <p className="mt-1 text-[13px] leading-relaxed text-[#475569]">{quote?.complete ? disclaimer : "Some prices for this design are still being set; our team confirms your price after a quick review."}</p>
-      {quote?.includes?.length ? (
-        <details className="mt-3 text-[13.5px] text-[#334155]">
-          <summary className="cursor-pointer font-semibold text-[#306EEC]">What&rsquo;s included</summary>
-          <ul className="mt-2 list-disc pl-5">{quote.includes.map((l, i) => <li key={i}>{l}</li>)}</ul>
-        </details>
-      ) : null}
-      <p className="mt-3 text-[12px] text-[#94A3B8]">Not a contract. No installation date is booked until we measure and you approve the proposal.</p>
     </div>
   );
 }
 
-function RequestForm({ quote, privacyNote, onBack, onSubmit }: { quote: PublicQuote | null; privacyNote?: string; onBack: () => void; onSubmit: (f: Record<string, unknown>) => Promise<void> }) {
+function RequestForm({ quote, privacyNote, demo, onSubmit }: { quote: PublicQuote | null; privacyNote?: string; demo: boolean; onSubmit: (f: Record<string, unknown>) => Promise<void> }) {
   const [f, setF] = useState({ name: "", email: "", phone: "", zip: "", address: "", contactPref: "phone", notes: "", consent: false, website: "" });
   const [busy, setBusy] = useState(false);
   const [errs, setErrs] = useState<Record<string, string>>({});
@@ -478,90 +552,59 @@ function RequestForm({ quote, privacyNote, onBack, onSubmit }: { quote: PublicQu
     } finally { setBusy(false); }
   }
   const field = (k: string, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
-    <label className="grid gap-1 text-[13px] text-[#475569]">{label}
-      <input className={`${input} ${errs[k] ? "border-[#A3261B]" : ""}`} value={(f as any)[k]} onChange={(e) => set(k, e.target.value)} aria-invalid={Boolean(errs[k])} name={k} {...props} />
-      {errs[k] ? <span className="text-[12.5px] text-[#A3261B]">{errs[k]}</span> : null}
+    <label className="grid gap-1.5"><span className="text-[14px] font-semibold text-[#1C1B19]">{label}</span>
+      <input className={`${input} ${errs[k] ? "border-[#C2410C]" : ""}`} value={(f as any)[k]} onChange={(e) => set(k, e.target.value)} aria-invalid={Boolean(errs[k])} name={k} {...props} />
+      {errs[k] ? <span className="text-[13px] text-[#9A3412]">{errs[k]}</span> : null}
     </label>
   );
   return (
-    <Panel title="Request installation" sub="No account needed. We'll call to confirm the details and schedule a free in-home measurement.">
-      <form onSubmit={submit} className="grid gap-3" noValidate>
-        {field("name", "Your name", { autoComplete: "name" })}
-        <div className="grid gap-3 sm:grid-cols-2">
-          {field("phone", "Phone", { autoComplete: "tel", inputMode: "tel" })}
-          {field("email", "Email", { autoComplete: "email", inputMode: "email" })}
-        </div>
-        <div className="grid gap-3 sm:grid-cols-[140px_1fr]">
-          {field("zip", "ZIP code", { autoComplete: "postal-code", inputMode: "numeric", maxLength: 5 })}
-          {field("address", "Street address (optional)", { autoComplete: "street-address" })}
-        </div>
-        <label className="grid gap-1 text-[13px] text-[#475569]">Best way to reach you
-          <select className={input} value={f.contactPref} onChange={(e) => set("contactPref", e.target.value)}>
-            <option value="phone">Phone call</option><option value="text">Text message</option><option value="email">Email</option>
-          </select>
-        </label>
-        <label className="grid gap-1 text-[13px] text-[#475569]">Anything we should know? (optional)
-          <textarea className={`${input} min-h-[90px] py-2`} maxLength={2000} value={f.notes} onChange={(e) => set("notes", e.target.value)} />
-        </label>
-        <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" value={f.website} onChange={(e) => set("website", e.target.value)} aria-hidden />
-        <label className="flex items-start gap-3 text-[13.5px] leading-snug text-[#334155]">
-          <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0" checked={f.consent} onChange={(e) => set("consent", e.target.checked)} data-testid="consent" />
-          <span>Profixter may contact me by phone, text or email about this request.</span>
-        </label>
-        {errs.consent ? <span className="text-[12.5px] text-[#A3261B]">{errs.consent}</span> : null}
-        {privacyNote ? <p className="m-0 text-[12.5px] leading-relaxed text-[#64748B]" data-testid="privacy-note">{privacyNote}</p> : null}
-        <p className="m-0 text-[13px] text-[#475569]" data-testid="request-price">{quote?.complete ? <>Estimated total in your request: <b>{totalText(quote)}</b></> : PRICE_PENDING}</p>
-        {msg ? <p className="m-0 rounded-xl bg-[#FDECEB] px-3 py-2 text-[13.5px] text-[#A3261B]">{msg}</p> : null}
-        <div className="mt-2 flex gap-2">
-          <button type="button" className={secondary} onClick={onBack}>Back</button>
-          <button type="submit" className={`${primary} flex-1`} disabled={busy} data-testid="submit-request">{busy ? "Sending…" : "Request installation"}</button>
-        </div>
-      </form>
-    </Panel>
-  );
-}
-
-function Start({ canResume, onBegin, onResume, onNew }: { canResume: boolean; onBegin: (k: Kind) => void; onResume: () => void; onNew: () => void }) {
-  return (
-    <div className="mx-auto max-w-3xl py-4 text-center sm:py-10">
-      <span className="inline-block rounded-full bg-[#E3ECFD] px-3 py-1 text-[12.5px] font-semibold text-[#2558c9]">Shower Studio</span>
-      <h1 className="mt-4 text-[34px] font-bold leading-[1.1] text-[#0B1628] sm:text-[48px]">Design your new bathroom in a minute</h1>
-      <p className="mx-auto mt-3 max-w-xl text-[16px] leading-relaxed text-[#475569]">Pick walls, a base, a door and extras, and see an estimated price. No photo, no measuring, no account.</p>
-      {canResume ? (
-        <div className="mx-auto mt-6 flex max-w-md flex-col gap-2 sm:flex-row sm:justify-center">
-          <button type="button" className={primary} onClick={onResume} data-testid="resume">Continue my design</button>
-          <button type="button" className={secondary} onClick={onNew}>Start a new one</button>
-        </div>
-      ) : null}
-      <div className="mx-auto mt-8 grid max-w-2xl gap-4 sm:grid-cols-2">
-        {([["shower", "Walk-in shower", "Replace a tub or an old shower with a walk-in shower."], ["tub", "Bathtub", "A new bathtub with matching walls."]] as const).map(([k, title, sub]) => (
-          <button key={k} type="button" onClick={() => onBegin(k)} data-testid={`start-${k}`}
-            className="group overflow-hidden rounded-3xl bg-white text-left shadow-[0_8px_30px_rgba(11,22,40,0.08)] ring-1 ring-[#DDE3EE] transition hover:ring-2 hover:ring-[#306EEC]">
-            <div className="relative h-44 overflow-hidden bg-[#EEF2F8] sm:h-52">
-              <img src={SCENE.src} alt="" className="h-full w-full object-cover object-[50%_60%] transition group-hover:scale-[1.03]" />
-              <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-[#475569]">Example bathroom</span>
-            </div>
-            <div className="p-4">
-              <div className="flex items-center justify-between"><span className="text-[18px] font-bold text-[#0B1628]">{title}</span><span className="text-[22px] text-[#306EEC]" aria-hidden>→</span></div>
-              <p className="mt-1 text-[13.5px] text-[#64748B]">{sub}</p>
-            </div>
-          </button>
-        ))}
+    <form onSubmit={submit} className="studio-fade grid gap-4" noValidate>
+      <div>
+        <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#8C867C]">Profixter installation {demo ? <DemoTag /> : null}</div>
+        <h3 className="mt-1 text-[22px] font-semibold tracking-[-0.01em]">Request installation</h3>
+        <p className="mt-1 text-[14px] leading-relaxed text-[#5F5A52]">Your design goes to Profixter&rsquo;s bathroom team. We&rsquo;ll call to confirm the details and set up a free in-home measurement. No account needed.</p>
       </div>
-      <p className="mt-6 text-[12.5px] text-[#94A3B8]">Want to see it on your own bathroom? You can add a photo later. <Link href="/kitchen-bathroom" className="underline">See our bathroom work</Link></p>
-    </div>
+      {field("name", "Your name", { autoComplete: "name" })}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {field("phone", "Phone", { autoComplete: "tel", inputMode: "tel" })}
+        {field("email", "Email", { autoComplete: "email", inputMode: "email" })}
+      </div>
+      <div className="grid gap-4 sm:grid-cols-[140px_1fr]">
+        {field("zip", "ZIP code", { autoComplete: "postal-code", inputMode: "numeric", maxLength: 5 })}
+        {field("address", "Street address (optional)", { autoComplete: "street-address" })}
+      </div>
+      <label className="grid gap-1.5"><span className="text-[14px] font-semibold">Best way to reach you</span>
+        <select className={input} value={f.contactPref} onChange={(e) => set("contactPref", e.target.value)}>
+          <option value="phone">Phone call</option><option value="text">Text message</option><option value="email">Email</option>
+        </select>
+      </label>
+      <label className="grid gap-1.5"><span className="text-[14px] font-semibold">Anything we should know? (optional)</span>
+        <textarea className={`${input} min-h-[96px] py-3`} maxLength={2000} value={f.notes} onChange={(e) => set("notes", e.target.value)} />
+      </label>
+      <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" value={f.website} onChange={(e) => set("website", e.target.value)} aria-hidden />
+      <label className="flex items-start gap-3 text-[14px] leading-snug">
+        <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 accent-[#1C1B19]" checked={f.consent} onChange={(e) => set("consent", e.target.checked)} data-testid="consent" />
+        <span>Profixter may contact me by phone, text or email about this request.</span>
+      </label>
+      {errs.consent ? <span className="text-[13px] text-[#9A3412]">{errs.consent}</span> : null}
+      {privacyNote ? <p className="m-0 text-[12.5px] leading-relaxed text-[#8C867C]" data-testid="privacy-note">{privacyNote}</p> : null}
+      <p className="m-0 rounded-2xl bg-white px-4 py-3 text-[14px] ring-1 ring-[#E7E1D8]" data-testid="request-price">{quote?.complete && quote.totalCents != null ? <>{demo ? "Demo estimate" : "Estimated total"} in your request: <b>{money0(quote.totalCents)}</b></> : PRICE_PENDING}</p>
+      {msg ? <p className="m-0 rounded-2xl bg-[#FBEDE7] px-4 py-3 text-[14px] text-[#9A3412]" role="alert">{msg}</p> : null}
+      <button type="submit" className={`${btn.primary} w-full`} disabled={busy} data-testid="submit-request">{busy ? <><Spinner className="h-5 w-5" />Sending…</> : "Send my request"}</button>
+      <div style={{ height: "env(safe-area-inset-bottom)" }} />
+    </form>
   );
 }
 
 function Done({ reference, onNew, preview }: { reference?: string; onNew: () => void; preview?: boolean }) {
   return (
-    <div className="mx-auto max-w-xl rounded-3xl bg-white p-8 text-center shadow-[0_8px_30px_rgba(11,22,40,0.06)]" data-testid="request-done">
-      <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#E8F6EE] text-[28px]" aria-hidden>✓</div>
-      <h2 className="mt-4 text-[26px] font-bold text-[#0B1628]">We have your design</h2>
-      <p className="mt-2 text-[15px] leading-relaxed text-[#475569]">Thank you! A Profixter designer will contact you to confirm the details and schedule a free measurement. Nothing is booked yet.</p>
-      {reference ? <p className="mt-3 text-[13px] text-[#64748B]">Reference: <b>{reference}</b></p> : null}
-      {preview ? <p className="mt-3 rounded-xl bg-[#F1F5FF] px-3 py-2 text-[13px] text-[#334155]" data-testid="preview-not-sent">Owner preview: this request was checked like a real one, but nothing was saved or sent.</p> : null}
-      <button type="button" className={`${secondary} mt-6`} onClick={onNew}>Design another bathroom</button>
+    <div className="studio-rise mx-auto max-w-md rounded-[28px] bg-white p-8 text-center shadow-[0_20px_50px_rgba(28,27,25,0.10)]" data-testid="request-done">
+      <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#E7F1EB] text-[#2F6B4F]"><Icon name="check" className="h-7 w-7" /></div>
+      <h2 className="mt-4 text-[26px] font-semibold tracking-[-0.01em]">We have your design</h2>
+      <p className="mt-2 text-[15px] leading-relaxed text-[#5F5A52]">Thank you! A Profixter designer will contact you to confirm the details and set up a free measurement. Nothing is booked yet.</p>
+      {reference ? <p className="mt-3 text-[13px] text-[#8C867C]">Reference: <b className="text-[#1C1B19]">{reference}</b></p> : null}
+      {preview ? <p className="mt-3 rounded-2xl bg-[#FFF1D6] px-3 py-2 text-[13px] text-[#7A4F00]" data-testid="preview-not-sent">Owner preview: this request was checked like a real one, but nothing was saved or sent.</p> : null}
+      <button type="button" className={`${btn.secondary} mt-6`} onClick={onNew}>Design another bathroom</button>
     </div>
   );
 }
