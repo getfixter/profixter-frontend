@@ -49,6 +49,81 @@ function Card({ selected, onClick, title, subtitle, image, badge, testId }: { se
   );
 }
 
+/** Group catalog entries into product families, keeping catalog order. Entries without a family stand alone. */
+function familiesOf(list: any[]) {
+  const out: { key: string; name: string; items: any[] }[] = [];
+  const at = new Map<string, number>();
+  for (const x of list) {
+    const key = x.family?.key || `sku:${x.id}`;
+    if (!at.has(key)) { at.set(key, out.length); out.push({ key, name: x.family?.name || x.name, items: [] }); }
+    out[at.get(key)!].items.push(x);
+  }
+  return out;
+}
+const testKey = (k: string) => k.replace(/[^\w-]+/g, "-").slice(0, 60);
+
+/**
+ * One card per product family; the chosen family shows its sizes and colours
+ * as chips. A family with a single product is just that product's card.
+ */
+function FamilyPicker({ list, selectedId, onPick, prefix, subtitle, image, badge }: {
+  list: any[]; selectedId: string; onPick: (id: string) => void; prefix: string;
+  subtitle: (x: any, many: boolean) => string | undefined; image: (x: any) => string | undefined; badge?: (x: any) => string | undefined;
+}) {
+  const fams = familiesOf(list);
+  const current = fams.find((fm) => fm.items.some((x) => x.id === selectedId));
+  const sel = current?.items.find((x) => x.id === selectedId);
+  const sizes = current ? [...new Set(current.items.map((x) => x.variant?.size || ""))].filter(Boolean) : [];
+  const colours = current && sel ? current.items.filter((x) => (x.variant?.size || "") === (sel.variant?.size || "")) : [];
+  return (
+    <>
+      <Row>
+        {fams.map((fm) => {
+          const shown = fm.items.find((x) => x.id === selectedId) || fm.items[0];
+          const many = fm.items.length > 1;
+          return (
+            <Card key={fm.key} testId={many ? `family-${prefix}-${testKey(fm.key)}` : `${prefix}-${shown.id}`} selected={fm.items.some((x) => x.id === selectedId)}
+              onClick={() => onPick(shown.id)} title={many ? fm.name : shown.name} subtitle={many ? `${fm.items.length} options` : subtitle(shown, false)} image={image(shown)} badge={badge?.(shown)} />
+          );
+        })}
+      </Row>
+      {current && current.items.length > 1 && sel ? (
+        <div className="mt-1 grid gap-2 rounded-2xl bg-[#F4F7FC] p-3" data-testid={`variants-${prefix}`}>
+          {sizes.length > 1 ? (
+            <div>
+              <div className="mb-1 text-[12px] font-semibold text-[#475569]">Size</div>
+              <div className="flex flex-wrap gap-2">
+                {sizes.map((sz) => {
+                  const pick = current.items.find((x) => (x.variant?.size || "") === sz && x.variant?.color === sel.variant?.color) || current.items.find((x) => (x.variant?.size || "") === sz)!;
+                  const on = (sel.variant?.size || "") === sz;
+                  return <button key={sz} type="button" aria-pressed={on} onClick={() => onPick(pick.id)} className={`min-h-[40px] rounded-xl border px-3 text-[13px] ${on ? "border-[#306EEC] bg-white font-semibold text-[#0B1628]" : "border-[#DDE3EE] bg-white text-[#475569]"}`}>{sz}</button>;
+                })}
+              </div>
+            </div>
+          ) : null}
+          {colours.length > 1 || colours[0]?.variant?.color ? (
+            <div>
+              <div className="mb-1 text-[12px] font-semibold text-[#475569]">Color{sel.variant?.color ? `: ${sel.variant.color}` : ""}</div>
+              <div className="flex flex-wrap gap-2">
+                {colours.map((x) => {
+                  const on = x.id === sel.id;
+                  return (
+                    <button key={x.id} type="button" aria-pressed={on} title={x.variant?.color || x.name} onClick={() => onPick(x.id)} data-testid={`${prefix}-${x.id}`}
+                      className={`flex min-h-[40px] items-center gap-2 rounded-xl border px-2.5 text-[13px] ${on ? "border-[#306EEC] bg-white font-semibold text-[#0B1628]" : "border-[#DDE3EE] bg-white text-[#475569]"}`}>
+                      <span className="inline-block h-5 w-5 rounded-full ring-1 ring-black/10" style={{ background: x.variant?.colorHex || "#e8e6e1" }} />
+                      {x.variant?.color || "Standard"}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 const Row = ({ children }: { children: React.ReactNode }) => <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2">{children}</div>;
 const H = ({ children }: { children: React.ReactNode }) => <h3 className="mb-2 mt-5 text-[15px] font-bold text-[#0B1628] first:mt-0">{children}</h3>;
 
@@ -88,24 +163,16 @@ export default function DesignPanel({ snap, engine, variant = "public", section 
       {show("walls") && (
         <>
           <H>Wall style</H>
-          <Row>
-            {(o.finishes || []).map((f: any) => (
-              <Card key={f.id} testId={`finish-${f.id}`} selected={f.id === d.finishId} onClick={() => change((x) => { x.finishId = f.id; }, { finishOnly: true })}
-                title={f.name} subtitle={variant === "staff" ? f.kits?.[0]?.model : f.manufacturer} image={f.photo ? apiUrl(f.photo) : swatch(f)} badge={f.visualStatus === "illustrative" ? "Illustrative" : undefined} />
-            ))}
-          </Row>
+          <FamilyPicker list={o.finishes || []} selectedId={d.finishId} prefix="finish" onPick={(id) => change((x) => { x.finishId = id; }, { finishOnly: true })}
+            subtitle={(f) => (variant === "staff" ? f.kits?.[0]?.model : f.manufacturer)} image={(f) => (f.photo ? apiUrl(f.photo) : swatch(f))} badge={(f) => (f.visualStatus === "illustrative" ? "Illustrative" : undefined)} />
           {!o.finishes?.length ? <p className="text-[13px] text-[#64748B]">No wall style in our catalog fits these measurements. We&rsquo;ll suggest options after measuring.</p> : null}
         </>
       )}
       {show("base") && (
         <>
           <H>{kind === "tub" ? "Bathtub" : "Shower base"}</H>
-          <Row>
-            {(o.bases || []).filter((b: any) => b.kind === kind).map((b: any) => (
-              <Card key={b.id} testId={`base-${b.id}`} selected={b.id === d.baseId} onClick={() => change((x) => { x.baseId = b.id; })}
-                title={b.name} subtitle={`${b.dims.length}″ × ${b.dims.width}″`} image={b.photo ? apiUrl(b.photo) : undefined} />
-            ))}
-          </Row>
+          <FamilyPicker list={(o.bases || []).filter((b: any) => b.kind === kind)} selectedId={d.baseId} prefix="base" onPick={(id) => change((x) => { x.baseId = id; })}
+            subtitle={(b) => `${b.dims.length}″ × ${b.dims.width}″`} image={(b) => (b.photo ? apiUrl(b.photo) : undefined)} />
           {(cur.base?.drains?.length || 0) > 1 ? (
             <label className="mt-2 grid gap-1 text-[13px] text-[#475569]">Drain position
               <select className="min-h-[44px] rounded-xl border border-[#C5CBD8] bg-white px-3 text-[15px] text-[#0B1628]" value={d.drainId} onChange={(ev) => change((x) => { x.drainId = ev.target.value; })}>

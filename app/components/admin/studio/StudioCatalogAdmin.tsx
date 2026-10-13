@@ -1,10 +1,11 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { adminStudio, apiUrl, money } from "@/lib/studio/api";
 import { inputClass } from "./StudioAdmin";
 import StudioManufacturersAdmin, { ManufacturerImage } from "./StudioManufacturersAdmin";
+import StudioCatalogManager, { STAGE } from "./StudioCatalogManager";
 
 const card = "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5";
 const lab = "grid gap-1 text-xs font-bold uppercase tracking-wide text-slate-500";
@@ -19,6 +20,7 @@ const toCents = (s: string) => (String(s).trim() === "" ? null : Math.round(Numb
 export default function StudioCatalogAdmin() {
   const [tab, setTab] = useState<"products" | "manufacturers" | "pricing" | "review">("products");
   const [openSku, setOpenSku] = useState<string | null>(null);
+  const [mfrFilter, setMfrFilter] = useState("");
   return (
     <div className="space-y-5">
       <div className={`${card} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
@@ -34,94 +36,86 @@ export default function StudioCatalogAdmin() {
           ))}
         </div>
       </div>
-      {tab === "products" ? <Products openSku={openSku} onOpened={() => setOpenSku(null)} /> : tab === "manufacturers" ? <StudioManufacturersAdmin onOpenProduct={(sku) => { setOpenSku(sku); setTab("products"); }} /> : tab === "pricing" ? <Pricing /> : <Review />}
+      {tab === "products" ? <Products openSku={openSku} onOpened={() => setOpenSku(null)} manufacturer={mfrFilter} /> : tab === "manufacturers" ? <StudioManufacturersAdmin onOpenProduct={(sku) => { setOpenSku(sku); setTab("products"); }} onOpenCatalog={(m) => { setMfrFilter(m); setTab("products"); }} /> : tab === "pricing" ? <Pricing /> : <Review />}
     </div>
   );
 }
 
 // ===================================================================== products
-function Products({ openSku, onOpened }: { openSku?: string | null; onOpened?: () => void }) {
-  const [list, setList] = useState<any[] | null>(null);
+function Products({ openSku, onOpened, manufacturer }: { openSku?: string | null; onOpened?: () => void; manufacturer?: string }) {
   const [fields, setFields] = useState<any>(null);
-  const [cat, setCat] = useState("wall");
-  const [editing, setEditing] = useState<any>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [q, setQ] = useState("");
-  const [origin, setOrigin] = useState<"all" | "own" | "manufacturer">("all");
-  const load = useCallback(() => adminStudio.products().then((r) => setList(r.products)).catch((e) => setMsg(e.message)), []);
-  useEffect(() => { load(); adminStudio.fields().then((r) => setFields(r.categories)).catch(() => {}); }, [load]);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [creating, setCreating] = useState<any>(null);
+  const [arrange, setArrange] = useState(false);
+  const [round, setRound] = useState(0);
+  useEffect(() => { adminStudio.fields().then((r) => setFields(r.categories)).catch(() => {}); }, []);
   useEffect(() => {
     if (!openSku) return;
     let live = true;
-    adminStudio.products().then((r) => {
+    adminStudio.families({ q: openSku, stage: "all" }).then((r) => {
       if (!live) return;
-      const p = r.products.find((x: any) => x.sku === openSku);
-      if (p) { setCat(p.category); setEditing(p); }
+      const p = r.families.flatMap((x: any) => x.products).find((x: any) => x.sku === openSku);
+      if (p) setEditId(p._id);
       onOpened?.();
     }).catch(() => {});
     return () => { live = false; };
   }, [openSku, onOpened]);
+  const back = () => { setEditId(null); setCreating(null); setRound((x) => x + 1); };
 
-  const rows = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    return (list || []).filter((p) => p.category === cat
-      && (origin === "all" || (origin === "manufacturer" ? Boolean(p.source?.manufacturer) : !p.source?.manufacturer))
-      && (!term || [p.name, p.sku, p.model, p.manufacturer, p.colorName].some((x) => String(x || "").toLowerCase().includes(term))));
-  }, [list, cat, q, origin]);
+  if (creating) return <ProductEditor initial={creating} fields={fields} onClose={back} />;
+  if (editId) return <EditorById id={editId} fields={fields} onClose={back} onSwitch={setEditId} />;
+  if (arrange) return <ArrangeList onEdit={setEditId} onBack={() => setArrange(false)} />;
+  return (
+    <StudioCatalogManager key={`${round}-${manufacturer || ""}`} initialManufacturer={manufacturer || ""} onOpen={setEditId} onArrange={() => setArrange(true)}
+      onAdd={(cat) => setCreating({ category: cat, type: fields?.[cat]?.[0]?.id, engine: {}, specs: [], sources: [], pricing: { priceCents: null, installCents: 0 }, isPublic: true, visualStatus: "illustrative" })}
+      onImportStarter={async () => { try { const r = await adminStudio.importStarter(); return `Added ${r.added} starter products as drafts (unpriced).`; } catch (e: any) { return e.message; } }} />
+  );
+}
+
+/** Opens any product by id (from the manager, a manufacturer page or a variant switch). */
+function EditorById({ id, fields, onClose, onSwitch }: { id: string; fields: any; onClose: () => void; onSwitch: (id: string) => void }) {
+  const [data, setData] = useState<any>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { let live = true; adminStudio.product(id).then((r) => live && setData(r)).catch((e) => live && setErr(e.message)); return () => { live = false; }; }, [id]);
+  if (err) return <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{err}</p>;
+  if (!data || data.product._id !== id) return <p className="text-slate-500">Loading…</p>;
+  return <ProductEditor key={id} initial={data.product} siblings={data.siblings || []} fields={fields} onClose={onClose} onSwitch={onSwitch} />;
+}
+
+/** The hand-ordered list per category (display order in the designer). */
+function ArrangeList({ onEdit, onBack }: { onEdit: (id: string) => void; onBack: () => void }) {
+  const [cat, setCat] = useState("wall");
+  const [list, setList] = useState<any[] | null>(null);
+  const load = useCallback(() => adminStudio.products({ category: cat, status: "published" }).then((r) => setList(r.products)).catch(() => setList([])), [cat]);
+  useEffect(() => { load(); }, [load]);
   async function move(i: number, dir: -1 | 1) {
-    const ids = rows.map((p) => p._id);
+    const ids = (list || []).map((p) => p._id);
     const j = i + dir;
     if (j < 0 || j >= ids.length) return;
     [ids[i], ids[j]] = [ids[j], ids[i]];
     await adminStudio.reorder(ids);
     load();
   }
-
-  if (editing) return <ProductEditor initial={editing} fields={fields} onClose={() => { setEditing(null); load(); }} />;
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        {Object.entries(CATS).map(([k, v]) => (
-          <button key={k} type="button" onClick={() => setCat(k)} className={`rounded-full px-3.5 py-1.5 text-sm font-semibold ${cat === k ? "bg-blue-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}`}>
-            {v} <span className="opacity-70">{(list || []).filter((p) => p.category === k).length}</span>
-          </button>
-        ))}
-        <div className="ml-auto flex gap-2">
-          <button type="button" className={btn} onClick={async () => { try { const r = await adminStudio.importStarter(); setMsg(`Added ${r.added} starter products as drafts (unpriced).`); load(); } catch (e: any) { setMsg(e.message); } }}>Import starter products</button>
-          <button type="button" className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white" onClick={() => setEditing({ category: cat, type: fields?.[cat]?.[0]?.id, engine: {}, specs: [], sources: [], pricing: { priceCents: null, installCents: 0 }, isPublic: true, visualStatus: "illustrative" })} data-testid="catalog-add">Add product</button>
+      <div className={card}>
+        <button type="button" className="text-sm font-bold text-blue-600" onClick={onBack}>← Back to all products</button>
+        <h3 className="mt-1 text-lg font-bold text-slate-900">Display order</h3>
+        <p className="text-sm text-slate-500">The order customers see published products in each category (featured first).</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {Object.entries(CATS).map(([k, v]) => <button key={k} type="button" onClick={() => setCat(k)} className={`rounded-full px-3.5 py-1.5 text-sm font-semibold ${cat === k ? "bg-blue-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}`}>{v}</button>)}
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <input className={`${inputClass} max-w-xs py-2`} placeholder="Search name, SKU, model, color" value={q} onChange={(e) => setQ(e.target.value)} />
-        {(["all", "own", "manufacturer"] as const).map((o) => (
-          <button key={o} type="button" onClick={() => setOrigin(o)} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${origin === o ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"}`}>{o === "all" ? "All" : o === "own" ? "Added by hand" : "From manufacturers"}</button>
-        ))}
-      </div>
-      {msg ? <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">{msg}</p> : null}
-      {!list ? <p className="text-slate-500">Loading…</p> : rows.length === 0 ? <div className={`${card} text-center text-slate-500`}>No products in this category.</div> : (
+      {!list ? <p className="text-slate-500">Loading…</p> : list.length === 0 ? <div className={`${card} text-center text-slate-500`}>No published products in this category.</div> : (
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          {rows.map((p, i) => (
-            <div key={p._id} className="flex items-center gap-3 border-b border-slate-100 p-3 last:border-0" data-testid={`catalog-row-${p.sku}`}>
+          {list.map((p, i) => (
+            <div key={p._id} className="flex items-center gap-3 border-b border-slate-100 p-3 last:border-0">
               <div className="flex flex-col">
                 <button type="button" aria-label="Move up" className="px-1 text-slate-400 hover:text-slate-800" onClick={() => move(i, -1)}>▲</button>
                 <button type="button" aria-label="Move down" className="px-1 text-slate-400 hover:text-slate-800" onClick={() => move(i, 1)}>▼</button>
               </div>
-              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100">{p.assets.photos[0]?.url ? <img src={apiUrl(p.assets.photos[0].url)} alt="" className="h-full w-full object-cover" /> : p.externalMedia?.find((m: any) => m.kind === "photo") ? <ManufacturerImage url={p.externalMedia.find((m: any) => m.kind === "photo").url} w={120} className="h-full w-full object-contain" /> : null}</div>
-              <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setEditing(p)}>
-                <div className="truncate font-bold text-slate-900">{p.name} {p.featured ? <span className="text-amber-500">★</span> : null}</div>
-                <div className="truncate text-xs text-slate-500">{p.sku} · {p.manufacturer} {p.model}{p.colorName ? ` · ${p.colorName}` : ""}</div>
-                {p.source?.manufacturer ? (
-                  <div className="mt-0.5 flex flex-wrap gap-1 text-[11px]">
-                    <span className="text-slate-500">List {money(p.source.listPriceCents)}{p.pricing?.costCents != null ? ` · cost ${money(p.pricing.costCents)}` : ""}</span>
-                    {p.compatibility?.status !== "reviewed" ? <span className="rounded-full bg-amber-100 px-1.5 font-bold text-amber-800">Compatibility unverified</span> : null}
-                    {p.source.pendingReview?.length ? <span className="rounded-full bg-red-100 px-1.5 font-bold text-red-700">{p.source.pendingReview.length} change(s) to review</span> : null}
-                    {p.source.unitSku ? <span className="rounded-full bg-slate-100 px-1.5 font-bold text-slate-600">Part of {p.source.unitSku}</span> : null}
-                  </div>
-                ) : null}
-              </button>
-              <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${STATUS_TONE[p.status]}`}>{p.status}</span>
-              <span className="w-24 text-right text-sm font-semibold text-slate-900">{p.pricing?.priceCents == null ? <span className="text-amber-600">No price</span> : money(p.pricing.priceCents)}</span>
-              <span className={`w-16 text-right text-xs ${p.issues.some((x: any) => x.level === "error") ? "text-red-600" : p.issues.some((x: any) => x.level === "warn") ? "text-amber-600" : "text-slate-400"}`}>{p.issues.filter((x: any) => x.level !== "info").length || "✓"}</span>
+              <button type="button" className="min-w-0 flex-1 truncate text-left font-semibold text-slate-900" onClick={() => onEdit(p._id)}>{p.name} {p.featured ? <span className="text-amber-500">★</span> : null}</button>
+              <span className="text-sm text-slate-600">{money(p.pricing?.priceCents)}</span>
             </div>
           ))}
         </div>
@@ -140,7 +134,8 @@ function setPath(o: any, path: string, v: any) {
   return out;
 }
 
-function ProductEditor({ initial, fields, onClose }: { initial: any; fields: any; onClose: () => void }) {
+function ProductEditor({ initial, fields, onClose, siblings = [], onSwitch }: { initial: any; fields: any; onClose: () => void; siblings?: any[]; onSwitch?: (id: string) => void }) {
+  const [report, setReport] = useState<any>(null);
   const [p, setP] = useState<any>(structuredClone(initial));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<{ kind: string; text: string } | null>(null);
@@ -159,6 +154,7 @@ function ProductEditor({ initial, fields, onClose }: { initial: any; fields: any
         engine: p.engine, specs: p.specs, sources: p.sources, visualStatus: p.visualStatus, isPublic: p.isPublic, featured: p.featured, sortOrder: p.sortOrder,
         pricing: { priceCents: p.pricing?.priceCents ?? null, costCents: p.pricing?.costCents ?? null, installCents: p.pricing?.installCents || 0, internalNote: p.pricing?.internalNote || "" },
         ...(p.compatibility ? { compatibility: { status: p.compatibility.status, note: p.compatibility.note || "" } } : {}),
+        ...(p.source?.manufacturer ? { review: { info: p.review?.info === true, visual: p.review?.visual === true } } : {}),
       };
       const r = creating ? await adminStudio.createProduct(body) : await adminStudio.updateProduct(p._id, body);
       setP(r.product);
@@ -183,7 +179,7 @@ function ProductEditor({ initial, fields, onClose }: { initial: any; fields: any
     try { const r = await adminStudio.uploadAsset(p._id, file, { kind, ...extra }); setP(r.product); setMsg({ kind: "ok", text: kind === "texture" ? "Texture uploaded: the preview now uses it." : "Photo added." }); }
     catch (e: any) { setMsg({ kind: "err", text: e.message }); } finally { setBusy(false); }
   }
-  const [tex, setTex] = useState({ widthIn: "12", heightIn: "12" });
+  const [tex, setTex] = useState({ widthIn: "12", heightIn: "12", textureSource: "owner" });
   const fromMfr = Boolean(p.source?.manufacturer);
   const mfrPhotos = (p.externalMedia || []).filter((m: any) => m.kind === "photo");
   const mfrDocs = (p.externalMedia || []).filter((m: any) => m.kind !== "photo" && m.kind !== "video");
@@ -209,6 +205,49 @@ function ProductEditor({ initial, fields, onClose }: { initial: any; fields: any
         </div>
       </div>
       {msg ? <p className={`rounded-xl px-4 py-3 text-sm ${msg.kind === "err" ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-800"}`} role="status">{msg.text}</p> : null}
+      {!creating && p.readiness ? (
+        <div className={card} data-testid="product-readiness">
+          <div className="flex flex-wrap items-center gap-2">
+            <h4 className="font-bold text-slate-900">Publishing checklist</h4>
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${(STAGE[p.readiness.stage] || STAGE.incomplete).tone}`} data-testid="product-stage">{(STAGE[p.readiness.stage] || STAGE.incomplete).label}</span>
+          </div>
+          {p.readiness.blockers.length ? (
+            <ul className="mt-2 space-y-1 text-sm text-slate-700">{p.readiness.blockers.map((b: string, i: number) => <li key={i}>☐ {b}</li>)}</ul>
+          ) : <p className="mt-2 text-sm text-emerald-700">{p.status === "published" ? "Published. Customers see it once the Shower Studio is public." : "Everything is in place: you can publish it."}</p>}
+          {p.imaging ? (
+            <p className="mt-3 text-xs text-slate-500" data-testid="product-imaging">
+              Photos customers may see: <b>{p.imaging.publicPhotos}</b>
+              {p.imaging.manufacturerImages ? <> · manufacturer images: {p.imaging.manufacturerImages} (rights {p.imaging.imageRights === "approved" ? "confirmed" : p.imaging.imageRights === "denied" ? "denied" : "unconfirmed - Admin only"})</> : null}
+              {" "}· texture: {p.imaging.texture ? (p.imaging.texture === "owner" ? "your own" : p.imaging.texture) : "none (pattern drawn)"} · preview: {p.imaging.visualization === "needs-review" ? "needs your check" : p.imaging.visualization}
+            </p>
+          ) : null}
+          {fromMfr && !p.source.unitSku ? (
+            <div className="mt-3 grid gap-2 rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
+              <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={p.review?.info === true} onChange={(e) => set("review", { ...(p.review || {}), info: e.target.checked })} data-testid="product-review-info" /> <span>I checked the product information: name, description and specifications.</span></label>
+              <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={p.review?.visual === true} onChange={(e) => set("review", { ...(p.review || {}), visual: e.target.checked })} data-testid="product-review-visual" /> <span>I checked the illustrative preview against the real product (it is labelled &ldquo;Illustrative&rdquo; for customers).{p.source.visualIssues?.length ? <span className="mt-1 block text-xs text-amber-800">To check: {p.source.visualIssues.join(" · ")}</span> : null}</span></label>
+              <span className="text-xs text-slate-500">Saved with Save.</span>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      {!creating && siblings.length > 1 ? (
+        <div className={card} data-testid="product-siblings">
+          <h4 className="mb-2 font-bold text-slate-900">Other sizes and colors in this family</h4>
+          <div className="space-y-2">
+            {[...new Set(siblings.map((x: any) => x.variant.size))].map((size) => (
+              <div key={String(size)} className="flex flex-wrap items-center gap-2">
+                <span className="w-44 shrink-0 text-xs font-bold text-slate-500">{String(size) || "Standard"}</span>
+                {siblings.filter((x: any) => x.variant.size === size).map((x: any) => (
+                  <button key={x._id} type="button" disabled={x._id === p._id} onClick={() => onSwitch?.(x._id)} className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs ring-1 ${x._id === p._id ? "bg-blue-50 font-bold ring-blue-400" : "ring-slate-200 hover:ring-blue-300"}`} data-testid={`sibling-${x.sku}`}>
+                    <span className="inline-block h-3.5 w-3.5 rounded-full ring-1 ring-black/10" style={{ background: x.variant.colorHex || "#e8e6e1" }} />
+                    {x.variant.color || x.sku}{x.status === "published" ? " ✓" : ""}{x.priceCents != null ? ` · ${money(x.priceCents)}` : ""}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
       {!creating && p.issues?.length ? (
         <ul className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">{p.issues.map((i: any, k: number) => <li key={k}>{i.level === "error" ? "⛔" : i.level === "warn" ? "⚠️" : "ℹ️"} {i.message}</li>)}</ul>
       ) : null}
@@ -279,6 +318,18 @@ function ProductEditor({ initial, fields, onClose }: { initial: any; fields: any
                 <label className={lab}>Status<select className={inputClass} value={p.compatibility?.status || "unverified"} onChange={(e) => set("compatibility", { ...(p.compatibility || {}), status: e.target.value })} data-testid="product-compat"><option value="unverified">Unverified</option><option value="reviewed">Reviewed by me</option></select></label>
                 <label className={lab}>Note<input className={inputClass} value={p.compatibility?.note || ""} placeholder="e.g. pairs with SR-3260 bases per the drawing" onChange={(e) => set("compatibility", { ...(p.compatibility || {}), note: e.target.value })} /></label>
               </div>
+              {report ? (
+                <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm" data-testid="product-compat-report">
+                  <ul className="space-y-1">{report.checks.map((c: any, i: number) => <li key={i} className={c.status === "ok" ? "text-slate-700" : "text-amber-800"}>{c.status === "ok" ? "✓" : "⚠️"} {c.text}</li>)}</ul>
+                  {report.pairLabel ? (
+                    <>
+                      <p className="mt-2 text-xs font-bold uppercase text-slate-500">{report.pairLabel}: {report.total}</p>
+                      <p className="text-xs text-slate-600">{report.pairs.length ? report.pairs.map((x: any) => `${x.name}${x.status !== "published" ? ` (${x.status})` : ""}`).join(" · ") : "None yet."}{report.total > report.pairs.length ? " …" : ""}</p>
+                      <p className="mt-1 text-xs text-slate-500">Worked out from sizes with the designer&rsquo;s own fit rules. Customers can only combine products that pass them; confirm the pairing with the manufacturer&rsquo;s drawings.</p>
+                    </>
+                  ) : null}
+                </div>
+              ) : <button type="button" className={`${btn} mt-3`} onClick={async () => { try { setReport((await adminStudio.compatibility(p._id)).report); } catch (e: any) { setMsg({ kind: "err", text: e.message }); } }} data-testid="product-compat-check">Show what it fits</button>}
             </>
           ) : null}
         </div>
@@ -326,13 +377,14 @@ function ProductEditor({ initial, fields, onClose }: { initial: any; fields: any
               {p.assets.texture ? (
                 <div className="mt-2 flex items-center gap-3">
                   <img src={apiUrl(p.assets.texture.url)} alt="" className="h-20 w-20 rounded-lg object-cover" />
-                  <span className="text-sm text-slate-600">{p.assets.texture.widthIn}″ × {p.assets.texture.heightIn}″</span>
+                  <span className="text-sm text-slate-600">{p.assets.texture.widthIn}″ × {p.assets.texture.heightIn}″ · {p.assets.texture.source === "manufacturer" ? "from the manufacturer" : p.assets.texture.source === "approximation" ? "approximation (testing only)" : "your own"}</span>
                   <button type="button" className="text-sm font-bold text-red-600" onClick={async () => setP((await adminStudio.removeAsset(p._id, p.assets.texture.assetId)).product)}>Remove</button>
                 </div>
               ) : null}
               <div className="mt-2 flex flex-wrap items-end gap-2">
                 <label className={lab}>Width (in)<input className={`${inputClass} w-24`} value={tex.widthIn} onChange={(e) => setTex({ ...tex, widthIn: e.target.value })} /></label>
                 <label className={lab}>Height (in)<input className={`${inputClass} w-24`} value={tex.heightIn} onChange={(e) => setTex({ ...tex, heightIn: e.target.value })} /></label>
+                <label className={lab}>Source<select className={`${inputClass} w-auto`} value={tex.textureSource} onChange={(e) => setTex({ ...tex, textureSource: e.target.value })}><option value="owner">My own photo of the material</option><option value="manufacturer">Supplied by the manufacturer</option><option value="approximation">Approximation (testing only)</option></select></label>
                 <label className={`${btn} cursor-pointer`}>Upload texture<input type="file" accept="image/*" className="hidden" onChange={(e) => upload(e.target.files?.[0], "texture", tex)} /></label>
               </div>
             </div>

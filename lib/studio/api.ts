@@ -96,7 +96,11 @@ const unwrap = async <T,>(p: Promise<{ data: T }>) => {
 export const adminStudio = {
   fields: () => unwrap<{ categories: Record<string, { id: string; label: string; fields: any[] }[]> }>(API.get("/api/admin/studio/catalog/fields")),
   products: (q: Record<string, string> = {}) => unwrap<{ products: any[] }>(API.get("/api/admin/studio/products", { params: q })),
-  product: (id: string) => unwrap<{ product: any }>(API.get(`/api/admin/studio/products/${id}`)),
+  product: (id: string) => unwrap<{ product: any; siblings?: any[] }>(API.get(`/api/admin/studio/products/${id}`)),
+  /** The catalog manager: families, filters, paging (see GET /products?view=families). */
+  families: (q: Record<string, string>) => unwrap<any>(API.get("/api/admin/studio/products", { params: { view: "families", ...q } })),
+  bulk: (action: string, ids: string[], note?: string) => unwrap<{ done: number; skipped: { sku: string; reason: string }[] }>(API.post("/api/admin/studio/products/bulk", { action, ids, note })),
+  compatibility: (id: string) => unwrap<{ report: any }>(API.get(`/api/admin/studio/products/${id}/compatibility`)),
   createProduct: (body: any) => unwrap<{ product: any }>(API.post("/api/admin/studio/products", body)),
   updateProduct: (id: string, body: any) => unwrap<{ product: any }>(API.put(`/api/admin/studio/products/${id}`, body)),
   setStatus: (id: string, status: string) => unwrap<{ product: any }>(API.post(`/api/admin/studio/products/${id}/status`, { status })),
@@ -154,6 +158,9 @@ export const adminManufacturers = {
   items: (key: string, q: Record<string, string> = {}) => unwrap<{ total: number; page: number; per: number; items: any[] }>(API.get(`${M(key)}/items`, { params: q })),
   item: (key: string, part: string) => unwrap<any>(API.get(`${M(key)}/items/${encodeURIComponent(part)}`)),
   addToStudio: (key: string, partNumbers: string[]) => unwrap<{ added: any[]; skipped: { partNumber: string; reason: string }[] }>(API.post(`${M(key)}/add-to-studio`, { partNumbers }, { timeout: 60000 })),
+  eligible: (key: string) => unwrap<any>(API.get(`${M(key)}/studio-eligible`, { timeout: 60000 })),
+  startBulkAdd: (key: string, groups: string[]) => unwrap<{ job: any }>(API.post(`${M(key)}/studio-jobs`, { groups })),
+  bulkJobs: (key: string) => unwrap<{ jobs: any[] }>(API.get(`${M(key)}/studio-jobs`)),
   linkCheck: (key: string) => unwrap<{ started: boolean }>(API.post(`${M(key)}/link-check`, {})),
   setColor: (key: string, code: string, hex: string | null) => unwrap<{ colors: any[] }>(API.put(`${M(key)}/colors/${code}`, { hex })),
   uploadColorAsset: (key: string, code: string, file: File, extra: Record<string, string>) => {
