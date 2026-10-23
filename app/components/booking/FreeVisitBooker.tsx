@@ -16,6 +16,13 @@
  * /api/bookings, which re-checks the slot inside a transaction and owns every
  * free-visit rule (one per address, service area, photo or example, Labor Only).
  * This component only renders what the server answers.
+ *
+ * THE HOMEPAGE IS THE EXCEPTION (`guest`). A signed-out visitor there types a
+ * name, mobile and email under the day and time, and one press sends the whole
+ * request to POST /api/free-visit-requests: no /signup, no address, no account.
+ * That saves a pending request for the owner to call and confirm - it is not a
+ * booking and holds no slot - and only once it is saved does the Meta Lead fire,
+ * in the browser here and on the server with the same event id.
  */
 
 import Link from "next/link";
@@ -38,7 +45,7 @@ import {
 } from "@/lib/booking-calendar-availability";
 import { compressImage } from "@/lib/compressImage";
 import { trackEvent } from "@/lib/analytics";
-import { getAttribution, trackSchedule, trackStep } from "@/lib/meta";
+import { getAttribution, getFbCookies, newEventId, trackLead, trackSchedule, trackStep } from "@/lib/meta";
 import { hasActiveMembership } from "@/lib/auth-routing";
 import { libraryLabel } from "@/lib/booking-library";
 import {
@@ -56,6 +63,13 @@ const RESUME_PATH = "/book/free";
 const MAX_PHOTOS = 10;
 const MONTHS_AHEAD = 4;
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+/*
+ * Shown under the contact fields, and sent back with the request: the server
+ * refuses anything but this exact sentence and stores it as the consent the
+ * confirmation text is sent on. Change it in routes/freeVisitRequests.js too.
+ */
+const CONTACT_CONSENT_TEXT =
+  "By booking, you agree to be contacted by call or text about your visit. Msg & data rates may apply.";
 /* sessionStorage: the out-of-area state has been counted for this tab. */
 const OUT_OF_AREA_SHOWN_KEY = "pf_out_of_area_shown";
 
@@ -86,7 +100,47 @@ type Confirmation = {
   timeLabel: string;
   address: string;
   reference?: string;
+  /* A homepage request: we call to confirm, so it is not "booked" yet. */
+  request?: boolean;
 };
+
+type Contact = { name: string; phone: string; email: string };
+type ContactErrors = Partial<Record<keyof Contact, string>>;
+
+/* 10 digits, or 11 with the leading US 1. */
+function usPhoneDigits(value: string): string {
+  const d = value.replace(/\D/g, "");
+  const national = d.length === 11 && d.startsWith("1") ? d.slice(1) : d;
+  return /^[2-9]\d{2}[2-9]\d{6}$/.test(national) ? national : "";
+}
+
+function contactErrorsFor(c: Contact): ContactErrors {
+  const out: ContactErrors = {};
+  const name = c.name.trim();
+  if (!name) out.name = "Enter your full name.";
+  else if (name.length < 2 || !/\s/.test(name)) out.name = "Enter your first and last name.";
+  if (!usPhoneDigits(c.phone)) out.phone = "Enter a 10-digit US mobile number.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(c.email.trim())) out.email = "Enter a valid email address.";
+  return out;
+}
+
+/* The ad's parameters as they are on this page's URL. */
+function urlParamsNow(): Record<string, string> {
+  const out: Record<string, string> = {};
+  try {
+    const params = new URLSearchParams(window.location.search);
+    for (const key of [
+      "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+      "fbclid", "gclid", "gbraid", "wbraid", "campaign_id", "adset_id", "ad_id",
+    ]) {
+      const value = params.get(key);
+      if (value) out[key] = value;
+    }
+  } catch {
+    /* no URL params */
+  }
+  return out;
+}
 
 /* ------------------------------------------------------------------ */
 /* Date helpers - every date here is a YYYY-MM-DD string in New York. */
@@ -171,6 +225,7 @@ export default function FreeVisitBooker({
   id = "book",
   autoResume = false,
   variant = "full",
+  guest = false,
 }: {
   /** Anchor id, so a header link can scroll straight to the booker. */
   id?: string;
@@ -182,6 +237,12 @@ export default function FreeVisitBooker({
    * state, same rules, same booking - only the layout is smaller.
    */
   variant?: "full" | "compact";
+  /**
+   * Homepage only, with variant "compact": a signed-out visitor books in one
+   * step with name, mobile and email instead of going through /signup.
+   * Signed-in visitors keep the account booking exactly as before.
+   */
+  guest?: boolean;
 }) {
   const compact = variant === "compact";
   const router = useRouter();
@@ -218,6 +279,9 @@ export default function FreeVisitBooker({
   const [noteFocused, setNoteFocused] = useState(false);
   /* Photos come back from IndexedDB asynchronously; until then their count is unknown, not zero. */
   const [photosRestored, setPhotosRestored] = useState(false);
+  /* --- the person, homepage guest request only ---------------------- */
+  const [contact, setContact] = useState<Contact>({ name: "", phone: "", email: "" });
+  const [contactErrors, setContactErrors] = useState<ContactErrors>({});
 
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const photosRef = useRef<HTMLDivElement>(null);
@@ -226,6 +290,14 @@ export default function FreeVisitBooker({
   const summaryRef = useRef<HTMLDivElement>(null);
   const tracked = useRef<Set<string>>(new Set());
   const resumeStarted = useRef(false);
+  const contactRef = useRef<HTMLDivElement>(null);
+  /*
+   * One id per submission, kept across retries of the same press (a dropped
+   * connection, a double tap) so the server sees one lead and Meta one Lead.
+   * Replaced only after a success.
+   */
+  const requestEventId = useRef("");
+  const leadFired = useRef(false);
 
   const trackOnce = useCallback((name: string, params: Record<string, string | number | boolean> = {}) => {
     if (tracked.current.has(name)) return;
@@ -413,9 +485,13 @@ export default function FreeVisitBooker({
   const selectedSlotOpen = !!selectedTime && slotOptions.some((s) => s.time === selectedTime && s.available);
 
   /* --- readiness -------------------------------------------------- */
+  /* Signed out on the homepage: the one-step request, not /signup. */
+  const guestMode = guest && compact && !isLoading && access === "anonymous";
   const noteOk = wordCount(note) >= 3;
-  const photoOk = photos.length > 0 || !!libraryReference;
-  const ready = noteOk && photoOk && !!selectedDate && selectedSlotOpen;
+  /* The request asks for a photo only if they have one; the owner sees the job on the call. */
+  const photoOk = guestMode || photos.length > 0 || !!libraryReference;
+  const contactOk = !guestMode || Object.keys(contactErrorsFor(contact)).length === 0;
+  const ready = noteOk && photoOk && !!selectedDate && selectedSlotOpen && contactOk;
 
   /* --- funnel steps (anonymous, once per browser per day) --------- */
   const stepsSent = useRef<Set<string>>(new Set());
@@ -514,13 +590,25 @@ export default function FreeVisitBooker({
     if (!selectedDate) next.date = "Pick a day.";
     else if (!selectedSlotOpen) next.time = "Pick a time.";
     setErrors(next);
+    const nextContact = guestMode ? contactErrorsFor(contact) : {};
+    setContactErrors(nextContact);
     if (next.date || next.time) setWhenOpen(true);
-    const first = next.note ? noteRef : next.photos ? photosRef : next.date ? calendarRef : next.time ? timesRef : null;
+    const firstContact = (["name", "phone", "email"] as const).find((k) => nextContact[k]);
+    const first = next.note ? noteRef : next.photos ? photosRef : next.date ? calendarRef : next.time ? timesRef : firstContact ? contactRef : null;
     if (first?.current) {
       first.current.scrollIntoView({ behavior: "smooth", block: "center" });
       if (first === noteRef) noteRef.current?.focus({ preventScroll: true });
+      if (first === contactRef) {
+        contactRef.current?.querySelector<HTMLInputElement>(`[data-fv-contact="${firstContact}"]`)?.focus({ preventScroll: true });
+      }
     }
-    return Object.keys(next).length === 0;
+    return Object.keys(next).length === 0 && !firstContact;
+  };
+
+  const onContactChange = (field: keyof Contact, value: string) => {
+    setContact((c) => ({ ...c, [field]: value }));
+    if (contactErrors[field]) setContactErrors((e) => ({ ...e, [field]: undefined }));
+    if (formError) setFormError("");
   };
 
   /* --- creating the booking --------------------------------------- */
@@ -612,8 +700,89 @@ export default function FreeVisitBooker({
     }
   }, [addressId, id, libraryReference, note, photos, refreshDay, selectedDate, selectedTime, slotTaken, user]);
 
+  /*
+   * The homepage request, in one press. The Lead fires only after the server
+   * has saved it, once, with the event id the server used for its own Lead -
+   * so Meta keeps one conversion, and a failed request never counts as one.
+   */
+  const submitGuestRequest = async () => {
+    setPhase("submitting");
+    setFormError("");
+    setNotice("");
+    if (!requestEventId.current) requestEventId.current = newEventId();
+    const eventId = requestEventId.current;
+
+    try {
+      const form = new FormData();
+      const { fbp, fbc } = getFbCookies();
+      const fields: Record<string, string> = {
+        name: contact.name.trim(),
+        phone: usPhoneDigits(contact.phone),
+        email: contact.email.trim(),
+        note: note.trim(),
+        requestedDate: selectedDate,
+        requestedTime: selectedTime,
+        libraryReference: photos.length ? "" : libraryReference,
+        consentText: CONTACT_CONSENT_TEXT,
+        eventId,
+        pageUrl: window.location.href,
+        sourcePage: window.location.pathname || "/",
+        urlParams: JSON.stringify(urlParamsNow()),
+        attribution: JSON.stringify(getAttribution()),
+        fbp,
+        fbc,
+      };
+      for (const [k, v] of Object.entries(fields)) if (v) form.append(k, v);
+      for (const file of photos) form.append("images", file, file.name || "photo.jpg");
+
+      const res = await fetch(`${API_BASE}/api/free-visit-requests`, { method: "POST", body: form });
+      const body = (await res.json().catch(() => ({}))) as {
+        success?: boolean; code?: string; field?: keyof Contact | "note" | "date"; message?: string;
+      };
+
+      if (res.ok && body.success) {
+        if (!leadFired.current) {
+          leadFired.current = true;
+          trackLead(
+            { content_name: "free_first_visit", status: "free_visit_requested", lead_type: "free_visit_request" },
+            // The server already sent its half with this id; no second relay.
+            { eventId, relay: false }
+          );
+        }
+        requestEventId.current = "";
+        setConfirmation({ dateLabel: longDate(selectedDate), timeLabel: time12(selectedTime), address: "", request: true });
+        setPhase("done");
+        await clearDraft();
+        window.setTimeout(() => {
+          document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 60);
+        return;
+      }
+
+      setPhase("edit");
+      if (body.code === "SLOT_UNAVAILABLE" || body.code === "DATE_UNAVAILABLE") {
+        await slotTaken(selectedDate, body.code === "DATE_UNAVAILABLE" ? "Please pick another day - everything else is saved." : undefined);
+      } else if (body.field === "name" || body.field === "phone" || body.field === "email") {
+        setContactErrors((e) => ({ ...e, [body.field as keyof Contact]: body.message }));
+        contactRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else if (body.field === "note") {
+        setErrors((e) => ({ ...e, note: body.message }));
+        noteRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        setFormError(body.message || "We couldn't send that just now. Please try again, or call or text 631-599-1363.");
+      }
+    } catch {
+      setPhase("edit");
+      setFormError("We couldn't reach our server. Check your connection and try again.");
+    }
+  };
+
   const onBook = async () => {
     if (!validate()) return;
+    if (guestMode) {
+      await submitGuestRequest();
+      return;
+    }
     if (access === "anonymous") {
       saveDraft({
         note,
@@ -668,6 +837,29 @@ export default function FreeVisitBooker({
   /* ------------------------------------------------------------------ */
   /* Render                                                             */
   /* ------------------------------------------------------------------ */
+
+  if (phase === "done" && confirmation?.request) {
+    return (
+      <div id={id} className="fv-card fv-enter scroll-mt-24 p-6 text-center sm:p-10" role="status" data-fv="request-done">
+        <div className="fv-check mx-auto" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none">
+            <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <h2 className="mt-5 text-[30px] font-bold leading-tight tracking-[-0.03em] text-[#0B1628] sm:text-[38px]">
+          Got it!
+        </h2>
+        <p className="mx-auto mt-3 max-w-[420px] text-[17px] leading-7 text-[#3b4658]">
+          A Profixter team member will call you shortly to confirm your free visit on{" "}
+          <strong className="text-[#0B1628]">{confirmation.dateLabel} at {confirmation.timeLabel}</strong>.
+        </p>
+        <p className="mx-auto mt-5 max-w-[420px] text-[14px] leading-6 text-[#64748B]">
+          We&rsquo;ve sent the details to your email and phone. Questions? Call or text{" "}
+          <a href="tel:+16315991363" className="fv-link whitespace-nowrap text-[14px]">631-599-1363</a>.
+        </p>
+      </div>
+    );
+  }
 
   if (phase === "done" && confirmation) {
     return (
@@ -922,6 +1114,43 @@ export default function FreeVisitBooker({
           )}
         </div>
 
+        {/* Who to call - the homepage request only. */}
+        {guestMode ? (
+          <div ref={contactRef} className="mt-3 grid scroll-mt-28 gap-2.5" data-fv="contact">
+            <span className="fv-label">Your details</span>
+            <ContactField
+              field="name"
+              label="Full name"
+              value={contact.name}
+              error={contactErrors.name}
+              onChange={onContactChange}
+              inputProps={{ type: "text", autoComplete: "name", autoCapitalize: "words", enterKeyHint: "next", maxLength: 120 }}
+            />
+            <ContactField
+              field="phone"
+              label="Mobile number"
+              value={contact.phone}
+              error={contactErrors.phone}
+              onChange={onContactChange}
+              inputProps={{ type: "tel", inputMode: "tel", autoComplete: "tel-national", enterKeyHint: "next", maxLength: 20 }}
+            />
+            <ContactField
+              field="email"
+              label="Email"
+              value={contact.email}
+              error={contactErrors.email}
+              onChange={onContactChange}
+              inputProps={{ type: "email", inputMode: "email", autoComplete: "email", autoCapitalize: "none", spellCheck: false, enterKeyHint: "done", maxLength: 200 }}
+            />
+            <p className="text-[13px] leading-[1.45] text-[#64748B]" data-fv="consent">
+              {CONTACT_CONSENT_TEXT}{" "}
+              <Link href="/terms" target="_blank" rel="noopener" className="underline underline-offset-2">Terms</Link>
+              {" · "}
+              <Link href="/privacy" target="_blank" rel="noopener" className="underline underline-offset-2">Privacy Policy</Link>
+            </p>
+          </div>
+        ) : null}
+
         <div ref={summaryRef} className="scroll-mt-28">
           <AccessNotice access={access} waitlist={waitlist} />
           {formError ? <p className="fv-error" role="alert">{formError}</p> : null}
@@ -935,7 +1164,7 @@ export default function FreeVisitBooker({
                 data-fv="book"
               >
                 {submitting ? (
-                  <><span className="fv-spinner" aria-hidden="true" /> Booking your visit…</>
+                  <><span className="fv-spinner" aria-hidden="true" /> {guestMode ? "Sending…" : "Booking your visit…"}</>
                 ) : (
                   <>Book my free visit <span aria-hidden="true">→</span></>
                 )}
@@ -1162,6 +1391,42 @@ export default function FreeVisitBooker({
           </>
         ) : null}
       </section>
+    </div>
+  );
+}
+
+/* One contact input: the placeholder names it on screen, the sr-only label names it to assistive tech. */
+function ContactField({
+  field,
+  label,
+  value,
+  error,
+  onChange,
+  inputProps,
+}: {
+  field: keyof Contact;
+  label: string;
+  value: string;
+  error?: string;
+  onChange: (field: keyof Contact, value: string) => void;
+  inputProps: React.InputHTMLAttributes<HTMLInputElement>;
+}) {
+  const inputId = `fv-contact-${field}`;
+  return (
+    <div>
+      <label htmlFor={inputId} className="sr-only">{label}</label>
+      <input
+        id={inputId}
+        {...inputProps}
+        value={value}
+        onChange={(e) => onChange(field, e.target.value)}
+        placeholder={label}
+        aria-invalid={!!error}
+        aria-describedby={error ? `${inputId}-error` : undefined}
+        className={`fv-input ${error ? "fv-input--error" : ""}`}
+        data-fv-contact={field}
+      />
+      {error ? <p id={`${inputId}-error`} className="fv-error !mt-1">{error}</p> : null}
     </div>
   );
 }

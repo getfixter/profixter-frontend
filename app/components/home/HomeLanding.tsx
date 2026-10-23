@@ -62,7 +62,7 @@ export default function HomeLanding() {
           </div>
 
           <div className="fv-enter" style={{ animationDelay: "160ms" }}>
-            <FreeVisitBooker id="book" variant="compact" />
+            <FreeVisitBooker id="book" variant="compact" guest />
             <p className="mt-3 text-center text-[14px] text-[#64748B] lg:hidden">
               Need regular help?{" "}
               <Link href="/membership/plans" className="fv-link text-[14px]" onClick={() => trackEvent("see_plans_clicked", { placement: "home_hero" })}>

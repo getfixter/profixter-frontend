@@ -92,8 +92,13 @@ async function scrollThrough(page) {
       const how = [...document.querySelectorAll("h2")].find((e) => /Book\. We come/.test(e.textContent || ""));
       return { h: Math.round(card.height), how: how ? Math.round(how.getBoundingClientRect().top + window.scrollY) : 99999 };
     });
-    check("booker opens compact (< 420px tall at 390px)", size.h < 420, `${size.h}px`);
-    check("'How it works' within about one screen of the top", size.how < 900, `${size.how}px`);
+    /*
+     * Raised 2026-10-23 from 420 / 900: the signed-out booker now carries name,
+     * mobile, email and the consent line, so the request is one step with no
+     * /signup. Those ~170px are the price of that step, by the owner's choice.
+     */
+    check("booker opens compact (< 620px tall at 390px)", size.h < 620, `${size.h}px`);
+    check("'How it works' within about one and a half screens of the top", size.how < 1060, `${size.how}px`);
     check("no signup link anywhere on Home", s.noSignupWall, "");
     await ctx.close();
   }
