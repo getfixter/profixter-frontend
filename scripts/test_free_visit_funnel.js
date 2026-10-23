@@ -332,14 +332,14 @@ async function finishSignupSteps(page) {
     check("draft is cleared once booked", !draftLeft);
     check("no page errors in the whole funnel", errors.length === 0, errors.join(" | "));
 
-    /* Meta: one Lead per person, the booking is Schedule. */
+    /* Meta: the account Lead, plus Schedule and an always-on Lead for the booking. */
     const fbq = await fbqLog(page);
     const allLeads = fbq.filter((c) => c[0] === "track" && c[1] === "Lead");
     /*
-     * The transition switch (NEXT_PUBLIC_META_LEGACY_FREE_VISIT_LEAD, on unless
-     * "false") keeps the old free-visit Lead alongside Schedule until the live
-     * campaigns are confirmed not to depend on it. It is marked
-     * lead_type "free_visit_legacy" and is the only extra Lead allowed.
+     * The ad account optimises on Lead, so the booked free visit always fires
+     * one (lead_type "free_visit_legacy"), whatever
+     * NEXT_PUBLIC_META_LEGACY_FREE_VISIT_LEAD says. That switch now only
+     * governs the funnel custom events.
      */
     const legacyOn = process.env.NEXT_PUBLIC_META_LEGACY_FREE_VISIT_LEAD !== "false";
     const legacy = allLeads.filter((l) => l[2]?.lead_type === "free_visit_legacy");
@@ -347,10 +347,8 @@ async function finishSignupSteps(page) {
     const schedules = fbq.filter((c) => c[0] === "track" && c[1] === "Schedule");
     check("cold booker: exactly one Lead, and it is the account", leads.length === 1 && leads[0][2]?.lead_type === "account" && leads[0][2]?.content_name === "account_created", JSON.stringify(leads.map((l) => l[2])));
     check(
-      legacyOn ? "transition: the legacy free-visit Lead still fires once, with its old content_name and status" : "legacy free-visit Lead is retired",
-      legacyOn
-        ? legacy.length === 1 && legacy[0][2]?.content_name === "free_first_visit" && legacy[0][2]?.status === "free_visit_booked"
-        : legacy.length === 0,
+      "the booked free visit fires one Lead with an eventID, its content_name and status unchanged",
+      legacy.length === 1 && !!legacy[0][3]?.eventID && legacy[0][2]?.content_name === "free_first_visit" && legacy[0][2]?.status === "free_visit_booked",
       JSON.stringify(legacy.map((l) => l[2]))
     );
     check("cold booker: the booking is one Schedule with an eventID", schedules.length === 1 && !!schedules[0][3]?.eventID && schedules[0][2]?.content_name === "free_first_visit", JSON.stringify(schedules));
@@ -358,8 +356,8 @@ async function finishSignupSteps(page) {
     check("Schedule is relayed to the server with the same event id", relayed.length === 1 && relayed[0].eventId === schedules[0]?.[3]?.eventID, JSON.stringify(state.relays.map((r) => [r.eventName, r.eventId])));
     const leadRelays = state.relays.filter((r) => r.eventName === "Lead");
     check(
-      "the account Lead is not relayed from the browser (registration sends it); only the legacy Lead is, as before",
-      legacyOn ? leadRelays.length === 1 && leadRelays[0].eventId === legacy[0]?.[3]?.eventID : leadRelays.length === 0,
+      "the account Lead is not relayed from the browser (registration sends it); the free-visit Lead is, with the browser's event id",
+      leadRelays.length === 1 && !!leadRelays[0].eventId && leadRelays[0].eventId === legacy[0]?.[3]?.eventID,
       JSON.stringify(leadRelays)
     );
     const custom = fbq.filter((c) => c[0] === "trackCustom").map((c) => c[1]);
