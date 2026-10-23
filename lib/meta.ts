@@ -566,13 +566,11 @@ type ConversionOptions = {
 /**
  * The event the ad account optimises against.
  *
- * One Lead per person: the account being created, plus the estimate and
- * partnership forms. Every caller passes `lead_type` ("account",
- * "renovation_estimate", "community_partnership") so a custom conversion can
- * be built per kind in Events Manager.
- *
- * A free first visit used to fire a second Lead for the same person minutes
- * after signup, which doubled every cold booker. It is Schedule now (below).
+ * Fired for the account being created, the estimate and partnership forms, and
+ * every booked free first visit (from trackSchedule, below). Every caller
+ * passes `lead_type` ("account", "renovation_estimate",
+ * "community_partnership", "free_visit_legacy") so a custom conversion can be
+ * built per kind in Events Manager.
  *
  * The default dataLayer name is kept as it always was, because GTM may be
  * listening for it; it is not a description of the Meta event.
@@ -602,17 +600,15 @@ export function trackSchedule(params: Params = {}, opts: ConversionOptions = {})
     eventId: opts.eventId,
   });
   /*
-   * TRANSITION SWITCH. A booked free visit used to be reported as a Lead.
-   * Until the live campaigns are confirmed not to optimise on that Lead (or on
-   * a custom conversion filtering content_name / status from it), the legacy
-   * Lead keeps firing exactly as before, alongside Schedule, so ad delivery
-   * sees no change. Set NEXT_PUBLIC_META_LEGACY_FREE_VISIT_LEAD=false to
-   * retire it once the campaign audit (BackEnd meta_campaign_audit) is clean.
-   * Its own event id, and no second dataLayer push.
+   * ALWAYS a Lead as well. The ad campaigns optimise on Lead, so every booked
+   * free visit must fire one - no switch can turn it off (the old
+   * NEXT_PUBLIC_META_LEGACY_FREE_VISIT_LEAD no longer touches it). It mints
+   * its own event id, which send() gives both the fbq call and the relay, so
+   * Meta deduplicates the browser and server copies. content_name, status and
+   * lead_type are unchanged from the transition, so existing custom
+   * conversions keep matching. No second dataLayer push.
    */
-  if (process.env.NEXT_PUBLIC_META_LEGACY_FREE_VISIT_LEAD !== "false") {
-    send("Lead", { ...params, lead_type: "free_visit_legacy" }, { server: opts.relay !== false, dataLayerEvent: undefined });
-  }
+  send("Lead", { ...params, lead_type: "free_visit_legacy" }, { server: opts.relay !== false, dataLayerEvent: undefined });
   return id;
 }
 
