@@ -169,6 +169,10 @@ export interface Booking {
   assignedFixterName?: string;
   assignedFixterEmail?: string;
   assignedFixterPosition?: EmployeePosition | "";
+  /** Set on a homepage free-visit request; status "Pending Confirmation" until the owner confirms. */
+  guestRequestId?: string | null;
+  /** A possible repeat customer the server flagged for the owner to verify. */
+  freeVisitReview?: { required?: boolean; reasons?: string[] } | null;
 }
 
 export interface BlacklistEntry {
@@ -326,6 +330,17 @@ export interface EmailLogResponse {
   totalPages: number;
 }
 
+export type RequestLeadStatus =
+  | "new"
+  | "pending_confirmation"
+  | "confirmed"
+  | "completed"
+  | "declined"
+  | "canceled"
+  | "contacted"
+  | "won"
+  | "lost";
+
 export interface RequestLead {
   _id: string;
   name: string;
@@ -336,8 +351,11 @@ export interface RequestLead {
   serviceType?: string;
   sourcePage?: string;
   leadSource?: string;
-  status?: "new" | "pending_confirmation" | "contacted" | "won" | "lost";
+  status?: RequestLeadStatus;
   createdAt?: string;
+  /* The reserved visit a homepage free-visit request is (Admin > Jobs). */
+  bookingId?: string | null;
+  reservationIssue?: { code?: string; message?: string } | null;
   /* Homepage free-visit requests (serviceType "free_visit_request") only. */
   requestedDate?: string;
   requestedTime?: string;
@@ -2207,7 +2225,7 @@ export const getAllRequests = async (): Promise<RequestLead[]> => {
 
 export const updateRequestStatus = async (
   requestId: string,
-  status: "new" | "pending_confirmation" | "contacted" | "won" | "lost"
+  status: RequestLeadStatus
 ): Promise<RequestLead> => {
   const response = await API.put(`/api/admin/requests/${requestId}/status`, {
     status,
@@ -2223,6 +2241,90 @@ export const deleteRequestLead = async (
     data: { confirmation },
   });
 };
+
+// Homepage free-visit requests: review, confirm, decline (routes/adminFreeVisits)
+export interface FreeVisitMatch {
+  source: string;
+  bookingId?: string;
+  bookingNumber?: string;
+  requestId?: string;
+  state: "consumed" | "active" | "released";
+  status: string;
+  date?: string | null;
+  matchedOn: string[];
+  strength: "strong" | "review";
+}
+
+export interface FreeVisitEligibility {
+  decision: "eligible" | "blocked" | "review";
+  code: string;
+  reasons: string[];
+  matches: FreeVisitMatch[];
+}
+
+export interface FreeVisitDetail {
+  booking: {
+    _id: string;
+    bookingNumber: string;
+    status: string;
+    date: string;
+    requestedDate: string;
+    requestedTime: string;
+    name: string;
+    phone: string;
+    email: string;
+    address: string;
+    city: string;
+    state: string;
+    zip: string;
+    hasAddress: boolean;
+    service: string;
+    selectedTask?: string;
+    note: string;
+    adminNote?: string;
+    images: Array<string | { key: string; url: string }>;
+    libraryReference?: string;
+    assignedFixterName?: string;
+    reserved: boolean;
+    linkedAccount?: string;
+    review?: { required?: boolean; reasons?: string[]; acknowledgedAt?: string | null } | null;
+    confirmation?: { confirmedAt?: string | null; declinedAt?: string | null } | null;
+  };
+  lead: {
+    _id: string;
+    status: string;
+    createdAt?: string;
+    sourcePage?: string;
+    attribution?: { url?: Record<string, string>; firstTouch?: Record<string, unknown> } | null;
+    consent?: { text?: string; at?: string } | null;
+  } | null;
+  eligibility: FreeVisitEligibility | null;
+  alreadyConfirmed?: boolean;
+  notified?: boolean;
+}
+
+export interface FreeVisitUpdate {
+  name?: string;
+  phone?: string;
+  email?: string;
+  address?: { line1: string; unit?: string; city: string; state: string; zip: string };
+  note?: string;
+  adminNote?: string;
+  date?: string;
+  time?: string;
+}
+
+export const getFreeVisit = async (bookingId: string): Promise<FreeVisitDetail> =>
+  (await API.get(`/api/admin/free-visits/${encodeURIComponent(bookingId)}`)).data;
+
+export const saveFreeVisit = async (bookingId: string, update: FreeVisitUpdate): Promise<FreeVisitDetail> =>
+  (await API.put(`/api/admin/free-visits/${encodeURIComponent(bookingId)}`, update)).data;
+
+export const confirmFreeVisit = async (bookingId: string, acknowledgeReview = false): Promise<FreeVisitDetail> =>
+  (await API.post(`/api/admin/free-visits/${encodeURIComponent(bookingId)}/confirm`, { acknowledgeReview })).data;
+
+export const declineFreeVisit = async (bookingId: string, reason = ""): Promise<FreeVisitDetail> =>
+  (await API.post(`/api/admin/free-visits/${encodeURIComponent(bookingId)}/decline`, { reason })).data;
 
 // Projects
 export const getProjects = async (filters?: {

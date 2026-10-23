@@ -17,6 +17,8 @@ import {
 interface BookingsTableProps {
   bookings: Booking[];
   updateStatus: (bookingId: string, status: string, assignedFixterId?: string | null) => Promise<void>;
+  /** Open the free-visit review (address, eligibility, Confirm Visit) for a homepage request. */
+  onReviewFreeVisit?: (bookingId: string) => void;
   users: User[];
   onUpdateBooking: (bookingId: string, patch: BookingAdminPatch) => Promise<void>;
   readOnly?: boolean;
@@ -84,8 +86,15 @@ function nyLocalToISOString(local: string) {
   return new Date(pretendUTC.getTime() - totalOffsetMinutes * 60_000).toISOString();
 }
 
+/* A homepage free-visit request whose slot is held until the owner confirms it. */
+function isPendingGuestRequest(booking: Booking) {
+  return !!booking.guestRequestId && String(booking.status || "").toLowerCase() === "pending confirmation";
+}
+
 function getStatusTone(status: string) {
   const normalized = String(status || "").toLowerCase();
+
+  if (normalized === "pending confirmation") return "border-dashed border-amber-400 bg-amber-50 text-amber-800";
 
   if (normalized === "confirmed") return "border-emerald-200 bg-emerald-50 text-emerald-800";
   if (normalized === "pending") return "border-amber-200 bg-amber-50 text-amber-800";
@@ -251,6 +260,7 @@ async function writeToClipboard(text: string) {
 export default function BookingsTable({
   bookings,
   updateStatus,
+  onReviewFreeVisit,
   users,
   onUpdateBooking,
   readOnly = false,
@@ -544,7 +554,8 @@ export default function BookingsTable({
                 const fullAddress = formatAddress(booking.address, booking.city, booking.state, booking.zip);
                 const isEditing = editingId === booking._id;
                 const status = String(booking.status || "Pending").toLowerCase();
-                const isPending = status === "pending" || !booking.status;
+                const guestPending = isPendingGuestRequest(booking);
+                const isPending = (status === "pending" || !booking.status) && !guestPending;
                 const hasPhotos = !!booking.images?.length;
                 const late = isLate(booking, now);
                 const unassigned = isUnassignedActive(booking);
@@ -555,8 +566,9 @@ export default function BookingsTable({
                   <article
                     key={booking._id}
                     className={`overflow-hidden rounded-xl border bg-white ${
-                      late ? "border-rose-200" : unassigned ? "border-amber-200" : "border-slate-200"
+                      guestPending ? "border-dashed border-amber-400 bg-amber-50/40" : late ? "border-rose-200" : unassigned ? "border-amber-200" : "border-slate-200"
                     }`}
+                    data-booking-status={booking.status}
                   >
                     {/*
                       * THE SUMMARY - everything needed to triage a job without
@@ -712,6 +724,15 @@ export default function BookingsTable({
                               </button>
                             )}
 
+                            {booking.freeVisitReview?.required && !guestPending && (
+                              <span
+                                className="rounded border border-amber-300 bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-900"
+                                title={(booking.freeVisitReview.reasons || []).join(", ").replace(/_/g, " ")}
+                              >
+                                Verify free visit
+                              </span>
+                            )}
+
                             <span className="text-[11px] text-slate-400">#{booking.bookingNumber}</span>
                           </div>
                         </div>
@@ -791,7 +812,17 @@ export default function BookingsTable({
                         </div>
 
                         {/* The most-used control on the screen stays in the summary. */}
-                        {!readOnly && (
+                        {!readOnly && guestPending && (
+                          <button
+                            type="button"
+                            onClick={() => onReviewFreeVisit?.(booking._id)}
+                            className="min-h-[48px] w-full rounded-[12px] bg-amber-500 px-3 text-sm font-bold text-white active:bg-amber-600"
+                            data-review-free-visit
+                          >
+                            Call, then review &amp; confirm
+                          </button>
+                        )}
+                        {!readOnly && !guestPending && (
                           <BookingStatusSelect
                             bookingId={booking._id}
                             currentStatus={booking.status}
@@ -850,7 +881,7 @@ export default function BookingsTable({
                           <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
                             Job detail
                           </div>
-                          {!readOnly && (
+                          {!readOnly && !guestPending && (
                             <button
                               type="button"
                               onClick={() => (isEditing ? cancelEdit() : startEdit(booking))}
