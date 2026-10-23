@@ -4,11 +4,27 @@ import React from "react";
 import type { RequestLead } from "@/lib/admin-service";
 import OpenInStudio from "@/app/components/admin/studio/OpenInStudio";
 
+type LeadStatus = "new" | "pending_confirmation" | "contacted" | "won" | "lost";
+
+const STATUS_LABEL: Record<string, string> = { pending_confirmation: "Pending confirmation" };
+
+/* "2026-10-30" + "10:00" -> "Thu, Oct 30 at 10:00 AM" (both already New York). */
+function requestedWhen(date?: string, time?: string) {
+  if (!date) return "-";
+  const [y, m, d] = date.split("-").map(Number);
+  const day = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", {
+    weekday: "short", month: "short", day: "numeric", timeZone: "UTC",
+  });
+  if (!time) return day;
+  const [hh, mm] = time.split(":").map(Number);
+  return `${day} at ${hh % 12 || 12}:${String(mm).padStart(2, "0")} ${hh >= 12 ? "PM" : "AM"}`;
+}
+
 interface RequestsTableProps {
   requests: RequestLead[];
   onUpdateStatus: (
     requestId: string,
-    status: "new" | "contacted" | "won" | "lost"
+    status: LeadStatus
   ) => void | Promise<void>;
   onDeleteLead: (request: RequestLead, confirmation: string) => void | Promise<void>;
 }
@@ -46,6 +62,7 @@ function niceServiceType(value?: string) {
     case "on_demand":        return "On Demand";
     case "general_contractor": return "General Contractor";
     case "home_improvement": return "Home Improvement";
+    case "free_visit_request": return "Free visit request";
     default:                 return value || "-";
   }
 }
@@ -116,7 +133,7 @@ export default function RequestsTable({
                   {niceServiceType(request.serviceType)}
                 </span>
                 <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                  {request.status || "new"}
+                  {STATUS_LABEL[request.status || ""] || request.status || "new"}
                 </span>
               </div>
 
@@ -136,6 +153,20 @@ export default function RequestsTable({
                   <strong>Source:</strong> {request.sourcePage || "-"}
                   {request.sourcePage === "/shower-studio" ? <OpenInStudio leadId={String(request._id)} /> : null}
                 </div>
+                {request.serviceType === "free_visit_request" ? (
+                  <>
+                    <div>
+                      <strong>Requested visit:</strong> {requestedWhen(request.requestedDate, request.requestedTime)}{" "}
+                      <span className="text-slate-400">(not held - confirm by phone)</span>
+                    </div>
+                    {request.attribution?.url && Object.keys(request.attribution.url).length ? (
+                      <div className="break-all">
+                        <strong>UTMs:</strong>{" "}
+                        {Object.entries(request.attribution.url).map(([k, v]) => `${k}=${v}`).join(" · ")}
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
                 <div>
                   <strong>Created:</strong> {formatDate(request.createdAt)}
                 </div>
@@ -148,12 +179,15 @@ export default function RequestsTable({
                 onChange={(e) =>
                   onUpdateStatus(
                     request._id,
-                    e.target.value as "new" | "contacted" | "won" | "lost"
+                    e.target.value as LeadStatus
                   )
                 }
                 className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 lg:w-[180px]"
               >
                 <option value="new">New</option>
+                {request.serviceType === "free_visit_request" ? (
+                  <option value="pending_confirmation">Pending confirmation</option>
+                ) : null}
                 <option value="contacted">Contacted</option>
                 <option value="won">Won</option>
                 <option value="lost">Lost</option>
@@ -179,6 +213,19 @@ export default function RequestsTable({
             <div className="whitespace-pre-wrap text-sm text-slate-700">
               {request.message || "-"}
             </div>
+            {request.images?.length ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {request.images.map((url, i) => (
+                  <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="block h-16 w-16 overflow-hidden rounded-lg border border-slate-200 bg-white">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
+                  </a>
+                ))}
+              </div>
+            ) : null}
+            {request.libraryReference ? (
+              <div className="mt-2 text-xs text-slate-500">Example chosen: {request.libraryReference}</div>
+            ) : null}
           </div>
         </div>
       ))}

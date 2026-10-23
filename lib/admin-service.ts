@@ -336,8 +336,14 @@ export interface RequestLead {
   serviceType?: string;
   sourcePage?: string;
   leadSource?: string;
-  status?: "new" | "contacted" | "won" | "lost";
+  status?: "new" | "pending_confirmation" | "contacted" | "won" | "lost";
   createdAt?: string;
+  /* Homepage free-visit requests (serviceType "free_visit_request") only. */
+  requestedDate?: string;
+  requestedTime?: string;
+  images?: string[];
+  libraryReference?: string;
+  attribution?: { url?: Record<string, string>; firstTouch?: Record<string, unknown> };
 }
 
 export interface BookingHistoryChange {
@@ -2201,7 +2207,7 @@ export const getAllRequests = async (): Promise<RequestLead[]> => {
 
 export const updateRequestStatus = async (
   requestId: string,
-  status: "new" | "contacted" | "won" | "lost"
+  status: "new" | "pending_confirmation" | "contacted" | "won" | "lost"
 ): Promise<RequestLead> => {
   const response = await API.put(`/api/admin/requests/${requestId}/status`, {
     status,

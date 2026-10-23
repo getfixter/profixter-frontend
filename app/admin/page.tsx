@@ -388,7 +388,7 @@ function AdminPageContent() {
 
   const handleUpdateRequestStatus = async (
     requestId: string,
-    status: "new" | "contacted" | "won" | "lost"
+    status: "new" | "pending_confirmation" | "contacted" | "won" | "lost"
   ) => {
     try {
       await updateRequestStatus(requestId, status);
