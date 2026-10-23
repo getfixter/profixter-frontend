@@ -1,12 +1,18 @@
 "use client";
 
 import React from "react";
-import type { RequestLead } from "@/lib/admin-service";
+import type { RequestLead, RequestLeadStatus } from "@/lib/admin-service";
 import OpenInStudio from "@/app/components/admin/studio/OpenInStudio";
 
-type LeadStatus = "new" | "pending_confirmation" | "contacted" | "won" | "lost";
+type LeadStatus = RequestLeadStatus;
 
-const STATUS_LABEL: Record<string, string> = { pending_confirmation: "Pending confirmation" };
+const STATUS_LABEL: Record<string, string> = {
+  pending_confirmation: "Pending confirmation",
+  confirmed: "Visit confirmed",
+  completed: "Visit completed",
+  declined: "Declined",
+  canceled: "Canceled",
+};
 
 /* "2026-10-30" + "10:00" -> "Thu, Oct 30 at 10:00 AM" (both already New York). */
 function requestedWhen(date?: string, time?: string) {
@@ -27,6 +33,8 @@ interface RequestsTableProps {
     status: LeadStatus
   ) => void | Promise<void>;
   onDeleteLead: (request: RequestLead, confirmation: string) => void | Promise<void>;
+  /** Open the reserved visit behind a homepage free-visit request. */
+  onReviewFreeVisit?: (bookingId: string) => void;
 }
 
 function formatDate(value?: string) {
@@ -71,6 +79,7 @@ export default function RequestsTable({
   requests,
   onUpdateStatus,
   onDeleteLead,
+  onReviewFreeVisit,
 }: RequestsTableProps) {
   const [deleteTarget, setDeleteTarget] = React.useState<RequestLead | null>(null);
   const [confirmation, setConfirmation] = React.useState("");
@@ -157,8 +166,13 @@ export default function RequestsTable({
                   <>
                     <div>
                       <strong>Requested visit:</strong> {requestedWhen(request.requestedDate, request.requestedTime)}{" "}
-                      <span className="text-slate-400">(not held - confirm by phone)</span>
+                      <span className="text-slate-400">
+                        {request.bookingId ? "(slot reserved on the calendar)" : "(not held - confirm by phone)"}
+                      </span>
                     </div>
+                    {request.reservationIssue?.message ? (
+                      <div className="rounded-md bg-rose-50 px-2 py-1 text-rose-700">{request.reservationIssue.message}</div>
+                    ) : null}
                     {request.attribution?.url && Object.keys(request.attribution.url).length ? (
                       <div className="break-all">
                         <strong>UTMs:</strong>{" "}
@@ -174,6 +188,18 @@ export default function RequestsTable({
             </div>
 
             <div className="flex w-full flex-col gap-2 lg:w-auto">
+              {request.bookingId ? (
+                <button
+                  type="button"
+                  onClick={() => onReviewFreeVisit?.(String(request.bookingId))}
+                  className={`min-h-[44px] w-full rounded-xl px-3 py-2 text-sm font-bold lg:w-[180px] ${
+                    request.status === "pending_confirmation" ? "bg-amber-500 text-white" : "border border-slate-300 bg-white text-slate-800"
+                  }`}
+                  data-review-free-visit-lead
+                >
+                  {request.status === "pending_confirmation" ? "Review & confirm" : "Open visit"}
+                </button>
+              ) : (
               <select
                 value={request.status || "new"}
                 onChange={(e) =>
@@ -192,6 +218,7 @@ export default function RequestsTable({
                 <option value="won">Won</option>
                 <option value="lost">Lost</option>
               </select>
+              )}
               <button
                 type="button"
                 onClick={() => {

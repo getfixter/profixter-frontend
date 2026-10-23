@@ -389,3 +389,10 @@
     font-size: 0.75rem;
   }
 }
+
+/* A day holding a homepage request that is not confirmed yet: dashed amber ring. */
+.bk-cal-dot.bk-cal-dot--pending {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1.5px dashed #f59e0b;
+}

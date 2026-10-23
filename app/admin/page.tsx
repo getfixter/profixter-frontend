@@ -13,6 +13,7 @@ import BookingsTable from "@/app/components/admin/BookingsTable";
 import RecentWorkModule from "@/app/components/admin/RecentWorkModule";
 import FixterWorkPhotos from "@/app/components/admin/FixterWorkPhotos";
 import BookingsCalendar from "@/app/components/admin/BookingsCalendar";
+import FreeVisitReviewPanel from "@/app/components/admin/FreeVisitReviewPanel";
 import BlacklistTable from "@/app/components/admin/BlacklistTable";
 import CommunicationsModule from "../components/admin/CommunicationsModule";
 import RequestsTable from "@/app/components/admin/RequestsTable";
@@ -59,6 +60,7 @@ import type {
   Booking,
   BlacklistEntry,
   RequestLead,
+  RequestLeadStatus,
   BookingAssignee,
   BookingAdminPatch,
 } from "@/lib/admin-service";
@@ -134,6 +136,8 @@ function AdminPageContent() {
   const [active, setActive] = useState("bookings");
   const [toast, setToast] = useState<string | null>(null);
 
+  /* The homepage free-visit request open for review, from Jobs or Leads. */
+  const [reviewBookingId, setReviewBookingId] = useState<string | null>(null);
   const showToast = useCallback((msg: string) => {
     setToast(msg);
   }, []);
@@ -388,7 +392,7 @@ function AdminPageContent() {
 
   const handleUpdateRequestStatus = async (
     requestId: string,
-    status: "new" | "pending_confirmation" | "contacted" | "won" | "lost"
+    status: RequestLeadStatus
   ) => {
     try {
       await updateRequestStatus(requestId, status);
@@ -709,7 +713,11 @@ function AdminPageContent() {
 
     if (statusFilter) {
       list = list.filter(
-        (b) => String(b.status || "").toLowerCase() === statusFilter
+        (b) => {
+          const status = String(b.status || "").toLowerCase();
+          // "Pending" is everything waiting on the owner, held homepage requests included.
+          return status === statusFilter || (statusFilter === "pending" && status === "pending confirmation");
+        }
       );
     }
 
@@ -784,7 +792,7 @@ function AdminPageContent() {
   }
 
   const today = todayNY();
-  const pendingCount = bookings.filter((booking) => String(booking.status || "").toLowerCase() === "pending").length;
+  const pendingCount = bookings.filter((booking) => ["pending", "pending confirmation"].includes(String(booking.status || "").toLowerCase())).length;
   const confirmedCount = bookings.filter((booking) => String(booking.status || "").toLowerCase() === "confirmed").length;
   const completedCount = bookings.filter((booking) => String(booking.status || "").toLowerCase() === "completed").length;
   const upcomingCount = bookings.filter((booking) => {
@@ -1020,6 +1028,7 @@ function AdminPageContent() {
               >
                 <option value="">All statuses</option>
                 <option value="pending">Pending</option>
+                <option value="pending confirmation">Pending confirmation</option>
                 <option value="confirmed">Confirmed</option>
                 <option value="completed">Completed</option>
                 <option value="canceled">Canceled</option>
@@ -1100,6 +1109,7 @@ function AdminPageContent() {
                 requests={filteredRequests}
                 onUpdateStatus={handleUpdateRequestStatus}
                 onDeleteLead={handleDeleteLead}
+                onReviewFreeVisit={setReviewBookingId}
               />
             )}
 
@@ -1121,6 +1131,7 @@ function AdminPageContent() {
                 <BookingsTable
                   bookings={filteredBookings}
                   updateStatus={handleUpdateBookingStatus}
+                  onReviewFreeVisit={setReviewBookingId}
                   onToast={showToast}
                   users={users}
                   onUpdateBooking={handleUpdateBooking}
@@ -1166,6 +1177,17 @@ function AdminPageContent() {
           </>
         )}
       </div>
+
+      {reviewBookingId && (
+        <FreeVisitReviewPanel
+          bookingId={reviewBookingId}
+          onClose={() => {
+            setReviewBookingId(null);
+            void fetchAll();
+          }}
+          onChanged={(message) => showToast(message)}
+        />
+      )}
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>

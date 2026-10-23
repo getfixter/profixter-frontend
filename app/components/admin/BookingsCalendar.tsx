@@ -27,18 +27,35 @@ export default function BookingsCalendar({
     });
     return countsMap;
   }, [bookings]);
+  /* Homepage requests holding a slot until the owner confirms: shown apart. */
+  const pendingCounts = useMemo(() => {
+    const map: Record<string, number> = {};
+    bookings.forEach((b) => {
+      if (!b.guestRequestId || String(b.status || "").toLowerCase() !== "pending confirmation") return;
+      const key = toYMDNY(new Date(b.date));
+      map[key] = (map[key] || 0) + 1;
+    });
+    return map;
+  }, [bookings]);
 
   const value = selectedDate ? new Date(`${selectedDate}T12:00:00`) : new Date();
 
   // Badge з кількістю бронювань
   const tileContent = ({ date, view }: any) => {
     if (view !== 'month') return null;
-    const count = counts[toYMDNY(date)] || 0;
-    return count ? (
-      <span className="bk-cal-dot" title={`${count} booking(s)`}>
+    const key = toYMDNY(date);
+    const count = counts[key] || 0;
+    const pending = pendingCounts[key] || 0;
+    if (!count) return null;
+    return (
+      <span
+        className={`bk-cal-dot ${pending ? 'bk-cal-dot--pending' : ''}`}
+        title={pending ? `${count} booking(s), ${pending} pending confirmation` : `${count} booking(s)`}
+        data-pending-confirmation={pending || undefined}
+      >
         {count}
       </span>
-    ) : null;
+    );
   };
 
   // CSS класи для днів
