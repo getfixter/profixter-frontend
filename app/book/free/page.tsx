@@ -13,7 +13,10 @@ export const metadata: Metadata = {
 /**
  * The free-visit booker on its own page.
  *
- * Signup and sign-in return here (?next=/book/free), and autoResume creates the
+ * Signed out, it is the one-step guest request (name, mobile, email) - this is
+ * where follow-up emails and the Google Business Profile button land, so nobody
+ * is sent through /signup first. Signup and sign-in still return here
+ * (?next=/book/free), and autoResume creates the
  * booking the visitor already asked for from their saved draft, so nothing is
  * entered twice. Opened directly, it is simply the booker.
  */
@@ -31,9 +34,9 @@ export default function FreeVisitPage() {
           <h1 className="mt-4 text-[34px] font-bold leading-[1.05] tracking-[-0.04em] text-[#0B1628] sm:text-[44px]">
             Book your free visit.
           </h1>
-          <p className="mt-2 text-[16px] text-[#5b6577]">One per home. No card needed.</p>
+          <p className="mt-2 text-[16px] text-[#5b6577]">One per customer. No card needed.</p>
           <div className="mt-6">
-            <FreeVisitBooker id="book" autoResume />
+            <FreeVisitBooker id="book" autoResume guest />
           </div>
         </div>
       </main>

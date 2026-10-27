@@ -111,6 +111,7 @@ async function fakeApi(ctx, opts = {}) {
         requestedDate: field("requestedDate"), requestedTime: field("requestedTime"),
         consentText: field("consentText"), eventId: field("eventId"), urlParams: field("urlParams"),
         libraryReference: field("libraryReference"), images: (body.match(/name="images"/g) || []).length,
+        sourcePage: field("sourcePage"),
       });
       const next = state.requestQueue.shift() || { status: 201, body: { success: true, requestId: "r1", eventId: field("eventId") } };
       return json(next.status, next.body);
@@ -258,11 +259,6 @@ async function completeSignup(page, { zip = "11758" } = {}) {
 }
 
 const SHOTS = process.env.FUNNEL_SHOTS || "";
-const idbPhotos = (page) => page.evaluate(() => new Promise((res) => {
-  const r = indexedDB.open("pf-booking-draft", 1);
-  r.onsuccess = () => { try { const g = r.result.transaction("photos", "readonly").objectStore("photos").get("current"); g.onsuccess = () => res(g.result?.records?.length ?? -1); g.onerror = () => res(-2); } catch { res(-3); } };
-  r.onerror = () => res(-4);
-}));
 async function shot(page, name) {
   if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${name}.png`) });
 }
@@ -403,96 +399,47 @@ async function finishSignupSteps(page) {
     await ctx.close();
   }
 
-  /* 1. Anonymous on /book/free: booker -> signup -> booked, nothing re-entered. */
+  /*
+   * 1. Anonymous on /book/free: the same one-step request as the homepage.
+   * Follow-up emails and the Google Business Profile button land here, so a
+   * signed-out visitor is never sent through /signup first (owner, 2026-10-26:
+   * homeowners were dropping out of free-visit booking at the signup wall).
+   */
   {
-    console.log("\n--- anonymous visitor books before signing up ---");
+    console.log("\n--- anonymous visitor on /book/free: one step, no signup ---");
     const { ctx, page, state, errors } = await newContext(browser);
+    const urls = [];
+    page.on("framenavigated", (f) => { if (f === page.mainFrame()) urls.push(f.url()); });
     await page.goto(BASE + "/book/free", { waitUntil: "networkidle" });
     check("/book/free shows the booker to a new visitor", await page.locator('[data-fv="note"]').isVisible());
-    check("/book/free keeps the signup route: no contact fields", (await page.locator("[data-fv-contact]").count()) === 0);
+    check("/book/free asks for name, mobile and email instead of signup", (await page.locator("[data-fv-contact]").count()) === 3);
     check("no account wall: the calendar is visible signed out", (await page.locator('[data-booking-date-disabled="false"]').count()) > 0);
+    check("the promise says one per customer", /One per customer/.test(await page.locator("main").innerText()));
 
-    // Validation: nothing filled in -> stays put, says what is missing.
     await page.click('[data-fv="book"]');
     await page.waitForTimeout(400);
-    check("empty booking is stopped with a message", page.url().endsWith("/book/free") && (await page.locator(".fv-error").count()) > 0);
+    check("empty request is stopped with a message", page.url().endsWith("/book/free") && (await page.locator(".fv-error").count()) > 0 && state.requestPosts.length === 0);
 
-    const visit = await buildVisit(page);
-
+    const visit = await buildVisit(page, { photo: false });
+    await page.fill('[data-fv-contact="name"]', "Jane Doe");
+    await page.fill('[data-fv-contact="phone"]', "(631) 555-0142");
+    await page.fill('[data-fv-contact="email"]', "jane.doe@example.com");
+    const layout = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, width: window.innerWidth }));
+    check("no sideways scroll at 390px", layout.scroll <= layout.width, JSON.stringify(layout));
     await page.click('[data-fv="book"]');
-    await page.waitForURL(/\/signup\?next=%2Fbook%2Ffree/, { timeout: 10000 });
-    check("final CTA goes to signup with next=/book/free", true, page.url().replace(BASE, ""));
-    await page.waitForSelector("[data-signup-carry]");
-    check("signup shows the visit being booked", (await page.locator("[data-signup-carry]").innerText()).includes("Free visit"));
-    await shot(page, "signup-1-carry");
-    check("signup reads 'Almost done'", (await page.locator("h1,h2").first().innerText()).includes("Almost done"));
-    check("signup Log In keeps the way back", ((await page.locator('a[href^="/signin"]').first().getAttribute("href")) || "").includes("next=%2Fbook%2Ffree"));
-
-    // Refresh mid-signup: the draft survives.
-    await page.reload({ waitUntil: "networkidle" });
-    check("draft survives a refresh on signup", (await page.locator("[data-signup-carry]").count()) === 1);
-
-    if (process.env.FUNNEL_DEBUG) console.log("      idb before signup:", await idbPhotos(page));
-    await completeSignup(page);
-    if (process.env.FUNNEL_DEBUG) console.log("      idb after address:", await idbPhotos(page));
-    await finishSignupSteps(page);
-    if (process.env.FUNNEL_DEBUG) console.log("      idb before submit:", await idbPhotos(page));
-    await page.click('button[type="submit"]');
-    await page.waitForURL((u) => u.pathname === "/book/free", { timeout: 15000 });
-    if (process.env.FUNNEL_DEBUG) console.log("      idb on /book/free:", await idbPhotos(page));
-    await page.waitForSelector("text=You’re booked.", { timeout: 20000 }).catch(() => {});
-    await shot(page, "resume-result");
-    const done = await page.locator("text=You’re booked.").count();
-    if (!done) console.log("      resume state:", JSON.stringify(await page.evaluate(() => ({
-      notice: document.querySelector(".fv-notice")?.textContent, error: [...document.querySelectorAll(".fv-error")].map((e) => e.textContent),
-      access: document.querySelector("[data-fv-access]")?.getAttribute("data-fv-access"), draft: sessionStorage.getItem("pf_free_visit_draft"),
-    }))));
-    const post = state.bookingPosts[0] || {};
-    check("booking created automatically after signup", done === 1 && state.bookingPosts.length === 1);
-    check("POST carries the note typed before signup", post.note === "The bathroom faucet drips and a towel bar fell off");
-    check("POST carries the date and time picked before signup", post.requestedDate === visit.date && post.requestedTime === visit.time, `${post.requestedDate} ${post.requestedTime}`);
-    check("POST carries the photo added before signup", post.images === 1);
-    check("POST is a Labor Only free visit on the new address", post.service === "Labor Only" && post.addressId === "addr1");
-    const draftLeft = await page.evaluate(() => sessionStorage.getItem("pf_free_visit_draft"));
-    check("draft is cleared once booked", !draftLeft);
-    check("no page errors in the whole funnel", errors.length === 0, errors.join(" | "));
-
-    /* Meta: the account Lead, plus Schedule and an always-on Lead for the booking. */
-    const fbq = await fbqLog(page);
-    const allLeads = fbq.filter((c) => c[0] === "track" && c[1] === "Lead");
-    /*
-     * The ad account optimises on Lead, so the booked free visit always fires
-     * one (lead_type "free_visit_legacy"), whatever
-     * NEXT_PUBLIC_META_LEGACY_FREE_VISIT_LEAD says. That switch now only
-     * governs the funnel custom events.
-     */
-    const legacyOn = process.env.NEXT_PUBLIC_META_LEGACY_FREE_VISIT_LEAD !== "false";
-    const legacy = allLeads.filter((l) => l[2]?.lead_type === "free_visit_legacy");
-    const leads = allLeads.filter((l) => l[2]?.lead_type !== "free_visit_legacy");
-    const schedules = fbq.filter((c) => c[0] === "track" && c[1] === "Schedule");
-    check("cold booker: exactly one Lead, and it is the account", leads.length === 1 && leads[0][2]?.lead_type === "account" && leads[0][2]?.content_name === "account_created", JSON.stringify(leads.map((l) => l[2])));
-    check(
-      "the booked free visit fires one Lead with an eventID, its content_name and status unchanged",
-      legacy.length === 1 && !!legacy[0][3]?.eventID && legacy[0][2]?.content_name === "free_first_visit" && legacy[0][2]?.status === "free_visit_booked",
-      JSON.stringify(legacy.map((l) => l[2]))
-    );
-    check("cold booker: the booking is one Schedule with an eventID", schedules.length === 1 && !!schedules[0][3]?.eventID && schedules[0][2]?.content_name === "free_first_visit", JSON.stringify(schedules));
-    const relayed = state.relays.filter((r) => r.eventName === "Schedule");
-    check("Schedule is relayed to the server with the same event id", relayed.length === 1 && relayed[0].eventId === schedules[0]?.[3]?.eventID, JSON.stringify(state.relays.map((r) => [r.eventName, r.eventId])));
-    const leadRelays = state.relays.filter((r) => r.eventName === "Lead");
-    check(
-      "the account Lead is not relayed from the browser (registration sends it); the free-visit Lead is, with the browser's event id",
-      leadRelays.length === 1 && !!leadRelays[0].eventId && leadRelays[0].eventId === legacy[0]?.[3]?.eventID,
-      JSON.stringify(leadRelays)
-    );
-    const custom = fbq.filter((c) => c[0] === "trackCustom").map((c) => c[1]);
-    check(
-      legacyOn ? "transition: funnel taps still reach Meta as custom events, as before" : "date, time and photo taps no longer reach Meta",
-      legacyOn ? custom.some((n) => /^free_visit_/.test(n)) : !custom.some((n) => /^free_visit_/.test(n)),
-      custom.join(",")
-    );
-    const dl = await dlLog(page);
-    check("the dataLayer still gets the free-visit funnel steps", ["free_visit_date_selected", "free_visit_time_selected", "free_visit_booked"].every((n) => dl.some((e) => e.event === n)));
+    await page.waitForSelector('[data-fv="request-done"]', { timeout: 15000 }).catch(() => {});
+    await shot(page, "book-free-request-done");
+    const done = (await page.locator('[data-fv="request-done"]').innerText().catch(() => "")).replace(/\s+/g, " ");
+    check("success: on-page confirmation with the day and time", done.includes("Got it!") && done.includes(" at "), done);
+    const post = state.requestPosts[0] || {};
+    check("one request, photo optional", state.requestPosts.length === 1 && post.images === 0);
+    check("POST carries name, phone, email, job and day/time", post.name === "Jane Doe" && post.phone === "6315550142" && post.email === "jane.doe@example.com" && post.note === "The bathroom faucet drips and a towel bar fell off" && post.requestedDate === visit.date && post.requestedTime === visit.time, JSON.stringify(post));
+    check("POST says it came from /book/free", post.sourcePage === "/book/free", post.sourcePage);
+    const leads = (await fbqLog(page)).filter((c) => c[0] === "track" && c[1] === "Lead");
+    check("exactly one Lead, the free-visit request", leads.length === 1 && leads[0]?.[2]?.lead_type === "free_visit_request", JSON.stringify(leads.map((l) => l[2])));
+    check("never went to /signup", !urls.some((u) => u.includes("/signup")), urls.join(" "));
+    check("no account and no booking were created", state.registerPosts === 0 && state.bookingPosts.length === 0);
+    check("no page errors on /book/free", errors.length === 0, errors.join(" | "));
     await ctx.close();
   }
 
@@ -511,50 +458,27 @@ async function finishSignupSteps(page) {
     await ctx.close();
   }
 
-  /* 2. The slot goes while they sign up. */
+  /* 2. The slot goes while the /book/free request is sent: details kept, no Lead. */
   {
-    console.log("\n--- slot taken during signup ---");
+    console.log("\n--- slot taken during a /book/free request ---");
     const { ctx, page, state } = await newContext(browser, {
-      bookingQueue: [{ status: 409, body: { code: "SLOT_UNAVAILABLE", message: "This time is no longer available." } }],
+      requestQueue: [{ status: 409, body: { code: "SLOT_UNAVAILABLE", message: "That time was just taken." } }],
     });
     await page.goto(BASE + "/book/free", { waitUntil: "networkidle" });
     const visit = await buildVisit(page, { photo: false });
-    // No photo: use the library instead, which must also carry through.
-    await page.locator("[data-library-open]").or(page.getByText("Choose from Profixter Library")).first().click();
-    await page.locator('[role="dialog"] button[aria-pressed]').first().click();
-    await page.waitForTimeout(500);
-    const lib = await page.evaluate(() => JSON.parse(sessionStorage.getItem("pf_free_visit_draft") || "{}").libraryReference);
+    await page.fill('[data-fv-contact="name"]', "Jane Doe");
+    await page.fill('[data-fv-contact="phone"]', "631-555-0142");
+    await page.fill('[data-fv-contact="email"]', "jane.doe@example.com");
     await page.click('[data-fv="book"]');
-    await page.waitForURL(/\/signup/);
-    await completeSignup(page);
-    await finishSignupSteps(page);
-    await page.click('button[type="submit"]');
-    await page.waitForURL((u) => u.pathname === "/book/free", { timeout: 15000 });
-    await page.waitForSelector(".fv-notice", { timeout: 20000 }).catch(() => {});
+    await page.waitForSelector(".fv-notice", { timeout: 10000 }).catch(() => {});
     check("taken slot: plain message shown", (await page.locator(".fv-notice").innerText().catch(() => "")).includes("just taken"));
-    check("taken slot: note kept", (await page.inputValue('[data-fv="note"]')) === "The bathroom faucet drips and a towel bar fell off");
+    check("taken slot: note and details kept", (await page.inputValue('[data-fv="note"]')) === "The bathroom faucet drips and a towel bar fell off" && (await page.inputValue('[data-fv-contact="name"]')) === "Jane Doe");
     check("taken slot: same day still selected, time cleared", (await page.locator(".fv-day--selected").getAttribute("data-booking-date")) === visit.date && (await page.locator(".fv-slot--selected").count()) === 0);
-    check("library example carried through signup", !!lib && state.bookingPosts[0]?.libraryReference === lib, lib);
-    // Choose again and book - signed in now, so it books in place.
+    check("taken slot: no Lead", !(await fbqLog(page)).some((c) => c[0] === "track" && c[1] === "Lead"));
     await page.locator('[data-booking-time-available="true"]').first().click();
     await page.click('[data-fv="book"]');
-    await page.waitForSelector("text=You’re booked.", { timeout: 15000 }).catch(() => {});
-    check("taken slot: re-pick books without signing up again", (await page.locator("text=You’re booked.").count()) === 1 && state.registerPosts === 1 && state.bookingPosts.length === 2);
-    await ctx.close();
-  }
-
-  /* 3. Out of area, caught at the address step before an account exists. */
-  {
-    console.log("\n--- out-of-area address ---");
-    const { ctx, page, state } = await newContext(browser);
-    await page.goto(BASE + "/book/free", { waitUntil: "networkidle" });
-    await buildVisit(page);
-    await page.click('[data-fv="book"]');
-    await page.waitForURL(/\/signup/);
-    await completeSignup(page, { zip: "10001" });
-    const err = await page.locator(".auth-error").allInnerTexts();
-    check("out-of-area: stopped at the address step", err.join(" ").includes("don't serve this address") && (await page.locator("#name").count()) === 0, err.join(" | "));
-    check("out-of-area: no account created", state.registerPosts === 0);
+    await page.waitForSelector('[data-fv="request-done"]', { timeout: 15000 }).catch(() => {});
+    check("taken slot: re-pick sends without signing up", (await page.locator('[data-fv="request-done"]').count()) === 1 && state.requestPosts.length === 2 && state.registerPosts === 0);
     await ctx.close();
   }
 

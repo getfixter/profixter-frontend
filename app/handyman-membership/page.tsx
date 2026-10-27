@@ -121,7 +121,7 @@ export default async function HandymanMembershipPage() {
     ["Visits", `Up to ${STANDARD_VISIT_MINUTES} minutes, everyday home tasks, the same local team.`],
     ["How often", "As often as you need. Your plan sets how many visits you can have booked at the same time."],
     ["Without a membership", `One-Time Visit $${oneTime.priceDollars} (one small job, up to ${oneTime.minutes} minutes); Full Day $${fullDay.priceDollars} (about ${fullDay.hours} hours).`],
-    ["New customers", `A free first ${STANDARD_VISIT_MINUTES}-minute visit, one per home.`],
+    ["New customers", `A free first ${STANDARD_VISIT_MINUTES}-minute visit, one per customer.`],
     ["Contact", `${BUSINESS_PHONE_DISPLAY}, ${OPENING_HOURS.display}.`],
     ["License", `${LICENSE_PHRASE}. Fully insured.`],
   ];
@@ -301,7 +301,7 @@ export default async function HandymanMembershipPage() {
             {[
               <>
                 <strong className="font-semibold text-[#0B1628]">Start with a free first visit</strong> if you are a new
-                customer: {STANDARD_VISIT_MINUTES} minutes, one per home, no card required.{" "}
+                customer: {STANDARD_VISIT_MINUTES} minutes, one per customer, no card required.{" "}
                 <Link href="/book/free" className={LINK}>
                   Book it
                 </Link>

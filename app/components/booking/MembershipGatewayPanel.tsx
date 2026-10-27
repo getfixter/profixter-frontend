@@ -101,7 +101,7 @@ export default function MembershipGatewayPanel() {
               {isAuthenticated ? "Your first visit is free." : "Your first visit may be free."}
             </p>
             <p className="mt-2 text-[13.5px] leading-5 text-[#4A5462]">
-              90 minutes of handyman work, no card required, one per home. It is the
+              90 minutes of handyman work, no card required, one per customer. It is the
               easiest way to see how we work before deciding anything.
             </p>
             <Link

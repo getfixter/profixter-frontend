@@ -284,7 +284,7 @@ export function DetailPage({
       ? [
           {
             title: "Best first step",
-            body: "New to Profixter? Your first visit is free: up to 90 minutes of handyman work, one per home, no card needed. After that, book a $99 One-Time Visit when the task is specific, small, and on the approved service list.",
+            body: "New to Profixter? Your first visit is free: up to 90 minutes of handyman work, one per customer, no card needed. After that, book a $99 One-Time Visit when the task is specific, small, and on the approved service list.",
           },
           {
             title: "Better long-term answer",
@@ -527,7 +527,7 @@ export function LocationDetailPage({
   const paths: { title: string; body: string; href: string; label: string }[] = [
     {
       title: "New to Profixter",
-      body: "A free first 90-minute visit for new Nassau and Suffolk customers, one per home.",
+      body: "A free first 90-minute visit, one per customer, for new customers in Nassau and Suffolk.",
       href: "/book/free",
       label: "Book a free first visit",
     },

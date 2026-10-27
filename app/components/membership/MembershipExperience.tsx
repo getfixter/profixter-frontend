@@ -195,7 +195,7 @@ function FreeVisitFlow() {
             Nothing to pay, and no membership required.
           </p>
           <p className="mx-auto mt-5 max-w-[600px] text-[12px] leading-5 text-[#86868B] sm:text-[13px]">
-            90 minutes of handyman labor &middot; No card required &middot; One per home &middot; Subject to availability
+            90 minutes of handyman labor &middot; No card required &middot; One per customer &middot; Subject to availability
           </p>
         </div>
       </section>
@@ -311,7 +311,7 @@ function ProspectMembershipFlow({
                 Your first visit is free.
               </p>
               <p className="mt-1.5 text-[13px] leading-5 text-[#6E6E73] sm:text-[14px]">
-                90-minute first visit · No card required · One per home
+                90-minute first visit · No card required · One per customer
               </p>
               <Link
                 href="/book/free"

@@ -18,7 +18,7 @@ import { HOME_FAQ } from "@/lib/home-faq";
  * heard of yet and undersells the plain answer to "I need a handyman". The
  * title now leads with that and keeps the membership beside it. Every fact in
  * the description is published elsewhere on the site and verified: free first
- * 90-minute visit (new customers, one per home), $99 One-Time Visit, plans from
+ * 90-minute visit (one per customer, new customers only), $99 One-Time Visit, plans from
  * $149 a month, Nassau and Suffolk.
  *
  * The page body is unchanged and still a client component.

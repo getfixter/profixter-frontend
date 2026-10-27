@@ -55,7 +55,7 @@ function OffersBlock({ oneTime, fullDay }: { oneTime: OneTimeOffer; fullDay: Ful
     {
       name: "Free first visit",
       price: "Free",
-      body: `A ${STANDARD_VISIT_MINUTES}-minute first visit for new Nassau and Suffolk customers, one per home.`,
+      body: `A free ${STANDARD_VISIT_MINUTES}-minute first visit, one per customer, for new customers in Nassau and Suffolk.`,
       href: "/book/free",
     },
     {
