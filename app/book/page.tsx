@@ -1406,8 +1406,10 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
           <summary className="cursor-pointer text-[11px] font-extrabold sm:text-[13px]">Important information</summary>
           <div className="mt-2 grid gap-2 border-t border-[#E5E9F2] pt-2 text-[10px] leading-4 text-[#64748B] sm:grid-cols-3 sm:text-[12px]">
             <p><strong className="text-[#0B1628]">What&rsquo;s included:</strong> {pageCopy.includeText}</p>
-            <p><strong className="text-[#0B1628]">Materials and exclusions:</strong> Materials are separate. Appliance repair and larger projects are excluded.</p>
-            <p><strong className="text-[#0B1628]">After payment:</strong> Admin reviews the request. If it cannot be approved, you receive a full refund.</p>
+            <p><strong className="text-[#0B1628]">Materials:</strong> Materials are separate.</p>
+            {/* Owner rule (2026-10-27): the site never says a job is excluded or
+                rejected. The owner reviews every request and decides. */}
+            <p><strong className="text-[#0B1628]">After payment:</strong> Your appointment request will be reviewed by our team. We&rsquo;ll contact you if we need any additional details. If we can&rsquo;t take it on, you receive a full refund.</p>
             {/* Straight to the visit list. This used to leave Book for an
                 Account tab whose only remaining content was a link back to
                 Book. */}

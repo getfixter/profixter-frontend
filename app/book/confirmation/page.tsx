@@ -164,7 +164,7 @@ export default async function BookConfirmationPage({
               . One-Time Visit cancellation or reschedule requests require admin approval and are not handled with a one-click cancel button in your account.
             </p>
             <p className="mt-3 text-[14px] leading-6 text-[#64748B]">
-              Larger or multi-day work should use a Project Estimate instead of a One-Time Visit.
+              Your appointment request will be reviewed by our team. We&rsquo;ll contact you if we need any additional details. Planning a bigger project as well? A free Project Estimate is available too.
             </p>
             <Link
               href="/projects"
