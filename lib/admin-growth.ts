@@ -79,14 +79,41 @@ export type Acquisition = {
   visitors30: number | null;
   registrations30: number | null;
   bySource30: Array<{ key: string; label: string; visitors: number; registrations: number; freeVisits: number }>;
+  /* Account bookings + one-step requests: never the same visit twice. Pending = waiting for our call. */
+  newFreeVisits?: {
+    last7: number | null;
+    prev7: number | null;
+    last30: number | null;
+    prev30: number | null;
+    last7Pending: number | null;
+    last7Confirmed: number | null;
+    last30Pending: number | null;
+    last30Confirmed: number | null;
+    fromAccounts30: number | null;
+    fromRequests30: number | null;
+  };
+  /* The current one-step flow only (from flowSince, 2026-10-27). */
   funnel30: {
     booking_page_view?: number;
     booker_started?: number;
     slot_selected?: number;
     signup_view?: number;
+    oneStepRequests?: number | null;
     firstFreeVisits: number | null;
+    since?: string;
+    flowSince?: string | null;
     trackingSince: string;
   };
+  /* The retired sign-up flow, kept apart as history. */
+  funnelBefore?: {
+    booking_page_view: number;
+    booker_started: number;
+    slot_selected: number;
+    signup_view: number;
+    firstFreeVisits: number | null;
+    since: string;
+    through: string;
+  } | null;
   costPerFirstFreeVisitCents: number | null;
 };
 

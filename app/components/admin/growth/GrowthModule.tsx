@@ -82,13 +82,45 @@ function actionOutcome(a: GrowthActionView) {
 
 /* ------------------------------------------------------------------ */
 
+/* The one-step booking (from 2026-10-27): there is no sign-up step any more. */
 const FUNNEL_STEPS: Array<{ key: keyof Acquisition["funnel30"]; label: string }> = [
+  { key: "booking_page_view", label: "Saw the booker" },
+  { key: "booker_started", label: "Started" },
+  { key: "slot_selected", label: "Picked a time" },
+  { key: "oneStepRequests", label: "Sent a request" },
+  { key: "firstFreeVisits", label: "Booked from an account" },
+];
+
+/* The retired sign-up flow, shown apart as history - never mixed into the steps above. */
+const OLD_FUNNEL_STEPS: Array<{ key: keyof NonNullable<Acquisition["funnelBefore"]>; label: string }> = [
   { key: "booking_page_view", label: "Saw the booker" },
   { key: "booker_started", label: "Started" },
   { key: "slot_selected", label: "Picked a time" },
   { key: "signup_view", label: "Went to sign up" },
   { key: "firstFreeVisits", label: "Booked a first free visit" },
 ];
+
+const shortDate = (ymd?: string | null) =>
+  ymd ? new Date(`${ymd}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }) : "";
+
+function FunnelBars({ rows }: { rows: Array<{ key: string; label: string; n: number | null }> }) {
+  const top = Math.max(1, ...rows.map((r) => r.n || 0));
+  return (
+    <div className="mt-3 space-y-2">
+      {rows.map((r) => (
+        <div key={r.key} className="flex items-center gap-3 text-[13px]">
+          <span className="w-40 flex-none text-slate-600">{r.label}</span>
+          <span className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+            <span className="absolute inset-y-0 left-0 rounded-full bg-blue-600" style={{ width: `${r.n ? Math.max(2, Math.round((r.n / top) * 100)) : 0}%` }} />
+          </span>
+          <span className="w-12 flex-none text-right font-semibold text-slate-700">{r.n ?? "—"}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const num = (v: unknown) => (typeof v === "number" ? v : null);
 
 function change(now: number | null, before: number | null) {
   if (now == null || before == null) return null;
@@ -99,10 +131,12 @@ function change(now: number | null, before: number | null) {
 /** The number-one metric: new first free-visit bookings, and where homeowners drop out. */
 function AcquisitionCard({ data }: { data: Acquisition | null | undefined }) {
   if (!data) return null;
-  const f = data.firstFreeVisits;
+  // account bookings + one-step requests (the backend never counts a visit in both); older backends: accounts only
+  const n = data.newFreeVisits;
+  const f = n || data.firstFreeVisits;
   const c7 = change(f.last7, f.prev7);
   const c30 = change(f.last30, f.prev30);
-  const top = Math.max(1, ...FUNNEL_STEPS.map((s) => Number(data.funnel30[s.key]) || 0));
+  const old = data.funnelBefore;
   const sources = [...data.bySource30].filter((s) => s.freeVisits).sort((a, b) => b.freeVisits - a.freeVisits).slice(0, 6);
   return (
     <Card>
@@ -112,37 +146,48 @@ function AcquisitionCard({ data }: { data: Acquisition | null | undefined }) {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <div className="grid grid-cols-2 gap-3">
           {[
-            { label: "Last 7 days", v: f.last7, c: c7 },
-            { label: "Last 30 days", v: f.last30, c: c30 },
+            { label: "Last 7 days", v: f.last7, c: c7, pending: n?.last7Pending, confirmed: n?.last7Confirmed },
+            { label: "Last 30 days", v: f.last30, c: c30, pending: n?.last30Pending, confirmed: n?.last30Confirmed },
           ].map((t) => (
             <div key={t.label} className="rounded-[14px] bg-slate-50 p-4">
               <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">{t.label}</div>
               <div className="mt-2 text-[40px] font-bold leading-none tracking-[-0.03em] text-slate-900">{t.v ?? "—"}</div>
               {t.c ? <div className={`mt-1 text-[12px] font-semibold ${t.c.d > 0 ? "text-emerald-700" : t.c.d < 0 ? "text-rose-700" : "text-slate-500"}`}>{t.c.text}</div> : null}
+              {n ? (
+                <div className="mt-2 space-y-0.5 text-[12px] text-slate-600" data-testid="free-visit-split">
+                  <div>
+                    <span className="font-semibold text-amber-700">{t.pending ?? "—"}</span> Pending Confirmation
+                  </div>
+                  <div>
+                    <span className="font-semibold text-emerald-700">{t.confirmed ?? "—"}</span> Confirmed
+                  </div>
+                </div>
+              ) : null}
             </div>
           ))}
           <div className="col-span-2 text-[12px] text-slate-500">
-            {sources.length ? `Where they came from (30d): ${sources.map((s) => `${s.label} ${s.freeVisits}`).join(" · ")}` : "No first free visits in the last 30 days."}
+            {n ? `Booked from an account and sent as a request from the website, each visit counted once (30d: ${n.fromAccounts30 ?? "—"} from accounts, ${n.fromRequests30 ?? "—"} requests). ` : ""}
+            {sources.length ? `Account bookings by source (30d): ${sources.map((s) => `${s.label} ${s.freeVisits}`).join(" · ")}` : "No account bookings in the last 30 days."}
           </div>
         </div>
         <div>
-          <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">Booking funnel, last 30 days</div>
-          <div className="mt-3 space-y-2">
-            {FUNNEL_STEPS.map((s) => {
-              const v = data.funnel30[s.key];
-              const n = typeof v === "number" ? v : null;
-              return (
-                <div key={s.key} className="flex items-center gap-3 text-[13px]">
-                  <span className="w-40 flex-none text-slate-600">{s.label}</span>
-                  <span className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-                    <span className="absolute inset-y-0 left-0 rounded-full bg-blue-600" style={{ width: `${n ? Math.max(2, Math.round((n / top) * 100)) : 0}%` }} />
-                  </span>
-                  <span className="w-12 flex-none text-right font-semibold text-slate-700">{n ?? "—"}</span>
-                </div>
-              );
-            })}
+          <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+            Booking funnel{data.funnel30.since ? ` since ${shortDate(data.funnel30.since)}` : ", last 30 days"}
           </div>
-          <p className="mt-2 text-[12px] text-slate-400">Funnel steps are counted since {data.funnel30.trackingSince}, once per browser per day.</p>
+          <FunnelBars rows={FUNNEL_STEPS.map((s) => ({ key: s.key, label: s.label, n: num(data.funnel30[s.key]) }))} />
+          <p className="mt-2 text-[12px] text-slate-400">
+            The one-step booking: pick a time, leave name, mobile and email, send. Counted once per browser per day
+            {data.funnel30.flowSince ? `, from ${shortDate(data.funnel30.flowSince)}` : ""}.
+          </p>
+          {old ? (
+            <details className="mt-3 rounded-[12px] bg-slate-50 px-3 py-2" data-testid="old-funnel">
+              <summary className="cursor-pointer text-[12px] font-semibold text-slate-500">
+                Before {shortDate(data.funnel30.flowSince)}: the old sign-up flow ({shortDate(old.since)} – {shortDate(old.through)})
+              </summary>
+              <FunnelBars rows={OLD_FUNNEL_STEPS.map((s) => ({ key: s.key, label: s.label, n: num(old[s.key]) }))} />
+              <p className="mt-2 text-[12px] text-slate-400">History only. That flow sent visitors to sign up before booking; it is not comparable with the funnel above.</p>
+            </details>
+          ) : null}
         </div>
       </div>
     </Card>
