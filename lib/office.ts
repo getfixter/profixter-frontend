@@ -35,12 +35,25 @@ export type OfficeState = {
   robots: RobotState[];
   kpis: {
     firstFreeVisits: { last7: number | null; prev7: number | null; last30: number | null; prev30: number | null } | null;
+    /** Account bookings + one-step requests, never the same visit twice; pending = waiting for our call. */
+    newFreeVisits?: {
+      last7: number | null;
+      prev7: number | null;
+      last30: number | null;
+      prev30: number | null;
+      last7Pending: number | null;
+      last7Confirmed: number | null;
+      last30Pending: number | null;
+      last30Confirmed: number | null;
+    } | null;
     funnel30: {
       booking_page_view?: number;
       booker_started?: number;
       slot_selected?: number;
       signup_view?: number;
+      oneStepRequests?: number | null;
       firstFreeVisits: number | null;
+      flowSince?: string | null;
       /** One window for every step: the last 30 days, or the days since page tracking began. */
       since?: string;
       through?: string;

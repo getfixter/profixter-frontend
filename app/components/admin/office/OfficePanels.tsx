@@ -634,17 +634,20 @@ function RobotSettings({ d, owner, onChanged }: { d: RobotDetail; owner: boolean
 /* Results                                                             */
 /* ================================================================== */
 
-const FUNNEL: Array<{ key: "booking_page_view" | "booker_started" | "slot_selected" | "signup_view" | "firstFreeVisits"; label: string }> = [
+/* The one-step booking (from 2026-10-27): no sign-up step any more. */
+const FUNNEL: Array<{ key: "booking_page_view" | "booker_started" | "slot_selected" | "oneStepRequests" | "firstFreeVisits"; label: string }> = [
   { key: "booking_page_view", label: "Saw the booking form" },
   { key: "booker_started", label: "Started filling it" },
   { key: "slot_selected", label: "Picked a time" },
-  { key: "signup_view", label: "Went to sign up" },
-  { key: "firstFreeVisits", label: "Booked" },
+  { key: "oneStepRequests", label: "Sent a request" },
+  { key: "firstFreeVisits", label: "Booked from an account" },
 ];
 
 export function ResultsPanel({ office, onClose, onOpenRequests }: { office: OfficeState; onClose: () => void; onOpenRequests: () => void }) {
   const k = office.kpis;
-  const f = k.firstFreeVisits;
+  // account bookings + one-step requests when the server sends them
+  const f = k.newFreeVisits || k.firstFreeVisits;
+  const split = k.newFreeVisits;
   const diff7 = f && f.last7 != null && f.prev7 != null ? f.last7 - f.prev7 : null;
   const funnel = k.funnel30;
   const top = Math.max(1, ...FUNNEL.map((s) => Number(funnel?.[s.key]) || 0));
@@ -674,6 +677,11 @@ export function ResultsPanel({ office, onClose, onOpenRequests }: { office: Offi
               <div className={styles.muted}>
                 Last 30 days: {f.last30 ?? "—"} (before that: {f.prev30 ?? "—"})
               </div>
+              {split ? (
+                <div className={styles.muted}>
+                  This week: {split.last7Pending ?? "—"} Pending Confirmation · {split.last7Confirmed ?? "—"} Confirmed
+                </div>
+              ) : null}
             </div>
           </div>
         ) : (
@@ -700,7 +708,8 @@ export function ResultsPanel({ office, onClose, onOpenRequests }: { office: Offi
               })}
               <div className={styles.muted} style={{ marginTop: 8 }}>
                 {funnel.since && funnel.through ? `Every step counts the same days: ${funnel.since} to ${funnel.through}.` : null}
-                {funnel.fullWindow === false ? ` Page tracking began ${funnel.trackingSince}, so this is too early to judge rates.` : null}
+                {funnel.flowSince ? ` The one-step booking began ${funnel.flowSince}; the old sign-up flow is not mixed in.` : null}
+                {funnel.fullWindow === false ? " Too early to judge rates." : null}
               </div>
             </>
           ) : (
