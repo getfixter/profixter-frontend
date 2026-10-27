@@ -1947,7 +1947,7 @@ if (next?.date) {
                   $0 due for your first eligible visit. No membership required, and no credit card needed to book.
                 </div>
                 <div className="mt-2 text-[9px] leading-4 text-[#94A3B8] sm:text-[11px]">
-                  One free visit per property. Standard handyman labor, up to 90 minutes. Materials not included. Subject to availability.
+                  One free visit per customer. Standard handyman labor, up to 90 minutes. Materials not included. Subject to availability.
                 </div>
               </div>
             )}

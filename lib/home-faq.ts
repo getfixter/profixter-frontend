@@ -13,7 +13,7 @@
 export const HOME_FAQ: Array<{ q: string; a: string; link?: { href: string; label: string } }> = [
   {
     q: "What's included in the free visit?",
-    a: "Up to 90 minutes of handyman labor at your home. One per home, no card needed. If special parts are needed, you only cover the material cost.",
+    a: "Up to 90 minutes of handyman labor at your home. One per customer, no card needed. If special parts are needed, you only cover the material cost.",
   },
   {
     q: "What can a Fixter help with?",

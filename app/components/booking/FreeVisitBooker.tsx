@@ -14,12 +14,14 @@
  * not hold one. Availability is read from the same public calendar endpoints
  * BookingSection uses, and the booking is created by the same POST
  * /api/bookings, which re-checks the slot inside a transaction and owns every
- * free-visit rule (one per address, service area, photo or example, Labor Only).
+ * free-visit rule (one per customer, service area, photo or example, Labor Only).
  * This component only renders what the server answers.
  *
- * THE HOMEPAGE IS THE EXCEPTION (`guest`). A signed-out visitor there types a
- * name, mobile and email under the day and time, and one press sends the whole
- * request to POST /api/free-visit-requests: no /signup, no address, no account.
+ * GUEST REQUESTS (`guest`: the homepage and /book/free). A signed-out visitor
+ * types a name, mobile and email under the day and time, and one press sends the
+ * whole request to POST /api/free-visit-requests: no /signup, no address, no
+ * account. /book/free is where follow-up emails and the Google Business Profile
+ * button land, so it must not send those visitors through /signup either.
  * That saves a pending request for the owner to call and confirm - it is not a
  * booking and holds no slot - and only once it is saved does the Meta Lead fire,
  * in the browser here and on the server with the same event id.
@@ -238,9 +240,9 @@ export default function FreeVisitBooker({
    */
   variant?: "full" | "compact";
   /**
-   * Homepage only, with variant "compact": a signed-out visitor books in one
-   * step with name, mobile and email instead of going through /signup.
-   * Signed-in visitors keep the account booking exactly as before.
+   * The homepage and /book/free: a signed-out visitor books in one step with
+   * name, mobile and email instead of going through /signup. Signed-in
+   * visitors keep the account booking exactly as before.
    */
   guest?: boolean;
 }) {
@@ -485,8 +487,8 @@ export default function FreeVisitBooker({
   const selectedSlotOpen = !!selectedTime && slotOptions.some((s) => s.time === selectedTime && s.available);
 
   /* --- readiness -------------------------------------------------- */
-  /* Signed out on the homepage: the one-step request, not /signup. */
-  const guestMode = guest && compact && !isLoading && access === "anonymous";
+  /* Signed out where guests are welcome: the one-step request, not /signup. */
+  const guestMode = guest && !isLoading && access === "anonymous";
   const noteOk = wordCount(note) >= 3;
   /* The request asks for a photo only if they have one; the owner sees the job on the call. */
   const photoOk = guestMode || photos.length > 0 || !!libraryReference;
@@ -895,6 +897,43 @@ export default function FreeVisitBooker({
   const canGoForward = month < shiftMonth(monthOf(today), MONTHS_AHEAD - 1);
   const submitting = phase === "submitting";
 
+  /* Who to call - guest requests only. The same fields in both layouts. */
+  const contactBlock = guestMode ? (
+    <div ref={contactRef} className="mt-3 grid scroll-mt-28 gap-2.5" data-fv="contact">
+      <span className="fv-label">Your details</span>
+      <ContactField
+        field="name"
+        label="Full name"
+        value={contact.name}
+        error={contactErrors.name}
+        onChange={onContactChange}
+        inputProps={{ type: "text", autoComplete: "name", autoCapitalize: "words", enterKeyHint: "next", maxLength: 120 }}
+      />
+      <ContactField
+        field="phone"
+        label="Mobile number"
+        value={contact.phone}
+        error={contactErrors.phone}
+        onChange={onContactChange}
+        inputProps={{ type: "tel", inputMode: "tel", autoComplete: "tel-national", enterKeyHint: "next", maxLength: 20 }}
+      />
+      <ContactField
+        field="email"
+        label="Email"
+        value={contact.email}
+        error={contactErrors.email}
+        onChange={onContactChange}
+        inputProps={{ type: "email", inputMode: "email", autoComplete: "email", autoCapitalize: "none", spellCheck: false, enterKeyHint: "done", maxLength: 200 }}
+      />
+      <p className="text-[13px] leading-[1.45] text-[#64748B]" data-fv="consent">
+        {CONTACT_CONSENT_TEXT}{" "}
+        <Link href="/terms" target="_blank" rel="noopener" className="underline underline-offset-2">Terms</Link>
+        {" · "}
+        <Link href="/privacy" target="_blank" rel="noopener" className="underline underline-offset-2">Privacy Policy</Link>
+      </p>
+    </div>
+  ) : null;
+
   if (compact) {
     const started = noteFocused || note.trim().length > 0 || photos.length > 0 || !!libraryReference;
     const picked = !!selectedDate && selectedSlotOpen;
@@ -1114,42 +1153,7 @@ export default function FreeVisitBooker({
           )}
         </div>
 
-        {/* Who to call - the homepage request only. */}
-        {guestMode ? (
-          <div ref={contactRef} className="mt-3 grid scroll-mt-28 gap-2.5" data-fv="contact">
-            <span className="fv-label">Your details</span>
-            <ContactField
-              field="name"
-              label="Full name"
-              value={contact.name}
-              error={contactErrors.name}
-              onChange={onContactChange}
-              inputProps={{ type: "text", autoComplete: "name", autoCapitalize: "words", enterKeyHint: "next", maxLength: 120 }}
-            />
-            <ContactField
-              field="phone"
-              label="Mobile number"
-              value={contact.phone}
-              error={contactErrors.phone}
-              onChange={onContactChange}
-              inputProps={{ type: "tel", inputMode: "tel", autoComplete: "tel-national", enterKeyHint: "next", maxLength: 20 }}
-            />
-            <ContactField
-              field="email"
-              label="Email"
-              value={contact.email}
-              error={contactErrors.email}
-              onChange={onContactChange}
-              inputProps={{ type: "email", inputMode: "email", autoComplete: "email", autoCapitalize: "none", spellCheck: false, enterKeyHint: "done", maxLength: 200 }}
-            />
-            <p className="text-[13px] leading-[1.45] text-[#64748B]" data-fv="consent">
-              {CONTACT_CONSENT_TEXT}{" "}
-              <Link href="/terms" target="_blank" rel="noopener" className="underline underline-offset-2">Terms</Link>
-              {" · "}
-              <Link href="/privacy" target="_blank" rel="noopener" className="underline underline-offset-2">Privacy Policy</Link>
-            </p>
-          </div>
-        ) : null}
+        {contactBlock}
 
         <div ref={summaryRef} className="scroll-mt-28">
           <AccessNotice access={access} waitlist={waitlist} />
@@ -1366,6 +1370,8 @@ export default function FreeVisitBooker({
           </div>
         </div>
 
+        {contactBlock}
+
         {formError ? <p className="fv-error" role="alert">{formError}</p> : null}
 
         {!blocked ? (
@@ -1378,13 +1384,13 @@ export default function FreeVisitBooker({
               data-fv="book"
             >
               {submitting ? (
-                <><span className="fv-spinner" aria-hidden="true" /> Booking your visit…</>
+                <><span className="fv-spinner" aria-hidden="true" /> {guestMode ? "Sending…" : "Booking your visit…"}</>
               ) : (
                 <>Book my free visit <span aria-hidden="true">→</span></>
               )}
             </button>
             <p className="mt-3 text-center text-[13px] text-[#64748B]">
-              {access === "anonymous"
+              {access === "anonymous" && !guestMode
                 ? "Next: your address and contact. About a minute. No card needed."
                 : "No card needed."}
             </p>

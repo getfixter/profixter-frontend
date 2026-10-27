@@ -257,7 +257,7 @@ export const PROFIXTER_STRUCTURED_DATA = {
           {
             "@type": "Offer",
             name: "Free first visit",
-            description: "A free 90-minute first visit for new Nassau and Suffolk customers, one per home.",
+            description: "A free 90-minute first visit, one per customer, for new customers in Nassau and Suffolk.",
             url: `${SITE_URL}/book/free`,
             price: "0.00",
             priceCurrency: "USD",
