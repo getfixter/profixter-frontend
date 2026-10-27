@@ -1,6 +1,7 @@
 import type { AccountAddress, AccountFormData } from "./types";
 import { AddressesPanel } from "./AddressesPanel";
 import { SmsPreferences } from "./SmsPreferences";
+import { EmailPreferences } from "./EmailPreferences";
 
 interface PersonalInfoFormProps {
   formData: AccountFormData;
@@ -67,6 +68,7 @@ export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
         * these rules exist to prevent.
         */}
       <SmsPreferences />
+      <EmailPreferences />
     </div>
   );
 }
