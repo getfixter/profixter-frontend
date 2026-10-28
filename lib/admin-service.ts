@@ -12,6 +12,8 @@ export interface User {
   addresses: Address[];
 addressesDetailed?: AddressDetailed[];
 createdAt?: string; // ✅ add this
+  /* Finished visits that have started, counted from booking records by the server. */
+  completedBookings?: number;
 }
 
 export interface CustomerActivityItem {
@@ -1372,6 +1374,137 @@ export const getAllUsers = async (): Promise<User[]> => {
 
 export const getMembers = async (): Promise<User[]> => {
   const response = await API.get("/api/admin/members");
+  return response.data;
+};
+
+/*
+ * Loyalty Benefits as Admin reads them. Every month, reward and date is
+ * composed by the server from the same function the customer's account uses;
+ * the screen only lays it out.
+ */
+export type LoyaltyStandingKey =
+  | "inactive"
+  | "annual"
+  | "none"
+  | "ended"
+  | "paused"
+  | "payment_issue"
+  | "manual"
+  | "renewal_pending"
+  | "ending"
+  | "benefit_active"
+  | "complete"
+  | "not_started"
+  | "earning";
+
+export type LoyaltyBenefitState = "active" | "upcoming" | "used" | "expired" | "needs_review";
+
+export interface AdminLoyaltyBenefit {
+  id: string;
+  milestone: number;
+  kind: "tier_upgrade" | "loyalty_full_day" | "free_month";
+  rewardPlan: string | null;
+  headline: string;
+  state: LoyaltyBenefitState;
+  stateLabel: string;
+  duration: string;
+  grantedAt: string | null;
+  effectiveFrom: string | null;
+  effectiveUntil: string | null;
+  currentRun: boolean;
+  status: string;
+  active: boolean;
+  pendingFreeMonth: boolean;
+}
+
+/* One rung of the 3 / 6 / 12 month ladder. Dates are estimates that assume every renewal is paid. */
+export interface AdminLoyaltyRung {
+  milestone: number;
+  position: "reached" | "next" | "later";
+  reward: { headline: string; detail: string } | null;
+  duration: string;
+  benefitFrom?: string | null;
+  benefitUntil?: string | null;
+  estimatedDate: string | null;
+  monthsRemaining: number;
+  benefitId: string | null;
+  benefitStateLabel: string;
+  basis: string;
+}
+
+export interface AdminLoyaltyRow {
+  userId: string;
+  addressId: string;
+  address: {
+    _id: string;
+    label: string;
+    line1: string;
+    city: string;
+    state: string;
+    zip: string;
+    isDefault: boolean;
+  } | null;
+  addressSnapshot: { line1?: string; city?: string; state?: string; zip?: string } | null;
+  membership: {
+    state: "none" | "active" | "ending" | "renewal_pending" | "payment_issue" | "paused" | "ended";
+    plan?: string | null;
+    planLabel?: string;
+    billingCycle?: string;
+    status?: string;
+    startedAt?: string | null;
+    currentPeriodEnd?: string | null;
+    cancelsOn?: string | null;
+    pendingPlan?: string | null;
+    pendingChangeEffectiveDate?: string | null;
+    billedByStripe?: boolean;
+    complimentaryPlan?: string | null;
+    complimentaryPlanLabel?: string;
+    complimentaryUntil?: string | null;
+  };
+  loyalty: {
+    reason: string;
+    standing: { key: LoyaltyStandingKey; label: string; tone: "neutral" | "info" | "success" | "warning" | "danger"; cancelsOn?: string | null };
+    programStartedAt: string | null;
+    countedMonths: number;
+    nextMilestone: number | null;
+    monthsRemaining: number | null;
+    nextReward: { headline: string; detail: string } | null;
+    nextRewardBasis: string;
+    nextRewardDuration?: string;
+    expectedDate: string | null;
+    requirement: string;
+    dateNote: string;
+    ladderComplete: boolean;
+    benefitsEarned: number;
+    benefits: AdminLoyaltyBenefit[];
+    ladder?: AdminLoyaltyRung[];
+    loyaltyFullDaysAvailable: number;
+    continuity: { keptUntil: string; lost: boolean; note: string } | null;
+    previousRunOnly?: boolean;
+    annualNote: string;
+  };
+}
+
+export interface MembersLoyaltyResponse {
+  programActive: boolean;
+  programStartedAt: string | null;
+  rows: AdminLoyaltyRow[];
+}
+
+export interface CustomerLoyaltyResponse {
+  programActive: boolean;
+  programStartedAt: string | null;
+  completedBookings: number;
+  addresses: AdminLoyaltyRow[];
+}
+
+export const getMembersLoyalty = async (): Promise<MembersLoyaltyResponse> => {
+  const response = await API.get("/api/admin/members/loyalty");
+  return response.data;
+};
+
+export const getCustomerLoyalty = async (userId: string): Promise<CustomerLoyaltyResponse> => {
+  const response = await API.get(`/api/admin/users/${userId}/loyalty`);
   return response.data;
 };
 

@@ -1083,6 +1083,7 @@ function AdminPageContent() {
                 canDelete={isAdmin}
                 canFixGhl={isAdmin}
                 showCustomerPanels={canCustomers}
+                canViewLoyalty={canMembers}
               />
             )}
 
@@ -1101,6 +1102,8 @@ function AdminPageContent() {
                 canDelete={isAdmin}
                 canFixGhl={isAdmin}
                 showCustomerPanels={canCustomers}
+                showLoyalty={canMembers}
+                canViewLoyalty={canMembers}
               />
             )}
 
