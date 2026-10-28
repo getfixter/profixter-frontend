@@ -3,13 +3,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   getCustomerActivity,
+  getMembersLoyalty,
   type AddressDetailed,
+  type AdminLoyaltyRow,
   type CustomerActivityItem,
   type User,
 } from '@/lib/admin-service';
 import { formatDateNY, getTodayNY } from '@/lib/utils/timezone-helpers';
 import CommunicationHistory from './CommunicationHistory';
 import SmsConsentPanel from './SmsConsentPanel';
+import { CompletedBookingsChip, CustomerLoyaltyPanel, LoyaltyStrip } from './LoyaltyProgress';
 
 type PlanFilter = 'all' | 'basic' | 'plus' | 'premium' | 'elite' | 'cancel';
 
@@ -36,6 +39,10 @@ interface UsersTableProps {
   canDelete?: boolean;
   canFixGhl?: boolean;
   showCustomerPanels?: boolean;
+  /* Members view: a loyalty line on every membership row. */
+  showLoyalty?: boolean;
+  /* Completed visits and Loyalty Progress inside the customer detail. Needs members.read. */
+  canViewLoyalty?: boolean;
 }
 
 type FlattenedRow = {
@@ -220,6 +227,8 @@ export default function UsersTable({
   canDelete = !readOnly,
   canFixGhl = !readOnly,
   showCustomerPanels = true,
+  showLoyalty = false,
+  canViewLoyalty = false,
 }: UsersTableProps) {
   const [planFilter, setPlanFilter] = useState<PlanFilter>('all');
   const [savingCancellationByAddress, setSavingCancellationByAddress] = useState<Record<string, boolean>>({});
@@ -236,7 +245,39 @@ export default function UsersTable({
   const [deleteError, setDeleteError] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const [loyaltyByTrack, setLoyaltyByTrack] = useState<Map<string, AdminLoyaltyRow> | null>(null);
+  const [loyaltyFailed, setLoyaltyFailed] = useState(false);
+
   const minCancellationDate = getTodayNY();
+
+  /*
+   * Loaded after the list has drawn and on its own, so the members list never
+   * waits on the ledger and a failure here costs only the loyalty lines.
+   */
+  useEffect(() => {
+    if (!showLoyalty) return;
+    let cancelled = false;
+    setLoyaltyFailed(false);
+    void getMembersLoyalty()
+      .then((response) => {
+        if (cancelled) return;
+        setLoyaltyByTrack(new Map(response.rows.map((row) => [`${row.userId}:${row.addressId}`, row])));
+      })
+      .catch((error) => {
+        console.error('Failed to load loyalty progress:', error);
+        if (!cancelled) setLoyaltyFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showLoyalty]);
+
+  const renderLoyalty = (user: User, address: AddressDetailed | null) => {
+    if (!address) return <span className="text-xs text-slate-400">No address record</span>;
+    if (loyaltyFailed) return <span className="text-xs text-slate-400">Loyalty unavailable</span>;
+    if (!loyaltyByTrack) return <div className="h-12 animate-pulse rounded-xl bg-slate-100" />;
+    return <LoyaltyStrip row={loyaltyByTrack.get(`${user._id}:${address._id}`)} />;
+  };
 
   useEffect(() => {
     if (!historyUser) return;
@@ -444,6 +485,7 @@ export default function UsersTable({
       'Phone',
       'Address',
       'Plan',
+      'Completed Bookings',
       'Created',
       'Blacklisted',
     ];
@@ -459,6 +501,7 @@ export default function UsersTable({
         user.phone || '',
         addressText,
         rowPlan,
+        user.completedBookings ?? 0,
         created,
         isBlacklisted,
       ];
@@ -644,6 +687,7 @@ export default function UsersTable({
                   <th className="px-4 py-4 text-left text-sm font-semibold">Contact</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold">Address</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold">Plan</th>
+                  {showLoyalty && <th className="min-w-[240px] px-4 py-4 text-left text-sm font-semibold">Loyalty</th>}
                   <th className="px-4 py-4 text-left text-sm font-semibold">Created</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold">Actions</th>
                 </tr>
@@ -681,6 +725,9 @@ export default function UsersTable({
                           >
                             {user.email}
                           </a>
+                          <div>
+                            <CompletedBookingsChip count={user.completedBookings} />
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-4">
@@ -741,6 +788,7 @@ export default function UsersTable({
                           <span className="text-sm text-slate-400">No address record</span>
                         )}
                       </td>
+                      {showLoyalty && <td className="px-4 py-4">{renderLoyalty(user, address)}</td>}
                       <td className="px-4 py-4 text-sm text-slate-600">
                         {user.createdAt ? new Date(user.createdAt).toLocaleString() : 'Not available'}
                       </td>
@@ -807,6 +855,10 @@ export default function UsersTable({
                       <div className="mt-1 text-xs text-slate-300">ID {user.userId}</div>
                       <div className="mt-1 text-xs text-slate-400">
                         {user.createdAt ? new Date(user.createdAt).toLocaleString() : 'Not available'}
+                      </div>
+                      <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-slate-200">
+                        Completed bookings
+                        <span className="text-sm font-bold tabular-nums text-white">{user.completedBookings ?? 0}</span>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
@@ -902,6 +954,13 @@ export default function UsersTable({
                       <div className="text-sm text-slate-400">No address record</div>
                     )}
                   </div>
+
+                  {showLoyalty && (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                      <div className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Loyalty</div>
+                      {renderLoyalty(user, address)}
+                    </div>
+                  )}
 
                   <button
                     type="button"
@@ -1021,6 +1080,14 @@ export default function UsersTable({
                 * delivery failure, and checking the history first sends people
                 * looking for a bug that is not there.
                 */}
+              {/*
+                * Visits and loyalty first: the two things asked about most, and
+                * read-only, so they sit above everything that can be acted on.
+                */}
+              {canViewLoyalty && <div className="mb-5 border-b border-slate-200 pb-5">
+                <CustomerLoyaltyPanel key={historyUser._id} userId={historyUser._id} fallbackCompleted={historyUser.completedBookings} />
+              </div>}
+
               {showCustomerPanels && <div className="mb-5 border-b border-slate-200 pb-5">
                 <SmsConsentPanel userId={historyUser._id} />
               </div>}
