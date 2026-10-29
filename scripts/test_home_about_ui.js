@@ -70,9 +70,18 @@ async function scrollThrough(page) {
       const t = document.body.innerText.replace(/’/g, "'");
       const note = document.querySelector('[data-fv="note"]').getBoundingClientRect();
       return {
-        headline: t.includes("Your handyman.") && t.includes("On demand."),
+        /* Website 3.0: the first screen names the product - a membership. */
+        headline: t.includes("Your home.") && t.includes("One membership."),
         offer: t.includes("First 90-minute visit"),
-        bookerOnFirstScreen: note.top < window.innerHeight,
+        /*
+         * Website 3.0 leads with the membership; the booker moved below the
+         * ways to book. What stays pinned is that it is one tap from the first
+         * screen.
+         */
+        bookerOnFirstScreen: [...document.querySelectorAll('a[href="#book"]')].some((a) => {
+          const r = a.getBoundingClientRect();
+          return r.height > 0 && r.top < window.innerHeight;
+        }) && note.top > 0,
         liveCalendar: document.querySelectorAll('[data-booking-date-disabled="false"]').length > 0,
         noStartScreen: !document.querySelector(".start-screen"),
         noSignupWall: !document.querySelector('a[href^="/signup"]'),
@@ -80,7 +89,7 @@ async function scrollThrough(page) {
     });
     check("headline states the product", s.headline, "");
     check("free 90-minute offer stated", s.offer, "");
-    check("booker starts on the first screen (390px)", s.bookerOnFirstScreen, "");
+    check("booker is one tap from the first screen (390px)", s.bookerOnFirstScreen, "");
     check("real availability shown signed out", s.liveCalendar, "");
     check("old start screen removed", s.noStartScreen, "");
     /*
@@ -89,7 +98,7 @@ async function scrollThrough(page) {
      */
     const size = await page.evaluate(() => {
       const card = document.querySelector("#book").getBoundingClientRect();
-      const how = [...document.querySelectorAll("h2")].find((e) => /Book\. We come/.test(e.textContent || ""));
+      const how = [...document.querySelectorAll("h2")].find((e) => /Try Profixter on us/.test(e.textContent || ""));
       return { h: Math.round(card.height), how: how ? Math.round(how.getBoundingClientRect().top + window.scrollY) : 99999 };
     });
     /*
@@ -98,7 +107,7 @@ async function scrollThrough(page) {
      * /signup. Those ~170px are the price of that step, by the owner's choice.
      */
     check("booker opens compact (< 620px tall at 390px)", size.h < 620, `${size.h}px`);
-    check("'How it works' within about one and a half screens of the top", size.how < 1060, `${size.how}px`);
+    check("the free-visit section starts within about two screens of the top", size.how < 1700, `${size.how}px`);
     check("no signup link anywhere on Home", s.noSignupWall, "");
     await ctx.close();
   }
@@ -122,8 +131,8 @@ async function scrollThrough(page) {
       const t = document.body.innerText.replace(/’/g, "'");
       return {
         beats: {
-          how: t.includes("Book. We come. Done."),
-          plans: t.includes("Want a handyman all year?"),
+          how: t.includes("Try Profixter on us."),
+          plans: t.includes("One membership. Every small job."),
           work: /real work/i.test(t),
           proof: t.includes("A local company, not a marketplace."),
           faq: !!document.querySelector("details.lx-faq"),

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { getCustomerHomePath, hasActiveMembership } from "@/lib/auth-routing";
@@ -15,8 +15,6 @@ type NavItem = {
 
 const hiddenPathPrefixes = [
   "/admin",
-  // Shower Studio is a full-screen design app with its own controls along the bottom.
-  "/shower-studio",
   // The event kiosk is a full-screen booth display with exactly one action.
   "/event",
   // Document signing is a focused ceremony. The site nav is fixed to the bottom
@@ -48,7 +46,7 @@ function buildItems({ homeHref, isMember }: { homeHref: string; isMember: boolea
     href: homeHref,
     match: (pathname) => pathname === "/",
     icon: (
-      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10.5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
       </svg>
     ),
@@ -62,7 +60,7 @@ function buildItems({ homeHref, isMember }: { homeHref: string; isMember: boolea
     match: (pathname) =>
       pathname === "/membership" || pathname === "/membership-info" || pathname === "/membership/plans",
     icon: (
-      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <rect x="2.5" y="5" width="19" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.9" />
         <path d="M2.5 10h19M6 14.5h4" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
       </svg>
@@ -74,7 +72,7 @@ function buildItems({ homeHref, isMember }: { homeHref: string; isMember: boolea
     href: isMember ? "/book?visit=membership" : "/book",
     match: (pathname) => pathname === "/book" || pathname.startsWith("/book/"),
     icon: (
-      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
         <path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       </svg>
@@ -88,7 +86,7 @@ function buildItems({ homeHref, isMember }: { homeHref: string; isMember: boolea
     // not own. No highlight is the truthful state.
     match: (pathname) => pathname === "/account" || pathname === "/signin" || pathname === "/signup",
     icon: (
-      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle cx="12" cy="8" r="3.6" stroke="currentColor" strokeWidth="1.9" />
         <path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
       </svg>
@@ -104,7 +102,7 @@ function buildItems({ homeHref, isMember }: { homeHref: string; isMember: boolea
         pathname
       ),
     icon: (
-      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M4 20V8l8-4 8 4v12" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
         <path d="M9 20v-6h6v6M4 11l8 4 8-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
@@ -121,32 +119,45 @@ function buildItems({ homeHref, isMember }: { homeHref: string; isMember: boolea
     .sort((a, b) => order.indexOf(a.label) - order.indexOf(b.label));
 }
 
+/**
+ * The phone tab bar, for signed-in customers only (Website 3.0).
+ *
+ * Before the redesign every visitor got it, and on a marketing page it was a
+ * second navigation stacked under the first, eating 76px of every phone screen
+ * and covering the booker. A visitor without an account now navigates from the
+ * header's "Menu" sheet, which carries the same destinations with labels that
+ * say what each one is. Somebody signed in is using Profixter as an app - book,
+ * check a project, open their account - and keeps the bar, slimmer (52px).
+ */
 export default function CustomerSiteMobileNav() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const isMember = hasActiveMembership(user);
   const items = buildItems({ homeHref: getCustomerHomePath(user), isMember });
   const hidden = hiddenPathPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  const shown = !hidden && isAuthenticated;
 
-  if (hidden) return null;
+  /*
+   * Tells the page the bar is there (html.has-tabbar), so fixed things that
+   * share the bottom edge - the sticky CTA, the support chat button - can sit
+   * above it. See --pf-support-chat-bottom-mobile in app/ui-shell.css.
+   */
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("has-tabbar", shown);
+    return () => root.classList.remove("has-tabbar");
+  }, [shown]);
+
+  if (!shown) return null;
 
   return (
     <>
       {/*
-        customer-site-nav is a hook for CSS, not a style: while the logged-out
-        start screen is covering the homepage, globals.css hides this bar. It is
-        fixed to the bottom of the viewport, so on that one screen it would sit
-        across the scroll cue and offer a nav the front door is deliberately
-        without. Done in CSS because an attribute is readable before the first
-        paint and a piece of React state is not - the flash of a tab bar over
-        the hero is exactly what this avoids.
+        customer-site-nav is also a hook for CSS (app/mobile-scale.css and the
+        StickyMobileCTA offset), not only a style.
       */}
-      <nav
-        aria-label="Customer site navigation"
-        className="customer-site-nav fixed inset-x-0 bottom-0 z-[70] border-t border-[#D7E0F5] bg-white/95 px-2 pt-1.5 shadow-[0_-10px_34px_rgba(15,23,42,0.12)] backdrop-blur-md lg:hidden sm:pt-2"
-        style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom, 0px))" }}
-      >
-        <div className={`mx-auto grid max-w-[520px] gap-1 ${items.length === 4 ? "grid-cols-4" : "grid-cols-5"}`}>
+      <nav aria-label="Customer site navigation" className="customer-site-nav csn lg:hidden">
+        <div className={`csn__grid ${items.length === 4 ? "grid-cols-4" : "grid-cols-5"}`}>
           {items.map((item) => {
             const active = item.match(pathname);
             return (
@@ -154,24 +165,16 @@ export default function CustomerSiteMobileNav() {
                 key={item.label}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={[
-                  "csn-item flex min-h-[46px] flex-col items-center justify-center gap-0.5 rounded-[8px] px-1 text-[11px] font-bold transition active:scale-[0.98] sm:min-h-[58px] sm:gap-1 sm:text-[11px]",
-                  active
-                    ? "bg-[#EEF5FF] text-[#306EEC]"
-                    : "text-[#64748B] hover:bg-[#F8FAFF] hover:text-[#0B1628]",
-                ].join(" ")}
+                className={`csn-item ${active ? "is-active" : ""}`}
               >
-                <span className={active ? "text-[#306EEC]" : "text-[#94A3B8]"}>{item.icon}</span>
+                <span className="csn-item__icon">{item.icon}</span>
                 <span>{item.label}</span>
               </Link>
             );
           })}
         </div>
       </nav>
-      <div
-        className="customer-site-nav-spacer h-[calc(76px+env(safe-area-inset-bottom,0px))] lg:hidden"
-        aria-hidden="true"
-      />
+      <div className="customer-site-nav-spacer csn-spacer lg:hidden" aria-hidden="true" />
     </>
   );
 }

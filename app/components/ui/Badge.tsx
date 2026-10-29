@@ -1,26 +1,17 @@
-import React from 'react';
+import React from "react";
 
+/** A small pill label (ui-tag in app/ui.css). `accent` tints it ProFixter blue. */
 type BadgeProps = React.HTMLAttributes<HTMLSpanElement> & {
-  color?: 'primary' | 'neutral' | 'success';
-  rounded?: 'sm' | 'md' | 'lg';
+  tone?: "neutral" | "accent";
+  dot?: boolean;
 };
 
-const colorMap = {
-  primary: 'bg-[#306EEC] text-white',
-  neutral: 'bg-[#EEF2FF] text-[#313234] border border-[#C5CBD8]',
-  success: 'bg-[#43A047] text-white'
-} as const;
-
-const roundedMap = { sm: 'rounded', md: 'rounded-md', lg: 'rounded-[8px]' } as const;
-
-export function Badge({ color = 'primary', rounded = 'md', className = '', ...props }: BadgeProps) {
+export function Badge({ tone = "neutral", dot = false, className = "", children, ...props }: BadgeProps) {
   return (
-    <span className={[
-      'inline-flex items-center px-2.5 py-1 text-xs font-semibold',
-      colorMap[color],
-      roundedMap[rounded],
-      className
-    ].join(' ')} {...props} />
+    <span className={["ui-tag", tone === "accent" ? "ui-tag--accent" : "", className].filter(Boolean).join(" ")} {...props}>
+      {dot ? <span className="ui-tag__dot" aria-hidden="true" /> : null}
+      {children}
+    </span>
   );
 }
 

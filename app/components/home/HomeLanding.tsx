@@ -1,187 +1,320 @@
 "use client";
 
 /**
- * The homepage for anyone who is not already a member: the booking IS the page.
+ * The homepage for anyone who is not already a member (Website 3.0).
  *
- * Use first, explain second, details only when asked. The first screen states
- * the offer in a line and is the booker; everything below is short, and the
- * long answers sit in a closed FAQ rather than in paragraphs nobody asked for.
+ * The one thing a visitor must understand within five seconds: Profixter is a
+ * handyman membership for your home. So the first screen says exactly that,
+ * offers the membership first, and puts the free first visit one tap away.
+ * Then, in order: the other ways in (One-Time, Full Day), the free-visit
+ * booker itself, how membership works, real work, why us, questions.
  *
- * Members keep the home they already know (HomeMarketing), so nobody who pays
- * for Profixter is shown an offer they cannot use.
+ * Short text only. Details live behind links and a closed FAQ.
+ *
+ * THE BOOKER IS UNCHANGED. FreeVisitBooker (same component, same props, same
+ * API calls, validation, consent line and Meta/analytics events) only moved
+ * down the page and wears the design system through .hm-booker in home.css.
+ *
+ * Every fact here is already published on the site: plans from $149/month,
+ * the free first 90-minute visit for new Nassau and Suffolk customers (one per
+ * customer, no card), the $99 One-Time Visit for one small job, Full Day.
  */
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
 import FreeVisitBooker from "@/app/components/booking/FreeVisitBooker";
-import RecentWorkSection from "@/app/components/sections/RecentWorkSection";
 import GoogleRatingCompact from "@/app/components/home/GoogleRatingCompact";
+import WorkStrip from "@/app/components/home/WorkStrip";
 import Reveal from "@/app/components/ui/Reveal";
 import { trackEvent } from "@/lib/analytics";
 import { HOME_FAQ as FAQ } from "@/lib/home-faq";
+import { BOOKING_LINKS } from "@/lib/site-architecture";
 
 const STEPS = [
-  { title: "Pick a time.", body: "Tell us what needs doing and choose a slot. About a minute." },
-  { title: "Your Fixter arrives.", body: "A local Profixter pro comes to your home with the tools." },
-  { title: "It's done.", body: "Up to 90 minutes of work on your list." },
+  { title: "Pick a time", body: "Tell us what needs doing. About a minute." },
+  { title: "Your Fixter arrives", body: "A local pro, with the tools." },
+  { title: "It's done", body: "Up to 90 minutes of work on your list." },
 ];
+
+const MEMBERSHIP_POINTS = [
+  {
+    title: "Book as often as you need",
+    body: "No monthly visit allowance. Your plan sets how many visits you can have booked at the same time.",
+  },
+  {
+    title: "90 minutes, every visit",
+    body: "Mounting, assembly, fixtures, small repairs, patching - the everyday list.",
+  },
+  {
+    title: "The same local team",
+    body: "So nobody has to learn your house twice.",
+  },
+];
+
+const FACTS: Array<[string, string]> = [
+  ["Licensed", "Suffolk County HI-71484"],
+  ["Insured", "Fully insured"],
+  ["Local", "Nassau & Suffolk"],
+];
+
+function Arrow() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+      <path d="M2 7h10M8 3l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 export default function HomeLanding() {
   useEffect(() => {
-    trackEvent("landing_viewed", { variant: "free_visit_booker" });
+    trackEvent("landing_viewed", { variant: "membership_first" });
   }, []);
 
+  const plansClick = (placement: string) => () => trackEvent("see_plans_clicked", { placement });
+
   return (
-    <main className="lx-root">
-      {/* ============================ HERO + BOOKER ============================ */}
-      <section className="lx-hero px-4 pb-10 pt-6 sm:pb-16 sm:pt-12">
-        <div className="lx-glow -right-40 -top-40" aria-hidden="true" />
-        <div className="lx-wrap grid grid-cols-[minmax(0,1fr)] items-start gap-8 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-16">
-          <div className="lg:pt-6">
-            <p className="lx-pill fv-enter">
-              <b>Free</b> First 90-minute visit
-            </p>
-            <h1 className="lx-h1 fv-enter mt-4" style={{ animationDelay: "60ms" }}>
-              Your handyman.
-              <br />
-              <span>On demand.</span>
-            </h1>
-            <p className="lx-lede fv-enter mt-3 max-w-[440px]" style={{ animationDelay: "120ms" }}>
-              Tell us what needs fixing and pick a time. A Fixter comes to your home on Long Island.
-            </p>
-            <ul className="mt-6 hidden flex-wrap gap-x-5 gap-y-2 lg:flex" aria-label="Why Profixter">
-              <li className="lx-tick">Licensed &amp; insured</li>
-              <li className="lx-tick">Nassau &amp; Suffolk</li>
-              <li className="lx-tick">No card needed</li>
-            </ul>
-            <div className="mt-8 hidden lg:block">
-              <Link href="/membership/plans" className="fv-link" onClick={() => trackEvent("see_plans_clicked", { placement: "home_hero" })}>
-                Need regular help? See plans →
-              </Link>
-            </div>
+    <main className="hm">
+      {/* ================================ HERO ================================ */}
+      <section className="hm-hero" aria-labelledby="hm-title">
+        <div className="ui-container hm-hero__grid">
+          <div className="ui-media hm-hero__media ui-rise">
+            <Image
+              src="/images/home/fixter-at-home-tall.webp"
+              alt="A Profixter handyman fixing an outlet in a Long Island living room"
+              fill
+              priority
+              sizes="(min-width: 1024px) 520px, 100vw"
+              className="hm-hero__img"
+            />
           </div>
 
-          <div className="fv-enter" style={{ animationDelay: "160ms" }}>
-            <FreeVisitBooker id="book" variant="compact" guest />
-            <p className="mt-3 text-center text-[14px] text-[#64748B] lg:hidden">
-              Need regular help?{" "}
-              <Link href="/membership/plans" className="fv-link text-[14px]" onClick={() => trackEvent("see_plans_clicked", { placement: "home_hero" })}>
-                See plans
+          <div className="hm-hero__copy">
+            <p className="ui-eyebrow ui-rise">Handyman membership &middot; Long Island</p>
+            <h1 id="hm-title" className="ui-display hm-hero__title ui-rise" style={{ animationDelay: "60ms" }}>
+              Your home. Your handyman. One membership.
+            </h1>
+            <p className="ui-lede hm-hero__lede ui-rise" style={{ animationDelay: "120ms" }}>
+              Reliable handyman visits through one simple monthly membership, from $149/month.
+            </p>
+            <div className="hm-hero__ctas ui-rise" style={{ animationDelay: "180ms" }}>
+              <Link
+                href={BOOKING_LINKS.memberships.href}
+                className="ui-btn ui-btn--primary ui-btn--lg"
+                onClick={plansClick("home_hero")}
+              >
+                Explore memberships
               </Link>
+              <Link
+                href="#book"
+                className="ui-btn ui-btn--secondary ui-btn--lg"
+                onClick={() => trackEvent("free_visit_cta_clicked", { placement: "home_hero" })}
+              >
+                Book a free visit
+              </Link>
+            </div>
+            <p className="hm-hero__offer ui-rise" style={{ animationDelay: "240ms" }}>
+              <span className="ui-tag ui-tag--accent">Free</span>
+              <span>First 90-minute visit for new Nassau &amp; Suffolk customers. No card needed.</span>
             </p>
           </div>
         </div>
       </section>
 
-      {/* ============================ HOW IT WORKS ============================= */}
-      <section className="lx-section" aria-labelledby="lx-how">
-        <div className="lx-wrap">
-          <Reveal>
-            <p className="lx-eyebrow">How it works</p>
-            <h2 id="lx-how" className="lx-h2 mt-2">Book. We come. Done.</h2>
+      {/* ============================ WAYS TO START =========================== */}
+      <section className="ui-section ui-section--tight hm-ways" aria-labelledby="hm-ways">
+        <div className="ui-container">
+          <h2 id="hm-ways" className="sr-only">
+            Ways to book
+          </h2>
+          <ul className="hm-ways__list">
+            <li>
+              <Link href={BOOKING_LINKS.memberships.href} className="hm-way hm-way--lead" onClick={plansClick("home_ways")}>
+                <span className="hm-way__name">Membership</span>
+                <span className="hm-way__price ui-num">From $149/mo</span>
+                <span className="hm-way__desc">Book as often as you need.</span>
+                <span className="hm-way__go" aria-hidden="true"><Arrow /></span>
+              </Link>
+            </li>
+            <li>
+              <Link href="#book" className="hm-way">
+                <span className="hm-way__name">Free first visit</span>
+                <span className="hm-way__price">Free</span>
+                <span className="hm-way__desc">90 minutes, new customers.</span>
+                <span className="hm-way__go" aria-hidden="true"><Arrow /></span>
+              </Link>
+            </li>
+            <li>
+              <Link href={BOOKING_LINKS.oneTime.href} className="hm-way">
+                <span className="hm-way__name">One-Time Visit</span>
+                <span className="hm-way__price ui-num">$99</span>
+                <span className="hm-way__desc">One small job, up to 90 minutes.</span>
+                <span className="hm-way__go" aria-hidden="true"><Arrow /></span>
+              </Link>
+            </li>
+            <li>
+              <Link href={BOOKING_LINKS.fullDay.href} className="hm-way">
+                <span className="hm-way__name">Full Day</span>
+                <span className="hm-way__price">All day</span>
+                <span className="hm-way__desc">One Fixter, your whole list.</span>
+                <span className="hm-way__go" aria-hidden="true"><Arrow /></span>
+              </Link>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      {/* ======================== FREE VISIT + BOOKER ========================= */}
+      <section className="ui-section ui-section--soft hm-try" aria-labelledby="hm-try">
+        <div className="ui-container hm-try__grid">
+          <Reveal className="hm-try__copy">
+            <p className="ui-eyebrow ui-eyebrow--accent">First visit free</p>
+            <h2 id="hm-try" className="ui-h2">
+              Try Profixter on us.
+            </h2>
+            <p className="ui-lede">Tell us what needs fixing and pick a time. Up to 90 minutes of work, free for new customers.</p>
+            <ol className="hm-steps">
+              {STEPS.map((s, i) => (
+                <li key={s.title}>
+                  <span className="hm-steps__n ui-num">{i + 1}</span>
+                  <span>
+                    <b>{s.title}</b>
+                    <span>{s.body}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
           </Reveal>
-          <ol className="mt-8 grid gap-4 sm:grid-cols-3">
-            {STEPS.map((s, i) => (
-              <Reveal key={s.title} delay={i * 70} as="li" className="lx-step-card h-full">
-                <span className="lx-step-num">{i + 1}</span>
-                <h3 className="mt-5 text-[21px] font-bold tracking-[-0.02em]">{s.title}</h3>
-                <p className="mt-1.5 text-[15px] leading-6 text-[#5b6577]">{s.body}</p>
+
+          <div className="hm-booker">
+            <FreeVisitBooker id="book" variant="compact" guest />
+          </div>
+        </div>
+      </section>
+
+      {/* ============================== MEMBERSHIP ============================ */}
+      <section className="ui-section hm-member" aria-labelledby="hm-plans">
+        <div className="ui-container">
+          <Reveal className="ui-head ui-head--row">
+            <div>
+              <p className="ui-eyebrow">Membership</p>
+              <h2 id="hm-plans" className="ui-h2">
+                One membership. Every small job.
+              </h2>
+            </div>
+            <Link href="/handyman-membership" className="ui-link">
+              How membership works
+            </Link>
+          </Reveal>
+
+          <ul className="hm-points">
+            {MEMBERSHIP_POINTS.map((p, i) => (
+              <Reveal as="li" key={p.title} delay={i * 70} className="hm-point">
+                <span className="hm-point__n ui-num">0{i + 1}</span>
+                <h3 className="ui-h3">{p.title}</h3>
+                <p className="ui-body">{p.body}</p>
               </Reveal>
             ))}
-          </ol>
+          </ul>
+
+          <Reveal className="hm-member__cta">
+            <p className="hm-member__price">
+              <span className="ui-num">Plans from $149 a month.</span> Your first visit is free.
+            </p>
+            <Link href={BOOKING_LINKS.memberships.href} className="ui-btn ui-btn--primary" onClick={plansClick("home_membership")}>
+              Explore memberships
+            </Link>
+          </Reveal>
         </div>
       </section>
 
-      {/* ============================== MEMBERSHIP ============================== */}
-      <section className="px-4" aria-labelledby="lx-plans">
-        <div className="lx-wrap">
-          <Reveal>
-            <div className="lx-dark px-6 py-10 sm:px-12 sm:py-14">
-              <div className="grid items-end gap-8 md:grid-cols-[1fr_auto]">
-                <div>
-                  <p className="lx-eyebrow !text-[#8fb2ff]">Membership</p>
-                  <h2 id="lx-plans" className="lx-h2 mt-2 max-w-[560px]">Want a handyman all year?</h2>
-                  <p className="mt-3 max-w-[520px] text-[16px] leading-7 text-white/70">
-                    Plans from $149 a month. Book as often as you need - your plan sets how many visits you can have booked at once.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row md:flex-col">
-                  <Link
-                    href="/membership/plans"
-                    className="fv-cta !bg-white !text-[#0B1628] !shadow-none hover:!bg-[#EEF4FF]"
-                    onClick={() => trackEvent("see_plans_clicked", { placement: "home_membership" })}
-                  >
-                    See plans <span aria-hidden="true">→</span>
-                  </Link>
-                  <Link href="/handyman-membership" className="text-center text-[14px] font-semibold text-white/70 hover:text-white">
-                    How membership works
-                  </Link>
-                </div>
-              </div>
+      {/* =============================== REAL WORK ============================ */}
+      <section className="ui-section ui-section--flush-top hm-realwork" aria-labelledby="hm-work">
+        <div className="ui-container">
+          <Reveal className="ui-head ui-head--row">
+            <div>
+              <p className="ui-eyebrow">Real work</p>
+              <h2 id="hm-work" className="ui-h2">
+                Real homes. Real jobs.
+              </h2>
             </div>
+            <Link href="/recent-work" className="ui-link">
+              See more work
+            </Link>
           </Reveal>
+        </div>
+        <div className="ui-container">
+          <WorkStrip />
         </div>
       </section>
 
-      {/* =============================== REAL WORK ============================== */}
-      <section className="lx-section !pb-0" aria-labelledby="lx-work">
-        <div className="lx-wrap">
+      {/* ================================= TRUST ============================== */}
+      <section className="ui-section ui-section--soft" aria-labelledby="hm-trust">
+        <div className="ui-container hm-trust">
           <Reveal>
-            <p className="lx-eyebrow">Real work</p>
-            <h2 id="lx-work" className="lx-h2 mt-2">Real homes. Real jobs.</h2>
-          </Reveal>
-        </div>
-        <div className="mt-8">
-          <RecentWorkSection variant="preview" showHeading={false} />
-        </div>
-      </section>
-
-      {/* ================================= TRUST ================================ */}
-      <section className="lx-section" aria-labelledby="lx-trust">
-        <div className="lx-wrap grid items-center gap-8 md:grid-cols-[1fr_auto]">
-          <Reveal>
-            <h2 id="lx-trust" className="lx-h2">A local company, not a marketplace.</h2>
-            <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-3">
-              <li className="lx-tick">Licensed HI-71484</li>
-              <li className="lx-tick">Fully insured</li>
-              <li className="lx-tick">Nassau &amp; Suffolk</li>
-            </ul>
+            <p className="ui-eyebrow">Who comes to your home</p>
+            <h2 id="hm-trust" className="ui-h2">
+              A local company, not a marketplace.
+            </h2>
+            <dl className="hm-facts">
+              {FACTS.map(([k, v]) => (
+                <div key={k}>
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+            </dl>
           </Reveal>
           <Reveal delay={80}>
-            <GoogleRatingCompact />
+            <GoogleRatingCompact className="hm-rating" />
           </Reveal>
         </div>
       </section>
 
-      {/* ================================== FAQ ================================= */}
-      <section className="lx-section !pt-0" aria-labelledby="lx-faq">
-        <div className="lx-wrap max-w-[760px]">
-          <h2 id="lx-faq" className="text-[24px] font-bold tracking-[-0.02em]">Questions</h2>
-          <div className="mt-4 divide-y divide-[#E6EBF3] border-y border-[#E6EBF3]">
+      {/* ================================== FAQ =============================== */}
+      <section className="ui-section" aria-labelledby="hm-faq">
+        <div className="ui-container ui-container--narrow">
+          <h2 id="hm-faq" className="ui-h2 hm-faq__title">
+            Questions
+          </h2>
+          <div className="ui-faq">
             {FAQ.map((item) => (
-              <details key={item.q} className="lx-faq group">
-                <summary className="flex min-h-[60px] items-center justify-between gap-4 py-4 text-[16px] font-semibold">
-                  {item.q}
-                  <span className="lx-plus text-[22px] font-light text-[#306EEC]" aria-hidden="true">+</span>
-                </summary>
-                <div className="pb-5 pr-8 text-[15px] leading-7 text-[#5b6577]">
+              <details key={item.q} className="lx-faq">
+                <summary>{item.q}</summary>
+                <div className="ui-faq__a">
                   {item.a}
                   {item.link ? (
                     <>
                       {" "}
-                      <Link href={item.link.href} className="fv-link text-[15px]">{item.link.label}</Link>
+                      <Link href={item.link.href} className="hm-inline-link">
+                        {item.link.label}
+                      </Link>
                     </>
                   ) : null}
                 </div>
               </details>
             ))}
           </div>
-          <p className="mt-6 text-[15px] text-[#5b6577]">
-            Something else? Call or text{" "}
-            <a href="tel:+16315991363" className="fv-link text-[15px]">631-599-1363</a>
-            {" "}or read{" "}
-            <Link href="/about" className="fv-link text-[15px]">about us</Link>.
-          </p>
+
+          <div className="hm-after">
+            <Link href="/gift" className="hm-after__gift">
+              <span>
+                <b>Buying for someone else?</b> Give a membership as a gift.
+              </span>
+              <Arrow />
+            </Link>
+            <p className="ui-small">
+              Something else? Call or text{" "}
+              <a href="tel:+16315991363" className="hm-inline-link ui-num">
+                631-599-1363
+              </a>
+              , or read{" "}
+              <Link href="/about" className="hm-inline-link">
+                about us
+              </Link>
+              .
+            </p>
+          </div>
         </div>
       </section>
     </main>
