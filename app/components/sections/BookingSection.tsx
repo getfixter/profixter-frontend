@@ -6,6 +6,8 @@ import LoyaltyBenefitsPanel from "@/app/components/account/LoyaltyBenefitsPanel"
 import { getLoyaltyStatus, type LoyaltyStatus } from "@/lib/subscription-service";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
+import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
+import { useServiceTextsOptIn } from "@/app/components/booking/ServiceTextsOptIn";
 import { trackEvent } from "@/lib/analytics";
 import {
   getCalendarConfig,
@@ -166,6 +168,8 @@ function isAbortError(error: unknown): boolean {
 export default function BookingSection() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
+  const { ensureContact, contactSheet } = useContactCompletion();
+  const { serviceTextsOptIn, applyServiceTextsOptIn } = useServiceTextsOptIn();
 
   const bookingUser = user as BookingUser | null;
   const addresses = bookingUser?.addresses || [];
@@ -1169,6 +1173,7 @@ if (next?.date) {
       setError("Choose a service type.");
       return;
     }
+    if (!(await ensureContact())) return;
     setLoading(true);
     setError("");
     setNotice("");
@@ -1192,6 +1197,9 @@ if (next?.date) {
         requestedDate: formatDateYMD(selectedDate),
         requestedTime: selectedTime,
       });
+
+      /* Only now, with the booking accepted: the box is never a condition of it. */
+      await applyServiceTextsOptIn();
 
       const bookedAddress = addresses.find((address) => address._id === addressId);
       const confirmedDateValue = bookingResult.booking.date || formatDateYMD(selectedDate);
@@ -2064,6 +2072,7 @@ if (next?.date) {
 
             {/* Confirm card */}
             <div className="order-7 pb-[calc(80px+env(safe-area-inset-bottom,0px))] sm:pb-0 lg:order-none">
+              {serviceTextsOptIn ? <div className="mb-2.5">{serviceTextsOptIn}</div> : null}
               <button
                 onClick={handleBookNow}
                 data-track="booking-cta"
@@ -2212,6 +2221,7 @@ if (next?.date) {
           onClose={closeBookingConfirmation}
           onViewVisit={viewConfirmedVisit}
         />
+        {contactSheet}
 
       </div>
     </section>

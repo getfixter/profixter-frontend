@@ -16,7 +16,13 @@ import { getNextBooking } from "@/lib/booking-service";
  * eligible would flash an offer we cannot honour; treating it as ineligible
  * would hide one the customer is entitled to.
  */
-export type FreeVisitState = "loading" | "eligible" | "consumed" | "ineligible";
+/*
+ * "needs_address": signed in, not a member, and no home on file yet. Not an
+ * answer about eligibility - the server cannot be asked until there is an
+ * address - so callers show the offer with an "add your home" step. Adding the
+ * home refreshes `user`, which re-runs this hook and gets the real answer.
+ */
+export type FreeVisitState = "loading" | "eligible" | "consumed" | "ineligible" | "needs_address";
 
 export function useFreeVisitEligibility(): FreeVisitState {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -45,7 +51,7 @@ export function useFreeVisitEligibility(): FreeVisitState {
         user?.addresses?.[0]?._id;
 
       if (!addressId) {
-        if (!cancelled) setState("ineligible");
+        if (!cancelled) setState("needs_address");
         return;
       }
 

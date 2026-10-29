@@ -14,6 +14,13 @@ addressesDetailed?: AddressDetailed[];
 createdAt?: string; // ✅ add this
   /* Finished visits that have started, counted from booking records by the server. */
   completedBookings?: number;
+  /* Registration 2.0: a customer may have only a phone, only an email, or only Google/Apple. */
+  phoneVerifiedAt?: string | null;
+  emailVerifiedAt?: string | null;
+  phoneVerified?: boolean;
+  emailVerified?: boolean;
+  authProviders?: string[];
+  smsPreferences?: { marketingEnabled?: boolean; transactionalEnabled?: boolean };
 }
 
 export interface CustomerActivityItem {

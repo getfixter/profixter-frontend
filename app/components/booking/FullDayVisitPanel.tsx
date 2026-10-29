@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
+import { useAddHome } from "@/app/components/address/AddHomeSheet";
+import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
+import { useServiceTextsOptIn } from "@/app/components/booking/ServiceTextsOptIn";
 import { compressImage } from "@/lib/compressImage";
 import { trackEvent, trackInitiateCheckout } from "@/lib/analytics";
 import {
@@ -121,6 +124,9 @@ export default function FullDayVisitPanel() {
   const [config, setConfig] = useState<FullDayConfig>(FALLBACK_CONFIG);
   const [eligibility, setEligibility] = useState<FullDayEligibility | null>(null);
   const [addressId, setAddressId] = useState("");
+  const { requestHome, homeSheet } = useAddHome();
+  const { ensureContact, contactSheet } = useContactCompletion();
+  const { serviceTextsOptIn, applyServiceTextsOptIn } = useServiceTextsOptIn();
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -250,6 +256,8 @@ export default function FullDayVisitPanel() {
       return;
     }
 
+    if (!(await ensureContact())) return;
+
     setSubmitting(true);
     try {
       const payload = {
@@ -262,6 +270,8 @@ export default function FullDayVisitPanel() {
       if (included) {
         trackEvent("full_day_included_booking_started", { date: selectedDate });
         const result = await bookIncludedFullDay(payload);
+        /* Only now, with the day booked: the box is never a condition of it. */
+        await applyServiceTextsOptIn();
         setBooked({ bookingNumber: result.bookingNumber, date: selectedDate });
         // The benefit is spent, so the panel must stop offering it.
         setEligibility((current) =>
@@ -275,6 +285,7 @@ export default function FullDayVisitPanel() {
         });
         trackEvent("full_day_checkout_started", { date: selectedDate });
         const result = await createFullDayCheckout(payload);
+        await applyServiceTextsOptIn();
         window.location.href = result.url;
         return;
       }
@@ -524,12 +535,16 @@ export default function FullDayVisitPanel() {
                     ))}
                   </select>
                   {!addresses.length && (
-                    <Link
-                      href="/account?tab=personal"
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const home = await requestHome();
+                        if (home?.address?._id) setAddressId(String(home.address._id));
+                      }}
                       className="mt-2 inline-flex text-[13px] font-bold text-[#306EEC]"
                     >
-                      Add an address in your account -&gt;
-                    </Link>
+                      Add your home -&gt;
+                    </button>
                   )}
                 </div>
 
@@ -671,6 +686,8 @@ export default function FullDayVisitPanel() {
                     </div>
                   )}
 
+                  {serviceTextsOptIn ? <div className="mt-3">{serviceTextsOptIn}</div> : null}
+
                   <button
                     type="button"
                     onClick={submit}
@@ -728,6 +745,8 @@ export default function FullDayVisitPanel() {
         Changes to a booked Full Day are handled by phone. Call{" "}
         {config.cancellationPhone}.
       </p>
+      {homeSheet}
+      {contactSheet}
     </section>
   );
 }

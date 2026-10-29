@@ -31,6 +31,7 @@ import {
 import Link from "next/link";
 
 import { useAuth } from "@/lib/useAuth";
+import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
 import {
   GiftError,
   formatMoneyCents,
@@ -159,6 +160,7 @@ function Steps({ current }: { current: Step }) {
 
 export default function GiftPurchaseClient() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { ensureContact, contactSheet } = useContactCompletion();
 
   const [options, setOptions] = useState<GiftOptions | null>(null);
   const [optionsState, setOptionsState] = useState<"loading" | "ready" | "off" | "error">("loading");
@@ -328,6 +330,8 @@ export default function GiftPurchaseClient() {
   const handlePay = useCallback(async () => {
     if (submitLock.current) return;
     if (!plan || durationMonths === null) return;
+    // The receipt goes to the purchaser's email; ask for it here if missing.
+    if (!(await ensureContact({ fields: ["email"] }))) return;
 
     submitLock.current = true;
     setSubmitting(true);
@@ -360,7 +364,7 @@ export default function GiftPurchaseClient() {
       submitLock.current = false;
       setSubmitting(false);
     }
-  }, [
+  }, [ensureContact, 
     plan,
     durationMonths,
     firstName,
@@ -508,6 +512,7 @@ export default function GiftPurchaseClient() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+      {contactSheet}
       <header className="mb-7">
         <h2 className="text-[26px] font-semibold leading-tight text-[#313234] sm:text-[32px]">
           Gift a Membership

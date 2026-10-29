@@ -1,123 +1,86 @@
 "use client";
 
 import Link from "next/link";
-
-import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
+  useCallback,
   useEffect,
-  useMemo,
+  useRef,
   useState,
-  type ChangeEvent,
   type FormEvent,
   type ReactNode,
 } from "react";
-import { register } from "@/lib/auth-service";
-import { getRoleLandingPath, hasActiveMembership, safeReturnPath } from "@/lib/auth-routing";
 import { useAuth } from "@/lib/useAuth";
-import { extractUSNationalPhoneDigits, isValidUSNationalPhoneDigits } from "@/lib/phone";
+import { safeReturnPath } from "@/lib/auth-routing";
 import { trackEvent } from "@/lib/analytics";
+import { newEventId, trackLead, trackStartSignup } from "@/lib/meta";
 import {
-  getAttribution,
-  getFbCookies,
-  identify,
-  newEventId,
-  trackLead,
-  trackStartSignup,
-} from "@/lib/meta";
+  appleSignIn,
+  choosePhoneAccount,
+  clearPendingFlow,
+  conversionFields,
+  createAccountForPhone,
+  formatPhoneInput,
+  googleSignIn,
+  isValidEmail,
+  loadPendingFlow,
+  maskPhoneForDisplay,
+  otpErrorMessage,
+  passwordLogin,
+  phoneToE164,
+  readApiError,
+  savePendingFlow,
+  startEmailOtp,
+  startPhoneOtp,
+  verifyEmailOtp,
+  verifyPhoneOtp,
+  type ChooseAccountResult,
+  type LinkRequiredResult,
+  type PendingAuthFlow,
+} from "@/lib/auth2";
 import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
 import AuthScreen, { AuthHeading, AuthSubmit } from "@/app/components/auth/AuthScreen";
-import AddressField, { type AddressValue, type ServiceAreaState } from "@/app/components/address/AddressField";
+import CodeStep, { outcomeFromError, type CodeOutcome } from "@/app/components/auth/CodeStep";
+import {
+  ChooseAccountStep,
+  EmailStep,
+  LinkRequiredStep,
+  MethodChooser,
+  PasswordStep,
+  type AccountChoice,
+} from "@/app/components/auth/AuthSteps";
+import type { AppleCredential } from "@/app/components/auth/AppleAuth";
+import { useCompleteSignIn, type AuthMethod } from "@/app/components/auth/useCompleteSignIn";
 import { hasBookableDraft, loadDraft } from "@/lib/booking-draft";
 
-type Step = 1 | 2 | 3 | 4;
-
 /*
- * Four questions, and almost no other words.
+ * Registration & Authentication 2.0.
  *
- * Every step used to carry a subtitle under its heading, and every subtitle
- * said the heading again: "How should we call you?" / "Tell us whose home we
- * are helping." A subtitle survives on exactly one step, where the question
- * genuinely cannot carry the meaning on its own - "Protect your account" does
- * not tell anybody the password needs eight characters.
- */
-const stepCopy: Record<Step, { title: string; subtitle: string }> = {
-  1: { title: "What's your home address?", subtitle: "" },
-  2: { title: "What's your name?", subtitle: "" },
-  3: { title: "How can we reach you?", subtitle: "" },
-  4: { title: "Protect your account", subtitle: "" },
-};
-
-const initialFormData = {
-  name: "",
-  email: "",
-  password: "",
-  phone: "",
-  address: "",
-  city: "",
-  state: "NY",
-  zip: "",
-  county: "",
-};
-
-type FormData = typeof initialFormData;
-
-function PasswordToggle({
-  value,
-  onChange,
-  placeholder = "Password",
-  id,
-  autoComplete = "new-password",
-}: {
-  value: string;
-  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  id: string;
-  autoComplete?: string;
-}) {
-  const [show, setShow] = useState(false);
-  return (
-    <div className="relative">
-      <input
-        id={id}
-        type={show ? "text" : "password"}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        className="auth-input auth-input--trailing"
-      />
-      <button
-        type="button"
-        onClick={() => setShow(!show)}
-        className="auth-reveal"
-        aria-label={show ? "Hide password" : "Show password"}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-          {show ? (
-            <>
-              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" strokeLinecap="round" strokeLinejoin="round" />
-              <line x1="1" y1="1" x2="23" y2="23" strokeLinecap="round" />
-            </>
-          ) : (
-            <>
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="12" cy="12" r="3" />
-            </>
-          )}
-        </svg>
-      </button>
-    </div>
-  );
-}
-
-/*
- * The label, kept for assistive technology and no longer drawn.
+ * One screen of four ways in - phone (primary), Google, Apple, email - and
+ * nothing else to fill in: no address, no plan, no password. The same page
+ * serves /signin (app/(auth)/signin/page.tsx re-exports it), where returning
+ * customers also get "Sign in with password".
  *
- * Every field used to carry a letterspaced capitalised caption - PASSWORD,
- * FULL NAME, MOBILE PHONE NUMBER - above an input that already had a
- * placeholder and a question above that. Three labels for one box. The heading
- * is the label; this keeps the accessible name real without printing it again.
+ * STEPS AND SCREENS. `step` is what the A2P evidence tests read: step 1 is the
+ * choice of method and step 2 is the phone number, in this file's only form.
+ * The remaining screens (the code, email, "we found your account", password)
+ * are components that render once a number or address has been given.
+ *
+ * NO CHECKBOXES, ON PURPOSE. The registered A2P campaign makes text consent
+ * optional and asks for none at sign-up. The code this screen sends is a
+ * one-time text the person requests, delivered by Twilio Verify outside that
+ * campaign, so it needs no box. Continuing accepts the Terms and Privacy Policy
+ * (consent version "terms.continue.v1" in BackEnd utils/consent/consentText.js,
+ * word for word in the line under the button). Service texts are offered later,
+ * as one optional unticked box at the booking step (ServiceTextsOptIn) and in
+ * account settings; marketing texts only in account settings. Nothing about
+ * texting is asked, or bundled, here.
  */
+type Screen = "methods" | "phone" | "code" | "email" | "link" | "password" | "choose";
+
+type Carry = { kind: "free-visit"; when: string } | { kind: "plan"; label: string } | null;
+
+/** The label, kept for assistive technology and not drawn: the heading is the label. */
 function FieldLabel({ htmlFor, children }: { htmlFor: string; children: ReactNode }) {
   return (
     <label htmlFor={htmlFor} className="sr-only">
@@ -126,272 +89,43 @@ function FieldLabel({ htmlFor, children }: { htmlFor: string; children: ReactNod
   );
 }
 
-function FieldInput({
-  id,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  autoComplete,
-  maxLength,
-}: {
-  id: string;
-  value: string;
-  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  placeholder: string;
-  type?: string;
-  autoComplete?: string;
-  maxLength?: number;
-}) {
-  return (
-    <input
-      id={id}
-      type={type}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      autoComplete={autoComplete}
-      maxLength={maxLength}
-      className="auth-input"
-    />
-  );
-}
-
-/**
- * One tick box, shared by all three consents on this page.
- *
- * THE THREE BOXES DELIBERATELY LOOK ALIKE.
- *
- * Terms acceptance is required and the two SMS boxes are not, but they are
- * rendered by the same component at the same weight so that nobody - customer
- * or carrier reviewer - can mistake the optional ones for fine print bolted
- * onto the required one. Bundling is the thing being disproved here, and three
- * visibly equal, visibly separate controls is what disproves it.
- */
-function ConsentCheckbox({
-  id,
-  checked,
-  onChange,
-  label,
-  children,
-}: {
-  id: string;
-  checked: boolean;
-  onChange: (next: boolean) => void;
-  /* Optional: when absent, the children ARE the sentence, so the documents can
-     be linked inside it rather than repeated underneath. */
-  label?: ReactNode;
-  children?: ReactNode;
-}) {
-  return (
-    <label
-      htmlFor={id}
-      className="auth-consent__row cursor-pointer"
-    >
-      <span className="relative mt-0.5 flex flex-shrink-0">
-        <input
-          id={id}
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => onChange(e.target.checked)}
-          className="peer sr-only"
-        />
-        <span className="auth-consent__box">
-          {checked ? (
-            <svg width="9" height="7" viewBox="0 0 9 7" fill="none" aria-hidden="true">
-              <path d="M1 3.5l2 2L8 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ) : null}
-        </span>
-      </span>
-      <span className="auth-consent__text">
-        {label ? <span className="font-semibold text-[#0B1628]">{label}</span> : null}
-        {children ? (
-          <span className={label ? "mt-1 block text-[#8A94A6]" : "font-semibold text-[#0B1628]"}>
-            {children}
-          </span>
-        ) : null}
-      </span>
-    </label>
-  );
-}
-
-/**
- * One consent row whose visible name is the link.
- *
- * WHY THIS IS NOT ConsentCheckbox WITH AN ANCHOR PASSED IN.
- *
- * That component wraps its whole row in a <label>, and a click anywhere inside
- * a label is forwarded to the control - so a customer tapping "Service text
- * messages" to find out what it means would silently tick the box on the way
- * out of the page, and arrive at the explanation having already agreed to the
- * thing it explains. Here the <label> covers the tick target alone and the
- * anchor is its sibling: tapping the box toggles, tapping the words opens the
- * page, and neither does the other's job.
- *
- * The link opens in a new tab because the alternative is losing a part-filled
- * four-step registration in order to read a definition.
- */
-function ConsentRow({
-  id,
-  checked,
-  onChange,
-  label,
-  href,
-  requirement,
-}: {
-  id: string;
-  checked: boolean;
-  onChange: (next: boolean) => void;
-  label: string;
-  href: string;
-  /*
-   * NOT RENDERED, AND STILL LOAD-BEARING.
-   *
-   * The row used to print this word beside the label. The owner removed it:
-   * two names and two boxes is the whole of what the final step should look
-   * like, and a customer who has to be told which one is compulsory before
-   * they have tried anything is being warned rather than asked.
-   *
-   * The value survives because required-ness has three other jobs to do. It
-   * marks the control for assistive technology, it is what the source-scanning
-   * compliance tests read to prove the SERVICE box is the required one and the
-   * marketing box never is, and it keeps the distinction stated in the file
-   * rather than implied by which of two <ConsentRow>s came first.
-   */
-  requirement: "Required" | "Optional";
-}) {
-  return (
-    <div className="auth-consent__row">
-      {/*
-        * The negative margin is what keeps this honest: the padding grows the
-        * tap target to something a thumb can hit, and the -m-2 pulls the row
-        * back to the height it would have had, so the control gets bigger
-        * without the row getting taller.
-        */}
-      <label htmlFor={id} className="-m-2 flex flex-shrink-0 cursor-pointer items-center p-2">
-        <input
-          id={id}
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => onChange(e.target.checked)}
-          /*
-           * aria-required, never the HTML `required` attribute. The real one
-           * would hand the browser the failure and pop its own bubble, which
-           * is the one thing the inline message exists to avoid; this one only
-           * announces, and leaves the reporting where we put it.
-           */
-          aria-required={requirement === "Required"}
-          className="peer sr-only"
-        />
-        <span className="auth-consent__box">
-          {checked ? (
-            <svg width="10" height="8" viewBox="0 0 9 7" fill="none" aria-hidden="true">
-              <path d="M1 3.5l2 2L8 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ) : null}
-        </span>
-      </label>
-      {/*
-        * THE LABEL TICKS THE BOX. THE LINK IS SEPARATE.
-        *
-        * These two words used to BE the link - underlined, and opening the
-        * disclosure in a new tab. People tap a checkbox label to tick the
-        * checkbox, so the most natural gesture on this row threw them out of
-        * registration and into a legal page. The underline warned them, which
-        * is not the same as not setting the trap.
-        *
-        * The disclosure still has to be reachable from each consent, and it
-        * still is - it just no longer sits on top of the control.
-        */}
-      <label htmlFor={id} className="auth-consent__label">
-        {label}
-      </label>
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="auth-consent__details"
-      >
-        Details
-      </a>
-    </div>
-  );
-}
-
 export default function SignUpPage() {
-  const router = useRouter();
-  const { login: authLogin } = useAuth();
-  const [step, setStep] = useState<Step>(1);
-  /*
-   * The address, only ever set by picking one out of the lookup (or by the
-   * manual fallback). Null means "nothing we would send a Fixter to yet", which
-   * is what Continue checks.
-   */
-  const [address, setAddress] = useState<AddressValue | null>(null);
-  /*
-   * Whether the chosen property is somewhere the First Visit Free offer applies.
-   *
-   * Kept at the page level, not inside the address field, because the promise it
-   * governs is the badge at the top of every step - so once the address says the
-   * offer does not apply, it has to stop being made for the rest of the flow,
-   * not just on the screen where we found out.
-   */
-  const [serviceArea, setServiceArea] = useState<ServiceAreaState>("unknown");
-  /*
-   * Unchecked, deliberately.
-   *
-   * A pre-ticked box is not affirmative consent. TCPA/CTIA and Twilio's web
-   * form opt-in standard both require the customer to perform the tick
-   * themselves, and an A2P reviewer loading this page checks exactly this.
-   */
-  const [agreeTerms, setAgreeTerms] = useState(false);
-  const [consentError, setConsentError] = useState(false);
-  /* Raised only by an attempt to finish, and only by the service box. */
-  const [smsConsentError, setSmsConsentError] = useState(false);
-  /*
-   * THE TWO SMS CONSENTS. BOTH OPTIONAL, BOTH UNCHECKED, BOTH INERT.
-   *
-   * Neither is read by any validator on this page. That is not an incidental
-   * detail, it is the whole compliance claim: a customer can leave both alone
-   * and still register, book, pay and use every part of ProFixter, and the only
-   * consequence is that we never text them. Everything they need still arrives
-   * by email.
-   *
-   * Service and marketing are two separate states rather than one, because they
-   * rest on different permissions and a customer may reasonably want
-   * appointment reminders and no advertising. Collapsing them into a single
-   * box, or into the Terms box above, is the forced-consent defect this pair
-   * exists to remove - the carrier reviewer who rejected the campaign was
-   * looking at a page where service texts had no box at all.
-   */
-  const [smsTransactionalConsent, setSmsTransactionalConsent] = useState(false);
-  const [smsMarketingConsent, setSmsMarketingConsent] = useState(false);
+  const pathname = usePathname();
+  const mode: "signup" | "signin" = pathname?.startsWith("/signin") ? "signin" : "signup";
+  const { isAuthenticated, isLoading } = useAuth();
+  const completeSignIn = useCompleteSignIn();
+
+  const [screen, setScreen] = useState<Screen>("methods");
+  /* What the A2P tests call the step: 1 = choose a method, 2 = the phone number. */
+  const step = screen === "methods" ? 1 : screen === "phone" ? 2 : 0;
+
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [codeChannel, setCodeChannel] = useState<"phone" | "email">("phone");
+  const [masked, setMasked] = useState("");
+  const [resendAt, setResendAt] = useState(0);
+  const [linkToken, setLinkToken] = useState("");
+  const [hint, setHint] = useState<LinkRequiredResult["hint"] | null>(null);
+  const [accountChoices, setAccountChoices] = useState<AccountChoice[]>([]);
+  const [choiceToken, setChoiceToken] = useState("");
+  const [householdAccounts, setHouseholdAccounts] = useState<ChooseAccountResult["accounts"]>([]);
+  const [choosingId, setChoosingId] = useState("");
+
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; phone?: string }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [offerEmail, setOfferEmail] = useState(false);
 
-  const [formData, setFormData] = useState<FormData>(initialFormData);
-
-
-  /*
-   * What the visitor was in the middle of when signup was asked of them.
-   *
-   * A free visit they already scheduled, or a plan they already chose. Shown
-   * once, above the question, so signup reads as the last small step of that
-   * task rather than the start of a new one - and nothing has to be chosen
-   * again afterwards, because `next` returns them to finish it.
-   */
   const [returnTo, setReturnTo] = useState("");
-  const [carry, setCarry] = useState<
-    | { kind: "free-visit"; when: string }
-    | { kind: "plan"; label: string }
-    | null
-  >(null);
+  const [carry, setCarry] = useState<Carry>(null);
+  const restored = useRef(false);
+  const busy = useRef(false);
 
+  /* What the visitor was in the middle of, and a refresh in the middle of a code. */
   useEffect(() => {
-    const next = safeReturnPath(new URLSearchParams(window.location.search).get("next")) || "";
-    setReturnTo(next);
+    const params = new URLSearchParams(window.location.search);
+    const next = safeReturnPath(params.get("next")) || "";
+    let nextCarry: Carry = null;
     if (next.startsWith("/book/free")) {
       const draft = loadDraft();
       if (hasBookableDraft(draft)) {
@@ -401,333 +135,455 @@ export default function SignUpPage() {
         });
         const [hh, mm] = draft.requestedTime.split(":").map(Number);
         const time = `${hh % 12 === 0 ? 12 : hh % 12}:${String(mm).padStart(2, "0")} ${hh >= 12 ? "PM" : "AM"}`;
-        setCarry({ kind: "free-visit", when: `${day} · ${time}` });
+        nextCarry = { kind: "free-visit", when: `${day} · ${time}` };
       }
     } else if (next.startsWith("/membership/plans") || next.startsWith("/book?visit=membership")) {
       try {
         const pending = JSON.parse(sessionStorage.getItem("pendingCheckoutPlan") || "null");
-        if (pending?.summary) setCarry({ kind: "plan", label: String(pending.summary) });
+        if (pending?.summary) nextCarry = { kind: "plan", label: String(pending.summary) };
       } catch {
         /* no plan to show */
       }
     }
+    const code = params.get("promo")?.trim().toUpperCase() || "";
+    if (code) sessionStorage.setItem("pendingPromoCode", code);
+
+    const flow = loadPendingFlow();
+    queueMicrotask(() => {
+      setReturnTo(next);
+      setCarry(nextCarry);
+      if (flow) {
+        setPhone(flow.phone || "");
+        setEmail(flow.email || "");
+        setMasked(flow.masked || "");
+        setCodeChannel(flow.channel || "phone");
+        setResendAt(flow.resendAt || 0);
+        setLinkToken(flow.linkToken || "");
+        setHint(flow.hint || null);
+        setChoiceToken(flow.choiceToken || "");
+        setHouseholdAccounts(flow.accounts || []);
+        /* An expired code is not worth returning to: go back to where it is asked for. */
+        const expired = flow.screen === "code" && flow.expiresAt && flow.expiresAt < Date.now();
+        setScreen(expired ? (flow.channel === "email" ? "email" : "phone") : flow.screen);
+      }
+      restored.current = true;
+    });
+    trackEvent(mode === "signin" ? "view_login" : "view_signup", { page: mode === "signin" ? "/signin" : "/signup" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const phoneDigits = useMemo(() => extractUSNationalPhoneDigits(formData.phone), [formData.phone]);
-  const zipDigits = useMemo(() => formData.zip.replace(/\D/g, ""), [formData.zip]);
-
-  useEffect(() => {
-    trackEvent("view_signup", { page: "/signup" });
-    trackEvent("signup_started", { page: "/signup" });
-    const code = new URLSearchParams(window.location.search).get("promo")?.trim().toUpperCase() || "";
-    if (code) {
-      sessionStorage.setItem("pendingPromoCode", code);
-    }
-  }, []);
-
-  const clearFeedback = () => {
-    if (error) setError("");
-    if (consentError) setConsentError(false);
-  };
-
-  const handleChange = (field: keyof FormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    clearFeedback();
-    if (field === "email" || field === "phone") {
-      setFieldErrors((prev) => ({ ...prev, [field]: "" }));
-    }
-  };
-
-  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
-
-  const formatPhone = (value: string) => {
-    const digits = extractUSNationalPhoneDigits(value);
-    if (digits.length <= 3) return digits;
-    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-  };
-
-  const validatePropertyStep = () => {
-    /*
-     * One condition now: is there an address we actually looked up?
-     *
-     * Typing text is not an address. The old check counted filled boxes, which
-     * "123 whatever street" satisfies perfectly.
-     */
-    if (!address?.verified) { setError("Select your address from the list."); return false; }
-    /*
-     * Booking a free visit, at an address we do not serve: stop here, before
-     * an account is made for a visit that cannot happen. Plain signup is not
-     * affected - it never promised a visit.
-     */
-    if (carry?.kind === "free-visit" && serviceArea === "outside") {
-      setError("We don't serve this address yet, so we can't book this visit. Profixter serves Nassau and Suffolk counties.");
-      return false;
-    }
-    setError("");
-    return true;
-  };
-
-  const validateNameStep = () => {
-    if (!formData.name.trim()) { setError("Please enter your full name"); return false; }
-    setError("");
-    return true;
-  };
-
-  const validateContactStep = () => {
-    if (!formData.email.trim()) { setFieldErrors((p) => ({ ...p, email: "Please enter your email" })); return false; }
-    if (!isValidEmail(formData.email)) { setFieldErrors((p) => ({ ...p, email: "Please enter a valid email address" })); return false; }
-
-    /*
-     * The number and the texting choice are checked here because they are ASKED
-     * here. A field cannot be validated on a step that does not show it, so
-     * this check travels with the fieldset wherever it goes.
-     */
-    if (!formData.phone.trim()) { setFieldErrors((p) => ({ ...p, phone: "Please enter your phone number" })); return false; }
-    if (phoneDigits.length !== 10 || !isValidUSNationalPhoneDigits(phoneDigits)) { setFieldErrors((p) => ({ ...p, phone: "Please enter a valid 10-digit US phone number" })); return false; }
-
-    /*
-     * Service texts are a condition of registration, checked here AND on the
-     * server - a form validator is trivially bypassed by posting to the
-     * endpoint directly, and routes/auth.js refuses the request without it.
-     *
-     * MARKETING IS DELIBERATELY ABSENT from this check and must stay absent. It
-     * is its own control, its own consent, and never a condition of anything.
-     */
-    if (!smsTransactionalConsent) {
-      /*
-       * Inline, beneath the box itself. There is exactly one control that can
-       * fix this and it is a few pixels above the message.
-       */
-      setSmsConsentError(true);
-      setError("");
-      return false;
-    }
-
-    setError("");
-    setFieldErrors({});
-    return true;
-  };
-
-  const validateSecurityStep = () => {
-    if (!formData.password) { setError("Create a password."); return false; }
-    if (formData.password.length < 8) { setError("Use at least 8 characters."); return false; }
-    if (!agreeTerms) {
-      setConsentError(true);
-      setError("You must agree to the Terms and Privacy Policy to continue.");
-      return false;
-    }
-    setError("");
-    setConsentError(false);
-    setSmsConsentError(false);
-    return true;
-  };
-
-  const validateCurrentStep = () => {
-    if (step === 1) return validatePropertyStep();
-    if (step === 2) return validateNameStep();
-    if (step === 3) return validateContactStep();
-    return validateSecurityStep();
-  };
-
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
-
-  const handleNextStep = () => {
-    if (!validateCurrentStep()) return;
-
-    /*
-     * StartSignup, at the only moment it is true.
-     *
-     * Fired here rather than on the button's onClick, because a tap that fails
-     * validation is not a signup starting - it is somebody being told their
-     * address is outside the service area. Validation has already passed by
-     * this line, so the visitor has given us an address we accepted.
-     *
-     * It also cannot be a page-load or URL trigger: the four steps are one
-     * route and one component, so from a tag manager's point of view nothing
-     * happens between landing on /signup and the account existing.
-     */
-    if (step === 1) {
-      trackStartSignup({
-        content_name: "signup_address",
-        city: formData.city || undefined,
-        state: formData.state || undefined,
-        verified_address: address?.placeId ? "yes" : "manual",
+  /* Keep the unfinished flow in this tab's session, never the password. */
+  const persist = useCallback(
+    (patch: Partial<Omit<PendingAuthFlow, "savedAt">> & { screen: PendingAuthFlow["screen"] }) => {
+      savePendingFlow({
+        phone,
+        email,
+        masked,
+        channel: codeChannel,
+        resendAt,
+        linkToken: linkToken || undefined,
+        hint: hint || undefined,
+        ...patch,
       });
-    }
+    },
+    [phone, email, masked, codeChannel, resendAt, linkToken, hint]
+  );
 
-    if (step < 4) {
-      setStep((step + 1) as Step);
-      scrollToTop();
+  const go = useCallback(
+    (next: Screen) => {
+      setError("");
+      setFieldErrors({});
+      setOfferEmail(false);
+      setAccountChoices([]);
+      setScreen(next);
+      if (next === "methods") clearPendingFlow();
+      else persist({ screen: next });
+    },
+    [persist]
+  );
+
+  /* Focus follows the screen, so a keyboard or screen reader lands on the question. */
+  const firstScreen = useRef(true);
+  useEffect(() => {
+    if (firstScreen.current) {
+      firstScreen.current = false;
+      return;
     }
+    const selector =
+      screen === "phone" ? "#phone" : screen === "email" || screen === "password" ? "#auth-email" : screen === "code" ? null : ".auth-question";
+    if (selector) document.querySelector<HTMLElement>(selector)?.focus({ preventScroll: true });
+    window.scrollTo({ top: 0 });
+  }, [screen]);
+
+  const choose = (method: AuthMethod) => {
+    trackEvent("signup_started", { page: mode === "signin" ? "/signin" : "/signup", method });
+    if (mode === "signup") trackStartSignup({ content_name: "signup_method", method });
   };
 
-  const handleBackStep = () => {
-    setError("");
-    setConsentError(false);
-    setFieldErrors({});
-    if (step > 1) {
-      setStep((step - 1) as Step);
-      scrollToTop();
-    }
+  const finish = async (token: string, created: boolean, eventId: string, method: AuthMethod) => {
+    await completeSignIn({
+      token,
+      created,
+      eventId,
+      method,
+      /*
+       * The Lead, for a NEW account only, after identify() has run so it
+       * carries the matching identifiers. relay: false - the server already
+       * sent this to the Conversions API with the same event id.
+       */
+      onCreated: () =>
+        trackLead(
+          { content_name: "account_created", status: "new_account", lead_type: "account" },
+          { eventId, relay: false }
+        ),
+    });
   };
 
-  const submitHomeSetup = async () => {
+  /* --------------------------------------------------------------- phone */
+
+  /*
+   * The step validators. Each answers one question about what is on screen and
+   * reports it beside the control that can fix it. There is no consent to
+   * validate: sign-up asks for none.
+   */
+  const validatePhoneNumberStep = () => {
+    if (!phone.trim()) {
+      setFieldErrors({ phone: "Enter your mobile number." });
+      return false;
+    }
+    if (!phoneToE164(phone)) {
+      setFieldErrors({ phone: "Enter a valid mobile number, like (631) 555-0123." });
+      return false;
+    }
+    return true;
+  };
+
+  const validateEmailStep = () => {
+    if (!isValidEmail(email)) {
+      setFieldErrors({ email: email.trim() ? "Enter a valid email address." : "Enter your email." });
+      return false;
+    }
+    return true;
+  };
+
+  const sendPhoneCode = async (e?: FormEvent<HTMLFormElement>) => {
+    e?.preventDefault();
+    if (busy.current) return;
     setError("");
-    setConsentError(false);
-
-    if (!validatePropertyStep()) { setStep(1); scrollToTop(); return; }
-    if (!validateNameStep()) { setStep(2); scrollToTop(); return; }
-    if (!validateContactStep()) { setStep(3); scrollToTop(); return; }
-    if (!validateSecurityStep()) { setStep(4); return; }
-
+    setOfferEmail(false);
+    if (!validatePhoneNumberStep()) return;
+    const e164 = phoneToE164(phone) as string;
+    busy.current = true;
     setLoading(true);
-
-    // Minted before the request so the browser event and the server event that
-    // the request triggers are the same event as far as Meta is concerned.
-    const leadEventId = newEventId();
-    const { fbp, fbc } = getFbCookies();
-
     try {
-      const registrationPayload = {
-        name: formData.name.trim(),
-        email: formData.email.trim(),
-        password: formData.password,
-        phone: formData.phone.trim(),
-        address: formData.address.trim(),
-        city: formData.city.trim(),
-        state: formData.state,
-        zip: zipDigits,
-        /*
-         * No county. It used to be a required field derived in the browser from
-         * the ZIP prefix, which is the range matching utils/serviceArea.js
-         * refuses to do because Long Island ZIPs interleave with Queens. The
-         * server derives it from the allowlist now.
-         *
-         * placeId and the coordinates are sent when the address came from a
-         * lookup and omitted when it was typed by hand, which is how the server
-         * tells the two apart. The coordinates are checked against the ZIP's
-         * own polygon before anything is stored.
-         */
-        placeId: address?.placeId || "",
-        lat: address?.lat ?? null,
-        lng: address?.lng ?? null,
-        termsAccepted: true,
-        consentSource: "website_signup",
-        consentAt: new Date().toISOString(),
-        /*
-         * The two ticks, sent exactly as the customer left them.
-         *
-         * Never coerced to true, and never derived from the presence of a phone
-         * number or from Terms acceptance. The server records consent only when
-         * one of these is literally true, and writes nothing at all when it is
-         * not, so that "never asked" stays distinguishable from "said no".
-         */
-        smsTransactionalConsent,
-        smsMarketingConsent,
-        /*
-         * Tracking rides along with the registration it describes.
-         *
-         * The event id is minted HERE, before the request, so the browser and
-         * the server can both describe this one account creation with the same
-         * id and Meta counts one Lead rather than two. The server is the one
-         * that talks to the Conversions API, because at that point it holds the
-         * real email, phone, name and address to hash - the things that decide
-         * whether Meta can match the conversion to a person who saw the ad.
-         *
-         * Attribution is sent at the same time for the same reason: this is the
-         * moment an anonymous visitor becomes a row we can attribute, and the
-         * campaign that produced them only exists in this browser's storage.
-         */
-        metaEventId: leadEventId,
-        attribution: getAttribution(),
-        fbp,
-        fbc,
-      };
-
-      const { token } = await register(registrationPayload);
-      const verifiedUser = await authLogin(token);
-      if (!verifiedUser) {
-        throw new Error("We could not verify your new account. Please try again.");
+      const res = await startPhoneOtp({ phone: e164 });
+      const nextMasked = res.phoneMasked || maskPhoneForDisplay(e164);
+      const nextResendAt = Date.now() + (res.resendAfterSeconds || 30) * 1000;
+      setMasked(nextMasked);
+      setResendAt(nextResendAt);
+      setCodeChannel("phone");
+      setScreen("code");
+      persist({
+        screen: "code",
+        channel: "phone",
+        masked: nextMasked,
+        resendAt: nextResendAt,
+        expiresAt: Date.now() + (res.expiresInSeconds || 600) * 1000,
+      });
+    } catch (err) {
+      const parsed = readApiError(err);
+      if (parsed.code === "INVALID_PHONE") setFieldErrors({ phone: otpErrorMessage(parsed, "phone") });
+      else {
+        setError(otpErrorMessage(parsed, "phone"));
+        setOfferEmail(parsed.code === "SMS_UNAVAILABLE");
       }
-
-      /*
-       * Advanced matching before the Lead, not after.
-       *
-       * fbq queues calls in order, so re-initing with the hashed email and
-       * phone first means the Lead that follows carries them. Reversed, the
-       * most important event of the funnel would be the one event sent without
-       * the identifiers that let Meta match it.
-       */
-      identify({ email: formData.email, phone: formData.phone });
-
-      trackEvent("signup_completed", { source: "website_signup" });
-      /*
-       * relay: false - the registration handler already sent this to the
-       * Conversions API with the same id and better data than the page has.
-       */
-      trackLead(
-        { content_name: "account_created", status: "new_account", lead_type: "account" },
-        { eventId: leadEventId, relay: false }
-      );
-      const checkoutPromo =
-        new URLSearchParams(window.location.search).get("promo")?.trim().toUpperCase() ||
-        sessionStorage.getItem("pendingPromoCode") ||
-        "";
-      if (checkoutPromo) {
-        sessionStorage.setItem("pendingPromoCode", checkoutPromo);
-      }
-      // Where they were heading before they were asked to create an account,
-      // if anywhere. Same-site paths only; see safeReturnPath.
-      const returnPath = safeReturnPath(
-        new URLSearchParams(window.location.search).get("next")
-      );
-      const landingPath = getRoleLandingPath(verifiedUser);
-      /*
-       * No ?next: a new customer lands on the free-visit booker, the thing
-       * they can use today. It used to be /membership, a heavier booking UI
-       * that forced a reload. /book/free handles every case itself: it books
-       * the free visit, sends a member to their calendar, and offers a
-       * One-Time Visit or a plan to a home that has already had its free
-       * visit. A plan or promo carried into signup still goes to /membership,
-       * where PlansSection picks it up.
-       */
-      const planPending = (() => {
-        try {
-          return Boolean(sessionStorage.getItem("pendingCheckoutPlan"));
-        } catch {
-          return false;
-        }
-      })();
-      const customerLanding =
-        hasActiveMembership(verifiedUser) || checkoutPromo || planPending ? "/membership" : "/book/free";
-      router.replace(
-        returnPath || (landingPath === "/account" ? customerLanding : landingPath)
-      );
-    } catch (err: unknown) {
-      const errorResponse = err as { response?: { data?: { message?: string } }; message?: string };
-      const message = errorResponse?.response?.data?.message || errorResponse.message || "We couldn't finish setting up your home. Please try again.";
-      setError(message);
+    } finally {
+      busy.current = false;
       setLoading(false);
     }
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (step < 4) {
-      handleNextStep();
+  /* --------------------------------------------------------------- email */
+
+  const sendEmailCode = async () => {
+    if (busy.current) return;
+    setError("");
+    if (!validateEmailStep()) return;
+    busy.current = true;
+    setLoading(true);
+    try {
+      const res = await startEmailOtp(email);
+      const nextMasked = res.emailMasked || email.trim().toLowerCase();
+      const nextResendAt = Date.now() + (res.resendAfterSeconds || 30) * 1000;
+      setMasked(nextMasked);
+      setResendAt(nextResendAt);
+      setCodeChannel("email");
+      setScreen("code");
+      persist({
+        screen: "code",
+        channel: "email",
+        masked: nextMasked,
+        resendAt: nextResendAt,
+        expiresAt: Date.now() + (res.expiresInSeconds || 600) * 1000,
+      });
+    } catch (err) {
+      setFieldErrors({ email: otpErrorMessage(readApiError(err), "email") });
+    } finally {
+      busy.current = false;
+      setLoading(false);
+    }
+  };
+
+  /* ---------------------------------------------------------------- code */
+
+  const verifyCode = async (code: string): Promise<CodeOutcome> => {
+    const eventId = newEventId();
+    try {
+      if (codeChannel === "phone") {
+        const e164 = phoneToE164(phone) || phone;
+        const res = await verifyPhoneOtp({ phone: e164, code, ...conversionFields(eventId) });
+        if (res.status === "link_required") {
+          setLinkToken(res.linkToken);
+          setHint(res.hint);
+          setScreen("link");
+          persist({ screen: "link", linkToken: res.linkToken, hint: res.hint });
+          return null;
+        }
+        if (res.status === "choose_account") {
+          setChoiceToken(res.choiceToken);
+          setHouseholdAccounts(res.accounts || []);
+          setScreen("choose");
+          persist({ screen: "choose", choiceToken: res.choiceToken, accounts: res.accounts || [] });
+          return null;
+        }
+        if (res.status === "signed_in") {
+          await finish(res.token, res.created, eventId, "phone");
+          return null;
+        }
+        return { error: "Something went wrong. Please try again." };
+      }
+      const res = await verifyEmailOtp({
+        email,
+        code,
+        ...(linkToken ? { linkToken } : {}),
+        ...conversionFields(eventId),
+      });
+      if (res.status === "signed_in") {
+        await finish(res.token, res.created, eventId, "email");
+        return null;
+      }
+      return { error: "Something went wrong. Please try again." };
+    } catch (err) {
+      if (err instanceof Error && !("response" in err) && err.message.startsWith("We couldn't open")) {
+        return { error: err.message, keepCode: true };
+      }
+      return outcomeFromError(err, codeChannel);
+    }
+  };
+
+  const resendCode = async (): Promise<CodeOutcome> => {
+    try {
+      if (codeChannel === "phone") {
+        const e164 = phoneToE164(phone) || phone;
+        const res = await startPhoneOtp({ phone: e164 });
+        const nextResendAt = Date.now() + (res.resendAfterSeconds || 30) * 1000;
+        setResendAt(nextResendAt);
+        persist({ screen: "code", resendAt: nextResendAt, expiresAt: Date.now() + (res.expiresInSeconds || 600) * 1000 });
+      } else {
+        const res = await startEmailOtp(email);
+        const nextResendAt = Date.now() + (res.resendAfterSeconds || 30) * 1000;
+        setResendAt(nextResendAt);
+        persist({ screen: "code", resendAt: nextResendAt, expiresAt: Date.now() + (res.expiresInSeconds || 600) * 1000 });
+      }
+      return null;
+    } catch (err) {
+      return outcomeFromError(err, codeChannel);
+    }
+  };
+
+  /* ------------------------------------------------------- choose_account */
+
+  const chooseHouseholdAccount = async (accountId: string) => {
+    if (busy.current || !choiceToken) return;
+    busy.current = true;
+    setChoosingId(accountId);
+    setError("");
+    try {
+      const res = await choosePhoneAccount({ choiceToken, accountId });
+      await finish(res.token, false, "", "phone");
+    } catch (err) {
+      const parsed = readApiError(err);
+      setChoosingId("");
+      if (parsed.code === "LINK_EXPIRED") {
+        setChoiceToken("");
+        setHouseholdAccounts([]);
+        go("phone");
+        setError(otpErrorMessage(parsed, "phone"));
+      } else {
+        setError(otpErrorMessage(parsed, "phone"));
+      }
+    } finally {
+      busy.current = false;
+    }
+  };
+
+  /* -------------------------------------------------------- link_required */
+
+  const createNewAccount = async () => {
+    if (busy.current || !linkToken) return;
+    busy.current = true;
+    setLoading(true);
+    setError("");
+    const eventId = newEventId();
+    try {
+      const res = await createAccountForPhone({ linkToken, ...conversionFields(eventId) });
+      await finish(res.token, true, eventId, "phone");
+    } catch (err) {
+      const parsed = readApiError(err);
+      setError(
+        parsed.code === "CODE_EXPIRED" || parsed.status === 410
+          ? "That took a little too long. Please confirm your number again."
+          : otpErrorMessage(parsed, "phone")
+      );
+      setLoading(false);
+    } finally {
+      busy.current = false;
+    }
+  };
+
+  /* ------------------------------------------------------------ password */
+
+  const signInWithPassword = async (password: string, accountRole?: "customer" | "employee") => {
+    if (busy.current) return;
+    if (!isValidEmail(email) || !password) {
+      setError("Enter your email and password.");
       return;
     }
-    void submitHomeSetup();
+    busy.current = true;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await passwordLogin({
+        email,
+        password,
+        ...(linkToken ? { linkToken } : {}),
+        ...(accountRole ? { accountRole } : {}),
+      });
+      try {
+        localStorage.setItem("rememberedEmail", email.trim());
+      } catch {
+        /* not essential */
+      }
+      await finish(res.token, false, "", "password");
+    } catch (err) {
+      const parsed = readApiError(err);
+      if (parsed.code === "ACCOUNT_CHOICE_REQUIRED") {
+        setAccountChoices(parsed.accounts || []);
+      } else {
+        setError(parsed.message || (parsed.code === "NETWORK" ? otpErrorMessage(parsed, "email") : "Invalid email or password"));
+      }
+      setLoading(false);
+    } finally {
+      busy.current = false;
+    }
   };
+
+  /* ------------------------------------------------------- Google / Apple */
+
+  const signInWithGoogle = async (idToken: string) => {
+    if (busy.current) return;
+    choose("google");
+    busy.current = true;
+    setLoading(true);
+    setError("");
+    const eventId = newEventId();
+    try {
+      const res = await googleSignIn({ idToken, ...conversionFields(eventId) });
+      await finish(res.token, Boolean(res.created), eventId, "google");
+    } catch (err) {
+      setError(readApiError(err).message || "Google sign-in didn't finish. Please try again.");
+      setLoading(false);
+    } finally {
+      busy.current = false;
+    }
+  };
+
+  const signInWithApple = async (credential: AppleCredential) => {
+    if (busy.current) return;
+    busy.current = true;
+    setLoading(true);
+    setError("");
+    const eventId = newEventId();
+    try {
+      const res = await appleSignIn({ ...credential, ...conversionFields(eventId) });
+      await finish(res.token, Boolean(res.created), eventId, "apple");
+    } catch (err) {
+      setError(readApiError(err).message || "Apple sign-in didn't finish. Please try again.");
+      setLoading(false);
+    } finally {
+      busy.current = false;
+    }
+  };
+
+  /* ---------------------------------------------------------------- copy */
+
+  const heading = (() => {
+    switch (screen) {
+      case "methods":
+        if (mode === "signin") return "Welcome back";
+        return carry?.kind === "free-visit" ? "Almost done. Create your account to book." : "Create your account";
+      case "phone":
+        return "What's your mobile number?";
+      case "code":
+        return codeChannel === "phone" ? "Check your texts" : "Check your email";
+      case "email":
+        return linkToken ? "Confirm it's you" : "What's your email?";
+      case "link":
+        return "We found an existing Profixter account for this number";
+      case "password":
+        return "Sign in with password";
+      case "choose":
+        return "Which account?";
+    }
+  })();
+
+  const sub =
+    screen === "methods"
+      ? mode === "signin"
+        ? "Use the way you signed up. No password needed."
+        : "It takes seconds. No password, no forms."
+      : screen === "link"
+        ? "Confirm it's yours to open it, or start a new account."
+        : screen === "choose"
+          ? "More than one Profixter account uses this number. Choose yours."
+          : undefined;
+
+  const back = (() => {
+    switch (screen) {
+      case "phone":
+        return () => go("methods");
+      case "code":
+        return () => go(codeChannel === "phone" ? (linkToken ? "link" : "phone") : "email");
+      case "email":
+        return () => go(linkToken ? "link" : "methods");
+      case "link":
+      case "choose":
+        return () => go("phone");
+      case "password":
+        return () => go(linkToken ? "link" : "methods");
+      default:
+        return undefined;
+    }
+  })();
+
+  const altHref = mode === "signin"
+    ? returnTo ? `/signup?next=${encodeURIComponent(returnTo)}` : "/signup"
+    : returnTo ? `/signin?next=${encodeURIComponent(returnTo)}` : "/signin";
 
   return (
     <RoleEntryGate loadingLabel="Checking your session..." redirectLabel="Opening Your Home...">
-      <AuthScreen
-        altLabel="Log In"
-        altHref={returnTo ? `/signin?next=${encodeURIComponent(returnTo)}` : "/signin"}
-      >
-        {carry ? (
+      <AuthScreen altLabel={mode === "signin" ? "Create account" : "Log In"} altHref={altHref}>
+        {carry && screen === "methods" ? (
           <p className="auth-carry" data-signup-carry={carry.kind}>
             {carry.kind === "free-visit" ? (
               <>
@@ -740,247 +596,196 @@ export default function SignUpPage() {
             )}
           </p>
         ) : null}
-        {/*
-          The question, and nothing else above it.
 
-          What used to be here: a "Back to Home" pill, a LONG ISLAND HOME CARE
-          eyebrow, a marketing headline with a paragraph and three trust badges
-          on desktop, a green "first visit is free" panel repeated on all four
-          steps, a card inside a card, a heading and a subtitle restating the
-          heading. Eight things wrapped around one field.
-        */}
-        <AuthHeading onBack={step > 1 ? handleBackStep : undefined}>
-          {step === 1 && carry?.kind === "free-visit"
-            ? "Almost done. Where should we send your Fixter?"
-            : stepCopy[step].title}
+        <AuthHeading onBack={back} sub={sub}>
+          {heading}
         </AuthHeading>
-        {stepCopy[step].subtitle ? <p className="auth-sub">{stepCopy[step].subtitle}</p> : null}
 
-        <form onSubmit={handleSubmit} className="auth-fields" noValidate>
-                  {step === 1 ? (
-                    <AddressField
-                      value={address}
-                      onServiceArea={setServiceArea}
-                      onChange={(next) => {
-                        setAddress(next);
-                        clearFeedback();
-                        /*
-                          formData stays the source of truth for the submit
-                          payload, so the structured parts are mirrored into it
-                          as they arrive. The unit rides inside the street line
-                          because that is how the backend keys a property - see
-                          findDuplicateAddress, where "Apt 1" and "Apt 2" are
-                          deliberately two different homes.
-                        */
-                        setFormData((prev) => ({
-                          ...prev,
-                          address: next ? [next.line1, next.unit.trim()].filter(Boolean).join(" ") : "",
-                          city: next?.city || "",
-                          state: next?.state || "NY",
-                          zip: next?.zip || "",
-                        }));
-                      }}
-                    />
-                  ) : null}
+        {step === 1 ? (
+          <MethodChooser
+            mode={mode}
+            busy={loading}
+            oneTap={!isAuthenticated && !isLoading && screen === "methods"}
+            onPhone={() => {
+              choose("phone");
+              go("phone");
+            }}
+            onEmail={() => {
+              choose("email");
+              setLinkToken("");
+              setHint(null);
+              go("email");
+            }}
+            onPassword={() => {
+              choose("password");
+              setLinkToken("");
+              setHint(null);
+              try {
+                setEmail((prev) => prev || localStorage.getItem("rememberedEmail") || "");
+              } catch {
+                /* nothing remembered */
+              }
+              go("password");
+            }}
+            onGoogle={(idToken) => void signInWithGoogle(idToken)}
+            onApple={(credential) => void signInWithApple(credential)}
+            onAppleStart={() => choose("apple")}
+            onProviderError={setError}
+          />
+        ) : null}
 
-                  {step === 2 ? (
-                    <div>
-                      <FieldLabel htmlFor="name">Full Name</FieldLabel>
-                      <FieldInput
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => handleChange("name", e.target.value)}
-                        placeholder="Full name"
-                        autoComplete="name"
-                      />
-                    </div>
-                  ) : null}
+        {step === 2 ? (
+          <form onSubmit={sendPhoneCode} className="auth-fields" noValidate>
+            <div>
+              <FieldLabel htmlFor="phone">Mobile Phone Number</FieldLabel>
+              <input
+                id="phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                enterKeyHint="send"
+                value={phone}
+                onChange={(e) => {
+                  setPhone(formatPhoneInput(e.target.value));
+                  if (fieldErrors.phone) setFieldErrors({});
+                  if (error) setError("");
+                }}
+                placeholder="(631) 555-0123"
+                aria-invalid={fieldErrors.phone ? true : undefined}
+                aria-describedby={fieldErrors.phone ? "phone-error" : "terms-continue"}
+                className="auth-input"
+              />
+              <div aria-live="polite">
+                {fieldErrors.phone ? (
+                  <p id="phone-error" className="auth-error">
+                    {fieldErrors.phone}
+                  </p>
+                ) : null}
+              </div>
+            </div>
 
-                  {step === 3 ? (
+            <div aria-live="polite">
+              {error ? (
+                <p className="auth-error auth-error--form" role="alert">
+                  {error}
+                  {offerEmail ? (
                     <>
-                    <div>
-                      <FieldLabel htmlFor="email">Email Address</FieldLabel>
-                      <FieldInput
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleChange("email", e.target.value)}
-                        placeholder="Email"
-                        autoComplete="email"
-                      />
-                      {fieldErrors.email ? (
-                        <p className="auth-error">{fieldErrors.email}</p>
-                      ) : null}
-                    </div>
-
-
-                      {/*
-                        * THE NUMBER AND THE TWO CHOICES, ON THE STEP THAT ASKS FOR THEM.
-                        *
-                        * This used to be a bordered panel that rendered on every
-                        * step, carrying a legend, two sub-headings, the phone field,
-                        * an explanation of the phone field, a six-line disclosure
-                        * paragraph and three document links. Somebody arriving to
-                        * type their address met a compliance form before they had
-                        * entered anything, which is a poor way to start and a worse
-                        * way to ask permission.
-                        *
-                        * It is now the number and two rows, shown once, on the step
-                        * that asks how to reach the customer - which is where a
-                        * question about texting them belongs, beside the number the
-                        * texts would go to.
-                        *
-                        * WHY THE PHONE INPUT COMES WITH IT, ALWAYS. Twilio's campaign
-                        * check rejected an earlier version for having "no phone number
-                        * field connected to SMS consent". Wherever these boxes go the
-                        * number goes with them, inside one <fieldset>, or a reviewer
-                        * meets two checkboxes with nothing to attach them to. That is
-                        * the part that is load-bearing; which numbered step they land
-                        * on is not. The fieldset is borderless and its legend is
-                        * screen-reader-only, so the grouping is real to a parser and
-                        * invisible as a panel.
-                        *
-                        * Its validation moves with it, always - a field cannot be
-                        * validated on a step that does not show it.
-                        */}
-                      <fieldset className="m-0 space-y-2.5 border-0 p-0">
-                        <legend className="sr-only">
-                          Mobile number and text message preferences
-                        </legend>
-
-                        <div>
-                          <FieldLabel htmlFor="phone">Mobile Phone Number</FieldLabel>
-                          <FieldInput
-                            id="phone"
-                            type="tel"
-                            value={formData.phone}
-                            onChange={(e) => handleChange("phone", formatPhone(e.target.value))}
-                            placeholder="Mobile number"
-                            autoComplete="tel"
-                          />
-                          {fieldErrors.phone ? (
-                            <p className="auth-error">{fieldErrors.phone}</p>
-                          ) : null}
-                        </div>
-
-                        <ConsentRow
-                          id="sms-service-consent"
-                          checked={smsTransactionalConsent}
-                          onChange={(next) => {
-                            setSmsTransactionalConsent(next);
-                            if (smsConsentError) setSmsConsentError(false);
-                          }}
-                          label="Service text messages"
-                          href="/communication-consent#service-texts"
-                          requirement="Required"
-                        />
-                        {/*
-                          * Directly beneath the box that caused it, not at the foot
-                          * of the group - where it sat under "Offers & promotions"
-                          * and read as though declining offers had blocked the
-                          * account. Raised by an attempt to finish, never by typing,
-                          * and never by the marketing box, which has no failing
-                          * state to report.
-                          */}
-                        {smsConsentError ? (
-                          <p className="auth-error">
-                            Service texts are required to create your account.
-                          </p>
-                        ) : null}
-
-                        <ConsentRow
-                          id="sms-marketing-consent"
-                          checked={smsMarketingConsent}
-                          onChange={setSmsMarketingConsent}
-                          label="Offers & promotions"
-                          href="/communication-consent#marketing"
-                          requirement="Optional"
-                        />
-                      </fieldset>
-                    </>
-                  ) : null}
-
-                  {step === 4 ? (
-                    <>
-                      <div>
-                        <FieldLabel htmlFor="password">Password</FieldLabel>
-                        <PasswordToggle
-                          id="password"
-                          value={formData.password}
-                          onChange={(e) => handleChange("password", e.target.value)}
-                          placeholder="Create a password"
-                        />
-                      </div>
-
-                      {/*
-                        * The one required box, and the only one.
-                        *
-                        * It covers the Terms and the Privacy Policy and nothing else.
-                        * No SMS consent of any kind is bundled into it: the two text
-                        * message choices above are their own controls, and the
-                        * fieldset boundary keeps them out of this one.
-                        */}
-                      <ConsentCheckbox
-                        id="agree-terms"
-                        checked={agreeTerms}
-                        onChange={(next) => {
-                          setAgreeTerms(next);
-                          if (consentError) setConsentError(false);
+                      {" "}
+                      <button
+                        type="button"
+                        className="font-bold underline underline-offset-[3px]"
+                        onClick={() => {
+                          setLinkToken("");
+                          go("email");
                         }}
                       >
-                        {/*
-                          The documents linked inside the sentence rather than
-                          repeated under it.
-
-                          This row used to say "I agree to the Terms of Service
-                          and Privacy Policy." and then, underneath, "Required to
-                          create an account." followed by both documents again as
-                          links - the same two names twice, and a note saying the
-                          box is required directly above a button that will not
-                          work without it. One sentence, both links, still
-                          reachable, two lines shorter on the step where height
-                          costs the most.
-
-                          Kept as a closed element on purpose: the A2P suite
-                          scopes "the required Terms box" from this id to the
-                          matching </ConsentCheckbox>, and a self-closing tag
-                          leaves it no boundary to stop at.
-                        */}
-                        I agree to the{" "}
-                        <Link href="/terms" className="auth-inline-link underline underline-offset-4">
-                          Terms of Service
-                        </Link>{" "}
-                        and{" "}
-                        <Link href="/privacy" className="auth-inline-link underline underline-offset-4">
-                          Privacy Policy
-                        </Link>
-                        .
-                      </ConsentCheckbox>
+                        Use email
+                      </button>
                     </>
                   ) : null}
+                </p>
+              ) : null}
+            </div>
 
+            <AuthSubmit disabled={loading} loading={loading}>
+              {loading ? "Sending code" : "Text me a code"}
+            </AuthSubmit>
 
-                  {error ? <p className="auth-error auth-error--form">{error}</p> : null}
+            {/*
+              * The whole disclosure, and the only one: consent version
+              * "terms.continue.v1", word for word. No checkbox - continuing is
+              * the acceptance - and no marketing of any kind. The links open in
+              * a new tab so reading them never loses the number typed above.
+              */}
+            <p id="terms-continue" className="auth-fineprint" data-terms-continue>
+              By continuing, you agree to the{" "}
+              <Link href="/terms" target="_blank" rel="noopener noreferrer">
+                Terms
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" target="_blank" rel="noopener noreferrer">
+                Privacy Policy
+              </Link>{" "}
+              and to receive a one-time{" "}
+              <Link href="/communication-consent" target="_blank" rel="noopener noreferrer">
+                verification text
+              </Link>
+              . Msg &amp; data rates may apply.
+            </p>
+          </form>
+        ) : null}
 
-          <AuthSubmit disabled={loading} loading={loading}>
-            {step === 4
-              ? loading
-                ? "Creating your account"
-                : carry?.kind === "free-visit"
-                  ? "Create account & book"
-                  : carry?.kind === "plan"
-                    ? "Create account & continue"
-                    : "Create account"
-              : "Continue"}
-          </AuthSubmit>
-        </form>
+        {screen === "code" ? (
+          <CodeStep
+            key={`${codeChannel}-${masked}`}
+            idPrefix="auth"
+            channel={codeChannel}
+            destination={masked}
+            resendAt={resendAt}
+            onVerify={verifyCode}
+            onResend={resendCode}
+            onChangeDestination={() => go(codeChannel === "phone" ? "phone" : "email")}
+            changeLabel={codeChannel === "phone" ? "Change number" : "Change email"}
+          />
+        ) : null}
 
-        {/*
-          The free first visit, once, under the button - not a bordered badge on
-          every screen. Suppressed the moment the address is confirmed outside
-          the service area, and it stays suppressed for the rest of the flow.
-        */}
-        {serviceArea !== "outside" && carry?.kind !== "plan" ? (
+        {screen === "email" ? (
+          <EmailStep
+            email={email}
+            onEmail={(value) => {
+              setEmail(value);
+              if (fieldErrors.email) setFieldErrors({});
+            }}
+            onSubmit={() => void sendEmailCode()}
+            loading={loading}
+            error={fieldErrors.email || ""}
+            maskedHint={linkToken ? hint?.maskedEmail || null : null}
+          />
+        ) : null}
+
+        {screen === "link" ? (
+          <LinkRequiredStep
+            maskedEmail={hint?.maskedEmail || null}
+            hasPassword={Boolean(hint?.hasPassword)}
+            loading={loading}
+            onEmailCode={() => {
+              setEmail("");
+              go("email");
+            }}
+            onPassword={() => {
+              setEmail("");
+              go("password");
+            }}
+            onNewAccount={() => void createNewAccount()}
+          />
+        ) : null}
+
+        {screen === "password" ? (
+          <PasswordStep
+            email={email}
+            onEmail={(value) => {
+              setEmail(value);
+              if (error) setError("");
+            }}
+            onSubmit={(password) => void signInWithPassword(password)}
+            onChoose={(role, password) => void signInWithPassword(password, role)}
+            loading={loading}
+            error={error}
+            choices={accountChoices}
+          />
+        ) : null}
+
+        {screen === "choose" ? (
+          <ChooseAccountStep accounts={householdAccounts} loadingId={choosingId} onChoose={(id) => void chooseHouseholdAccount(id)} />
+        ) : null}
+
+        {(screen === "methods" || screen === "link" || screen === "choose") && error ? (
+          <p className="auth-error auth-error--form" role="alert" aria-live="assertive">
+            {error}
+          </p>
+        ) : null}
+
+        {screen === "methods" && carry?.kind !== "plan" && mode === "signup" ? (
           <p className="auth-reassure">
             <b>First visit free.</b> No card required.
           </p>

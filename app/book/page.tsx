@@ -36,6 +36,9 @@ import PlansSection from "@/app/components/sections/PlansSection";
 import { useFreeVisitEligibility } from "@/lib/free-visit";
 import MembershipUpgradePrompt, { normalizePlanKey } from "@/app/components/membership/MembershipUpgradePrompt";
 import { hasActiveMembership as hasActiveMembershipFor } from "@/lib/auth-routing";
+import { useAddHome } from "@/app/components/address/AddHomeSheet";
+import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
+import { useServiceTextsOptIn } from "@/app/components/booking/ServiceTextsOptIn";
 
 const ONE_TIME_SERVICE_OPTIONS = [
   "Replace Light Fixture",
@@ -258,6 +261,9 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
   const [configError, setConfigError] = useState("");
   const [addressId, setAddressId] = useState("");
   const [addressPickerOpen, setAddressPickerOpen] = useState(false);
+  const { requestHome, homeSheet } = useAddHome();
+  const { ensureContact, contactSheet } = useContactCompletion();
+  const { serviceTextsOptIn, applyServiceTextsOptIn } = useServiceTextsOptIn();
   const [selectedTask, setSelectedTask] = useState("");
   const [servicePickerOpen, setServicePickerOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -668,6 +674,8 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
       return;
     }
 
+    if (!(await ensureContact())) return;
+
     setLoading(true);
     try {
       const taskForApi = resolveTaskValue(selectedTask, config);
@@ -691,6 +699,8 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
         images: photos,
         libraryReference: libraryReference || undefined,
       });
+      /* Only now, with the visit accepted for checkout: never a condition of it. */
+      await applyServiceTextsOptIn();
       window.location.href = result.url;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to start checkout.";
@@ -960,12 +970,16 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                         className="mt-1 min-h-9 w-full rounded-[6px] border border-[#C5CBD8] bg-[#F8FAFF] px-2 text-[10px] font-semibold text-[#0B1628] outline-none transition focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/15 sm:min-h-11 sm:text-[13px]"
                       ><option value="">Choose address</option>{addresses.map((address) => <option key={address._id} value={address._id}>{addressLabel(address)}</option>)}</select>}
                       {!addresses.length && (
-                        <Link
-                          href="/account?tab=personal"
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const home = await requestHome();
+                            if (home?.address?._id) setAddressId(String(home.address._id));
+                          }}
                           className="mt-2 inline-flex text-[13px] font-bold text-[#306EEC]"
                         >
-                          Add an address in your account -&gt;
-                        </Link>
+                          Add your home -&gt;
+                        </button>
                       )}
                     </div>
 
@@ -1380,6 +1394,8 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                       </div>
                     )}
 
+                    {serviceTextsOptIn ? <div className="mb-1.5">{serviceTextsOptIn}</div> : null}
+
                     <button
                       type="button"
                       onClick={submit}
@@ -1451,6 +1467,8 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
       )}
 
       <Footer />
+      {homeSheet}
+      {contactSheet}
     </main>
   );
 }
@@ -1500,6 +1518,7 @@ function BookExperience() {
   const isMember = hasActiveMembershipFor(user);
   const isAnonymous = !isLoading && !isAuthenticated;
   const freeVisit = useFreeVisitEligibility();
+  const { openHome, homeSheet } = useAddHome();
   // Same plan source the Extra Visit flow uses: the subscribed address.
   const currentPlanKey = normalizePlanKey(
     (user?.addresses || []).find((address) => Boolean(address.hasActiveSubscription))?.plan
@@ -1575,7 +1594,32 @@ function BookExperience() {
               </span>
               <span className="shrink-0 font-semibold text-[#306EEC]">Book it →</span>
             </Link>
+          ) : freeVisit === "needs_address" ? (
+            /*
+             * Signed in without a home yet: the offer stays, with the one step
+             * it needs. Saving the home re-runs the eligibility check, and the
+             * server decides whether it becomes the link above.
+             */
+            <div
+              className="mt-3 flex flex-col gap-2 rounded-[16px] border border-[#E3E8F1] bg-white px-4 py-3.5 text-[14px] sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+              data-book-free-visit="needs-address"
+            >
+              <span className="text-[#3b4658]">
+                <b className="text-[#0B1628]">Try us first.</b> Your first 90-minute visit is free.
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  trackEvent("free_visit_cta_clicked", { placement: "book_tab_add_home" });
+                  openHome();
+                }}
+                className="shrink-0 text-left font-semibold text-[#306EEC]"
+              >
+                Add your home to check availability →
+              </button>
+            </div>
           ) : null}
+          {homeSheet}
         </section>
         <FullDayVisitHistory />
         <Footer />

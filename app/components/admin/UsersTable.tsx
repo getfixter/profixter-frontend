@@ -119,12 +119,45 @@ function normalizePlan(plan: unknown): PlanFilter {
 }
 
 function getAddressText(address: AddressDetailed | null) {
-  return address
-    ? `${address.line1 || ''}, ${address.city || ''}, ${address.state || ''} ${address.zip || ''}`
-        .replace(/\s+/g, ' ')
-        .replace(/,\s*,/g, ',')
-        .trim()
-    : 'No address';
+  if (!address) return 'No address';
+  const clean = (value: unknown) => String(value || '').trim();
+  const stateZip = [clean(address.state), clean(address.zip)].filter(Boolean).join(' ');
+  return [clean(address.line1), clean(address.city), stateZip].filter(Boolean).join(', ') || 'Address details missing';
+}
+
+const PROVIDER_LABELS: Record<string, string> = { google: 'Google', apple: 'Apple' };
+
+/*
+ * Registration 2.0 signals, as compact chips: what the customer has verified,
+ * whether they have a home on file yet, SMS offers consent and how they sign in.
+ */
+function CustomerChips({ user, hasAddress, dark = false }: { user: User; hasAddress: boolean; dark?: boolean }) {
+  const chip = dark
+    ? 'rounded-full px-2 py-0.5 text-[11px] font-semibold'
+    : 'rounded-full border px-2 py-0.5 text-[11px] font-semibold';
+  const tone = {
+    good: dark ? 'bg-emerald-500/15 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    info: dark ? 'bg-sky-500/15 text-sky-200' : 'border-sky-200 bg-sky-50 text-sky-700',
+    warn: dark ? 'bg-amber-500/15 text-amber-200' : 'border-amber-200 bg-amber-50 text-amber-800',
+    muted: dark ? 'bg-white/10 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600',
+  };
+  const providers = (user.authProviders || [])
+    .map((provider) => PROVIDER_LABELS[String(provider).toLowerCase()])
+    .filter((label): label is string => Boolean(label));
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {(user.phoneVerifiedAt || user.phoneVerified) && <span className={`${chip} ${tone.good}`}>Phone verified</span>}
+      {(user.emailVerifiedAt || user.emailVerified) && <span className={`${chip} ${tone.good}`}>Email verified</span>}
+      {!hasAddress && <span className={`${chip} ${tone.warn}`}>No address yet</span>}
+      {user.smsPreferences?.marketingEnabled && <span className={`${chip} ${tone.info}`}>SMS offers: on</span>}
+      {providers.map((label) => (
+        <span key={label} className={`${chip} ${tone.muted}`}>
+          {label}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function userMatchesPlan(user: User, plan: PlanFilter) {
@@ -350,7 +383,7 @@ export default function UsersTable({
   };
 
   const expectedDeleteUserConfirmation = deleteUserTarget
-    ? `DELETE ${deleteUserTarget.email}`
+    ? `DELETE ${deleteUserTarget.email || deleteUserTarget.userId}`
     : '';
 
   const handleConfirmDeleteUser = async () => {
@@ -727,12 +760,17 @@ export default function UsersTable({
                               </span>
                             )}
                           </div>
-                          <a
-                            href={`mailto:${user.email}`}
-                            className="text-sm text-sky-700 transition hover:text-sky-900 hover:underline"
-                          >
-                            {user.email}
-                          </a>
+                          {user.email ? (
+                            <a
+                              href={`mailto:${user.email}`}
+                              className="text-sm text-sky-700 transition hover:text-sky-900 hover:underline"
+                            >
+                              {user.email}
+                            </a>
+                          ) : (
+                            <span className="text-sm text-slate-400">No email</span>
+                          )}
+                          <CustomerChips user={user} hasAddress={(user.addressesDetailed || []).length > 0} />
                           <div>
                             <CompletedBookingsChip count={user.completedBookings} />
                           </div>
@@ -763,10 +801,14 @@ export default function UsersTable({
                       </td>
                       <td className="px-4 py-4">
                         <div className="space-y-2">
-                          <div className="flex items-start gap-1.5">
-                            <div className="text-sm text-slate-700">{addressText}</div>
-                            <CopyAddressButton address={address} className="-mt-1" />
-                          </div>
+                          {address ? (
+                            <div className="flex items-start gap-1.5">
+                              <div className="text-sm text-slate-700">{addressText}</div>
+                              <CopyAddressButton address={address} className="-mt-1" />
+                            </div>
+                          ) : (
+                            <div className="text-sm text-slate-400">—</div>
+                          )}
                           {address?.label && (
                             <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                               {address.label}
@@ -881,6 +923,9 @@ export default function UsersTable({
                         Completed bookings
                         <span className="text-sm font-bold tabular-nums text-white">{user.completedBookings ?? 0}</span>
                       </div>
+                      <div className="mt-2">
+                        <CustomerChips user={user} hasAddress={(user.addressesDetailed || []).length > 0} dark />
+                      </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       {address?.isDefault && (
@@ -900,12 +945,16 @@ export default function UsersTable({
                 <div className="space-y-3 p-4">
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
                     <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Email</div>
-                    <a
-                      href={`mailto:${user.email}`}
-                      className="mt-1 block break-all text-sm font-medium text-sky-700"
-                    >
-                      {user.email}
-                    </a>
+                    {user.email ? (
+                      <a
+                        href={`mailto:${user.email}`}
+                        className="mt-1 block break-all text-sm font-medium text-sky-700"
+                      >
+                        {user.email}
+                      </a>
+                    ) : (
+                      <div className="mt-1 text-sm text-slate-400">No email</div>
+                    )}
                   </div>
 
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
@@ -937,10 +986,14 @@ export default function UsersTable({
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Address</div>
-                        <div className="mt-1 flex items-start gap-1.5">
-                          <div className="text-sm text-slate-700">{addressText}</div>
-                          <CopyAddressButton address={address} className="-mt-0.5" />
-                        </div>
+                        {address ? (
+                          <div className="mt-1 flex items-start gap-1.5">
+                            <div className="text-sm text-slate-700">{addressText}</div>
+                            <CopyAddressButton address={address} className="-mt-0.5" />
+                          </div>
+                        ) : (
+                          <div className="mt-1 text-sm text-slate-400">—</div>
+                        )}
                       </div>
                       {address?.label && (
                         <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">
@@ -1068,7 +1121,7 @@ export default function UsersTable({
                     {historyUser.name || 'Unnamed user'}
                   </div>
                   <div className="mt-1 text-xs text-slate-300">
-                    {historyUser.email} · ID {historyUser.userId}
+                    {historyUser.email || historyUser.phone || 'No email'} · ID {historyUser.userId}
                   </div>
                 </div>
                 <div className="flex flex-shrink-0 items-center gap-2">

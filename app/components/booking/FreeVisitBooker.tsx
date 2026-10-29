@@ -31,6 +31,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
+import { useAddHome } from "@/app/components/address/AddHomeSheet";
+import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
+import { useServiceTextsOptIn } from "@/app/components/booking/ServiceTextsOptIn";
 import {
   createBooking,
   getMonthAvailability,
@@ -270,6 +273,9 @@ export default function FreeVisitBooker({
   const [phase, setPhase] = useState<Phase>("edit");
   const [access, setAccess] = useState<Access>("anonymous");
   const [addressId, setAddressId] = useState("");
+  const { requestHome, homeSheet } = useAddHome();
+  const { ensureContact, contactSheet } = useContactCompletion();
+  const { serviceTextsOptIn, applyServiceTextsOptIn } = useServiceTextsOptIn();
   const [errors, setErrors] = useState<{ note?: string; photos?: string; date?: string; time?: string }>({});
   const [notice, setNotice] = useState("");
   const [formError, setFormError] = useState("");
@@ -628,6 +634,7 @@ export default function FreeVisitBooker({
   }) => {
     const d = draftOverride || { note, libraryReference, date: selectedDate, time: selectedTime, photos };
     if (!addressId) return;
+    if (!(await ensureContact())) return;
     setPhase("submitting");
     setFormError("");
     setNotice("");
@@ -661,6 +668,8 @@ export default function FreeVisitBooker({
       });
 
       const reference = String(result?.booking?.bookingNumber || "");
+      /* Only now, with the booking accepted: the box is never a condition of it. */
+      await applyServiceTextsOptIn();
       /*
        * Schedule, not a second Lead: the Lead was this person's account,
        * created a minute ago on /signup.
@@ -700,7 +709,7 @@ export default function FreeVisitBooker({
         setFormError(errorMessage(err) || "We couldn't book that just now. Please try again.");
       }
     }
-  }, [addressId, id, libraryReference, note, photos, refreshDay, selectedDate, selectedTime, slotTaken, user]);
+  }, [addressId, applyServiceTextsOptIn, ensureContact, id, libraryReference, note, photos, refreshDay, selectedDate, selectedTime, slotTaken, user]);
 
   /*
    * The homepage request, in one press. The Lead fires only after the server
@@ -777,6 +786,15 @@ export default function FreeVisitBooker({
       setPhase("edit");
       setFormError("We couldn't reach our server. Check your connection and try again.");
     }
+  };
+
+  /*
+   * Add the home inline, then carry on: the refreshed user re-runs the
+   * "who is booking" effect above, which asks the server about the free visit.
+   */
+  const addHomeAndContinue = async () => {
+    const home = await requestHome();
+    if (home?.address?._id) setAddressId(String(home.address._id));
   };
 
   const onBook = async () => {
@@ -1156,10 +1174,13 @@ export default function FreeVisitBooker({
         {contactBlock}
 
         <div ref={summaryRef} className="scroll-mt-28">
-          <AccessNotice access={access} waitlist={waitlist} />
+          <AccessNotice access={access} waitlist={waitlist} onAddHome={addHomeAndContinue} />
+          {homeSheet}
+          {contactSheet}
           {formError ? <p className="fv-error" role="alert">{formError}</p> : null}
           {!blocked ? (
             <>
+              {serviceTextsOptIn ? <div className="mt-3">{serviceTextsOptIn}</div> : null}
               <button
                 type="button"
                 className={`fv-cta fv-cta--compact mt-3 w-full ${ready ? "fv-cta--ready" : ""}`}
@@ -1345,7 +1366,9 @@ export default function FreeVisitBooker({
 
       {/* 4. Summary + the one button */}
       <section ref={summaryRef} className="fv-step fv-step--last scroll-mt-28" aria-label="Your visit">
-        <AccessNotice access={access} waitlist={waitlist} />
+        <AccessNotice access={access} waitlist={waitlist} onAddHome={addHomeAndContinue} />
+          {homeSheet}
+          {contactSheet}
         <div className={`fv-reveal ${selectedDate && selectedSlotOpen ? "fv-reveal--open" : ""}`}>
           <div>
             {selectedDate && selectedSlotOpen ? (
@@ -1376,6 +1399,7 @@ export default function FreeVisitBooker({
 
         {!blocked ? (
           <>
+            {serviceTextsOptIn ? <div className="mt-4">{serviceTextsOptIn}</div> : null}
             <button
               type="button"
               className={`fv-cta mt-4 w-full ${ready ? "fv-cta--ready" : ""}`}
@@ -1459,7 +1483,15 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 /** What a signed-in customer who cannot have the free visit sees instead of a button that would fail. */
-function AccessNotice({ access, waitlist }: { access: Access; waitlist: { zip: string; email: string } }) {
+function AccessNotice({
+  access,
+  waitlist,
+  onAddHome,
+}: {
+  access: Access;
+  waitlist: { zip: string; email: string };
+  onAddHome: () => void;
+}) {
   if (access === "member") {
     return (
       <div className="fv-panel" data-fv-access="member">
@@ -1494,7 +1526,7 @@ function AccessNotice({ access, waitlist }: { access: Access; waitlist: { zip: s
     return (
       <div className="fv-panel" data-fv-access="no-address">
         <p className="font-semibold text-[#0B1628]">Add your home address to book.</p>
-        <Link href="/account" className="fv-cta mt-4 w-full">Add address</Link>
+        <button type="button" onClick={onAddHome} className="fv-cta mt-4 w-full">Add your home</button>
       </div>
     );
   }

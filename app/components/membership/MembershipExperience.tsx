@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { getRoleLandingPath } from "@/lib/auth-routing";
 import { useFreeVisitEligibility } from "@/lib/free-visit";
+import { useAddHome } from "@/app/components/address/AddHomeSheet";
 import { trackEvent } from "@/lib/analytics";
 
 import Header from "@/app/components/sections/Header";
@@ -273,7 +274,13 @@ function PostFreeVisitFlow() {
 function ProspectMembershipFlow({
   postFreeVisit = false,
   showFreeVisitOffer = false,
-}: { postFreeVisit?: boolean; showFreeVisitOffer?: boolean } = {}) {
+  onAddHome,
+}: {
+  postFreeVisit?: boolean;
+  showFreeVisitOffer?: boolean;
+  /** Signed in without a home: the offer's step is adding one, not booking. */
+  onAddHome?: () => void;
+} = {}) {
   const steps = [
     ["Choose a plan", "Pick the level of home support that fits your needs."],
     ["Book when needed", "Choose a date, add notes and photos, and request your visit."],
@@ -308,18 +315,31 @@ function ProspectMembershipFlow({
           {showFreeVisitOffer ? (
             <div className="mx-auto mt-7 max-w-[520px] rounded-[8px] border border-[#E5E5EA] bg-[#F5F5F7] px-5 py-5">
               <p className="text-[19px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[19px]">
-                Your first visit is free.
+                {onAddHome ? "Your first visit may be free." : "Your first visit is free."}
               </p>
               <p className="mt-1.5 text-[13px] leading-5 text-[#6E6E73] sm:text-[14px]">
                 90-minute first visit · No card required · One per customer
               </p>
-              <Link
-                href="/book/free"
-                onClick={() => trackEvent("free_visit_cta_clicked", { placement: "membership_hero" })}
-                className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9] sm:w-auto"
-              >
-                Book Your First Visit Free
-              </Link>
+              {onAddHome ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackEvent("free_visit_cta_clicked", { placement: "membership_hero_add_home" });
+                    onAddHome();
+                  }}
+                  className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9] sm:w-auto"
+                >
+                  Add your home to check availability
+                </button>
+              ) : (
+                <Link
+                  href="/book/free"
+                  onClick={() => trackEvent("free_visit_cta_clicked", { placement: "membership_hero" })}
+                  className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9] sm:w-auto"
+                >
+                  Book Your First Visit Free
+                </Link>
+              )}
             </div>
           ) : null}
 
@@ -459,6 +479,7 @@ export default function MembershipExperience() {
    * drift apart and disagree about whether a visit is free.
    */
   const introState = useFreeVisitEligibility();
+  const { openHome, homeSheet } = useAddHome();
 
   useEffect(() => {
     if (isLoading) return;
@@ -540,12 +561,19 @@ export default function MembershipExperience() {
           <ProspectMembershipFlow />
         )}
 
+        {/* No home on file yet: show the offer, with adding the home as its
+            step. Saving it re-runs the eligibility check; the server decides. */}
+        {isAuthenticated && !isSubscribed && introState === "needs_address" && (
+          <ProspectMembershipFlow showFreeVisitOffer onAddHome={openHome} />
+        )}
+
         {!isAuthenticated && (
           <ProspectMembershipFlow showFreeVisitOffer />
         )}
       </main>
 
       {!isSubscribed && introState !== "eligible" && <StickyMobileCTA />}
+      {homeSheet}
     </div>
   );
 }

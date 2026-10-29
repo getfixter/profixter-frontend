@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { useFreeVisitEligibility } from "@/lib/free-visit";
+import { useAddHome } from "@/app/components/address/AddHomeSheet";
 import { trackEvent } from "@/lib/analytics";
 
 /**
@@ -25,6 +26,7 @@ import { trackEvent } from "@/lib/analytics";
 export default function MembershipGatewayPanel() {
   const { isAuthenticated } = useAuth();
   const freeVisit = useFreeVisitEligibility();
+  const { openHome, homeSheet } = useAddHome();
 
   /*
    * An anonymous visitor has no property on file, so there is nothing to check
@@ -32,6 +34,11 @@ export default function MembershipGatewayPanel() {
    * so they get a straight answer.
    */
   const offerFreeVisit = isAuthenticated ? freeVisit === "eligible" : true;
+  /*
+   * Signed in with no home on file: the offer stays, with "add your home" as
+   * the step. Saving it re-runs the eligibility hook, and the server decides.
+   */
+  const needsAddress = isAuthenticated && freeVisit === "needs_address";
   /* The booker itself - for a visitor with no account, signup comes after the time is picked. */
   const freeVisitHref = "/book/free";
   const freeVisitLabel = isAuthenticated
@@ -92,25 +99,38 @@ export default function MembershipGatewayPanel() {
          * it on a phone, so on desktop it uses width that was empty rather than
          * making the column taller.
          */}
-        {offerFreeVisit && (
+        {(offerFreeVisit || needsAddress) && (
           <aside className="rounded-[8px] border border-[#D9E4FF] bg-[#F4F8FF] p-5 sm:p-6">
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#306EEC]">
               New here?
             </p>
             <p className="mt-2 text-[17px] font-semibold leading-[1.25] tracking-[-0.02em] text-[#0B1628]">
-              {isAuthenticated ? "Your first visit is free." : "Your first visit may be free."}
+              {isAuthenticated && !needsAddress ? "Your first visit is free." : "Your first visit may be free."}
             </p>
             <p className="mt-2 text-[13.5px] leading-5 text-[#4A5462]">
               90 minutes of handyman work, no card required, one per customer. It is the
               easiest way to see how we work before deciding anything.
             </p>
-            <Link
-              href={freeVisitHref}
-              onClick={() => trackEvent("free_visit_cta_clicked", { placement: "book_fixter_tab" })}
-              className="mt-4 inline-flex min-h-[46px] w-full items-center justify-center rounded-[8px] bg-[#0B1628] px-5 text-[15px] font-semibold text-white transition hover:bg-[#172033] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] sm:w-auto"
-            >
-              {freeVisitLabel}
-            </Link>
+            {needsAddress ? (
+              <button
+                type="button"
+                onClick={() => {
+                  trackEvent("free_visit_cta_clicked", { placement: "book_fixter_tab_add_home" });
+                  openHome();
+                }}
+                className="mt-4 inline-flex min-h-[46px] w-full items-center justify-center rounded-[8px] bg-[#0B1628] px-5 text-[15px] font-semibold text-white transition hover:bg-[#172033] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] sm:w-auto"
+              >
+                Add your home to check availability
+              </button>
+            ) : (
+              <Link
+                href={freeVisitHref}
+                onClick={() => trackEvent("free_visit_cta_clicked", { placement: "book_fixter_tab" })}
+                className="mt-4 inline-flex min-h-[46px] w-full items-center justify-center rounded-[8px] bg-[#0B1628] px-5 text-[15px] font-semibold text-white transition hover:bg-[#172033] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC] sm:w-auto"
+              >
+                {freeVisitLabel}
+              </Link>
+            )}
             {!isAuthenticated && (
               <p className="mt-2.5 text-[12.5px] leading-4 text-[#6E6E73]">
                 We check your address first to confirm it is available.
@@ -119,6 +139,7 @@ export default function MembershipGatewayPanel() {
           </aside>
         )}
       </div>
+      {homeSheet}
     </section>
   );
 }
