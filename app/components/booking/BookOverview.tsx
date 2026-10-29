@@ -54,32 +54,27 @@ export default function BookOverview() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#F8F7F2] text-[#0B1628]">
+    <main className="pg-book">
       <Header />
       <VisitTypeNav active={DEFAULT_VISIT_TYPE} />
-      <section className="mx-auto w-full max-w-[1280px] px-4 pb-10 pt-5 sm:px-6 sm:pt-8 lg:px-8">
-        <h1 className="text-[26px] font-black leading-tight tracking-[-0.035em] text-[#071325] sm:text-[36px] lg:text-[40px]">
-          {BOOK_HEADING}
-        </h1>
-        <p className="mt-2 max-w-[640px] text-[14px] leading-6 text-[#475569] sm:text-[16px]">
+      <section className="ui-container pb-12 pt-5 sm:pt-8">
+        <h1 className="pg-book__title">{BOOK_HEADING}</h1>
+        <p className="pg-book__sub">
           Handyman visits across Nassau and Suffolk. New customers can start with a{" "}
-          <Link href="/book/free" className="font-semibold text-[#306EEC] underline underline-offset-2">
+          <Link href="/book/free" className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2">
             free first {STANDARD_VISIT_MINUTES}-minute visit
           </Link>
           .
         </p>
-        <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="pg-cards pg-cards--4 mt-6">
           {options.map((option) => (
             <li key={option.name}>
-              <Link
-                href={option.href}
-                className="block h-full rounded-[12px] border border-[#E3E8F1] bg-white p-4 transition hover:border-[#C9D6EE]"
-              >
+              <Link href={option.href} className="ui-card ui-card--link h-full">
                 <span className="flex items-baseline justify-between gap-3">
-                  <span className="text-[16px] font-black">{option.name}</span>
-                  <span className="text-[13px] font-bold text-[#306EEC]">{option.price}</span>
+                  <span className="pg-card__title !text-[17px]">{option.name}</span>
+                  <span className="ui-num text-[13px] font-semibold text-[color:var(--ui-accent-ink)]">{option.price}</span>
                 </span>
-                <span className="mt-1.5 block text-[14px] leading-6 text-[#5C6672]">{option.body}</span>
+                <span className="pg-card__meta block">{option.body}</span>
               </Link>
             </li>
           ))}

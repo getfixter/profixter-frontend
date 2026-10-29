@@ -785,11 +785,6 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     </div>
   );
 
-  const PlanCheck = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="mt-[4px] flex-none text-[#111111]">
-      <path d="M5 12.5l4 4 10-10" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
 
   /**
    * Mobile-first plan presentation.

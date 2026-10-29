@@ -45,10 +45,10 @@ function ServiceTextsOptIn({
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-[3px] h-4 w-4 flex-shrink-0 cursor-pointer rounded border-[#B8C2D3] accent-[#306EEC]"
+        className="mt-[2px] h-[18px] w-[18px] flex-shrink-0 cursor-pointer rounded border-[color:var(--ui-line-2)] accent-[#0B1628]"
       />
-      <div className="min-w-0 text-[13px] leading-[18px] text-[#475569]">
-        <label htmlFor="booking-service-texts" className="cursor-pointer font-semibold text-[#0B1628]">
+      <div className="min-w-0 text-[14px] leading-[1.45] text-[color:var(--ui-text-2)]">
+        <label htmlFor="booking-service-texts" className="cursor-pointer font-medium text-[color:var(--ui-ink)]">
           {LABEL}
         </label>{" "}
         {/* Outside the label: reading what a consent means must never tick it. */}
@@ -56,11 +56,11 @@ function ServiceTextsOptIn({
           href="/communication-consent#service-texts"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[12px] font-semibold text-[#306EEC] underline underline-offset-2"
+          className="text-[13px] font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2"
         >
           Details
         </a>
-        <p className="mt-0.5 text-[11.5px] leading-4 text-[#8A94A6]">{DETAILS}</p>
+        <p className="mt-0.5 text-[13px] leading-[1.45] text-[color:var(--ui-text-3)]">{DETAILS}</p>
       </div>
     </div>
   );
