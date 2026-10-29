@@ -484,33 +484,18 @@ check("gifting is reachable without knowing the URL", () => {
   has(architecture, '{ label: "Gift a Membership", href: "/gift" }', "and in the footer");
 });
 
-check("the homepage and the plan comparison both offer it", () => {
-  has(homeMarketing, "<GiftCallout variant=\"card\"", "the homepage carries a full gift card");
-  has(plansSection, 'GiftCallout variant="inline"', "the comparison carries one quiet line");
-  // /membership renders PlansSection with `compact`, so a !compact gate here
-  // would hide the gift line on the very page most likely to prompt the idea.
-  const inlineAt = plansSection.indexOf('<GiftCallout variant="inline" />');
-  assert.ok(inlineAt > 0, "the inline callout should be rendered");
-  const preceding = plansSection.slice(Math.max(0, inlineAt - 220), inlineAt);
-  assert.ok(
-    !preceding.includes("!compact &&"),
-    "the gift line must not be gated on the non-compact layout"
-  );
+check("the homepage offers it to members and visitors alike", () => {
   /*
-   * The rule CHANGED, deliberately. Gifting used to be required to sit after
-   * the closing call to action, which is how it ended up as the last thing
-   * on the page and why nobody found it.
-   *
-   * It must still not outrank the primary message - the hero and the
-   * membership pitch come first - but it now sits between them and the rest
-   * of the page rather than after everything.
+   * Homepage 3.0 (99a7900) split the page: members get HomeMarketing, with
+   * the shared card under their shortcuts; visitors get HomeLanding, with
+   * one line after the FAQ. The plan comparison no longer carries a gift
+   * line (8353809: somebody comparing prices for their own house is not
+   * shopping for a present), so it is not asserted here.
    */
-  const heroAt = homeMarketing.indexOf("=========================== HERO");
-  const giftAt = homeMarketing.indexOf("<GiftCallout variant=\"card\"");
-  const membershipAt = homeMarketing.indexOf("=========================== MEMBERSHIP");
-  assert(giftAt > 0, "the homepage must promote gifting");
-  assert(heroAt < 0 || giftAt > heroAt, "but never above the hero");
-  assert(giftAt < membershipAt, "and before the membership section, not after the whole page");
+  has(homeMarketing, '<GiftCallout variant="card" audience="member" />', "members see the gift card");
+  const landing = read("app", "components", "home", "HomeLanding.tsx");
+  has(landing, 'href="/gift"', "visitors are offered gifting too");
+  has(landing, "Buying for someone else?");
 });
 
 check("the callout speaks to real occasions, not just realtors", () => {
@@ -555,10 +540,10 @@ check("buying still requires an account", () => {
 
 console.log("\nLength selection\n");
 
-check("the purchase flow asks for a length as its own step", () => {
-  has(purchase, 'type Step = "plan" | "length" | "recipient" | "review"');
-  has(purchase, '"plan", "length", "recipient", "review"', "the rail shows four steps");
-  has(purchase, 'step === "length"', "and the step renders");
+check("the purchase flow asks for a length, on the same screen as the plan", () => {
+  // The wizard's separate Length step became a row of choices under the plan.
+  lacks(codeOnly(purchase), "type Step =", "there are no wizard steps");
+  has(purchase, 'name="gift-length"', "lengths are real radio inputs");
   has(purchase, "setChosenDuration", "the length is a choice");
 });
 
@@ -596,34 +581,42 @@ check("months are labelled singular or plural correctly", () => {
 check("the recipient address is optional and collapsed by default", () => {
   // Most people buying for a colleague or a client do not know the street
   // address, and requiring it was where the purchase was being abandoned.
-  has(purchase, "Add recipient address (optional)", "the section says it is optional");
-  has(purchase, "const [addressOpen, setAddressOpen]", "and starts closed");
-  has(purchase, 'aria-expanded={addressOpen}', "the disclosure is announced");
-  has(purchase, 'aria-controls="gift-address-fields"');
+  // It lives in the one closed optional section with the message.
+  has(purchase, "Add a message or details", "the section is named");
+  has(purchase, '(optional)', "and says it is optional");
+  has(purchase, "const [moreOpen, setMoreOpen] = useState(false)", "and starts closed");
+  has(purchase, "aria-expanded={moreOpen}", "the disclosure is announced");
+  has(purchase, 'aria-controls="gift-more"');
+  has(purchase, 'id="gift-more" hidden={!moreOpen}');
+  has(purchase, "Only if you know it. They choose the home when they claim.", "and says why it is optional");
 
   const code = codeOnly(purchase);
   // The old unconditional requirements must be gone.
   lacks(code, 'next.line1 = "Enter their street address."', "the street is no longer demanded");
   lacks(code, 'next.city = "Enter their city."', "nor the city");
-  // But a half-typed address is still refused.
+  // But a half-typed address is still refused, and the section opens to show it.
   has(code, "const anyAddress = Boolean(line1.trim() || city.trim() || zip.trim())");
   has(code, "if (anyAddress) {", "partial addresses are still caught");
-});
-
-check("the review screen copes with no address", () => {
-  // Rendering the row unconditionally produced ", , NY" on the last screen
-  // before payment, which reads as a bug.
-  has(purchase, "line1.trim() ? (", "the property row is conditional");
-  has(purchase, "They choose it when they claim", "and says so plainly instead");
+  has(code, 'if (["line1", "city", "zip"].includes(first)) setMoreOpen(true);', "a hidden error is revealed");
 });
 
 check("a phone number can be given, and is optional", () => {
-  has(purchase, 'label="Mobile number (optional)"', "labelled optional");
+  // Offered as a second contact rather than shown: email is the one the
+  // server requires.
+  has(purchase, "Add another contact (mobile number)", "offered, not demanded");
+  has(purchase, "const [phoneOpen, setPhoneOpen] = useState(false)", "hidden until asked for");
+  has(purchase, 'label="Their mobile number"');
   has(purchase, 'type="tel"');
-  has(purchase, 'autoComplete="tel"');
+  has(purchase, 'inputMode="tel"');
   has(purchase, "phone: phone.trim()", "and is sent with the purchase");
   has(service, "phone?: string", "the type marks it optional");
-  has(purchase, "We will text them the gift as well as emailing it.", "what it does is explained");
+  has(purchase, "We text them the link too.", "what it does is explained");
+  // Removing it clears the number, so a hidden number is never sent.
+  assert.match(purchase, /setPhone\(""\);\s+setPhoneOpen\(false\);/, "removing it clears the number");
+});
+
+check("the email requirement is explained in a few words", () => {
+  has(purchase, 'hint="We email them a link to claim it."');
 });
 
 check("email stays required, because identity binds on it", () => {
@@ -659,12 +652,18 @@ check("gift marketing comes from ONE component, not a copy per page", () => {
   for (const [name, source] of [
     ["book", bookPage],
     ["account overview", overview],
-    ["membership", membershipExp],
-    ["plans", plansPage],
     ["about", aboutPage],
     ["homepage", homeMarketing],
   ]) {
     has(source, "GiftCallout", `${name} should use the shared component`);
+  }
+  // /membership and /membership/plans dropped their gift blocks on purpose
+  // (8353809); if one comes back it must be the shared component.
+  for (const [name, source] of [
+    ["membership", membershipExp],
+    ["plans", plansPage],
+  ]) {
+    assert.ok(!/gift-heading/.test(codeOnly(source)) || source.includes("GiftCallout"), `${name} must not hand-roll a gift block`);
   }
   // And every shape lives in that one file.
   for (const variant of ['"band"', '"card"', '"bar"', '"inline"']) {
@@ -706,7 +705,6 @@ check("the pitch follows the reader, member or not", () => {
     'audience={covered ? "member" : "public"}',
     "the account pitch follows whether this person actually has cover"
   );
-  has(membershipExp, 'audience="public"', "the membership page is for visitors");
   // The two pitches must actually differ.
   has(callout, "You already know the convenience of having a Fixter");
   has(callout, "Give family, friends, clients or a new homeowner");
@@ -714,18 +712,13 @@ check("the pitch follows the reader, member or not", () => {
 
 check("gifting is discoverable high on the homepage", () => {
   // It used to be the last thing on the page, which is why nobody found it.
-  const giftAt = homeMarketing.indexOf("home-gift-heading");
-  const membershipAt = homeMarketing.indexOf("=========================== MEMBERSHIP");
-  const end = homeMarketing.length;
+  // On the member homepage it sits straight under the shortcuts, ahead of
+  // the gallery and everything else.
+  const giftAt = homeMarketing.indexOf('aria-label="Give a membership"');
+  const workAt = homeMarketing.indexOf('aria-labelledby="hm-work"');
   assert.ok(giftAt > 0, "the homepage must promote gifting");
-  assert.ok(
-    giftAt < membershipAt,
-    "gifting should appear before the membership section, not after everything"
-  );
-  assert.ok(
-    giftAt < end * 0.75,
-    `the gift block is ${Math.round((giftAt / end) * 100)}% through the file; it must not be stranded at the bottom`
-  );
+  assert.ok(workAt > 0, "the real-work section should still be there");
+  assert.ok(giftAt < workAt, "gifting should come before the rest of the page");
 });
 
 check("the homepage does not promote gifting twice", () => {
@@ -735,15 +728,16 @@ check("the homepage does not promote gifting twice", () => {
   assert.equal(occurrences, 1, `expected one gift block on the homepage, found ${occurrences}`);
 });
 
-check("the membership pages promote gifting above the fold-and-a-half", () => {
-  const giftAt = membershipExp.indexOf("membership-gift-heading");
-  const plansAt = membershipExp.indexOf("<PlansSection hideCancellationUi compact />");
-  assert.ok(giftAt > 0 && plansAt > 0);
-  assert.ok(
-    giftAt < plansAt,
-    "on /membership the card must sit ABOVE the comparison; below it landed three quarters down the page"
-  );
-  has(plansPage, "plans-gift-heading", "the comparison page carries one too");
+check("the membership pages leave gifting to its own page and the footer", () => {
+  /*
+   * Reversed deliberately in 8353809: a visitor reading /membership or the
+   * plan comparison is shopping for their own house, and a second pitch
+   * there cost a decision. Gifting stays one tap away in the header and the
+   * footer instead.
+   */
+  lacks(codeOnly(membershipExp), "<GiftCallout", "no gift block on /membership");
+  lacks(codeOnly(plansPage), "<GiftCallout", "no gift block on the comparison");
+  has(architecture, '{ label: "Gift a Membership", href: "/gift" }', "the footer keeps it");
 });
 
 check("the account promotes gifting on the screen members land on", () => {

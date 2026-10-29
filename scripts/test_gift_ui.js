@@ -126,7 +126,7 @@ test("prices are read from the options endpoint", () => {
   assert.match(code(service), /API\.get\("\/api\/gifts\/options"\)/);
   assert.match(code(purchase), /getGiftOptions/);
   assert.match(code(purchase), /quote\.totalCents/);
-  assert.match(code(purchase), /quote\.perMonthCents/);
+  assert.match(code(purchase), /quotes\[0\]\?\.perMonthCents/);
 });
 
 test("there is no fallback price when the API cannot be reached", () => {
@@ -159,16 +159,26 @@ test("no disabled future durations are rendered", () => {
 section("Purchase flow");
 /* ========================================================================== */
 
-test("the flow has plan, length, recipient and review steps", () => {
-  // Length became its own step once gifts stopped being two months only.
-  assert.match(code(purchase), /type Step = "plan" \| "length" \| "recipient" \| "review"/);
-  assert.match(purchase, /How long should it run/);
-  assert.match(purchase, /Review your gift/);
+test("the flow is one form: recipient, gift, optional details, summary", () => {
+  /*
+   * The four-step wizard (plan, length, recipient, review) was replaced by a
+   * single screen in October 2026. A purchaser only has to answer who it is
+   * for and which gift, and see what it costs and how they pay.
+   */
+  const body = code(purchase);
+  assert.ok(!/type Step =/.test(body), "there are no wizard steps any more");
+  const recipientAt = purchase.indexOf("Who is it for?");
+  const giftAt = purchase.indexOf("Choose the gift");
+  const optionalAt = purchase.indexOf("Add a message or details");
+  const summaryAt = purchase.indexOf('id="gift-summary-heading"');
+  assert.ok(recipientAt > 0 && giftAt > recipientAt, "required recipient fields come first");
+  assert.ok(optionalAt > giftAt, "the optional section follows the required ones");
+  assert.ok(summaryAt > optionalAt, "the summary sits with the pay button");
 });
 
 test("the one-time nature is stated plainly, before payment", () => {
   assert.match(purchase, /One-time payment/);
-  assert.match(purchase, /does not automatically renew/);
+  assert.match(purchase, /does not\s+automatically renew/);
 });
 
 test("no coupon field is built, and none is promised", () => {
@@ -186,7 +196,10 @@ test("no coupon field is built, and none is promised", () => {
   assert.ok(!/allow_promotion_codes/.test(body), "Stripe config belongs on the server");
   // Gift checkout accepts codes through Stripe's own field, so pointing the
   // customer at it is right; building an input here would not be.
-  assert.match(purchase, /enter it on the next screen/i);
+  assert.match(purchase, /<dt>Promo code<\/dt>\s*<dd className="gf-muted">Enter at checkout<\/dd>/);
+  // Tax is Stripe's to compute; the summary names it without a figure.
+  assert.match(purchase, /<dt>Sales tax<\/dt>\s*<dd className="gf-muted">Added at checkout<\/dd>/);
+  assert.ok(!/taxRate|\*\s*0?\.0\d/.test(body), "no tax is computed in the browser");
 });
 
 test("recipient fields are validated before review", () => {
@@ -199,8 +212,8 @@ test("recipient fields are validated before review", () => {
 test("self-gifting is caught in the UI and surfaced from the server", () => {
   assert.match(code(purchase), /cleanEmail === String\(user\.email\)/);
   assert.match(code(purchase), /SELF_GIFT_NOT_ALLOWED/);
-  // The server's refusal is shown on the field that caused it.
-  assert.match(code(purchase), /setStep\("recipient"\)/);
+  // The server's refusal is shown on the field that caused it, and scrolled to.
+  assert.match(code(purchase), /revealError\(fieldError\)/);
 });
 
 test("double submission cannot create two checkout sessions", () => {
@@ -394,7 +407,9 @@ test("NO BILLING CONTROL IS RENDERED FOR A GIFT", () => {
 test("the gift card offers Continue Membership instead", () => {
   assert.match(accountGift, /Continue membership/);
   // Which goes to the ORDINARY membership flow, paid by the recipient.
-  assert.match(code(accountGift), /href="\/membership"/);
+  // /membership/plans since c1e7e2c ("plans one tap away"); the rule is
+  // the same: an ordinary paid membership, never a renewal of the gift.
+  assert.match(code(accountGift), /href="\/membership\/plans"/);
 });
 
 test("no gift path attempts to renew or resume the gift itself", () => {
@@ -512,7 +527,9 @@ test("tap targets meet the 44px minimum", () => {
 
 test("layouts stack on mobile and open out on desktop", () => {
   // Mobile-first: base classes stack, sm: opens them out.
-  assert.match(purchase, /grid gap-3 sm:grid-cols-2/);
+  // The purchase form's grids live in gift.css: one column on phones.
+  const giftCss = read("app", "gift", "gift.css");
+  assert.match(giftCss, /\.gf-layout \{\s*display: grid;\s*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(purchase, /flex-col gap-3 sm:flex-row/);
   assert.match(accountGift, /flex-col gap-2\.5 sm:flex-row/);
   assert.ok(
@@ -523,14 +540,15 @@ test("layouts stack on mobile and open out on desktop", () => {
 
 test("desktop is not merely a stretched phone layout", () => {
   // Real desktop sizing, not one width scaled up.
-  assert.match(purchase, /sm:text-\[32px\]/);
-  assert.match(purchase, /max-w-3xl/);
+  // The purchase screen puts the summary in a sticky column from 960px.
+  const giftCss = read("app", "gift", "gift.css");
+  assert.match(giftCss, /grid-template-columns: minmax\(0, 1fr\) 372px/);
+  assert.match(giftCss, /\.gf-aside \{\s*position: sticky;/);
   assert.match(claim, /max-w-lg/);
 });
 
 test("long names, emails and addresses cannot break the layout", () => {
   for (const [name, source] of [
-    ["purchase", purchase],
     ["claim", claim],
     ["account section", accountGift],
     ["confirmation", confirmation],
@@ -540,6 +558,8 @@ test("long names, emails and addresses cannot break the layout", () => {
       `${name} must wrap long unbroken text`
     );
   }
+  // The purchase summary wraps through its stylesheet.
+  assert.match(read("app", "gift", "gift.css"), /overflow-wrap: anywhere/);
 });
 
 /* ========================================================================== */
