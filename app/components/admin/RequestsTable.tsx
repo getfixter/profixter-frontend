@@ -2,7 +2,6 @@
 
 import React from "react";
 import type { RequestLead, RequestLeadStatus } from "@/lib/admin-service";
-import OpenInStudio from "@/app/components/admin/studio/OpenInStudio";
 
 type LeadStatus = RequestLeadStatus;
 
@@ -160,7 +159,6 @@ export default function RequestsTable({
                 ) : null}
                 <div>
                   <strong>Source:</strong> {request.sourcePage || "-"}
-                  {request.sourcePage === "/shower-studio" ? <OpenInStudio leadId={String(request._id)} /> : null}
                 </div>
                 {request.serviceType === "free_visit_request" ? (
                   <>
