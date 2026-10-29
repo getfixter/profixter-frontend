@@ -44,7 +44,6 @@
   :root[data-surface="site"] .sm\:text-5xl { font-size: clamp(28px, calc(28px + (100vw - 640px) * 0.0125), 38px); }
   :root[data-surface="site"] .sm\:text-\[48px\] { font-size: clamp(28px, calc(28px + (100vw - 640px) * 0.0125), 38px); }
   :root[data-surface="site"] .sm\:text-\[50px\] { font-size: clamp(28px, min(calc(28px + (100vw - 640px) * 0.015), calc(18px + 2.75vh)), 40px); }
-  :root[data-surface="site"] .sm\:text-\[56px\] { font-size: clamp(28px, min(calc(28px + (100vw - 640px) * 0.015), calc(18px + 2.75vh)), 40px); }
   :root[data-surface="site"] .sm\:text-\[62px\] { font-size: clamp(31px, min(calc(31px + (100vw - 640px) * 0.0175), calc(20.25px + 3.09vh)), 45px); }
   :root[data-surface="site"] .sm\:pb-16 { padding-bottom: clamp(27px, 5vh, 45px); }
   :root[data-surface="site"] .sm\:py-16 { padding-bottom: clamp(27px, 5vh, 45px); }
