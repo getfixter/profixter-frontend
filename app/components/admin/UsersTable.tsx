@@ -15,7 +15,9 @@ import SmsConsentPanel from './SmsConsentPanel';
 import CopyAddressButton from './CopyAddressButton';
 import { CompletedBookingsChip, CustomerLoyaltyPanel, LoyaltyStrip } from './LoyaltyProgress';
 import AdminGiftModal from './AdminGiftModal';
-import { GiftIcon } from '@heroicons/react/24/outline';
+import CustomerEditSheet from './CustomerEditSheet';
+import CustomerProfileHistory from './CustomerProfileHistory';
+import { GiftIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 
 type PlanFilter = 'all' | 'basic' | 'plus' | 'premium' | 'elite' | 'cancel';
 
@@ -48,6 +50,13 @@ interface UsersTableProps {
   canViewLoyalty?: boolean;
   /* Owner only: buy a gift membership for this customer through the normal gift checkout. */
   canGift?: boolean;
+  /*
+   * Edit a customer's names, phone, email and addresses (customers.manage).
+   * Phone and email stay owner-only on the server; the sheet shows them read-only to staff.
+   */
+  canEdit?: boolean;
+  /* The saved row, to swap into the list without a reload. */
+  onUserUpdated?: (user: User) => void;
 }
 
 type FlattenedRow = {
@@ -268,6 +277,8 @@ export default function UsersTable({
   showLoyalty = false,
   canViewLoyalty = false,
   canGift = false,
+  canEdit = false,
+  onUserUpdated,
 }: UsersTableProps) {
   const [planFilter, setPlanFilter] = useState<PlanFilter>('all');
   const [savingCancellationByAddress, setSavingCancellationByAddress] = useState<Record<string, boolean>>({});
@@ -288,6 +299,14 @@ export default function UsersTable({
   const [loyaltyFailed, setLoyaltyFailed] = useState(false);
 
   const [giftTarget, setGiftTarget] = useState<{ user: User; addressId: string | null } | null>(null);
+  const [editUserId, setEditUserId] = useState<string | null>(null);
+  const [profileRefresh, setProfileRefresh] = useState(0);
+
+  const handleUserSaved = (saved: User) => {
+    onUserUpdated?.(saved);
+    setHistoryUser((current) => (current && current._id === saved._id ? { ...current, ...saved } : current));
+    setProfileRefresh((n) => n + 1);
+  };
 
   const minCancellationDate = getTodayNY();
 
@@ -854,6 +873,16 @@ export default function UsersTable({
                           >
                             History
                           </button>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => setEditUserId(user._id)}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
+                            >
+                              <PencilSquareIcon className="h-4 w-4" aria-hidden="true" />
+                              Edit
+                            </button>
+                          )}
                           {canGift && (
                             <button
                               type="button"
@@ -1039,14 +1068,24 @@ export default function UsersTable({
                     </div>
                   )}
 
-                  <div className={canGift ? 'grid grid-cols-[1fr_auto] gap-2' : ''}>
+                  <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() => openHistory(user)}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+                      className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
                     >
                       View history
                     </button>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => setEditUserId(user._id)}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
+                      >
+                        <PencilSquareIcon className="h-4 w-4" aria-hidden="true" />
+                        Edit
+                      </button>
+                    )}
                     {canGift && (
                       <button
                         type="button"
@@ -1125,6 +1164,16 @@ export default function UsersTable({
                   </div>
                 </div>
                 <div className="flex flex-shrink-0 items-center gap-2">
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => setEditUserId(historyUser._id)}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-sky-300/30 bg-sky-500/15 px-3.5 text-sm font-semibold text-sky-100 transition hover:bg-sky-500/25"
+                    >
+                      <PencilSquareIcon className="h-4 w-4" aria-hidden="true" />
+                      Edit
+                    </button>
+                  )}
                   {canGift && (
                     <button
                       type="button"
@@ -1191,6 +1240,11 @@ export default function UsersTable({
 
               {showCustomerPanels && <div className="mb-5 border-b border-slate-200 pb-5">
                 <SmsConsentPanel userId={historyUser._id} />
+              </div>}
+
+              {/* Admin corrections to names, phone, email and addresses, with before and after. */}
+              {(showCustomerPanels || canViewLoyalty) && <div className="mb-5 border-b border-slate-200 pb-5">
+                <CustomerProfileHistory userId={historyUser._id} refreshKey={profileRefresh} />
               </div>}
 
               {/*
@@ -1280,6 +1334,15 @@ export default function UsersTable({
             </div>
           </div>
         </div>
+      )}
+
+      {editUserId && (
+        <CustomerEditSheet
+          key={editUserId}
+          userId={editUserId}
+          onClose={() => setEditUserId(null)}
+          onSaved={handleUserSaved}
+        />
       )}
 
       {giftTarget && (
