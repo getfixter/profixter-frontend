@@ -115,37 +115,35 @@ export function NamePromptCard() {
 }
 
 export function AddHomeCard({ hasHome }: { hasHome: boolean }) {
-  const { homeSheet, requestHome } = useAddHome();
+  const { homeSheet, openHome } = useAddHome();
+
   /*
    * The sheet refreshes the user before it shows its "we don't serve this area
-   * yet" notice, so hasHome flips while it is still open. Stay mounted until the
-   * customer closes it, or the notice would vanish with the card.
+   * yet" notice, so hasHome flips while it is still open. The sheet therefore
+   * sits BESIDE the card, at the same place in the tree whether or not the
+   * card is drawn: when it was a child of the card and then the only thing
+   * returned, React remounted it and the notice was replaced by an empty form.
    */
-  const [sheetOpen, setSheetOpen] = useState(false);
-
-  const open = () => {
-    setSheetOpen(true);
-    void requestHome().finally(() => setSheetOpen(false));
-  };
-
-  if (hasHome) return sheetOpen ? <>{homeSheet}</> : null;
-
   return (
-    <section className="acct-card" aria-labelledby="acct-add-home" data-acct-prompt="home">
-      <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
-        <div className="min-w-0">
-          <h2 id="acct-add-home" className="acct-card__title">
-            Add your home
-          </h2>
-          <p className="acct-card__text !mt-1">
-            Optional for now. Add it when you&apos;re ready to book, and we&apos;ll check we serve your area.
-          </p>
-        </div>
-        <button type="button" onClick={open} className={buttonClass({ variant: "secondary", size: "sm", className: "shrink-0" })}>
-          Add your home
-        </button>
-      </div>
+    <>
+      {!hasHome ? (
+        <section className="acct-card" aria-labelledby="acct-add-home" data-acct-prompt="home">
+          <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
+            <div className="min-w-0">
+              <h2 id="acct-add-home" className="acct-card__title">
+                Add your home
+              </h2>
+              <p className="acct-card__text !mt-1">
+                Optional for now. Add it when you&apos;re ready to book, and we&apos;ll check we serve your area.
+              </p>
+            </div>
+            <button type="button" onClick={openHome} className={buttonClass({ variant: "secondary", size: "sm", className: "shrink-0" })}>
+              Add your home
+            </button>
+          </div>
+        </section>
+      ) : null}
       {homeSheet}
-    </section>
+    </>
   );
 }
