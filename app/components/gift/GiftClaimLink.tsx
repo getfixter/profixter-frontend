@@ -108,12 +108,12 @@ export default function GiftClaimLink({
   if (claimed) {
     return (
       <div
-        className={`rounded-[10px] border border-[#D8EAD9] bg-[#F2FAF3] px-4 py-3 ${className}`}
+        className={`rounded-[var(--ui-r-md)] border border-[#D8EAD9] bg-[#F2FAF3] px-5 py-4 ${className}`}
       >
-        <p className="text-[14px] font-semibold text-[#1F5D2C]">
+        <p className="text-[15px] font-semibold text-[#1F5D2C]">
           {recipientFirstName ? `${recipientFirstName} claimed this gift` : "This gift was claimed"}
         </p>
-        <p className="mt-1 text-[13px] leading-relaxed text-[#3F6B48]">
+        <p className="mt-1 text-[14px] leading-relaxed text-[#3F6B48]">
           Nothing further to send. The membership is theirs now.
         </p>
       </div>
@@ -121,16 +121,16 @@ export default function GiftClaimLink({
   }
 
   return (
-    <div className={`rounded-[10px] border border-[#E0E6F5] bg-[#F8FAFF] px-4 py-4 ${className}`}>
-      <p className="text-[14px] font-semibold text-[#313234]">Send it yourself</p>
+    <div className={`rounded-[var(--ui-r-md)] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-soft)] px-5 py-5 ${className}`}>
+      <p className="text-[15px] font-semibold text-[color:var(--ui-ink)]">Send it yourself</p>
 
       {invitationExpired ? (
-        <p className="mt-1 text-[13px] leading-relaxed text-[#8A5A1E]">
+        <p className="mt-1 text-[14px] leading-relaxed text-[#8A5A1E]">
           The link we emailed has expired. The gift itself is still valid — get a fresh link
           below and send it to {recipientFirstName || "them"}.
         </p>
       ) : (
-        <p className="mt-1 text-[13px] leading-relaxed text-[#6A6D71]">
+        <p className="mt-1 text-[14px] leading-relaxed text-[color:var(--ui-text-2)]">
           We have emailed the invitation. If you would rather hand it over yourself, get a link
           below.
         </p>
@@ -148,20 +148,20 @@ export default function GiftClaimLink({
               value={url}
               aria-label="Private gift claim link"
               onFocus={(e) => e.currentTarget.select()}
-              className="min-w-0 flex-1 truncate rounded-[8px] border border-[#D5DEEF] bg-white px-3 py-2 font-mono text-[12.5px] text-[#4A5568]"
+              className="min-h-[44px] min-w-0 flex-1 truncate rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line-2)] bg-white px-3 py-2 font-mono text-[13px] text-[color:var(--ui-text-2)]"
             />
             <button
               type="button"
               onClick={() => copy(url)}
-              className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-[8px] bg-[#306EEC] px-4 text-[14px] font-semibold text-white transition hover:bg-[#2558C4]"
+              className="ui-btn ui-btn--secondary min-h-[44px] shrink-0"
             >
               {copied ? "Copied" : "Copy link"}
             </button>
           </div>
-          <p aria-hidden="true" className="mt-1.5 truncate text-[12px] text-[#8A8F98] sm:hidden">
+          <p aria-hidden="true" className="mt-1.5 truncate text-[13px] text-[color:var(--ui-text-3)] sm:hidden">
             {shorten(url)}
           </p>
-          <p className="mt-2.5 text-[12.5px] leading-relaxed text-[#6A6D71]">
+          <p className="mt-2.5 text-[13px] leading-relaxed text-[color:var(--ui-text-3)]">
             Only share this private link with {recipientFirstName || "the person it is for"}. Any
             link we emailed earlier has now stopped working.
           </p>
@@ -172,11 +172,11 @@ export default function GiftClaimLink({
             type="button"
             onClick={getLink}
             disabled={busy}
-            className="mt-3 inline-flex min-h-[42px] items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[14px] font-semibold text-white transition hover:bg-[#2558C4] disabled:opacity-60"
+            className="ui-btn ui-btn--secondary mt-3 min-h-[44px]"
           >
             {busy ? "Preparing…" : "Get gift link"}
           </button>
-          <p className="mt-2 text-[12.5px] leading-relaxed text-[#6A6D71]">
+          <p className="mt-2 text-[13px] leading-relaxed text-[color:var(--ui-text-3)]">
             This creates a fresh private link and stops the emailed one from working, so you
             become the one delivering it.
           </p>

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import Header from "@/app/components/sections/Header";
+import Footer from "@/app/components/sections/Footer";
 import GiftClaimClient from "./GiftClaimClient";
 
 /**
@@ -24,8 +26,14 @@ export default async function GiftClaimPage({
 }) {
   const { token } = await params;
   return (
-    <main className="min-h-[70vh] bg-white">
-      <GiftClaimClient token={token} />
-    </main>
+    <div className="min-h-screen bg-white">
+      <div className="sticky top-0 z-50">
+        <Header />
+      </div>
+      <main className="min-h-[70vh] bg-white">
+        <GiftClaimClient token={token} />
+      </main>
+      <Footer compact />
+    </div>
   );
 }

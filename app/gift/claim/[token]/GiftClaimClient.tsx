@@ -33,6 +33,7 @@ import {
   type ClaimDetails,
   type ClaimPreview,
 } from "@/lib/gift-service";
+import "../../gift.css";
 
 type Address = {
   _id: string;
@@ -212,7 +213,12 @@ export default function GiftClaimClient({ token }: { token: string }) {
       ? addresses.find((a) => String(a.line1 || "").trim().toLowerCase() === wanted)
       : null;
     return String((match || addresses[0])._id);
-  }, [addresses, phase]);
+    /*
+     * Keyed on the details, not the phase. The address hint arrives from a
+     * second request after the preview has rendered, so keying on the phase
+     * left the match unused and always fell back to the first property.
+     */
+  }, [addresses, details]);
 
   /* The customer's own choice wins once they make one. */
   const addressId = chosenAddressId || defaultAddressId;
@@ -255,11 +261,7 @@ export default function GiftClaimClient({ token }: { token: string }) {
   if (phase.kind === "loading" || authLoading) {
     return (
       <div className="mx-auto max-w-lg px-4 py-20 text-center sm:px-6">
-        <div
-          className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[#E0E6F5] border-t-[#306EEC]"
-          role="status"
-          aria-label="Loading your gift"
-        />
+        <div className="gf-spinner" role="status" aria-label="Loading your gift" />
       </div>
     );
   }
@@ -267,11 +269,11 @@ export default function GiftClaimClient({ token }: { token: string }) {
   if (phase.kind === "error") {
     return (
       <div className="mx-auto max-w-lg px-4 py-14 sm:px-6">
-        <div className="rounded-[12px] border border-[#E0E6F5] bg-white p-6 text-center sm:p-8">
-          <h1 className="text-[22px] font-semibold leading-tight text-[#313234] sm:text-[26px]">
+        <div className="ui-card text-center sm:p-8">
+          <h1 className="ui-h2">
             {phase.title}
           </h1>
-          <p className="mx-auto mt-3 max-w-sm text-[15px] leading-relaxed text-[#6A6D71]">
+          <p className="ui-body mx-auto mt-3 max-w-sm text-[color:var(--ui-text-2)]">
             {phase.body}
           </p>
 
@@ -283,14 +285,14 @@ export default function GiftClaimClient({ token }: { token: string }) {
                   logout();
                   router.push(`/signin?next=${encodeURIComponent(returnTo)}`);
                 }}
-                className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-semibold text-white transition hover:bg-[#2558C4]"
+                className="ui-btn ui-btn--primary min-h-[48px]"
               >
                 Sign out and use a different account
               </button>
             ) : null}
             <Link
               href="/"
-              className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-6 text-[15px] font-semibold text-[#313234] transition hover:bg-[#F8FAFF]"
+              className="ui-btn ui-btn--secondary min-h-[48px]"
             >
               Go to ProFixter
             </Link>
@@ -306,14 +308,11 @@ export default function GiftClaimClient({ token }: { token: string }) {
     return (
       <div className="mx-auto max-w-lg px-4 py-14 sm:px-6">
         <div className="text-center">
-          <div
-            className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#E4F0E9]"
-            aria-hidden
-          >
+          <div className="gf-check mx-auto" aria-hidden>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path
                 d="M20 6 9 17l-5-5"
-                stroke="#2A6B47"
+                stroke="currentColor"
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -327,31 +326,31 @@ export default function GiftClaimClient({ token }: { token: string }) {
             not start for three weeks would be a lie they discover at the worst
             possible moment — when they try to book.
           */}
-          <h1 className="mt-5 text-[26px] font-semibold leading-tight text-[#313234] sm:text-[30px]">
+          <h1 className="ui-h2 mt-5">
             {result.queued ? "Your gift is ready" : "Your gift membership is active"}
           </h1>
         </div>
 
-        <div className="mt-6 rounded-[12px] border border-[#E0E6F5] bg-white p-5 text-center sm:p-6">
-          <p className="text-[20px] font-semibold text-[#313234]">
+        <div className="ui-card mt-6 text-center">
+          <p className="ui-h3">
             {planLabel(result.plan)}
-            <span className="ml-2 text-[15px] font-normal text-[#6A6D71]">
+            <span className="ml-2 text-[15px] font-normal text-[color:var(--ui-text-3)]">
               &middot; {monthsLabel(result.durationMonths)}
             </span>
           </p>
 
           {result.queued ? (
-            <p className="mt-3 text-[15px] leading-relaxed text-[#6A6D71]">
+            <p className="ui-body mt-3 text-[color:var(--ui-text-2)]">
               It starts on{" "}
-              <span className="font-medium text-[#313234]">{formatGiftDate(result.startAt)}</span>,
+              <span className="font-medium text-[color:var(--ui-ink)]">{formatGiftDate(result.startAt)}</span>,
               when your current membership ends, and runs through{" "}
-              <span className="font-medium text-[#313234]">{formatGiftDate(result.endAt)}</span>.
+              <span className="font-medium text-[color:var(--ui-ink)]">{formatGiftDate(result.endAt)}</span>.
               None of the gifted time overlaps with what you are already paying for.
             </p>
           ) : (
-            <p className="mt-3 text-[15px] text-[#6A6D71]">
+            <p className="ui-body mt-3 text-[color:var(--ui-text-2)]">
               Active through{" "}
-              <span className="font-medium text-[#313234]">
+              <span className="font-medium text-[color:var(--ui-ink)]">
                 {result.activeThrough || formatGiftDate(result.endAt)}
               </span>
             </p>
@@ -362,21 +361,21 @@ export default function GiftClaimClient({ token }: { token: string }) {
           {result.queued ? (
             <Link
               href="/account?tab=plan"
-              className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-semibold text-white transition hover:bg-[#2558C4]"
+              className="ui-btn ui-btn--primary min-h-[48px]"
             >
               View your membership
             </Link>
           ) : (
             <Link
               href="/book?visit=membership"
-              className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-semibold text-white transition hover:bg-[#2558C4]"
+              className="ui-btn ui-btn--primary min-h-[48px]"
             >
               Book your Fixter
             </Link>
           )}
           <Link
             href="/account?tab=plan"
-            className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-6 text-[15px] font-semibold text-[#313234] transition hover:bg-[#F8FAFF]"
+            className="ui-btn ui-btn--secondary min-h-[48px]"
           >
             Go to your account
           </Link>
@@ -421,16 +420,14 @@ export default function GiftClaimClient({ token }: { token: string }) {
       {/* ---------------------------------------------------------------- */}
       {/* Claiming. Unchanged behaviour, on a surface that can be read.     */}
       {/* ---------------------------------------------------------------- */}
-      <section id="claim" className="scroll-mt-6 bg-[#F4F6FB] px-4 py-12 sm:px-6 sm:py-16">
+      <section id="claim" className="ui-section ui-section--soft scroll-mt-20 px-[var(--ui-gutter)]">
         <div className="mx-auto w-full max-w-[560px]">
           {!isAuthenticated ? (
-            <div className="rounded-[14px] border border-[#E0E6F5] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:p-7">
-              <h2 className="text-[19px] font-semibold text-[#313234] sm:text-[21px]">
-                Claim your gift
-              </h2>
-              <p className="mt-2 text-[14px] leading-relaxed text-[#6A6D71]">
+            <div className="ui-card ui-card--raised sm:p-7">
+              <h2 className="ui-h3">Claim your gift</h2>
+              <p className="ui-body mt-2 text-[color:var(--ui-text-2)]">
                 The invitation was sent to{" "}
-                <span className="break-words font-medium text-[#313234]">
+                <span className="break-words font-medium text-[color:var(--ui-ink)]">
                   {gift.recipientEmailHint}
                 </span>
                 , so use that address.
@@ -443,7 +440,7 @@ export default function GiftClaimClient({ token }: { token: string }) {
                       ? `/signin?next=${encodeURIComponent(returnTo)}`
                       : `/signup?next=${encodeURIComponent(returnTo)}`
                   }
-                  className="inline-flex min-h-[48px] items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-semibold text-white transition hover:bg-[#2558C4]"
+                  className="ui-btn ui-btn--primary min-h-[48px]"
                 >
                   {gift.hasAccount ? "Sign in to claim" : "Create an account to claim"}
                 </Link>
@@ -453,24 +450,22 @@ export default function GiftClaimClient({ token }: { token: string }) {
                       ? `/signup?next=${encodeURIComponent(returnTo)}`
                       : `/signin?next=${encodeURIComponent(returnTo)}`
                   }
-                  className="inline-flex min-h-[48px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-6 text-[15px] font-semibold text-[#313234] transition hover:bg-[#F8FAFF]"
+                  className="ui-btn ui-btn--secondary min-h-[48px]"
                 >
                   {gift.hasAccount ? "I need an account" : "I already have an account"}
                 </Link>
               </div>
             </div>
           ) : (
-            <div className="rounded-[14px] border border-[#E0E6F5] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:p-7">
-              <h2 className="text-[19px] font-semibold text-[#313234] sm:text-[21px]">
-                Which property is it for?
-              </h2>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-[#6A6D71]">
+            <div className="ui-card ui-card--raised sm:p-7">
+              <h2 className="ui-h3">Which property is it for?</h2>
+              <p className="ui-small mt-1.5">
                 A membership covers one home.
                 {details?.addressSnapshot?.line1 ? (
                   <>
                     {" "}
                     The person who sent it had{" "}
-                    <span className="font-medium text-[#313234]">
+                    <span className="font-medium text-[color:var(--ui-ink)]">
                       {details.addressSnapshot.line1}
                     </span>{" "}
                     in mind.
@@ -485,10 +480,10 @@ export default function GiftClaimClient({ token }: { token: string }) {
                     <label
                       key={address._id}
                       className={[
-                        "flex cursor-pointer items-start gap-3 rounded-[8px] border p-3.5 transition",
+                        "flex min-h-[56px] cursor-pointer items-start gap-3 rounded-[var(--ui-r-sm)] border p-3.5 transition",
                         addressId === String(address._id)
-                          ? "border-[#306EEC] bg-[#F5F9FF]"
-                          : "border-[#E0E6F5] bg-white hover:border-[#C5CBD8]",
+                          ? "border-[color:var(--ui-ink)] bg-[#fbfbfa] shadow-[inset_0_0_0_1px_var(--ui-ink)]"
+                          : "border-[color:var(--ui-line-2)] bg-white hover:border-[#b9c1cd]",
                       ].join(" ")}
                     >
                       <input
@@ -497,11 +492,11 @@ export default function GiftClaimClient({ token }: { token: string }) {
                         value={String(address._id)}
                         checked={addressId === String(address._id)}
                         onChange={() => setChosenAddressId(String(address._id))}
-                        className="mt-0.5 h-4 w-4 shrink-0 accent-[#306EEC]"
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-[#0B1628]"
                       />
-                      <span className="min-w-0 text-[14px] leading-snug text-[#313234]">
+                      <span className="min-w-0 text-[15px] leading-snug text-[color:var(--ui-ink)]">
                         <span className="block break-words font-medium">{address.line1}</span>
-                        <span className="block break-words text-[13px] text-[#6A6D71]">
+                        <span className="block break-words text-[14px] text-[color:var(--ui-text-3)]">
                           {address.city}, {address.state} {address.zip}
                         </span>
                       </span>
@@ -514,14 +509,14 @@ export default function GiftClaimClient({ token }: { token: string }) {
                  * rather than given a second address form here — the recipient
                  * owns the address, and there should be one place it is created.
                  */
-                <div className="mt-4 rounded-[8px] border border-[#E0E6F5] bg-[#F8FAFF] p-4">
-                  <p className="text-[14px] leading-relaxed text-[#6A6D71]">
+                <div className="mt-4 rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-soft)] p-4">
+                  <p className="ui-small text-[color:var(--ui-text-2)]">
                     You do not have a property saved yet. Add one to your account, then come back
                     to this link to claim your gift.
                   </p>
                   <Link
                     href={`/account?tab=personal&next=${encodeURIComponent(returnTo)}`}
-                    className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[14px] font-semibold text-white transition hover:bg-[#2558C4]"
+                    className="ui-btn ui-btn--primary mt-3 min-h-[44px]"
                   >
                     Add your property
                   </Link>
@@ -529,10 +524,7 @@ export default function GiftClaimClient({ token }: { token: string }) {
               )}
 
               {claimError ? (
-                <p
-                  role="alert"
-                  className="mt-4 rounded-[8px] border border-[#F3C9C4] bg-[#FDF3F2] px-4 py-3 text-sm text-[#A03227]"
-                >
+                <p role="alert" className="gf-alert mt-4">
                   {claimError}
                 </p>
               ) : null}
@@ -543,14 +535,11 @@ export default function GiftClaimClient({ token }: { token: string }) {
                   onClick={handleClaim}
                   disabled={claiming}
                   aria-busy={claiming}
-                  className="mt-5 inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-semibold text-white transition hover:bg-[#2558C4] disabled:cursor-not-allowed disabled:bg-[#8FB3F5]"
+                  className="ui-btn ui-btn--primary ui-btn--lg ui-btn--block mt-5 min-h-[52px]"
                 >
                   {claiming ? (
                     <>
-                      <span
-                        className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                        aria-hidden
-                      />
+                      <span className="gf-spinner gf-spinner--sm" aria-hidden />
                       Claiming&hellip;
                     </>
                   ) : (
@@ -559,7 +548,7 @@ export default function GiftClaimClient({ token }: { token: string }) {
                 </button>
               ) : null}
 
-              <p className="mt-3 text-center text-[12px] text-[#9CA3AF]">
+              <p className="ui-small mt-3 text-center">
                 Your {monthsLabel(gift.durationMonths).toLowerCase()} start when you claim.
               </p>
             </div>

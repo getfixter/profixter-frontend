@@ -1,7 +1,10 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 
+import Header from "@/app/components/sections/Header";
+import Footer from "@/app/components/sections/Footer";
 import GiftConfirmationClient from "./GiftConfirmationClient";
+import "../gift.css";
 
 export const metadata: Metadata = {
   title: "Gift confirmed | ProFixter",
@@ -16,20 +19,22 @@ export const metadata: Metadata = {
  */
 export default function GiftConfirmationPage() {
   return (
-    <main className="min-h-[70vh] bg-white">
-      <Suspense
-        fallback={
-          <div className="mx-auto max-w-xl px-4 py-20 text-center sm:px-6">
-            <div
-              className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[#E0E6F5] border-t-[#306EEC]"
-              role="status"
-              aria-label="Loading"
-            />
-          </div>
-        }
-      >
-        <GiftConfirmationClient />
-      </Suspense>
-    </main>
+    <div className="min-h-screen bg-white">
+      <div className="sticky top-0 z-50">
+        <Header />
+      </div>
+      <main className="min-h-[70vh]">
+        <Suspense
+          fallback={
+            <div className="py-20 text-center">
+              <div className="gf-spinner" role="status" aria-label="Loading" />
+            </div>
+          }
+        >
+          <GiftConfirmationClient />
+        </Suspense>
+      </main>
+      <Footer compact />
+    </div>
   );
 }
