@@ -18,9 +18,7 @@ export type AdminTabId =
   | "promotion"
   | "recent-work"
   | "work-photos"
-  | "activity"
-  | "studio"
-  | "studio-catalog";
+  | "activity";
 
 /*
  * Who sees a tab:
@@ -50,8 +48,6 @@ export const ADMIN_TABS: AdminTabItem[] = [
   { id: "users",      label: "All Users",  shortLabel: "Users",   description: "Customer CRM", permission: PERM.CUSTOMERS_MANAGE },
   { id: "projects",   label: "Projects",   shortLabel: "Projects", description: "Sales pipeline", permission: PERM.PROJECTS_MANAGE },
   { id: "requests",   label: "Leads",      shortLabel: "Leads",   description: "Estimate requests", permission: PERM.LEADS_MANAGE },
-  { id: "studio",     label: "Shower Studio", shortLabel: "Studio", description: "Designs, Studio requests, proposals", permission: PERM.STUDIO_SELL },
-  { id: "studio-catalog", label: "Studio Catalog", shortLabel: "Catalog", description: "Studio products, assets and prices", permission: PERM.STUDIO_CATALOG },
   { id: "emails",     label: "Communications", shortLabel: "Comms", description: "Email & SMS templates, history", permission: PERM.COMMUNICATIONS_MANAGE },
   { id: "recent-work", label: "Recent Work", shortLabel: "Photos", description: "Public work gallery", permission: PERM.RECENT_WORK_MANAGE },
   { id: "promotion",  label: "Promotion Popup", shortLabel: "Popup", description: "Visitor promotion", permission: PERM.PROMOTION_MANAGE },
