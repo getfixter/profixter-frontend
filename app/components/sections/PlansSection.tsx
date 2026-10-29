@@ -6,7 +6,8 @@ import { plans, type Plan } from "@/app/data/content";
 import { BENEFIT_ROWS, benefitIncluded, benefitLabel } from "@/app/data/plan-benefits";
 import API from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
-import { getRoleLandingPath } from "@/lib/auth-routing";
+import { useAddHome } from "@/app/components/address/AddHomeSheet";
+import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
 import type { PlanType } from "@/lib/stripe-links";
 import type { Address } from "@/lib/auth-service";
 import { trackEvent, trackInitiateCheckout } from "@/lib/analytics";
@@ -205,7 +206,8 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const { user, isAuthenticated, token } = useAuth();
-  const roleLandingPath = getRoleLandingPath(user);
+  const { requestHome, homeSheet } = useAddHome();
+  const { ensureContact, contactSheet } = useContactCompletion();
 
   const addresses: Address[] = useMemo(() => user?.addresses || [], [user?.addresses]);
 
@@ -633,8 +635,19 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     }
 
     if (!addresses.length) {
-      setActionError("Please add an address to your account first.");
-      window.location.href = roleLandingPath;
+      /*
+       * No home yet: add it here and carry on to checkout with it. A home that
+       * was only just saved cannot have a plan, so this is always a fresh
+       * subscription.
+       */
+      const home = await requestHome();
+      if (!home?.address?._id) return;
+      const newAddressId = String(home.address._id);
+      setSelectedAddressId(newAddressId);
+      // Outside the service area: the sheet has already said so.
+      if (home.serviceArea && home.serviceArea.inArea === false) return;
+      if (!(await ensureContact())) return;
+      await startCheckout(planType, newAddressId, home.user?.email || user.email, billing, planName);
       return;
     }
 
@@ -658,6 +671,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     }
 
     if (action.kind === "subscribe") {
+      if (!(await ensureContact())) return;
       await startCheckout(planType, selectedAddress._id, user.email, billing, planName);
       return;
     }
@@ -1178,13 +1192,16 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         return;
       }
       trackEvent("plan_selected", { plan: normalizePlanType(chosen.name) || "", billing_cycle: billing, signed_in: true });
-      if (chosenAction?.kind === "subscribe") setResumeOpen(true);
+      // The confirmation sheet needs a home to show; without one, handleSubscribe adds it first.
+      if (chosenAction?.kind === "subscribe" && selectedAddress) setResumeOpen(true);
       else void handleSubscribe(chosen.name);
     };
 
     return (
       <section id="plans" className="scroll-mt-28" data-plan-picker>
         {resumeSheet}
+        {homeSheet}
+        {contactSheet}
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 className="text-[22px] font-bold leading-tight tracking-[-0.025em] text-[#0B1628] sm:text-[26px]">
             Choose your membership
@@ -1319,6 +1336,8 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
   return (
     <section id="plans" className={`w-full scroll-mt-[140px] bg-[#F5F5F7] px-4 sm:px-5 ${compact ? "py-8 sm:py-11" : "py-8 sm:py-13 lg:py-12"}`}>
       {resumeSheet}
+      {homeSheet}
+      {contactSheet}
       <div className="mx-auto max-w-[1280px]">
         <div className={`mx-auto max-w-[720px] text-center ${compact ? "mb-7 sm:mb-9" : "mb-8 sm:mb-9"}`}>
           {/*
@@ -1376,10 +1395,14 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
           <div className="mx-auto mb-8 max-w-[520px] rounded-[8px] border border-[#E5E7EB] bg-white p-5 text-center shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
             <p className="font-semibold text-[#111827]">Add an address to start a plan.</p>
             <button
-              onClick={() => (window.location.href = roleLandingPath)}
+              type="button"
+              onClick={async () => {
+                const home = await requestHome();
+                if (home?.address?._id) setSelectedAddressId(String(home.address._id));
+              }}
               className="mt-4 h-11 rounded-[8px] bg-[#111111] px-6 text-sm font-semibold text-white transition hover:bg-black"
             >
-              Add Address
+              Add your home
             </button>
           </div>
         )}

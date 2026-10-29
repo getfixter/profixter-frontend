@@ -1,7 +1,6 @@
 // lib/auth-service.ts — FULL FINAL
 import API from "./api";
 import { normalizeUSPhoneE164 } from "./phone";
-import { getAttribution } from "./meta";
 
 export interface Address {
   _id: string;
@@ -57,6 +56,23 @@ export interface User {
   mustChangePassword?: boolean;
   /* Computed by the server from field work + sections; what the UI may show. */
   permissions?: string[];
+
+  /*
+   * Registration & Authentication 2.0. A customer can now exist with only a
+   * verified phone, only an email, or only a Google/Apple identity, so email
+   * may be "" and phone may be "", and addresses may be [].
+   */
+  phoneVerified?: boolean;
+  emailVerified?: boolean;
+  hasPassword?: boolean;
+  /* True when the account has no real name yet (phone-only signup). */
+  needsName?: boolean;
+  phoneVerifiedAt?: string | null;
+  emailVerifiedAt?: string | null;
+  authProviders?: string[];
+  smsPreferences?: { transactionalEnabled?: boolean; marketingEnabled?: boolean } | null;
+  /* Service texts are on (GET /api/auth/me). Hides the booking-step offer. */
+  smsServiceTexts?: boolean;
 }
 
 export interface AuthResponse {
@@ -201,12 +217,8 @@ export const getCurrentUser = async (): Promise<User> => {
   return response.data;
 };
 
-// =================== GOOGLE LOGIN ===================
-export const googleLogin = async (idToken: string): Promise<AuthResponse> => {
-  // First-touch attribution rides along; the server stores it only for a new account.
-  const response = await API.post<AuthResponse>("/api/auth/google", { idToken, attribution: getAttribution() });
-  return response.data;
-};
+// Google and Apple sign-in live in lib/auth2.ts, with the rest of the
+// passwordless contract (they carry the Meta event id and fbp/fbc too).
 
 // =================== LOGOUT ===================
 export const logout = (): void => {

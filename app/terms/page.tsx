@@ -401,10 +401,12 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">13. Electronic Communications (Email, SMS, Phone)</h2>
             <p>
-  Service text messages are required to create an account: registration asks you
-  to agree to receive texts about your visits, and the box is never pre-ticked.
-  Marketing texts are separate and optional, and are never required to create an
-  account, book, or buy anything. Providing a phone number is not by itself
+  Text messages are optional. Creating an account asks for no SMS consent: a
+  phone sign-up sends only a one-time verification code that you request. Service
+  texts are offered as an optional unticked box when you book and in your account
+  settings. Marketing texts are separate and optional, offered only in your
+  account settings, and are never required to create an account, book, or buy
+  anything. Providing a phone number is not by itself
   consent to text you, and either category can be switched off in your account
   settings at any time.
 </p>
@@ -434,14 +436,14 @@ export default function TermsPage() {
                 different number: <span className="font-semibold">631-599-1363</span>.
               </p>
               <p>
-  Program Description: Creating a Profixter account requires agreeing to receive
-  service texts, so you may receive appointment confirmations, scheduling
-  updates, service reminders, customer support messages and account updates from
-  Premium Island Homes Inc. (Profixter). If you separately opt in to marketing
-  texts, you may also receive occasional offers. Each category has its own
-  unchecked checkbox at sign-up and in your account settings; neither box is
-  pre-ticked, marketing is never required, and either can be switched off in your
-  account settings at any time.
+  Program Description: If you opt in to service texts, you may receive
+  appointment confirmations, scheduling updates, service reminders, customer
+  support messages and account updates from Premium Island Homes Inc.
+  (Profixter). If you separately opt in to marketing texts, you may also receive
+  occasional offers. Service texts are offered as an unchecked box when you book
+  and in your account settings; marketing texts only in your account settings.
+  Neither box is pre-ticked, neither is required, and either can be switched off
+  in your account settings at any time.
 </p>
 
               <ul className="list-disc list-inside space-y-2">

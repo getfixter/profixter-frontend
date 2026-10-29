@@ -29,12 +29,14 @@
  * them.
  */
 
+import { formatPhoneInput } from "@/lib/auth2";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
 import GiftCallout from "@/app/components/gift/GiftCallout";
 import ManagePlanModal from "./ManagePlanModal";
+import { AddHomeCard, NamePromptCard } from "./ProfilePrompts";
 import { getPrimaryFixter } from "@/lib/fixter";
 import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
 import { BUSINESS_PHONE_DISPLAY, BUSINESS_PHONE_E164 } from "@/lib/seo";
@@ -257,7 +259,9 @@ export default function AccountOverview({
     }
   }, [subscription, addressId]);
 
-  const firstName = (formData.name || "").trim().split(/\s+/)[0] || "there";
+  const firstName = (formData.name || "").trim().split(/\s+/)[0] || "";
+  /* Registration 2.0: a customer may have only a phone, or only an email. */
+  const contactLine = (formData.email || "").trim() || formatPhoneInput(String(formData.phone || ""));
 
   if (loading) return <Skeleton />;
 
@@ -268,9 +272,11 @@ export default function AccountOverview({
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           <div className="min-w-0">
             <h1 id="acct-who" className="text-[20px] font-semibold tracking-[-0.02em] text-[#0F172A]">
-              Hello, {firstName}
+              {firstName ? `Hello, ${firstName}` : "Hello there"}
             </h1>
-            <p className="mt-0.5 break-words text-[13.5px] text-[#64748B]">{formData.email}</p>
+            {contactLine ? (
+              <p className="mt-0.5 break-words text-[13.5px] text-[#64748B]">{contactLine}</p>
+            ) : null}
           </div>
 
           {/*
@@ -307,6 +313,9 @@ export default function AccountOverview({
           ) : null}
         </div>
       </section>
+
+      <NamePromptCard />
+      <AddHomeCard hasHome={addresses.length > 0} />
 
       {/* ────────────────────────── Membership ────────────────────────── */}
       <section className={`${CARD} overflow-hidden`} aria-labelledby="acct-plan">

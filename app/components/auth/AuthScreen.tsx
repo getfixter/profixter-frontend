@@ -77,7 +77,9 @@ export function AuthHeading({
           Back
         </button>
       ) : null}
-      <h1 className="auth-question">{children}</h1>
+      <h1 className="auth-question outline-none" tabIndex={-1}>
+        {children}
+      </h1>
       {sub ? <p className="auth-sub">{sub}</p> : null}
     </>
   );

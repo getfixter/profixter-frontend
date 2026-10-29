@@ -29,6 +29,9 @@ const AUTH_CHALLENGE_ROUTES = [
   '/api/auth/login',
   '/api/auth/register',
   '/api/auth/google',
+  '/api/auth/apple',
+  // Wrong codes are 400s, but a 401 from a code endpoint is still an answer.
+  '/api/auth/otp/',
   '/api/password-reset',
 ];
 

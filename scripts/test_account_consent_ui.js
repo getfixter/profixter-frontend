@@ -11,6 +11,15 @@
  * - staff/excluded accounts see no email switch at all
  * - the SMS switches are still there and still separate
  * - no page errors, no sideways scroll on a phone
+ *
+ * Registration 2.0 (2026-10-28): sign-up no longer asks about texts at all
+ * (sign-in codes go through Twilio Verify, outside the A2P campaign), so
+ * account settings - with the booking-step box for service texts - is where
+ * the SMS choices live, and the only place marketing texts are offered. Added:
+ * - both SMS boxes render separately, unticked when the server says so, with
+ *   the registered wording, and each saves only its own field
+ * - the phone sign-up screen has zero checkboxes and the exact one-line
+ *   disclosure with its three links
  */
 const { chromium } = require("playwright");
 
@@ -23,11 +32,12 @@ function check(name, pass, detail = "") {
   console.log(`${pass ? "PASS" : "FAIL"}  ${name}${detail ? "  :: " + detail : ""}`);
 }
 
-async function open(browser, emailPrefs, { width = 1280, height = 900 } = {}) {
+async function open(browser, emailPrefs, { width = 1280, height = 900, sms = { transactionalEnabled: true, marketingEnabled: false }, path = "/account?tab=personal" } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, isMobile: width < 700, hasTouch: width < 700 });
   await ctx.addInitScript(() => localStorage.setItem("token", "ui-token"));
   const puts = [];
   let current = { ...emailPrefs };
+  let smsState = { ...sms, phoneOptedOut: false, phoneOptOutScope: "" };
   await ctx.route(/\/api\//, (route) => {
     const req = route.request();
     const u = new URL(req.url());
@@ -35,7 +45,14 @@ async function open(browser, emailPrefs, { width = 1280, height = 900 } = {}) {
     if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
     const json = (body, status = 200) => route.fulfill({ status, contentType: "application/json", headers: cors, body: JSON.stringify(body) });
     if (u.pathname === "/api/auth/me") return json(CUSTOMER);
-    if (u.pathname === "/api/users/me/sms-preferences") return json({ transactionalEnabled: true, marketingEnabled: false, phoneOptedOut: false, phoneOptOutScope: "" });
+    if (u.pathname === "/api/users/me/sms-preferences") {
+      if (req.method() === "PUT") {
+        const body = JSON.parse(req.postData() || "{}");
+        puts.push({ sms: body });
+        smsState = { ...smsState, ...body };
+      }
+      return json(smsState);
+    }
     if (u.pathname === "/api/users/me/email-preferences") {
       if (req.method() === "PUT") {
         const body = JSON.parse(req.postData() || "{}");
@@ -50,7 +67,7 @@ async function open(browser, emailPrefs, { width = 1280, height = 900 } = {}) {
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto(`${BASE}/account?tab=personal`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
   await page.waitForTimeout(1200);
   return { ctx, page, errors, puts };
 }
@@ -101,6 +118,53 @@ async function open(browser, emailPrefs, { width = 1280, height = 900 } = {}) {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     check("no sideways scroll", overflow <= 1, `${overflow}px`);
     check("the switch shows", (await page.locator("[data-testid=email-preferences]").count()) === 1);
+    check("no page errors", errors.length === 0, errors.join("; "));
+    await ctx.close();
+  }
+
+  {
+    console.log("\n--- SMS choices in account settings (Registration 2.0) ---");
+    const { ctx, page, errors, puts } = await open(browser, { marketingEnabled: true, status: "existing_customer", canChange: true }, { width: 390, height: 844, sms: { transactionalEnabled: false, marketingEnabled: false } });
+    const box = (text) => page.locator("label", { hasText: text }).locator("input[type=checkbox]");
+    const service = box("Text me about my ProFixter visits.");
+    const offers = box("Text me occasional ProFixter offers.");
+    check("the service box is shown, once", (await service.count()) === 1);
+    check("the offers box is shown, once", (await offers.count()) === 1);
+    check("the service box is unticked", (await service.count()) === 1 && !(await service.isChecked()));
+    check("the offers box is unticked", (await offers.count()) === 1 && !(await offers.isChecked()));
+    if ((await service.count()) === 1) {
+      await service.check();
+      await page.waitForTimeout(500);
+    }
+    const smsPuts = puts.filter((p) => p.sms);
+    check("ticking service saves service only", smsPuts.length === 1 && smsPuts[0].sms.transactionalEnabled === true && !("marketingEnabled" in smsPuts[0].sms), JSON.stringify(smsPuts));
+    check("and leaves offers unticked", (await offers.count()) === 1 && !(await offers.isChecked()));
+    check("no page errors", errors.length === 0, errors.join("; "));
+    await ctx.close();
+  }
+
+  {
+    console.log("\n--- the phone sign-up screen (Registration 2.0) ---");
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto(`${BASE}/signup`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Continue with phone" }).click();
+    await page.waitForSelector("#phone");
+    check("zero checkboxes on the phone screen", (await page.locator("input[type=checkbox]").count()) === 0);
+    const line = page.locator("[data-terms-continue]");
+    const text = ((await line.textContent()) || "").replace(/\s+/g, " ").trim();
+    check(
+      "the exact one-line disclosure",
+      text === "By continuing, you agree to the Terms and Privacy Policy and to receive a one-time verification text. Msg & data rates may apply.",
+      text
+    );
+    for (const [name, href] of [["Terms", "/terms"], ["Privacy Policy", "/privacy"], ["verification text", "/communication-consent"]]) {
+      const link = line.getByRole("link", { name, exact: true });
+      check(`"${name}" links to ${href} in a new tab`, (await link.count()) === 1 && (await link.getAttribute("href")) === href && (await link.getAttribute("target")) === "_blank");
+    }
+    check("no marketing wording", !/offer|promotion|marketing/i.test(await page.locator("main, body").first().innerText()));
     check("no page errors", errors.length === 0, errors.join("; "));
     await ctx.close();
   }

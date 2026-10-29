@@ -93,27 +93,40 @@ export default function CommunicationConsentPage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">2. Your Consent to Contact You</h2>
             <p>
-              We treat service communications and marketing communications as two separate things, we ask for them separately, and
-              service texts are required to create an account while marketing texts are optional.
+              We treat service communications and marketing communications as two separate things, we ask for them separately,
+              and both are optional. Creating an account asks for no text-message consent at all.
             </p>
             <ul className="list-disc list-inside space-y-2 mt-3">
               <li>
-                <span className="font-semibold">Service texts are part of having an account.</span> Creating a ProFixter
-                account requires agreeing to receive service text messages about your visits. Marketing texts are separate
-                and are never required for anything. Providing a phone number is still not by itself consent to text you
-                &mdash; the tick is the act that matters &mdash; and service texts can be switched off in your account
-                settings at any time after registration.
+                <span className="font-semibold">Signing up asks for no SMS consent.</span> The sign-up screen has no text-message
+                checkboxes. If you sign up or sign in with your phone, we send a{" "}
+                <span className="font-semibold">one-time verification code</span> that you request, through Twilio Verify. That
+                single code is the only text it sends; it does not subscribe you to anything. Continuing on that screen means you
+                agree to the{" "}
+                <Link href="/terms" className="text-[#93c5fd] underline underline-offset-2">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className="text-[#93c5fd] underline underline-offset-2">
+                  Privacy Policy
+                </Link>{" "}
+                and to receive that verification text. Msg &amp; data rates may apply.
               </li>
               <li>
-                <span className="font-semibold">Service texts are required to create an account.</span> Appointment
-                confirmations, reminders, scheduling updates and service notifications are sent by SMS once you tick the
-                service-text box during registration. The box is never pre-ticked &mdash; you tick it yourself &mdash; and you
-                can turn service texts off at any time in your account settings afterwards.
+                <span className="font-semibold">Service texts are optional.</span> Booking confirmations, appointment reminders and
+                arrival updates are sent by SMS only if you tick the box{" "}
+                <span className="font-semibold">&ldquo;Text me about my visits&rdquo;</span> when you book a visit, or switch on{" "}
+                <span className="font-semibold">&ldquo;Text me about my ProFixter visits.&rdquo;</span> in your account settings.
+                The box is never pre-ticked &mdash; you tick it yourself &mdash; and it is never a condition of booking. Providing
+                a phone number is not by itself consent to text you. You can turn service texts off at any time in your account
+                settings.
               </li>
               <li>
                 <span className="font-semibold">Marketing texts require a second, separate opt-in.</span> Promotional texts are sent
-                only if you tick the separate, optional marketing box. It is unchecked by default, it is not the same box as the
-                service one, and ticking either never ticks the other.{" "}
+                only if you switch on <span className="font-semibold">&ldquo;Text me occasional ProFixter offers.&rdquo;</span> in
+                your account settings, which is the only place marketing texts are offered. It is unchecked by default, it is not
+                the same box as the service one, and ticking either never ticks the other. Marketing texts are never offered at
+                sign-up or at booking.{" "}
                 <span className="font-semibold">
                   Providing a phone number is never by itself treated as consent to marketing.
                 </span>
@@ -173,10 +186,16 @@ export default function CommunicationConsentPage() {
                 <ul className="list-disc list-inside space-y-2">
                   <li>Appointment scheduling, confirmations, rescheduling, and arrival updates</li>
                   <li>Service status updates, follow-ups, and support conversations</li>
-                  <li>Account authentication/security alerts (for example, verification codes)</li>
+                  <li>Account security alerts</li>
                   <li>Billing notices, receipts, and important account notices</li>
                   <li>Requests for photos/info to prepare for a visit</li>
                 </ul>
+                <p className="mt-3 text-white/70">
+                  Optional. Offered as the unchecked box &ldquo;Text me about my visits&rdquo; when you book, and in your account
+                  settings. Message frequency varies. Message and data rates may apply. Reply STOP to opt out or HELP for help.
+                  One-time sign-in verification codes are separate: they are sent only when you request one, through Twilio
+                  Verify, and are not part of this category.
+                </p>
               </div>
 
               <div id="marketing" className="scroll-mt-24 rounded-[8px] bg-white/5 border border-white/10 p-5">
@@ -186,6 +205,7 @@ export default function CommunicationConsentPage() {
                   <li>Limited-time campaigns (example: new service area, early-bird discounts)</li>
                 </ul>
                 <p className="mt-3 text-white/70">
+                  Offered only in your account settings, as the unchecked box &ldquo;Text me occasional ProFixter offers.&rdquo;
                   Marketing consent is optional and is not required to purchase services. If you opt out of marketing, you may still
                   receive necessary transactional messages.
                 </p>
@@ -247,20 +267,21 @@ export default function CommunicationConsentPage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3">7. How We Collect Opt-In (Consent Records)</h2>
             <p>
-              Customers opt in on our website sign-up form, which presents two separate, unchecked, optional SMS checkboxes — one
-              for service texts and one for marketing texts — alongside a separate required acceptance of the Terms of Service and
-              Privacy Policy. Neither SMS box is required to submit the form. The same two choices are available at any time in
-              account settings.
+              Account sign-up collects no SMS consent: it has no text-message checkboxes, and continuing accepts the Terms of
+              Service and Privacy Policy and a one-time verification text the person requests, sent through Twilio Verify. Service
+              texts are offered as one optional, unchecked box &mdash; &ldquo;Text me about my visits&rdquo; &mdash; just above the
+              button when you book a visit, and in account settings. Marketing texts are offered only in account settings, as a
+              separate unchecked box. Neither is required to book or to use ProFixter.
             </p>
             <p className="mt-3">
-              The sign-up form and your account settings are the only places we collect SMS consent. Texting us does not by itself
+              The booking step and your account settings are the only places we collect SMS consent. Texting us does not by itself
               subscribe you to any category of message. We do not accept verbal or paper opt-ins, we do not use a keyword sign-up,
               and we never buy, rent or accept a shared list of phone numbers.
             </p>
             <ul className="list-disc list-inside space-y-2 mt-3">
               <li>
                 For each choice we keep the consent status, the date and time it was recorded, and the place it came from — the
-                sign-up form or your account settings. Service texts and marketing texts are recorded separately.
+                booking step or your account settings. Service texts and marketing texts are recorded separately.
               </li>
               <li>
                 Replying <span className="font-semibold">START</span> or <span className="font-semibold">UNSTOP</span> lifts a
@@ -329,7 +350,7 @@ export default function CommunicationConsentPage() {
           </section>
 
           <p className="text-xs sm:text-sm text-white/55 mt-7 text-center">
-            Last Updated: January 9, 2026
+            Last Updated: October 28, 2026
           </p>
 
           {/* See the note on the privacy policy: neighbouring documents, not a CTA. */}

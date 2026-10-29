@@ -121,21 +121,24 @@ export default function PrivacyPage() {
               3. SMS Messaging &amp; Compliance
             </h2>
             <p>
-              Service text messages are required to create a Profixter account:
-              registration asks you to agree to receive texts about your visits,
-              and the box is never pre-ticked. Marketing texts are a separate,
-              optional choice and are never a condition of anything. Both can be
-              switched off in your account settings at any time after you register.
+              Text messages are optional. Creating a Profixter account asks for no
+              SMS consent: if you sign up with your phone, we text you a one-time
+              verification code that you request, and nothing else. Service texts
+              are offered later, as an optional unticked box when you book and in
+              your account settings. Marketing texts are a separate, optional choice
+              offered only in your account settings, and are never a condition of
+              anything. Both can be switched off in your account settings at any time.
             </p>
 
             <ul className="list-disc list-inside space-y-2 mt-3">
               <li>
-                <span className="font-semibold">Service messages (required to register):</span>{" "}
+                <span className="font-semibold">Service messages (optional):</span>{" "}
                 Appointment confirmations, reminders, scheduling updates and
-                service notifications are sent once you tick the service-text box,
-                which is required to create a ProFixter account. The box is never
-                pre-ticked, and service texts can be switched off in your account
-                settings at any time afterwards. Giving us a
+                service notifications are sent only if you tick &ldquo;Text me about
+                my visits&rdquo; when you book, or switch service texts on in your
+                account settings. The box is never pre-ticked, it is never required
+                to book, and service texts can be switched off in your account
+                settings at any time. Giving us a
                 phone number is never by itself treated as consent to text you —
                 we ask for a number so we can call you and so your Fixter can
                 reach you at the door.
@@ -145,9 +148,9 @@ export default function PrivacyPage() {
                   Marketing messages (separate optional opt-in):
                 </span>{" "}
                 Promotional texts are sent only if you tick the separate,
-                optional marketing box. It is unchecked by default, it is not the
-                same box as the service one, and ticking either never ticks the
-                other. We keep timestamped records of opt-in and opt-out actions.
+                optional marketing box in your account settings. It is unchecked by
+                default, it is not the same box as the service one, and ticking
+                either never ticks the other. We keep timestamped records of opt-in and opt-out actions.
               </li>
               <li>
                 <span className="font-semibold">If you decline marketing:</span> Nothing
