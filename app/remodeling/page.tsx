@@ -170,7 +170,7 @@ export default function RemodelingPage() {
                   </span>
                 </div>
 
-                <h1 className="text-[43px] sm:text-[50px] lg:text-[50px] font-black leading-[0.86] tracking-[-0.048em] text-white mb-7">
+                <h1 className="ui-display text-white mb-7">
                   Your bathroom.
                   <br />
                   <span
@@ -195,7 +195,7 @@ export default function RemodelingPage() {
                   <button
                     type="button"
                     onClick={callNow}
-                    className="inline-flex min-h-[44px] items-center justify-center gap-3 rounded-[8px] px-10 text-[17px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-3 rounded-[8px] px-10 text-[17px] font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                     style={{ background: "linear-gradient(135deg, #306EEC 0%, #1E4ED8 100%)", boxShadow: "0 20px 60px rgba(48,110,236,0.40)" }}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -294,7 +294,7 @@ export default function RemodelingPage() {
                       <button
                         type="button"
                         onClick={callNow}
-                        className="w-full min-h-[46px] rounded-[8px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 active:scale-[0.99]"
+                        className="w-full min-h-[46px] rounded-[8px] text-[15px] font-semibold text-white flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 active:scale-[0.99]"
                         style={{ background: "linear-gradient(135deg, #306EEC 0%, #1E4ED8 100%)", boxShadow: "0 12px 40px rgba(48,110,236,0.32)" }}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -372,7 +372,7 @@ export default function RemodelingPage() {
                 <div key={strong} className="flex items-center gap-3">
                   <div className="text-[#7BAEFF]/70">{icon}</div>
                   <div>
-                    <div className="text-[13px] font-extrabold text-white/75">{strong}</div>
+                    <div className="text-[13px] font-semibold text-white/75">{strong}</div>
                     <div className="text-[11px] text-white/32 leading-tight">{label}</div>
                   </div>
                 </div>
@@ -394,17 +394,17 @@ export default function RemodelingPage() {
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
             <div className="max-w-[680px] mb-9 sm:mb-16">
               <div className="inline-flex items-center gap-2.5 rounded-[6px] border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.10)]">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[color:var(--ui-accent-ink)]" aria-hidden="true">
                   <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">Complete Scope</span>
+                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[color:var(--ui-accent-ink)]">Complete Scope</span>
               </div>
-              <h2 className="text-[30px] sm:text-[40px] lg:text-[43px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-5">
+              <h2 className="ui-h2 mb-5 text-inherit">
                 Everything handled.
                 <br />
                 <span style={{ color: "#306EEC" }}>Start to finish.</span>
               </h2>
-              <p className="text-[15px] sm:text-[17px] leading-relaxed text-[#475569] max-w-[520px]">
+              <p className="text-[15px] sm:text-[17px] leading-relaxed text-[color:var(--ui-text-2)] max-w-[520px]">
                 From demolition day to the moment you turn on your new shower
                 for the first time - every trade, every detail, fully
                 coordinated by our team.
@@ -505,13 +505,13 @@ export default function RemodelingPage() {
               ].map(({ title, body, icon }) => (
                 <div
                   key={title}
-                  className="group rounded-[8px] border border-[#C5CBD8] bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.06)] transition-all duration-300 hover:shadow-[0_16px_56px_rgba(15,23,42,0.11)] hover:-translate-y-0.5"
+                  className="group rounded-[8px] border border-[color:var(--ui-line-2)] bg-white p-6 shadow-[var(--ui-shadow-1)] transition-all duration-300 hover:shadow-[0_16px_56px_rgba(15,23,42,0.11)] hover:-translate-y-0.5"
                 >
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-[8px] bg-[#EEF3FF] text-[#306EEC] transition-all group-hover:bg-[#306EEC] group-hover:text-white">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-[8px] bg-[#EEF3FF] text-[color:var(--ui-accent-ink)] transition-all group-hover:bg-[#306EEC] group-hover:text-white">
                     {icon}
                   </div>
-                  <h3 className="text-[16px] font-bold text-[#0B1628] mb-2 leading-snug">{title}</h3>
-                  <p className="text-[13px] leading-relaxed text-[#64748B]">{body}</p>
+                  <h3 className="text-[16px] font-bold text-[color:var(--ui-ink)] mb-2 leading-snug">{title}</h3>
+                  <p className="text-[13px] leading-relaxed text-[color:var(--ui-text-3)]">{body}</p>
                 </div>
               ))}
             </div>
@@ -520,7 +520,7 @@ export default function RemodelingPage() {
               <button
                 type="button"
                 onClick={callNow}
-                className="inline-flex h-[48px] items-center gap-3 rounded-[8px] px-9 text-[16px] font-extrabold text-white"
+                className="inline-flex h-[48px] items-center gap-3 rounded-[8px] px-9 text-[16px] font-semibold text-white"
                 style={{ background: "linear-gradient(135deg, #306EEC 0%, #1E4ED8 100%)", boxShadow: "0 16px 48px rgba(48,110,236,0.35)" }}
               >
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -533,32 +533,32 @@ export default function RemodelingPage() {
             {/* ── Warranty + Financing callout ── */}
             <div className="mt-7 sm:mt-8 grid sm:grid-cols-2 gap-5">
               {/* Warranty */}
-              <div className="rounded-[8px] border border-[#D9E4FF] bg-white p-6 sm:p-7 shadow-[0_4px_24px_rgba(15,23,42,0.05)] flex items-start gap-5">
-                <div className="flex-shrink-0 h-12 w-12 rounded-[8px] bg-[#EEF3FF] flex items-center justify-center text-[#306EEC]">
+              <div className="rounded-[8px] border border-[#D9E4FF] bg-white p-6 sm:p-7 shadow-[var(--ui-shadow-1)] flex items-start gap-5">
+                <div className="flex-shrink-0 h-12 w-12 rounded-[8px] bg-[#EEF3FF] flex items-center justify-center text-[color:var(--ui-accent-ink)]">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
                     <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
                 <div>
-                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#306EEC] mb-1">Warranty</div>
-                  <h4 className="text-[16px] font-bold text-[#0B1628] mb-2 leading-snug">Workmanship warranty included.</h4>
-                  <p className="text-[13px] leading-relaxed text-[#64748B]">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--ui-accent-ink)] mb-1">Warranty</div>
+                  <h4 className="text-[16px] font-bold text-[color:var(--ui-ink)] mb-2 leading-snug">Workmanship warranty included.</h4>
+                  <p className="text-[13px] leading-relaxed text-[color:var(--ui-text-3)]">
                     Workmanship warranty on all labor. Product and material warranties vary by manufacturer and selection. Full warranty details reviewed and provided before work begins.
                   </p>
                 </div>
               </div>
               {/* Financing */}
-              <div className="rounded-[8px] border border-[#D9E4FF] bg-white p-6 sm:p-7 shadow-[0_4px_24px_rgba(15,23,42,0.05)] flex items-start gap-5">
-                <div className="flex-shrink-0 h-12 w-12 rounded-[8px] bg-[#EEF3FF] flex items-center justify-center text-[#306EEC]">
+              <div className="rounded-[8px] border border-[#D9E4FF] bg-white p-6 sm:p-7 shadow-[var(--ui-shadow-1)] flex items-start gap-5">
+                <div className="flex-shrink-0 h-12 w-12 rounded-[8px] bg-[#EEF3FF] flex items-center justify-center text-[color:var(--ui-accent-ink)]">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
                 <div>
-                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#306EEC] mb-1">Financing</div>
-                  <h4 className="text-[16px] font-bold text-[#0B1628] mb-2 leading-snug">Start your remodel sooner.</h4>
-                  <p className="text-[13px] leading-relaxed text-[#64748B]">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--ui-accent-ink)] mb-1">Financing</div>
+                  <h4 className="text-[16px] font-bold text-[color:var(--ui-ink)] mb-2 leading-snug">Start your remodel sooner.</h4>
+                  <p className="text-[13px] leading-relaxed text-[color:var(--ui-text-3)]">
                     Monthly payment options are available for qualified homeowners. Don&rsquo;t delay your bathroom remodel while saving the full amount - start enjoying the result now and pay over time. Ask about financing at your free consultation.
                   </p>
                 </div>
@@ -591,7 +591,7 @@ export default function RemodelingPage() {
                     Real Long Island Projects
                   </span>
                 </div>
-                <h2 className="text-[32px] sm:text-[40px] lg:text-[43px] font-black leading-[0.88] tracking-[-0.045em] text-white mb-5">
+                <h2 className="ui-h2 text-white mb-5">
                   Work we&rsquo;re
                   <br />
                   <span
@@ -617,7 +617,7 @@ export default function RemodelingPage() {
                     key={l}
                     className="rounded-[8px] border border-white/[0.09] bg-white/[0.04] px-4 py-4 text-center min-w-[88px]"
                   >
-                    <div className="text-[18px] font-extrabold text-white leading-none mb-1.5">{v}</div>
+                    <div className="text-[18px] font-semibold text-white leading-none mb-1.5">{v}</div>
                     <div className="text-[10px] font-semibold text-white/35">{l}</div>
                   </div>
                 ))}
@@ -658,7 +658,7 @@ export default function RemodelingPage() {
                   {/* Bottom label + nav */}
                   <div className="absolute bottom-0 left-0 right-0 px-6 pb-6 flex items-end justify-between">
                     <div>
-                      <div className="text-[23px] sm:text-[30px] font-black text-white leading-none tracking-[-0.025em] mb-1">
+                      <div className="text-[23px] sm:text-[30px] font-semibold text-white leading-none tracking-[-0.025em] mb-1">
                         {activePhoto.label}
                       </div>
                       <div className="text-[11px] font-semibold text-white/45 uppercase tracking-[0.18em]">
@@ -749,7 +749,7 @@ export default function RemodelingPage() {
                   <button
                     type="button"
                     onClick={callNow}
-                    className="w-full min-h-[46px] rounded-[8px] text-[14px] font-extrabold text-white transition-all hover:-translate-y-0.5"
+                    className="w-full min-h-[46px] rounded-[8px] text-[14px] font-semibold text-white transition-all hover:-translate-y-0.5"
                     style={{ background: "linear-gradient(135deg, #306EEC 0%, #1E4ED8 100%)", boxShadow: "0 10px 30px rgba(48,110,236,0.28)" }}
                   >
                     Request Free Consultation
@@ -773,18 +773,18 @@ export default function RemodelingPage() {
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-[720px] text-center mb-9 sm:mb-16">
               <div className="inline-flex items-center gap-2.5 rounded-[6px] border border-[#D9E4FF] bg-white px-4 py-2 mb-6 shadow-[0_2px_12px_rgba(48,110,236,0.08)]">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[color:var(--ui-accent-ink)]" aria-hidden="true">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
                   <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
-                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">How It Works</span>
+                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[color:var(--ui-accent-ink)]">How It Works</span>
               </div>
-              <h2 className="text-[30px] sm:text-[40px] lg:text-[43px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-5">
+              <h2 className="ui-h2 mb-5 text-inherit">
                 From first call
                 <br />
                 <span style={{ color: "#306EEC" }}>to finished bathroom.</span>
               </h2>
-              <p className="text-[15px] sm:text-[17px] text-[#475569] leading-relaxed">
+              <p className="text-[15px] sm:text-[17px] text-[color:var(--ui-text-2)] leading-relaxed">
                 A typical Long Island bathroom remodel follows this sequence.
                 We keep you informed at every phase - no surprises.
               </p>
@@ -822,24 +822,24 @@ export default function RemodelingPage() {
                       className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full border-2 bg-white shadow-[0_4px_20px_rgba(48,110,236,0.12)]"
                       style={{ borderColor: "rgba(48,110,236,0.45)" }}
                     >
-                      <span className="text-[15px] font-black" style={{ color: "#306EEC" }}>
+                      <span className="text-[15px] font-semibold" style={{ color: "#306EEC" }}>
                         {String(i + 1).padStart(2, "0")}
                       </span>
                     </div>
-                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#306EEC]/60 lg:hidden">{time}</div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--ui-accent-ink)]/60 lg:hidden">{time}</div>
                   </div>
-                  <div className="hidden lg:block text-[11px] font-bold uppercase tracking-[0.18em] text-[#306EEC]/60 mb-2">{time}</div>
-                  <h3 className="text-[16px] font-bold text-[#0B1628] mb-2.5 leading-snug">{phase}</h3>
-                  <p className="text-[13px] sm:text-[14px] text-[#64748B] leading-relaxed">{body}</p>
+                  <div className="hidden lg:block text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--ui-accent-ink)]/60 mb-2">{time}</div>
+                  <h3 className="text-[16px] font-bold text-[color:var(--ui-ink)] mb-2.5 leading-snug">{phase}</h3>
+                  <p className="text-[13px] sm:text-[14px] text-[color:var(--ui-text-3)] leading-relaxed">{body}</p>
                 </div>
               ))}
             </div>
 
             <div
-              className="mt-8 sm:mt-9 rounded-[8px] border border-[#306EEC]/15 px-6 py-5 text-center bg-white shadow-[0_4px_20px_rgba(15,23,42,0.05)]"
+              className="mt-8 sm:mt-9 rounded-[8px] border border-[#306EEC]/15 px-6 py-5 text-center bg-white shadow-[var(--ui-shadow-1)]"
             >
-              <p className="text-[14px] text-[#64748B] leading-relaxed max-w-[680px] mx-auto">
-                <span className="text-[#0B1628] font-semibold">Timeline note:</span> Complex projects with layout changes, custom tile work, or structural modifications may run 4–6 weeks. We give you a precise schedule - not an estimate - before any work begins.
+              <p className="text-[14px] text-[color:var(--ui-text-3)] leading-relaxed max-w-[680px] mx-auto">
+                <span className="text-[color:var(--ui-ink)] font-semibold">Timeline note:</span> Complex projects with layout changes, custom tile work, or structural modifications may run 4–6 weeks. We give you a precise schedule - not an estimate - before any work begins.
               </p>
             </div>
           </div>
@@ -865,7 +865,7 @@ export default function RemodelingPage() {
                 </svg>
                 <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#7BAEFF]/80">Why Profixter</span>
               </div>
-              <h2 className="text-[30px] sm:text-[40px] lg:text-[43px] font-black leading-[0.92] tracking-[-0.04em] text-white mb-5">
+              <h2 className="ui-h2 text-white mb-5">
                 The difference is in
                 <br />
                 <span
@@ -931,24 +931,24 @@ export default function RemodelingPage() {
           style={{ background: "linear-gradient(160deg, #EAEDFA 0%, #E4E9F8 100%)" }}
         >
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="overflow-hidden rounded-[8px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+            <div className="overflow-hidden rounded-[8px] border border-[color:var(--ui-line-2)] bg-white shadow-[var(--ui-shadow-1)]">
               <div className="grid lg:grid-cols-[1fr_1fr] divide-y lg:divide-y-0 lg:divide-x divide-[#E6E8EF]">
 
                 {/* Left: Value framing */}
                 <div className="px-6 py-10 sm:px-10 sm:py-9 lg:px-12 flex flex-col gap-7">
                   <div>
                     <div className="inline-flex items-center gap-2 rounded-[6px] border border-[#D9E4FF] bg-[#EEF3FF] px-3 py-1.5 mb-5">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#306EEC]" aria-hidden="true">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[color:var(--ui-accent-ink)]" aria-hidden="true">
                         <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
-                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">Investment Confidence</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[color:var(--ui-accent-ink)]">Investment Confidence</span>
                     </div>
-                    <h3 className="text-[23px] sm:text-[26px] font-black leading-tight text-[#0B1628] mb-4">
+                    <h3 className="text-[23px] sm:text-[26px] font-semibold leading-tight text-[color:var(--ui-ink)] mb-4">
                       A bathroom remodel is the
                       highest-return renovation
                       you can make.
                     </h3>
-                    <p className="text-[14px] sm:text-[15px] text-[#475569] leading-relaxed">
+                    <p className="text-[14px] sm:text-[15px] text-[color:var(--ui-text-2)] leading-relaxed">
                       Long Island homes with professionally remodeled bathrooms see significant increases in appraised value and resale speed. This is not just comfort - it&rsquo;s a financial decision that pays back.
                     </p>
                   </div>
@@ -960,8 +960,8 @@ export default function RemodelingPage() {
                       { stat: "9+ yrs", label: "Our Long Island track record" },
                     ].map(({ stat, label }) => (
                       <div key={stat} className="rounded-[8px] border border-[#E6E8EF] bg-[#F8F9FC] p-4 text-center">
-                        <div className="text-[19px] font-black text-[#306EEC] mb-1">{stat}</div>
-                        <div className="text-[10px] font-semibold text-[#64748B] leading-tight">{label}</div>
+                        <div className="text-[19px] font-semibold text-[color:var(--ui-accent-ink)] mb-1">{stat}</div>
+                        <div className="text-[10px] font-semibold text-[color:var(--ui-text-3)] leading-tight">{label}</div>
                       </div>
                     ))}
                   </div>
@@ -970,11 +970,11 @@ export default function RemodelingPage() {
                 {/* Right: Transparent pricing approach */}
                 <div className="px-6 py-10 sm:px-10 sm:py-9 lg:px-12 bg-[#F0F4FF] flex flex-col gap-6">
                   <div>
-                    <h3 className="text-[19px] sm:text-[23px] font-extrabold leading-tight text-[#0B1628] mb-3">
+                    <h3 className="text-[19px] sm:text-[23px] font-semibold leading-tight text-[color:var(--ui-ink)] mb-3">
                       Transparent pricing.
                       No surprise invoices.
                     </h3>
-                    <p className="text-[14px] sm:text-[15px] text-[#475569] leading-relaxed">
+                    <p className="text-[14px] sm:text-[15px] text-[color:var(--ui-text-2)] leading-relaxed">
                       You receive a written, line-item estimate before any work begins. Not a rough range - a real number for the exact scope discussed. If anything changes, we tell you before touching it.
                     </p>
                   </div>
@@ -999,7 +999,7 @@ export default function RemodelingPage() {
                   <button
                     type="button"
                     onClick={callNow}
-                    className="inline-flex h-[46px] items-center justify-center gap-2.5 rounded-[8px] text-[15px] font-extrabold text-white transition-all hover:-translate-y-0.5"
+                    className="inline-flex h-[46px] items-center justify-center gap-2.5 rounded-[8px] text-[15px] font-semibold text-white transition-all hover:-translate-y-0.5"
                     style={{ background: "linear-gradient(135deg, #306EEC 0%, #1E4ED8 100%)", boxShadow: "0 12px 36px rgba(48,110,236,0.28)" }}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1007,7 +1007,7 @@ export default function RemodelingPage() {
                     </svg>
                     Request Free Consultation
                   </button>
-                  <p className="text-[11px] text-center text-[#94A3B8]">Free · No obligation · We come to you</p>
+                  <p className="text-[11px] text-center text-[color:var(--ui-text-3)]">Free · No obligation · We come to you</p>
                 </div>
               </div>
             </div>
@@ -1033,7 +1033,7 @@ export default function RemodelingPage() {
                 <div className="inline-flex items-center gap-2.5 rounded-full border border-[#306EEC]/20 bg-[#306EEC]/[0.06] px-4 py-2 mb-7 backdrop-blur-sm">
                   <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#7BAEFF]/70">Real Answers</span>
                 </div>
-                <h2 className="text-[30px] sm:text-[40px] lg:text-[43px] font-black leading-[0.92] tracking-[-0.04em] text-white mb-5">
+                <h2 className="ui-h2 text-white mb-5">
                   Common questions.
                   <br />
                   <span
@@ -1092,7 +1092,7 @@ export default function RemodelingPage() {
                   <button
                     type="button"
                     onClick={callNow}
-                    className="w-full rounded-[8px] py-3.5 text-[15px] font-extrabold text-white transition-all hover:-translate-y-0.5"
+                    className="w-full rounded-[8px] py-3.5 text-[15px] font-semibold text-white transition-all hover:-translate-y-0.5"
                     style={{ background: "linear-gradient(135deg, #306EEC 0%, #1E4ED8 100%)", boxShadow: "0 12px 36px rgba(48,110,236,0.25)" }}
                   >
                     Request Consultation
@@ -1111,7 +1111,7 @@ export default function RemodelingPage() {
           style={{ background: "linear-gradient(160deg, #EAEDFA 0%, #E4E9F8 100%)" }}
         >
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="overflow-hidden rounded-[8px] border border-[#C5CBD8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+            <div className="overflow-hidden rounded-[8px] border border-[color:var(--ui-line-2)] bg-white shadow-[var(--ui-shadow-1)]">
               <div className="grid lg:grid-cols-[1fr_1fr] divide-y lg:divide-y-0 lg:divide-x divide-[#E6E8EF]">
 
                 <div className="px-6 py-10 sm:px-10 sm:py-9 lg:px-12 flex flex-col justify-between gap-7">
@@ -1120,8 +1120,8 @@ export default function RemodelingPage() {
                       <Image src="/images/Taras.png" alt="Taras Bandura" fill className="object-cover object-top" sizes="72px" />
                     </div>
                     <div>
-                      <div className="text-[18px] font-bold text-[#0B1628]">Taras Bandura</div>
-                      <div className="text-[13px] font-semibold text-[#306EEC]">Founder &amp; General Manager</div>
+                      <div className="text-[18px] font-bold text-[color:var(--ui-ink)]">Taras Bandura</div>
+                      <div className="text-[13px] font-semibold text-[color:var(--ui-accent-ink)]">Founder &amp; General Manager</div>
                     </div>
                   </div>
 
@@ -1135,7 +1135,7 @@ export default function RemodelingPage() {
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                           <path d="M5 12.5l4 4 10-10" stroke="#306EEC" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
-                        <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#64748B]">{t}</span>
+                        <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-[color:var(--ui-text-3)]">{t}</span>
                       </div>
                     ))}
                   </div>
@@ -1143,10 +1143,10 @@ export default function RemodelingPage() {
 
                 <div className="px-6 py-10 sm:px-10 sm:py-9 lg:px-12 bg-[#F0F4FF] flex flex-col justify-between gap-6">
                   <div>
-                    <div className="text-[21px] sm:text-[23px] font-extrabold leading-tight text-[#0B1628] mb-3">
+                    <div className="text-[21px] sm:text-[23px] font-semibold leading-tight text-[color:var(--ui-ink)] mb-3">
                       Your bathroom deserves to be done once - and done right.
                     </div>
-                    <p className="text-[14px] sm:text-[15px] text-[#475569] leading-relaxed">
+                    <p className="text-[14px] sm:text-[15px] text-[color:var(--ui-text-2)] leading-relaxed">
                       A properly remodeled bathroom lasts 15–20 years before it needs attention. A poorly done one starts showing problems in 2–3. The difference is in the decisions made behind the walls - where you can&rsquo;t see them.
                     </p>
                   </div>
@@ -1155,7 +1155,7 @@ export default function RemodelingPage() {
                     <button
                       type="button"
                       onClick={callNow}
-                      className="inline-flex h-[48px] items-center justify-center gap-2.5 rounded-[8px] text-[16px] font-extrabold text-white transition-all hover:-translate-y-0.5"
+                      className="inline-flex h-[48px] items-center justify-center gap-2.5 rounded-[8px] text-[16px] font-semibold text-white transition-all hover:-translate-y-0.5"
                       style={{ background: "linear-gradient(135deg, #306EEC 0%, #1E4ED8 100%)", boxShadow: "0 12px 36px rgba(48,110,236,0.28)" }}
                     >
                       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1165,7 +1165,7 @@ export default function RemodelingPage() {
                     </button>
                     <a
                       href={`tel:${PHONE_TEL}`}
-                      className="inline-flex h-[46px] items-center justify-center gap-2.5 rounded-[8px] border border-[#C5CBD8] bg-white text-[15px] font-semibold text-[#0B1628] transition hover:border-[#306EEC] hover:text-[#306EEC]"
+                      className="inline-flex h-[46px] items-center justify-center gap-2.5 rounded-[8px] border border-[color:var(--ui-line-2)] bg-white text-[15px] font-semibold text-[color:var(--ui-ink)] transition hover:border-[#306EEC] hover:text-[color:var(--ui-accent-ink)]"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.37 1.9.72 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -1201,7 +1201,7 @@ export default function RemodelingPage() {
                 </span>
               </div>
 
-              <h2 className="text-[40px] sm:text-[46px] lg:text-[50px] font-black leading-[0.87] tracking-[-0.048em] text-white mb-6">
+              <h2 className="ui-h2 text-white mb-6">
                 The bathroom
                 <br />
                 <span
@@ -1221,7 +1221,7 @@ export default function RemodelingPage() {
                 <button
                   type="button"
                   onClick={callNow}
-                  className="inline-flex min-h-[68px] items-center justify-center gap-3 rounded-[8px] px-12 text-[18px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
+                  className="inline-flex min-h-[68px] items-center justify-center gap-3 rounded-[8px] px-12 text-[18px] font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                   style={{ background: "linear-gradient(135deg, #306EEC 0%, #1E4ED8 100%)", boxShadow: "0 24px 70px rgba(48,110,236,0.45)" }}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">

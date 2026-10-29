@@ -107,7 +107,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
         className="flex w-full items-center justify-between px-5 py-4 text-left"
         aria-expanded={open}
       >
-        <span className="pr-3 text-[15px] font-extrabold text-[#0B1628]">{question}</span>
+        <span className="pr-3 text-[15px] font-semibold text-[color:var(--ui-ink)]">{question}</span>
         <svg
           width="16"
           height="16"
@@ -120,7 +120,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
         </svg>
       </button>
       {open && (
-        <div className="px-5 pb-4 text-[14px] leading-relaxed text-[#475569]">{answer}</div>
+        <div className="px-5 pb-4 text-[14px] leading-relaxed text-[color:var(--ui-text-2)]">{answer}</div>
       )}
     </div>
   );
@@ -166,7 +166,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                   {config.eyebrow}
                 </div>
 
-                <h1 className="mt-6 text-[40px] font-black leading-[0.88] tracking-[-0.045em] text-white sm:text-[46px] lg:text-[50px]">
+                <h1 className="ui-display mt-6 text-white">
                   {config.headline}
                 </h1>
 
@@ -177,7 +177,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                 <div className="mt-8 flex flex-wrap gap-3">
                   <a
                     href="#estimate-form"
-                    className="inline-flex min-h-[62px] items-center justify-center gap-2.5 rounded-[8px] bg-[#D4A574] px-6 text-[16px] font-extrabold text-[#111827] shadow-[0_16px_48px_rgba(212,165,116,0.30)] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
+                    className="inline-flex min-h-[62px] items-center justify-center gap-2.5 rounded-[8px] bg-[#D4A574] px-6 text-[16px] font-semibold text-[color:var(--ui-ink)] shadow-[0_16px_48px_rgba(212,165,116,0.30)] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
                   >
                     {config.cta}
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -251,12 +251,12 @@ export default function ExteriorLandingPage({ project }: Props) {
               <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#C49060]">
                 {project === "roofing" ? "Why it matters" : "What you get"}
               </div>
-              <h2 className="mt-3 text-[30px] font-black tracking-[-0.03em] text-[#0B1628] sm:text-[34px]">
+              <h2 className="ui-h2 mt-3 text-inherit">
                 {project === "roofing"
                   ? "A roof that protects the entire home"
                   : "Siding that works as hard as it looks"}
               </h2>
-              <p className="mx-auto mt-4 max-w-[560px] text-[15px] leading-relaxed text-[#475569]">
+              <p className="mx-auto mt-4 max-w-[560px] text-[15px] leading-relaxed text-[color:var(--ui-text-2)]">
                 {project === "roofing"
                   ? "From material selection to warranty coverage - everything reviewed clearly before work begins."
                   : "From moisture protection to curb appeal - durable siding that ends the patch-repair cycle."}
@@ -271,8 +271,8 @@ export default function ExteriorLandingPage({ project }: Props) {
                   <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-[6px] bg-[#FDF8F2]">
                     <CheckMark />
                   </div>
-                  <div className="text-[15px] font-extrabold text-[#0B1628]">{title}</div>
-                  <p className="mt-2 text-[13px] leading-relaxed text-[#475569]">{body}</p>
+                  <div className="text-[15px] font-semibold text-[color:var(--ui-ink)]">{title}</div>
+                  <p className="mt-2 text-[13px] leading-relaxed text-[color:var(--ui-text-2)]">{body}</p>
                 </div>
               ))}
             </div>
@@ -285,7 +285,7 @@ export default function ExteriorLandingPage({ project }: Props) {
             <div className="grid gap-7 lg:grid-cols-[1fr_1.4fr] lg:items-start">
               <div>
                 <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#E8C49A]">Signs to act</div>
-                <h2 className="mt-3 text-[30px] font-black leading-tight tracking-[-0.035em] text-white sm:text-[34px]">
+                <h2 className="ui-h2 mt-3 text-white">
                   When temporary repairs stop making sense
                 </h2>
                 <p className="mt-4 text-[15px] leading-relaxed text-white/48">
@@ -295,7 +295,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                 </p>
                 <a
                   href="#estimate-form"
-                  className="mt-7 inline-flex min-h-[46px] items-center justify-center rounded-[8px] bg-[#D4A574] px-5 text-[15px] font-extrabold text-[#111827] shadow-[0_12px_32px_rgba(212,165,116,0.25)] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
+                  className="mt-7 inline-flex min-h-[46px] items-center justify-center rounded-[8px] bg-[#D4A574] px-5 text-[15px] font-semibold text-[color:var(--ui-ink)] shadow-[0_12px_32px_rgba(212,165,116,0.25)] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
                 >
                   Request a Free Estimate
                 </a>
@@ -304,7 +304,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                 {config.signs.map(({ title, body }) => (
                   <div key={title} className="rounded-[8px] border border-white/10 bg-white/[0.05] p-5">
                     <div className="mb-3 h-1.5 w-10 rounded-full bg-[#D4A574]" />
-                    <div className="text-[15px] font-extrabold text-white">{title}</div>
+                    <div className="text-[15px] font-semibold text-white">{title}</div>
                     <p className="mt-2 text-[13px] leading-relaxed text-white/45">{body}</p>
                   </div>
                 ))}
@@ -321,10 +321,10 @@ export default function ExteriorLandingPage({ project }: Props) {
               <div className="mb-4 inline-flex rounded-[6px] bg-[#FDF8F2] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#C49060]">
                 Warranty
               </div>
-              <h2 className="text-[23px] font-black tracking-[-0.03em] text-[#0B1628] sm:text-[26px]">
+              <h2 className="ui-h2 text-inherit">
                 {config.warrantyTitle}
               </h2>
-              <p className="mt-4 text-[14px] leading-relaxed text-[#475569]">{config.warrantyBody}</p>
+              <p className="mt-4 text-[14px] leading-relaxed text-[color:var(--ui-text-2)]">{config.warrantyBody}</p>
               <div className="mt-5 flex items-start gap-2 text-[13px] font-semibold text-[#C49060]">
                 <CheckMark color="#C49060" />
                 Reviewed and explained clearly before work begins
@@ -332,17 +332,17 @@ export default function ExteriorLandingPage({ project }: Props) {
             </div>
             {/* Financing */}
             <div className="rounded-[8px] border border-[#D9E4FF] bg-white p-7 sm:p-9">
-              <div className="mb-4 inline-flex rounded-[6px] bg-[#EFF6FF] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">
+              <div className="mb-4 inline-flex rounded-[6px] bg-[#EFF6FF] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[color:var(--ui-accent-ink)]">
                 Financing
               </div>
-              <h2 className="text-[23px] font-black tracking-[-0.03em] text-[#0B1628] sm:text-[26px]">
+              <h2 className="ui-h2 text-inherit">
                 Protect the home now
               </h2>
-              <p className="mt-4 text-[14px] leading-relaxed text-[#475569]">
+              <p className="mt-4 text-[14px] leading-relaxed text-[color:var(--ui-text-2)]">
                 Financing is available for qualified homeowners, so a necessary exterior project doesn&rsquo;t have to
                 stay on hold. We&rsquo;ll walk you through options clearly during your estimate - no pressure.
               </p>
-              <div className="mt-5 flex items-start gap-2 text-[13px] font-semibold text-[#306EEC]">
+              <div className="mt-5 flex items-start gap-2 text-[13px] font-semibold text-[color:var(--ui-accent-ink)]">
                 <CheckMark color="#306EEC" />
                 No need to delay protecting your home
               </div>
@@ -365,7 +365,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                   <div className="inline-flex rounded-[6px] border border-[#D4A574]/28 bg-[#D4A574]/10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#E8C49A]">
                     Profixter Members
                   </div>
-                  <h2 className="mt-4 text-[26px] font-black leading-tight tracking-[-0.03em] text-white sm:text-[32px]">
+                  <h2 className="ui-h2 mt-4 text-white">
                     Exclusive exterior project offers for active members.
                   </h2>
                   <p className="mt-4 max-w-[540px] text-[15px] leading-relaxed text-white/58">
@@ -389,7 +389,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                 <div className="flex flex-col gap-3 sm:flex-row lg:min-w-[200px] lg:flex-col">
                   <a
                     href="#estimate-form"
-                    className="inline-flex min-h-[48px] items-center justify-center rounded-[8px] bg-[#D4A574] px-6 text-[15px] font-extrabold text-[#111827] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
+                    className="inline-flex min-h-[48px] items-center justify-center rounded-[8px] bg-[#D4A574] px-6 text-[15px] font-semibold text-[color:var(--ui-ink)] transition hover:-translate-y-0.5 hover:bg-[#E0B886]"
                   >
                     Request Estimate
                   </a>
@@ -411,11 +411,11 @@ export default function ExteriorLandingPage({ project }: Props) {
             <div className="grid gap-7 lg:grid-cols-2 lg:items-start">
               {/* Why us */}
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#306EEC]">Why Profixter</div>
-                <h2 className="mt-3 text-[30px] font-black tracking-[-0.035em] text-[#0B1628] sm:text-[32px]">
+                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[color:var(--ui-accent-ink)]">Why Profixter</div>
+                <h2 className="ui-h2 mt-3 text-inherit">
                   High-ticket work with a homeowner-first process
                 </h2>
-                <p className="mt-4 text-[15px] leading-relaxed text-[#475569]">
+                <p className="mt-4 text-[15px] leading-relaxed text-[color:var(--ui-text-2)]">
                   We don&rsquo;t rush estimates, oversell materials, or send crews you&rsquo;ve never met. You get local
                   accountability, honest recommendations, and a team focused on protecting the home - not closing a
                   sale.
@@ -434,8 +434,8 @@ export default function ExteriorLandingPage({ project }: Props) {
                         </svg>
                       </div>
                       <div>
-                        <div className="text-[14px] font-extrabold text-[#0B1628]">{title}</div>
-                        <div className="mt-0.5 text-[13px] leading-relaxed text-[#475569]">{body}</div>
+                        <div className="text-[14px] font-semibold text-[color:var(--ui-ink)]">{title}</div>
+                        <div className="mt-0.5 text-[13px] leading-relaxed text-[color:var(--ui-text-2)]">{body}</div>
                       </div>
                     </div>
                   ))}
@@ -463,7 +463,7 @@ export default function ExteriorLandingPage({ project }: Props) {
             <div className="grid gap-7 lg:grid-cols-[1fr_460px] lg:items-start">
               <div>
                 <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#E8C49A]">Request a callback</div>
-                <h2 className="mt-3 text-[30px] font-black leading-tight tracking-[-0.035em] text-white sm:text-[34px]">
+                <h2 className="ui-h2 mt-3 text-white">
                   Know what your project will cost.
                 </h2>
                 <p className="mt-4 text-[15px] leading-relaxed text-white/50">
@@ -490,7 +490,7 @@ export default function ExteriorLandingPage({ project }: Props) {
                   </div>
                   <a
                     href="tel:+16315991363"
-                    className="mt-2 block text-[23px] font-black tracking-[-0.02em] text-white transition hover:text-[#E8C49A]"
+                    className="mt-2 block text-[23px] font-semibold tracking-[-0.02em] text-white transition hover:text-[#E8C49A]"
                   >
                     631-599-1363
                   </a>
@@ -506,7 +506,7 @@ export default function ExteriorLandingPage({ project }: Props) {
         {/* ── FINAL CTA ─────────────────────────────────────── */}
         <section className="bg-[#0A1422] py-9 sm:py-11">
           <div className="mx-auto max-w-[760px] px-4 text-center sm:px-6">
-            <h2 className="text-[26px] font-black leading-tight tracking-[-0.03em] text-white sm:text-[30px]">
+            <h2 className="ui-h2 text-white">
               {project === "roofing"
                 ? "Your roof should not be something you keep worrying about."
                 : "Your home's exterior should protect and impress - not stress you out."}
@@ -517,7 +517,7 @@ export default function ExteriorLandingPage({ project }: Props) {
             <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <a
                 href="#estimate-form"
-                className="inline-flex min-h-[48px] w-full items-center justify-center rounded-[8px] bg-[#D4A574] px-9 text-[16px] font-extrabold text-[#111827] shadow-[0_16px_40px_rgba(212,165,116,0.26)] transition hover:-translate-y-0.5 hover:bg-[#E0B886] sm:w-auto"
+                className="inline-flex min-h-[48px] w-full items-center justify-center rounded-[8px] bg-[#D4A574] px-9 text-[16px] font-semibold text-[color:var(--ui-ink)] shadow-[0_16px_40px_rgba(212,165,116,0.26)] transition hover:-translate-y-0.5 hover:bg-[#E0B886] sm:w-auto"
               >
                 {config.cta}
               </a>
