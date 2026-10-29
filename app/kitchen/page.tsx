@@ -172,7 +172,7 @@ export default function KitchenPage() {
                   </span>
                 </div>
 
-                <h1 className="text-[43px] sm:text-[50px] lg:text-[50px] font-black leading-[0.86] tracking-[-0.048em] text-white mb-7">
+                <h1 className="ui-display text-white mb-7">
                   The kitchen
                   <br />
                   your home
@@ -199,7 +199,7 @@ export default function KitchenPage() {
                   <button
                     type="button"
                     onClick={callNow}
-                    className="inline-flex min-h-[44px] items-center justify-center gap-3 rounded-[8px] px-10 text-[17px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-3 rounded-[8px] px-10 text-[17px] font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                     style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 20px 60px rgba(217,119,6,0.40)" }}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -298,7 +298,7 @@ export default function KitchenPage() {
                       <button
                         type="button"
                         onClick={callNow}
-                        className="w-full min-h-[46px] rounded-[8px] text-[15px] font-extrabold text-white flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 active:scale-[0.99]"
+                        className="w-full min-h-[46px] rounded-[8px] text-[15px] font-semibold text-white flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 active:scale-[0.99]"
                         style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 12px 40px rgba(217,119,6,0.35)" }}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -385,7 +385,7 @@ export default function KitchenPage() {
                 <div key={strong} className="flex items-center gap-3">
                   <div className="text-[#D97706]/70">{icon}</div>
                   <div>
-                    <div className="text-[13px] font-extrabold text-white/75">{strong}</div>
+                    <div className="text-[13px] font-semibold text-white/75">{strong}</div>
                     <div className="text-[11px] text-white/32 leading-tight">{label}</div>
                   </div>
                 </div>
@@ -412,12 +412,12 @@ export default function KitchenPage() {
                 </svg>
                 <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#D97706]">Complete Scope</span>
               </div>
-              <h2 className="text-[30px] sm:text-[40px] lg:text-[43px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-5">
+              <h2 className="ui-h2 mb-5 text-inherit">
                 Everything handled.
                 <br />
                 <span style={{ color: "#D97706" }}>Start to finish.</span>
               </h2>
-              <p className="text-[15px] sm:text-[17px] leading-relaxed text-[#475569] max-w-[520px]">
+              <p className="text-[15px] sm:text-[17px] leading-relaxed text-[color:var(--ui-text-2)] max-w-[520px]">
                 From the moment we pull your first cabinet to the day you cook
                 your first meal in your new kitchen â€” every trade, every
                 decision, fully coordinated by our team.
@@ -519,13 +519,13 @@ export default function KitchenPage() {
               ].map(({ title, body, icon }) => (
                 <div
                   key={title}
-                  className="group rounded-[8px] border border-[#E8DCC8] bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.06)] transition-all duration-300 hover:shadow-[0_16px_56px_rgba(15,23,42,0.11)] hover:-translate-y-0.5"
+                  className="group rounded-[8px] border border-[#E8DCC8] bg-white p-6 shadow-[var(--ui-shadow-1)] transition-all duration-300 hover:shadow-[0_16px_56px_rgba(15,23,42,0.11)] hover:-translate-y-0.5"
                 >
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-[8px] bg-[#FEF3C7] text-[#D97706] transition-all group-hover:bg-[#D97706] group-hover:text-white">
                     {icon}
                   </div>
-                  <h3 className="text-[16px] font-bold text-[#0B1628] mb-2 leading-snug">{title}</h3>
-                  <p className="text-[13px] leading-relaxed text-[#64748B]">{body}</p>
+                  <h3 className="text-[16px] font-bold text-[color:var(--ui-ink)] mb-2 leading-snug">{title}</h3>
+                  <p className="text-[13px] leading-relaxed text-[color:var(--ui-text-3)]">{body}</p>
                 </div>
               ))}
             </div>
@@ -534,7 +534,7 @@ export default function KitchenPage() {
               <button
                 type="button"
                 onClick={callNow}
-                className="inline-flex h-[48px] items-center gap-3 rounded-[8px] px-9 text-[16px] font-extrabold text-white"
+                className="inline-flex h-[48px] items-center gap-3 rounded-[8px] px-9 text-[16px] font-semibold text-white"
                 style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 16px 48px rgba(217,119,6,0.35)" }}
               >
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -546,7 +546,7 @@ export default function KitchenPage() {
 
             {/* â”€â”€ Warranty + Financing callout â”€â”€ */}
             <div className="mt-7 sm:mt-8 grid sm:grid-cols-2 gap-5">
-              <div className="rounded-[8px] border border-[#FDE68A] bg-white p-6 sm:p-7 shadow-[0_4px_24px_rgba(15,23,42,0.05)] flex items-start gap-5">
+              <div className="rounded-[8px] border border-[#FDE68A] bg-white p-6 sm:p-7 shadow-[var(--ui-shadow-1)] flex items-start gap-5">
                 <div className="flex-shrink-0 h-12 w-12 rounded-[8px] bg-[#FEF3C7] flex items-center justify-center text-[#D97706]">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -555,13 +555,13 @@ export default function KitchenPage() {
                 </div>
                 <div>
                   <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#D97706] mb-1">Warranty</div>
-                  <h4 className="text-[16px] font-bold text-[#0B1628] mb-2 leading-snug">Workmanship warranty included.</h4>
-                  <p className="text-[13px] leading-relaxed text-[#64748B]">
+                  <h4 className="text-[16px] font-bold text-[color:var(--ui-ink)] mb-2 leading-snug">Workmanship warranty included.</h4>
+                  <p className="text-[13px] leading-relaxed text-[color:var(--ui-text-3)]">
                     Workmanship warranty on all labor. Cabinet and appliance manufacturer warranties vary by brand and product grade. All warranty details reviewed at project closeout so you know exactly what&rsquo;s covered.
                   </p>
                 </div>
               </div>
-              <div className="rounded-[8px] border border-[#FDE68A] bg-white p-6 sm:p-7 shadow-[0_4px_24px_rgba(15,23,42,0.05)] flex items-start gap-5">
+              <div className="rounded-[8px] border border-[#FDE68A] bg-white p-6 sm:p-7 shadow-[var(--ui-shadow-1)] flex items-start gap-5">
                 <div className="flex-shrink-0 h-12 w-12 rounded-[8px] bg-[#FEF3C7] flex items-center justify-center text-[#D97706]">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -569,8 +569,8 @@ export default function KitchenPage() {
                 </div>
                 <div>
                   <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#D97706] mb-1">Financing</div>
-                  <h4 className="text-[16px] font-bold text-[#0B1628] mb-2 leading-snug">Start cooking in your new kitchen sooner.</h4>
-                  <p className="text-[13px] leading-relaxed text-[#64748B]">
+                  <h4 className="text-[16px] font-bold text-[color:var(--ui-ink)] mb-2 leading-snug">Start cooking in your new kitchen sooner.</h4>
+                  <p className="text-[13px] leading-relaxed text-[color:var(--ui-text-3)]">
                     Monthly payment options are available for qualified homeowners. Don&rsquo;t put your kitchen on hold for years while saving â€” most Long Island homeowners who remodel choose to finance. Start enjoying it now and pay over time. Ask about financing at your free consultation.
                   </p>
                 </div>
@@ -603,7 +603,7 @@ export default function KitchenPage() {
                     Real Long Island Projects
                   </span>
                 </div>
-                <h2 className="text-[32px] sm:text-[40px] lg:text-[43px] font-black leading-[0.88] tracking-[-0.045em] text-white mb-5">
+                <h2 className="ui-h2 text-white mb-5">
                   Work we&rsquo;re
                   <br />
                   <span
@@ -626,7 +626,7 @@ export default function KitchenPage() {
                   { v: "5.0 â˜…", l: "Google Rating" },
                 ].map(({ v, l }) => (
                   <div key={l} className="rounded-[8px] border border-white/[0.09] bg-white/[0.04] px-4 py-4 text-center min-w-[88px]">
-                    <div className="text-[18px] font-extrabold text-white leading-none mb-1.5">{v}</div>
+                    <div className="text-[18px] font-semibold text-white leading-none mb-1.5">{v}</div>
                     <div className="text-[10px] font-semibold text-white/35">{l}</div>
                   </div>
                 ))}
@@ -667,7 +667,7 @@ export default function KitchenPage() {
                   {/* Bottom label + nav */}
                   <div className="absolute bottom-0 left-0 right-0 px-6 pb-6 flex items-end justify-between">
                     <div>
-                      <div className="text-[23px] sm:text-[30px] font-black text-white leading-none tracking-[-0.025em] mb-1">
+                      <div className="text-[23px] sm:text-[30px] font-semibold text-white leading-none tracking-[-0.025em] mb-1">
                         {activePhoto.label}
                       </div>
                       <div className="text-[11px] font-semibold text-white/45 uppercase tracking-[0.18em]">
@@ -758,7 +758,7 @@ export default function KitchenPage() {
                   <button
                     type="button"
                     onClick={callNow}
-                    className="w-full min-h-[46px] rounded-[8px] text-[14px] font-extrabold text-white transition-all hover:-translate-y-0.5"
+                    className="w-full min-h-[46px] rounded-[8px] text-[14px] font-semibold text-white transition-all hover:-translate-y-0.5"
                     style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 10px 30px rgba(217,119,6,0.30)" }}
                   >
                     Request Free Consultation
@@ -788,12 +788,12 @@ export default function KitchenPage() {
                 </svg>
                 <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#D97706]">How It Works</span>
               </div>
-              <h2 className="text-[30px] sm:text-[40px] lg:text-[43px] font-black leading-[0.92] tracking-[-0.04em] text-[#0B1628] mb-5">
+              <h2 className="ui-h2 mb-5 text-inherit">
                 From first call
                 <br />
                 <span style={{ color: "#D97706" }}>to finished kitchen.</span>
               </h2>
-              <p className="text-[15px] sm:text-[17px] text-[#475569] leading-relaxed">
+              <p className="text-[15px] sm:text-[17px] text-[color:var(--ui-text-2)] leading-relaxed">
                 A typical Long Island kitchen remodel follows this sequence.
                 You&rsquo;ll know exactly where we are at every phase.
               </p>
@@ -831,22 +831,22 @@ export default function KitchenPage() {
                       className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full border-2 bg-white shadow-[0_4px_20px_rgba(217,119,6,0.12)]"
                       style={{ borderColor: "rgba(217,119,6,0.45)" }}
                     >
-                      <span className="text-[15px] font-black" style={{ color: "#D97706" }}>
+                      <span className="text-[15px] font-semibold" style={{ color: "#D97706" }}>
                         {String(i + 1).padStart(2, "0")}
                       </span>
                     </div>
                     <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#D97706]/60 lg:hidden">{time}</div>
                   </div>
                   <div className="hidden lg:block text-[11px] font-bold uppercase tracking-[0.18em] text-[#D97706]/60 mb-2">{time}</div>
-                  <h3 className="text-[16px] font-bold text-[#0B1628] mb-2.5 leading-snug">{phase}</h3>
-                  <p className="text-[13px] sm:text-[14px] text-[#64748B] leading-relaxed">{body}</p>
+                  <h3 className="text-[16px] font-bold text-[color:var(--ui-ink)] mb-2.5 leading-snug">{phase}</h3>
+                  <p className="text-[13px] sm:text-[14px] text-[color:var(--ui-text-3)] leading-relaxed">{body}</p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-8 sm:mt-9 rounded-[8px] border border-[#FDE68A] px-6 py-5 text-center bg-white shadow-[0_4px_20px_rgba(15,23,42,0.05)]">
-              <p className="text-[14px] text-[#64748B] leading-relaxed max-w-[680px] mx-auto">
-                <span className="text-[#0B1628] font-semibold">Timeline note:</span> Projects involving layout changes, structural work, or custom cabinet lead times may run 6â€“8 weeks. We give you a precise project schedule â€” not a vague estimate â€” before any work begins.
+            <div className="mt-8 sm:mt-9 rounded-[8px] border border-[#FDE68A] px-6 py-5 text-center bg-white shadow-[var(--ui-shadow-1)]">
+              <p className="text-[14px] text-[color:var(--ui-text-3)] leading-relaxed max-w-[680px] mx-auto">
+                <span className="text-[color:var(--ui-ink)] font-semibold">Timeline note:</span> Projects involving layout changes, structural work, or custom cabinet lead times may run 6â€“8 weeks. We give you a precise project schedule â€” not a vague estimate â€” before any work begins.
               </p>
             </div>
           </div>
@@ -872,7 +872,7 @@ export default function KitchenPage() {
                 </svg>
                 <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#FCD34D]/80">Why Profixter</span>
               </div>
-              <h2 className="text-[30px] sm:text-[40px] lg:text-[43px] font-black leading-[0.92] tracking-[-0.04em] text-white mb-5">
+              <h2 className="ui-h2 text-white mb-5">
                 The kitchen is too
                 <br />
                 <span
@@ -938,7 +938,7 @@ export default function KitchenPage() {
           style={{ background: "linear-gradient(160deg, #FFFBF0 0%, #FEF8E7 100%)" }}
         >
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="overflow-hidden rounded-[8px] border border-[#E8DCC8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+            <div className="overflow-hidden rounded-[8px] border border-[#E8DCC8] bg-white shadow-[var(--ui-shadow-1)]">
               <div className="grid lg:grid-cols-[1fr_1fr] divide-y lg:divide-y-0 lg:divide-x divide-[#F0E8D8]">
 
                 {/* Left: Value framing */}
@@ -950,11 +950,11 @@ export default function KitchenPage() {
                       </svg>
                       <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D97706]">Investment Confidence</span>
                     </div>
-                    <h3 className="text-[23px] sm:text-[26px] font-black leading-tight text-[#0B1628] mb-4">
+                    <h3 className="text-[23px] sm:text-[26px] font-semibold leading-tight text-[color:var(--ui-ink)] mb-4">
                       The highest-return
                       renovation in your home.
                     </h3>
-                    <p className="text-[14px] sm:text-[15px] text-[#475569] leading-relaxed">
+                    <p className="text-[14px] sm:text-[15px] text-[color:var(--ui-text-2)] leading-relaxed">
                       A professionally remodeled kitchen dramatically increases your home&rsquo;s appraised value and is the single most important feature for Long Island home buyers. This is both a quality-of-life upgrade and a sound financial decision.
                     </p>
                   </div>
@@ -966,8 +966,8 @@ export default function KitchenPage() {
                       { stat: "9+ yrs", label: "Our Long Island track record" },
                     ].map(({ stat, label }) => (
                       <div key={stat} className="rounded-[8px] border border-[#F0E8D8] bg-[#FFFBF0] p-4 text-center">
-                        <div className="text-[19px] font-black text-[#D97706] mb-1">{stat}</div>
-                        <div className="text-[10px] font-semibold text-[#64748B] leading-tight">{label}</div>
+                        <div className="text-[19px] font-semibold text-[#D97706] mb-1">{stat}</div>
+                        <div className="text-[10px] font-semibold text-[color:var(--ui-text-3)] leading-tight">{label}</div>
                       </div>
                     ))}
                   </div>
@@ -976,11 +976,11 @@ export default function KitchenPage() {
                 {/* Right: Transparent pricing */}
                 <div className="px-6 py-10 sm:px-10 sm:py-9 lg:px-12 bg-[#FFFDF5] flex flex-col gap-6">
                   <div>
-                    <h3 className="text-[19px] sm:text-[23px] font-extrabold leading-tight text-[#0B1628] mb-3">
+                    <h3 className="text-[19px] sm:text-[23px] font-semibold leading-tight text-[color:var(--ui-ink)] mb-3">
                       Transparent pricing.
                       No surprise invoices.
                     </h3>
-                    <p className="text-[14px] sm:text-[15px] text-[#475569] leading-relaxed">
+                    <p className="text-[14px] sm:text-[15px] text-[color:var(--ui-text-2)] leading-relaxed">
                       You receive a written, line-item estimate before any work begins. Not a rough range â€” a real number for the exact scope discussed. If anything changes mid-project, we tell you before touching it.
                     </p>
                   </div>
@@ -1005,7 +1005,7 @@ export default function KitchenPage() {
                   <button
                     type="button"
                     onClick={callNow}
-                    className="inline-flex h-[46px] items-center justify-center gap-2.5 rounded-[8px] text-[15px] font-extrabold text-white transition-all hover:-translate-y-0.5"
+                    className="inline-flex h-[46px] items-center justify-center gap-2.5 rounded-[8px] text-[15px] font-semibold text-white transition-all hover:-translate-y-0.5"
                     style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 12px 36px rgba(217,119,6,0.30)" }}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1013,7 +1013,7 @@ export default function KitchenPage() {
                     </svg>
                     Request Free Consultation
                   </button>
-                  <p className="text-[11px] text-center text-[#94A3B8]">Free Â· No obligation Â· We come to you</p>
+                  <p className="text-[11px] text-center text-[color:var(--ui-text-3)]">Free Â· No obligation Â· We come to you</p>
                 </div>
               </div>
             </div>
@@ -1039,7 +1039,7 @@ export default function KitchenPage() {
                 <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D97706]/20 bg-[#D97706]/[0.06] px-4 py-2 mb-7 backdrop-blur-sm">
                   <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#FCD34D]/70">Real Answers</span>
                 </div>
-                <h2 className="text-[30px] sm:text-[40px] lg:text-[43px] font-black leading-[0.92] tracking-[-0.04em] text-white mb-5">
+                <h2 className="ui-h2 text-white mb-5">
                   Common questions.
                   <br />
                   <span
@@ -1098,7 +1098,7 @@ export default function KitchenPage() {
                   <button
                     type="button"
                     onClick={callNow}
-                    className="w-full rounded-[8px] py-3.5 text-[15px] font-extrabold text-white transition-all hover:-translate-y-0.5"
+                    className="w-full rounded-[8px] py-3.5 text-[15px] font-semibold text-white transition-all hover:-translate-y-0.5"
                     style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 12px 36px rgba(217,119,6,0.25)" }}
                   >
                     Request Consultation
@@ -1117,7 +1117,7 @@ export default function KitchenPage() {
           style={{ background: "linear-gradient(160deg, #FFFBF0 0%, #FEF8E7 100%)" }}
         >
           <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            <div className="overflow-hidden rounded-[8px] border border-[#E8DCC8] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+            <div className="overflow-hidden rounded-[8px] border border-[#E8DCC8] bg-white shadow-[var(--ui-shadow-1)]">
               <div className="grid lg:grid-cols-[1fr_1fr] divide-y lg:divide-y-0 lg:divide-x divide-[#F0E8D8]">
 
                 <div className="px-6 py-10 sm:px-10 sm:py-9 lg:px-12 flex flex-col justify-between gap-7">
@@ -1126,7 +1126,7 @@ export default function KitchenPage() {
                       <Image src="/images/Taras.png" alt="Taras Bandura" fill className="object-cover object-top" sizes="72px" />
                     </div>
                     <div>
-                      <div className="text-[18px] font-bold text-[#0B1628]">Taras Bandura</div>
+                      <div className="text-[18px] font-bold text-[color:var(--ui-ink)]">Taras Bandura</div>
                       <div className="text-[13px] font-semibold text-[#D97706]">Founder &amp; General Manager</div>
                     </div>
                   </div>
@@ -1141,7 +1141,7 @@ export default function KitchenPage() {
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                           <path d="M5 12.5l4 4 10-10" stroke="#D97706" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
-                        <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#64748B]">{t}</span>
+                        <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-[color:var(--ui-text-3)]">{t}</span>
                       </div>
                     ))}
                   </div>
@@ -1149,10 +1149,10 @@ export default function KitchenPage() {
 
                 <div className="px-6 py-10 sm:px-10 sm:py-9 lg:px-12 bg-[#FFFDF5] flex flex-col justify-between gap-6">
                   <div>
-                    <div className="text-[21px] sm:text-[23px] font-extrabold leading-tight text-[#0B1628] mb-3">
+                    <div className="text-[21px] sm:text-[23px] font-semibold leading-tight text-[color:var(--ui-ink)] mb-3">
                       Your kitchen deserves to be done once â€” and done right.
                     </div>
-                    <p className="text-[14px] sm:text-[15px] text-[#475569] leading-relaxed">
+                    <p className="text-[14px] sm:text-[15px] text-[color:var(--ui-text-2)] leading-relaxed">
                       A properly built kitchen lasts 20+ years before it needs real attention. The decisions made behind the cabinets, under the counters, and inside the walls â€” that&rsquo;s what determines whether your kitchen ages well or fails fast.
                     </p>
                   </div>
@@ -1161,7 +1161,7 @@ export default function KitchenPage() {
                     <button
                       type="button"
                       onClick={callNow}
-                      className="inline-flex h-[48px] items-center justify-center gap-2.5 rounded-[8px] text-[16px] font-extrabold text-white transition-all hover:-translate-y-0.5"
+                      className="inline-flex h-[48px] items-center justify-center gap-2.5 rounded-[8px] text-[16px] font-semibold text-white transition-all hover:-translate-y-0.5"
                       style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 12px 36px rgba(217,119,6,0.30)" }}
                     >
                       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1171,7 +1171,7 @@ export default function KitchenPage() {
                     </button>
                     <a
                       href={`tel:${PHONE_TEL}`}
-                      className="inline-flex h-[46px] items-center justify-center gap-2.5 rounded-[8px] border border-[#E8DCC8] bg-white text-[15px] font-semibold text-[#0B1628] transition hover:border-[#D97706] hover:text-[#D97706]"
+                      className="inline-flex h-[46px] items-center justify-center gap-2.5 rounded-[8px] border border-[#E8DCC8] bg-white text-[15px] font-semibold text-[color:var(--ui-ink)] transition hover:border-[#D97706] hover:text-[#D97706]"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.37 1.9.72 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -1207,7 +1207,7 @@ export default function KitchenPage() {
                 </span>
               </div>
 
-              <h2 className="text-[40px] sm:text-[46px] lg:text-[50px] font-black leading-[0.87] tracking-[-0.048em] text-white mb-6">
+              <h2 className="ui-h2 text-white mb-6">
                 The kitchen
                 <br />
                 <span
@@ -1227,7 +1227,7 @@ export default function KitchenPage() {
                 <button
                   type="button"
                   onClick={callNow}
-                  className="inline-flex min-h-[68px] items-center justify-center gap-3 rounded-[8px] px-12 text-[18px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
+                  className="inline-flex min-h-[68px] items-center justify-center gap-3 rounded-[8px] px-12 text-[18px] font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                   style={{ background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)", boxShadow: "0 24px 70px rgba(217,119,6,0.50)" }}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">

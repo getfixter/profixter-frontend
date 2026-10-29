@@ -4,8 +4,9 @@ import Link from "next/link";
 import GiftCallout from "@/app/components/gift/GiftCallout";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
+import Reveal from "@/app/components/ui/Reveal";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
-import { CORE_PRODUCTS } from "@/lib/site-architecture";
+import { BOOKING_LINKS, CORE_PRODUCTS } from "@/lib/site-architecture";
 
 export const metadata: Metadata = {
   title: {
@@ -55,7 +56,7 @@ const WAYS = [
   {
     title: CORE_PRODUCTS[0].shortTitle,
     role: "The main way people work with us",
-    href: CORE_PRODUCTS[0].href,
+    href: BOOKING_LINKS.memberships.href,
     cta: CORE_PRODUCTS[0].cta,
     body: "One local team that learns your home and keeps the list moving, month after month.",
     featured: true,
@@ -63,7 +64,8 @@ const WAYS = [
   {
     title: CORE_PRODUCTS[1].shortTitle,
     role: "One job, one visit",
-    href: CORE_PRODUCTS[1].href,
+    // Straight to the One-Time flow; a bare /book opens on Book Fixter.
+    href: BOOKING_LINKS.oneTime.href,
     cta: CORE_PRODUCTS[1].cta,
     body: "A single focused visit when a membership is not the right fit today.",
     featured: false,
@@ -79,7 +81,7 @@ const WAYS = [
   {
     title: "Full Day Fixter",
     role: "A longer list, one day",
-    href: "/book?visit=full-day",
+    href: BOOKING_LINKS.fullDay.href,
     cta: "Book a full day",
     body: "One Fixter for about eight hours, working through the whole list.",
     featured: false,
@@ -138,27 +140,12 @@ const faqJsonLd = {
   })),
 };
 
-function Tick() {
-  return (
-    <span className="mt-0.5 flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full bg-[#E6EEFE] text-[#306EEC]">
-      <svg width="9" height="7" viewBox="0 0 9 7" fill="none" aria-hidden="true">
-        <path d="M1 3.5l2 2L8 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </span>
-  );
-}
-
 /**
  * ABOUT — the page for somebody who chose to learn more.
  *
- * Home shows; this explains. That division is the whole point of the redesign:
- * the homepage stopped being a manual so that the information in it could live
- * somewhere a person arrives at on purpose, rather than somewhere they have to
- * scroll through eleven screens of on their way to a button.
- *
- * It uses the same type scale and rhythm as Home (the mk- primitives), so it
- * reads as the same product at a different density - denser, because the
- * visitor asked for density by coming here.
+ * Home shows; this explains. It wears the same design system as Home, at a
+ * slightly higher density, because the visitor asked for density by coming
+ * here. Every section the page has always had is still here, shorter.
  */
 export default function AboutPage() {
   return (
@@ -172,225 +159,171 @@ export default function AboutPage() {
       </div>
 
       <main>
-        {/* ============================ HERO ============================ */}
-        <section className="mk-beat">
-          <div className="mk-wrap">
-            <p className="mk-eyebrow">About Profixter</p>
-            <h1 className="mk-h2">One company to take care of your home.</h1>
-            <p className="mk-lede">
-              Instead of finding somebody new every time something breaks, you have a local
-              team that already knows the house.
-            </p>
-          </div>
-        </section>
-
-        {/* ======================= WHY IT EXISTS ======================== */}
+        {/* ======================= HERO + WHY IT EXISTS ======================= */}
         {/*
-          The founder, in his own voice, near the top.
-
-          This is the one thing on the site nobody else can copy, and it answers
-          the question About exists to answer better than any paragraph we could
-          write around it.
+          The founder, in his own voice, beside the headline: the one thing on
+          the site nobody else can copy, and the best answer to who we are.
         */}
-        <section className="mk-beat pt-0" aria-labelledby="about-why">
-          <div className="mk-wrap">
-            <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:gap-12">
-              <div>
-                <p className="mk-eyebrow">Why it exists</p>
-                <h2 id="about-why" className="mk-h2">
-                  Built because every small job started over.
-                </h2>
-                <p className="mk-lede">
-                  Searching, explaining, waiting, and hoping somebody turns up. Profixter
-                  was built so a homeowner only has to do that once.
-                </p>
-                <figure className="mt-7 flex items-center gap-3.5">
-                  <Image
-                    src="/images/Taras.png"
-                    alt=""
-                    width={48}
-                    height={48}
-                    className="h-12 w-12 flex-none rounded-full object-cover object-top"
-                  />
-                  <figcaption className="text-[14px] leading-snug">
-                    <span className="block font-semibold text-[#0B1628]">Taras Bandura</span>
-                    <span className="block text-[#8A94A6]">Founder</span>
-                  </figcaption>
-                </figure>
-              </div>
-
-              <div className="aspect-video overflow-hidden rounded-[14px] border border-[#E2E8F4] bg-black shadow-[0_18px_50px_rgba(11,22,40,0.14)]">
-                <iframe
-                  src="https://www.youtube.com/embed/HQoAkLNGI9c?rel=0"
-                  title="Why Profixter was built"
-                  loading="lazy"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="h-full w-full"
+        <section className="ui-section ui-section--tight" aria-labelledby="about-why">
+          <div className="ui-container grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:gap-14">
+            <div className="ui-rise">
+              <p className="ui-eyebrow ui-eyebrow--accent">About Profixter</p>
+              <h1 className="ui-display">One company to take care of your home.</h1>
+              <p className="ui-lede">
+                Instead of finding somebody new every time something breaks, you have a local
+                team that already knows the house.
+              </p>
+              <h2 id="about-why" className="ui-h3 mt-7">
+                Built because every small job started over.
+              </h2>
+              <p className="ui-body mt-1.5 max-w-[52ch]">
+                Searching, explaining, waiting, and hoping somebody turns up. Profixter
+                was built so a homeowner only has to do that once.
+              </p>
+              <figure className="mt-5 flex items-center gap-3">
+                <Image
+                  src="/images/Taras.png"
+                  alt=""
+                  width={44}
+                  height={44}
+                  className="h-11 w-11 flex-none rounded-full object-cover object-top"
                 />
-              </div>
+                <figcaption className="text-[14px] leading-snug">
+                  <span className="block font-semibold text-[color:var(--ui-ink)]">Taras Bandura</span>
+                  <span className="block text-[color:var(--ui-text-3)]">Founder</span>
+                </figcaption>
+              </figure>
+            </div>
+
+            <div className="ui-media ui-rise aspect-video bg-black shadow-[var(--ui-shadow-3)]" style={{ animationDelay: "60ms" }}>
+              <iframe
+                src="https://www.youtube.com/embed/HQoAkLNGI9c?rel=0"
+                title="Why Profixter was built"
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="absolute inset-0 h-full w-full"
+              />
             </div>
           </div>
         </section>
 
         {/* =================== WHAT A MEMBERSHIP COVERS ================== */}
-        <section className="mk-beat bg-[#F6F8FC]" aria-labelledby="about-covers">
-          <div className="mk-wrap">
-            <p className="mk-eyebrow">What it covers</p>
-            <h2 id="about-covers" className="mk-h2">
-              The everyday kind of work.
-            </h2>
-            <p className="mk-lede">
-              The jobs that are too small to call a contractor about and too annoying to
-              leave. Larger work is quoted separately.
-            </p>
-
-            <ul className="mt-8 grid gap-x-8 gap-y-3.5 sm:grid-cols-2 lg:grid-cols-3">
-              {COVERED.map((item) => (
-                <li key={item} className="flex items-start gap-2.5 text-[16px] text-[#20304A]">
-                  <Tick />
-                  {item}
-                </li>
-              ))}
-            </ul>
-
-            <p className="mt-8 text-[15px]">
-              <Link href="/recent-work" className="font-semibold text-[#306EEC] underline-offset-4 hover:underline">
+        <section className="ui-section ui-section--soft ui-section--tight" aria-labelledby="about-covers">
+          <div className="ui-container grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:gap-14">
+            <Reveal>
+              <p className="ui-eyebrow">What it covers</p>
+              <h2 id="about-covers" className="ui-h2">The everyday kind of work.</h2>
+              <p className="ui-lede">
+                The jobs that are too small to call a contractor about and too annoying to
+                leave. Larger work is quoted separately.
+              </p>
+            </Reveal>
+            <Reveal delay={60}>
+              <ul className="ui-checks sm:grid-cols-2 lg:pt-8">
+                {COVERED.map((item) => (
+                  <li key={item} className="!text-[15px]">{item}</li>
+                ))}
+              </ul>
+              <Link href="/recent-work" className="ui-link mt-4">
                 See real finished jobs
               </Link>
-            </p>
+            </Reveal>
           </div>
         </section>
 
         {/* ======================== WAYS TO WORK ========================= */}
-        <section id="ways-to-work" className="mk-beat scroll-mt-[110px]" aria-labelledby="about-ways">
-          <div className="mk-wrap">
-            <p className="mk-eyebrow">Ways to work with us</p>
-            <h2 id="about-ways" className="mk-h2">
-              Start where it fits.
-            </h2>
-
-            <div className="mt-9 grid gap-4 sm:grid-cols-2">
-              {WAYS.map((w) => (
-                <div
-                  key={w.title}
-                  className={`flex flex-col rounded-[14px] border p-6 ${
-                    w.featured
-                      ? "border-[#306EEC]/35 bg-[#F4F8FF]"
-                      : "border-[#E2E8F4] bg-white"
-                  }`}
-                >
-                  <p className="text-[11px] font-bold uppercase tracking-[0.13em] text-[#8A94A6]">
-                    {w.role}
-                  </p>
-                  <h3 className="mt-2.5 text-[22px] font-bold tracking-[-0.03em] text-[#0B1628]">
-                    {w.title}
-                  </h3>
-                  <p className="mt-2.5 flex-1 text-[15px] leading-[1.55] text-[#5B6577]">{w.body}</p>
+        <section id="ways-to-work" className="ui-section ui-section--tight scroll-mt-[90px]" aria-labelledby="about-ways">
+          <div className="ui-container">
+            <div className="ui-head">
+              <p className="ui-eyebrow">Ways to work with us</p>
+              <h2 id="about-ways" className="ui-h2">Start where it fits.</h2>
+            </div>
+            <div className="pg-cards pg-cards--4">
+              {WAYS.map((w, index) => (
+                <Reveal key={w.title} delay={index * 50}>
                   <Link
                     href={w.href}
-                    className="mt-5 inline-flex items-center gap-1.5 text-[15px] font-semibold text-[#306EEC] underline-offset-4 hover:underline"
+                    className={`ui-card ui-card--link flex h-full flex-col ${w.featured ? "ui-card--dark" : ""}`}
                   >
-                    {w.cta}
-                    <svg width="6" height="10" viewBox="0 0 7 12" aria-hidden="true">
-                      <path d="M1 1l5 5-5 5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                    </svg>
+                    <span className={`text-[13px] font-medium ${w.featured ? "text-[color:var(--ui-on-dark-2)]" : "text-[color:var(--ui-text-3)]"}`}>
+                      {w.role}
+                    </span>
+                    <span className={`mt-1.5 text-[19px] font-semibold tracking-[-0.02em] ${w.featured ? "text-white" : "text-[color:var(--ui-ink)]"}`}>
+                      {w.title}
+                    </span>
+                    <span className={`mt-1.5 flex-1 text-[14px] leading-[1.5] ${w.featured ? "text-[color:var(--ui-on-dark-2)]" : "text-[color:var(--ui-text-2)]"}`}>
+                      {w.body}
+                    </span>
+                    <span className={`ui-link mt-3 ${w.featured ? "!text-white" : ""}`}>{w.cta}</span>
                   </Link>
-                </div>
+                </Reveal>
               ))}
             </div>
           </div>
         </section>
 
         {/* ========================= LOCAL + TRUST ====================== */}
-        <section className="mk-beat bg-[#0B1628] text-white" aria-labelledby="about-trust">
-          <div className="mk-wrap">
-            <p className="mk-eyebrow !text-white/45">Who you are dealing with</p>
-            <h2 id="about-trust" className="mk-h2 !text-white">
-              A local company, not a marketplace.
-            </h2>
-            <p className="mk-lede !text-white/60">
-              You are not being matched with whoever is free. You work with the same
-              company each time, and nobody has to learn your house twice.
-            </p>
-
-            <dl className="mt-9 grid gap-x-10 gap-y-7 sm:grid-cols-2">
-              {TRUST.map(([k, v]) => (
-                <div key={k}>
-                  <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">{k}</dt>
-                  <dd className="mt-2 text-[16px] leading-[1.5] text-white/82">{v}</dd>
-                </div>
-              ))}
-            </dl>
+        <section className="ui-section ui-section--tight bg-[color:var(--ui-ink)] text-white" aria-labelledby="about-trust">
+          <div className="ui-container grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:gap-14">
+            <Reveal>
+              <p className="ui-eyebrow !text-[color:var(--ui-on-dark-2)]">Who you are dealing with</p>
+              <h2 id="about-trust" className="ui-h2 !text-white">A local company, not a marketplace.</h2>
+              <p className="ui-lede !text-[color:var(--ui-on-dark-2)]">
+                You are not being matched with whoever is free. You work with the same
+                company each time, and nobody has to learn your house twice.
+              </p>
+            </Reveal>
+            <Reveal delay={60}>
+              <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:pt-8">
+                {TRUST.map(([k, v]) => (
+                  <div key={k} className="border-t border-white/15 pt-3">
+                    <dt className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[color:var(--ui-on-dark-2)]">{k}</dt>
+                    <dd className="mt-1 text-[15px] leading-[1.5] text-[color:var(--ui-on-dark)]">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </Reveal>
           </div>
         </section>
 
         {/* ============================= FAQ ============================ */}
-        <section className="mk-beat" aria-labelledby="about-faq">
-          <div className="mk-wrap">
-            <p className="mk-eyebrow">Questions</p>
-            <h2 id="about-faq" className="mk-h2">
-              Before you choose.
-            </h2>
-
-            <dl className="mt-8 divide-y divide-[#E6EBF4] border-t border-[#E6EBF4]">
+        <section className="ui-section ui-section--tight" aria-labelledby="about-faq">
+          <div className="ui-container ui-container--narrow">
+            <p className="ui-eyebrow">Questions</p>
+            <h2 id="about-faq" className="ui-h2">Before you choose.</h2>
+            <div className="ui-faq mt-5">
               {faqs.map((faq) => (
-                <div key={faq.q} className="py-6">
-                  <dt className="text-[17px] font-bold tracking-[-0.02em] text-[#0B1628]">{faq.q}</dt>
-                  <dd className="mt-2.5 max-w-[62ch] text-[16px] leading-[1.55] text-[#5B6577]">{faq.a}</dd>
-                </div>
+                <details key={faq.q}>
+                  <summary>{faq.q}</summary>
+                  <p className="ui-faq__a">{faq.a}</p>
+                </details>
               ))}
-            </dl>
+            </div>
           </div>
         </section>
 
         {/* ============================ GIFT ============================ */}
-        {/* Once. It was on this page twice - once near the top and again in the
-            middle of the product cards.
-
-            Rendered bare: GiftCallout's band variant is a full-bleed section of
-            its own, so wrapping it in another section produced two nested
-            sections saying the same thing, which is how it came back. */}
+        {/* Once, and rendered bare: GiftCallout's band is a section of its own. */}
         <GiftCallout />
 
         {/* ============================ CLOSE =========================== */}
-        <section className="home-close" aria-labelledby="about-close">
-          <div className="mk-wrap">
-            <h2 id="about-close" className="mk-h2">
-              Start with whatever&rsquo;s been waiting longest.
-            </h2>
-            <p className="mk-lede">Your first 90-minute visit is free. No card required.</p>
+        <section className="ui-section ui-section--tight ui-section--soft" aria-labelledby="about-close">
+          <div className="ui-container text-center">
+            <h2 id="about-close" className="ui-h2">Start with whatever&rsquo;s been waiting longest.</h2>
+            <p className="ui-lede mx-auto">Your first 90-minute visit is free. No card required.</p>
             {/*
-              An explicit Get Started, not MembershipCtaLink.
-
-              That component decides the label itself and renders "See plans"
-              for anyone not signed in - a deliberate choice on pages about a
-              single job, where a registration form in front of four public
-              prices is a bureaucratic ask. It also means any label passed to it
-              is silently discarded, which is how this close ended up saying
-              something other than what the code said.
-
-              About closes the same way the start screen and Home do, because by
-              this point the reader has read everything and the primary action
-              should be the same one it has been all along.
+              An explicit Get Started, not MembershipCtaLink: that component
+              picks its own label (See plans, for visitors) and would silently
+              discard this one. About closes the way Home does.
             */}
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link href="/signup?source=about" className="home-cta !mt-0">
+            <div className="pg-actions justify-center">
+              <Link href="/signup?source=about" className="ui-btn ui-btn--primary ui-btn--lg">
                 Get Started
-                <svg width="19" height="14" viewBox="0 0 19 14" aria-hidden="true">
-                  <path
-                    d="M1 7h16m0 0l-5.6-5.6M17 7l-5.6 5.6"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="none"
-                  />
-                </svg>
               </Link>
-              <p className="home-quiet !mt-0">
-                <Link href="/membership/plans">See plans</Link>
-              </p>
+              <Link href="/membership/plans" className="ui-btn ui-btn--secondary ui-btn--lg">
+                See plans
+              </Link>
             </div>
           </div>
         </section>

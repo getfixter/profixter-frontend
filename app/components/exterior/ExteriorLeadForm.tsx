@@ -129,7 +129,7 @@ export default function ExteriorLeadForm({ defaultProject, accentLabel }: Props)
     >
       <div className="mb-6">
         <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#E8C49A]">{accentLabel}</div>
-        <h3 className="mt-2 text-[23px] font-black leading-tight text-white">Request your free estimate</h3>
+        <h3 className="mt-2 text-[23px] font-semibold leading-tight text-white">Request your free estimate</h3>
         <p className="mt-1.5 text-[13px] leading-relaxed text-white/50">
           Share the basics. A real person will review the project and follow up.
         </p>
@@ -274,7 +274,7 @@ export default function ExteriorLeadForm({ defaultProject, accentLabel }: Props)
       <button
         type="submit"
         disabled={status === "loading"}
-        className="mt-5 inline-flex min-h-[48px] w-full items-center justify-center rounded-[8px] bg-[#D4A574] px-6 text-[16px] font-extrabold text-[#111827] shadow-[0_12px_32px_rgba(212,165,116,0.22)] transition hover:-translate-y-0.5 hover:bg-[#E0B886] disabled:cursor-not-allowed disabled:opacity-65"
+        className="mt-5 inline-flex min-h-[48px] w-full items-center justify-center rounded-[8px] bg-[#D4A574] px-6 text-[16px] font-semibold text-[color:var(--ui-ink)] shadow-[0_12px_32px_rgba(212,165,116,0.22)] transition hover:-translate-y-0.5 hover:bg-[#E0B886] disabled:cursor-not-allowed disabled:opacity-65"
       >
         {status === "loading" ? (
           <span className="flex items-center gap-2">

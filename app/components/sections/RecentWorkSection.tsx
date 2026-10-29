@@ -207,37 +207,24 @@ export default function RecentWorkSection({
 
   return (
     <section
-      className={`relative w-full overflow-hidden ${showHeading ? "py-12 sm:py-16" : "pb-12 pt-6 sm:pb-16 sm:pt-7"}`}
-      style={{ background: "linear-gradient(180deg, #080F1E 0%, #060C18 100%)" }}
+      className={`relative w-full bg-white ${showHeading ? "ui-section ui-section--tight" : "pb-12 pt-6 sm:pb-16 sm:pt-7"}`}
       {...(showHeading ? { "aria-labelledby": "recent-work-heading" } : { "aria-label": "Examples of work a membership covers" })}
     >
-      {showHeading && (
-        <div
-          aria-hidden="true"
-          className="absolute top-0 left-0 right-0 h-px"
-          style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.18), transparent)" }}
-        />
-      )}
-
-      <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+      <div className="ui-container relative">
         {showHeading && (
-        <div className="mb-7 text-center sm:mb-10">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-[6px] border border-white/10 bg-white/[0.04] px-4 py-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/45">
-              {eyebrow}
-            </span>
-          </div>
+        <div className="ui-head">
+          <p className="ui-eyebrow ui-eyebrow--accent">{eyebrow}</p>
           {/*
             The full gallery is a page of its own, so its heading is the page's
             H1. The homepage preview keeps an H2 under the homepage's own H1.
           */}
           <HeadingTag
             id="recent-work-heading"
-            className="mb-3 text-[26px] font-extrabold leading-[1.08] tracking-[-0.03em] text-white sm:text-[36px]"
+            className={HeadingTag === "h1" ? "ui-display" : "ui-h2"}
           >
             {heading}
           </HeadingTag>
-          <p className="mx-auto max-w-[600px] text-[15px] leading-relaxed text-white/48 sm:text-[17px]">
+          <p className="ui-lede">
             {subheading}
           </p>
         </div>
@@ -251,7 +238,7 @@ export default function RecentWorkSection({
             * photograph below the fold, which on a page whose entire job is
             * showing photographs is the wrong trade.
             */
-          <div className="mb-6 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0">
+          <div className="mb-6 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
             <FilterChip active={!category} onClick={() => setCategory("")}>
               All work
               <span className="ml-1.5 tabular-nums opacity-50">{total}</span>
@@ -274,12 +261,12 @@ export default function RecentWorkSection({
             {Array.from({ length: pageSize > 8 ? 8 : pageSize }).map((_, index) => (
               <div
                 key={index}
-                className="aspect-[4/3] animate-pulse rounded-xl bg-white/[0.05]"
+                className="aspect-[4/3] animate-pulse rounded-[var(--ui-r-md)] bg-[color:var(--ui-bg-sunk)]"
               />
             ))}
           </div>
         ) : photos.length === 0 ? (
-          <p className="py-8 text-center text-[15px] text-white/40">
+          <p className="py-8 text-center text-[15px] text-[color:var(--ui-text-3)]">
             Nothing in this category yet.
           </p>
         ) : (
@@ -296,11 +283,11 @@ export default function RecentWorkSection({
                 <button
                   type="button"
                   onClick={() => setLightboxIndex(index)}
-                  className="group relative block aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.04] transition duration-300 hover:border-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#306EEC]"
+                  className="group relative block aspect-[4/3] w-full overflow-hidden rounded-[var(--ui-r-md)] bg-[color:var(--ui-bg-sunk)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-accent)]"
                   aria-label={photo.caption ? `View photo: ${shortLabel(photo.caption)}` : "View photo"}
                 >
                   {broken.has(photo.id) ? (
-                    <span className="absolute inset-0 flex items-center justify-center text-white/20">
+                    <span className="absolute inset-0 flex items-center justify-center text-[color:var(--ui-line-2)]">
                       <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="5" width="18" height="14" rx="2" />
                         <path d="m3 17 5-5 4 4 3-3 6 6" />
@@ -338,7 +325,7 @@ export default function RecentWorkSection({
                         setBroken((current) => new Set(current).add(photo.id))
                       }
                       style={{ height: "100%", width: "100%" }}
-                      className="absolute inset-0 object-cover transition duration-500 group-hover:scale-[1.05]"
+                      className="absolute inset-0 object-cover transition duration-700 group-hover:scale-[1.03]"
                     />
                   )}
                 </button>
@@ -357,7 +344,7 @@ export default function RecentWorkSection({
                 */}
                 {photo.caption ? (
                   <figcaption
-                    className={`mt-2 text-[12.5px] leading-[1.45] text-white/70 sm:text-[13px] ${
+                    className={`mt-2 text-[13px] leading-[1.45] text-[color:var(--ui-text-3)] ${
                       isPreview ? "line-clamp-2" : "line-clamp-3"
                     }`}
                   >
@@ -377,7 +364,7 @@ export default function RecentWorkSection({
           <div className="mt-7 text-center sm:mt-8">
             <Link
               href={moreHref}
-              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[10px] bg-white px-7 text-[15px] font-semibold text-[#0B1628] transition hover:bg-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#060C18]"
+              className="ui-btn ui-btn--secondary"
             >
               {moreLabel}
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -393,7 +380,7 @@ export default function RecentWorkSection({
               type="button"
               onClick={() => load(page + 1, category, true)}
               disabled={loadingMore}
-              className="inline-flex min-h-[46px] items-center justify-center rounded-[10px] border border-white/15 bg-white/[0.06] px-6 text-[14px] font-semibold text-white transition hover:bg-white/[0.12] disabled:opacity-50"
+              className="ui-btn ui-btn--secondary"
             >
               {loadingMore ? "Loading…" : "Show more work"}
             </button>
@@ -426,10 +413,10 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex min-h-[38px] flex-shrink-0 items-center whitespace-nowrap rounded-[8px] border px-3.5 text-[13px] font-semibold transition ${
+      className={`inline-flex min-h-[40px] flex-shrink-0 items-center whitespace-nowrap rounded-[var(--ui-r-pill)] border px-3.5 text-[14px] font-medium transition-colors ${
         active
-          ? "border-[#306EEC]/40 bg-[#306EEC]/20 text-white"
-          : "border-white/10 bg-white/[0.04] text-white/60 hover:border-white/20 hover:text-white/90"
+          ? "border-[color:var(--ui-ink)] bg-[color:var(--ui-ink)] text-white"
+          : "border-[color:var(--ui-line-2)] bg-white text-[color:var(--ui-text-2)] hover:border-[#b9c1cd]"
       }`}
     >
       {children}

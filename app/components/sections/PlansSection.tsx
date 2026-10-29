@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { plans, type Plan } from "@/app/data/content";
 import { BENEFIT_ROWS, benefitIncluded, benefitLabel } from "@/app/data/plan-benefits";
@@ -177,9 +177,14 @@ type PlansSectionProps = {
   compact?: boolean;
   /** The short four-row list for the Book tab: choose, confirm, checkout. */
   picker?: boolean;
+  /**
+   * No section chrome (background, padding, page container): the page places
+   * the selector itself, as /membership/plans does in its two-column layout.
+   */
+  bare?: boolean;
 };
 
-export default function PlansSection({ hideCancellationUi = false, compact = false, hideIntro = false, picker = false }: PlansSectionProps = {}) {
+export default function PlansSection({ hideCancellationUi = false, compact = false, hideIntro = false, picker = false, bare = false }: PlansSectionProps = {}) {
   const [billing, setBilling] = useState<BillingCycle>("monthly");
   /*
    * Which plan the one box is showing.
@@ -205,7 +210,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     trackEvent("plans_viewed", { layout: picker ? "book_picker" : compact ? "compact" : "full" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const { user, isAuthenticated, token } = useAuth();
+  const { user, isAuthenticated, isLoading, token } = useAuth();
   const { requestHome, homeSheet } = useAddHome();
   const { ensureContact, contactSheet } = useContactCompletion();
 
@@ -617,6 +622,29 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeRequested, isAuthenticated, user, selectedAddressId, addressSubscriptionMap, selectedPlanName]);
 
+  /*
+   * Back from signup with a plan but no home yet: ask for the home straight
+   * away instead of leaving an "Add your home" box to find and tap. This only
+   * opens the same AddHomeSheet the button opens; once the home is saved, the
+   * effect above shows the usual one-step confirmation before any checkout.
+   */
+  const resumeHomeAsked = useRef(false);
+  useEffect(() => {
+    if (!resumeRequested || isLoading || !isAuthenticated || !user || addresses.length > 0) return;
+    if (resumeHomeAsked.current) return;
+    resumeHomeAsked.current = true;
+    void (async () => {
+      const home = await requestHome();
+      if (!home?.address?._id) {
+        setResumeRequested(false);
+        return;
+      }
+      setSelectedAddressId(String(home.address._id));
+      // Outside the service area: the sheet has already said so.
+      if (home.serviceArea && home.serviceArea.inArea === false) setResumeRequested(false);
+    })();
+  }, [resumeRequested, isLoading, isAuthenticated, user, addresses.length, requestHome]);
+
   const handleSubscribe = async (planName: string) => {
     if (actionLoadingPlan) return;
     const planType = normalizePlanType(planName);
@@ -685,34 +713,33 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
   const addressIsActive = isManagedActiveStatus(selectedAddressSubscription?.status);
 
   const AddressPicker = () => (
-    <div className="mx-auto mb-8 max-w-[720px]">
-      <div className="rounded-[8px] border border-[#E5E7EB] bg-white px-4 py-4 shadow-[0_18px_60px_rgba(15,23,42,0.06)] sm:px-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="flex-1">
-            <label className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.12em] text-[#6B7280]">
-              Service address
-            </label>
-            <select
-              value={selectedAddressId || ""}
-              onChange={(e) => {
-                const id = e.target.value;
-                setSelectedAddressId(id);
-                if (token && addressSubscriptionMap[id] === undefined) {
-                  checkAddressState(id);
-                }
-              }}
-              className="h-11 w-full rounded-[8px] border border-[#D1D5DB] bg-[#F9FAFB] px-3 text-sm font-semibold text-[#111827] outline-none focus:border-[#111827]"
-            >
-              {addresses.map((a) => (
-                <option key={a._id} value={a._id}>
-                  {(a.label ? `${a.label}: ` : "") + `${a.line1}, ${a.city}`}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="text-sm font-semibold text-[#4B5563] sm:min-w-[130px] sm:text-right">
-            {checkingAddr ? "Checking..." : addressIsActive ? "Active plan" : "No active plan"}
-          </div>
+    <div className="mx-auto mb-4 max-w-[560px]">
+      <div className="flex items-end gap-3 rounded-[var(--ui-r-md)] border border-[color:var(--ui-line)] bg-white px-4 py-3">
+        <div className="min-w-0 flex-1">
+          <label htmlFor="plans-address" className="ui-eyebrow mb-1.5 block">
+            Service address
+          </label>
+          <select
+            id="plans-address"
+            value={selectedAddressId || ""}
+            onChange={(e) => {
+              const id = e.target.value;
+              setSelectedAddressId(id);
+              if (token && addressSubscriptionMap[id] === undefined) {
+                checkAddressState(id);
+              }
+            }}
+            className="h-11 w-full min-w-0 rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line-2)] bg-white px-3 text-[15px] text-[color:var(--ui-ink)] outline-none focus:border-[color:var(--ui-accent)]"
+          >
+            {addresses.map((a) => (
+              <option key={a._id} value={a._id}>
+                {(a.label ? `${a.label}: ` : "") + `${a.line1}, ${a.city}`}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="shrink-0 pb-3 text-[13px] font-medium text-[color:var(--ui-text-3)]">
+          {checkingAddr ? "Checking..." : addressIsActive ? "Active plan" : "No active plan"}
         </div>
       </div>
     </div>
@@ -781,11 +808,6 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     </div>
   );
 
-  const PlanCheck = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="mt-[4px] flex-none text-[#111111]">
-      <path d="M5 12.5l4 4 10-10" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
 
   /**
    * Mobile-first plan presentation.
@@ -1203,22 +1225,20 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         {homeSheet}
         {contactSheet}
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 className="text-[22px] font-bold leading-tight tracking-[-0.025em] text-[#0B1628] sm:text-[26px]">
-            Choose your membership
-          </h2>
-          <div className="inline-flex rounded-[12px] bg-[#EEF1F6] p-1" role="group" aria-label="Billing">
+          <h2 className="ui-h3">Choose your membership</h2>
+          <div className="inline-flex rounded-[var(--ui-r-sm)] bg-[color:var(--ui-bg-soft)] p-1 shadow-[inset_0_0_0_1px_var(--ui-line)]" role="group" aria-label="Billing">
             {(["monthly", "annual"] as const).map((cycle) => (
               <button
                 key={cycle}
                 type="button"
                 aria-pressed={billing === cycle}
                 onClick={() => setBilling(cycle)}
-                className={`h-10 rounded-[9px] px-4 text-[14px] font-semibold transition ${
-                  billing === cycle ? "bg-white text-[#0B1628] shadow-[0_4px_14px_rgba(15,23,42,0.10)]" : "text-[#5b6577]"
+                className={`h-10 rounded-[7px] px-3.5 text-[14px] font-semibold transition ${
+                  billing === cycle ? "bg-white text-[color:var(--ui-ink)] shadow-[0_0_0_1px_var(--ui-line)]" : "text-[color:var(--ui-text-2)]"
                 }`}
               >
                 {cycle === "monthly" ? "Monthly" : (
-                  <>Annual <span className="ml-1 text-[12px] font-bold text-[#306EEC]">2 mo free</span></>
+                  <>Annual <span className="ml-1 text-[12px] font-semibold text-[color:var(--ui-accent-ink)]">2 mo free</span></>
                 )}
               </button>
             ))}
@@ -1226,7 +1246,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         </div>
 
         {checkoutCanceled ? (
-          <p className="mt-3 rounded-[12px] bg-[#F3F7FF] px-4 py-2.5 text-[14px] text-[#3b4658]">
+          <p className="mt-3 rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-soft)] px-4 py-2.5 text-[14px] text-[color:var(--ui-text-2)]">
             You didn&rsquo;t finish checking out. Nothing was charged.
           </p>
         ) : null}
@@ -1255,34 +1275,34 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                   <span className={`pk-dot ${isChosen ? "pk-dot--on" : ""}`} aria-hidden="true" />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
-                      <span className="text-[16px] font-bold text-[#0B1628]">{p.displayName}</span>
+                      <span className="text-[16px] font-semibold text-[color:var(--ui-ink)]">{p.displayName}</span>
                       {p.badge === "StartHere" ? (
-                        <span className="rounded-full bg-[#EEF4FF] px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-[#306EEC]">Popular</span>
+                        <span className="ui-tag ui-tag--accent !min-h-[20px] !px-2 !text-[11px]">Popular</span>
                       ) : null}
                     </span>
-                    <span className="mt-0.5 block text-[13px] leading-5 text-[#5b6577]">{line}</span>
+                    <span className="mt-0.5 block text-[13px] leading-5 text-[color:var(--ui-text-3)]">{line}</span>
                   </span>
-                  <span className="shrink-0 text-right text-[16px] font-bold text-[#0B1628]">{priceLabel(p)}</span>
+                  <span className="ui-num shrink-0 text-right text-[16px] font-semibold text-[color:var(--ui-ink)]">{priceLabel(p)}</span>
                 </button>
                 {isChosen ? (
                   <details className="pk-details px-4 pb-3 pl-11">
-                    <summary className="cursor-pointer text-[13px] font-semibold text-[#306EEC]">What&rsquo;s included</summary>
-                    <ul className="mt-2 space-y-1.5 text-[13px] leading-5 text-[#3b4658]">
+                    <summary className="cursor-pointer text-[13px] font-semibold text-[color:var(--ui-accent-ink)]">What&rsquo;s included</summary>
+                    <ul className="mt-2 space-y-1.5 text-[13px] leading-5 text-[color:var(--ui-text-2)]">
                       {BENEFIT_ROWS.filter((row) => benefitIncluded(row, p.name as PlanName)).map((row) => (
                         <li key={row.id} className="flex gap-2">
-                          <span className="text-[#306EEC]" aria-hidden="true">✓</span>
+                          <span className="text-[color:var(--ui-accent)]" aria-hidden="true">✓</span>
                           <span>
                             {benefitLabel(row, p.name as PlanName)}
-                            {row.detail ? <span className="text-[#64748B]"> - {row.detail}</span> : null}
+                            {row.detail ? <span className="text-[color:var(--ui-text-3)]"> - {row.detail}</span> : null}
                           </span>
                         </li>
                       ))}
                     </ul>
-                    <p className="mt-2 text-[13px] leading-5 text-[#64748B]">
+                    <p className="mt-2 text-[13px] leading-5 text-[color:var(--ui-text-3)]">
                       There&rsquo;s no monthly visit allowance. Book as often as you need - your plan simply determines how many visits you can have booked at the same time.{" "}
-                      <Link href="/membership/plans" className="font-semibold text-[#306EEC]">Full comparison</Link>
+                      <Link href="/membership/plans" className="font-semibold text-[color:var(--ui-accent-ink)]">Full comparison</Link>
                       {" · "}
-                      <Link href="/terms" className="font-semibold text-[#306EEC]">Terms</Link>
+                      <Link href="/terms" className="font-semibold text-[color:var(--ui-accent-ink)]">Terms</Link>
                     </p>
                   </details>
                 ) : null}
@@ -1292,7 +1312,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         </div>
 
         {isAuthenticated && addresses.length > 1 ? (
-          <label className="mt-3 flex items-center gap-3 text-[13px] font-semibold text-[#5b6577]">
+          <label className="mt-3 flex items-center gap-3 text-[13px] font-semibold text-[color:var(--ui-text-2)]">
             For
             <select
               value={selectedAddressId || ""}
@@ -1301,7 +1321,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
                 setSelectedAddressId(id);
                 if (token && addressSubscriptionMap[id] === undefined) checkAddressState(id);
               }}
-              className="h-10 min-w-0 flex-1 rounded-[10px] border border-[#D7DEE9] bg-white px-3 text-[14px] text-[#0B1628]"
+              className="h-11 min-w-0 flex-1 rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line-2)] bg-white px-3 text-[15px] text-[color:var(--ui-ink)]"
             >
               {addresses.map((a) => (
                 <option key={a._id} value={a._id}>{`${a.line1}, ${a.city}`}</option>
@@ -1311,7 +1331,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
         ) : null}
 
         {actionError && !resumeOpen ? <p className="fv-error" role="alert">{actionError}</p> : null}
-        {actionMessage ? <p className="mt-2 text-[14px] text-[#3b4658]">{actionMessage}</p> : null}
+        {actionMessage ? <p className="mt-2 text-[14px] text-[color:var(--ui-text-2)]">{actionMessage}</p> : null}
 
         <button
           type="button"
@@ -1326,175 +1346,154 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
             <>Choose {chosen.displayName} · ${chosenPricing.amount.toLocaleString("en-US")}{chosenPricing.suffix === "/mo" ? "/mo" : "/yr"}</>
           )}
         </button>
-        <p className="mt-2 text-center text-[13px] text-[#64748B]">
+        <p className="mt-2 text-center text-[13px] text-[color:var(--ui-text-3)]">
           {billing === "annual" ? "Billed once for the year · 12 months for the price of 10" : "Billed monthly · cancel anytime"} · tax at checkout
         </p>
       </section>
     );
   }
 
-  return (
-    <section id="plans" className={`w-full scroll-mt-[140px] bg-[#F5F5F7] px-4 sm:px-5 ${compact ? "py-8 sm:py-11" : "py-8 sm:py-13 lg:py-12"}`}>
+  const body = (
+    <>
       {resumeSheet}
       {homeSheet}
       {contactSheet}
-      <div className="mx-auto max-w-[1280px]">
-        <div className={`mx-auto max-w-[720px] text-center ${compact ? "mb-7 sm:mb-9" : "mb-8 sm:mb-9"}`}>
-          {/*
-           * sm:text-5xl was a Tailwind preset, so the compactness sweep never
-           * saw it and this section heading ended up larger than the H1 of
-           * every page it appears on. It is a section heading and now sizes
-           * like one.
-           */}
+      {!hideIntro || promoCode || compact ? (
+        <div className={`mx-auto max-w-[720px] text-center ${compact ? "mb-6 sm:mb-8" : "mb-6 sm:mb-8"}`}>
           {!hideIntro && (
             <>
-              <h2 className="text-[23px] font-semibold tracking-normal text-[#111111] sm:text-[30px]">
-                Choose the membership for your home
-              </h2>
-              <p className="mt-3 text-[15px] leading-6 text-[#6E6E73] sm:mt-4 sm:text-lg sm:leading-7">
-                Start with the level of support that fits today. You can change plans as your home needs change.
-              </p>
+              <h2 className="ui-h2">Choose the membership for your home</h2>
+              <p className="ui-lede mx-auto">Change plans whenever your home does.</p>
             </>
           )}
           {promoCode ? (
-            <div className="mt-5 inline-flex rounded-[8px] border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm font-semibold text-[#166534]">
-              Promo code {promoCode} will be applied at checkout
-            </div>
+            <p className="ui-tag ui-tag--accent mt-4">Promo code {promoCode} will be applied at checkout</p>
           ) : null}
           {compact ? (
-            <div className="mx-auto mt-5 max-w-[360px] rounded-[8px] border border-[#D9E4FA] bg-white/80 px-4 py-3 shadow-[0_8px_24px_rgba(48,110,236,0.06)] lg:mt-6 lg:max-w-[480px] lg:rounded-[10px] lg:px-6 lg:py-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#306EEC] lg:text-[12px]">Annual special</p>
-              <p className="mt-1 text-[13px] leading-5 text-[#4B5563] lg:mt-1.5 lg:text-[15px] lg:leading-6">
-                Pay for <strong className="font-semibold text-[#111111]">10 months</strong>. Get <strong className="font-semibold text-[#111111]">12 months of Membership.</strong>
-              </p>
-            </div>
+            <p className="mx-auto mt-4 max-w-[420px] text-[14px] leading-[1.5] text-[color:var(--ui-text-2)]">
+              <span className="ui-eyebrow ui-eyebrow--accent mb-1 block">Annual special</span>
+              Pay for <strong className="font-semibold text-[color:var(--ui-ink)]">10 months</strong>. Get{" "}
+              <strong className="font-semibold text-[color:var(--ui-ink)]">12 months of Membership.</strong>
+            </p>
           ) : null}
           {compact ? <BillingToggle /> : null}
         </div>
+      ) : null}
 
-        {/*
-          Somebody who backed out of Stripe. Not an error, not a warning colour,
-          no automatic retry - just an acknowledgement that they are back where
-          they were, with the plan still there to press.
-        */}
-        {checkoutCanceled && (
-          <div className="mx-auto mt-6 max-w-[560px] rounded-[8px] border border-[#D7E0F5] bg-[#F8FAFF] px-5 py-4 text-center">
-            <p className="text-[14px] font-semibold text-[#0B1628]">
-              You didn&rsquo;t finish checking out.
-            </p>
-            <p className="mt-1 text-[13.5px] leading-5 text-[#6E6E73]">
-              Nothing was charged. Your plan is still selected below whenever you
-              want to pick it up again.
-            </p>
-          </div>
-        )}
-
-        {isAuthenticated && user && addresses.length > 0 && <AddressPicker />}
-
-        {isAuthenticated && user && addresses.length === 0 && (
-          <div className="mx-auto mb-8 max-w-[520px] rounded-[8px] border border-[#E5E7EB] bg-white p-5 text-center shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-            <p className="font-semibold text-[#111827]">Add an address to start a plan.</p>
-            <button
-              type="button"
-              onClick={async () => {
-                const home = await requestHome();
-                if (home?.address?._id) setSelectedAddressId(String(home.address._id));
-              }}
-              className="mt-4 h-11 rounded-[8px] bg-[#111111] px-6 text-sm font-semibold text-white transition hover:bg-black"
-            >
-              Add your home
-            </button>
-          </div>
-        )}
-
-        {(actionMessage || actionError) && (
-          <div className="mx-auto mb-8 max-w-[720px] space-y-3">
-            {actionMessage ? (
-              <div className="rounded-[8px] border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3 text-sm font-semibold text-[#166534]">
-                {actionMessage}
-              </div>
-            ) : null}
-            {actionError ? (
-              <div className="rounded-[8px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-sm font-semibold text-[#991B1B]">
-                {actionError}
-              </div>
-            ) : null}
-          </div>
-        )}
-
-        {/* ========================= THE SELECTOR ========================= */}
-        {compact ? <CompactPlanComparison /> : renderPlanSelector()}
-
-        {/* ==================== AFTER THE DECISION ==================== */}
-        {/*
-          Loyalty moved below the plans, and shortened.
-
-          It used to sit between the billing toggle and the cards - a reason to
-          STAY, printed into the middle of the moment somebody is deciding what
-          to BUY. Same fact either way; it reads better as the thing you find
-          once the choice is made.
-
-          The free visit sits here for the same reason and in the same register:
-          a way out for somebody not ready, placed UNDER the decision rather
-          than beside it, so it never competes with choosing a plan. Nothing
-          about eligibility is touched - this is a link to /book.
-        */}
-        {!compact && (
-          <div className="plan-after">
-            <div className="plan-after__card">
-              <p className="plan-after__label">Loyalty Benefits</p>
-              {billing === "annual" ? (
-                <p className="plan-after__body">
-                  <b>Already built in.</b> Annual members pay for 10 months and get 12.
-                </p>
-              ) : (
-                <p className="plan-after__body">
-                  <b>Stay, and it gets better.</b> At 3 and 6 months, the plan above yours,
-                  free. At 12 months, a month on us.
-                </p>
-              )}
-              <Link href="/membership/loyalty" className="plan-after__link">
-                How it works
-              </Link>
-            </div>
-
-            <div className="plan-after__card">
-              <p className="plan-after__label">Not ready to choose?</p>
-              <p className="plan-after__body">
-                <b>Your first 90-minute visit is free.</b> No card required.
-              </p>
-              <Link href="/book/free" className="plan-after__link">
-                Book a free visit
-              </Link>
-            </div>
-          </div>
-        )}
-
-        <div className={`mx-auto max-w-[720px] ${compact ? "mt-6" : "mt-7"}`}>
-
-          {/*
-            The reassurance a person wants in the second before they enter a
-            card, and nothing more. Home carries the full trust band; this is
-            four facts and a link.
-          */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-[#E5E5EA] pt-5 text-[13px] text-[#6E6E73]">
-            <span>Licensed <span className="font-medium text-[#111111]">Suffolk County HI-71484</span></span>
-            <span aria-hidden="true" className="text-[#D2D2D7]">&middot;</span>
-            <span>Insured for in-home work</span>
-            <span aria-hidden="true" className="text-[#D2D2D7]">&middot;</span>
-            <span>Nassau &amp; Suffolk</span>
-            <span aria-hidden="true" className="text-[#D2D2D7]">&middot;</span>
-            <span>Secure payment by Stripe</span>
-          </div>
-
-          <p className="mt-4 text-center text-[13.5px] text-[#6E6E73]">
-            Not sure it covers your list?{" "}
-            <Link href="/recent-work" className="font-semibold text-[#306EEC] underline-offset-4 hover:underline">
-              See what we do
-            </Link>
+      {/*
+        Somebody who backed out of Stripe. Not an error, not a warning colour,
+        no automatic retry - just an acknowledgement that they are back where
+        they were, with the plan still there to press.
+      */}
+      {checkoutCanceled && (
+        <div className="mx-auto mb-4 max-w-[560px] rounded-[var(--ui-r-md)] border border-[color:var(--ui-line)] bg-white px-4 py-3">
+          <p className="text-[14px] font-semibold text-[color:var(--ui-ink)]">
+            You didn&rsquo;t finish checking out.
+          </p>
+          <p className="mt-0.5 text-[14px] leading-5 text-[color:var(--ui-text-2)]">
+            Nothing was charged. Your plan is still selected below whenever you
+            want to pick it up again.
           </p>
         </div>
+      )}
+
+      {isAuthenticated && user && addresses.length > 0 && <AddressPicker />}
+
+      {isAuthenticated && user && addresses.length === 0 && (
+        <div className="mx-auto mb-4 flex max-w-[560px] items-center justify-between gap-3 rounded-[var(--ui-r-md)] border border-[color:var(--ui-line)] bg-white px-4 py-3">
+          <p className="text-[14px] font-medium text-[color:var(--ui-ink)]">Add an address to start a plan.</p>
+          <button
+            type="button"
+            onClick={async () => {
+              const home = await requestHome();
+              if (home?.address?._id) setSelectedAddressId(String(home.address._id));
+            }}
+            className="ui-btn ui-btn--secondary ui-btn--sm shrink-0"
+          >
+            Add your home
+          </button>
+        </div>
+      )}
+
+      {(actionMessage || actionError) && (
+        <div className="mx-auto mb-4 max-w-[560px] space-y-2">
+          {actionMessage ? (
+            <div className="rounded-[var(--ui-r-sm)] border border-[#cfe8d8] bg-[#f2faf5] px-4 py-3 text-[14px] font-medium text-[#1f6b3d]">
+              {actionMessage}
+            </div>
+          ) : null}
+          {actionError ? (
+            <div className="pg-error" role="alert">
+              {actionError}
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {/* ========================= THE SELECTOR ========================= */}
+      {compact ? <CompactPlanComparison /> : renderPlanSelector()}
+
+      {/* ==================== AFTER THE DECISION ==================== */}
+      {/*
+        Loyalty and the free visit sit UNDER the decision, never beside it: a
+        reason to stay and a way in for somebody not ready, as two quiet rows.
+        Nothing about eligibility is touched - this is a link to /book/free.
+      */}
+      {!compact && (
+        <div className="plan-after">
+          <div className="plan-after__card">
+            <p className="plan-after__label">Loyalty Benefits</p>
+            {billing === "annual" ? (
+              <p className="plan-after__body">
+                <b>Already built in.</b> Annual members pay for 10 months and get 12.
+              </p>
+            ) : (
+              <p className="plan-after__body">
+                <b>Stay, and it gets better.</b> At 3 and 6 months, the plan above yours,
+                free. At 12 months, a month on us.
+              </p>
+            )}
+            <Link href="/membership/loyalty" className="plan-after__link">
+              How it works
+            </Link>
+          </div>
+
+          <div className="plan-after__card">
+            <p className="plan-after__label">Not ready to choose?</p>
+            <p className="plan-after__body">
+              <b>Your first 90-minute visit is free.</b> No card required.
+            </p>
+            <Link href="/book/free" className="plan-after__link">
+              Book a free visit
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/*
+        The reassurance a person wants in the second before they enter a card,
+        and nothing more: four facts.
+      */}
+      <ul className="pg-facts pg-trust">
+        <li>Licensed Suffolk County HI-71484</li>
+        <li>Insured for in-home work</li>
+        <li>Nassau &amp; Suffolk</li>
+        <li>Secure payment by Stripe</li>
+      </ul>
+    </>
+  );
+
+  if (bare) {
+    return (
+      <div id="plans" className="scroll-mt-[96px]">
+        {body}
       </div>
+    );
+  }
+
+  return (
+    <section id="plans" className={`ui-section ui-section--soft w-full scroll-mt-[96px] ${compact ? "ui-section--tight" : ""}`}>
+      <div className="ui-container">{body}</div>
     </section>
   );
 }
@@ -1535,42 +1534,42 @@ function PlanResumeSheet({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-end justify-center bg-[#0B1628]/45 backdrop-blur-[3px] sm:items-center sm:p-6"
+      className="fixed inset-0 z-[200] flex items-end justify-center bg-[#0B1628]/45 sm:items-center sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="plan-resume-title"
       data-plan-resume
     >
-      <div className="fv-card fv-enter w-full max-w-[460px] !bg-white !rounded-b-none p-6 pb-[max(24px,env(safe-area-inset-bottom))] sm:!rounded-[26px] sm:p-8">
-        <p className="lx-eyebrow">Almost there</p>
-        <h2 id="plan-resume-title" className="mt-2 text-[26px] font-bold leading-tight tracking-[-0.03em] text-[#0B1628]">
+      <div className="fv-enter w-full max-w-[440px] rounded-t-[var(--ui-r-lg)] bg-white p-5 pb-[max(20px,env(safe-area-inset-bottom))] shadow-[var(--ui-shadow-3)] sm:rounded-[var(--ui-r-lg)] sm:p-7">
+        <p className="ui-eyebrow">Almost there</p>
+        <h2 id="plan-resume-title" className="ui-h3 !text-[22px]">
           {planName} · {billing === "annual" ? "Annual" : "Monthly"}
         </h2>
         {pricing ? (
-          <p className="mt-3 text-[#0B1628]">
-            <span className="text-[40px] font-bold tracking-[-0.04em]">${pricing.amount.toLocaleString("en-US")}</span>
-            <span className="ml-1 text-[16px] font-semibold text-[#64748B]">{pricing.suffix === "/mo" ? "/ month" : "/ year"}</span>
+          <p className="mt-2 text-[color:var(--ui-ink)]">
+            <span className="ui-num text-[36px] font-semibold tracking-[-0.04em]">${pricing.amount.toLocaleString("en-US")}</span>
+            <span className="ml-1 text-[15px] font-medium text-[color:var(--ui-text-3)]">{pricing.suffix === "/mo" ? "/ month" : "/ year"}</span>
           </p>
         ) : null}
-        <dl className="mt-4 space-y-2 text-[14px]">
+        <dl className="pg-rows mt-4">
           {address ? (
-            <div className="flex justify-between gap-4 rounded-[12px] bg-[#F6F8FC] px-4 py-3">
-              <dt className="font-semibold text-[#64748B]">Home</dt>
-              <dd className="text-right font-semibold text-[#0B1628]">{address}</dd>
+            <div>
+              <dt>Home</dt>
+              <dd>{address}</dd>
             </div>
           ) : null}
-          <div className="flex justify-between gap-4 rounded-[12px] bg-[#F6F8FC] px-4 py-3">
-            <dt className="font-semibold text-[#64748B]">Billed</dt>
-            <dd className="text-right font-semibold text-[#0B1628]">
+          <div>
+            <dt>Billed</dt>
+            <dd>
               {billing === "annual" ? "Yearly, upfront" : "Monthly"} · tax calculated at checkout
             </dd>
           </div>
         </dl>
         {error ? <p className="fv-error" role="alert">{error}</p> : null}
-        <button type="button" className="fv-cta mt-6 w-full" onClick={onContinue} disabled={busy} data-plan-resume-continue>
+        <button type="button" className="ui-btn ui-btn--primary ui-btn--lg ui-btn--block mt-5" onClick={onContinue} disabled={busy} data-plan-resume-continue>
           {busy ? <><span className="fv-spinner" aria-hidden="true" /> Opening checkout…</> : <>Continue to secure checkout <span aria-hidden="true">→</span></>}
         </button>
-        <button type="button" className="mt-3 w-full py-2 text-[15px] font-semibold text-[#306EEC]" onClick={onClose} disabled={busy}>
+        <button type="button" className="ui-btn ui-btn--ghost ui-btn--block mt-2" onClick={onClose} disabled={busy}>
           Change plan
         </button>
       </div>

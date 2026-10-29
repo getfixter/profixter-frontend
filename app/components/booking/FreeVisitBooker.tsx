@@ -866,14 +866,14 @@ export default function FreeVisitBooker({
             <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        <h2 className="mt-5 text-[30px] font-bold leading-tight tracking-[-0.03em] text-[#0B1628] sm:text-[38px]">
+        <h2 className="ui-h2 mt-5">
           Got it!
         </h2>
-        <p className="mx-auto mt-3 max-w-[420px] text-[17px] leading-7 text-[#3b4658]">
+        <p className="mx-auto mt-3 max-w-[420px] text-[16px] leading-[1.6] text-[color:var(--ui-text-2)]">
           A Profixter team member will call you shortly to confirm your free visit on{" "}
-          <strong className="text-[#0B1628]">{confirmation.dateLabel} at {confirmation.timeLabel}</strong>.
+          <strong className="text-[color:var(--ui-ink)]">{confirmation.dateLabel} at {confirmation.timeLabel}</strong>.
         </p>
-        <p className="mx-auto mt-5 max-w-[420px] text-[14px] leading-6 text-[#64748B]">
+        <p className="mx-auto mt-5 max-w-[420px] text-[14px] leading-6 text-[color:var(--ui-text-3)]">
           We&rsquo;ve sent the details to your email and phone. Questions? Call or text{" "}
           <a href="tel:+16315991363" className="fv-link whitespace-nowrap text-[14px]">631-599-1363</a>.
         </p>
@@ -889,16 +889,16 @@ export default function FreeVisitBooker({
             <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        <h2 className="mt-5 text-[30px] font-bold leading-tight tracking-[-0.03em] text-[#0B1628] sm:text-[38px]">
+        <h2 className="ui-h2 mt-5">
           You&rsquo;re booked.
         </h2>
-        <p className="mt-2 text-[16px] text-[#5b6577]">Your free 90-minute visit is on the calendar.</p>
+        <p className="mt-2 text-[16px] text-[color:var(--ui-text-2)]">Your free 90-minute visit is on the calendar.</p>
         <dl className="mx-auto mt-6 grid max-w-[420px] gap-2 text-left">
           <SummaryRow label="When" value={`${confirmation.dateLabel} · ${confirmation.timeLabel}`} />
           {confirmation.address ? <SummaryRow label="Where" value={confirmation.address} /> : null}
           {confirmation.reference ? <SummaryRow label="Booking" value={`#${confirmation.reference}`} /> : null}
         </dl>
-        <p className="mx-auto mt-5 max-w-[420px] text-[14px] leading-6 text-[#64748B]">
+        <p className="mx-auto mt-5 max-w-[420px] text-[14px] leading-6 text-[color:var(--ui-text-3)]">
           We&rsquo;ll confirm by email and text. You can see or change it any time in My Home.
         </p>
         <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -943,7 +943,7 @@ export default function FreeVisitBooker({
         onChange={onContactChange}
         inputProps={{ type: "email", inputMode: "email", autoComplete: "email", autoCapitalize: "none", spellCheck: false, enterKeyHint: "done", maxLength: 200 }}
       />
-      <p className="text-[13px] leading-[1.45] text-[#64748B]" data-fv="consent">
+      <p className="text-[13px] leading-[1.45] text-[color:var(--ui-text-3)]" data-fv="consent">
         {CONTACT_CONSENT_TEXT}{" "}
         <Link href="/terms" target="_blank" rel="noopener" className="underline underline-offset-2">Terms</Link>
         {" · "}
@@ -1051,10 +1051,10 @@ export default function FreeVisitBooker({
                 <div className="mt-1.5">
                   <div className="flex items-center justify-between">
                     <button type="button" className="fv-nav" onClick={() => setMonth(shiftMonth(month, -1))} disabled={!canGoBack} aria-label="Previous month">‹</button>
-                    <span className="text-[14px] font-semibold text-[#0B1628]" aria-live="polite">{monthLabel(month)}</span>
+                    <span className="text-[14px] font-semibold text-[color:var(--ui-ink)]" aria-live="polite">{monthLabel(month)}</span>
                     <button type="button" className="fv-nav" onClick={() => setMonth(shiftMonth(month, 1))} disabled={!canGoForward} aria-label="Next month">›</button>
                   </div>
-                  <div className="mt-1 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[#94A3B8]" aria-hidden="true">
+                  <div className="mt-1 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[color:var(--ui-text-3)]" aria-hidden="true">
                     {WEEKDAYS.map((d, i) => <div key={i}>{d}</div>)}
                   </div>
                   <div className="mt-1 grid grid-cols-7 gap-1" role="grid" aria-label={monthLabel(month)}>
@@ -1152,7 +1152,7 @@ export default function FreeVisitBooker({
                           })}
                         </div>
                       ) : (
-                        <p className="text-[13px] text-[#64748B]">This day just filled up. Pick another.</p>
+                        <p className="text-[13px] text-[color:var(--ui-text-3)]">This day just filled up. Pick another.</p>
                       )}
                       {errors.time ? <p className="fv-error">{errors.time}</p> : null}
                     </div>
@@ -1194,7 +1194,7 @@ export default function FreeVisitBooker({
                   <>Book my free visit <span aria-hidden="true">→</span></>
                 )}
               </button>
-              <p className="mt-2 text-center text-[13px] text-[#64748B]">90 minutes · free · no card needed</p>
+              <p className="mt-2 text-center text-[13px] text-[color:var(--ui-text-3)]">90 minutes · free · no card needed</p>
             </>
           ) : null}
         </div>
@@ -1277,12 +1277,12 @@ export default function FreeVisitBooker({
           <h2 id={`${id}-when`} className="fv-step-title">Pick a day</h2>
           <div className="-mx-2 flex items-center justify-between gap-1 sm:mx-0 sm:justify-end">
             <button type="button" className="fv-nav" onClick={() => setMonth(shiftMonth(month, -1))} disabled={!canGoBack} aria-label="Previous month">‹</button>
-            <span className="min-w-[128px] text-center text-[14px] font-semibold text-[#0B1628]" aria-live="polite">{monthLabel(month)}</span>
+            <span className="min-w-[128px] text-center text-[14px] font-semibold text-[color:var(--ui-ink)]" aria-live="polite">{monthLabel(month)}</span>
             <button type="button" className="fv-nav" onClick={() => setMonth(shiftMonth(month, 1))} disabled={!canGoForward} aria-label="Next month">›</button>
           </div>
         </div>
 
-        <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[#94A3B8]" aria-hidden="true">
+        <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[color:var(--ui-text-3)]" aria-hidden="true">
           {WEEKDAYS.map((d, i) => <div key={i}>{d}</div>)}
         </div>
         <div className="mt-1.5 grid grid-cols-7 gap-1" role="grid" aria-label={monthLabel(month)} data-fv="calendar">
@@ -1315,7 +1315,7 @@ export default function FreeVisitBooker({
             <button type="button" className="underline" onClick={() => void loadMonth(month, true)}>Try again</button>
           </p>
         ) : monthMap && !Object.entries(monthMap).some(([ymd, d]) => ymd >= today && isBookableDay(d)) ? (
-          <p className="mt-3 text-[13px] text-[#64748B]">No open days this month - try the next one.</p>
+          <p className="mt-3 text-[13px] text-[color:var(--ui-text-3)]">No open days this month - try the next one.</p>
         ) : null}
         {errors.date ? <p className="fv-error">{errors.date}</p> : null}
 
@@ -1324,7 +1324,7 @@ export default function FreeVisitBooker({
           <div>
             {selectedDate ? (
               <div className="pt-5">
-                <p className="text-[14px] font-semibold text-[#0B1628]">
+                <p className="text-[14px] font-semibold text-[color:var(--ui-ink)]">
                   {longDate(selectedDate)}
                 </p>
                 {notice ? <p className="fv-notice mt-2" role="alert">{notice}</p> : null}
@@ -1355,7 +1355,7 @@ export default function FreeVisitBooker({
                     })}
                   </div>
                 ) : (
-                  <p className="mt-3 text-[14px] text-[#64748B]">This day just filled up. Pick another.</p>
+                  <p className="mt-3 text-[14px] text-[color:var(--ui-text-3)]">This day just filled up. Pick another.</p>
                 )}
                 {errors.time ? <p className="fv-error">{errors.time}</p> : null}
               </div>
@@ -1375,14 +1375,14 @@ export default function FreeVisitBooker({
               <div className="fv-summary">
                 <div className="fv-summary-row">
                   <span>Free first visit</span>
-                  <span className="text-[#0B1628]">$0</span>
+                  <span className="text-[color:var(--ui-ink)]">$0</span>
                 </div>
                 <div className="fv-summary-row">
                   <span>{shortDate(selectedDate)} · {time12(selectedTime)}</span>
                   <span>90 min</span>
                 </div>
                 {noteOk ? (
-                  <p className="mt-1 line-clamp-2 text-[13px] text-[#64748B]">
+                  <p className="mt-1 line-clamp-2 text-[13px] text-[color:var(--ui-text-3)]">
                     {note.trim()}
                     {!photos.length && libraryReference ? ` · Example: ${libraryLabel(libraryReference)}` : ""}
                     {photos.length ? ` · ${photos.length} photo${photos.length > 1 ? "s" : ""}` : ""}
@@ -1413,7 +1413,7 @@ export default function FreeVisitBooker({
                 <>Book my free visit <span aria-hidden="true">→</span></>
               )}
             </button>
-            <p className="mt-3 text-center text-[13px] text-[#64748B]">
+            <p className="mt-3 text-center text-[13px] text-[color:var(--ui-text-3)]">
               {access === "anonymous" && !guestMode
                 ? "Next: your address and contact. About a minute. No card needed."
                 : "No card needed."}
@@ -1475,9 +1475,9 @@ function StepLabel({ n, done }: { n: number; done: boolean }) {
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 rounded-[12px] bg-[#F6F8FC] px-4 py-3">
-      <dt className="text-[13px] font-semibold uppercase tracking-[0.08em] text-[#94A3B8]">{label}</dt>
-      <dd className="text-right text-[15px] font-semibold text-[#0B1628]">{value}</dd>
+    <div className="flex items-baseline justify-between gap-4 border-b border-[color:var(--ui-line)] py-3">
+      <dt className="text-[14px] text-[color:var(--ui-text-3)]">{label}</dt>
+      <dd className="text-right text-[15px] font-medium text-[color:var(--ui-ink)]">{value}</dd>
     </div>
   );
 }
@@ -1495,8 +1495,8 @@ function AccessNotice({
   if (access === "member") {
     return (
       <div className="fv-panel" data-fv-access="member">
-        <p className="font-semibold text-[#0B1628]">You&rsquo;re a member.</p>
-        <p className="mt-1 text-[14px] text-[#5b6577]">Book your visit from your member calendar.</p>
+        <p className="font-semibold text-[color:var(--ui-ink)]">You&rsquo;re a member.</p>
+        <p className="mt-1 text-[14px] text-[color:var(--ui-text-2)]">Book your visit from your member calendar.</p>
         <Link href="/book?visit=membership" className="fv-cta mt-4 w-full">Book as a member</Link>
       </div>
     );
@@ -1504,8 +1504,8 @@ function AccessNotice({
   if (access === "used") {
     return (
       <div className="fv-panel" data-fv-access="used">
-        <p className="font-semibold text-[#0B1628]">Your free visit has been used at this address.</p>
-        <p className="mt-1 text-[14px] text-[#5b6577]">Book a one-time visit, or get a plan for regular help.</p>
+        <p className="font-semibold text-[color:var(--ui-ink)]">Your free visit has been used at this address.</p>
+        <p className="mt-1 text-[14px] text-[color:var(--ui-text-2)]">Book a one-time visit, or get a plan for regular help.</p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <Link href="/book?visit=additional" className="fv-cta">Book a one-time visit</Link>
           <Link href="/membership/plans" className="fv-cta fv-cta--quiet">See plans</Link>
@@ -1516,8 +1516,8 @@ function AccessNotice({
   if (access === "outside") {
     return (
       <div className="fv-panel" data-fv-access="outside">
-        <p className="font-semibold text-[#0B1628]">We&rsquo;re not in your area yet.</p>
-        <p className="mt-1 text-[14px] text-[#5b6577]">Profixter serves Nassau and Suffolk counties on Long Island.</p>
+        <p className="font-semibold text-[color:var(--ui-ink)]">We&rsquo;re not in your area yet.</p>
+        <p className="mt-1 text-[14px] text-[color:var(--ui-text-2)]">Profixter serves Nassau and Suffolk counties on Long Island.</p>
         <OutOfAreaWaitlist zip={waitlist.zip} defaultEmail={waitlist.email} />
       </div>
     );
@@ -1525,7 +1525,7 @@ function AccessNotice({
   if (access === "no-address") {
     return (
       <div className="fv-panel" data-fv-access="no-address">
-        <p className="font-semibold text-[#0B1628]">Add your home address to book.</p>
+        <p className="font-semibold text-[color:var(--ui-ink)]">Add your home address to book.</p>
         <button type="button" onClick={onAddHome} className="fv-cta mt-4 w-full">Add your home</button>
       </div>
     );
@@ -1621,7 +1621,7 @@ function OutOfAreaWaitlist({ zip, defaultEmail }: { zip: string; defaultEmail: s
 
   if (state === "done") {
     return (
-      <p className="mt-4 text-[14px] font-semibold text-[#0B1628]" role="status" data-fv-waitlist="done">
+      <p className="mt-4 text-[14px] font-semibold text-[color:var(--ui-ink)]" role="status" data-fv-waitlist="done">
         Thanks. We&rsquo;ll email you when Profixter starts serving your area.
       </p>
     );

@@ -88,7 +88,7 @@ export default function BookingConfirmationDialog({
   return createPortal(
     <div
       data-booking-confirmation-overlay="true"
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/45 px-4 backdrop-blur-[3px]"
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#0B1628]/45 px-4"
       style={{
         minHeight: "100dvh",
         paddingTop: "max(24px, env(safe-area-inset-top, 0px))",
@@ -102,7 +102,7 @@ export default function BookingConfirmationDialog({
         aria-modal="true"
         aria-labelledby="booking-success-title"
         aria-describedby="booking-success-status"
-        className="flex w-full max-w-[420px] flex-col overflow-hidden rounded-[8px] border border-black/[0.08] bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.24)] backdrop-blur-xl"
+        className="flex w-full max-w-[420px] flex-col overflow-hidden rounded-[var(--ui-r-lg)] bg-white shadow-[var(--ui-shadow-3)]"
         style={{ maxHeight: "calc(100dvh - 48px)" }}
       >
         <div className="min-h-0 overflow-y-auto px-5 pb-4 pt-5 sm:px-5 sm:pb-5 sm:pt-6">
@@ -123,11 +123,11 @@ export default function BookingConfirmationDialog({
             </button>
           </div>
 
-          <h2 id="booking-success-title" className="mt-3 text-[21px] font-extrabold tracking-[-0.025em] text-[#0B1628] sm:text-[23px]">
+          <h2 id="booking-success-title" className="ui-h3 mt-3 !text-[21px]">
             Visit booked
           </h2>
           {confirmation.isFreeVisit ? (
-            <p className="mt-1.5 text-[15px] font-semibold text-[#306EEC]">
+            <p className="mt-1.5 text-[15px] font-semibold text-[color:var(--ui-accent-ink)]">
               Your first visit is on us.
             </p>
           ) : null}
@@ -137,12 +137,12 @@ export default function BookingConfirmationDialog({
             </p>
           ) : null}
           {confirmation.address ? (
-            <p className="mt-1.5 break-words text-[13px] leading-5 text-[#64748B]">
+            <p className="mt-1.5 break-words text-[14px] leading-[1.5] text-[color:var(--ui-text-2)]">
               {confirmation.address}
             </p>
           ) : null}
           {confirmation.bookingReference ? (
-            <p className="mt-1.5 text-[11px] font-semibold text-[#94A3B8]">
+            <p className="mt-1.5 text-[13px] text-[color:var(--ui-text-3)]">
               Reference {confirmation.bookingReference}
             </p>
           ) : null}
@@ -151,18 +151,18 @@ export default function BookingConfirmationDialog({
           </p>
 
           <div className="mt-4 border-t border-black/[0.07] pt-4">
-            <h3 className="text-[13px] font-bold text-[#0B1628]">Before your visit</h3>
+            <h3 className="text-[14px] font-semibold text-[color:var(--ui-ink)]">Before your visit</h3>
             {confirmation.isFreeVisit ? (
-              <p className="mt-1.5 text-[13px] leading-5 text-[#64748B]">
+              <p className="mt-1.5 text-[14px] leading-[1.5] text-[color:var(--ui-text-2)]">
                 Have the items you&rsquo;d like us to look at ready. If there is anything we
                 should know before the visit, let us know.
               </p>
             ) : (
               <>
-                <p className="mt-1.5 text-[13px] leading-5 text-[#64748B]">
+                <p className="mt-1.5 text-[14px] leading-[1.5] text-[color:var(--ui-text-2)]">
                   Please have any materials you already purchased ready for your Fixter.
                 </p>
-                <p className="mt-1.5 text-[13px] leading-5 text-[#64748B]">
+                <p className="mt-1.5 text-[14px] leading-[1.5] text-[color:var(--ui-text-2)]">
                   Need us to bring materials or special tools? Add a note to your visit as early as possible so we can prepare.
                 </p>
               </>
@@ -174,14 +174,14 @@ export default function BookingConfirmationDialog({
           <button
             type="button"
             onClick={onViewVisit}
-            className="h-12 w-full rounded-[8px] bg-[#306EEC] text-[15px] font-bold text-white shadow-[0_8px_24px_rgba(48,110,236,0.24)] transition hover:bg-[#2558c9] active:scale-[0.99]"
+            className="ui-btn ui-btn--primary ui-btn--block"
           >
             View My Visit
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="h-10 w-full rounded-[8px] text-[13px] font-semibold text-[#64748B] transition hover:bg-[#F8FAFC] hover:text-[#0B1628]"
+            className="ui-btn ui-btn--ghost ui-btn--block !text-[14px]"
           >
             Done
           </button>

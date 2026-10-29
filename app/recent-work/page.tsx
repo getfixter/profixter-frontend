@@ -69,11 +69,13 @@ export default async function RecentWorkPage() {
       }
     : null;
   return (
-    <main className="min-h-screen bg-[#060C18]">
+    <main className="min-h-screen bg-white">
       {galleryJsonLd ? (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(galleryJsonLd) }} />
       ) : null}
-      <Header />
+      <div className="sticky top-0 z-50">
+        <Header />
+      </div>
       <RecentWorkSection
         variant="full"
         /*
@@ -99,12 +101,12 @@ export default async function RecentWorkPage() {
         the same question - "would they do my kind of job?" - answered from the
         visit records, server-rendered, as dated aggregates.
       */}
-      <section aria-labelledby="what-members-book" className="relative bg-[#060C18] pb-16 pt-4">
-        <div className="mx-auto max-w-[880px] px-4 sm:px-6">
-          <h2 id="what-members-book" className="text-[22px] font-extrabold tracking-[-0.02em] text-white sm:text-[28px]">
+      <section aria-labelledby="what-members-book" className="ui-section ui-section--soft ui-section--tight">
+        <div className="ui-container ui-container--narrow">
+          <h2 id="what-members-book" className="ui-h2">
             What Long Island homeowners book most
           </h2>
-          <p className="mt-3 text-[15px] leading-relaxed text-white/60">
+          <p className="mt-3 text-[15px] leading-relaxed text-[color:var(--ui-text-2)]">
             From more than {COMPLETED_VISITS_ROUNDED} completed visits across Nassau and Suffolk since {DATA_SINCE}: the
             rough share of visit requests that mention each kind of work, read from what customers wrote when they
             booked. Lists are common: {MULTI_TASK_REQUEST_PHRASE}. As of {DATA_AS_OF}.
@@ -112,21 +114,21 @@ export default async function RecentWorkPage() {
           <ul className="mt-6 grid gap-2.5">
             {TASK_MIX.map((row) => (
               <li key={row.label} className="grid grid-cols-[1fr_auto] items-center gap-3 sm:grid-cols-[minmax(0,1fr)_160px_48px]">
-                <span className="text-[14px] text-white/80 sm:text-[15px]">{row.label}</span>
-                <span aria-hidden="true" className="hidden h-1.5 overflow-hidden rounded-full bg-white/10 sm:block">
+                <span className="text-[14px] text-[color:var(--ui-ink)] sm:text-[15px]">{row.label}</span>
+                <span aria-hidden="true" className="hidden h-1.5 overflow-hidden rounded-full bg-[color:var(--ui-line)] sm:block">
                   <span className="block h-full rounded-full bg-[#306EEC]" style={{ width: `${(row.percent / 25) * 100}%` }} />
                 </span>
-                <span className="text-right text-[14px] font-bold tabular-nums text-white">~{row.percent}%</span>
+                <span className="text-right text-[14px] font-bold tabular-nums text-[color:var(--ui-ink)]">~{row.percent}%</span>
               </li>
             ))}
           </ul>
-          <p className="mt-6 text-[14px] leading-relaxed text-white/55">
+          <p className="mt-6 text-[14px] leading-relaxed text-[color:var(--ui-text-3)]">
             Got a list like this?{" "}
-            <Link href="/guides/handyman-for-small-jobs" className="font-semibold text-[#8FB2FF] underline underline-offset-2">
+            <Link href="/guides/handyman-for-small-jobs" className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2">
               How to get small jobs done
             </Link>{" "}
             ·{" "}
-            <Link href="/handyman-membership" className="font-semibold text-[#8FB2FF] underline underline-offset-2">
+            <Link href="/handyman-membership" className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2">
               How the membership works
             </Link>
           </p>

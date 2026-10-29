@@ -22,27 +22,33 @@ export const metadata: Metadata = {
  */
 export default function FreeVisitPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="pg-flow pg-flow--free min-h-screen bg-white">
       <div className="sticky top-0 z-50">
         <Header />
       </div>
-      <main className="lx-root lx-hero px-4 pb-16 pt-8 sm:pt-12">
-        <div className="mx-auto max-w-[620px]">
-          <p className="lx-pill">
-            <b>Free</b> First 90-minute visit
-          </p>
-          <h1 className="mt-4 text-[34px] font-bold leading-[1.05] tracking-[-0.04em] text-[#0B1628] sm:text-[44px]">
-            Book your free visit.
-          </h1>
-          <p className="mt-2 text-[16px] text-[#5b6577]">One per customer. No card needed.</p>
-          <div className="mt-6">
+      <main className="ui-section ui-section--tight ui-section--soft">
+        <div className="ui-container pg-plans__grid">
+          <div className="pg-plans__intro pg-intro ui-rise">
+            <p className="ui-tag ui-tag--accent">
+              <span className="ui-tag__dot" aria-hidden="true" />
+              Free first visit
+            </p>
+            <h1 className="ui-display mt-4">Book your free visit.</h1>
+            <p className="ui-lede">90 minutes with a Fixter. One per customer. No card needed.</p>
+            <div className="pg-plans__aside">
+              <ul className="ui-checks">
+                <li>Describe the job and add a photo or an example</li>
+                <li>Pick a real open time</li>
+                <li>New Nassau &amp; Suffolk customers</li>
+              </ul>
+            </div>
+          </div>
+          <div className="ui-rise" style={{ animationDelay: "60ms" }}>
             <FreeVisitBooker id="book" autoResume guest />
           </div>
         </div>
       </main>
-      <div className="relative z-20">
-        <Footer />
-      </div>
+      <Footer />
     </div>
   );
 }

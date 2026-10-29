@@ -77,30 +77,23 @@ export default function ServicesPage() {
           }))}
         />
 
-        <section className="px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
-          <div className="mx-auto max-w-[1180px] rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.05)] sm:p-8">
-            <div className="max-w-[720px]">
-              <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
-                Why Membership comes first
-              </div>
-              <h2 className="mt-3 text-[26px] font-black leading-tight tracking-[-0.035em] text-[#0B1628] sm:text-[36px]">
-                If the home list keeps growing, Membership is usually the better answer.
-              </h2>
+        <section className="ui-section ui-section--tight ui-section--soft">
+          <div className="ui-container grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14">
+            <div>
+              <p className="ui-eyebrow">Why Membership comes first</p>
+              <h2 className="ui-h2">If the home list keeps growing, Membership is usually the better answer.</h2>
+              <Link href="/membership/plans" className="ui-btn ui-btn--primary mt-5">
+                See plans
+              </Link>
             </div>
-            <div className="mt-7 grid gap-3 sm:grid-cols-2">
+            <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
               {membershipBenefits.map((benefit) => (
-                <div key={benefit.title} className="rounded-[8px] bg-[#F8FAFF] p-5">
-                  <h3 className="text-[17px] font-black text-[#0B1628]">{benefit.title}</h3>
-                  <p className="mt-2 text-[14px] leading-6 text-[#64748B]">{benefit.body}</p>
-                </div>
+                <li key={benefit.title} className="ui-card">
+                  <h3 className="pg-card__title !text-[16px]">{benefit.title}</h3>
+                  <p className="pg-card__meta">{benefit.body}</p>
+                </li>
               ))}
-            </div>
-            <Link
-              href="/membership/plans"
-              className="mt-7 inline-flex min-h-[44px] items-center justify-center rounded-[8px] bg-[#0B1628] px-6 text-[14px] font-black text-white transition hover:bg-[#172033]"
-            >
-              See plans
-            </Link>
+            </ul>
           </div>
         </section>
 

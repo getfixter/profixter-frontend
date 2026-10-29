@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import Header from "@/app/components/sections/Header";
+import Footer from "@/app/components/sections/Footer";
 import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
@@ -83,10 +85,10 @@ function Evidence({
   height: number;
 }) {
   return (
-    <figure className="mt-6 rounded-[10px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+    <figure className="mt-6 rounded-[10px] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-soft)] p-4 sm:p-5">
       <figcaption className="mb-3">
-        <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#93c5fd]">{label}</span>
-        <p className="mt-1.5 text-sm sm:text-base text-white/75 leading-relaxed">{caption}</p>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--ui-accent-ink)]">{label}</span>
+        <p className="mt-1.5 text-[15px] sm:text-base text-[color:var(--ui-text-2)] leading-relaxed">{caption}</p>
       </figcaption>
       {/*
         `unoptimized` on purpose: these are compliance screenshots and should
@@ -94,7 +96,7 @@ function Evidence({
         version by the image pipeline. Whether a checkbox reads as ticked is the
         entire value of the picture.
       */}
-      <div className="mx-auto max-w-[420px] overflow-hidden rounded-[8px] border border-white/10 bg-[#0B1628]">
+      <div className="mx-auto max-w-[420px] overflow-hidden rounded-[8px] border border-[color:var(--ui-line)] bg-[#0B1628]">
         <Image src={src} alt={alt} width={width} height={height} className="h-auto w-full" unoptimized />
       </div>
     </figure>
@@ -104,28 +106,26 @@ function Evidence({
 /** One quoted piece of on-screen wording. */
 function Wording({ label, quote, children }: { label: string; quote: string; children: ReactNode }) {
   return (
-    <div className="border-t border-white/10 pt-4 first:border-t-0 first:pt-0">
-      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/50">{label}</p>
+    <div className="border-t border-[color:var(--ui-line)] pt-4 first:border-t-0 first:pt-0">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--ui-text-3)]">{label}</p>
       <p className="mt-1 font-semibold">&ldquo;{quote}&rdquo;</p>
-      <p className="mt-1 text-white/70">{children}</p>
+      <p className="mt-1 text-[color:var(--ui-text-2)]">{children}</p>
     </div>
   );
 }
 
 export default function SmsConsentExamplePage() {
   return (
-    <div className="min-h-screen px-4 py-9 sm:py-32 bg-[#020617] text-white">
+    <div className="min-h-screen bg-white text-[color:var(--ui-ink)]">
+      <div className="sticky top-0 z-50">
+        <Header />
+      </div>
       <div
-        className="max-w-5xl mx-auto rounded-[8px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(49,50,52,0.62) 0%, rgba(49,50,52,0.52) 55%, rgba(49,50,52,0.5) 100%), rgba(15,23,42,0.92)",
-          boxShadow: "0px 0px 90px 0px rgba(0,0,0,0.55)",
-        }}
+        className="ui-container ui-container--narrow pb-16 pt-8 sm:pb-20 sm:pt-12"
       >
-        <h1 className="text-3xl sm:text-4xl font-semibold mb-3 text-center tracking-tight">{TITLE}</h1>
+        <h1 className="ui-display mb-3 text-center">{TITLE}</h1>
 
-        <p className="text-sm sm:text-base text-white/65 text-center mb-8 leading-relaxed">
+        <p className="text-[15px] sm:text-base text-[color:var(--ui-text-2)] text-center mb-8 leading-relaxed">
           <span className="font-semibold">ProFixter</span> is operated by{" "}
           <span className="font-semibold">Premium Island Homes Inc.</span>
           <br />
@@ -133,10 +133,10 @@ export default function SmsConsentExamplePage() {
           <span className="font-semibold">HI-71484</span> &middot; Nassau and Suffolk Counties, New York
         </p>
 
-        <div className="rounded-[8px] border border-[#93c5fd]/25 bg-[#93c5fd]/[0.06] p-5 text-sm sm:text-base leading-relaxed text-white/80">
+        <div className="rounded-[8px] border border-[color:var(--ui-line)] bg-[color:var(--ui-accent-soft)] p-5 text-[15px] sm:text-base leading-relaxed text-[color:var(--ui-text-2)]">
           This page is published as <span className="font-semibold">evidence</span> of how ProFixter collects consent
           to send text messages. It explains and illustrates the real screens: the sign-up screen at{" "}
-          <Link href="/signup" className="text-[#93c5fd] underline underline-offset-2">
+          <Link href="/signup" className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
             profixter.com/signup
           </Link>
           , the booking step, and account settings.{" "}
@@ -144,26 +144,26 @@ export default function SmsConsentExamplePage() {
           page collects information, and there is no checkbox, form or button here that subscribes anyone to anything.
         </div>
 
-        <div className="space-y-10 text-sm sm:text-base text-white/85 leading-relaxed mt-10">
+        <div className="space-y-10 text-[15px] sm:text-base text-[color:var(--ui-text-2)] leading-relaxed mt-10">
           {/* 1 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">1. The two phone numbers, and why they differ</h2>
-            <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">1. The two phone numbers, and why they differ</h2>
+            <div className="rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
               <p>
                 Text messages are sent from: <span className="font-semibold">631-888-6340</span>
                 <br />
                 Customer service and HELP by phone: <span className="font-semibold">631-599-1363</span>
               </p>
-              <p className="mt-3 text-white/70">
+              <p className="mt-3 text-[color:var(--ui-text-2)]">
                 <span className="font-semibold">These are two different numbers on purpose.</span>{" "}
                 631-888-6340 is our carrier-registered messaging number and is the number our text messages come from.
                 631-599-1363 is our customer-service line, where a person answers. Replying{" "}
                 <span className="font-semibold">HELP</span> to a text returns our automated help reply; calling
                 631-599-1363 reaches our office during business hours.
               </p>
-              <p className="mt-3 text-white/70">
+              <p className="mt-3 text-[color:var(--ui-text-2)]">
                 Email:{" "}
-                <a className="text-[#93c5fd] underline underline-offset-2" href={PUBLIC_CONTACT_MAILTO}>
+                <a className="text-[color:var(--ui-accent-ink)] underline underline-offset-2" href={PUBLIC_CONTACT_MAILTO}>
                   {PUBLIC_CONTACT_EMAIL}
                 </a>
               </p>
@@ -172,7 +172,7 @@ export default function SmsConsentExamplePage() {
 
           {/* 2 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">2. Where consent is collected</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">2. Where consent is collected</h2>
             <p>
               Text messages are optional at every point. There are exactly two places where SMS consent is collected,
               and neither is the sign-up screen:
@@ -201,7 +201,7 @@ export default function SmsConsentExamplePage() {
 
           {/* 3 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">3. The exact wording on each screen</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">3. The exact wording on each screen</h2>
             <p>
               Verbatim, followed by what each choice covers. Every &ldquo;Details&rdquo; or document link opens the{" "}
               <a href="/communication-consent" className="underline underline-offset-4">
@@ -210,7 +210,7 @@ export default function SmsConsentExamplePage() {
               in a new tab and never ticks a box.
             </p>
 
-            <div className="mt-4 rounded-[8px] bg-white/5 border border-white/10 p-5 space-y-4">
+            <div className="mt-4 rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5 space-y-4">
               <Wording
                 label="Sign-up screen - one line under the “Text me a code” button (no checkbox)"
                 quote="By continuing, you agree to the Terms and Privacy Policy and to receive a one-time verification text. Msg & data rates may apply."
@@ -254,7 +254,7 @@ export default function SmsConsentExamplePage() {
 
           {/* 4 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">4. What is, and is not, consent</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">4. What is, and is not, consent</h2>
             <ul className="list-disc list-inside space-y-2">
               <li>
                 <span className="font-semibold">Service SMS is optional.</span> It is never required to create an
@@ -304,7 +304,7 @@ export default function SmsConsentExamplePage() {
 
           {/* 5 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">5. What the screens actually look like</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">5. What the screens actually look like</h2>
             <p>
               Annotated screenshots of the real screens at phone width. The annotations (outlines and numbered notes)
               are added for this page and are not part of the screens themselves.
@@ -340,7 +340,7 @@ export default function SmsConsentExamplePage() {
 
           {/* 6 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">6. STOP, HELP, and what START really does</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">6. STOP, HELP, and what START really does</h2>
             <ul className="list-disc list-inside space-y-2">
               <li>
                 <span className="font-semibold">STOP</span> (also STOPALL, UNSUBSCRIBE, CANCEL, END, QUIT) stops every
@@ -366,7 +366,7 @@ export default function SmsConsentExamplePage() {
 
           {/* 7 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">7. What we keep as a consent record</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">7. What we keep as a consent record</h2>
             <p>For each of the two choices, independently, we retain:</p>
             <ul className="list-disc list-inside space-y-2 mt-3">
               <li>the consent status &mdash; on, off, or never chosen;</li>
@@ -385,7 +385,7 @@ export default function SmsConsentExamplePage() {
 
           {/* 8 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">8. Message categories</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">8. Message categories</h2>
             <p>
               <span className="font-semibold">Service texts</span> &mdash; booking confirmations, rescheduling and
               cancellation notices, appointment reminders, notice that a Fixter is on the way, membership and account
@@ -396,7 +396,7 @@ export default function SmsConsentExamplePage() {
               seasonal work and renovation services. Every marketing message carries &ldquo;Reply STOP to opt
               out.&rdquo;
             </p>
-            <p className="mt-3 text-white/70">
+            <p className="mt-3 text-[color:var(--ui-text-2)]">
               One-time sign-in verification codes are neither: they are sent through Twilio Verify, only when requested,
               and not under this campaign.
             </p>
@@ -404,34 +404,34 @@ export default function SmsConsentExamplePage() {
 
           {/* 9 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">9. The documents themselves</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">9. The documents themselves</h2>
             <ul className="list-disc list-inside space-y-2">
               <li>
-                <Link href="/signup" className="text-[#93c5fd] underline underline-offset-2">
+                <Link href="/signup" className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                   https://www.profixter.com/signup
                 </Link>{" "}
                 &mdash; the sign-up screen (no SMS consent is collected there)
               </li>
               <li>
-                <Link href="/privacy" className="text-[#93c5fd] underline underline-offset-2">
+                <Link href="/privacy" className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                   https://www.profixter.com/privacy
                 </Link>{" "}
                 &mdash; Privacy Policy
               </li>
               <li>
-                <Link href="/terms" className="text-[#93c5fd] underline underline-offset-2">
+                <Link href="/terms" className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                   https://www.profixter.com/terms
                 </Link>{" "}
                 &mdash; Terms of Service
               </li>
               <li>
-                <Link href="/communication-consent" className="text-[#93c5fd] underline underline-offset-2">
+                <Link href="/communication-consent" className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                   https://www.profixter.com/communication-consent
                 </Link>{" "}
                 &mdash; Communication Consent &amp; SMS Terms
               </li>
             </ul>
-            <p className="mt-4 text-white/70">
+            <p className="mt-4 text-[color:var(--ui-text-2)]">
               Mobile information and SMS consent will not be shared with third parties or affiliates for marketing or
               promotional purposes.
             </p>
@@ -440,19 +440,20 @@ export default function SmsConsentExamplePage() {
 
         <nav
           aria-label="Related legal documents"
-          className="mt-10 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs sm:text-sm text-white/55"
+          className="mt-10 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[13px] sm:text-sm text-[color:var(--ui-text-3)]"
         >
-          <Link href="/privacy" className="underline underline-offset-4 transition hover:text-white">
+          <Link href="/privacy" className="underline underline-offset-4 transition hover:text-[color:var(--ui-ink)]">
             Privacy Policy
           </Link>
-          <Link href="/terms" className="underline underline-offset-4 transition hover:text-white">
+          <Link href="/terms" className="underline underline-offset-4 transition hover:text-[color:var(--ui-ink)]">
             Terms of Service
           </Link>
-          <Link href="/communication-consent" className="underline underline-offset-4 transition hover:text-white">
+          <Link href="/communication-consent" className="underline underline-offset-4 transition hover:text-[color:var(--ui-ink)]">
             Communication Consent &amp; SMS Terms
           </Link>
         </nav>
       </div>
+      <Footer />
     </div>
   );
 }

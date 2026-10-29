@@ -18,6 +18,7 @@
  * Start Membership to everyone else. Nothing about billing is invented here.
  */
 
+import { useEffect, useRef, useState } from "react";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import PlansSection from "@/app/components/sections/PlansSection";
@@ -28,13 +29,28 @@ import Link from "next/link";
 import { membershipFaqJsonLd } from "@/app/data/membership-faq";
 import { absoluteUrl } from "@/lib/seo";
 import PlanComparisonTable from "@/app/components/membership/PlanComparisonTable";
+import { buttonClass } from "@/app/components/ui/Button";
+import Reveal from "@/app/components/ui/Reveal";
 
 export default function MembershipPlansPage() {
   const { user } = useAuth();
   const isMember = hasActiveMembership(user);
+  /*
+   * The flat comparison is open on a wide screen, where it reads at a glance,
+   * and one tap away on a phone, where a seven-row, four-column table is a
+   * wall of text under a selector that already answers the question. Either
+   * way the table is in the HTML (a closed <details> still renders its
+   * content), so every price stays readable to crawlers.
+   */
+  const compareRef = useRef<HTMLDetailsElement>(null);
+  const [compareOpen, setCompareOpen] = useState(false);
+  useEffect(() => {
+    // Opening the element fires onToggle, which records it in state.
+    if (compareRef.current && window.matchMedia("(min-width: 768px)").matches) compareRef.current.open = true;
+  }, []);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white">
+    <div className="pg-flow min-h-screen overflow-x-clip bg-white">
       {/*
         The accordion below renders these questions and answers as real text,
         which is the condition Google puts on FAQ markup. The `true` is the
@@ -53,66 +69,90 @@ export default function MembershipPlansPage() {
       </div>
 
       <main>
-        <section className="bg-white px-4 pb-6 pt-8 sm:px-6 sm:pb-8 sm:pt-12 lg:px-8">
-          <div className="mx-auto max-w-[1180px]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#306EEC]">
-              Membership
-            </p>
-            <h1 className="mt-3 max-w-[20ch] text-balance text-[30px] font-semibold leading-[1.1] tracking-[-0.03em] text-[#111111] sm:text-[38px] lg:text-[40px]">
-              {isMember ? "Compare your plan options." : "Choose the level of help your home needs."}
-            </h1>
-            <p className="mt-3 max-w-[52ch] text-[16px] leading-[1.55] text-[#6E6E73] sm:text-[17px]">
-              {isMember
-                ? "Your current plan is marked below. You can move up or down at any time, and the change follows your normal billing."
-                : "Change it whenever your home does."}
-            </p>
+        <section className="ui-section ui-section--tight ui-section--soft">
+          <div className="ui-container pg-plans__grid">
+            <div className="pg-plans__intro pg-intro ui-rise">
+              <p className="ui-eyebrow ui-eyebrow--accent">Membership</p>
+              <h1 className="ui-display">
+                {isMember ? "Compare your plan options." : "Choose the help your home needs."}
+              </h1>
+              <p className="ui-lede">
+                {isMember
+                  ? "Your current plan is marked. Move up or down at any time; the change follows your normal billing."
+                  : "Book as often as you need. Change plans whenever your home does."}
+              </p>
 
-            {isMember && (
-              <div className="mt-5 flex flex-wrap gap-2">
-                <Link
-                  href="/book?visit=membership"
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-[8px] bg-[#0B1628] px-5 text-[14px] font-semibold text-white transition hover:bg-[#172033]"
-                >
-                  Book Fixter
-                </Link>
-                <Link
-                  href="/account?tab=plan"
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-[8px] border border-[#D7DEE9] bg-white px-5 text-[14px] font-semibold text-[#0B1628] transition hover:bg-[#F8FAFF]"
-                >
-                  Manage plan
-                </Link>
+              {isMember && (
+                <div className="pg-actions">
+                  <Link href="/book?visit=membership" className={buttonClass({ variant: "primary" })}>
+                    Book Fixter
+                  </Link>
+                  <Link href="/account?tab=plan" className={buttonClass({ variant: "secondary" })}>
+                    Manage plan
+                  </Link>
+                </div>
+              )}
+
+              {/* Wide screens only: the column beside the selector would otherwise be empty. */}
+              <div className="pg-plans__aside">
+                <ul className="ui-checks">
+                  <li>90-minute visits for any home task</li>
+                  <li>The same local team every time</li>
+                  <li>Month to month, or 12 months for the price of 10</li>
+                </ul>
+                <p className="ui-small mt-6">
+                  New to the idea?{" "}
+                  <Link href="/handyman-membership" className="font-semibold text-[color:var(--ui-accent-ink)]">
+                    How a membership works
+                  </Link>
+                </p>
               </div>
-            )}
+            </div>
+
+            {/* The one plan comparison in the product. No duplicate plan data. */}
+            <div className="ui-rise" style={{ animationDelay: "60ms" }}>
+              <PlansSection hideCancellationUi hideIntro bare />
+            </div>
           </div>
         </section>
 
-        {/* The one plan comparison in the product. No duplicate plan data. */}
-        <PlansSection hideCancellationUi hideIntro />
-
         {/*
-          The same plans, flat. The cards above show one plan at a time, so on
-          their own they put a single price in the HTML; this puts the whole
-          ladder, annual prices included, where a reader comparing on a wide
-          screen - or a crawler - can see it without a tap.
+          The same plans, flat. The selector shows one plan at a time, so on its
+          own it puts a single price in the HTML; this puts the whole ladder,
+          annual prices included, where a reader comparing on a wide screen - or
+          a crawler - can see it without a tap.
         */}
-        <PlanComparisonTable />
+        <section className="ui-section ui-section--tight">
+          <Reveal className="ui-container">
+            <details
+              ref={compareRef}
+              className="pg-compare"
+              onToggle={(event) => setCompareOpen((event.currentTarget as HTMLDetailsElement).open)}
+            >
+              <summary className="cursor-pointer rounded-[var(--ui-r-md)] border border-[color:var(--ui-line)] bg-white md:hidden">
+                <span className="flex min-h-[52px] items-center justify-between gap-3 px-4 text-[15px] font-semibold text-[color:var(--ui-ink)]">
+                  Compare all four plans
+                  <span className="text-[13px] font-medium text-[color:var(--ui-accent-ink)]">
+                    {compareOpen ? "Hide" : "Show table"}
+                  </span>
+                </span>
+              </summary>
+              <PlanComparisonTable bare intro="" />
+            </details>
 
-        <section className="px-4 pb-4 sm:px-6 lg:px-8">
-          <p className="mx-auto max-w-[1180px] text-[15px] leading-[1.6] text-[#6E6E73]">
-            New to the idea?{" "}
-            <Link href="/handyman-membership" className="font-semibold text-[#306EEC] underline underline-offset-2">
-              How a handyman membership works
-            </Link>
-            , and{" "}
-            <Link href="/guides/handyman-membership-vs-hiring-per-job" className="font-semibold text-[#306EEC] underline underline-offset-2">
-              when hiring per job is the better deal
-            </Link>
-            . Only need one thing done?{" "}
-            <Link href="/book?visit=additional" className="font-semibold text-[#306EEC] underline underline-offset-2">
-              Book a One-Time Visit
-            </Link>
-            .
-          </p>
+            <ul className="pg-facts mt-6">
+              <li>
+                <Link href="/guides/handyman-membership-vs-hiring-per-job" className="font-medium text-[color:var(--ui-accent-ink)]">
+                  Membership vs hiring per job
+                </Link>
+              </li>
+              <li>
+                <Link href="/book?visit=additional" className="font-medium text-[color:var(--ui-accent-ink)]">
+                  Only one thing? Book a One-Time Visit
+                </Link>
+              </li>
+            </ul>
+          </Reveal>
         </section>
 
         {/*
