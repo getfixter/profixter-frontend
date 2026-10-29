@@ -66,7 +66,7 @@ function GoogleAuthInner({ onCredential, onError, oneTap, disabled }: Props) {
           }}
           onError={() => onError("Google sign-in didn't finish. Please try again.")}
           text="continue_with"
-          shape="pill"
+          shape="rectangular"
           size="large"
           theme="outline"
           logo_alignment="center"

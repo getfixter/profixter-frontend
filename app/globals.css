@@ -1254,14 +1254,11 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
    Auth — sign up, sign in, password reset
    =========================
 
-   WHY THIS IS LIGHT NOW.
+   ON THE DESIGN SYSTEM (Website 3.0).
 
-   Everything else a customer sees is white: the homepage, the header, the
-   membership pages, and the start screen's content layer - navy headline, blue
-   button, frosted white chips over a bright photograph. Auth was the only dark
-   surface on the site, so pressing Get Started on a sunlit room and landing on
-   a near-black form was a change of product, at the exact moment of highest
-   intent. The same palette, continued.
+   The same surface as the rest of the site: white, navy ink, hairlines, one
+   blue accent for links and focus. The wordmark is the inline <Wordmark />
+   the header uses, so the old dark logo chip is gone.
 
    WHY THERE IS NO CARD.
 
@@ -1270,9 +1267,8 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
    content from other content, and there is no other content here. The question
    is the page.
 
-   Sized against the start screen on purpose - same navy (#0b1628), same brand
-   blue (#306eec), same pill button, same tight display tracking - so the two
-   screens read as one product.
+   The primary action is the navy ui-btn--primary in shape and colour. Blue is
+   kept for the free-visit booking action, as everywhere else on the site.
 */
 
 .auth-screen {
@@ -1281,22 +1277,8 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   flex-direction: column;
   min-height: 100vh;
   min-height: 100svh;
-  background: #f6f8fc;
-  color: #0b1628;
-}
-
-/* A single wash of brand colour, top-left, well under the content. Enough to
-   stop a plain white page feeling like a document, far too faint to read as
-   decoration. */
-.auth-screen::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(64% 46% at 6% -4%, rgba(48, 110, 236, 0.13) 0%, rgba(48, 110, 236, 0) 64%),
-    radial-gradient(52% 42% at 104% 102%, rgba(48, 110, 236, 0.09) 0%, rgba(48, 110, 236, 0) 70%),
-    linear-gradient(178deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 34%);
+  background: var(--ui-bg);
+  color: var(--ui-text);
 }
 
 .auth-screen__bar {
@@ -1306,63 +1288,61 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: calc(env(safe-area-inset-top, 0px) + 14px) calc(env(safe-area-inset-right, 0px) + 16px) 0
+  min-height: 56px;
+  padding: env(safe-area-inset-top, 0px) calc(env(safe-area-inset-right, 0px) + 16px) 0
     calc(env(safe-area-inset-left, 0px) + 16px);
+  border-bottom: 1px solid var(--ui-line);
 }
 
 @media (min-width: 640px) {
   .auth-screen__bar {
-    padding: calc(env(safe-area-inset-top, 0px) + 22px) calc(env(safe-area-inset-right, 0px) + 28px) 0
-      calc(env(safe-area-inset-left, 0px) + 28px);
+    min-height: 64px;
+    padding-left: calc(env(safe-area-inset-left, 0px) + 28px);
+    padding-right: calc(env(safe-area-inset-right, 0px) + 28px);
   }
 }
 
-/* The same dark chip the site header and the start screen use. The wordmark is
-   drawn light-on-dark and is not recoloured anywhere on the site. */
+/* The wordmark, drawn inline in navy and blue. No chip behind it. */
 .auth-brand {
   display: inline-flex;
   align-items: center;
-  border-radius: 7px;
-  background: #0b1628;
-  padding: 6px 9px;
-  transition: background-color 0.2s ease;
+  min-height: 44px;
+  border-radius: var(--ui-r-xs);
 }
 
-.auth-brand:hover {
-  background: #172033;
-}
-
-.auth-brand img {
-  height: 22px;
-  width: auto;
+.auth-brand .ui-wordmark {
+  height: 17px;
 }
 
 @media (min-width: 640px) {
-  .auth-brand img {
-    height: 25px;
+  .auth-brand .ui-wordmark {
+    height: 19px;
   }
 }
 
 /* Secondary by construction: no fill, no border, no pill. It is a sentence. */
 .auth-bar__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-size: 14px;
-  font-weight: 600;
-  color: #4a5462;
-  padding: 10px 4px;
-  transition: color 0.18s ease;
+  font-weight: 500;
+  color: var(--ui-text-2);
+  padding: 0 4px;
+  transition: color var(--ui-dur-1) var(--ui-ease);
 }
 
 .auth-bar__link:hover {
-  color: #306eec;
+  color: var(--ui-accent-ink);
 }
 
 .auth-bar__link b {
-  color: #0b1628;
-  font-weight: 700;
+  color: var(--ui-ink);
+  font-weight: 600;
 }
 
 .auth-bar__link:hover b {
-  color: #306eec;
+  color: var(--ui-accent-ink);
 }
 
 /*
@@ -1379,7 +1359,7 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   flex: 1;
   display: flex;
   justify-content: center;
-  padding: 0 calc(env(safe-area-inset-left, 0px) + 20px) calc(env(safe-area-inset-bottom, 0px) + 28px)
+  padding: 0 calc(env(safe-area-inset-left, 0px) + 20px) calc(env(safe-area-inset-bottom, 0px) + 24px)
     calc(env(safe-area-inset-right, 0px) + 20px);
 }
 
@@ -1396,25 +1376,22 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
 .auth-screen__column {
   width: 100%;
   margin-block: auto;
-  max-width: 420px;
+  max-width: 400px;
+  padding-top: 28px;
   padding-bottom: clamp(16px, 7vh, 72px);
 }
 
 @media (min-width: 1024px) {
   .auth-screen__column {
-    /*
-     * 520, not 440. "How can we reach you?" wrapped after "reach" on a 1440px
-     * screen, which reads as an accident rather than a line break.
-     */
-    max-width: 520px;
+    max-width: 440px;
     padding-bottom: clamp(24px, 8vh, 88px);
   }
 }
 
-/* A phone on its side has no room to start high. */
 /* A phone on its side: no bias, every pixel is needed for the field. */
 @media (max-height: 560px) {
   .auth-screen__column {
+    padding-top: 16px;
     padding-bottom: 0;
   }
 }
@@ -1423,40 +1400,40 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 18px;
-  padding: 8px 10px 8px 6px;
+  min-height: 40px;
+  margin-bottom: 12px;
+  padding: 0 10px 0 6px;
   margin-left: -6px;
-  border-radius: 8px;
+  border-radius: var(--ui-r-xs);
   font-size: 14px;
-  font-weight: 600;
-  color: #6b7688;
-  transition: color 0.18s ease, background-color 0.18s ease;
+  font-weight: 500;
+  color: var(--ui-text-3);
+  transition: color var(--ui-dur-1) var(--ui-ease), background-color var(--ui-dur-1) var(--ui-ease);
 }
 
 .auth-back:hover {
-  color: #0b1628;
-  background: rgba(11, 22, 40, 0.04);
+  color: var(--ui-ink);
+  background: var(--ui-bg-soft);
 }
 
 /*
    The question.
 
-   The same display treatment as the start screen's headline, one step down in
-   size. It is the only large thing on the page, so it does not need to compete
-   with anything.
+   The site's display treatment, one step down: weight 600, tight tracking. It
+   is the only large thing on the page, so it does not need to compete.
 */
 .auth-question {
   margin: 0;
-  font-size: clamp(27px, 7.4vw, 34px);
-  font-weight: 700;
-  line-height: 1.08;
-  letter-spacing: -0.033em;
-  color: #0b1628;
+  font-size: clamp(26px, 6.6vw, 32px);
+  font-weight: 600;
+  line-height: var(--ui-lh-tight);
+  letter-spacing: var(--ui-track-display);
+  color: var(--ui-ink);
 }
 
 @media (min-width: 1024px) {
   .auth-question {
-    font-size: 38px;
+    font-size: 34px;
   }
 }
 
@@ -1466,17 +1443,16 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   }
 }
 
-/* Used twice in the whole flow, where a question genuinely cannot carry the
-   meaning on its own. Never as a default under every heading. */
+/* Used where a question genuinely cannot carry the meaning on its own. */
 .auth-sub {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   font-size: 15px;
   line-height: 1.5;
-  color: #5b6577;
+  color: var(--ui-text-2);
 }
 
 .auth-fields {
-  margin-top: 22px;
+  margin-top: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1485,44 +1461,41 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
 /*
    One input, everywhere.
 
-   Sign up, sign in and password reset each had their own: a filled dark box, a
-   lighter filled box, and a bare underline. Three answers to one question.
-
    16px is not a taste decision - anything smaller makes iOS Safari zoom the
    page on focus, which on a form is the difference between typing and fighting.
 */
 .auth-input {
   width: 100%;
-  height: 56px;
-  border-radius: 12px;
-  border: 1px solid #dde4f0;
+  height: 52px;
+  border-radius: var(--ui-r-sm);
+  border: 1px solid var(--ui-line-2);
   background: #ffffff;
   padding: 0 16px;
   font-size: 16px;
   font-weight: 500;
-  color: #0b1628;
+  color: var(--ui-ink);
   outline: none;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  transition: border-color var(--ui-dur-1) var(--ui-ease), box-shadow var(--ui-dur-1) var(--ui-ease);
   -webkit-appearance: none;
   appearance: none;
 }
 
 .auth-input::placeholder {
-  color: #9aa5b8;
+  color: #8c95a4;
   font-weight: 400;
 }
 
 .auth-input:focus {
-  border-color: #306eec;
-  box-shadow: 0 0 0 4px rgba(48, 110, 236, 0.14);
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 3px rgba(48, 110, 236, 0.16);
 }
 
 .auth-input[aria-invalid="true"] {
-  border-color: #dc5b5b;
+  border-color: #c4453f;
 }
 
 .auth-input[aria-invalid="true"]:focus {
-  box-shadow: 0 0 0 4px rgba(220, 91, 91, 0.14);
+  box-shadow: 0 0 0 3px rgba(196, 69, 63, 0.14);
 }
 
 /*
@@ -1540,7 +1513,7 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
 
 .auth-reveal {
   position: absolute;
-  right: 6px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
@@ -1548,53 +1521,45 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   justify-content: center;
   height: 44px;
   width: 44px;
-  border-radius: 10px;
-  color: #8a94a6;
-  transition: color 0.16s ease, background-color 0.16s ease;
+  border-radius: var(--ui-r-xs);
+  color: var(--ui-text-3);
+  transition: color var(--ui-dur-1) var(--ui-ease), background-color var(--ui-dur-1) var(--ui-ease);
 }
 
 .auth-reveal:hover {
-  color: #0b1628;
-  background: rgba(11, 22, 40, 0.05);
+  color: var(--ui-ink);
+  background: var(--ui-bg-soft);
 }
 
-/*
-   The primary action: the start screen's button, in a rectangle's clothing.
-   Same blue, same weight, same pill radius, full width because on a phone the
-   full width is the easiest thing in the world to hit.
-*/
+/* The primary action: ui-btn--primary at the large size, full width. */
 .auth-submit {
-  margin-top: 18px;
+  margin-top: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   width: 100%;
-  min-height: 56px;
-  border-radius: 999px;
-  background: #306eec;
+  min-height: var(--ui-btn-h-lg);
+  border-radius: var(--ui-r-sm);
+  background: var(--ui-ink);
   color: #ffffff;
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   letter-spacing: -0.01em;
-  box-shadow: 0 6px 16px rgba(48, 110, 236, 0.18);
-  transition: background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  transition: background-color var(--ui-dur-2) var(--ui-ease), transform var(--ui-dur-1) var(--ui-ease);
 }
 
 .auth-submit:hover:not(:disabled) {
-  background: #2059d4;
-  transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(48, 110, 236, 0.24);
+  background: var(--ui-ink-2);
 }
 
 .auth-submit:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.985);
 }
 
 .auth-submit:disabled {
   opacity: 0.55;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
 .auth-spinner {
@@ -1612,144 +1577,58 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   }
 }
 
-/*
-   The free first visit, said once and quietly.
-
-   It used to be a bordered green badge repeated on all four steps, and on a
-   desktop it was also the headline of the panel beside it - the same promise,
-   twice, on one screen. It is reassurance, not an announcement: one line under
-   the button, where somebody deciding whether to press it is already looking.
-
-   Absent entirely once the address is confirmed outside the service area, and
-   it stays absent for the rest of the flow.
-*/
+/* The free first visit, said once and quietly, under the ways in. */
 .auth-reassure {
-  margin: 14px 0 0;
+  margin: 16px 0 0;
   text-align: center;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  color: #5b6577;
+  color: var(--ui-text-2);
 }
 
 .auth-reassure b {
-  color: #0b1628;
-  font-weight: 700;
+  color: var(--ui-ink);
+  font-weight: 600;
 }
 
 /* Short, specific, and under the thing it is about. */
 .auth-error {
   margin: 8px 0 0;
   font-size: 13px;
-  font-weight: 600;
-  color: #c4453f;
+  font-weight: 500;
+  color: #b4342b;
 }
 
 .auth-error--form {
-  margin-top: 14px;
-  border-radius: 10px;
-  background: #fdeceb;
+  margin-top: 12px;
+  border-radius: var(--ui-r-sm);
+  background: #fdeeec;
   padding: 10px 13px;
 }
 
 .auth-alt {
-  margin-top: 22px;
+  margin-top: 20px;
   text-align: center;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7688;
+  color: var(--ui-text-3);
 }
 
 .auth-alt a {
-  font-weight: 700;
-  color: #0b1628;
+  font-weight: 600;
+  color: var(--ui-ink);
 }
 
 .auth-alt a:hover {
-  color: #306eec;
+  color: var(--ui-accent-ink);
 }
 
 .auth-inline-link {
   font-weight: 600;
-  color: #306eec;
+  color: var(--ui-accent-ink);
 }
 
 .auth-inline-link:hover {
-  text-decoration: underline;
-}
-
-/*
-   Consent, as three quiet rows rather than three bordered boxes.
-
-   The boxes are still real checkboxes, still unchecked, still individually
-   labelled and linked - none of that is style. What changed is that they no
-   longer look like three more form controls stacked on the heaviest screen in
-   the flow.
-*/
-.auth-consent {
-  margin-top: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  border-top: 1px solid #e6ebf4;
-  padding-top: 18px;
-}
-
-.auth-consent__row {
-  display: flex;
-  align-items: flex-start;
-  gap: 11px;
-}
-
-.auth-consent__box {
-  flex: none;
-  margin-top: 1px;
-  height: 20px;
-  width: 20px;
-  border-radius: 6px;
-  border: 1.5px solid #c3cddf;
-  background: #ffffff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: transparent;
-  transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
-}
-
-.auth-consent__row input:checked + .auth-consent__box {
-  background: #306eec;
-  border-color: #306eec;
-  color: #ffffff;
-}
-
-.auth-consent__row input:focus-visible + .auth-consent__box {
-  box-shadow: 0 0 0 4px rgba(48, 110, 236, 0.18);
-}
-
-/* The words beside the box. They tick it - see the note in ConsentRow. */
-.auth-consent__label {
-  /* Not flex:1. Stretching the label pushed Details to the far right of a
-     520px column, where it stopped looking like it belonged to this row. */
-  flex: 0 1 auto;
-  font-size: 14px;
-  line-height: 1.45;
-  font-weight: 600;
-  color: #0b1628;
-  cursor: pointer;
-}
-
-/* The disclosure, reachable from each consent without being the control. */
-.auth-consent__details {
-  flex: none;
-  align-self: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: #9aa5b8;
-  padding: 6px 2px 6px 8px;
-  transition: color 0.16s ease;
-}
-
-.auth-consent__details:hover {
-  color: #306eec;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -1758,34 +1637,17 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
 .auth-fallback {
   align-self: flex-start;
   margin-top: 10px;
+  min-height: 36px;
   font-size: 13px;
-  font-weight: 600;
-  color: #8a94a6;
+  font-weight: 500;
+  color: var(--ui-text-3);
   text-underline-offset: 4px;
-  transition: color 0.16s ease;
+  transition: color var(--ui-dur-1) var(--ui-ease);
 }
 
 .auth-fallback:hover {
-  color: #306eec;
+  color: var(--ui-accent-ink);
   text-decoration: underline;
-}
-
-.auth-consent__text {
-  font-size: 14px;
-  line-height: 1.45;
-  color: #3f4a5c;
-}
-
-.auth-consent__text b {
-  font-weight: 600;
-  color: #0b1628;
-}
-
-/* "Required" / "Optional" said plainly, because a customer deciding whether to
-   tick a box is entitled to know which ones they can skip. */
-.auth-consent__note {
-  color: #8a94a6;
-  font-weight: 500;
 }
 
 /*
@@ -1808,7 +1670,7 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .auth-submit:hover:not(:disabled) {
+  .auth-submit:active:not(:disabled) {
     transform: none;
   }
   .auth-spinner {
@@ -2642,8 +2504,8 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
 /* The code box: one input, digits spaced so six of them read as a code. */
 .auth-otp {
   text-align: center;
-  font-size: 26px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 600;
   letter-spacing: 0.42em;
   padding-left: calc(16px + 0.42em);
   font-variant-numeric: tabular-nums;
@@ -2651,19 +2513,19 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
 
 .auth-otp::placeholder {
   letter-spacing: 0.42em;
-  color: #c9d1de;
+  color: #c3c9d3;
 }
 
 .auth-otp[readonly] {
-  color: #6b7688;
+  color: var(--ui-text-3);
 }
 
 /* The four ways in. Equal height so the column never jumps. */
 .auth-methods {
-  margin-top: 24px;
+  margin-top: 22px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .auth-method {
@@ -2673,26 +2535,30 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   justify-content: center;
   gap: 10px;
   width: 100%;
-  min-height: 54px;
-  border-radius: 999px;
-  border: 1px solid #d5ddeb;
+  min-height: var(--ui-btn-h-lg);
+  border-radius: var(--ui-r-sm);
+  border: 1px solid var(--ui-line-2);
   background: #ffffff;
-  color: #0b1628;
-  font-size: 16px;
-  font-weight: 650;
+  color: var(--ui-ink);
+  font-size: 15px;
+  font-weight: 600;
   letter-spacing: -0.01em;
-  transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease;
+  transition: border-color var(--ui-dur-2) var(--ui-ease), background-color var(--ui-dur-2) var(--ui-ease),
+    transform var(--ui-dur-1) var(--ui-ease);
 }
 
 .auth-method:hover:not(:disabled) {
-  border-color: #306eec;
-  box-shadow: 0 4px 14px rgba(11, 22, 40, 0.06);
+  border-color: var(--ui-ink);
+}
+
+.auth-method:active:not(:disabled) {
+  transform: scale(0.985);
 }
 
 .auth-method:focus-visible,
 .auth-text-button:focus-visible,
 .auth-option:focus-visible {
-  outline: 2px solid #306eec;
+  outline: 2px solid var(--ui-accent);
   outline-offset: 2px;
 }
 
@@ -2701,19 +2567,16 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   cursor: not-allowed;
 }
 
+/* Phone, the way most people sign up: the one navy button on the screen. */
 .auth-method--primary {
-  border-color: #306eec;
-  background: #306eec;
+  border-color: var(--ui-ink);
+  background: var(--ui-ink);
   color: #ffffff;
-  font-size: 17px;
-  font-weight: 700;
-  min-height: 58px;
-  box-shadow: 0 6px 16px rgba(48, 110, 236, 0.2);
 }
 
 .auth-method--primary:hover:not(:disabled) {
-  background: #2059d4;
-  border-color: #2059d4;
+  background: var(--ui-ink-2);
+  border-color: var(--ui-ink-2);
 }
 
 .auth-method--apple {
@@ -2729,7 +2592,7 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
 
 .auth-method__icon {
   position: absolute;
-  left: 20px;
+  left: 18px;
   display: inline-flex;
 }
 
@@ -2745,12 +2608,12 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 4px 0;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  margin: 2px 0;
+  font-size: var(--ui-fs-micro);
+  font-weight: 500;
+  letter-spacing: var(--ui-track-micro);
   text-transform: uppercase;
-  color: #9aa5b8;
+  color: var(--ui-text-3);
 }
 
 .auth-divider::before,
@@ -2758,30 +2621,35 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   content: "";
   flex: 1;
   height: 1px;
-  background: #e2e8f2;
+  background: var(--ui-line);
 }
 
 .auth-fineprint {
-  margin-top: 18px;
+  margin-top: 16px;
   text-align: center;
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.5;
-  color: #7a8597;
+  color: var(--ui-text-3);
 }
 
 .auth-fineprint a {
-  color: #4a5462;
-  font-weight: 600;
+  color: var(--ui-text-2);
+  font-weight: 500;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
+.auth-fineprint a:hover {
+  color: var(--ui-accent-ink);
+}
+
 .auth-text-button {
+  min-height: 40px;
   font-size: 14px;
-  font-weight: 650;
-  color: #306eec;
-  padding: 8px 4px;
-  border-radius: 8px;
+  font-weight: 600;
+  color: var(--ui-accent-ink);
+  padding: 0 4px;
+  border-radius: var(--ui-r-xs);
 }
 
 .auth-text-button:hover:not(:disabled) {
@@ -2790,12 +2658,12 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
 }
 
 .auth-text-button:disabled {
-  color: #9aa5b8;
+  color: #8c95a4;
   cursor: default;
 }
 
 .auth-code-meta {
-  margin-top: 14px;
+  margin-top: 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2804,16 +2672,16 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
 }
 
 .auth-status {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   min-height: 20px;
   font-size: 13.5px;
-  font-weight: 600;
-  color: #5b6577;
+  font-weight: 500;
+  color: var(--ui-text-2);
 }
 
 /* The choices on "we found your account". */
 .auth-options {
-  margin-top: 22px;
+  margin-top: 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -2823,35 +2691,36 @@ html[data-pf-start="covering"] .customer-site-nav-spacer {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 3px;
+  gap: 2px;
   width: 100%;
   text-align: left;
-  border-radius: 14px;
-  border: 1px solid #dde4f0;
+  border-radius: var(--ui-r-md);
+  border: 1px solid var(--ui-line);
   background: #ffffff;
-  padding: 15px 16px;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  padding: 14px 16px;
+  transition: border-color var(--ui-dur-2) var(--ui-ease), box-shadow var(--ui-dur-2) var(--ui-ease);
 }
 
 .auth-option:hover:not(:disabled) {
-  border-color: #306eec;
-  box-shadow: 0 4px 14px rgba(11, 22, 40, 0.06);
+  border-color: var(--ui-line-2);
+  box-shadow: var(--ui-shadow-2);
 }
 
 .auth-option b {
-  font-size: 15.5px;
-  font-weight: 700;
-  color: #0b1628;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ui-ink);
 }
 
 .auth-option span {
-  font-size: 13.5px;
-  color: #5b6577;
+  font-size: 14px;
+  color: var(--ui-text-2);
 }
 
 .auth-option--quiet {
   background: transparent;
   border-style: dashed;
+  border-color: var(--ui-line-2);
 }
 
 /* A sheet: bottom-anchored on a phone, a centred card on a desktop. */
