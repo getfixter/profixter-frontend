@@ -122,6 +122,7 @@ export const PUBLIC_SITEMAP_ROUTES: readonly SitemapRoute[] = [
    */
   ...getSeoEngineSitemapRoutes().map((route) => ({ ...route, updated: CONTENT_RELEASE_DATE })),
   { path: "/careers", changeFrequency: "yearly", priority: 0.35, updated: "2026-08-13" },
+  { path: "/info", changeFrequency: "monthly", priority: 0.4, updated: "2026-10-29" },
   { path: "/partnerships", changeFrequency: "monthly", priority: 0.45, updated: "2026-08-13" },
   { path: "/privacy", changeFrequency: "yearly", priority: 0.25, updated: "2026-09-13" },
   { path: "/terms", changeFrequency: "yearly", priority: 0.25, updated: "2026-09-14" },
