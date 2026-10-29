@@ -75,49 +75,63 @@ export default async function GiftPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
-      <main className="min-h-[70vh] bg-white">
+      <div className="sticky top-0 z-50">
+        <Header />
+      </div>
+      <main>
         {/*
-          The page's one H1, in the served HTML. The purchase flow renders its
-          own visible heading for each step only after it has asked the API
-          whether gifts are available, so those are H2s under this.
+          The page's one H1, in the served HTML. The purchase flow below only
+          renders once it has asked the API whether gifts are available, so
+          its section headings are H2s under this.
         */}
-        <h1 className="sr-only">Gift a Profixter handyman membership</h1>
-        <GiftPurchaseClient />
+        <section className="ui-section ui-section--tight">
+          <div className="ui-container">
+            <header className="mb-8 max-w-[640px] sm:mb-10">
+              <p className="ui-eyebrow ui-eyebrow--accent">Gift a membership</p>
+              <h1 className="ui-display mt-3">Give someone a ProFixter membership.</h1>
+              <p className="ui-lede mt-3">
+                A professional handyman at their home. You pay once, they book the visits, and nothing renews.
+              </p>
+            </header>
+            <GiftPurchaseClient />
+          </div>
+        </section>
 
-        <section aria-labelledby="about-gift" className="border-t border-[#EEF1F8] bg-[#FAFBFE]">
-          <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-            <h2 id="about-gift" className="text-[22px] font-semibold leading-tight text-[#313234] sm:text-[26px]">
+        <section aria-labelledby="about-gift" className="ui-section ui-section--soft">
+          <div className="ui-container ui-container--narrow">
+            <h2 id="about-gift" className="ui-h2">
               How a gift membership works
             </h2>
-            <ul className="mt-5 space-y-3 text-[15px] leading-relaxed text-[#4A4D52] sm:text-base">
+            <ul className="ui-body mt-6 space-y-3 text-[color:var(--ui-text-2)]">
               <li>
-                <strong className="font-semibold text-[#313234]">You choose a plan and a length</strong>
+                <strong className="font-semibold text-[color:var(--ui-ink)]">You choose a plan and a length</strong>
                 {durations ? ` (${durations.join(", ")} months)` : ""}, and pay once. Nothing renews and nobody is
                 billed later.
               </li>
               <li>
-                <strong className="font-semibold text-[#313234]">They claim it</strong> with the link you send, add
-                their home, and book {STANDARD_VISIT_MINUTES}-minute visits like any member: repairs, installations and
-                everyday jobs, with the same local team.
+                <strong className="font-semibold text-[color:var(--ui-ink)]">They claim it</strong> with the link you
+                send, add their home, and book {STANDARD_VISIT_MINUTES}-minute visits like any member: repairs,
+                installations and everyday jobs, with the same local team.
               </li>
               <li>
-                <strong className="font-semibold text-[#313234]">For a Long Island home.</strong> Profixter works in
-                Nassau and Suffolk Counties, so the recipient&apos;s home needs to be there.
+                <strong className="font-semibold text-[color:var(--ui-ink)]">For a Long Island home.</strong> Profixter
+                works in Nassau and Suffolk Counties, so the recipient&apos;s home needs to be there.
               </li>
               <li>
-                <strong className="font-semibold text-[#313234]">Twelve months is priced like an annual membership</strong>
-                {" "}— 12 months for the price of 10. Shorter gifts are the monthly price times the months. Tax is added
+                <strong className="font-semibold text-[color:var(--ui-ink)]">
+                  Twelve months is priced like an annual membership
+                </strong>{" "}
+                — 12 months for the price of 10. Shorter gifts are the monthly price times the months. Tax is added
                 at checkout.
               </li>
             </ul>
 
             {plans.length ? (
-              <div className="relative mt-8 overflow-x-auto rounded-[12px] border border-[#E0E6F5] bg-white">
+              <div className="ui-card relative mt-8 overflow-x-auto p-0">
                 <table className="w-full border-collapse text-left text-[15px]">
                   <caption className="sr-only">Gift membership prices by plan and length</caption>
                   <thead>
-                    <tr className="border-b border-[#E0E6F5] bg-[#F8FAFF] text-[13px] text-[#6A6D71]">
+                    <tr className="border-b border-[color:var(--ui-line)] text-[13px] text-[color:var(--ui-text-3)]">
                       <th scope="col" className="px-4 py-3 font-semibold">Plan</th>
                       {(durations || []).map((months) => (
                         <th key={months} scope="col" className="px-4 py-3 text-right font-semibold">
@@ -128,12 +142,12 @@ export default async function GiftPage() {
                   </thead>
                   <tbody>
                     {plans.map((plan) => (
-                      <tr key={plan.plan} className="border-b border-[#EEF1F8] last:border-b-0">
-                        <th scope="row" className="px-4 py-3 font-semibold text-[#313234]">{plan.label}</th>
+                      <tr key={plan.plan} className="border-b border-[color:var(--ui-line)] last:border-b-0">
+                        <th scope="row" className="px-4 py-3 font-semibold text-[color:var(--ui-ink)]">{plan.label}</th>
                         {(durations || []).map((months) => {
                           const quote = plan.quotes.find((q) => q.durationMonths === months);
                           return (
-                            <td key={months} className="px-4 py-3 text-right tabular-nums text-[#313234]">
+                            <td key={months} className="ui-num px-4 py-3 text-right text-[color:var(--ui-ink)]">
                               {quote ? dollars(quote.totalCents) : "—"}
                             </td>
                           );
@@ -145,25 +159,25 @@ export default async function GiftPage() {
               </div>
             ) : null}
 
-            <h3 className="mt-10 text-[18px] font-semibold text-[#313234]">Who it suits</h3>
-            <ul className="mt-3 space-y-2 text-[15px] leading-relaxed text-[#4A4D52]">
+            <h3 className="ui-h3 mt-10">Who it suits</h3>
+            <ul className="ui-body mt-3 space-y-2 text-[color:var(--ui-text-2)]">
               <li>
                 New homeowners, whose first year usually brings a long list.{" "}
-                <Link href="/guides/new-homeowner-first-year-long-island" className="font-semibold text-[#306EEC] underline underline-offset-2">
+                <Link href="/guides/new-homeowner-first-year-long-island" className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                   The first-year checklist
                 </Link>
                 .
               </li>
               <li>
                 A parent or relative whose house needs regular small repairs.{" "}
-                <Link href="/guides/helping-a-parent-with-home-repairs" className="font-semibold text-[#306EEC] underline underline-offset-2">
+                <Link href="/guides/helping-a-parent-with-home-repairs" className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                   Helping a parent keep up their home
                 </Link>
                 .
               </li>
               <li>
                 Anyone whose to-do list you keep hearing about.{" "}
-                <Link href="/handyman-membership" className="font-semibold text-[#306EEC] underline underline-offset-2">
+                <Link href="/handyman-membership" className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                   What the membership includes
                 </Link>
                 .

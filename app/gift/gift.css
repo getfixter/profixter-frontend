@@ -1,0 +1,463 @@
+/*
+ * Gift purchase, confirmation and claim: the form parts the design system
+ * does not ship (fields, choice tiles, the summary rows).
+ *
+ * Built only from --ui-* tokens. Cormorant stays inside the gift card and the
+ * claim hero; nothing here sets a font, so every control reads in Geist.
+ * Layered with the ui-* components so a Tailwind utility on the same element
+ * still wins.
+ */
+
+@layer components {
+  /* ------------------------------------------------------------------ */
+  /* Layout                                                              */
+  /* ------------------------------------------------------------------ */
+
+  .gf-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--ui-s8);
+  }
+  /*
+   * The aside holds the card preview and the summary. On phones the summary
+   * (and its pay button) comes first, straight after the form; the preview
+   * follows it. From 960px they sit in a column, the card on top.
+   */
+  .gf-aside {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ui-s4);
+  }
+  .gf-aside > .gf-preview {
+    order: 2;
+  }
+  @media (min-width: 960px) {
+    .gf-aside > .gf-preview {
+      order: 0;
+    }
+    .gf-layout {
+      grid-template-columns: minmax(0, 1fr) 372px;
+      gap: var(--ui-s12);
+      align-items: start;
+    }
+    .gf-aside {
+      position: sticky;
+      top: 88px;
+    }
+  }
+
+  .gf-block + .gf-block {
+    margin-top: var(--ui-s8);
+    padding-top: var(--ui-s8);
+    border-top: 1px solid var(--ui-line);
+  }
+  .gf-block__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 var(--ui-s4);
+    font-size: var(--ui-fs-h3);
+    font-weight: 600;
+    line-height: var(--ui-lh-head);
+    letter-spacing: var(--ui-track-head);
+    color: var(--ui-ink);
+  }
+  .gf-block__num {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--ui-r-pill);
+    background: var(--ui-ink);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Fields                                                              */
+  /* ------------------------------------------------------------------ */
+
+  .gf-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--ui-s4);
+  }
+  /* Phones: City on its own line, State and ZIP side by side under it. */
+  .gf-row--address {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gf-row--address > :first-child {
+    grid-column: 1 / -1;
+  }
+  @media (min-width: 560px) {
+    .gf-row--2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .gf-row--address {
+      grid-template-columns: minmax(0, 1fr) 96px 120px;
+    }
+    .gf-row--address > :first-child {
+      grid-column: auto;
+    }
+  }
+  .gf-stack > * + * {
+    margin-top: var(--ui-s4);
+  }
+
+  .gf-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: var(--ui-fs-small);
+    font-weight: 500;
+    color: var(--ui-ink);
+  }
+  .gf-input {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: 11px 14px;
+    border: 1px solid var(--ui-line-2);
+    border-radius: var(--ui-r-sm);
+    background: #fff;
+    color: var(--ui-text);
+    font: inherit;
+    font-size: 16px; /* 16px stops iOS zooming into the field */
+    line-height: 1.4;
+    transition:
+      border-color var(--ui-dur-2) var(--ui-ease),
+      box-shadow var(--ui-dur-2) var(--ui-ease);
+  }
+  .gf-input::placeholder {
+    color: #8a93a3;
+  }
+  .gf-input:hover {
+    border-color: #b9c1cd;
+  }
+  .gf-input:focus {
+    outline: none;
+    border-color: var(--ui-accent);
+    box-shadow: 0 0 0 3px rgba(48, 110, 236, 0.16);
+  }
+  .gf-input[aria-invalid="true"] {
+    border-color: #c0392b;
+  }
+  .gf-input[aria-invalid="true"]:focus {
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.14);
+  }
+  textarea.gf-input {
+    min-height: 96px;
+    resize: vertical;
+  }
+  select.gf-input {
+    appearance: none;
+    padding-right: 36px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5 6 6.5l5-5' stroke='%23626D7F' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+  .gf-hint {
+    margin-top: 6px;
+    font-size: var(--ui-fs-small);
+    line-height: 1.45;
+    color: var(--ui-text-3);
+  }
+  .gf-error {
+    margin-top: 6px;
+    font-size: var(--ui-fs-small);
+    line-height: 1.45;
+    color: #b42318;
+  }
+
+  /* A quiet text button: "Add a mobile number", "Remove". */
+  .gf-textbtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ui-accent-ink);
+    font: inherit;
+    font-size: var(--ui-fs-small);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .gf-textbtn:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .gf-textbtn--muted {
+    color: var(--ui-text-3);
+    font-weight: 500;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Choice tiles (plan and length)                                      */
+  /* ------------------------------------------------------------------ */
+
+  .gf-legend {
+    margin-bottom: 8px;
+    padding: 0;
+    font-size: var(--ui-fs-small);
+    font-weight: 500;
+    color: var(--ui-ink);
+  }
+  .gf-choices {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  @media (min-width: 560px) {
+    .gf-choices--plans {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .gf-choices--lengths {
+      grid-template-columns: repeat(var(--gf-cols, 5), minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 559px) {
+    .gf-choices--lengths {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .gf-choice {
+    position: relative;
+    display: block;
+    min-height: 64px;
+    padding: 12px 12px 11px;
+    border: 1px solid var(--ui-line-2);
+    border-radius: var(--ui-r-sm);
+    background: #fff;
+    cursor: pointer;
+    transition:
+      border-color var(--ui-dur-2) var(--ui-ease),
+      box-shadow var(--ui-dur-2) var(--ui-ease),
+      background-color var(--ui-dur-2) var(--ui-ease);
+  }
+  .gf-choice:hover {
+    border-color: #b9c1cd;
+  }
+  /* The real radio, kept for keyboard and screen readers, drawn as the tile. */
+  .gf-choice input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .gf-choice:has(input:checked) {
+    border-color: var(--ui-ink);
+    box-shadow: inset 0 0 0 1px var(--ui-ink);
+    background: #fbfbfa;
+  }
+  .gf-choice:has(input:focus-visible) {
+    outline: 2px solid var(--ui-accent);
+    outline-offset: 2px;
+  }
+  .gf-choice__name {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--ui-ink);
+  }
+  .gf-choice__meta {
+    display: block;
+    margin-top: 3px;
+    font-size: 13px;
+    line-height: 1.3;
+    color: var(--ui-text-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .gf-choice__save {
+    display: block;
+    margin-top: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--ui-success);
+  }
+  .gf-choices[aria-invalid="true"] .gf-choice {
+    border-color: #e3a49c;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Optional details disclosure                                         */
+  /* ------------------------------------------------------------------ */
+
+  .gf-more {
+    border: 1px solid var(--ui-line);
+    border-radius: var(--ui-r-md);
+    background: var(--ui-bg-soft);
+  }
+  .gf-more__toggle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 56px;
+    padding: 14px 18px;
+    border: 0;
+    border-radius: var(--ui-r-md);
+    background: none;
+    color: var(--ui-ink);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+  }
+  .gf-more__toggle::after {
+    content: "";
+    flex: none;
+    width: 9px;
+    height: 9px;
+    margin-right: 4px;
+    border-right: 1.5px solid var(--ui-text-3);
+    border-bottom: 1.5px solid var(--ui-text-3);
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform var(--ui-dur-2) var(--ui-ease);
+  }
+  .gf-more__toggle[aria-expanded="true"]::after {
+    transform: translateY(2px) rotate(-135deg);
+  }
+  .gf-more__toggle .gf-opt {
+    font-weight: 400;
+    color: var(--ui-text-3);
+  }
+  .gf-more__body {
+    padding: 2px 18px 20px;
+  }
+  .gf-more__body .gf-input {
+    background: #fff;
+  }
+  .gf-subhead {
+    margin: var(--ui-s6) 0 4px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ui-ink);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Summary                                                             */
+  /* ------------------------------------------------------------------ */
+
+  .gf-preview {
+    padding: 14px;
+    border-radius: var(--ui-r-md);
+    background: var(--ui-ink);
+  }
+  .gf-preview__label {
+    margin: 0 0 10px 2px;
+    font-size: var(--ui-fs-micro);
+    font-weight: 600;
+    letter-spacing: var(--ui-track-micro);
+    text-transform: uppercase;
+    color: var(--ui-on-dark-2);
+  }
+
+  .gf-summary {
+    margin: 0;
+  }
+  .gf-summary__row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 9px 0;
+    font-size: var(--ui-fs-small);
+  }
+  .gf-summary__row dt {
+    color: var(--ui-text-2);
+  }
+  .gf-summary__row dd {
+    margin: 0;
+    min-width: 0;
+    text-align: right;
+    font-weight: 500;
+    color: var(--ui-ink);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .gf-summary__row dd.gf-muted {
+    font-weight: 400;
+    color: var(--ui-text-3);
+  }
+  .gf-summary__row dd.gf-discount {
+    color: var(--ui-success);
+  }
+  .gf-summary__total {
+    margin-top: 6px;
+    padding-top: 14px;
+    border-top: 1px solid var(--ui-line);
+    font-size: 15px;
+  }
+  .gf-summary__total dt {
+    font-weight: 600;
+    color: var(--ui-ink);
+  }
+  .gf-summary__total dd {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .gf-summary__total dd small {
+    display: block;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--ui-text-3);
+  }
+
+  .gf-alert {
+    padding: 12px 14px;
+    border: 1px solid #f3c9c4;
+    border-radius: var(--ui-r-sm);
+    background: #fdf3f2;
+    color: #a03227;
+    font-size: var(--ui-fs-small);
+    line-height: 1.45;
+  }
+
+  .gf-spinner {
+    width: 28px;
+    height: 28px;
+    margin: 0 auto;
+    border: 2px solid var(--ui-line);
+    border-top-color: var(--ui-ink);
+    border-radius: 50%;
+    animation: gf-spin 0.8s linear infinite;
+  }
+  .gf-spinner--sm {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    border-color: rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+  }
+  @keyframes gf-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .gf-check {
+    display: flex;
+    width: 48px;
+    height: 48px;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--ui-r-pill);
+    background: #e6f3ec;
+    color: var(--ui-success);
+  }
+}
