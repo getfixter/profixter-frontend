@@ -21,10 +21,10 @@ import { DATA_AS_OF, TASK_MIX, TOWNS_WITH_COMPLETED_WORK } from "@/lib/profixter
  * first, the conversion band last.
  */
 
-const H2 = "mt-12 scroll-mt-24 text-[24px] font-black leading-[1.15] tracking-[-0.03em] text-[#0B1628] sm:text-[29px]";
-const H3 = "mt-8 text-[19px] font-black leading-tight text-[#0B1628]";
-const P = "mt-4 text-[16px] leading-[1.75] text-[#334155] sm:text-[17px]";
-const LI = "flex gap-3 text-[16px] leading-[1.7] text-[#334155] sm:text-[17px]";
+const H2 = "mt-12 scroll-mt-24 text-[24px] font-semibold leading-[1.15] tracking-[-0.03em] text-[color:var(--ui-ink)] sm:text-[29px]";
+const H3 = "mt-8 text-[19px] font-semibold leading-tight text-[color:var(--ui-ink)]";
+const P = "mt-4 text-[16px] leading-[1.75] text-[color:var(--ui-text-2)] sm:text-[17px]";
+const LI = "flex gap-3 text-[16px] leading-[1.7] text-[color:var(--ui-text-2)] sm:text-[17px]";
 
 function formatDate(iso: string) {
   return new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", {
@@ -83,13 +83,13 @@ function OffersBlock({ oneTime, fullDay }: { oneTime: OneTimeOffer; fullDay: Ful
         <Link
           key={row.name}
           href={row.href}
-          className="group rounded-[10px] border border-[#DDE5F0] bg-white p-4 transition hover:border-[#BFD2FF] hover:shadow-[0_16px_46px_rgba(48,110,236,0.08)]"
+          className="group rounded-[10px] border border-[color:var(--ui-line)] bg-white p-4 transition hover:border-[#BFD2FF] hover:shadow-[0_16px_46px_rgba(48,110,236,0.08)]"
         >
           <span className="flex items-baseline justify-between gap-3">
-            <span className="text-[16px] font-black text-[#0B1628]">{row.name}</span>
-            <span className="text-[15px] font-black tabular-nums text-[#306EEC]">{row.price}</span>
+            <span className="text-[16px] font-semibold text-[color:var(--ui-ink)]">{row.name}</span>
+            <span className="text-[15px] font-semibold tabular-nums text-[color:var(--ui-accent-ink)]">{row.price}</span>
           </span>
-          <span className="mt-1.5 block text-[14px] leading-6 text-[#64748B]">{row.body}</span>
+          <span className="mt-1.5 block text-[14px] leading-6 text-[color:var(--ui-text-3)]">{row.body}</span>
         </Link>
       ))}
     </div>
@@ -98,29 +98,29 @@ function OffersBlock({ oneTime, fullDay }: { oneTime: OneTimeOffer; fullDay: Ful
 
 function TaskMixBlock() {
   return (
-    <div className="relative my-8 overflow-x-auto rounded-[12px] border border-[#DDE5F0] bg-white">
+    <div className="relative my-8 overflow-x-auto rounded-[12px] border border-[color:var(--ui-line)] bg-white">
       <table className="w-full border-collapse text-left text-[15px]">
-        <caption className="px-4 pt-4 text-left text-[13px] leading-5 text-[#64748B]">
+        <caption className="px-4 pt-4 text-left text-[13px] leading-5 text-[color:var(--ui-text-3)]">
           Rough share of Profixter visit requests that mention each kind of work, read by keyword from what customers
           wrote when booking. About 850 completed visits across Nassau and Suffolk, August 2025 to {DATA_AS_OF}. One
           request can mention several.
         </caption>
         <thead>
-          <tr className="border-b border-[#E3E8F1]">
-            <th scope="col" className="px-4 py-3 text-[12px] font-bold uppercase tracking-[0.08em] text-[#64748B]">Kind of work</th>
-            <th scope="col" className="px-4 py-3 text-right text-[12px] font-bold uppercase tracking-[0.08em] text-[#64748B]">Requests mentioning it</th>
+          <tr className="border-b border-[color:var(--ui-line)]">
+            <th scope="col" className="px-4 py-3 text-[12px] font-bold uppercase tracking-[0.08em] text-[color:var(--ui-text-3)]">Kind of work</th>
+            <th scope="col" className="px-4 py-3 text-right text-[12px] font-bold uppercase tracking-[0.08em] text-[color:var(--ui-text-3)]">Requests mentioning it</th>
           </tr>
         </thead>
         <tbody>
           {TASK_MIX.map((row) => (
-            <tr key={row.label} className="border-b border-[#EEF2F7] last:border-b-0">
-              <th scope="row" className="px-4 py-2.5 font-medium text-[#334155]">{row.label}</th>
+            <tr key={row.label} className="border-b border-[color:var(--ui-line)] last:border-b-0">
+              <th scope="row" className="px-4 py-2.5 font-medium text-[color:var(--ui-text-2)]">{row.label}</th>
               <td className="px-4 py-2.5 text-right tabular-nums">
                 <span className="inline-flex items-center justify-end gap-2.5">
                   <span aria-hidden="true" className="hidden h-1.5 w-24 overflow-hidden rounded-full bg-[#EEF2F7] sm:inline-block">
                     <span className="block h-full rounded-full bg-[#306EEC]" style={{ width: `${(row.percent / 25) * 100}%` }} />
                   </span>
-                  <span className="w-10 font-bold text-[#0B1628]">~{row.percent}%</span>
+                  <span className="w-10 font-bold text-[color:var(--ui-ink)]">~{row.percent}%</span>
                 </span>
               </td>
             </tr>
@@ -135,9 +135,9 @@ function TownProofBlock() {
   return (
     <div className="my-8 grid gap-4 sm:grid-cols-2">
       {(Object.keys(TOWNS_WITH_COMPLETED_WORK) as (keyof typeof TOWNS_WITH_COMPLETED_WORK)[]).map((county) => (
-        <div key={county} className="rounded-[10px] border border-[#DDE5F0] bg-white p-4">
-          <p className="text-[13px] font-black uppercase tracking-[0.1em] text-[#0B1628]">{county}</p>
-          <p className="mt-2 text-[14px] leading-6 text-[#475569]">{TOWNS_WITH_COMPLETED_WORK[county].join(", ")}</p>
+        <div key={county} className="rounded-[10px] border border-[color:var(--ui-line)] bg-white p-4">
+          <p className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[color:var(--ui-ink)]">{county}</p>
+          <p className="mt-2 text-[14px] leading-6 text-[color:var(--ui-text-2)]">{TOWNS_WITH_COMPLETED_WORK[county].join(", ")}</p>
         </div>
       ))}
     </div>
@@ -149,8 +149,8 @@ function Block({ block, oneTime, fullDay }: { block: GuideBlock; oneTime: OneTim
     case "answer":
       return (
         <div className="mt-8 rounded-[12px] border border-[#CFE0FF] bg-[#F3F7FF] p-5 sm:p-6">
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">The short answer</p>
-          <p className="mt-2.5 text-[17px] leading-[1.7] text-[#0B1628] sm:text-[18px]">
+          <p className="ui-eyebrow ui-eyebrow--accent !mb-0">The short answer</p>
+          <p className="mt-2.5 text-[17px] leading-[1.7] text-[color:var(--ui-ink)] sm:text-[18px]">
             <GuideText text={block.text} />
           </p>
         </div>
@@ -189,7 +189,7 @@ function Block({ block, oneTime, fullDay }: { block: GuideBlock; oneTime: OneTim
             <li key={item} className={LI}>
               <span
                 aria-hidden="true"
-                className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EEF4FF] text-[13px] font-black text-[#306EEC]"
+                className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EEF4FF] text-[13px] font-semibold text-[color:var(--ui-accent-ink)]"
               >
                 {index + 1}
               </span>
@@ -203,13 +203,13 @@ function Block({ block, oneTime, fullDay }: { block: GuideBlock; oneTime: OneTim
     case "table":
       return (
         <div className="my-7">
-          <div className="relative overflow-x-auto rounded-[12px] border border-[#DDE5F0] bg-white">
+          <div className="relative overflow-x-auto rounded-[12px] border border-[color:var(--ui-line)] bg-white">
             <table className="w-full min-w-[520px] border-collapse text-left text-[14.5px] leading-6">
               <caption className="sr-only">{block.caption}</caption>
               <thead>
-                <tr className="border-b border-[#E3E8F1] bg-[#F8FAFF]">
+                <tr className="border-b border-[color:var(--ui-line)] bg-[color:var(--ui-bg-soft)]">
                   {block.head.map((cell) => (
-                    <th key={cell} scope="col" className="px-4 py-3 text-[12px] font-bold uppercase tracking-[0.06em] text-[#64748B]">
+                    <th key={cell} scope="col" className="px-4 py-3 text-[12px] font-bold uppercase tracking-[0.06em] text-[color:var(--ui-text-3)]">
                       {cell}
                     </th>
                   ))}
@@ -217,14 +217,14 @@ function Block({ block, oneTime, fullDay }: { block: GuideBlock; oneTime: OneTim
               </thead>
               <tbody>
                 {block.rows.map((row) => (
-                  <tr key={row.join("|")} className="border-b border-[#EEF2F7] align-top last:border-b-0">
+                  <tr key={row.join("|")} className="border-b border-[color:var(--ui-line)] align-top last:border-b-0">
                     {row.map((cell, index) =>
                       index === 0 ? (
-                        <th key={index} scope="row" className="px-4 py-3 font-semibold text-[#0B1628]">
+                        <th key={index} scope="row" className="px-4 py-3 font-semibold text-[color:var(--ui-ink)]">
                           <GuideText text={cell} />
                         </th>
                       ) : (
-                        <td key={index} className="px-4 py-3 text-[#334155]">
+                        <td key={index} className="px-4 py-3 text-[color:var(--ui-text-2)]">
                           <GuideText text={cell} />
                         </td>
                       )
@@ -235,7 +235,7 @@ function Block({ block, oneTime, fullDay }: { block: GuideBlock; oneTime: OneTim
             </table>
           </div>
           {block.note ? (
-            <p className="mt-2 text-[13px] leading-6 text-[#64748B]">
+            <p className="mt-2 text-[13px] leading-6 text-[color:var(--ui-text-3)]">
               <GuideText text={block.note} />
             </p>
           ) : null}
@@ -249,7 +249,7 @@ function Block({ block, oneTime, fullDay }: { block: GuideBlock; oneTime: OneTim
           }`}
         >
           {block.title ? (
-            <p className={`text-[16px] font-black ${block.tone === "profixter" ? "text-white" : "text-[#0B1628]"}`}>
+            <p className={`text-[16px] font-semibold ${block.tone === "profixter" ? "text-white" : "text-[color:var(--ui-ink)]"}`}>
               {block.title}
             </p>
           ) : null}
@@ -264,11 +264,11 @@ function Block({ block, oneTime, fullDay }: { block: GuideBlock; oneTime: OneTim
       );
     case "qa":
       return (
-        <dl className="mt-5 divide-y divide-[#E3E8F1] border-y border-[#E3E8F1]">
+        <dl className="mt-5 divide-y divide-[color:var(--ui-line)] border-y border-[color:var(--ui-line)]">
           {block.items.map((item) => (
             <div key={item.q} className="py-5">
-              <dt className="text-[17px] font-black leading-snug text-[#0B1628]">{item.q}</dt>
-              <dd className="mt-2 text-[16px] leading-[1.7] text-[#334155]">
+              <dt className="text-[17px] font-semibold leading-snug text-[color:var(--ui-ink)]">{item.q}</dt>
+              <dd className="mt-2 text-[16px] leading-[1.7] text-[color:var(--ui-text-2)]">
                 <GuideText text={item.a} />
               </dd>
             </div>
@@ -328,14 +328,14 @@ export default async function GuideArticle({ guide }: { guide: Guide }) {
                 { label: guide.title, href: `/guides/${guide.slug}` },
               ]}
             />
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
+            <p className="ui-eyebrow ui-eyebrow--accent !mb-0">
               {GUIDE_CATEGORY_LABELS[guide.category]} · Long Island
             </p>
-            <h1 className="mt-4 text-[32px] font-black leading-[1.02] tracking-[-0.04em] text-[#0B1628] sm:text-[44px]">
+            <h1 className="ui-display mt-4">
               {guide.title}
             </h1>
-            <p className="mt-4 text-[17px] leading-[1.6] text-[#475569] sm:text-[19px]">{guide.dek}</p>
-            <p className="mt-4 text-[13px] font-semibold text-[#64748B]">
+            <p className="mt-4 text-[17px] leading-[1.6] text-[color:var(--ui-text-2)] sm:text-[19px]">{guide.dek}</p>
+            <p className="mt-4 text-[13px] font-semibold text-[color:var(--ui-text-3)]">
               Updated <time dateTime={guide.updated}>{formatDate(guide.updated)}</time> · By Profixter, Lindenhurst, NY ·{" "}
               {readingMinutes(guide)} min read
             </p>
@@ -345,14 +345,14 @@ export default async function GuideArticle({ guide }: { guide: Guide }) {
             ))}
 
             {guide.sources?.length ? (
-              <section aria-labelledby="sources" className="mt-12 border-t border-[#E3E8F1] pt-6">
-                <h2 id="sources" className="text-[15px] font-black uppercase tracking-[0.1em] text-[#0B1628]">
+              <section aria-labelledby="sources" className="mt-12 border-t border-[color:var(--ui-line)] pt-6">
+                <h2 id="sources" className="text-[15px] font-semibold uppercase tracking-[0.1em] text-[color:var(--ui-ink)]">
                   Sources
                 </h2>
                 <ul className="mt-3 grid gap-1.5">
                   {guide.sources.map((source) => (
-                    <li key={source.url} className="text-[14px] leading-6 text-[#64748B]">
-                      <a href={source.url} rel="noopener" className="underline underline-offset-2 hover:text-[#306EEC]">
+                    <li key={source.url} className="text-[14px] leading-6 text-[color:var(--ui-text-3)]">
+                      <a href={source.url} rel="noopener" className="underline underline-offset-2 hover:text-[color:var(--ui-accent-ink)]">
                         {source.label}
                       </a>
                     </li>
@@ -361,15 +361,15 @@ export default async function GuideArticle({ guide }: { guide: Guide }) {
               </section>
             ) : null}
 
-            <aside className="mt-10 rounded-[12px] border border-[#DDE5F0] bg-white p-5 sm:p-6">
-              <p className="text-[13px] font-black uppercase tracking-[0.1em] text-[#0B1628]">About Profixter</p>
-              <p className="mt-2 text-[15px] leading-[1.7] text-[#475569]">
+            <aside className="mt-10 rounded-[12px] border border-[color:var(--ui-line)] bg-white p-5 sm:p-6">
+              <p className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[color:var(--ui-ink)]">About Profixter</p>
+              <p className="mt-2 text-[15px] leading-[1.7] text-[color:var(--ui-text-2)]">
                 {SHORT_DESCRIPTION} {LICENSE_PHRASE}; fully insured. Questions:{" "}
-                <a href={`tel:${BUSINESS_PHONE_DISPLAY}`} className="font-semibold text-[#306EEC]">
+                <a href={`tel:${BUSINESS_PHONE_DISPLAY}`} className="font-semibold text-[color:var(--ui-accent-ink)]">
                   {BUSINESS_PHONE_DISPLAY}
                 </a>
                 .{" "}
-                <Link href="/handyman-membership" className="font-semibold text-[#306EEC] underline underline-offset-2">
+                <Link href="/handyman-membership" className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                   How the membership works
                 </Link>
               </p>
@@ -380,16 +380,16 @@ export default async function GuideArticle({ guide }: { guide: Guide }) {
         {related.length ? (
           <section className="px-4 pb-6 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-[760px]">
-              <h2 className="text-[20px] font-black text-[#0B1628]">Related guides</h2>
+              <h2 className="text-[20px] font-semibold text-[color:var(--ui-ink)]">Related guides</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {related.map((item) => (
                   <Link
                     key={item.slug}
                     href={`/guides/${item.slug}`}
-                    className="rounded-[10px] border border-[#DDE5F0] bg-white p-4 transition hover:border-[#BFD2FF]"
+                    className="rounded-[10px] border border-[color:var(--ui-line)] bg-white p-4 transition hover:border-[#BFD2FF]"
                   >
-                    <span className="block text-[16px] font-black leading-snug text-[#0B1628]">{item.title}</span>
-                    <span className="mt-1.5 block text-[14px] leading-6 text-[#64748B]">{item.summary}</span>
+                    <span className="block text-[16px] font-semibold leading-snug text-[color:var(--ui-ink)]">{item.title}</span>
+                    <span className="mt-1.5 block text-[14px] leading-6 text-[color:var(--ui-text-3)]">{item.summary}</span>
                   </Link>
                 ))}
               </div>

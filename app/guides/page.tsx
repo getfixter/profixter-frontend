@@ -59,11 +59,11 @@ export default function GuidesHubPage() {
           <div className="mx-auto max-w-[1180px]">
             <Breadcrumbs items={[{ label: "Guides", href: "/guides" }]} />
             <div className="max-w-[820px]">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">Homeowner guides · Long Island</p>
-              <h1 className="mt-4 text-[32px] font-black leading-[0.98] tracking-[-0.04em] text-[#0B1628] sm:text-[46px]">
+              <p className="ui-eyebrow ui-eyebrow--accent !mb-0">Homeowner guides · Long Island</p>
+              <h1 className="ui-display mt-4">
                 Straight answers about small repairs and keeping a house up.
               </h1>
-              <p className="mt-5 max-w-[680px] text-[15px] font-medium leading-7 text-[#475569] sm:text-[18px] sm:leading-8">
+              <p className="mt-5 max-w-[680px] text-[15px] font-medium leading-7 text-[color:var(--ui-text-2)] sm:text-[18px] sm:leading-8">
                 Written by a Long Island handyman company from what we see in homes every week. Each guide answers the
                 question first, including when the answer isn&apos;t us.
               </p>
@@ -74,7 +74,7 @@ export default function GuidesHubPage() {
         {groups.map((group) => (
           <section key={group.category} className="px-4 py-6 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-[1180px]">
-              <h2 className="text-[13px] font-black uppercase tracking-[0.14em] text-[#0B1628]">
+              <h2 className="text-[13px] font-semibold uppercase tracking-[0.14em] text-[color:var(--ui-ink)]">
                 {GUIDE_CATEGORY_LABELS[group.category]}
               </h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -82,10 +82,10 @@ export default function GuidesHubPage() {
                   <Link
                     key={guide.slug}
                     href={`/guides/${guide.slug}`}
-                    className="group rounded-[8px] border border-[#DDE5F0] bg-white p-5 shadow-[0_18px_54px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:border-[#BFD2FF]"
+                    className="group rounded-[8px] border border-[color:var(--ui-line)] bg-white p-5 shadow-[var(--ui-shadow-1)] transition hover:-translate-y-0.5 hover:border-[#BFD2FF]"
                   >
-                    <h3 className="text-[18px] font-black leading-snug text-[#0B1628]">{guide.title}</h3>
-                    <p className="mt-2.5 text-[14px] leading-6 text-[#64748B]">{guide.summary}</p>
+                    <h3 className="text-[18px] font-semibold leading-snug text-[color:var(--ui-ink)]">{guide.title}</h3>
+                    <p className="mt-2.5 text-[14px] leading-6 text-[color:var(--ui-text-3)]">{guide.summary}</p>
                   </Link>
                 ))}
               </div>

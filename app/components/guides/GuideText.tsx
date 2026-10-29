@@ -9,7 +9,7 @@ import type { ReactNode } from "react";
  */
 const TOKEN_SOURCE = String.raw`\[([^\]]+)\]\(([^)\s]+)\)|\*\*([^*]+)\*\*`;
 
-const LINK = "font-semibold text-[#306EEC] underline decoration-[#306EEC]/35 underline-offset-[3px] transition hover:decoration-[#306EEC]";
+const LINK = "font-semibold text-[color:var(--ui-accent-ink)] underline decoration-[#306EEC]/35 underline-offset-[3px] transition hover:decoration-[#306EEC]";
 
 export default function GuideText({ text }: { text: string }) {
   const out: ReactNode[] = [];
@@ -35,7 +35,7 @@ export default function GuideText({ text }: { text: string }) {
       );
     } else {
       out.push(
-        <strong key={key++} className="font-semibold text-[#0B1628]">
+        <strong key={key++} className="font-semibold text-[color:var(--ui-ink)]">
           {match[3]}
         </strong>
       );
