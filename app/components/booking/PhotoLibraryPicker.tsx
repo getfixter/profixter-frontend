@@ -92,7 +92,7 @@ export default function PhotoLibraryPicker({ value, onChange, context, compact =
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="mt-2 flex min-h-[52px] w-full items-center gap-3 rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line-2)] bg-white px-3 py-2 text-left transition-colors hover:border-[#b9c1cd] hover:bg-[#fbfbfa]"
+          className="mt-2 flex min-h-[48px] w-full items-center gap-3 rounded-[var(--ui-r-sm)] border border-[color:var(--ui-line-2)] bg-white px-3 py-1.5 text-left transition-colors hover:border-[#b9c1cd] hover:bg-[#fbfbfa]"
         >
           <span className="flex h-8 w-8 flex-none items-center justify-center rounded-[7px] bg-[color:var(--ui-bg-soft)] text-[color:var(--ui-ink)]">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -103,8 +103,8 @@ export default function PhotoLibraryPicker({ value, onChange, context, compact =
             </svg>
           </span>
           <span className="min-w-0">
-            <span className="block text-[14px] font-semibold text-[color:var(--ui-ink)]">Choose from Profixter Library</span>
-            <span className="block text-[13px] leading-[1.35] text-[color:var(--ui-text-3)]">
+            <span className="block text-[14px] font-semibold leading-[1.3] text-[color:var(--ui-ink)]">Choose from Profixter Library</span>
+            <span className="block text-[13px] leading-[1.25] text-[color:var(--ui-text-3)]">
               No photo right now? Pick the closest example.
             </span>
           </span>

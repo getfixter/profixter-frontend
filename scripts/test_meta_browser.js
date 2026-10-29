@@ -174,27 +174,24 @@ const dl = (page) => page.evaluate(() => window.__dl || []);
   {
     const { ctx, page } = await open(browser, "/signup", { settle: 3500 });
 
-    // Fill step 1 by hand: the address field is a Google Places component, and
-    // the manual path is the one a test can drive without the API.
-    const typed = await page.evaluate(() => {
-      const setValue = (el, value) => {
-        const setter = Object.getOwnPropertyDescriptor(
-          window.HTMLInputElement.prototype,
-          "value"
-        ).set;
-        setter.call(el, value);
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-      };
-      const inputs = Array.from(document.querySelectorAll("input"));
-      return inputs.map((i) => i.name || i.id || i.placeholder || "").filter(Boolean);
-    });
-    check("signup step 1 renders inputs", typed.length > 0, typed.slice(0, 6).join(", "));
-
+    /*
+     * Registration 2.0: step 1 is the method chooser (phone, Google, Apple,
+     * email) - buttons, no form fields until a method is picked.
+     */
+    const methods = await page.getByRole("button", { name: /Continue with (phone|email)/ }).count();
+    check("signup step 1 renders the sign-up methods", methods >= 2, `${methods}`);
     const before = (await calls(page)).filter((c) => c[1] === "StartSignup").length;
     check("StartSignup has not fired merely from loading /signup", before === 0, `${before}`);
 
     const dlBefore = (await dl(page)).filter((e) => e.event === "start_signup").length;
     check("start_signup is not a page-load dataLayer event", dlBefore === 0, `${dlBefore}`);
+
+    /* Choosing a method is the start of sign-up: exactly one StartSignup. */
+    await page.getByRole("button", { name: /Continue with phone/ }).first().click();
+    await page.waitForTimeout(800);
+    const after = (await calls(page)).filter((c) => c[1] === "StartSignup").length;
+    check("choosing a sign-up method fires StartSignup once", after === 1, `${after}`);
+    check("the phone step shows its one field", (await page.locator("#phone").count()) === 1);
 
     await ctx.close();
   }
