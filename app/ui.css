@@ -22,7 +22,7 @@
   --ui-ink-2: #1a2740;        /* primary button hover */
   --ui-text: #0b1628;
   --ui-text-2: #475264;       /* secondary copy, 7.6:1 on white */
-  --ui-text-3: #687385;       /* captions, meta, 4.8:1 on white */
+  --ui-text-3: #626d7f;       /* captions, meta: 5.2:1 on white, 4.8:1 on stone */
   --ui-line: #e6e8ec;         /* hairlines and card borders */
   --ui-line-2: #d3d8e0;       /* input borders, stronger dividers */
   --ui-bg: #ffffff;
