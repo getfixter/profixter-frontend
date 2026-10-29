@@ -3,6 +3,27 @@
 /* Built only from the tokens in app/ui.css.                             */
 /* ==================================================================== */
 
+/*
+ * Bottom-edge stacking on phones. The support chat button (z 60) reads
+ * --pf-support-chat-bottom-mobile; it sits on the safe area by default, above
+ * the tab bar for signed-in customers (html.has-tabbar, set by
+ * CustomerSiteMobileNav) and above the sticky CTA while that is showing
+ * (html.has-sticky-cta, set by StickyMobileCTA). 53px = tab bar, 72px = CTA.
+ */
+:root[data-surface="site"] {
+  --pf-support-chat-bottom-mobile: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  --pf-support-chat-bottom: 24px;
+}
+:root[data-surface="site"].has-tabbar {
+  --pf-support-chat-bottom-mobile: calc(53px + env(safe-area-inset-bottom, 0px) + 12px);
+}
+:root[data-surface="site"].has-sticky-cta {
+  --pf-support-chat-bottom-mobile: calc(72px + env(safe-area-inset-bottom, 0px) + 12px);
+}
+:root[data-surface="site"].has-tabbar.has-sticky-cta {
+  --pf-support-chat-bottom-mobile: calc(53px + 64px + env(safe-area-inset-bottom, 0px) + 12px);
+}
+
 @layer components {
   /* ---- header ---------------------------------------------------- */
   .hd {
@@ -49,6 +70,7 @@
     padding: 0 10px;
     font-size: 14px;
     font-weight: 500;
+    white-space: nowrap;
     color: var(--ui-ink);
     text-decoration: none;
     border-radius: 8px;
@@ -535,7 +557,7 @@
   }
   .ft__base p {
     margin: 0;
-    font-size: 12.5px;
+    font-size: 13px;
     line-height: 1.6;
     color: #8792a6;
   }

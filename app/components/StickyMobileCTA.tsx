@@ -26,6 +26,14 @@ export default function StickyMobileCTA() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  /* html.has-sticky-cta lifts the support chat button clear of this bar. */
+  const showing = visible && !isSubscribed;
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("has-sticky-cta", showing);
+    return () => root.classList.remove("has-sticky-cta");
+  }, [showing]);
+
   if (isSubscribed) return null;
 
   return (

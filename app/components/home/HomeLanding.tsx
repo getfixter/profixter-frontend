@@ -243,7 +243,7 @@ export default function HomeLanding() {
             </Link>
           </Reveal>
         </div>
-        <div className="ui-container hm-work-wrap">
+        <div className="ui-container">
           <WorkStrip />
         </div>
       </section>

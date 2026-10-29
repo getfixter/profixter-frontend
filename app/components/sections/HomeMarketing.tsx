@@ -82,7 +82,7 @@ export default function HomeMarketing() {
             </Link>
           </Reveal>
         </div>
-        <div className="ui-container hm-work-wrap">
+        <div className="ui-container">
           <WorkStrip />
         </div>
       </section>
