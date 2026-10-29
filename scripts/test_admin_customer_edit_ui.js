@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- a plain Node script, like its neighbours */
 /*
  * Admin edits a customer, in the browser, against a mocked API.
  *
