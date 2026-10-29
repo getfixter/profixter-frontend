@@ -1,26 +1,60 @@
-import React from 'react';
+import Link from "next/link";
+import React from "react";
+
+/**
+ * The design-system button (ui-btn in app/ui.css), as a <button> or a link.
+ *
+ *   primary    navy, the one main action on a screen
+ *   accent     ProFixter blue, for the free-visit booking action only
+ *   secondary  white with a hairline border
+ *   ghost      text-like, for tertiary actions
+ *   light / outline-light   on a navy band
+ *
+ * Sizes: sm (44px on touch, 40px on a desktop pointer), md (48px), lg (52px).
+ */
+export type ButtonVariant = "primary" | "accent" | "secondary" | "ghost" | "light" | "outline-light";
+export type ButtonSize = "sm" | "md" | "lg";
+
+export function buttonClass({
+  variant = "primary",
+  size = "md",
+  block = false,
+  className = "",
+}: {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  block?: boolean;
+  className?: string;
+} = {}) {
+  return [
+    "ui-btn",
+    `ui-btn--${variant}`,
+    size !== "md" ? `ui-btn--${size}` : "",
+    block ? "ui-btn--block" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'primary' | 'secondary' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  block?: boolean;
 };
 
-const base = 'inline-flex items-center justify-center rounded-[8px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#306EEC] disabled:opacity-50 disabled:pointer-events-none';
-const sizes: Record<NonNullable<ButtonProps['size']>, string> = {
-  sm: 'h-10 px-4 text-sm',
-  md: 'h-12 px-6 text-base',
-  lg: 'h-[48px] px-6 text-[19px]'
-};
-const variants: Record<NonNullable<ButtonProps['variant']>, string> = {
-  primary: 'bg-[#306EEC] text-[#EEF2FF] border border-[#306EEC] hover:bg-[#2558c9]',
-  secondary: 'bg-[#EEF2FF] text-[#313234] border border-[#C5CBD8] hover:bg-white',
-  ghost: 'bg-transparent text-[#EEF2FF] border border-[#EEF2FF] hover:bg-white/10'
+export function Button({ variant = "primary", size = "md", block = false, className = "", type = "button", ...props }: ButtonProps) {
+  return <button type={type} className={buttonClass({ variant, size, block, className })} {...props} />;
+}
+
+type ButtonLinkProps = React.ComponentProps<typeof Link> & {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  block?: boolean;
 };
 
-export function Button({ variant = 'primary', size = 'md', className = '', ...props }: ButtonProps) {
-  return (
-    <button className={[base, sizes[size], variants[variant], className].join(' ')} {...props} />
-  );
+export function ButtonLink({ variant = "primary", size = "md", block = false, className = "", ...props }: ButtonLinkProps) {
+  return <Link className={buttonClass({ variant, size, block, className })} {...props} />;
 }
 
 export default Button;

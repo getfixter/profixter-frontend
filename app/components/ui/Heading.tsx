@@ -1,32 +1,34 @@
-import React from 'react';
+import React from "react";
 
+/**
+ * Headings on the design-system scale (app/ui.css).
+ *
+ * `level` is the semantic tag; `size` is how it looks, so an H2 can carry the
+ * display size on a page whose H1 is elsewhere. Defaults: h1 display, h2 h2,
+ * h3/h4 h3.
+ */
 type HeadingProps = React.HTMLAttributes<HTMLHeadingElement> & {
   level?: 1 | 2 | 3 | 4;
-  accent?: 'primary' | 'default';
-  tight?: boolean;
+  size?: "display" | "h2" | "h3";
+  eyebrow?: React.ReactNode;
 };
 
-const sizeByLevel: Record<NonNullable<HeadingProps['level']>, string> = {
-  1: 'text-[46px]',
-  2: 'text-5xl',
-  3: 'text-3xl',
-  4: 'text-2xl'
-};
+const DEFAULT_SIZE = { 1: "display", 2: "h2", 3: "h3", 4: "h3" } as const;
 
-export function Heading({ level = 2, accent = 'default', tight = true, className = '', ...props }: HeadingProps) {
-  // Using `any` here keeps TS happy across React JSX runtimes without importing JSX types
-  const Tag: any = `h${level}` as any;
+export function Heading({ level = 2, size, eyebrow, className = "", children, ...props }: HeadingProps) {
+  const Tag = `h${level}` as "h1" | "h2" | "h3" | "h4";
+  const look = size ?? DEFAULT_SIZE[level];
+  const heading = (
+    <Tag className={[`ui-${look}`, className].filter(Boolean).join(" ")} {...props}>
+      {children}
+    </Tag>
+  );
+  if (!eyebrow) return heading;
   return (
-    <Tag
-      className={[
-        'font-bold uppercase tracking-[-0.05em]',
-        sizeByLevel[level],
-        tight ? 'leading-[89%]' : 'leading-tight',
-        accent === 'primary' ? 'text-[#306EEC]' : 'text-[#313234]',
-        className
-      ].join(' ')}
-      {...props}
-    />
+    <>
+      <p className="ui-eyebrow">{eyebrow}</p>
+      {heading}
+    </>
   );
 }
 

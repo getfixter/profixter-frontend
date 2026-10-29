@@ -23,7 +23,19 @@
  *   width term   floor at 640px wide, rising linearly to S at 1440px
  *   height term  S at 800px tall, 90% at 657px, 75% at 430px (only S >= 40)
  *
- * S is the size the code asks for, so 1440px and up look exactly as designed.
+ * WEBSITE 3.0. The sizes in the code were set when the site was meant to feel
+ * big, and the owner's verdict on the result was "everything is 50-60% too
+ * large". So S is no longer reached: every large size now tops out at a
+ * TARGET a step below what the code asks for (see target() below), and the
+ * formula above runs against that target instead of S:
+ *
+ *   S >= 56px   72% of S     a 64px hero headline ends at 46px
+ *   S >= 40px   80% of S     a 48px section title ends at 38px
+ *   S >= 30px   90% of S     a 36px card title ends at 32px
+ *
+ * Section padding (bottom, >= 64px) likewise ends at 70% of its value.
+ * Pages built on the design system (app/ui.css) do not use these utilities and
+ * are sized by its tokens; this keeps every older page in proportion with them.
  * Tailwind v4 puts utilities in a cascade layer and unlayered rules win, so
  * the rules below override the utilities without touching the components.
  * Breakpoint variants are emitted in Tailwind's own order inside their own
@@ -61,16 +73,26 @@ const SPACING = 4; // Tailwind v4 --spacing, px
 
 const r1 = (n) => Math.round(n * 100) / 100;
 
-function fluidType(s) {
+/* The size a large heading actually ends at (Website 3.0, see the header). */
+function target(s) {
+  if (s >= 56) return Math.round(s * 0.72);
+  if (s >= 40) return Math.round(s * 0.8);
+  if (s >= 30) return Math.round(s * 0.9);
+  return s;
+}
+
+function fluidType(size) {
+  const s = target(size);
   const floor = Math.round(Math.max(0.7 * s, Math.min(s, 28)));
-  if (floor >= s) return null;
+  if (floor >= s) return s < size ? `${s}px` : null;
   const width = `calc(${floor}px + (100vw - 640px) * ${Math.round(((s - floor) / 800) * 10000) / 10000})`;
   const height = `calc(${r1(0.45 * s)}px + ${r1((0.55 * s) / 8)}vh)`;
   const middle = s >= 40 ? `min(${width}, ${height})` : width;
   return `clamp(${floor}px, ${middle}, ${s}px)`;
 }
 
-function fluidPad(px) {
+function fluidPad(size) {
+  const px = Math.round(size * 0.7);
   return `clamp(${Math.round(px * 0.6)}px, ${r1((px / 900) * 100)}vh, ${px}px)`;
 }
 
@@ -142,4 +164,4 @@ if (process.argv.includes("--check")) {
   console.log(`wrote ${path.relative(ROOT, OUT)} (${css.split("\n").length} lines)`);
 }
 
-module.exports = { fluidType, fluidPad };
+module.exports = { fluidType, fluidPad, target };

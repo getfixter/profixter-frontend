@@ -11,22 +11,22 @@
 /* hundreds of components, the phone scale is one map from the sizes the */
 /* code uses to the sizes a phone should show:                           */
 /*                                                                       */
-/*   display  46/43/40/36 -> 30     body   18/17 -> 16                    */
-/*   title    34/32       -> 26            16/15 kept                     */
-/*            30          -> 24     small  14/13/12 kept                  */
-/*   section  27/26       -> 23     micro  8/9/10 -> 11 (raised: these    */
-/*            24          -> 21            carried real information)       */
-/*   card     23/22/21    -> 19                                           */
-/*            20/19       -> 17                                           */
+/*   display  46/43/40/36 -> 28     body   18/17 -> 16                    */
+/*   title    34/32       -> 24            16/15 kept                     */
+/*            30          -> 23     small  14/13/12 kept                  */
+/*   section  27/26       -> 21     micro  8/9/10 -> 11 (raised: these    */
+/*            24          -> 20            carried real information)       */
+/*   card     23/22/21    -> 18   (Website 3.0: every step one notch    */
+/*            20/19       -> 17    smaller than before)                 */
 /*                                                                       */
 /* Spacing follows the same idea: large vertical gaps shrink by ~30%,    */
 /* small ones are left alone. Tap targets never go below 44px.           */
 /* ==================================================================== */
 
 :root {
-  --m-display: 30px;
-  --m-title: 24px;
-  --m-section: 21px;
+  --m-display: 28px;
+  --m-title: 23px;
+  --m-section: 20px;
   --m-card: 17px;
   --m-body: 15px;
   --m-lede: 15px;
@@ -44,11 +44,11 @@
     font-size: var(--m-display);
     line-height: 1.08;
   }
-  :root[data-surface="site"] :is(.text-\[34px\], .text-\[32px\]) { font-size: 26px; line-height: 1.12; }
+  :root[data-surface="site"] :is(.text-\[34px\], .text-\[32px\]) { font-size: 24px; line-height: 1.14; }
   :root[data-surface="site"] :is(.text-3xl, .text-\[30px\]) { font-size: var(--m-title); line-height: 1.15; }
-  :root[data-surface="site"] :is(.text-\[27px\], .text-\[26px\]) { font-size: 23px; line-height: 1.18; }
+  :root[data-surface="site"] :is(.text-\[27px\], .text-\[26px\]) { font-size: 21px; line-height: 1.2; }
   :root[data-surface="site"] :is(.text-2xl, .text-\[24px\]) { font-size: var(--m-section); line-height: 1.22; }
-  :root[data-surface="site"] :is(.text-\[23px\], .text-\[22px\], .text-\[21px\]) { font-size: 19px; line-height: 1.25; }
+  :root[data-surface="site"] :is(.text-\[23px\], .text-\[22px\], .text-\[21px\]) { font-size: 18px; line-height: 1.28; }
   :root[data-surface="site"] :is(.text-xl, .text-\[20px\], .text-\[19px\]) { font-size: var(--m-card); line-height: 1.3; }
   :root[data-surface="site"] :is(.text-lg, .text-\[18px\], .text-\[17px\]) { font-size: 16px; line-height: 1.45; }
   :root[data-surface="site"] :is(.text-\[8px\], .text-\[9px\], .text-\[9\.5px\], .text-\[10px\]) { font-size: 11px; }
@@ -91,14 +91,7 @@
   /* ---------------------------------------------------------------- */
   /* Site chrome                                                        */
   /* ---------------------------------------------------------------- */
-  :root[data-surface="site"] .site-header { padding-top: 6px; padding-bottom: 6px; }
-  :root[data-surface="site"] .site-header > div > div { padding-top: 6px; padding-bottom: 6px; }
-  :root[data-surface="site"] .site-header .nav-brand-logo { height: 20px; width: auto; }
-
-  :root[data-surface="site"] .customer-site-nav { padding-top: 4px; }
-  :root[data-surface="site"] .csn-item { min-height: 44px; gap: 1px; font-size: 11px; }
-  :root[data-surface="site"] .csn-item svg { width: 19px; height: 19px; }
-  :root[data-surface="site"] .customer-site-nav-spacer { height: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  /* The header, menu sheet and tab bar are sized in app/ui-shell.css. */
 
   :root[data-surface="site"] .pf-tabs { padding-top: 8px; }
   :root[data-surface="site"] .pf-tabs > div { padding: 3px; gap: 2px; }
