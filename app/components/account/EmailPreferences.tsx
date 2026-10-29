@@ -63,31 +63,32 @@ export function EmailPreferences() {
   if (!state || state.status === "not_marketable") return null;
 
   return (
-    <div className="mt-5 rounded-[8px] border border-[#E0E6F5] bg-white px-4 py-4 sm:px-5" data-testid="email-preferences">
-      <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A9099]">Email</h3>
-      <label className="mt-3 flex cursor-pointer items-start gap-3">
+    <section className="acct-card" aria-labelledby="acct-email-prefs" data-testid="email-preferences">
+      <h2 id="acct-email-prefs" className="acct-card__title">
+        Email
+      </h2>
+      <label className="acct-check mt-4">
         <input
           type="checkbox"
           checked={state.marketingEnabled}
           disabled={saving || !state.canChange}
           onChange={(e) => toggle(e.target.checked)}
-          className="mt-0.5 h-4 w-4 flex-shrink-0 accent-[#306EEC] disabled:opacity-40"
         />
-        <span className="text-sm leading-relaxed text-[#313234]">
-          <span className="font-semibold">Email me ProFixter tips and offers.</span>
-          <span className="mt-1 block text-xs text-[#6A6D71]">
+        <span className="min-w-0">
+          <span className="acct-check__label">Email me ProFixter tips and offers.</span>
+          <span className="acct-check__help">
             Optional. Seasonal home tips, news and offers, at most once a week. Every email has a one-click unsubscribe.
             Turning this off never stops your booking confirmations, reminders or receipts.
           </span>
         </span>
       </label>
       {!state.canChange ? (
-        <p className="mt-3 rounded-[6px] bg-[#FFF6E9] px-3 py-2 text-xs leading-relaxed text-[#8A5A1B]">
+        <p className="acct-note">
           Marketing email is blocked for this address (it bounced or was reported). Contact us if that is a mistake.
         </p>
       ) : null}
-      {error ? <p className="mt-2 text-xs font-semibold text-[#B4342B]">{error}</p> : null}
-    </div>
+      {error ? <p className="acct-error">{error}</p> : null}
+    </section>
   );
 }
 

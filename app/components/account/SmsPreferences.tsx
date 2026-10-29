@@ -106,29 +106,28 @@ export function SmsPreferences() {
   if (!state) return null;
 
   return (
-    <div className="mt-5 rounded-[8px] border border-[#E0E6F5] bg-white px-4 py-4 sm:px-5">
-      <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A9099]">
+    <section className="acct-card" aria-labelledby="acct-sms" data-testid="sms-preferences">
+      <h2 id="acct-sms" className="acct-card__title">
         Text messages
-      </h3>
-      <p className="mt-1.5 text-xs leading-relaxed text-[#6A6D71]">
+      </h2>
+      <p className="acct-card__text">
         Both are optional and separate. Turning them off never affects your email
         confirmations, receipts or reminders, and never affects your membership or
         bookings.
       </p>
 
-      <div className="mt-3 space-y-3">
+      <div className="mt-4 grid gap-4">
         {CHANNELS.map(({ field, label, help }) => (
-          <label key={field} className="flex cursor-pointer items-start gap-3">
+          <label key={field} className="acct-check">
             <input
               type="checkbox"
               checked={state[field]}
               disabled={saving !== null || state.phoneOptedOut}
               onChange={(e) => toggle(field, e.target.checked)}
-              className="mt-0.5 h-4 w-4 flex-shrink-0 accent-[#306EEC] disabled:opacity-40"
             />
-            <span className="text-sm leading-relaxed text-[#313234]">
-              <span className="font-semibold">{label}</span>
-              <span className="mt-1 block text-xs text-[#6A6D71]">{help}</span>
+            <span className="min-w-0">
+              <span className="acct-check__label">{label}</span>
+              <span className="acct-check__help">{help}</span>
             </span>
           </label>
         ))}
@@ -145,7 +144,7 @@ export function SmsPreferences() {
          * A START lifts the block and nothing more: it restores neither
          * checkbox, so whoever comes back still has to turn on what they want.
          */
-        <p className="mt-3 rounded-[6px] bg-[#FFF6E9] px-3 py-2 text-xs leading-relaxed text-[#8A5A1B]">
+        <p className="acct-note">
           This phone number has opted out of SMS. Text <span className="font-semibold">START</span>{" "}
           to {"("}631{")"} 888-6340 to lift the block on your phone. That on its own does not
           resume any texts &mdash; come back here afterwards and switch on the ones you want.
@@ -153,9 +152,9 @@ export function SmsPreferences() {
       ) : null}
 
       {error && !state.phoneOptedOut ? (
-        <p className="mt-2 text-xs font-semibold text-[#B4342B]">{error}</p>
+        <p className="acct-error">{error}</p>
       ) : null}
-    </div>
+    </section>
   );
 }
 

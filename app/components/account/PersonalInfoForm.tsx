@@ -1,71 +1,101 @@
+"use client";
+
 import type { AccountAddress, AccountFormData } from "./types";
 import { AddressesPanel } from "./AddressesPanel";
 import { SmsPreferences } from "./SmsPreferences";
 import { EmailPreferences } from "./EmailPreferences";
+import { useAuth } from "@/lib/useAuth";
+import { formatPhoneInput } from "@/lib/auth2";
+import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
+import { buttonClass } from "@/app/components/ui/Button";
 
 interface PersonalInfoFormProps {
   formData: AccountFormData;
 }
 
-function AccountDetail({
-  label,
-  value,
-}: {
-  label: string;
-  value?: string | null;
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm text-[#6A6D71]">{label}</label>
-      <div className="w-full rounded-[8px] border border-[#C5CBD8] bg-[#EEF2FF] px-4 py-2.5 text-sm font-medium text-[#313234] opacity-90 sm:px-5 sm:py-3 sm:text-base">
-        {value || "-"}
-      </div>
-    </div>
-  );
-}
+type Field = "name" | "email" | "phone";
 
+/*
+ * Contact details, homes, and the text and email choices, on one page.
+ *
+ * PROGRESSIVE, NOT RE-ASKED. Registration 2.0 opens an account with one
+ * verified identifier, so a phone-only customer has no email here and a
+ * Google customer may have no phone. A missing detail gets an "Add" button
+ * that opens the same verified ContactCompletion sheet booking and checkout
+ * use (a code to the new phone or email, mode "attach"), so nothing is ever
+ * stored unverified and nothing already on the account is asked for again.
+ * Changing a detail that is already there stays a call to the office, as it
+ * always has.
+ */
 export function PersonalInfoForm({ formData }: PersonalInfoFormProps) {
   const addresses = (formData?.addresses || []) as AccountAddress[];
+  const { user } = useAuth();
+  const { ensureContact, contactSheet } = useContactCompletion();
+
+  const rows: { field: Field; label: string; value: string; verified?: boolean }[] = [
+    { field: "name", label: "Name", value: (formData?.name || "").trim() },
+    {
+      field: "email",
+      label: "Email",
+      value: (formData?.email || "").trim(),
+      verified: user?.emailVerified === true,
+    },
+    {
+      field: "phone",
+      label: "Mobile",
+      value: formData?.phone ? formatPhoneInput(String(formData.phone)) : "",
+      verified: user?.phoneVerified === true,
+    },
+  ];
 
   return (
-    <div>
-      <div className="mb-4 sm:mb-6">
-        <h2 className="text-xl font-semibold text-[#313234] sm:text-2xl">
-          Profile and addresses
+    <div className="acct-stack">
+      <section className="acct-card" aria-labelledby="acct-contact">
+        <h2 id="acct-contact" className="acct-card__title">
+          Contact details
         </h2>
-        <p className="mt-1 text-sm text-[#6A6D71]">
-          Manage where visits happen first. Account details are below.
+        <dl className="acct-fields">
+          {rows.map((row) => (
+            <div key={row.field} className="acct-field" data-acct-field={row.field}>
+              <div className="min-w-0">
+                <dt>{row.label}</dt>
+                <dd className={row.value ? "" : "acct-field__empty"}>
+                  {row.value || "Not added yet"}
+                  {row.value && row.verified ? (
+                    <span className="ui-tag ui-tag--accent ml-2 !min-h-[22px] align-[1px]">Verified</span>
+                  ) : null}
+                </dd>
+              </div>
+              {!row.value ? (
+                <button
+                  type="button"
+                  onClick={() => void ensureContact({ fields: [row.field] })}
+                  className={buttonClass({ variant: "secondary", size: "sm" })}
+                >
+                  Add {row.field === "phone" ? "mobile" : row.field}
+                </button>
+              ) : null}
+            </div>
+          ))}
+        </dl>
+        <p className="ui-small mt-2">
+          Need to change your name, email, or phone? Call 631-599-1363 and we&apos;ll help.
         </p>
-      </div>
+        {contactSheet}
+      </section>
 
       <AddressesPanel
         addresses={addresses}
         defaultAddressId={formData?.defaultAddressId ? String(formData.defaultAddressId) : null}
       />
 
-      <details className="mt-5 rounded-[8px] border border-[#E0E6F5] bg-white">
-        <summary className="flex min-h-[46px] cursor-pointer list-none items-center justify-between px-4 py-3 text-[15px] font-bold text-[#313234]">
-          Account details
-          <span className="text-[12px] font-semibold text-[#6A6D71]">Show</span>
-        </summary>
-
-        <div className="space-y-4 border-t border-[#EEF2FF] px-4 py-4 sm:space-y-5 sm:px-5">
-          <AccountDetail label="Name" value={formData?.name} />
-          <AccountDetail label="Email" value={formData?.email} />
-          <AccountDetail label="Phone" value={formData?.phone} />
-          <p className="text-xs text-[#6A6D71]">
-            Need to change your name, email, or phone? Call 631-599-1363 and we&apos;ll help.
-          </p>
-        </div>
-      </details>
-
       {/*
-        * Outside the collapsed "Account details", deliberately.
+        * Never inside a collapsed section, deliberately.
         *
-        * This is the one control on the page a customer can actually change,
-        * and it is a consent decision. Burying it behind a disclosure toggle
-        * would make opting out harder than opting in, which is the asymmetry
-        * these rules exist to prevent.
+        * These are the controls on the page a customer can actually change,
+        * and they are consent decisions. Burying them behind a disclosure
+        * toggle would make opting out harder than opting in, which is the
+        * asymmetry these rules exist to prevent.
         */}
       <SmsPreferences />
       <EmailPreferences />
