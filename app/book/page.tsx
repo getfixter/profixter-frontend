@@ -54,6 +54,8 @@ const ONE_TIME_SERVICE_OPTIONS = [
 ];
 
 const AUTO_SELECT_MONTHS_TO_CHECK = 6;
+/* Signing in from the One-Time tab comes back to the One-Time tab. */
+const ONE_TIME_RETURN_PATH = "/book?visit=additional";
 const FALLBACK_DAYS_TO_CHECK = 120;
 const CUSTOMER_MOBILE_NAV_HEIGHT_PX = 76;
 
@@ -774,10 +776,10 @@ function AdditionalVisitBooking({ navSlot }: { navSlot?: ReactNode }) {
                     We need a home profile for your address, photos, payment status, reminders, and booking history.
                   </p>
                   <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
-                    <Link href="/signin" className="ui-btn ui-btn--primary">
+                    <Link href={`/signin?next=${encodeURIComponent(ONE_TIME_RETURN_PATH)}`} className="ui-btn ui-btn--primary">
                       Log In
                     </Link>
-                    <Link href="/signup" className="ui-btn ui-btn--secondary">
+                    <Link href={`/signup?next=${encodeURIComponent(ONE_TIME_RETURN_PATH)}`} className="ui-btn ui-btn--secondary">
                       Create Account
                     </Link>
                   </div>
