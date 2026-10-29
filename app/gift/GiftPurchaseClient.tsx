@@ -15,20 +15,30 @@
  *    The options call 404s while GIFTS_ENABLED is off, and this screen renders
  *    the unavailable state — so deploying the code cannot launch the feature.
  *
- * 3. THERE IS NO COUPON FIELD. Stripe Checkout owns promotion codes and
- *    validates eligibility, expiry and redemption limits itself. A field here
- *    would either duplicate that badly or lie about what it had accepted.
+ * 3. THERE IS NO COUPON FIELD, AND NO TAX FIGURE. Stripe Checkout owns
+ *    promotion codes and validates eligibility, expiry and redemption limits
+ *    itself, and it computes sales tax from the billing address it collects.
+ *    A field here would either duplicate that badly or lie about what it had
+ *    accepted, so the summary names both and says where they are settled.
+ *
+ * ONE SCREEN, FOUR QUESTIONS. This used to be a four-step wizard (plan,
+ * length, recipient, review). A purchaser only needs to answer who it is for,
+ * which gift, and see what it costs and how they pay, so all of it is one
+ * form: the required fields first, everything optional behind one closed
+ * disclosure, and the summary beside the pay button. The payload sent to
+ * /api/gifts/checkout-session is unchanged.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import DigitalGiftCard from "@/app/components/gift/DigitalGiftCard";
+import GiftPromoCode from "@/app/components/gift/GiftPromoCode";
 import {
   MESSAGE_MAX_LENGTH,
   OCCASIONS,
   OCCASION_ORDER,
   type GiftOccasion,
 } from "@/app/components/gift/giftPresentation";
-import Link from "next/link";
 
 import { useAuth } from "@/lib/useAuth";
 import { useContactCompletion } from "@/app/components/auth/ContactCompletion";
@@ -42,24 +52,12 @@ import {
   type GiftOptions,
   type GiftPlan,
 } from "@/lib/gift-service";
-
-type Step = "plan" | "length" | "recipient" | "review";
+import "./gift.css";
 
 const US_STATES = ["NY", "NJ", "CT", "PA"];
 
-/*
- * min-h is not decoration. A <select> renders about two pixels shorter than an
- * <input> with identical padding, which left the State control at 43px — under
- * the 44px tap-target guideline, and visibly misaligned beside the City and ZIP
- * fields on the same row. Pinning a floor makes every control match and clear
- * the guideline regardless of how the browser measures it.
- */
-const FIELD =
-  "w-full min-h-[46px] rounded-[8px] border border-[#C5CBD8] bg-white px-4 py-2.5 text-sm text-[#313234] " +
-  "outline-none transition focus:border-[#306EEC] focus:ring-2 focus:ring-[#306EEC]/20 " +
-  "sm:px-5 sm:py-3 sm:text-base";
-
-const LABEL = "mb-2 block text-sm font-medium text-[#313234]";
+/** The order errors are reported in, which is the order the form reads. */
+const FIELD_ORDER = ["firstName", "lastName", "email", "phone", "plan", "line1", "city", "zip"];
 
 function Field({
   id,
@@ -69,8 +67,10 @@ function Field({
   type = "text",
   placeholder,
   error,
+  hint,
   autoComplete,
   maxLength,
+  inputMode,
 }: {
   id: string;
   label: string;
@@ -79,12 +79,15 @@ function Field({
   type?: string;
   placeholder?: string;
   error?: string;
+  hint?: string;
   autoComplete?: string;
   maxLength?: number;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
 }) {
+  const describedBy = [error ? `${id}-error` : "", hint ? `${id}-hint` : ""].filter(Boolean).join(" ");
   return (
     <div>
-      <label htmlFor={id} className={LABEL}>
+      <label htmlFor={id} className="gf-label">
         {label}
       </label>
       <input
@@ -96,65 +99,21 @@ function Field({
         placeholder={placeholder}
         autoComplete={autoComplete}
         maxLength={maxLength}
+        inputMode={inputMode}
         aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${id}-error` : undefined}
-        className={`${FIELD} ${error ? "border-[#C0392B] focus:border-[#C0392B] focus:ring-[#C0392B]/20" : ""}`}
+        aria-describedby={describedBy || undefined}
+        className="gf-input"
       />
       {error ? (
-        <p id={`${id}-error`} role="alert" className="mt-1.5 text-sm text-[#C0392B]">
+        <p id={`${id}-error`} role="alert" className="gf-error">
           {error}
+        </p>
+      ) : hint ? (
+        <p id={`${id}-hint`} className="gf-hint">
+          {hint}
         </p>
       ) : null}
     </div>
-  );
-}
-
-/** The step rail. Compact on mobile, never a horizontal scroll. */
-function Steps({ current }: { current: Step }) {
-  const order: Step[] = ["plan", "length", "recipient", "review"];
-  const labels: Record<Step, string> = {
-    plan: "Plan",
-    length: "Length",
-    recipient: "Recipient",
-    review: "Review",
-  };
-  const index = order.indexOf(current);
-
-  return (
-    <ol className="mb-7 flex items-center gap-2 sm:gap-3" aria-label="Progress">
-      {order.map((step, i) => {
-        const done = i < index;
-        const active = i === index;
-        return (
-          <li key={step} className="flex flex-1 items-center gap-2 sm:gap-3">
-            <span
-              aria-current={active ? "step" : undefined}
-              className={[
-                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold",
-                active
-                  ? "bg-[#306EEC] text-white"
-                  : done
-                    ? "bg-[#DCE8FF] text-[#306EEC]"
-                    : "bg-[#EEF2FF] text-[#9CA3AF]",
-              ].join(" ")}
-            >
-              {i + 1}
-            </span>
-            <span
-              className={[
-                "text-[13px] font-medium sm:text-sm",
-                active ? "text-[#313234]" : "text-[#9CA3AF]",
-              ].join(" ")}
-            >
-              {labels[step]}
-            </span>
-            {i < order.length - 1 ? (
-              <span className="ml-auto hidden h-px flex-1 bg-[#E0E6F5] sm:block" aria-hidden />
-            ) : null}
-          </li>
-        );
-      })}
-    </ol>
   );
 }
 
@@ -165,24 +124,34 @@ export default function GiftPurchaseClient() {
   const [options, setOptions] = useState<GiftOptions | null>(null);
   const [optionsState, setOptionsState] = useState<"loading" | "ready" | "off" | "error">("loading");
 
-  const [step, setStep] = useState<Step>("plan");
   const [plan, setPlan] = useState<GiftPlan | null>(null);
   const [chosenDuration, setChosenDuration] = useState<number | null>(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  /*
+   * The second contact, behind "Add a mobile number".
+   *
+   * Email is the one required way to reach the recipient (see validateRecipient
+   * for why). The phone is a second channel, so it starts hidden and appears
+   * only for somebody who wants the link texted as well.
+   */
+  const [phoneOpen, setPhoneOpen] = useState(false);
   const [phone, setPhone] = useState("");
-  const [addressOpen, setAddressOpen] = useState(false);
   const [line1, setLine1] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("NY");
   const [zip, setZip] = useState("");
 
   /*
-   * Presentation only. Neither of these reaches pricing, duration or
-   * entitlement — the server ignores them for everything but the words on
-   * the card, and sanitises both before storing them.
+   * Everything optional lives in one closed disclosure: the occasion, the
+   * personal message and the recipient's address. None of it reaches pricing,
+   * duration or entitlement — the server ignores the first two for everything
+   * but the words on the card (and sanitises both), and the address is only a
+   * hint for the recipient at claim time.
    */
+  const [moreOpen, setMoreOpen] = useState(false);
+
   /* The signed-in purchaser is who the gift is from. Shown on the preview
    * so it matches the card the recipient will actually open. */
   const purchaserName = String(user?.name || "").trim();
@@ -242,7 +211,6 @@ export default function GiftPurchaseClient() {
     };
   }, [authLoading]);
 
-  /* Launch offers one length. The API says which; this never assumes two. */
   /*
    * The chosen length, defaulting to the one the server nominates.
    *
@@ -252,15 +220,6 @@ export default function GiftPurchaseClient() {
    */
   const durationMonths =
     chosenDuration ?? options?.defaultDurationMonths ?? options?.durations?.[0] ?? null;
-
-  const quoteFor = useCallback(
-    (which: GiftPlan) => {
-      const entry = options?.plans.find((p) => p.plan === which);
-      if (!entry || durationMonths === null) return null;
-      return entry.quotes.find((q) => q.durationMonths === durationMonths) || null;
-    },
-    [options, durationMonths]
-  );
 
   /** Any plan at any offered length, straight from the server's quotes. */
   const quoteForDuration = useCallback(
@@ -272,19 +231,24 @@ export default function GiftPurchaseClient() {
     [options]
   );
 
-  const perMonthCents = useMemo(() => {
-    if (!plan) return null;
-    const entry = options?.plans.find((p) => p.plan === plan);
-    return entry?.quotes[0]?.perMonthCents ?? null;
-  }, [options, plan]);
-
-  const selectedQuote = useMemo(() => (plan ? quoteFor(plan) : null), [plan, quoteFor]);
+  const selectedQuote = useMemo(
+    () => quoteForDuration(plan, durationMonths),
+    [quoteForDuration, plan, durationMonths]
+  );
 
   const validateRecipient = useCallback(() => {
     const next: Record<string, string> = {};
     if (!firstName.trim()) next.firstName = "Enter their first name.";
     if (!lastName.trim()) next.lastName = "Enter their last name.";
 
+    /*
+     * EMAIL IS REQUIRED, and the server enforces the same rule
+     * (validateGiftPurchase: invalid_recipient_email). It is what claim
+     * identity binds on — the recipient proves the gift is theirs by signing
+     * in with the address the invitation went to. Nothing verifies a phone
+     * number typed by the purchaser, so a phone-only gift would be claimable
+     * by anybody holding the link.
+     */
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) next.email = "Enter their email address.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) next.email = "That does not look like an email address.";
@@ -302,6 +266,8 @@ export default function GiftPurchaseClient() {
     if (digits && !/^1?\d{10}$/.test(digits)) {
       next.phone = "Enter a 10-digit US phone number, or leave it blank.";
     }
+
+    if (!plan) next.plan = "Choose a plan.";
 
     /*
      * THE ADDRESS IS OPTIONAL, and this is the point of the section.
@@ -324,11 +290,37 @@ export default function GiftPurchaseClient() {
     }
 
     setErrors(next);
-    return Object.keys(next).length === 0;
-  }, [firstName, lastName, email, phone, line1, city, zip, user]);
+    return next;
+  }, [firstName, lastName, email, phone, plan, line1, city, zip, user]);
+
+  /*
+   * Take the purchaser to the first problem. An error message they cannot
+   * see is no help on a phone, where the pay button sits far below the
+   * fields. Hidden sections holding the error are opened first.
+   */
+  const revealError = useCallback((found: Record<string, string>) => {
+    const first = FIELD_ORDER.find((key) => found[key]);
+    if (!first) return;
+    if (first === "phone") setPhoneOpen(true);
+    if (["line1", "city", "zip"].includes(first)) setMoreOpen(true);
+    window.requestAnimationFrame(() => {
+      const target =
+        first === "plan"
+          ? document.querySelector<HTMLInputElement>('input[name="gift-plan"]')
+          : document.getElementById(first);
+      if (!target) return;
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      target.focus({ preventScroll: true });
+    });
+  }, []);
 
   const handlePay = useCallback(async () => {
     if (submitLock.current) return;
+    const found = validateRecipient();
+    if (Object.keys(found).length) {
+      revealError(found);
+      return;
+    }
     if (!plan || durationMonths === null) return;
     // The receipt goes to the purchaser's email; ask for it here if missing.
     if (!(await ensureContact({ fields: ["email"] }))) return;
@@ -357,14 +349,19 @@ export default function GiftPurchaseClient() {
     } catch (error) {
       const giftError = error instanceof GiftError ? error : null;
       setSubmitError(giftError?.message || "We could not open checkout. Please try again.");
+      // The server's refusal is shown on the field that caused it.
       if (giftError?.code === "SELF_GIFT_NOT_ALLOWED" || giftError?.code === "INVALID_RECIPIENT_EMAIL") {
-        setErrors((prev) => ({ ...prev, email: giftError.message }));
-        setStep("recipient");
+        const fieldError = { email: giftError.message };
+        setErrors((prev) => ({ ...prev, ...fieldError }));
+        revealError(fieldError);
       }
       submitLock.current = false;
       setSubmitting(false);
     }
-  }, [ensureContact, 
+  }, [
+    validateRecipient,
+    revealError,
+    ensureContact,
     plan,
     durationMonths,
     firstName,
@@ -384,12 +381,8 @@ export default function GiftPurchaseClient() {
   /* Everyone waits for the same fetch now, signed in or not. */
   if (authLoading || optionsState === "loading") {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6">
-        <div
-          className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[#E0E6F5] border-t-[#306EEC]"
-          role="status"
-          aria-label="Loading"
-        />
+      <div className="py-16 text-center">
+        <div className="gf-spinner" role="status" aria-label="Loading" />
       </div>
     );
   }
@@ -400,16 +393,12 @@ export default function GiftPurchaseClient() {
    */
   if (optionsState === "off") {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6">
-        <h2 className="text-2xl font-semibold text-[#313234] sm:text-3xl">Gift memberships</h2>
-        <p className="mx-auto mt-3 max-w-md text-[15px] text-[#6A6D71]">
-          Gift memberships are not available just yet. In the meantime, a ProFixter membership can
-          be started at any time.
+      <div className="ui-card ui-card--soft max-w-[560px]">
+        <h2 className="ui-h3">Gift memberships are not available just yet</h2>
+        <p className="ui-body mt-2 text-[color:var(--ui-text-2)]">
+          In the meantime, a ProFixter membership can be started at any time.
         </p>
-        <Link
-          href="/membership/plans"
-          className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-semibold text-white transition hover:bg-[#2558C4]"
-        >
+        <Link href="/membership/plans" className="ui-btn ui-btn--primary mt-5">
           See membership plans
         </Link>
       </div>
@@ -418,15 +407,15 @@ export default function GiftPurchaseClient() {
 
   if (optionsState === "error") {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6">
-        <h2 className="text-2xl font-semibold text-[#313234]">We could not load gift options</h2>
-        <p className="mx-auto mt-3 max-w-md text-[15px] text-[#6A6D71]">
+      <div className="ui-card ui-card--soft max-w-[560px]">
+        <h2 className="ui-h3">We could not load gift options</h2>
+        <p className="ui-body mt-2 text-[color:var(--ui-text-2)]">
           Something went wrong on our side. Please try again in a moment.
         </p>
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-[8px] border border-[#C5CBD8] px-6 text-[15px] font-semibold text-[#313234] transition hover:bg-[#F8FAFF]"
+          className="ui-btn ui-btn--secondary mt-5"
         >
           Try again
         </button>
@@ -443,38 +432,25 @@ export default function GiftPurchaseClient() {
    */
   if (!isAuthenticated) {
     const preview = options?.plans ?? [];
-    const shortest = options?.durations?.length ? Math.min(...options.durations) : null;
-    const longest = options?.durations?.length ? Math.max(...options.durations) : null;
 
     return (
-      <div className="mx-auto max-w-2xl px-4 py-14 sm:px-6">
-        <h2 className="text-[26px] font-semibold leading-tight text-[#313234] sm:text-[34px]">
-          Give someone a ProFixter membership
-        </h2>
-        <p className="mt-3 text-[15px] leading-relaxed text-[#6A6D71] sm:text-base">
-          A professional handyman at their home
-          {shortest && longest ? `, for ${shortest} to ${longest} months` : ""}. You pay once. They
-          book the visits. Nothing renews.
-        </p>
-
+      <div className="max-w-[560px]">
         {preview.length > 0 ? (
-          <div className="mt-8 overflow-hidden rounded-[12px] border border-[#E0E6F5]">
-            <div className="flex items-baseline justify-between border-b border-[#E0E6F5] bg-[#F8FAFF] px-4 py-3">
-              <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-[#6A6D71]">
-                Plans
-              </p>
-              <p className="text-[13px] text-[#6A6D71]">Per month of the gift</p>
+          <div className="ui-card p-0">
+            <div className="flex items-baseline justify-between gap-4 border-b border-[color:var(--ui-line)] px-5 py-3">
+              <p className="ui-eyebrow">Plans</p>
+              <p className="ui-small">Per month of the gift</p>
             </div>
             <ul>
               {preview.map((entry) => (
                 <li
                   key={entry.plan}
-                  className="flex items-baseline justify-between gap-4 border-b border-[#EEF1F8] px-4 py-3 last:border-b-0"
+                  className="flex items-baseline justify-between gap-4 border-b border-[color:var(--ui-line)] px-5 py-3 last:border-b-0"
                 >
-                  <span className="text-[15px] font-semibold text-[#313234]">{entry.label}</span>
-                  <span className="text-[15px] tabular-nums text-[#313234]">
+                  <span className="ui-body font-semibold text-[color:var(--ui-ink)]">{entry.label}</span>
+                  <span className="ui-body ui-num text-[color:var(--ui-ink)]">
                     {formatMoneyCents(entry.quotes[0]?.perMonthCents ?? 0)}
-                    <span className="text-[#6A6D71]">/mo</span>
+                    <span className="text-[color:var(--ui-text-3)]">/mo</span>
                   </span>
                 </li>
               ))}
@@ -482,24 +458,19 @@ export default function GiftPurchaseClient() {
           </div>
         ) : null}
 
-        <p className="mt-3 text-[13px] leading-relaxed text-[#6A6D71]">
-          Choose the length when you buy. The total is the monthly price times the number of
-          months, plus tax.
+        <p className="ui-small mt-3">
+          Choose the length when you buy. Tax is added at checkout.
         </p>
 
-        <div className="mt-7 rounded-[10px] border border-[#E0E6F5] bg-[#F8FAFF] p-5">
-          <p className="text-sm text-[#6A6D71]">Sign in to continue. We will bring you straight back here.</p>
+        <div className="ui-card ui-card--soft mt-6">
+          <p className="ui-body text-[color:var(--ui-text-2)]">
+            Sign in to buy a gift. We will bring you straight back here.
+          </p>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/signin?next=%2Fgift"
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-semibold text-white transition hover:bg-[#2558C4]"
-            >
+            <Link href="/signin?next=%2Fgift" className="ui-btn ui-btn--primary min-h-[48px] flex-1">
               Sign in
             </Link>
-            <Link
-              href="/signup?next=%2Fgift"
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-6 text-[15px] font-semibold text-[#313234] transition hover:bg-[#F8FAFF]"
-            >
+            <Link href="/signup?next=%2Fgift" className="ui-btn ui-btn--secondary min-h-[48px] flex-1">
               Create an account
             </Link>
           </div>
@@ -509,209 +480,38 @@ export default function GiftPurchaseClient() {
   }
 
   const plans = options?.plans ?? [];
+  const durations = options?.durations ?? [];
+  const messageLeft = MESSAGE_MAX_LENGTH - personalMessage.length;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+    <div className="gf-layout">
       {contactSheet}
-      <header className="mb-7">
-        <h2 className="text-[26px] font-semibold leading-tight text-[#313234] sm:text-[32px]">
-          Gift a Membership
-        </h2>
-        <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-[#6A6D71]">
-          Choose a plan and how long it runs, tell us who it is for, and we will send
-          them a beautiful digital gift.
-        </p>
-      </header>
 
-      <Steps current={step} />
-
-      {/* ------------------------------- Plan ------------------------------ */}
-      {step === "plan" ? (
-        <section aria-labelledby="plan-heading">
-          <h2 id="plan-heading" className="sr-only">
-            Choose a plan
-          </h2>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {plans.map((option) => {
-              const quote = quoteFor(option.plan);
-              if (!quote) return null;
-              const selected = plan === option.plan;
-              return (
-                <button
-                  key={option.plan}
-                  type="button"
-                  onClick={() => setPlan(option.plan)}
-                  aria-pressed={selected}
-                  className={[
-                    "rounded-[10px] border p-4 text-left transition sm:p-5",
-                    selected
-                      ? "border-[#306EEC] bg-[#F5F9FF] ring-2 ring-[#306EEC]/20"
-                      : "border-[#E0E6F5] bg-white hover:border-[#C5CBD8]",
-                  ].join(" ")}
-                >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-[17px] font-semibold text-[#313234]">{option.label}</span>
-                    <span className="shrink-0 text-[13px] text-[#6A6D71]">
-                      {formatMoneyCents(quote.perMonthCents)}/mo
-                    </span>
-                  </div>
-                  <div className="mt-3 flex items-baseline gap-2">
-                    <span className="text-[24px] font-semibold text-[#313234]">
-                      {formatMoneyCents(quote.perMonthCents)}
-                    </span>
-                    <span className="text-[13px] text-[#6A6D71]">per month</span>
-                  </div>
-                  <p className="mt-1 text-[13px] text-[#9CA3AF]">
-                    You choose how many months next
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-
-          <p className="mt-5 rounded-[8px] border border-[#E0E6F5] bg-[#F8FAFF] px-4 py-3 text-[13px] leading-relaxed text-[#6A6D71]">
-            <strong className="font-semibold text-[#313234]">One-time payment.</strong> This gift
-            does not automatically renew, and you will not be charged again.
-          </p>
-
-          <div className="mt-6 flex justify-end">
-            <button
-              type="button"
-              disabled={!plan}
-              onClick={() => setStep("length")}
-              className="inline-flex min-h-[46px] w-full items-center justify-center rounded-[8px] bg-[#306EEC] px-7 text-[15px] font-semibold text-white transition hover:bg-[#2558C4] disabled:cursor-not-allowed disabled:bg-[#C5CBD8] sm:w-auto"
-            >
-              Continue
-            </button>
-          </div>
-        </section>
-      ) : null}
-
-      {/* ------------------------------ Length ----------------------------- */}
-      {step === "length" && plan ? (
-        <section aria-labelledby="length-heading">
-          <h2 id="length-heading" className="text-[19px] font-semibold text-[#313234]">
-            How long should it run?
-          </h2>
-          <p className="mt-1.5 text-[14px] leading-relaxed text-[#6A6D71]">
-            {planLabel(plan)} is {formatMoneyCents(perMonthCents ?? 0)} a month, and a full year is
-            priced like an annual membership. The whole gift is
-            paid once, up front — nothing renews and there is no card left on file.
-          </p>
-
-          <div
-            role="radiogroup"
-            aria-label="Gift length"
-            className="mt-5 grid gap-3 sm:grid-cols-2"
-          >
-            {(options?.durations ?? []).map((months) => {
-              const quote = quoteForDuration(plan, months);
-              if (!quote) return null;
-              const selected = durationMonths === months;
-              return (
-                <button
-                  key={months}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => setChosenDuration(months)}
-                  className={[
-                    "flex items-baseline justify-between gap-3 rounded-[10px] border px-4 py-4 text-left transition sm:px-5",
-                    selected
-                      ? "border-[#306EEC] bg-[#F5F9FF] ring-2 ring-[#306EEC]/20"
-                      : "border-[#E0E6F5] bg-white hover:border-[#C5CBD8]",
-                  ].join(" ")}
-                >
-                  <span className="min-w-0">
-                    <span className="block text-[16px] font-semibold text-[#313234]">
-                      {monthsLabel(months)}
-                    </span>
-                    {/*
-                      Twelve months is sold at the annual rate, so printing
-                      "per month times months" beside it would be arithmetic
-                      that does not reach the price shown. The server says
-                      which basis it used; the saving is the honest thing to
-                      show in its place.
-                    */}
-                    <span className="mt-0.5 block text-[13px] text-[#9CA3AF]">
-                      {quote.pricingBasis === "annual" ? (
-                        <>
-                          Pay 10, get 12
-                          {quote.savingsCents ? (
-                            <span className="font-semibold text-[#1E7C4A]">
-                              {" "}
-                              &middot; save {formatMoneyCents(quote.savingsCents)}
-                            </span>
-                          ) : null}
-                        </>
-                      ) : (
-                        <>
-                          {formatMoneyCents(quote.perMonthCents)} &times; {months}
-                        </>
-                      )}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-[20px] font-semibold text-[#313234]">
-                    {formatMoneyCents(quote.totalCents)}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {selectedQuote ? (
-            <p className="mt-5 rounded-[8px] bg-[#F8FAFF] px-4 py-3 text-[14px] text-[#313234]">
-              <span className="font-semibold">
-                {monthsLabel(selectedQuote.durationMonths)} of ProFixter {planLabel(plan)}
-              </span>{" "}
-              &middot; {formatMoneyCents(selectedQuote.totalCents)} before tax
-            </p>
-          ) : null}
-
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-between">
-            <button
-              type="button"
-              onClick={() => setStep("plan")}
-              className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-6 text-[15px] font-semibold text-[#313234] transition hover:bg-[#F8FAFF]"
-            >
-              Back
-            </button>
-            <button
-              type="button"
-              disabled={!durationMonths}
-              onClick={() => setStep("recipient")}
-              className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] bg-[#306EEC] px-7 text-[15px] font-semibold text-white transition hover:bg-[#2558C4] disabled:cursor-not-allowed disabled:bg-[#C5CBD8]"
-            >
-              Continue
-            </button>
-          </div>
-        </section>
-      ) : null}
-
-      {/* ----------------------------- Recipient --------------------------- */}
-      {step === "recipient" ? (
-        <section aria-labelledby="recipient-heading">
-          <h2 id="recipient-heading" className="mb-4 text-[19px] font-semibold text-[#313234]">
+      <form
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          handlePay();
+        }}
+        aria-label="Gift details"
+        id="gift-form"
+      >
+        {/* --------------------------- 1. Recipient --------------------------- */}
+        <section className="gf-block" aria-labelledby="gift-recipient-heading">
+          <h2 id="gift-recipient-heading" className="gf-block__title">
+            <span className="gf-block__num" aria-hidden="true">1</span>
             Who is it for?
           </h2>
 
-          <form
-            noValidate
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (validateRecipient()) setStep("review");
-            }}
-            className="space-y-4"
-          >
-            <div className="grid gap-4 sm:grid-cols-2">
+          <div className="gf-stack">
+            <div className="gf-row gf-row--2">
               <Field
                 id="firstName"
                 label="First name"
                 value={firstName}
                 onChange={setFirstName}
                 error={errors.firstName}
-                autoComplete="given-name"
+                autoComplete="off"
                 maxLength={80}
               />
               <Field
@@ -720,108 +520,265 @@ export default function GiftPurchaseClient() {
                 value={lastName}
                 onChange={setLastName}
                 error={errors.lastName}
-                autoComplete="family-name"
+                autoComplete="off"
                 maxLength={80}
               />
             </div>
 
             <Field
               id="email"
-              label="Email address"
+              label="Their email"
               type="email"
               value={email}
               onChange={setEmail}
               error={errors.email}
-              placeholder="them@example.com"
-              autoComplete="email"
+              hint="We email them a link to claim it."
+              placeholder="name@example.com"
+              autoComplete="off"
+              inputMode="email"
               maxLength={200}
             />
 
             {/*
-              A phone number is optional and is a second way to reach them.
-
-              Email stays required because it is what proves, at claim time,
-              that the person signing in is the one the gift was addressed to.
-              A phone number is typed by the purchaser and verified by nobody,
-              so it decides whether we also text them — never who they are.
+              The second contact. Optional, so it is offered rather than shown:
+              a purchaser who adds it also gets the link texted to the
+              recipient. "Remove" clears the number as well as hiding the
+              field, so a hidden number is never sent.
             */}
-            <Field
-              id="phone"
-              label="Mobile number (optional)"
-              type="tel"
-              value={phone}
-              onChange={setPhone}
-              error={errors.phone}
-              placeholder="(631) 555-0134"
-              autoComplete="tel"
-              maxLength={20}
-            />
-            <p className="-mt-2 text-[13px] leading-relaxed text-[#6A6D71]">
-              We will text them the gift as well as emailing it.
-            </p>
-
-            {/*
-              THE ADDRESS IS OPTIONAL, and collapsed by default.
-
-              Most people buying a present for a colleague, a client or a
-              sister-in-law do not know their street address, and being asked
-              for it as a required field is where the purchase was being
-              abandoned. The recipient picks the property on their own account
-              when they claim, and that is the one entitlement uses; anything
-              entered here is only a hint so they recognise which home it was
-              meant for.
-            */}
-            <div className="rounded-[10px] border border-[#E0E6F5] bg-[#FAFBFE]">
+            {phoneOpen ? (
+              <div>
+                <Field
+                  id="phone"
+                  label="Their mobile number"
+                  type="tel"
+                  value={phone}
+                  onChange={setPhone}
+                  error={errors.phone}
+                  hint="We text them the link too."
+                  placeholder="(631) 555-0134"
+                  autoComplete="off"
+                  inputMode="tel"
+                  maxLength={20}
+                />
+                <button
+                  type="button"
+                  className="gf-textbtn gf-textbtn--muted"
+                  onClick={() => {
+                    setPhone("");
+                    setPhoneOpen(false);
+                    setErrors((prev) => {
+                      const rest = { ...prev };
+                      delete rest.phone;
+                      return rest;
+                    });
+                  }}
+                >
+                  Remove mobile number
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
-                onClick={() => setAddressOpen((open) => !open)}
-                aria-expanded={addressOpen}
-                aria-controls="gift-address-fields"
-                className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left"
+                className="gf-textbtn"
+                onClick={() => {
+                  setPhoneOpen(true);
+                  window.requestAnimationFrame(() => document.getElementById("phone")?.focus());
+                }}
               >
-                <span>
-                  <span className="block text-[15px] font-semibold text-[#313234]">
-                    Add recipient address (optional)
-                  </span>
-                  <span className="mt-0.5 block text-[13px] leading-relaxed text-[#6A6D71]">
-                    Skip this if you do not know it. They choose the property when they claim.
-                  </span>
-                </span>
-                <span aria-hidden="true" className="text-[18px] leading-none text-[#6A6D71]">
-                  {addressOpen ? "\u2212" : "+"}
-                </span>
+                <span aria-hidden="true">+</span> Add another contact (mobile number)
               </button>
+            )}
+          </div>
+        </section>
 
-              <div id="gift-address-fields" hidden={!addressOpen} className="space-y-4 px-4 pb-4">
+        {/* ----------------------------- 2. Gift ----------------------------- */}
+        <section className="gf-block" aria-labelledby="gift-choice-heading">
+          <h2 id="gift-choice-heading" className="gf-block__title">
+            <span className="gf-block__num" aria-hidden="true">2</span>
+            Choose the gift
+          </h2>
+
+          <fieldset>
+            <legend className="gf-legend">Plan</legend>
+            <div
+              className="gf-choices gf-choices--plans"
+              aria-invalid={errors.plan ? true : undefined}
+              aria-describedby={errors.plan ? "plan-error" : undefined}
+            >
+              {plans.map((option) => {
+                const perMonth = option.quotes[0]?.perMonthCents;
+                if (perMonth === undefined) return null;
+                return (
+                  <label key={option.plan} className="gf-choice">
+                    <input
+                      type="radio"
+                      name="gift-plan"
+                      value={option.plan}
+                      checked={plan === option.plan}
+                      onChange={() => {
+                        setPlan(option.plan);
+                        setErrors((prev) => {
+                          const rest = { ...prev };
+                          delete rest.plan;
+                          return rest;
+                        });
+                      }}
+                    />
+                    <span className="gf-choice__name">{option.label}</span>
+                    <span className="gf-choice__meta">{formatMoneyCents(perMonth)}/mo</span>
+                  </label>
+                );
+              })}
+            </div>
+            {errors.plan ? (
+              <p id="plan-error" role="alert" className="gf-error">
+                {errors.plan}
+              </p>
+            ) : null}
+          </fieldset>
+
+          {/*
+            Length. Each tile shows its own total once a plan is chosen.
+
+            Twelve months is sold at the annual rate, so printing "per month
+            times months" beside it would be arithmetic that does not reach
+            the price shown. The server says which basis it used; the saving
+            is the honest thing to show in its place.
+          */}
+          <fieldset className="mt-5">
+            <legend className="gf-legend">Length</legend>
+            <div
+              className="gf-choices gf-choices--lengths"
+              style={{ ["--gf-cols" as string]: String(Math.min(Math.max(durations.length, 1), 5)) }}
+            >
+              {durations.map((months) => {
+                const quote = quoteForDuration(plan, months);
+                return (
+                  <label key={months} className="gf-choice">
+                    <input
+                      type="radio"
+                      name="gift-length"
+                      value={months}
+                      checked={durationMonths === months}
+                      onChange={() => setChosenDuration(months)}
+                    />
+                    <span className="gf-choice__name">{monthsLabel(months)}</span>
+                    {quote ? (
+                      <>
+                        <span className="gf-choice__meta">{formatMoneyCents(quote.totalCents)}</span>
+                        {quote.pricingBasis === "annual" && quote.savingsCents ? (
+                          <span className="gf-choice__save">Save {formatMoneyCents(quote.savingsCents)}</span>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        </section>
+
+        {/* ---------------------------- Optional ----------------------------- */}
+        {/*
+          What the gift SAYS, kept apart from what the gift IS, plus the
+          address hint. All optional, all closed by default, and none of it
+          changes the plan, the length or the price.
+        */}
+        <section className="gf-block">
+          <div className="gf-more">
+            <button
+              type="button"
+              className="gf-more__toggle"
+              aria-expanded={moreOpen}
+              aria-controls="gift-more"
+              onClick={() => setMoreOpen((open) => !open)}
+            >
+              <span>
+                Add a message or details <span className="gf-opt">(optional)</span>
+              </span>
+            </button>
+
+            <div id="gift-more" hidden={!moreOpen} className="gf-more__body">
+              <div className="gf-stack">
+                <div>
+                  <label htmlFor="gift-occasion" className="gf-label">
+                    Occasion
+                  </label>
+                  <select
+                    id="gift-occasion"
+                    value={occasion}
+                    onChange={(e) => setOccasion(e.target.value as GiftOccasion)}
+                    className="gf-input"
+                  >
+                    {OCCASION_ORDER.map((key) => (
+                      <option key={key} value={key}>
+                        {OCCASIONS[key].label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <label htmlFor="gift-message" className="gf-label">
+                      Personal message
+                    </label>
+                    <span className="ui-num text-[13px] text-[color:var(--ui-text-3)]" aria-live="polite">
+                      {messageLeft} left
+                    </span>
+                  </div>
+                  <textarea
+                    id="gift-message"
+                    value={personalMessage}
+                    maxLength={MESSAGE_MAX_LENGTH}
+                    rows={3}
+                    onChange={(e) => setPersonalMessage(e.target.value.slice(0, MESSAGE_MAX_LENGTH))}
+                    placeholder="Congratulations on your new home!"
+                    className="gf-input"
+                  />
+                </div>
+              </div>
+
+              {/*
+                THE ADDRESS IS OPTIONAL. Most people buying a present for a
+                colleague, a client or a sister-in-law do not know their street
+                address, and being asked for it is where the purchase was being
+                abandoned. The recipient picks the property on their own
+                account when they claim, and that is the one entitlement uses;
+                anything entered here is only a hint so they recognise which
+                home it was meant for.
+              */}
+              <p className="gf-subhead">Their address</p>
+              <p className="gf-hint mt-0 mb-3">Only if you know it. They choose the home when they claim.</p>
+              <div className="gf-stack">
                 <Field
                   id="line1"
                   label="Street address"
                   value={line1}
                   onChange={setLine1}
                   error={errors.line1}
-                  autoComplete="address-line1"
+                  autoComplete="off"
                   maxLength={200}
                 />
-
-                <div className="grid gap-4 sm:grid-cols-[1fr_120px_140px]">
+                <div className="gf-row gf-row--address">
                   <Field
                     id="city"
                     label="City"
                     value={city}
                     onChange={setCity}
                     error={errors.city}
-                    autoComplete="address-level2"
+                    autoComplete="off"
                     maxLength={100}
                   />
                   <div>
-                    <label htmlFor="state" className={LABEL}>
+                    <label htmlFor="state" className="gf-label">
                       State
                     </label>
                     <select
                       id="state"
                       value={state}
                       onChange={(e) => setState(e.target.value)}
-                      className={FIELD}
+                      className="gf-input"
                     >
                       {US_STATES.map((s) => (
                         <option key={s} value={s}>
@@ -836,219 +793,121 @@ export default function GiftPurchaseClient() {
                     value={zip}
                     onChange={(v) => setZip(v.replace(/\D/g, "").slice(0, 5))}
                     error={errors.zip}
-                    autoComplete="postal-code"
+                    autoComplete="off"
+                    inputMode="numeric"
                     maxLength={5}
                   />
                 </div>
               </div>
             </div>
-
-            {/* ------------------------- Presentation ------------------------- */}
-          {/*
-            What the gift SAYS, kept apart from what the gift IS.
-
-            Both fields are optional and neither touches the plan, the length
-            or the price — the server treats them as words for the card and
-            nothing else. The heading says so plainly, because a purchaser
-            choosing "Birthday" should not have to wonder whether they have
-            just changed what they are buying.
-          */}
-          <fieldset className="mt-8 border-t border-[#EEF2FF] pt-7">
-            <legend className="sr-only">How the gift is presented</legend>
-            <h3 className="text-[15px] font-semibold text-[#313234]">Make it personal</h3>
-            <p className="mt-1 text-[13px] leading-relaxed text-[#6A6D71]">
-              Optional. This changes the wording on the gift, not the membership.
-            </p>
-
-            <label
-              htmlFor="gift-occasion"
-              className="mt-5 block text-[13px] font-medium text-[#313234]"
-            >
-              Occasion
-            </label>
-            <select
-              id="gift-occasion"
-              value={occasion}
-              onChange={(e) => setOccasion(e.target.value as GiftOccasion)}
-              className={FIELD}
-            >
-              {OCCASION_ORDER.map((key) => (
-                <option key={key} value={key}>
-                  {OCCASIONS[key].label}
-                </option>
-              ))}
-            </select>
-
-            <div className="mt-5 flex items-baseline justify-between gap-3">
-              <label htmlFor="gift-message" className="text-[13px] font-medium text-[#313234]">
-                Personal message
-              </label>
-              <span
-                className="text-[12px] tabular-nums text-[#9CA3AF]"
-                aria-live="polite"
-              >
-                {personalMessage.length}/{MESSAGE_MAX_LENGTH}
-              </span>
-            </div>
-            <textarea
-              id="gift-message"
-              value={personalMessage}
-              maxLength={MESSAGE_MAX_LENGTH}
-              rows={3}
-              onChange={(e) => setPersonalMessage(e.target.value.slice(0, MESSAGE_MAX_LENGTH))}
-              placeholder="Congratulations on your new home!"
-              className={`${FIELD} min-h-[92px] resize-y py-3 leading-relaxed`}
-            />
-          </fieldset>
-
-          <div className="flex flex-col gap-3 pt-3 sm:flex-row sm:justify-between">
-              <button
-                type="button"
-                onClick={() => setStep("length")}
-                className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-6 text-[15px] font-semibold text-[#313234] transition hover:bg-[#F8FAFF]"
-              >
-                Back
-              </button>
-              <button
-                type="submit"
-                className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] bg-[#306EEC] px-7 text-[15px] font-semibold text-white transition hover:bg-[#2558C4]"
-              >
-                Review gift
-              </button>
-            </div>
-          </form>
+          </div>
         </section>
-      ) : null}
+      </form>
 
-      {/* ------------------------------ Review ----------------------------- */}
-      {step === "review" && plan && selectedQuote ? (
-        <section aria-labelledby="review-heading">
-          <h2 id="review-heading" className="mb-4 text-[19px] font-semibold text-[#313234]">
-            Review your gift
-          </h2>
+      {/* ------------------------- Summary and pay ------------------------- */}
+      <aside className="gf-aside" aria-labelledby="gift-summary-heading">
+        {/*
+          The real card, not a mock of it.
 
-          {/*
-            The real card, not a mock of it.
-
-            This is the same DigitalGiftCard the recipient opens, given the
-            same props, so the promise "this is what they will receive" is
-            true by construction rather than by somebody remembering to keep
-            two designs in step. animate is off: it re-renders as the
-            purchaser types, and a card that replays its entrance on every
-            keystroke is a nuisance rather than a delight.
-          */}
-          <div className="mb-6 rounded-[14px] bg-[#0B1628] p-4 sm:p-6">
-            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8AA2CC]">
-              What they will receive
-            </p>
+          This is the same DigitalGiftCard the recipient opens, given the same
+          props, so the promise "this is what they will receive" is true by
+          construction rather than by somebody remembering to keep two designs
+          in step. Compact, and only once a plan is chosen: before that there
+          is no gift to show.
+        */}
+        {plan && durationMonths !== null ? (
+          <div className="gf-preview">
+            <p className="gf-preview__label">What they will receive</p>
             <DigitalGiftCard
               occasion={occasion}
               plan={plan}
-              durationMonths={selectedQuote.durationMonths}
+              durationMonths={durationMonths}
               recipientFirstName={firstName}
               recipientLastName={lastName}
               from={purchaserName}
               personalMessage={personalMessage}
-              previewNote="Preview only. Pricing and payment are shown below."
+              size="compact"
+              previewNote="Preview only."
             />
           </div>
+        ) : null}
 
-          <dl className="divide-y divide-[#EEF2FF] rounded-[10px] border border-[#E0E6F5] bg-white">
-            <div className="flex items-start justify-between gap-4 px-4 py-3.5 sm:px-5">
-              <dt className="text-[13px] text-[#6A6D71]">Recipient</dt>
-              <dd className="min-w-0 text-right text-[15px] font-medium text-[#313234]">
-                <span className="block break-words">
-                  {firstName} {lastName}
-                </span>
-                <span className="block break-all text-[13px] font-normal text-[#6A6D71]">{email}</span>
-                {phone.trim() ? (
-                  <span className="block text-[13px] font-normal text-[#6A6D71]">{phone.trim()}</span>
-                ) : null}
+        <div className="ui-card">
+          <h2 id="gift-summary-heading" className="ui-h3">
+            Summary
+          </h2>
+
+          <dl className="gf-summary mt-2">
+            <div className="gf-summary__row">
+              <dt>Plan</dt>
+              <dd className={plan ? "" : "gf-muted"}>{plan ? planLabel(plan) : "Choose a plan"}</dd>
+            </div>
+            <div className="gf-summary__row">
+              <dt>Length</dt>
+              <dd>{durationMonths !== null ? monthsLabel(durationMonths) : "—"}</dd>
+            </div>
+            <div className="gf-summary__row">
+              <dt>Price</dt>
+              <dd className={selectedQuote ? "" : "gf-muted"}>
+                {selectedQuote ? formatMoneyCents(selectedQuote.totalCents) : "—"}
               </dd>
             </div>
-            {/*
-              Only shown when an address was actually given. With the field
-              optional, rendering it unconditionally produced ", , NY" — a
-              line that looks like a bug on the last screen before payment.
-            */}
-            <div className="flex items-start justify-between gap-4 px-4 py-3.5 sm:px-5">
-              <dt className="text-[13px] text-[#6A6D71]">Property</dt>
-              <dd className="min-w-0 break-words text-right text-[15px] font-medium text-[#313234]">
-                {line1.trim() ? (
-                  `${line1}, ${city}, ${state} ${zip}`
-                ) : (
-                  <span className="font-normal text-[#6A6D71]">
-                    They choose it when they claim
-                  </span>
-                )}
-              </dd>
+            {selectedQuote?.pricingBasis === "annual" && selectedQuote.savingsCents ? (
+              <div className="gf-summary__row">
+                <dt>12 for the price of 10</dt>
+                <dd className="gf-discount">You save {formatMoneyCents(selectedQuote.savingsCents)}</dd>
+              </div>
+            ) : null}
+            <div className="gf-summary__row">
+              <dt>Promo code</dt>
+              <dd className="gf-muted">Enter at checkout</dd>
             </div>
-            <div className="flex items-start justify-between gap-4 px-4 py-3.5 sm:px-5">
-              <dt className="text-[13px] text-[#6A6D71]">Plan</dt>
-              <dd className="text-right text-[15px] font-medium text-[#313234]">{planLabel(plan)}</dd>
+            <div className="gf-summary__row">
+              <dt>Sales tax</dt>
+              <dd className="gf-muted">Added at checkout</dd>
             </div>
-            <div className="flex items-start justify-between gap-4 px-4 py-3.5 sm:px-5">
-              <dt className="text-[13px] text-[#6A6D71]">Length</dt>
-              <dd className="text-right text-[15px] font-medium text-[#313234]">
-                {monthsLabel(selectedQuote.durationMonths)}
-              </dd>
-            </div>
-            <div className="flex items-start justify-between gap-4 bg-[#F8FAFF] px-4 py-4 sm:px-5">
-              <dt className="text-[15px] font-semibold text-[#313234]">Total</dt>
-              <dd className="text-right">
-                <span className="block text-[20px] font-semibold text-[#313234]">
-                  {formatMoneyCents(selectedQuote.totalCents)}
-                </span>
-                <span className="block text-[12px] text-[#6A6D71]">before any discount</span>
+            <div className="gf-summary__row gf-summary__total">
+              <dt>Total</dt>
+              <dd data-testid="gift-total">
+                {selectedQuote ? formatMoneyCents(selectedQuote.totalCents) : "—"}
+                <small>before tax and any promo code</small>
               </dd>
             </div>
           </dl>
 
-          <p className="mt-4 text-[13px] leading-relaxed text-[#6A6D71]">
-            Have a promotion code? You can enter it on the next screen, at
-            checkout. Tax is added there too.
-          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <GiftPromoCode tone="light" />
+          </div>
 
           {submitError ? (
-            <p
-              role="alert"
-              className="mt-4 rounded-[8px] border border-[#F3C9C4] bg-[#FDF3F2] px-4 py-3 text-sm text-[#A03227]"
-            >
+            <p role="alert" className="gf-alert mt-4">
               {submitError}
             </p>
           ) : null}
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-between">
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={() => setStep("recipient")}
-              className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-6 text-[15px] font-semibold text-[#313234] transition hover:bg-[#F8FAFF] disabled:opacity-50"
-            >
-              Back
-            </button>
-            <button
-              type="button"
-              onClick={handlePay}
-              disabled={submitting}
-              aria-busy={submitting}
-              className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-[8px] bg-[#306EEC] px-7 text-[15px] font-semibold text-white transition hover:bg-[#2558C4] disabled:cursor-not-allowed disabled:bg-[#8FB3F5]"
-            >
-              {submitting ? (
-                <>
-                  <span
-                    className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                    aria-hidden
-                  />
-                  Opening checkout&hellip;
-                </>
-              ) : (
-                "Continue to payment"
-              )}
-            </button>
-          </div>
-        </section>
-      ) : null}
+          <button
+            type="submit"
+            form="gift-form"
+            disabled={submitting}
+            aria-busy={submitting}
+            className="ui-btn ui-btn--primary ui-btn--lg ui-btn--block mt-5"
+          >
+            {submitting ? (
+              <>
+                <span className="gf-spinner gf-spinner--sm" aria-hidden="true" />
+                Opening checkout&hellip;
+              </>
+            ) : (
+              "Continue to payment"
+            )}
+          </button>
+
+          <p className="ui-small mt-3 text-center">
+            Pay by card on Stripe&apos;s secure checkout. One-time payment: it does not
+            automatically renew.
+          </p>
+        </div>
+      </aside>
     </div>
   );
 }
