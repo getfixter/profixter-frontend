@@ -244,6 +244,8 @@ export default function BookingSection() {
   const [bookingConfirmation, setBookingConfirmation] = useState<BookingConfirmation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  /* Signed out at the button: where to come back to after signing in (path + query). */
+  const [signInNext, setSignInNext] = useState("");
   const [notice, setNotice] = useState("");
   const [fieldErrors, setFieldErrors] = useState<BookingFieldErrors>({});
   const closeBookingConfirmation = useCallback(() => setBookingConfirmation(null), []);
@@ -1109,8 +1111,11 @@ if (next?.date) {
 
   const handleBookNow = async () => {
     if (!isAuthenticated) {
-      alert("Please open My Home to book a visit.");
-      window.location.href = "/signin";
+      /*
+       * An inline prompt with links that carry ?next=, not an alert and a bare
+       * /signin: the customer signs in and lands back on this booking.
+       */
+      setSignInNext(`${window.location.pathname}${window.location.search}`);
       return;
     }
 
@@ -2061,6 +2066,20 @@ if (next?.date) {
 
             {/* Confirm card */}
             <div className="order-7 lg:order-none">
+              {signInNext && !isAuthenticated ? (
+                <div className="pg-panel mb-3" role="status" data-booking-signin-prompt>
+                  <p className="text-[15px] font-semibold text-[color:var(--ui-ink)]">Sign in to book this visit.</p>
+                  <p className="mt-0.5 text-[14px] text-[color:var(--ui-text-2)]">You will come straight back here.</p>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <Link href={`/signin?next=${encodeURIComponent(signInNext)}`} className="ui-btn ui-btn--primary ui-btn--sm">
+                      Sign in
+                    </Link>
+                    <Link href={`/signup?next=${encodeURIComponent(signInNext)}`} className="ui-btn ui-btn--secondary ui-btn--sm">
+                      Create account
+                    </Link>
+                  </div>
+                </div>
+              ) : null}
               {serviceTextsOptIn ? <div className="mb-2.5">{serviceTextsOptIn}</div> : null}
               <button
                 onClick={handleBookNow}

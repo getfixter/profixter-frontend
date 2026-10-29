@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { plans, type Plan } from "@/app/data/content";
 import { BENEFIT_ROWS, benefitIncluded, benefitLabel } from "@/app/data/plan-benefits";
@@ -210,7 +210,7 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     trackEvent("plans_viewed", { layout: picker ? "book_picker" : compact ? "compact" : "full" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const { user, isAuthenticated, token } = useAuth();
+  const { user, isAuthenticated, isLoading, token } = useAuth();
   const { requestHome, homeSheet } = useAddHome();
   const { ensureContact, contactSheet } = useContactCompletion();
 
@@ -621,6 +621,29 @@ export default function PlansSection({ hideCancellationUi = false, compact = fal
     if (getActionForPlan(selectedPlanName).kind === "subscribe") setResumeOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeRequested, isAuthenticated, user, selectedAddressId, addressSubscriptionMap, selectedPlanName]);
+
+  /*
+   * Back from signup with a plan but no home yet: ask for the home straight
+   * away instead of leaving an "Add your home" box to find and tap. This only
+   * opens the same AddHomeSheet the button opens; once the home is saved, the
+   * effect above shows the usual one-step confirmation before any checkout.
+   */
+  const resumeHomeAsked = useRef(false);
+  useEffect(() => {
+    if (!resumeRequested || isLoading || !isAuthenticated || !user || addresses.length > 0) return;
+    if (resumeHomeAsked.current) return;
+    resumeHomeAsked.current = true;
+    void (async () => {
+      const home = await requestHome();
+      if (!home?.address?._id) {
+        setResumeRequested(false);
+        return;
+      }
+      setSelectedAddressId(String(home.address._id));
+      // Outside the service area: the sheet has already said so.
+      if (home.serviceArea && home.serviceArea.inArea === false) setResumeRequested(false);
+    })();
+  }, [resumeRequested, isLoading, isAuthenticated, user, addresses.length, requestHome]);
 
   const handleSubscribe = async (planName: string) => {
     if (actionLoadingPlan) return;
