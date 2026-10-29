@@ -529,6 +529,12 @@ function AdminPageContent() {
     }
   };
 
+  /* A saved customer edit: swap the returned row in place, no reload. */
+  const handleUserUpdated = useCallback((saved: User) => {
+    setUsers((list) => list.map((u) => (u._id === saved._id ? { ...u, ...saved } : u)));
+    showToast("Customer updated");
+  }, [showToast]);
+
   const handleDeleteUser = async (targetUser: User, confirmation: string) => {
     await deleteUser(targetUser._id, confirmation);
     await fetchAll();
@@ -1103,6 +1109,8 @@ function AdminPageContent() {
                 showCustomerPanels={canCustomers}
                 canViewLoyalty={canMembers}
                 canGift={isAdmin}
+                canEdit={canCustomers}
+                onUserUpdated={handleUserUpdated}
               />
             )}
 
@@ -1124,6 +1132,8 @@ function AdminPageContent() {
                 showLoyalty={canMembers}
                 canViewLoyalty={canMembers}
                 canGift={isAdmin}
+                canEdit={canCustomers}
+                onUserUpdated={handleUserUpdated}
               />
             )}
 
