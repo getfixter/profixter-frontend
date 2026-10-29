@@ -1,198 +1,78 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import {
-  COMPANY_LINKS,
-  FOOTER_SEO_LINKS,
+  FOOTER_COMPANY_LINKS,
+  FOOTER_LEGAL_LINKS,
   FOOTER_PRODUCT_LINKS,
+  FOOTER_SEO_LINKS,
 } from "@/lib/site-architecture";
 import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
+import Wordmark from "@/app/components/ui/Wordmark";
 
-const TRUST_BADGES = [
-  "Licensed HI-71484",
-  "Fully insured",
-  "Nassau & Suffolk County",
-];
+type FooterLink = { readonly label: string; readonly href: string };
 
-export default function Footer({ compact = false }: { compact?: boolean }) {
-  const companyLinks = compact
-    ? COMPANY_LINKS.filter((link) =>
-        // Communication Consent keeps its place in the compact footer: it is a
-        // legal disclosure, so it belongs wherever Privacy and Terms appear.
-        ["About Us", "Privacy Policy", "Terms of Service", "Communication Consent", "SMS Consent"].includes(link.label)
-      )
-    : COMPANY_LINKS;
-
+function Group({ title, links }: { title: string; links: readonly FooterLink[] }) {
   return (
-    <footer
-      id="contact-us"
-      className="relative overflow-hidden"
-      style={{ background: "linear-gradient(165deg, #050C18 0%, #070F1E 50%, #040A14 100%)" }}
-    >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.022]"
-        style={{
-          backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
-          backgroundSize: "28px 28px",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute left-0 right-0 top-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(48,110,236,0.20), transparent)" }}
-      />
+    <nav className="ft__group" aria-label={`Footer ${title.toLowerCase()}`}>
+      <p className="ft__title">{title}</p>
+      <ul>
+        {links.map((link) => (
+          <li key={link.label}>
+            <Link href={link.href}>{link.label}</Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
 
-      <div className={`relative mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-5 ${compact ? "py-8 sm:py-10" : "py-10 sm:py-11"}`}>
-        <div className={`grid items-start ${compact ? "grid-cols-2 gap-7 sm:gap-8 lg:grid-cols-[1.3fr_0.7fr_0.7fr_0.9fr] lg:gap-10" : "grid-cols-2 gap-x-6 gap-y-7 sm:gap-7 lg:grid-cols-[1.35fr_0.62fr_0.72fr_0.68fr_0.78fr] lg:gap-8"}`}>
-          <div className="col-span-2 lg:col-span-1">
-            <Image
-              src="/images/logo-footer.svg"
-              alt="ProFixter"
-              width={200}
-              height={48}
-              className={`h-auto ${compact ? "mb-3 w-[150px] sm:w-[160px]" : "mb-4 w-[160px] sm:mb-5 sm:w-[180px]"}`}
-            />
-
-            <p className={`max-w-[430px] text-[#9AA3B2] ${compact ? "text-[13px] leading-5" : "mb-6 text-[14px] leading-relaxed sm:mb-7 sm:text-[15px]"}`}>
-              Membership, one-time handyman visits, and larger home projects for Long Island homeowners.
+/**
+ * The footer, Website 3.0: four short groups, not a sitemap.
+ *
+ * What must always be here, compact or not: Privacy, Terms, Communication
+ * Consent and SMS Consent (the A2P reviewer's one-click path), the licence
+ * line, the phone number, and the About & Information page, which carries
+ * every link that left this footer.
+ *
+ * `compact` drops the Explore group for focused flows; nothing legal goes.
+ */
+export default function Footer({ compact = false }: { compact?: boolean }) {
+  return (
+    <footer id="contact-us" className="ft">
+      <div className="ui-container">
+        <div className={`ft__grid ${compact ? "ft__grid--compact" : ""}`}>
+          <div className="ft__brand">
+            <Link href="/" aria-label="Profixter home" className="inline-flex">
+              <Wordmark tone="light" className="ft__mark" title="Profixter" />
+            </Link>
+            <p className="ft__line">A handyman membership for Long Island homes.</p>
+            <p className="ft__contact">
+              <a href="tel:+16315991363" className="ui-num">631-599-1363</a>
+              <a href={PUBLIC_CONTACT_MAILTO}>{PUBLIC_CONTACT_EMAIL}</a>
             </p>
-
-            {!compact ? <a
-              href="tel:+16315991363"
-              className="group inline-flex items-center gap-3 rounded-[8px] border border-white/[0.14] bg-white/[0.06] px-4 py-3 transition-all hover:border-white/[0.22] hover:bg-white/[0.12] sm:gap-3.5 sm:px-5 sm:py-3.5"
-            >
-              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#306EEC]">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path
-                    d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.37 1.9.72 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0122 16.92z"
-                    stroke="white"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">
-                  Call ProFixter
-                </div>
-                <div className="text-[15px] font-bold text-white sm:text-[16px]">
-                  631-599-1363
-                </div>
-              </div>
-            </a> : null}
           </div>
 
-          <div>
-            <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 sm:mb-5">
-              Products
-            </div>
-            <nav className="flex flex-col gap-3" aria-label="Footer products">
-              {FOOTER_PRODUCT_LINKS.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="text-[14px] font-medium text-[#9AA3B2] transition-colors hover:text-white sm:text-[15px]"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-
-          <div>
-            <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 sm:mb-5">
-              Company
-            </div>
-            <nav className="flex flex-col gap-3" aria-label="Footer company">
-              {companyLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="text-[14px] font-medium text-[#9AA3B2] transition-colors hover:text-white sm:text-[15px]"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-
-          {!compact ? <div>
-            <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 sm:mb-5">
-              Services
-            </div>
-            <nav className="flex flex-col gap-3" aria-label="Footer services">
-              {FOOTER_SEO_LINKS.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="text-[14px] font-medium text-[#9AA3B2] transition-colors hover:text-white sm:text-[15px]"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-          </div> : null}
-
-          <div className="col-span-2 lg:col-span-1">
-            <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 sm:mb-5">
-              Contact
-            </div>
-            <div className="flex flex-col gap-3">
-              <a
-                href={PUBLIC_CONTACT_MAILTO}
-                className="break-all text-[14px] font-medium text-[#9AA3B2] transition-colors hover:text-white sm:text-[15px]"
-              >
-                {PUBLIC_CONTACT_EMAIL}
-              </a>
-              {compact ? (
-                <a href="tel:+16315991363" className="text-[14px] font-medium text-[#9AA3B2] transition-colors hover:text-white sm:text-[15px]">
-                  631-599-1363
-                </a>
-              ) : <a
-                href="https://instagram.com/mrfixter.ny"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[14px] font-medium text-[#9AA3B2] transition-colors hover:text-white sm:text-[15px]"
-              >
-                @mrfixter.ny
-              </a>}
-              <p className="text-[13px] leading-6 text-white/32">
-                Based near Babylon. Serving Nassau and Suffolk Counties.
-              </p>
-            </div>
-          </div>
+          <Group title="Services" links={FOOTER_PRODUCT_LINKS} />
+          {!compact ? <Group title="Explore" links={FOOTER_SEO_LINKS} /> : null}
+          <Group title="Company" links={FOOTER_COMPANY_LINKS} />
+          <Group title="Legal" links={FOOTER_LEGAL_LINKS} />
         </div>
 
-        <div className={`flex flex-col items-center justify-between gap-3 border-t border-white/[0.09] pt-5 sm:flex-row ${compact ? "mt-7" : "mt-6 sm:mt-8 sm:pt-6"}`}>
+        <div className="ft__base">
           {/*
             * THE LEGAL ENTITY, SAID ONCE, WHERE EVERY PAGE CARRIES IT.
             *
             * ProFixter is a trading name. The company is Premium Island Homes
             * Inc., and that is the name on the EIN, on the Twilio A2P brand and
-            * on all three legal pages - but until now it appeared nowhere a
-            * visitor or a carrier reviewer would actually look. Someone
-            * checking whether profixter.com belongs to the registered brand had
-            * to open the privacy policy to find out, which is exactly the kind
-            * of gap that reads as a brand/website mismatch.
-            *
-            * One line in the footer closes it on every page at once, and it is
-            * the conventional place for it, so nothing about the marketing site
-            * has to become more legalistic to carry it.
+            * on all three legal pages. One line here means a visitor or a
+            * carrier reviewer checking whether profixter.com belongs to the
+            * registered brand finds it on every page.
             */}
-          <p className="text-[13px] text-[#4A5568]">
+          <p>
             &copy; 2026 Premium Island Homes Inc., d/b/a ProFixter. All rights reserved. &middot; Suffolk County Licensed HI-71484
           </p>
-          {!compact ? <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-            {TRUST_BADGES.map((item) => (
-              <div key={item} className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#86EFAC]" />
-                <span className="text-[12px] font-semibold text-white/28">{item}</span>
-              </div>
-            ))}
-          </div> : null}
+          <p>Licensed &amp; insured &middot; Serving Nassau &amp; Suffolk</p>
         </div>
       </div>
     </footer>

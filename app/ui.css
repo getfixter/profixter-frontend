@@ -1,0 +1,636 @@
+/* ==================================================================== */
+/* PROFIXTER DESIGN SYSTEM (Website 3.0)                                 */
+/*                                                                       */
+/* One set of tokens and a handful of component classes (ui-*) for the   */
+/* customer site. The reference for using them on a page is              */
+/* DESIGN_SYSTEM.md beside the repo; this file is the source of truth.   */
+/*                                                                       */
+/* Direction: restrained and precise. Navy ink on warm white, one blue   */
+/* accent used sparingly for links, focus and small marks, hairlines     */
+/* instead of heavy borders, soft layered shadows instead of glass, and  */
+/* one typeface (Geist) at a small number of sizes and two weights.      */
+/*                                                                       */
+/* Scope. Tokens are plain custom properties and harmless anywhere. The  */
+/* surface-wide rules at the bottom (font, weight taming, focus ring)    */
+/* only apply to html[data-surface="site"] (lib/surface.ts), so the      */
+/* admin and the /event kiosk look exactly as they did.                  */
+/* ==================================================================== */
+
+:root {
+  /* ---- colour ---------------------------------------------------- */
+  --ui-ink: #0b1628;          /* brand navy: headings, primary buttons */
+  --ui-ink-2: #1a2740;        /* primary button hover */
+  --ui-text: #0b1628;
+  --ui-text-2: #475264;       /* secondary copy, 7.6:1 on white */
+  --ui-text-3: #626d7f;       /* captions, meta: 5.2:1 on white, 4.8:1 on stone */
+  --ui-line: #e6e8ec;         /* hairlines and card borders */
+  --ui-line-2: #d3d8e0;       /* input borders, stronger dividers */
+  --ui-bg: #ffffff;
+  --ui-bg-soft: #f7f6f3;      /* warm stone: alternate sections */
+  --ui-bg-sunk: #efede8;      /* wells, image placeholders */
+  --ui-accent: #306eec;       /* ProFixter blue: links, focus, marks */
+  --ui-accent-ink: #2456c4;   /* accent as text on white, 6:1 */
+  --ui-accent-soft: #eef3fd;
+  --ui-on-dark: #f4f6fa;
+  --ui-on-dark-2: #a9b3c4;
+  --ui-success: #1f8a4c;
+
+  /* Aliases for components outside this system that theme from --pf-color-*
+     (e.g. the support chat). Same values as above; change those, not these. */
+  --pf-color-ink: var(--ui-ink);
+  --pf-color-text: var(--ui-text);
+  --pf-color-muted: var(--ui-text-3);
+  --pf-color-line: var(--ui-line);
+  --pf-color-bg: var(--ui-bg);
+  --pf-color-surface: var(--ui-bg-soft);
+  --pf-color-accent: var(--ui-accent);
+  --pf-color-accent-ink: var(--ui-accent-ink);
+  --pf-color-on-ink: #ffffff;
+
+  /* ---- type ------------------------------------------------------ */
+  --ui-font: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --ui-fs-display: clamp(30px, calc(2.2vw + 21px), 52px);  /* page H1 */
+  --ui-fs-h2: clamp(24px, calc(1.2vw + 19px), 36px);       /* section titles */
+  --ui-fs-h3: clamp(17px, calc(0.3vw + 16px), 20px);       /* card titles */
+  --ui-fs-lede: clamp(16px, calc(0.2vw + 15.2px), 18px);   /* intro line */
+  --ui-fs-body: 15px;                                       /* 16px from 640 */
+  --ui-fs-small: 14px;
+  --ui-fs-micro: 12px;                                      /* eyebrows, uppercase only */
+  --ui-lh-tight: 1.08;
+  --ui-lh-head: 1.18;
+  --ui-lh-body: 1.6;
+  --ui-track-display: -0.032em;
+  --ui-track-head: -0.022em;
+  --ui-track-micro: 0.14em;
+
+  /* ---- space (4px grid) ------------------------------------------ */
+  --ui-s1: 4px;
+  --ui-s2: 8px;
+  --ui-s3: 12px;
+  --ui-s4: 16px;
+  --ui-s5: 20px;
+  --ui-s6: 24px;
+  --ui-s8: 32px;
+  --ui-s10: 40px;
+  --ui-s12: 48px;
+  --ui-s16: 64px;
+  --ui-s20: 80px;
+  --ui-section: clamp(48px, calc(4vw + 32px), 96px);  /* vertical rhythm between sections */
+  --ui-gutter: clamp(16px, 4vw, 32px);
+  --ui-container: 1180px;
+  --ui-container-narrow: 760px;
+
+  /* ---- shape ----------------------------------------------------- */
+  --ui-r-xs: 6px;
+  --ui-r-sm: 10px;   /* buttons, inputs */
+  --ui-r-md: 14px;   /* cards */
+  --ui-r-lg: 20px;   /* large media, panels */
+  --ui-r-pill: 999px;
+  --ui-shadow-1: 0 1px 2px rgba(11, 22, 40, 0.06);
+  --ui-shadow-2: 0 1px 2px rgba(11, 22, 40, 0.04), 0 10px 28px -14px rgba(11, 22, 40, 0.16);
+  --ui-shadow-3: 0 2px 6px rgba(11, 22, 40, 0.04), 0 30px 60px -28px rgba(11, 22, 40, 0.28);
+
+  /* ---- controls -------------------------------------------------- */
+  --ui-btn-h: 48px;     /* default; 44px minimum touch target everywhere */
+  --ui-btn-h-sm: 40px;  /* desktop-only compact buttons (header) */
+  --ui-btn-h-lg: 52px;
+
+  /* ---- motion ---------------------------------------------------- */
+  --ui-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ui-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ui-dur-1: 140ms;
+  --ui-dur-2: 240ms;
+  --ui-dur-3: 640ms;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --ui-fs-body: 16px;
+  }
+}
+
+/* ==================================================================== */
+/* Surface-wide (customer site only)                                     */
+/* ==================================================================== */
+
+/*
+ * Geist, not Montserrat. Montserrat is a wide geometric face with a tall
+ * x-height: at any given size it reads a step larger than it is, which is a
+ * good part of why the site felt oversized. Geist is a narrower, engineered
+ * grotesk with tight default spacing and real tabular figures, it is already
+ * loaded (no extra bytes), and it is OFL-licensed via next/font/google.
+ */
+:root[data-surface="site"] body {
+  /* White, not the old lavender wash: a page without a background of its own
+     now sits on the same surface as everything built on this system. */
+  background: var(--ui-bg);
+  font-family: var(--ui-font);
+  font-feature-settings: "ss01" 0, "cv11" 1;
+  text-rendering: optimizeLegibility;
+}
+
+/*
+ * The old voice leaned on 800-900 weights. In Geist those read as shouting,
+ * so on the customer site "black" and "extrabold" settle at bold.
+ */
+:root[data-surface="site"] :is(.font-black, .font-extrabold) {
+  font-weight: 700;
+}
+
+/* One visible focus ring everywhere a keyboard can land. */
+:root[data-surface="site"] :is(a, button, summary, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/*
+ * Component classes live in the components layer, so a Tailwind utility on the
+ * same element (mt-6, max-w-none, text-center...) still wins, exactly as you
+ * would expect when you write both.
+ */
+@layer components {
+  /* ==================================================================== */
+  /* Layout                                                                */
+  /* ==================================================================== */
+
+  .ui-container {
+    width: 100%;
+    max-width: calc(var(--ui-container) + 2 * var(--ui-gutter));
+    margin-inline: auto;
+    padding-inline: var(--ui-gutter);
+  }
+  .ui-container--narrow {
+    max-width: calc(var(--ui-container-narrow) + 2 * var(--ui-gutter));
+  }
+
+  .ui-section {
+    padding-block: var(--ui-section);
+  }
+  .ui-section--soft {
+    background: var(--ui-bg-soft);
+  }
+  .ui-section--tight {
+    padding-block: calc(var(--ui-section) * 0.6);
+  }
+  .ui-section--flush-top {
+    padding-top: 0;
+  }
+
+  /* Section heading block: eyebrow + title + optional lede, then content. */
+  .ui-head {
+    max-width: 640px;
+    margin-bottom: clamp(24px, 3vw, 40px);
+  }
+  .ui-head--row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px 24px;
+    max-width: none;
+  }
+
+  /* ==================================================================== */
+  /* Type                                                                  */
+  /* ==================================================================== */
+
+  .ui-eyebrow {
+    margin: 0 0 10px;
+    font-size: var(--ui-fs-micro);
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: var(--ui-track-micro);
+    text-transform: uppercase;
+    color: var(--ui-text-3);
+  }
+  .ui-eyebrow--accent {
+    color: var(--ui-accent-ink);
+  }
+
+  .ui-display {
+    margin: 0;
+    font-size: var(--ui-fs-display);
+    font-weight: 600;
+    line-height: var(--ui-lh-tight);
+    letter-spacing: var(--ui-track-display);
+    color: var(--ui-ink);
+    text-wrap: balance;
+  }
+
+  .ui-h2 {
+    margin: 0;
+    font-size: var(--ui-fs-h2);
+    font-weight: 600;
+    line-height: var(--ui-lh-head);
+    letter-spacing: var(--ui-track-head);
+    color: var(--ui-ink);
+    text-wrap: balance;
+  }
+
+  .ui-h3 {
+    margin: 0;
+    font-size: var(--ui-fs-h3);
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.012em;
+    color: var(--ui-ink);
+  }
+
+  .ui-lede {
+    margin: 12px 0 0;
+    font-size: var(--ui-fs-lede);
+    line-height: 1.55;
+    color: var(--ui-text-2);
+    max-width: 52ch;
+    text-wrap: pretty;
+  }
+
+  .ui-body {
+    font-size: var(--ui-fs-body);
+    line-height: var(--ui-lh-body);
+    color: var(--ui-text-2);
+  }
+
+  .ui-small {
+    font-size: var(--ui-fs-small);
+    line-height: 1.5;
+    color: var(--ui-text-3);
+  }
+
+  .ui-num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* An inline text link with a trailing arrow that moves 2px on hover. */
+  .ui-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--ui-fs-small);
+    font-weight: 600;
+    color: var(--ui-accent-ink);
+    text-decoration: none;
+    min-height: 32px;
+  }
+  .ui-link::after {
+    content: "\2192";
+    transition: transform var(--ui-dur-2) var(--ui-ease);
+  }
+  .ui-link:hover::after {
+    transform: translateX(3px);
+  }
+  .ui-link--plain::after {
+    content: none;
+  }
+  .ui-link--quiet {
+    color: var(--ui-ink);
+  }
+
+  /* ==================================================================== */
+  /* Buttons                                                               */
+  /* ==================================================================== */
+
+  .ui-btn {
+    --_h: var(--ui-btn-h);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: var(--_h);
+    padding: 0 20px;
+    border: 1px solid transparent;
+    border-radius: var(--ui-r-sm);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background-color var(--ui-dur-2) var(--ui-ease),
+      border-color var(--ui-dur-2) var(--ui-ease),
+      color var(--ui-dur-2) var(--ui-ease),
+      box-shadow var(--ui-dur-2) var(--ui-ease),
+      transform var(--ui-dur-1) var(--ui-ease);
+  }
+  .ui-btn:active {
+    transform: scale(0.985);
+  }
+  .ui-btn:disabled,
+  .ui-btn[aria-disabled="true"] {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  .ui-btn svg {
+    flex: none;
+  }
+
+  .ui-btn--primary {
+    background: var(--ui-ink);
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(11, 22, 40, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  .ui-btn--primary:hover {
+    background: var(--ui-ink-2);
+  }
+
+  .ui-btn--accent {
+    background: var(--ui-accent);
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(36, 86, 196, 0.25);
+  }
+  .ui-btn--accent:hover {
+    background: var(--ui-accent-ink);
+  }
+
+  .ui-btn--secondary {
+    background: #fff;
+    color: var(--ui-ink);
+    border-color: var(--ui-line-2);
+  }
+  .ui-btn--secondary:hover {
+    border-color: #b9c1cd;
+    background: #fbfbfa;
+  }
+
+  .ui-btn--ghost {
+    background: transparent;
+    color: var(--ui-ink);
+  }
+  .ui-btn--ghost:hover {
+    background: rgba(11, 22, 40, 0.05);
+  }
+
+  /* On a navy band. */
+  .ui-btn--light {
+    background: #fff;
+    color: var(--ui-ink);
+  }
+  .ui-btn--light:hover {
+    background: #eef1f6;
+  }
+  .ui-btn--outline-light {
+    background: transparent;
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.28);
+  }
+  .ui-btn--outline-light:hover {
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .ui-btn--sm {
+    --_h: 44px;
+    padding: 0 14px;
+    font-size: 14px;
+  }
+  @media (min-width: 1024px) and (pointer: fine) {
+    .ui-btn--sm {
+      --_h: var(--ui-btn-h-sm);
+    }
+  }
+  .ui-btn--lg {
+    --_h: var(--ui-btn-h-lg);
+    padding: 0 26px;
+    font-size: 16px;
+  }
+  .ui-btn--block {
+    display: flex;
+    width: 100%;
+  }
+
+  /* ==================================================================== */
+  /* Surfaces                                                              */
+  /* ==================================================================== */
+
+  .ui-card {
+    position: relative;
+    background: #fff;
+    border: 1px solid var(--ui-line);
+    border-radius: var(--ui-r-md);
+    padding: clamp(18px, 2vw, 24px);
+  }
+  .ui-card--raised {
+    border-color: transparent;
+    box-shadow: var(--ui-shadow-2);
+  }
+  .ui-card--soft {
+    background: var(--ui-bg-soft);
+    border-color: transparent;
+  }
+  .ui-card--dark {
+    background: var(--ui-ink);
+    border-color: transparent;
+    color: var(--ui-on-dark);
+  }
+  /* A whole card as a link: lifts 1px and deepens its border, nothing else. */
+  .ui-card--link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    transition:
+      border-color var(--ui-dur-2) var(--ui-ease),
+      box-shadow var(--ui-dur-2) var(--ui-ease),
+      transform var(--ui-dur-2) var(--ui-ease);
+  }
+  .ui-card--link:hover {
+    border-color: var(--ui-line-2);
+    box-shadow: var(--ui-shadow-2);
+    transform: translateY(-1px);
+  }
+
+  /* Media frame: fixed aspect, radius, a slow zoom on hover. */
+  .ui-media {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--ui-r-lg);
+    background: var(--ui-bg-sunk);
+    isolation: isolate;
+  }
+  .ui-media > img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 900ms var(--ui-ease-out), opacity 600ms var(--ui-ease);
+  }
+  a:hover > .ui-media > img,
+  button:hover > .ui-media > img,
+  .ui-media--zoom:hover > img {
+    transform: scale(1.03);
+  }
+
+  /* Inline SVG wordmark (app/components/ui/Wordmark.tsx): set a height, width follows. */
+  .ui-wordmark {
+    display: block;
+    width: auto;
+    height: 18px;
+    aspect-ratio: 357 / 52;
+  }
+
+  .ui-hairline {
+    height: 1px;
+    border: 0;
+    margin: 0;
+    background: var(--ui-line);
+  }
+
+  /* Small label: a pill with a hairline border. */
+  .ui-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 26px;
+    padding: 0 10px;
+    border: 1px solid var(--ui-line);
+    border-radius: var(--ui-r-pill);
+    background: #fff;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ui-text-2);
+    white-space: nowrap;
+  }
+  .ui-tag--accent {
+    border-color: transparent;
+    background: var(--ui-accent-soft);
+    color: var(--ui-accent-ink);
+  }
+  .ui-tag__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ui-accent);
+  }
+
+  /* A list with a fine check mark per row. */
+  .ui-checks {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ui-checks > li {
+    position: relative;
+    padding-left: 24px;
+    font-size: var(--ui-fs-small);
+    line-height: 1.5;
+    color: var(--ui-text-2);
+  }
+  .ui-checks > li::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 0.42em;
+    width: 11px;
+    height: 6px;
+    border-left: 1.6px solid var(--ui-accent);
+    border-bottom: 1.6px solid var(--ui-accent);
+    transform: rotate(-45deg);
+  }
+
+  /* ==================================================================== */
+  /* FAQ / disclosure                                                      */
+  /* ==================================================================== */
+
+  .ui-faq {
+    border-top: 1px solid var(--ui-line);
+  }
+  .ui-faq > details {
+    border-bottom: 1px solid var(--ui-line);
+  }
+  .ui-faq summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 56px;
+    padding: 14px 0;
+    list-style: none;
+    cursor: pointer;
+    font-size: 15.5px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--ui-ink);
+  }
+  .ui-faq summary::-webkit-details-marker {
+    display: none;
+  }
+  .ui-faq summary::after {
+    content: "";
+    flex: none;
+    width: 9px;
+    height: 9px;
+    margin-right: 4px;
+    border-right: 1.5px solid var(--ui-text-3);
+    border-bottom: 1.5px solid var(--ui-text-3);
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform var(--ui-dur-2) var(--ui-ease);
+  }
+  .ui-faq details[open] summary::after {
+    transform: translateY(2px) rotate(-135deg);
+  }
+  .ui-faq__a {
+    padding: 0 32px 18px 0;
+    font-size: var(--ui-fs-body);
+    line-height: var(--ui-lh-body);
+    color: var(--ui-text-2);
+  }
+}
+
+/* ==================================================================== */
+/* Reveal (see app/components/ui/Reveal.tsx)                             */
+/* ==================================================================== */
+
+/*
+ * Hidden ONLY once JS has armed it (data-reveal="armed"), so with no JS, a
+ * failed observer or a crawler the content is simply there. Reveal.tsx also
+ * releases everything still waiting after a short grace period if the page
+ * has not been scrolled, which is what keeps full-page screenshots whole.
+ */
+[data-reveal="armed"] {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+}
+[data-reveal="in"] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 700ms var(--ui-ease-out),
+    transform 900ms var(--ui-ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal="armed"],
+  [data-reveal="in"] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* A single, quiet arrival for above-the-fold hero content. */
+@keyframes ui-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ui-rise {
+  animation: ui-rise 720ms var(--ui-ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-rise {
+    animation: none;
+  }
+}

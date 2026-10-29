@@ -292,7 +292,8 @@ async function finishSignupSteps(page) {
     page.on("framenavigated", (f) => { if (f === page.mainFrame()) urls.push(f.url()); });
     await page.goto(BASE + "/?utm_source=fb&utm_medium=paid&utm_campaign=120200&fbclid=IwAR_test", { waitUntil: "networkidle" });
     check("home shows the booker to a new visitor", await page.locator('[data-fv="note"]').isVisible());
-    check("home H1 states the product", (await page.locator("h1").first().innerText()).includes("On demand"));
+    /* Website 3.0: the H1 names the membership. */
+    check("home H1 states the product", (await page.locator("h1").first().innerText()).includes("One membership"));
     check("home uses the compact booker", (await page.locator('[data-fv-variant="compact"]').count()) === 1);
     check("no account wall: the calendar is visible signed out", (await page.locator('[data-booking-date-disabled="false"]').count()) > 0);
     check("quick-pick chips are still there", (await page.locator(".fv-chip").count()) >= 6);

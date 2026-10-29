@@ -8,6 +8,9 @@ import CustomerSiteMobileNav from "./components/CustomerSiteMobileNav";
 import FixterStage from "./components/fixter/FixterStage";
 import "./globals.css";
 import "./free-visit.css";
+/* The Website 3.0 design system: tokens and ui-* components (see the file). */
+import "./ui.css";
+import "./ui-shell.css";
 /* Last, so its phone-only rules sit after every other stylesheet. */
 import "./mobile-scale.css";
 import "./desktop-scale.css";
@@ -19,6 +22,11 @@ import MetaPageView from "./components/MetaPageView";
 import SurfaceMarker from "./components/SurfaceMarker";
 import { SURFACE_SCRIPT } from "@/lib/surface";
 
+/*
+ * The customer site's typeface (app/ui.css sets it on html[data-surface="site"]).
+ * Montserrat below stays loaded for the admin and the event kiosk, which keep
+ * their look.
+ */
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 /*
  * Not preloaded: the mono face appears in a few staff and code-like spots, never
@@ -31,6 +39,11 @@ const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  /*
+   * Not preloaded: since Website 3.0 only the staff surfaces (admin, event
+   * kiosk) render in it, so customer pages should not download it first.
+   */
+  preload: false,
 });
 
 /*
@@ -95,7 +108,6 @@ export const metadata: Metadata = {
     "handyman membership",
     "handyman subscription",
     "home maintenance membership",
-    "home support AI",
     "Nassau County handyman",
     "Suffolk County handyman",
     "home project estimates",

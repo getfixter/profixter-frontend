@@ -1,21 +1,49 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "@/lib/useAuth";
 import { usePathname, useRouter } from "next/navigation";
-import { MAIN_NAV_LINKS } from "@/lib/site-architecture";
+import { BOOKING_LINKS, INFO_PAGE, MAIN_NAV_LINKS } from "@/lib/site-architecture";
 import { getCustomerHomePath, getRoleLandingPath, hasActiveMembership } from "@/lib/auth-routing";
+import Wordmark from "@/app/components/ui/Wordmark";
 
+type NavLink = { label: string; href: string; meta?: string };
+
+const noopSubscribe = () => () => {};
+
+/**
+ * The site header, Website 3.0.
+ *
+ * One quiet bar: the wordmark, the primary destinations on a desktop, and on a
+ * phone a control that says "Menu" in words. Behind it, a full-height sheet
+ * with the ways to book first and everything else underneath.
+ *
+ * Who sees what is unchanged from before the redesign:
+ * - signed out: the public nav and "Book free visit";
+ * - signed in, not a member: Home, Book, Projects, See plans (their free visit
+ *   lives in /book), with Account in the profile menu;
+ * - member: Home, Book, Projects, Account, and the logo goes to their home.
+ * Staff never get here as staff: RoleEntryGate routes them first.
+ */
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   const { user, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
-  const profileMenuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const sheetId = useId();
+  /*
+   * The sheet is portalled to <body>. Inside the header it would be trapped:
+   * the bar's backdrop-filter makes it the containing block for fixed
+   * descendants, so a "full-height" sheet was exactly 56px tall.
+   */
+  const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
 
   const accountLabel = useMemo(() => {
     const first = user?.name?.trim().split(/\s+/)[0];
@@ -23,43 +51,27 @@ export default function Header() {
   }, [user?.name]);
   const accountHref = useMemo(() => getRoleLandingPath(user), [user]);
   /*
-   * The logo is the Home affordance on desktop. For an active member `/` only
-   * bounces back to the membership dashboard, so it points straight there.
+   * The logo is the Home affordance. For an active member `/` only bounces
+   * back to the membership dashboard, so it points straight there.
    */
   const isMember = hasActiveMembership(user);
   const homeHref = useMemo(() => getCustomerHomePath(user), [user]);
-  /*
-   * Desktop parity. The same four primary destinations as the phone, so the
-   * customer's mental model does not change with screen size. Account is a
-   * first-class item here rather than only a profile-menu entry, which was too
-   * easy to miss.
-   */
-  /*
-   * The free-visit booker: in place on the homepage, its own page elsewhere.
-   * This used to be /signup?redirect=/membership - an account form first, and
-   * a `redirect` parameter signup never read.
-   */
-  const freeVisitHref = pathname === "/" ? "/#book" : "/book/free";
+  /* The free-visit booker: in place on the homepage, its own page elsewhere. */
+  const freeVisitHref = pathname === "/" ? "/#book" : BOOKING_LINKS.freeVisit.href;
 
-  const navLinks = useMemo(() => {
+  const navLinks: readonly NavLink[] = useMemo(() => {
     if (isMember) {
       return [
         { label: "Home", href: "/" },
         { label: "Book", href: "/book?visit=membership" },
         { label: "Projects", href: "/projects" },
         { label: "Account", href: "/account" },
-      ] as const;
+      ];
     }
-
     /*
-     * Somebody who signed up but has not joined is neither a stranger nor a
-     * member, and they used to get the stranger's nav: Membership, How it
-     * works, Projects, About Us, with no way to reach Book at all. That is the
-     * state of every person who created an account to claim a free first
-     * visit, so the one thing they came back for was the one thing the header
-     * did not offer. They get the same four destinations as a member, pointed
-     * at the booking flow they are actually entitled to, with See plans in
-     * place of Home because joining is still the open question for them.
+     * Signed up but not a member: the one thing they came back for is their
+     * booking, so they get Book, pointed at the flow they are entitled to, and
+     * See plans because joining is still the open question for them.
      */
     if (isAuthenticated) {
       return [
@@ -67,11 +79,45 @@ export default function Header() {
         { label: "Book", href: "/book" },
         { label: "Projects", href: "/projects" },
         { label: "See plans", href: "/membership/plans" },
-      ] as const;
+      ];
     }
-
     return MAIN_NAV_LINKS;
   }, [isMember, isAuthenticated]);
+
+  /* The menu sheet: the ways to book first, with the one fact that decides each. */
+  const sheetPrimary: NavLink[] = useMemo(() => {
+    if (isMember) {
+      return [
+        { label: "Book a visit", href: "/book?visit=membership" },
+        { label: "Full Day", href: BOOKING_LINKS.fullDay.href },
+        { label: "Projects", href: "/projects" },
+        { label: "Account", href: "/account" },
+      ];
+    }
+    if (isAuthenticated) {
+      return [
+        { label: "Book", href: "/book" },
+        { label: "Memberships", href: BOOKING_LINKS.memberships.href, meta: "From $149/mo" },
+        { label: "Full Day", href: BOOKING_LINKS.fullDay.href },
+        { label: "Projects", href: "/projects" },
+      ];
+    }
+    return [
+      { label: "Memberships", href: BOOKING_LINKS.memberships.href, meta: "From $149/mo" },
+      { label: "Free first visit", href: freeVisitHref, meta: "New customers" },
+      { label: "One-Time Visit", href: BOOKING_LINKS.oneTime.href, meta: "$99" },
+      { label: "Full Day", href: BOOKING_LINKS.fullDay.href },
+      { label: "Gift a membership", href: "/gift" },
+    ];
+  }, [isMember, isAuthenticated, freeVisitHref]);
+
+  const sheetSecondary: NavLink[] = [
+    { label: "Home", href: homeHref },
+    ...(isAuthenticated ? [{ label: "Gift a membership", href: "/gift" }] : [{ label: "Projects", href: "/projects" }]),
+    INFO_PAGE,
+  ];
+
+  const closeMenu = useCallback(() => setIsMenuOpen(false), []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -79,36 +125,50 @@ export default function Header() {
         setIsProfileMenuOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  /* Lock the page behind the sheet, and hand focus in and back out. */
+  const wasOpen = useRef(false);
   useEffect(() => {
-    if (isMenuOpen) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
-
+    if (isMenuOpen) {
+      document.body.style.overflow = "hidden";
+      closeButtonRef.current?.focus({ preventScroll: true });
+    } else {
+      document.body.style.overflow = "";
+      if (wasOpen.current) menuButtonRef.current?.focus({ preventScroll: true });
+    }
+    wasOpen.current = isMenuOpen;
     return () => {
       document.body.style.overflow = "";
     };
   }, [isMenuOpen]);
 
-  useEffect(() => {
-    const close = () => setIsMenuOpen(false);
-    window.addEventListener("hashchange", close);
-    window.addEventListener("popstate", close);
+  /* Any navigation closes it (adjusted during render, not in an effect). */
+  const [lastPath, setLastPath] = useState(pathname);
+  if (lastPath !== pathname) {
+    setLastPath(pathname);
+    setIsMenuOpen(false);
+    setIsProfileMenuOpen(false);
+  }
 
+  useEffect(() => {
+    window.addEventListener("hashchange", closeMenu);
+    window.addEventListener("popstate", closeMenu);
     return () => {
-      window.removeEventListener("hashchange", close);
-      window.removeEventListener("popstate", close);
+      window.removeEventListener("hashchange", closeMenu);
+      window.removeEventListener("popstate", closeMenu);
     };
-  }, []);
+  }, [closeMenu]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsMenuOpen(false);
+      if (e.key === "Escape") {
+        setIsMenuOpen(false);
+        setIsProfileMenuOpen(false);
+      }
     };
-
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
@@ -120,242 +180,192 @@ export default function Header() {
     router.push("/");
   };
 
+  const isActive = (href: string) => {
+    // An in-page anchor (/#book) is a place on the page, not the page itself.
+    if (href.includes("#")) return false;
+    const path = href.split(/[?#]/)[0];
+    if (path === "/") return pathname === "/";
+    return pathname === path;
+  };
+
   return (
-    <header className="site-header relative z-50 w-full py-[8px] sm:py-[12px]">
-      <div className="mx-2.5 rounded-[8px] border border-white/50 bg-white/92 shadow-[0_14px_48px_rgba(9,22,43,0.14)] backdrop-blur-xl sm:mx-5">
-        <div className="mx-auto flex max-w-[1240px] items-center justify-between px-[12px] py-[8px] sm:px-[18px] sm:py-[10px]">
-          {/*
-            The same brand mark as the footer: PRO in ProFixter blue, FIXTER in
-            near-white. The header was taking the light-on-dark wordmark and
-            CSS-inverting it to black, which is how the site ended up with two
-            different identities on one page.
+    <header className="site-header hd">
+      <div className="hd__bar ui-container">
+        <Link href={homeHref} aria-label="Profixter home" className="hd__brand">
+          <Wordmark className="hd__mark" title="Profixter" />
+        </Link>
 
-            The mark is designed for a dark surface, so it gets one: a compact
-            dark chip inside the light header bar. That keeps the identity
-            intact and the contrast strong, rather than painting white letters
-            onto a white background.
-           */}
-          <Link
-            href={homeHref}
-            aria-label="Profixter home"
-            className="relative z-50 flex items-center rounded-[6px] bg-[#0B1628] px-2 py-1.5 transition hover:bg-[#172033] sm:px-2.5"
-          >
-            <Image
-              src="/images/logo-footer.svg"
-              alt="Profixter Long Island"
-              width={113}
-              height={24}
-              priority
-              className="nav-brand-logo"
-            />
-          </Link>
+        <nav className="hd__nav" aria-label="Main navigation">
+          {navLinks.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="hd__link"
+              aria-current={isActive(item.href) ? "page" : undefined}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
-          <nav className="hidden items-center gap-1 rounded-[8px] border border-[#E6ECF7] bg-white/72 p-1 lg:flex" aria-label="Main navigation">
-            {navLinks.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-[6px] px-3.5 py-2.5 text-sm font-black text-[#172033] transition-colors hover:bg-[#EEF4FF] hover:text-[#306EEC]"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="hidden items-center gap-3 lg:flex">
-            {isAuthenticated ? (
-              <div className="relative" ref={profileMenuRef}>
+        <div className="hd__end">
+          {isAuthenticated ? (
+            <>
+              <div className="hd__desk relative" ref={profileMenuRef}>
                 <button
+                  type="button"
                   onClick={() => setIsProfileMenuOpen((v) => !v)}
-                  className="flex items-center gap-2 rounded-[8px] border border-[#D8E2F2] bg-white/88 py-1.5 pl-4 pr-1.5 shadow-sm transition hover:bg-white"
+                  className="hd__profile"
                   aria-label="Open profile menu"
+                  aria-expanded={isProfileMenuOpen}
                 >
-                  <span className="text-sm font-black text-[#111827]">{accountLabel}</span>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0B1628]">
-                    <svg width="31" height="28" viewBox="0 0 31 28" fill="none" aria-hidden="true">
-                      <path d="M15.5 14C18.5376 14 21 11.5376 21 8.5C21 5.46243 18.5376 3 15.5 3C12.4624 3 10 5.46243 10 8.5C10 11.5376 12.4624 14 15.5 14Z" fill="#EEF2FF" />
-                      <path d="M15.5 16C9.70101 16 5 19.134 5 23C5 24.1046 5.89543 25 7 25H24C25.1046 25 26 24.1046 26 23C26 19.134 21.299 16 15.5 16Z" fill="#EEF2FF" />
-                    </svg>
-                  </div>
+                  <span className="hd__avatar" aria-hidden="true">
+                    {accountLabel.slice(0, 1).toUpperCase()}
+                  </span>
+                  <span>{accountLabel}</span>
+                  <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                    <path d="M2 3.5 5 6.5l3-3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </button>
 
                 {/*
                  * Whatever the nav beside it does not already carry, plus the
-                 * way out. A member has Account in the nav and no route to the
-                 * plan comparison; somebody who signed up but has not joined
-                 * has the opposite. Listing both for everybody meant one of the
-                 * two was always a second door to a page already on screen.
+                 * way out, so nothing on screen has two doors.
                  */}
                 {isProfileMenuOpen && (
-                  <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-[8px] border border-[#E6E8EF] bg-white py-2 shadow-lg">
+                  <div className="hd__dropdown" role="menu">
                     {!navLinks.some((link) => link.href === accountHref) && (
-                      <Link
-                        href={accountHref}
-                        className="block px-4 py-3 text-base text-[#111827] transition-colors hover:bg-[#EEF2FF]"
-                        onClick={() => setIsProfileMenuOpen(false)}
-                      >
+                      <Link href={accountHref} role="menuitem" className="hd__dropitem" onClick={() => setIsProfileMenuOpen(false)}>
                         My Account
                       </Link>
                     )}
                     {!navLinks.some((link) => link.href === "/membership/plans") && (
-                      <Link
-                        href="/membership/plans"
-                        className="block px-4 py-3 text-base text-[#111827] transition-colors hover:bg-[#EEF2FF]"
-                        onClick={() => setIsProfileMenuOpen(false)}
-                      >
+                      <Link href="/membership/plans" role="menuitem" className="hd__dropitem" onClick={() => setIsProfileMenuOpen(false)}>
                         See plans
                       </Link>
                     )}
-                    <div className="my-2 border-t border-[#E6E8EF]" />
-                    <button
-                      className="block w-full px-4 py-3 text-left text-base text-red-600 transition-colors hover:bg-[#EEF2FF]"
-                      onClick={handleLogout}
-                    >
+                    <Link href="/gift" role="menuitem" className="hd__dropitem" onClick={() => setIsProfileMenuOpen(false)}>
+                      Gift a membership
+                    </Link>
+                    <div className="hd__dropline" />
+                    <button type="button" role="menuitem" className="hd__dropitem hd__dropitem--danger" onClick={handleLogout}>
                       Log out
                     </button>
                   </div>
                 )}
               </div>
-            ) : (
-              <>
-                <Link
-                  href={freeVisitHref}
-                  className="rounded-[8px] bg-[#306EEC] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#2558C9]"
-                >
-                  Book free visit
+              {!isMember && (
+                <Link href={accountHref} className="hd__textlink hd__phone">
+                  Account
                 </Link>
-                <Link
-                  href="/signin"
-                  className="rounded-[8px] border border-[#C5CBD8] bg-white/90 px-5 py-3 text-sm font-black text-[#111827] shadow-sm transition hover:bg-white"
-                >
-                  Log In
-                </Link>
-              </>
-            )}
-          </div>
+              )}
+            </>
+          ) : (
+            <>
+              <Link href="/signin" className="hd__textlink">
+                Sign in
+              </Link>
+              <Link href={freeVisitHref} className="ui-btn ui-btn--primary ui-btn--sm hd__desk">
+                Book free visit
+              </Link>
+            </>
+          )}
 
           <button
-            onClick={() => setIsMenuOpen((v) => !v)}
-            className="relative z-[70] flex h-9 w-9 flex-col items-center justify-center gap-1.5 lg:hidden"
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            ref={menuButtonRef}
+            type="button"
+            onClick={() => setIsMenuOpen(true)}
+            className="hd__menu"
+            aria-label="Open menu"
             aria-expanded={isMenuOpen}
+            aria-controls={sheetId}
           >
-            <span className={`h-0.5 w-6 bg-[#111827] transition-all duration-300 ${isMenuOpen ? "translate-y-2 rotate-45" : ""}`} />
-            <span className={`h-0.5 w-6 bg-[#111827] transition-all duration-300 ${isMenuOpen ? "opacity-0" : ""}`} />
-            <span className={`h-0.5 w-6 bg-[#111827] transition-all duration-300 ${isMenuOpen ? "-translate-y-2 -rotate-45" : ""}`} />
+            <span>Menu</span>
+            <svg width="14" height="10" viewBox="0 0 14 10" aria-hidden="true">
+              <path d="M1 2h12M1 8h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
           </button>
         </div>
       </div>
 
-
-      <div
-        className={`fixed inset-0 z-[65] overflow-y-auto bg-white pb-[calc(env(safe-area-inset-bottom)+120px)] pt-[env(safe-area-inset-top)] transition-all duration-300 lg:hidden ${
-          isMenuOpen ? "visible opacity-100" : "invisible opacity-0"
-        }`}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Mobile navigation"
-      >
-        <button
-          onClick={() => setIsMenuOpen(false)}
-          aria-label="Close menu"
-          className="absolute right-4 top-11 z-[80] flex h-9 w-9 items-center justify-center rounded-full border border-[#E6E8EF] bg-white/95 text-[#111827] shadow-[0_10px_30px_rgba(17,24,39,0.15)] transition hover:bg-[#F6F7FB] sm:right-5 sm:top-14 sm:h-10 sm:w-10"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-
-        <button
-          aria-label="Close menu background"
-          className="absolute inset-0 h-full w-full cursor-default"
-          onClick={() => setIsMenuOpen(false)}
-        />
-
-        <div className="relative z-[75]">
-          <nav className="flex min-h-[100svh] flex-col items-center justify-start gap-4 px-4 pb-8 pt-20 sm:gap-5 sm:pb-10 sm:pt-24" aria-label="Mobile navigation">
-            <div className="w-full max-w-sm">
-              <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
-                Profixter Long Island
-              </div>
-              {/* Not a heading: this sits inside the nav dialog and would
-                  otherwise precede the page H1 in document order. */}
-              <p className="mt-2 text-2xl font-black leading-tight text-[#0B1628] sm:mt-3 sm:text-3xl">
-                What does your home need?
-              </p>
-            </div>
-
-            <div className="flex w-full max-w-sm flex-col gap-2.5 rounded-[8px] border border-[#E6E8EF] bg-white p-2.5 shadow-[0_16px_50px_rgba(17,24,39,0.08)] sm:gap-3 sm:p-3">
-              {navLinks.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setIsMenuOpen(false)}
-                  className="rounded-[8px] border border-[#EEF2F7] bg-[#F8FAFF] px-4 py-3.5 text-left text-[18px] font-black leading-none text-[#111827] transition hover:bg-[#EEF4FF] hover:text-[#306EEC] sm:rounded-[10px] sm:py-4 sm:text-[21px]"
-                >
-                  {item.label}
+      {/* The menu sheet. Mounted always so it can transition; inert when shut. */}
+      {mounted
+        ? createPortal(
+          <div className={`hd-sheet ${isMenuOpen ? "is-open" : ""}`} inert={!isMenuOpen} aria-hidden={!isMenuOpen}>
+            <button type="button" className="hd-sheet__scrim" aria-label="Close menu background" tabIndex={-1} onClick={closeMenu} />
+            <div id={sheetId} className="hd-sheet__panel" role="dialog" aria-modal="true" aria-label="Mobile navigation">
+              <div className="hd-sheet__top">
+                <Link href={homeHref} aria-label="Profixter home" className="hd__brand" onClick={closeMenu}>
+                  <Wordmark className="hd__mark" title="Profixter" />
                 </Link>
-              ))}
-            </div>
+                <button ref={closeButtonRef} type="button" onClick={closeMenu} aria-label="Close menu" className="hd__menu">
+                  <span>Close</span>
+                  <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                    <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
 
-            <div className="flex w-full max-w-sm flex-col gap-3 rounded-[8px] border border-[#E6E8EF] bg-white p-3 shadow-[0_16px_50px_rgba(17,24,39,0.08)] sm:gap-4 sm:p-4">
-              {isAuthenticated ? (
-                <>
-                  <div className="mb-1 flex items-center justify-between gap-3 rounded-[8px] border border-[#E6E8EF] bg-[#F8FAFF] p-3 sm:mb-2 sm:p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#C5CBD8] sm:h-14 sm:w-14">
-                        <svg width="30" height="26" viewBox="0 0 31 28" fill="none" aria-hidden="true">
-                          <path d="M15.5 14C18.5376 14 21 11.5376 21 8.5C21 5.46243 18.5376 3 15.5 3C12.4624 3 10 5.46243 10 8.5C10 11.5376 12.4624 14 15.5 14Z" fill="#EEF2FF" />
-                          <path d="M15.5 16C9.70101 16 5 19.134 5 23C5 24.1046 5.89543 25 7 25H24C25.1046 25 26 24.1046 26 23C26 19.134 21.299 16 15.5 16Z" fill="#EEF2FF" />
+              <nav className="hd-sheet__body" aria-label="Mobile navigation">
+                <ul className="hd-sheet__primary">
+                  {sheetPrimary.map((item, i) => (
+                    <li key={item.label} style={{ ["--i" as string]: i }}>
+                      <Link href={item.href} onClick={closeMenu} className="hd-sheet__row" aria-current={isActive(item.href) ? "page" : undefined}>
+                        <span>{item.label}</span>
+                        {item.meta ? <span className="hd-sheet__meta">{item.meta}</span> : null}
+                        <svg className="hd-sheet__chev" width="8" height="12" viewBox="0 0 8 12" aria-hidden="true">
+                          <path d="M2 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
-                      </div>
-                      <div>
-                        <p className="text-base font-semibold text-[#111827]">{accountLabel}</p>
-                        <p className="text-sm text-[#6B7280]">My Account</p>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Members already have Account in the list above, so this
-                      button repeated the same destination two rows apart. It
-                      stays for everyone whose nav does not carry one. */}
-                  {!navLinks.some((link) => link.href === accountHref) && (
-                    <Link
-                      href={accountHref}
-                      onClick={() => setIsMenuOpen(false)}
-                      className="rounded-[8px] bg-[#0B1628] px-5 py-3.5 text-center text-[15px] font-black text-white transition hover:bg-[#172033] sm:px-6 sm:py-4 sm:text-base"
-                    >
-                      My Account
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+
+                <ul className="hd-sheet__secondary">
+                  {sheetSecondary.map((item) => (
+                    <li key={item.label}>
+                      <Link href={item.href} onClick={closeMenu}>
+                        {item.label}
+                      </Link>
+                    </li>
+                  ))}
+                  <li>
+                    <a href="tel:+16315991363">Call 631-599-1363</a>
+                  </li>
+                </ul>
+              </nav>
+
+              <div className="hd-sheet__foot">
+                {isAuthenticated ? (
+                  <>
+                    <p className="hd-sheet__who">
+                      Signed in as <b>{accountLabel}</b>
+                    </p>
+                    {!navLinks.some((link) => link.href === accountHref) ? (
+                      <Link href={accountHref} onClick={closeMenu} className="ui-btn ui-btn--primary ui-btn--block">
+                        My Account
+                      </Link>
+                    ) : null}
+                    <button type="button" onClick={handleLogout} className="ui-btn ui-btn--ghost ui-btn--block hd-sheet__logout">
+                      Log out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link href={freeVisitHref} onClick={closeMenu} className="ui-btn ui-btn--primary ui-btn--block">
+                      Book free visit
                     </Link>
-                  )}
-                  <button
-                    onClick={handleLogout}
-                    className="rounded-[8px] border border-red-100 bg-red-50 px-5 py-3.5 text-[15px] font-black text-red-700 transition hover:bg-red-100 sm:px-6 sm:py-4 sm:text-base"
-                  >
-                    Log out
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href={freeVisitHref}
-                    onClick={() => setIsMenuOpen(false)}
-                    className="w-full rounded-[8px] bg-[#306EEC] px-5 py-3.5 text-center text-[15px] font-bold text-white transition hover:bg-[#2558C9] sm:px-6 sm:py-4 sm:text-base"
-                  >
-                    Book free visit
-                  </Link>
-                  <Link
-                    href="/signin"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="w-full rounded-[8px] border border-[#D7DEE9] bg-white px-5 py-3.5 text-center text-[15px] font-black text-[#0B1628] transition hover:bg-[#F8FAFF] sm:px-6 sm:py-4 sm:text-base"
-                  >
-                    Log In
-                  </Link>
-                </>
-              )}
+                    <Link href="/signin" onClick={closeMenu} className="ui-btn ui-btn--secondary ui-btn--block">
+                      Sign in
+                    </Link>
+                  </>
+                )}
+              </div>
             </div>
-          </nav>
-        </div>
-      </div>
+          </div>,
+            document.body
+          )
+        : null}
     </header>
   );
 }

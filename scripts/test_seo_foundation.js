@@ -277,7 +277,12 @@ const toPath = (url) => url.replace(SITE, "") || "/";
         text: m[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
       }));
     const ctaProblems = (html) => {
-      const links = anchors(html);
+      /*
+       * The page's own CTAs, not the site header: since Website 3.0 the header
+       * nav carries a "One-Time" entry (correctly ?visit=additional) on every
+       * page, ahead of any page content.
+       */
+      const links = anchors(html.replace(/<header[\s\S]*?<\/header>/, ""));
       const free = links.findIndex((a) => a.href === "/book/free");
       const oneTime = links.filter((a) => /one-time/i.test(a.text));
       const firstOneTime = links.findIndex((a) => /one-time/i.test(a.text));
