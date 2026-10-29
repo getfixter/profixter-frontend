@@ -18,7 +18,7 @@
  * Start Membership to everyone else. Nothing about billing is invented here.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import PlansSection from "@/app/components/sections/PlansSection";
@@ -42,9 +42,11 @@ export default function MembershipPlansPage() {
    * way the table is in the HTML (a closed <details> still renders its
    * content), so every price stays readable to crawlers.
    */
+  const compareRef = useRef<HTMLDetailsElement>(null);
   const [compareOpen, setCompareOpen] = useState(false);
   useEffect(() => {
-    if (window.matchMedia("(min-width: 768px)").matches) setCompareOpen(true);
+    // Opening the element fires onToggle, which records it in state.
+    if (compareRef.current && window.matchMedia("(min-width: 768px)").matches) compareRef.current.open = true;
   }, []);
 
   return (
@@ -123,8 +125,8 @@ export default function MembershipPlansPage() {
         <section className="ui-section ui-section--tight">
           <Reveal className="ui-container">
             <details
+              ref={compareRef}
               className="pg-compare"
-              open={compareOpen}
               onToggle={(event) => setCompareOpen((event.currentTarget as HTMLDetailsElement).open)}
             >
               <summary className="cursor-pointer rounded-[var(--ui-r-md)] border border-[color:var(--ui-line)] bg-white md:hidden">

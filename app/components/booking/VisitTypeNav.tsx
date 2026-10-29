@@ -87,19 +87,13 @@ export default function VisitTypeNav({
   const TABS = tabsFor(isMember);
 
   return (
-    <nav
-      aria-label="Visit type"
-      className="pf-tabs mx-auto w-full max-w-[1280px] px-4 pt-3 sm:px-6 sm:pt-5 lg:px-8"
-    >
+    <nav aria-label="Visit type" className="pf-tabs ui-container pt-3 sm:pt-5">
       {/*
-        Four tabs in one row, down to 375px. Measured rather than assumed: at
-        that width each tab gets about 80px and the longest label, "Book
-        Fixter", sets about 68px at 11.5px, so the row holds without wrapping
-        and without a scroller. A scroller would have hidden the fourth option
-        behind a gesture, which is the opposite of what a segmented control is
-        for.
+        Four tabs in one row, down to 320px. A scroller would hide the fourth
+        option behind a gesture, which is the opposite of what a segmented
+        control is for.
       */}
-      <div className="flex w-full gap-1 rounded-[8px] border border-[#E4E9F2] bg-[#F1F4F9] p-1 sm:max-w-[680px]">
+      <div className="flex w-full gap-1 rounded-[var(--ui-r-sm)] bg-white p-1 shadow-[inset_0_0_0_1px_var(--ui-line)] sm:max-w-[560px]">
         {TABS.map((tab) => {
           const selected = tab.type === active;
           return (
@@ -109,11 +103,10 @@ export default function VisitTypeNav({
               scroll={false}
               aria-current={selected ? "page" : undefined}
               className={[
-                "pf-tab flex min-h-[42px] flex-1 items-center justify-center whitespace-nowrap rounded-[6px] px-1 text-center text-[11.5px] font-semibold leading-tight tracking-[-0.01em] transition sm:min-h-[44px] sm:px-2 sm:text-[14px]",
-                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]",
+                "pf-tab flex min-h-[44px] flex-1 items-center justify-center whitespace-nowrap rounded-[7px] px-1 text-center text-[13px] font-semibold leading-tight tracking-[-0.01em] transition-colors sm:text-[14px]",
                 selected
-                  ? "bg-white text-[#0B1628] shadow-[0_1px_3px_rgba(11,22,40,0.12)]"
-                  : "text-[#5C6672] hover:text-[#0B1628]",
+                  ? "bg-[color:var(--ui-ink)] text-white"
+                  : "text-[color:var(--ui-text-2)] hover:bg-[color:var(--ui-bg-soft)] hover:text-[color:var(--ui-ink)]",
               ].join(" ")}
             >
               {tab.label}
