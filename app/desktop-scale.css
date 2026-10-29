@@ -6,7 +6,7 @@
   :root[data-surface="site"] .lx-h1 { font-size: clamp(32px, min(calc(32px + (100vw - 640px) * 0.0175), calc(20.7px + 3.16vh)), 46px); }
   :root[data-surface="site"] .lx-h2 { font-size: clamp(28px, calc(28px + (100vw - 640px) * 0.0125), 38px); }
   :root[data-surface="site"] .mk-h2 { font-size: clamp(29px, min(calc(29px + (100vw - 640px) * 0.0163), calc(18.9px + 2.89vh)), 42px); }
-  :root[data-surface="site"] .plan-box__figure { font-size: clamp(32px, min(calc(32px + (100vw - 640px) * 0.0175), calc(20.7px + 3.16vh)), 46px); }
+  :root[data-surface="site"] .plan-box__figure { font-size: clamp(45px, min(calc(45px + (100vw - 640px) * 0.0238), calc(28.8px + 4.4vh)), 64px); }
   :root[data-surface="site"] .text-3xl { font-size: 27px; }
   :root[data-surface="site"] .text-\[30px\] { font-size: 27px; }
   :root[data-surface="site"] .text-\[32px\] { font-size: clamp(28px, calc(28px + (100vw - 640px) * 0.0013), 29px); }
