@@ -1,6 +1,5 @@
 import {
   CORE_PRODUCTS,
-  HOME_SUPPORT_AI,
   MAIN_NAV_LINKS,
 } from "@/lib/site-architecture";
 import { plans } from "@/app/data/content";
@@ -109,7 +108,6 @@ export const PUBLIC_SITEMAP_ROUTES: readonly SitemapRoute[] = [
   { path: "/kitchen-bathroom", changeFrequency: "monthly", priority: 0.86, updated: "2026-10-06" },
   /* Homeowner guides: the problem-first entry points. */
   ...getGuideSitemapRoutes(),
-  { path: "/home-support", changeFrequency: "monthly", priority: 0.7, updated: "2026-08-13" },
   { path: "/about", changeFrequency: "monthly", priority: 0.8, updated: CONTENT_RELEASE_DATE },
   { path: "/communities", changeFrequency: "monthly", priority: 0.7, updated: "2026-10-06" },
   /*
@@ -222,7 +220,6 @@ export const PROFIXTER_STRUCTURED_DATA = {
         "Small home repairs",
         "Home maintenance",
         "Handyman visits",
-        "Home Support AI",
         "Roofing",
         "Siding",
         "Kitchen remodeling",
@@ -266,11 +263,6 @@ export const PROFIXTER_STRUCTURED_DATA = {
             "@type": "Offer",
             name: CORE_PRODUCTS[2].title,
             url: `${SITE_URL}${CORE_PRODUCTS[2].href}`,
-          },
-          {
-            "@type": "Offer",
-            name: HOME_SUPPORT_AI.title,
-            url: `${SITE_URL}${HOME_SUPPORT_AI.href}`,
           },
         ],
       },

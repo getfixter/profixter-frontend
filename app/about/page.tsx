@@ -5,21 +5,21 @@ import GiftCallout from "@/app/components/gift/GiftCallout";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
-import { CORE_PRODUCTS, HOME_SUPPORT_AI } from "@/lib/site-architecture";
+import { CORE_PRODUCTS } from "@/lib/site-architecture";
 
 export const metadata: Metadata = {
   title: {
     absolute: "About Profixter | Long Island's Modern Home Platform",
   },
   description:
-    "Meet the local team behind Profixter: Membership, $99 handyman visits, Profixter AI, and renovation estimates for Long Island homeowners.",
+    "Meet the local team behind Profixter: Membership, $99 handyman visits, and renovation estimates for Long Island homeowners.",
   alternates: {
     canonical: "/about",
   },
   openGraph: {
     title: "About Profixter | Long Island's Modern Home Platform",
     description:
-      "Learn why Profixter was built to make home ownership simpler with Membership, $99 visits, AI guidance, and renovation estimates.",
+      "Learn why Profixter was built to make home ownership simpler with Membership, $99 visits, and renovation estimates.",
     url: absoluteUrl("/about"),
     siteName: "Profixter",
     type: "website",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "About Profixter | Long Island's Modern Home Platform",
     description:
-      "Meet the local team behind Profixter: membership, handyman visits, home projects, and Profixter AI on Long Island.",
+      "Meet the local team behind Profixter: membership, handyman visits, and home projects on Long Island.",
     images: [DEFAULT_OG_IMAGE.url],
   },
 };
@@ -77,11 +77,11 @@ const WAYS = [
     featured: false,
   },
   {
-    title: HOME_SUPPORT_AI.shortTitle,
-    role: "Before you hire anyone",
-    href: HOME_SUPPORT_AI.href,
-    cta: HOME_SUPPORT_AI.cta,
-    body: "Free guidance on repairs, materials, quotes and whether a job is worth doing yourself.",
+    title: "Full Day Fixter",
+    role: "A longer list, one day",
+    href: "/book?visit=full-day",
+    cta: "Book a full day",
+    body: "One Fixter for about eight hours, working through the whole list.",
     featured: false,
   },
 ] as const;
@@ -119,8 +119,8 @@ const faqs = [
     a: "Yes. Bathrooms, kitchens, roofing, siding and multi-day work start with a project estimate rather than a membership visit, handled by the same local company.",
   },
   {
-    q: "What is Profixter AI?",
-    a: "Free guidance before you hire anyone: repairs, maintenance, safety, materials, reading a contractor's quote, and whether a job is worth doing yourself.",
+    q: "Is the first visit free?",
+    a: "New to Profixter? Your first visit is free: up to 90 minutes of handyman work, one per customer, no card needed.",
   },
   {
     q: "Do you repair appliances?",

@@ -17,7 +17,7 @@ export default function NotFound() {
           {/* The same four words the rest of the site uses. This page had its
               own vocabulary for every destination on it. */}
           <p className="mx-auto mt-4 max-w-[560px] text-base leading-7 text-slate-600">
-            Book a visit, see membership plans, start a project, or ask Profixter AI about your home.
+            Book a visit, see membership plans, start a project, or see our recent work.
           </p>
           <div className="mt-7 grid gap-3 sm:grid-cols-2">
             <Link href="/book" className="rounded-[6px] bg-blue-600 px-5 py-3 text-sm font-black text-white">
@@ -29,8 +29,8 @@ export default function NotFound() {
             <Link href="/projects" className="rounded-[6px] border border-slate-200 px-5 py-3 text-sm font-black text-slate-900">
               Projects
             </Link>
-            <Link href="/home-support" className="rounded-[6px] border border-slate-200 px-5 py-3 text-sm font-black text-slate-900">
-              Profixter AI
+            <Link href="/recent-work" className="rounded-[6px] border border-slate-200 px-5 py-3 text-sm font-black text-slate-900">
+              Recent work
             </Link>
           </div>
         </div>
