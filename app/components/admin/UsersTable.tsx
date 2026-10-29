@@ -13,6 +13,8 @@ import { formatDateNY, getTodayNY } from '@/lib/utils/timezone-helpers';
 import CommunicationHistory from './CommunicationHistory';
 import SmsConsentPanel from './SmsConsentPanel';
 import { CompletedBookingsChip, CustomerLoyaltyPanel, LoyaltyStrip } from './LoyaltyProgress';
+import AdminGiftModal from './AdminGiftModal';
+import { GiftIcon } from '@heroicons/react/24/outline';
 
 type PlanFilter = 'all' | 'basic' | 'plus' | 'premium' | 'elite' | 'cancel';
 
@@ -43,6 +45,8 @@ interface UsersTableProps {
   showLoyalty?: boolean;
   /* Completed visits and Loyalty Progress inside the customer detail. Needs members.read. */
   canViewLoyalty?: boolean;
+  /* Owner only: buy a gift membership for this customer through the normal gift checkout. */
+  canGift?: boolean;
 }
 
 type FlattenedRow = {
@@ -229,6 +233,7 @@ export default function UsersTable({
   showCustomerPanels = true,
   showLoyalty = false,
   canViewLoyalty = false,
+  canGift = false,
 }: UsersTableProps) {
   const [planFilter, setPlanFilter] = useState<PlanFilter>('all');
   const [savingCancellationByAddress, setSavingCancellationByAddress] = useState<Record<string, boolean>>({});
@@ -247,6 +252,8 @@ export default function UsersTable({
 
   const [loyaltyByTrack, setLoyaltyByTrack] = useState<Map<string, AdminLoyaltyRow> | null>(null);
   const [loyaltyFailed, setLoyaltyFailed] = useState(false);
+
+  const [giftTarget, setGiftTarget] = useState<{ user: User; addressId: string | null } | null>(null);
 
   const minCancellationDate = getTodayNY();
 
@@ -801,6 +808,16 @@ export default function UsersTable({
                           >
                             History
                           </button>
+                          {canGift && (
+                            <button
+                              type="button"
+                              onClick={() => setGiftTarget({ user, addressId: address?._id || null })}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
+                            >
+                              <GiftIcon className="h-4 w-4" aria-hidden="true" />
+                              Gift
+                            </button>
+                          )}
                           {canBlacklist && (isBlacklisted && blacklistId ? (
                             <button
                               type="button"
@@ -962,13 +979,25 @@ export default function UsersTable({
                     </div>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={() => openHistory(user)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
-                  >
-                    View history
-                  </button>
+                  <div className={canGift ? 'grid grid-cols-[1fr_auto] gap-2' : ''}>
+                    <button
+                      type="button"
+                      onClick={() => openHistory(user)}
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+                    >
+                      View history
+                    </button>
+                    {canGift && (
+                      <button
+                        type="button"
+                        onClick={() => setGiftTarget({ user, addressId: address?._id || null })}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
+                      >
+                        <GiftIcon className="h-4 w-4" aria-hidden="true" />
+                        Gift
+                      </button>
+                    )}
+                  </div>
 
                   {canBlacklist && (isBlacklisted && blacklistId ? (
                     <button
@@ -1035,14 +1064,26 @@ export default function UsersTable({
                     {historyUser.email} · ID {historyUser.userId}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={closeHistory}
-                  className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full border border-white/15 text-slate-200 transition hover:bg-white/10"
-                  aria-label="Close customer history"
-                >
-                  ×
-                </button>
+                <div className="flex flex-shrink-0 items-center gap-2">
+                  {canGift && (
+                    <button
+                      type="button"
+                      onClick={() => setGiftTarget({ user: historyUser, addressId: null })}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-violet-300/30 bg-violet-500/15 px-3.5 text-sm font-semibold text-violet-100 transition hover:bg-violet-500/25"
+                    >
+                      <GiftIcon className="h-4 w-4" aria-hidden="true" />
+                      Gift
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={closeHistory}
+                    className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full border border-white/15 text-slate-200 transition hover:bg-white/10"
+                    aria-label="Close customer history"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1179,6 +1220,15 @@ export default function UsersTable({
             </div>
           </div>
         </div>
+      )}
+
+      {giftTarget && (
+        <AdminGiftModal
+          key={`${giftTarget.user._id}:${giftTarget.addressId || ''}`}
+          user={giftTarget.user}
+          addressId={giftTarget.addressId}
+          onClose={() => setGiftTarget(null)}
+        />
       )}
 
       {deleteUserTarget && (

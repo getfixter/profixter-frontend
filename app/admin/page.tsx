@@ -141,6 +141,26 @@ function AdminPageContent() {
   const showToast = useCallback((msg: string) => {
     setToast(msg);
   }, []);
+
+  /*
+   * Back from a gift checkout started with Admin's Gift button. Stripe sends
+   * the owner here; the gift itself is recorded by the webhook, never by this
+   * redirect, so the message says what is true at this moment. The query is
+   * then removed so a refresh does not repeat it.
+   */
+  const giftReturn = searchParams.get("gift");
+  useEffect(() => {
+    if (giftReturn !== "paid" && giftReturn !== "canceled") return;
+    showToast(
+      giftReturn === "paid"
+        ? "Payment received. The gift invitation goes to the customer as soon as Stripe confirms it."
+        : "Gift checkout canceled. Nothing was charged."
+    );
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("gift");
+    params.delete("session_id");
+    router.replace(`/admin?${params.toString()}`, { scroll: false });
+  }, [giftReturn, router, searchParams, showToast]);
   const [users, setUsers] = useState<User[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingAssignees, setBookingAssignees] = useState<BookingAssignee[]>([]);
@@ -1084,6 +1104,7 @@ function AdminPageContent() {
                 canFixGhl={isAdmin}
                 showCustomerPanels={canCustomers}
                 canViewLoyalty={canMembers}
+                canGift={isAdmin}
               />
             )}
 
@@ -1104,6 +1125,7 @@ function AdminPageContent() {
                 showCustomerPanels={canCustomers}
                 showLoyalty={canMembers}
                 canViewLoyalty={canMembers}
+                canGift={isAdmin}
               />
             )}
 
