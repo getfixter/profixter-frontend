@@ -220,10 +220,16 @@
       grid-template-columns: repeat(var(--gf-cols, 5), minmax(0, 1fr));
     }
   }
-  @media (max-width: 559px) {
+  /* Three across from 360px; on the narrowest phones "12 months" needs two. */
+  @media (min-width: 360px) and (max-width: 559px) {
     .gf-choices--lengths {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+  }
+  .gf-choice__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .gf-choice {
