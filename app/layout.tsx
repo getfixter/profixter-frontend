@@ -5,6 +5,7 @@ import Script from "next/script";
 import Providers from "./providers";
 import ScrollToTop from "./ScrollToTop";
 import CustomerSiteMobileNav from "./components/CustomerSiteMobileNav";
+import SupportChat from "./components/support/SupportChat";
 import FixterStage from "./components/fixter/FixterStage";
 import "./globals.css";
 import "./free-visit.css";
@@ -305,6 +306,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           */}
           <FixterStage />
           <CustomerSiteMobileNav />
+          {/* The floating customer-support assistant; it decides for itself where it shows. */}
+          <SupportChat />
         </Providers>
       </body>
     </html>

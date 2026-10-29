@@ -34,24 +34,6 @@ export const CORE_PRODUCTS = [
   },
 ] as const;
 
-/*
- * RETIRED from navigation (Website 3.0). Profixter AI is no longer linked from
- * the header, the footer or the homepage, and its page is being retired
- * separately. The constant stays only because lib/seo.ts and app/about still
- * import it; delete it together with those references when the page goes.
- */
-export const HOME_SUPPORT_AI = {
-  id: "home-support-ai",
-  label: "Profixter AI",
-  href: "/home-support",
-  intent: "I am not sure where to start.",
-  title: "Profixter Home Support AI",
-  shortTitle: "Profixter AI",
-  summary:
-    "Free homeowner guidance for repairs, maintenance, quotes, materials, safety, and DIY-or-hire decisions.",
-  cta: "Ask Profixter AI",
-} as const;
-
 export const COMPANY_LINKS = [
   { label: "About Us", href: "/about" },
   { label: "Community Partnerships", href: "/communities" },
