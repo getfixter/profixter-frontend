@@ -12,6 +12,7 @@ import {
 import { formatDateNY, getTodayNY } from '@/lib/utils/timezone-helpers';
 import CommunicationHistory from './CommunicationHistory';
 import SmsConsentPanel from './SmsConsentPanel';
+import CopyAddressButton from './CopyAddressButton';
 import { CompletedBookingsChip, CustomerLoyaltyPanel, LoyaltyStrip } from './LoyaltyProgress';
 import AdminGiftModal from './AdminGiftModal';
 import { GiftIcon } from '@heroicons/react/24/outline';
@@ -762,7 +763,10 @@ export default function UsersTable({
                       </td>
                       <td className="px-4 py-4">
                         <div className="space-y-2">
-                          <div className="text-sm text-slate-700">{addressText}</div>
+                          <div className="flex items-start gap-1.5">
+                            <div className="text-sm text-slate-700">{addressText}</div>
+                            <CopyAddressButton address={address} className="-mt-1" />
+                          </div>
                           {address?.label && (
                             <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                               {address.label}
@@ -933,7 +937,10 @@ export default function UsersTable({
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Address</div>
-                        <div className="mt-1 text-sm text-slate-700">{addressText}</div>
+                        <div className="mt-1 flex items-start gap-1.5">
+                          <div className="text-sm text-slate-700">{addressText}</div>
+                          <CopyAddressButton address={address} className="-mt-0.5" />
+                        </div>
                       </div>
                       {address?.label && (
                         <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">
