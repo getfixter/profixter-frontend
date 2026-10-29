@@ -44,17 +44,17 @@ export default function GiftEntryPoint() {
   if (!available) return null;
 
   return (
-    <div className="mt-6 flex flex-col gap-4 rounded-[10px] border border-[#E0E6F5] bg-[#F8FAFF] p-5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mt-6 flex flex-col gap-4 rounded-[10px] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-soft)] p-5 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <h3 className="text-[16px] font-semibold text-[#313234]">Gift a Membership</h3>
-        <p className="mt-1 max-w-md text-[13px] leading-relaxed text-[#6A6D71]">
+        <h3 className="text-[16px] font-semibold text-[color:var(--ui-ink)]">Gift a Membership</h3>
+        <p className="mt-1 max-w-md text-[13px] leading-relaxed text-[color:var(--ui-text-2)]">
           Give someone a ProFixter membership for their home. You pay once, they book the visits,
           and nothing renews.
         </p>
       </div>
       <Link
         href="/gift"
-        className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-[8px] border border-[#306EEC] bg-white px-5 text-[14px] font-semibold text-[#306EEC] transition hover:bg-[#EEF2FF]"
+        className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-[10px] border border-[#306EEC] bg-white px-5 text-[14px] font-semibold text-[color:var(--ui-accent-ink)] transition hover:bg-[color:var(--ui-bg-soft)]"
       >
         Gift a Membership
       </Link>

@@ -209,11 +209,11 @@ function RetentionDebugDetails({ debug }: { debug: RetentionOfferDebug | null })
   if (!debug || process.env.NODE_ENV === "production") return null;
 
   return (
-    <details className="mt-4 rounded-[8px] border border-[#D7E0F5] bg-[#F8FAFF] p-3 text-left">
-      <summary className="cursor-pointer text-xs font-extrabold uppercase tracking-[0.14em] text-[#306EEC]">
+    <details className="mt-4 rounded-[10px] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-soft)] p-3 text-left">
+      <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--ui-accent-ink)]">
         Retention debug
       </summary>
-      <pre className="mt-3 max-h-56 overflow-auto whitespace-pre-wrap break-words text-[11px] leading-relaxed text-[#475569]">
+      <pre className="mt-3 max-h-56 overflow-auto whitespace-pre-wrap break-words text-[11px] leading-relaxed text-[color:var(--ui-text-2)]">
         {JSON.stringify(debug, null, 2)}
       </pre>
     </details>
@@ -727,8 +727,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
     className?: string;
   }) => (
     <div
-      className={`w-full rounded-[8px] border border-[#C5CBD8] bg-[#EEF2FF] p-5 sm:p-6 ${className}`}
-      style={{ boxShadow: "0px 0px 200px 0px rgba(0,0,0,0.10)" }}
+      className={`w-full rounded-[14px] border border-[color:var(--ui-line)] bg-white p-5 sm:p-6 ${className}`}
     >
       {children}
     </div>
@@ -750,7 +749,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
   return (
     <>
       <div>
-        <h2 className="mb-6 text-xl font-semibold text-[#313234] sm:mb-8 sm:text-2xl">
+        <h2 className="mb-4 text-[length:var(--ui-fs-h2)] font-semibold leading-[1.18] tracking-[-0.022em] text-[color:var(--ui-ink)] sm:mb-5">
           My plan{activeSubscriptions.length > 1 ? "s" : ""}
         </h2>
 
@@ -770,43 +769,43 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
         />
 
         {notice ? (
-          <div className="mb-4 rounded-[8px] border border-[#86EFAC]/50 bg-[#ECFDF3] px-4 py-3 text-sm font-semibold text-[#166534]">
+          <div className="mb-4 rounded-[10px] border border-[#86EFAC]/50 bg-[#ECFDF3] px-4 py-3 text-sm font-semibold text-[#166534]">
             {notice}
           </div>
         ) : null}
 
         {error ? (
-          <div className="mb-4 rounded-[8px] border border-[#FCA5A5]/60 bg-[#FEF2F2] px-4 py-3 text-sm font-semibold text-[#B91C1C]">
+          <div className="mb-4 rounded-[10px] border border-[#FCA5A5]/60 bg-[#FEF2F2] px-4 py-3 text-sm font-semibold text-[#B91C1C]">
             {error}
           </div>
         ) : null}
 
         {!loading && paymentEndedSubscriptions.length ? (
-          <div className="mb-4 rounded-[8px] border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3 text-sm font-semibold text-[#92400E]">
+          <div className="mb-4 rounded-[10px] border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3 text-sm font-semibold text-[#92400E]">
             Your Membership ended because payment could not be processed. Please start a new Membership to continue booking.
           </div>
         ) : null}
 
         {loading ? (
           <Card className="max-w-[620px]">
-            <div className="text-sm text-[#6A6D71] sm:text-base">Loading your plan details...</div>
+            <div className="text-sm text-[color:var(--ui-text-2)] sm:text-base">Loading your plan details...</div>
           </Card>
         ) : planUnavailable ? (
           <Card className="max-w-[620px]">
-            <h3 className="text-lg font-semibold text-[#313234] sm:text-xl">
+            <h3 className="text-lg font-semibold text-[color:var(--ui-ink)] sm:text-xl">
               We could not load your plan
             </h3>
-            <p className="mt-2 text-sm text-[#6A6D71] sm:text-base">
+            <p className="mt-2 text-sm text-[color:var(--ui-text-2)] sm:text-base">
               Your membership is active. The plan details just did not load this time. Refresh the
               page, or call us on{" "}
-              <a className="font-semibold text-[#306EEC]" href="tel:+16315991363">
+              <a className="font-semibold text-[color:var(--ui-accent-ink)]" href="tel:+16315991363">
                 631-599-1363
               </a>{" "}
               and we will sort it out.
             </p>
             <Link
               href="/book?visit=membership"
-              className="mt-5 inline-flex min-h-[46px] items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2557C7]"
+              className="mt-5 inline-flex min-h-[46px] items-center justify-center rounded-[10px] bg-[color:var(--ui-ink)] px-5 text-[15px] font-semibold text-white transition hover:bg-[color:var(--ui-ink-2)]"
             >
               Book a visit
             </Link>
@@ -816,27 +815,27 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
             <Card className="max-w-[620px]">
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
-                  <div className="mb-1 text-sm text-[#6A6D71]">No active membership</div>
-                  <h3 className="text-lg font-semibold text-[#313234] sm:text-xl">
-                    Recommended: <span className="text-[#306EEC]">{PLAN_DISPLAY_NAMES.plus}</span>
+                  <div className="mb-1 text-sm text-[color:var(--ui-text-2)]">No active membership</div>
+                  <h3 className="text-lg font-semibold text-[color:var(--ui-ink)] sm:text-xl">
+                    Recommended: <span className="text-[color:var(--ui-accent-ink)]">{PLAN_DISPLAY_NAMES.plus}</span>
                   </h3>
                   <div className="mt-2 flex items-baseline gap-1">
-                    <span className="text-2xl font-semibold text-[#313234]">${PLAN_PRICES.plus}</span>
-                    <span className="text-sm text-[#6A6D71] sm:text-base">/month</span>
+                    <span className="text-2xl font-semibold text-[color:var(--ui-ink)]">${PLAN_PRICES.plus}</span>
+                    <span className="text-sm text-[color:var(--ui-text-2)] sm:text-base">/month</span>
                   </div>
                 </div>
 
-                <div className="shrink-0 rounded-[6px] border border-[#C5CBD8] bg-white/70 px-3 py-2">
-                  <span className="text-xs font-semibold text-[#313234]">Most members start here</span>
+                <div className="shrink-0 rounded-[6px] border border-[color:var(--ui-line)] bg-white/70 px-3 py-2">
+                  <span className="text-xs font-semibold text-[color:var(--ui-ink)]">Most members start here</span>
                 </div>
               </div>
 
               <div className="mt-4">
-                <div className="mb-2 text-sm font-semibold text-[#313234]">Why members start here</div>
-                <ul className="space-y-2 text-sm text-[#6A6D71]">
+                <div className="mb-2 text-sm font-semibold text-[color:var(--ui-ink)]">Why members start here</div>
+                <ul className="space-y-2 text-sm text-[color:var(--ui-text-2)]">
                   {PLAN_INCLUDES.plus.map((item) => (
                     <li key={item} className="flex gap-2">
-                      <span className="font-bold text-[#306EEC]">&bull;</span>
+                      <span className="font-bold text-[color:var(--ui-accent-ink)]">&bull;</span>
                       <span>{item}</span>
                     </li>
                   ))}
@@ -845,22 +844,22 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
 
               <Link
                 href="/membership/plans"
-                className="mt-6 block w-full rounded-[8px] bg-[#306EEC] py-3 text-center text-base font-semibold text-[#EEF2FF] transition-colors hover:bg-[#2557C7] sm:py-4 sm:text-lg"
+                className="mt-6 block w-full rounded-[10px] bg-[color:var(--ui-ink)] py-3 text-center text-base font-semibold text-white transition-colors hover:bg-[color:var(--ui-ink-2)] sm:py-4 sm:text-lg"
               >
                 Start Membership
               </Link>
 
-              <div className="mt-3 text-xs text-[#6A6D71] opacity-80">
+              <div className="mt-3 text-xs text-[color:var(--ui-text-2)] opacity-80">
                 Manage your plan and book online anytime.
               </div>
             </Card>
 
             <Card className="max-w-[620px]">
-              <h3 className="mb-3 text-lg font-semibold text-[#313234] sm:text-xl">
+              <h3 className="mb-3 text-lg font-semibold text-[color:var(--ui-ink)] sm:text-xl">
                 Need help before reaching out?
               </h3>
 
-              <div className="space-y-2 text-sm text-[#6A6D71]">
+              <div className="space-y-2 text-sm text-[color:var(--ui-text-2)]">
                 <p>What can I book? See common tasks and visit expectations.</p>
                 <p>How often can I book? You can book as often as availability allows.</p>
                 <p>No estimates. No surprises. Everything stays easy to manage online.</p>
@@ -869,7 +868,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
               <div className="mt-6 flex flex-col gap-3">
                 <Link
                   href="/membership/plans"
-                  className="inline-flex items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
+                  className="inline-flex items-center justify-center rounded-[10px] border border-[color:var(--ui-line)] bg-white/70 px-4 py-3 text-sm font-semibold text-[color:var(--ui-ink)] transition hover:bg-white"
                 >
                   See plans
                 </Link>
@@ -898,19 +897,19 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                     <Card key={subscription._id} className="max-w-[620px]">
                       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                          <div className="text-sm font-semibold text-[#306EEC]">
+                          <div className="text-sm font-semibold text-[color:var(--ui-accent-ink)]">
                             {statusLabel(subscription, { hideCancellationUi })}
                           </div>
-                          <h3 className="mt-1 text-xl font-semibold text-[#313234] sm:text-2xl">
+                          <h3 className="mt-1 text-xl font-semibold text-[color:var(--ui-ink)] sm:text-2xl">
                             {formatPlanName(plan)} plan
                           </h3>
-                          <p className="mt-2 text-sm leading-relaxed text-[#6A6D71]">
+                          <p className="mt-2 text-sm leading-relaxed text-[color:var(--ui-text-2)]">
                             {formatAddress(subscription)}
                           </p>
                         </div>
 
-                        <div className="rounded-[8px] border border-[#C5CBD8] bg-white/70 px-4 py-3 text-right">
-                          <div className="text-2xl font-semibold text-[#313234]">
+                        <div className="rounded-[10px] border border-[color:var(--ui-line)] bg-white/70 px-4 py-3 text-right">
+                          <div className="text-2xl font-semibold text-[color:var(--ui-ink)]">
                             $
                             {planAmountForCycle(
                               subscription.planPrice,
@@ -918,47 +917,47 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                               subscription.billingCycle
                             )}
                           </div>
-                          <div className="text-sm text-[#6A6D71]">
+                          <div className="text-sm text-[color:var(--ui-text-2)]">
                             /{subscription.billingCycle === "annual" ? "year" : "month"}
                           </div>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        <div className="rounded-[8px] border border-[#D7E0F5] bg-white/70 px-4 py-3">
-                          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">
+                        <div className="rounded-[10px] border border-[color:var(--ui-line)] bg-white/70 px-4 py-3">
+                          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--ui-text-2)]">
                             Billing
                           </div>
-                          <div className="mt-1 text-sm font-semibold text-[#313234] capitalize">
+                          <div className="mt-1 text-sm font-semibold text-[color:var(--ui-ink)] capitalize">
                             {subscription.billingCycle}
                           </div>
                         </div>
-                        <div className="rounded-[8px] border border-[#D7E0F5] bg-white/70 px-4 py-3">
-                          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">
+                        <div className="rounded-[10px] border border-[color:var(--ui-line)] bg-white/70 px-4 py-3">
+                          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--ui-text-2)]">
                             {subscription.cancelAtPeriodEnd ? "Active Until" : "Renewal"}
                           </div>
-                          <div className="mt-1 text-sm font-semibold text-[#313234]">
+                          <div className="mt-1 text-sm font-semibold text-[color:var(--ui-ink)]">
                             {renewalDate || "On file"}
                           </div>
                         </div>
-                        <div className="rounded-[8px] border border-[#D7E0F5] bg-white/70 px-4 py-3">
-                          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">
+                        <div className="rounded-[10px] border border-[color:var(--ui-line)] bg-white/70 px-4 py-3">
+                          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--ui-text-2)]">
                             Status
                           </div>
-                          <div className="mt-1 text-sm font-semibold text-[#313234]">
+                          <div className="mt-1 text-sm font-semibold text-[color:var(--ui-ink)]">
                             {statusLabel(subscription, { hideCancellationUi })}
                           </div>
                         </div>
                       </div>
 
                       <div className="mt-4">
-                        <div className="mb-2 text-sm font-semibold text-[#313234]">
+                        <div className="mb-2 text-sm font-semibold text-[color:var(--ui-ink)]">
                           Included with this plan
                         </div>
-                        <ul className="space-y-2 text-sm text-[#6A6D71]">
+                        <ul className="space-y-2 text-sm text-[color:var(--ui-text-2)]">
                           {PLAN_INCLUDES[plan].map((item) => (
                             <li key={`${subscription._id}-${item}`} className="flex gap-2">
-                              <span className="font-bold text-[#306EEC]">&bull;</span>
+                              <span className="font-bold text-[color:var(--ui-accent-ink)]">&bull;</span>
                               <span>{item}</span>
                             </li>
                           ))}
@@ -982,7 +981,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                       ) : null}
 
                       {showCancellationUi && subscription.cancelAtPeriodEnd ? (
-                        <div className="mt-5 rounded-[8px] border border-[#FDE68A] bg-[#FFFBEB] p-4 text-sm text-[#92400E]">
+                        <div className="mt-5 rounded-[10px] border border-[#FDE68A] bg-[#FFFBEB] p-4 text-sm text-[#92400E]">
                           <div className="font-semibold">Cancellation scheduled</div>
                           <div className="mt-1">
                             Your plan stays active until{" "}
@@ -993,7 +992,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                       ) : null}
 
                       {pendingPlan && !subscription.cancelAtPeriodEnd ? (
-                        <div className="mt-5 rounded-[8px] border border-[#BFDBFE] bg-[#EFF6FF] p-4 text-sm text-[#1D4ED8]">
+                        <div className="mt-5 rounded-[10px] border border-[#BFDBFE] bg-[#EFF6FF] p-4 text-sm text-[#1D4ED8]">
                           <div className="font-semibold">Scheduled next plan: {pendingPlan}</div>
                           <div className="mt-1">
                             Your current {formatPlanName(plan)} plan stays active until{" "}
@@ -1009,7 +1008,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                             type="button"
                             disabled={isReactivating}
                             onClick={() => handleReactivate(subscription)}
-                            className="block w-full rounded-[8px] bg-[#306EEC] py-3 text-center text-base font-semibold text-[#EEF2FF] transition-colors hover:bg-[#2557C7] disabled:opacity-60"
+                            className="block w-full rounded-[10px] bg-[color:var(--ui-ink)] py-3 text-center text-base font-semibold text-white transition-colors hover:bg-[color:var(--ui-ink-2)] disabled:opacity-60"
                           >
                             {isReactivating ? "Reactivating..." : "Reactivate plan"}
                           </button>
@@ -1017,7 +1016,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                           <button
                             type="button"
                             onClick={() => openManagePlan(subscription)}
-                            className="block w-full rounded-[8px] bg-[#306EEC] py-3 text-center text-base font-semibold text-[#EEF2FF] transition-colors hover:bg-[#2557C7]"
+                            className="block w-full rounded-[10px] bg-[color:var(--ui-ink)] py-3 text-center text-base font-semibold text-white transition-colors hover:bg-[color:var(--ui-ink-2)]"
                           >
                             Manage Billing
                           </button>
@@ -1033,7 +1032,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                               (cancelTarget?._id === subscription._id && cancelMode === "checking")
                             }
                             onClick={() => openCancelFlow(subscription)}
-                            className="w-full rounded-[8px] border border-[#C5CBD8] bg-white/70 py-3 text-base font-semibold text-[#313234] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                            className="w-full rounded-[10px] border border-[color:var(--ui-line)] bg-white/70 py-3 text-base font-semibold text-[color:var(--ui-ink)] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             {subscription.cancelAtPeriodEnd
                               ? "Cancellation scheduled"
@@ -1045,14 +1044,14 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                       </div>
 
                       {subscription.stripeManaged ? (
-                        <div className="mt-1 text-xs font-semibold text-[#6A6D71]">
+                        <div className="mt-1 text-xs font-semibold text-[color:var(--ui-text-2)]">
                           {showCancellationUi
                             ? "Billing settings include plan changes, payment methods, invoices, and cancellation review."
                             : "Billing settings include plan changes, payment methods, and invoices."}
                         </div>
                       ) : null}
 
-                      <div className="mt-3 text-xs text-[#6A6D71]">
+                      <div className="mt-3 text-xs text-[color:var(--ui-text-2)]">
                         {showCancellationUi && subscription.cancelAtPeriodEnd
                           ? `Service continues until ${cancellationDate || renewalDate || "the end of the current period"}. You can reactivate anytime before that.`
                           : pendingPlan
@@ -1065,31 +1064,31 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
               </div>
 
               <Card className="max-w-[620px] h-fit">
-                <h3 className="mb-3 text-lg font-semibold text-[#313234] sm:text-xl">Need help before reaching out?</h3>
-                <p className="text-sm leading-relaxed text-[#6A6D71]">
+                <h3 className="mb-3 text-lg font-semibold text-[color:var(--ui-ink)] sm:text-xl">Need help before reaching out?</h3>
+                <p className="text-sm leading-relaxed text-[color:var(--ui-text-2)]">
                   Most answers are available in your booking and plan details.
                 </p>
 
                 <div className="mt-5 space-y-3">
                   <Link
                     href="/membership/plans"
-                    className="flex items-center justify-between rounded-[8px] border border-[#D7E0F5] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
+                    className="flex items-center justify-between rounded-[10px] border border-[color:var(--ui-line)] bg-white/70 px-4 py-3 text-sm font-semibold text-[color:var(--ui-ink)] transition hover:bg-white"
                   >
                     <span>How often can I book?</span>
-                    <span className="text-[#306EEC]">Open</span>
+                    <span className="text-[color:var(--ui-accent-ink)]">Open</span>
                   </Link>
                   <Link
                     href="/book?visit=membership"
-                    className="flex items-center justify-between rounded-[8px] border border-[#D7E0F5] bg-white/70 px-4 py-3 text-sm font-semibold text-[#313234] transition hover:bg-white"
+                    className="flex items-center justify-between rounded-[10px] border border-[color:var(--ui-line)] bg-white/70 px-4 py-3 text-sm font-semibold text-[color:var(--ui-ink)] transition hover:bg-white"
                   >
                     <span>Book your next visit</span>
-                    <span className="text-[#306EEC]">Go</span>
+                    <span className="text-[color:var(--ui-accent-ink)]">Go</span>
                   </Link>
                 </div>
 
-                <div className="mt-6 rounded-[8px] border border-[#D7E0F5] bg-white/80 p-4">
-                  <div className="text-sm font-semibold text-[#313234]">Simple monthly pricing</div>
-                  <div className="mt-1 text-sm text-[#6A6D71]">
+                <div className="mt-6 rounded-[10px] border border-[color:var(--ui-line)] bg-white/80 p-4">
+                  <div className="text-sm font-semibold text-[color:var(--ui-ink)]">Simple monthly pricing</div>
+                  <div className="mt-1 text-sm text-[color:var(--ui-text-2)]">
                     No estimates. No surprises. Each visit covers up to 90 minutes of work.
                   </div>
                 </div>
@@ -1098,22 +1097,22 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
 
             {historicalSubscriptions.length ? (
               <Card className="max-w-[620px]">
-                <h3 className="text-lg font-semibold text-[#313234]">Past plan history</h3>
+                <h3 className="text-lg font-semibold text-[color:var(--ui-ink)]">Past plan history</h3>
                 <div className="mt-4 space-y-3">
                   {historicalSubscriptions.map((subscription) => (
                     <div
                       key={subscription._id}
-                      className="rounded-[8px] border border-[#D7E0F5] bg-white/70 px-4 py-3"
+                      className="rounded-[10px] border border-[color:var(--ui-line)] bg-white/70 px-4 py-3"
                     >
                       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="text-sm font-semibold text-[#313234]">
+                        <div className="text-sm font-semibold text-[color:var(--ui-ink)]">
                           {formatPlanName(subscription.subscriptionType)} plan
                         </div>
-                        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">
+                        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--ui-text-2)]">
                           {statusLabel(subscription, { hideCancellationUi })}
                         </div>
                       </div>
-                      <div className="mt-1 text-sm text-[#6A6D71]">{formatAddress(subscription)}</div>
+                      <div className="mt-1 text-sm text-[color:var(--ui-text-2)]">{formatAddress(subscription)}</div>
                     </div>
                   ))}
                 </div>
@@ -1151,17 +1150,17 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
           }}
         >
           <div
-            className="w-full max-w-md rounded-[8px] bg-white p-6 shadow-[0_20px_100px_rgba(0,0,0,0.35)] sm:p-7"
+            className="w-full max-w-md rounded-[10px] bg-white p-6 shadow-[0_20px_100px_rgba(0,0,0,0.35)] sm:p-7"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="text-center">
               {cancelMode === "feedback" ? (
                 <>
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#ECFDF3] text-xl font-extrabold text-[#166534]">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#ECFDF3] text-xl font-semibold text-[#166534]">
                     ✓
                   </div>
-                  <h3 className="text-2xl font-extrabold tracking-[-0.02em] text-[#313234]">Your cancellation is scheduled</h3>
-                  <p className="mx-auto mt-3 max-w-[360px] text-sm leading-relaxed text-[#6A6D71]">
+                  <h3 className="text-2xl font-semibold tracking-[-0.02em] text-[color:var(--ui-ink)]">Your cancellation is scheduled</h3>
+                  <p className="mx-auto mt-3 max-w-[360px] text-sm leading-relaxed text-[color:var(--ui-text-2)]">
                     Your membership stays active until the end of this billing period. If you have a moment, what&apos;s
                     the main reason you&apos;re leaving? It&apos;s optional, and it helps us improve.
                   </p>
@@ -1175,8 +1174,8 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                         onClick={() => setFeedbackReason(r.value)}
                         className={`rounded-full px-3.5 py-2 text-sm font-semibold transition ${
                           feedbackReason === r.value
-                            ? "bg-[#306EEC] text-white"
-                            : "border border-[#D1D5DB] bg-white text-[#313234] hover:bg-[#F9FAFB]"
+                            ? "bg-[color:var(--ui-ink)] text-white"
+                            : "border border-[color:var(--ui-line)] bg-white text-[color:var(--ui-ink)] hover:bg-[color:var(--ui-bg-soft)]"
                         }`}
                       >
                         {r.label}
@@ -1189,7 +1188,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                       onChange={(e) => setFeedbackNote(e.target.value.slice(0, 500))}
                       rows={3}
                       placeholder="Anything you'd like to add? (optional)"
-                      className="mt-4 w-full rounded-[8px] border border-[#D1D5DB] px-3 py-2 text-sm text-[#313234] outline-none focus:border-[#306EEC]"
+                      className="mt-4 w-full rounded-[10px] border border-[color:var(--ui-line)] px-3 py-2 text-sm text-[color:var(--ui-ink)] outline-none focus:border-[#306EEC]"
                     />
                   ) : null}
                   <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -1210,7 +1209,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                           setCancelMode("confirm");
                         }
                       }}
-                      className="h-[46px] rounded-[8px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-50"
+                      className="h-[46px] rounded-[10px] bg-[color:var(--ui-ink)] font-semibold text-white transition hover:bg-[color:var(--ui-ink-2)] disabled:opacity-50"
                     >
                       {sendingFeedback ? "Sending..." : "Send"}
                     </button>
@@ -1221,7 +1220,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                         setCancelTarget(null);
                         setCancelMode("confirm");
                       }}
-                      className="h-[46px] rounded-[8px] border border-[#D1D5DB] bg-white font-extrabold text-[#313234] transition hover:bg-[#F9FAFB]"
+                      className="h-[46px] rounded-[10px] border border-[color:var(--ui-line)] bg-white font-semibold text-[color:var(--ui-ink)] transition hover:bg-[color:var(--ui-bg-soft)]"
                     >
                       Skip
                     </button>
@@ -1229,11 +1228,11 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                 </>
               ) : cancelMode === "checking" ? (
                 <div className="py-4">
-                  <div className="mx-auto mb-5 h-10 w-10 animate-spin rounded-full border-2 border-[#D7E0F5] border-t-[#306EEC]" />
-                  <h3 className="text-xl font-extrabold text-[#313234]">
+                  <div className="mx-auto mb-5 h-10 w-10 animate-spin rounded-full border-2 border-[color:var(--ui-line)] border-t-[#306EEC]" />
+                  <h3 className="text-xl font-semibold text-[color:var(--ui-ink)]">
                     Checking your membership...
                   </h3>
-                  <p className="mt-3 text-sm leading-relaxed text-[#6A6D71]">
+                  <p className="mt-3 text-sm leading-relaxed text-[color:var(--ui-text-2)]">
                     We&apos;re checking whether a retention offer is available for this membership.
                   </p>
                 </div>
@@ -1248,11 +1247,11 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                  * progress is still here.
                  */
                 <>
-                  <div className="mx-auto mb-5 inline-flex rounded-[6px] border border-[#D7E0F5] bg-[#EEF2FF] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#306EEC]">
+                  <div className="mx-auto mb-5 inline-flex rounded-[6px] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-soft)] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[color:var(--ui-accent-ink)]">
                     Before you go
                   </div>
 
-                  <h3 className="text-2xl font-extrabold tracking-[-0.02em] text-[#313234] sm:text-3xl">
+                  <h3 className="text-2xl font-semibold tracking-[-0.02em] text-[color:var(--ui-ink)] sm:text-3xl">
                     You have Loyalty Benefits building
                   </h3>
 
@@ -1264,7 +1263,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                   </div>
 
                   {retentionError ? (
-                    <div className="mt-4 rounded-[8px] border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3 text-left text-sm font-semibold text-[#92400E]">
+                    <div className="mt-4 rounded-[10px] border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3 text-left text-sm font-semibold text-[#92400E]">
                       {retentionError}
                     </div>
                   ) : null}
@@ -1278,7 +1277,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                         setRetentionError("");
                         setRetentionDebug(null);
                       }}
-                      className="min-h-[46px] rounded-[8px] bg-[#306EEC] px-4 py-3 text-base font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
+                      className="min-h-[46px] rounded-[10px] bg-[color:var(--ui-ink)] px-4 py-3 text-base font-semibold text-white transition hover:bg-[color:var(--ui-ink-2)] disabled:opacity-60"
                     >
                       Keep my membership
                     </button>
@@ -1288,7 +1287,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                       onClick={() =>
                         retentionOfferAvailable ? setCancelMode("offer") : handleCancel(false)
                       }
-                      className="min-h-[46px] rounded-[8px] border border-[#D1D5DB] bg-white px-4 py-3 text-base font-extrabold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
+                      className="min-h-[46px] rounded-[10px] border border-[color:var(--ui-line)] bg-white px-4 py-3 text-base font-semibold text-[color:var(--ui-ink)] transition hover:bg-[color:var(--ui-bg-soft)] disabled:opacity-60"
                     >
                       {canceling ? "Scheduling cancellation..." : "Continue cancellation"}
                     </button>
@@ -1296,18 +1295,18 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                 </>
               ) : cancelMode === "offer" ? (
                 <>
-                  <div className="mx-auto mb-5 inline-flex rounded-[6px] border border-[#D7E0F5] bg-[#EEF2FF] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#306EEC]">
+                  <div className="mx-auto mb-5 inline-flex rounded-[6px] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-soft)] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[color:var(--ui-accent-ink)]">
                     Member offer
                   </div>
 
-                  <h3 className="text-3xl font-extrabold tracking-[-0.02em] text-[#313234]">
+                  <h3 className="text-3xl font-semibold tracking-[-0.02em] text-[color:var(--ui-ink)]">
                     Before you cancel...
                   </h3>
-                  <div className="mx-auto mt-4 max-w-[340px] space-y-3 text-sm leading-relaxed text-[#6A6D71]">
+                  <div className="mx-auto mt-4 max-w-[340px] space-y-3 text-sm leading-relaxed text-[color:var(--ui-text-2)]">
                     <p>We&apos;d love to keep taking care of your home.</p>
                     <p>
                       Stay with Profixter and receive{" "}
-                      <strong className="font-extrabold text-[#313234]">
+                      <strong className="font-semibold text-[color:var(--ui-ink)]">
                         30% OFF your next monthly renewal.
                       </strong>
                     </p>
@@ -1319,7 +1318,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                   </div>
 
                   {retentionError ? (
-                    <div className="mt-5 rounded-[8px] border border-[#FCA5A5]/60 bg-[#FEF2F2] px-4 py-3 text-sm font-semibold text-[#B91C1C]">
+                    <div className="mt-5 rounded-[10px] border border-[#FCA5A5]/60 bg-[#FEF2F2] px-4 py-3 text-sm font-semibold text-[#B91C1C]">
                       {retentionError}
                     </div>
                   ) : null}
@@ -1330,7 +1329,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                       type="button"
                       disabled={acceptingRetention || canceling}
                       onClick={handleAcceptRetentionOffer}
-                      className="min-h-[46px] rounded-[8px] bg-[#306EEC] px-4 py-3 text-base font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
+                      className="min-h-[46px] rounded-[10px] bg-[color:var(--ui-ink)] px-4 py-3 text-base font-semibold text-white transition hover:bg-[color:var(--ui-ink-2)] disabled:opacity-60"
                     >
                       {acceptingRetention
                         ? "Applying offer..."
@@ -1340,7 +1339,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                       type="button"
                       disabled={acceptingRetention || canceling}
                       onClick={() => handleCancel(true)}
-                      className="min-h-[46px] rounded-[8px] border border-[#D1D5DB] bg-white px-4 py-3 text-base font-extrabold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
+                      className="min-h-[46px] rounded-[10px] border border-[color:var(--ui-line)] bg-white px-4 py-3 text-base font-semibold text-[color:var(--ui-ink)] transition hover:bg-[color:var(--ui-bg-soft)] disabled:opacity-60"
                     >
                       {canceling ? "Scheduling cancellation..." : "Continue Cancellation"}
                     </button>
@@ -1348,14 +1347,14 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                 </>
               ) : cancelMode === "accepted" ? (
                 <>
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#ECFDF3] text-2xl font-extrabold text-[#166534]">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#ECFDF3] text-2xl font-semibold text-[#166534]">
                     OK
                   </div>
 
-                  <h3 className="text-3xl font-extrabold tracking-[-0.02em] text-[#313234]">
+                  <h3 className="text-3xl font-semibold tracking-[-0.02em] text-[color:var(--ui-ink)]">
                     You&apos;re all set!
                   </h3>
-                  <p className="mx-auto mt-4 max-w-[340px] text-sm leading-relaxed text-[#6A6D71]">
+                  <p className="mx-auto mt-4 max-w-[340px] text-sm leading-relaxed text-[color:var(--ui-text-2)]">
                     Your next renewal will automatically receive 30% off. After that, your
                     membership returns to the regular monthly price.
                   </p>
@@ -1368,33 +1367,33 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                       setRetentionDebug(null);
                       setNotice("Retention offer accepted. Your membership remains active.");
                     }}
-                    className="mt-6 h-[46px] w-full rounded-[8px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9]"
+                    className="mt-6 h-[46px] w-full rounded-[10px] bg-[color:var(--ui-ink)] font-semibold text-white transition hover:bg-[color:var(--ui-ink-2)]"
                   >
                     Done
                   </button>
                 </>
               ) : (
                 <>
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#EEF2FF] text-2xl">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[color:var(--ui-bg-soft)] text-2xl">
                 !
               </div>
 
-              <h3 className="text-2xl font-extrabold text-[#313234]">Are you sure you want to cancel?</h3>
-              <p className="mt-3 text-sm leading-relaxed text-[#6A6D71]">
+              <h3 className="text-2xl font-semibold text-[color:var(--ui-ink)]">Are you sure you want to cancel?</h3>
+              <p className="mt-3 text-sm leading-relaxed text-[color:var(--ui-text-2)]">
                 You&apos;ll keep your membership until the end of the current billing period.
                 Your home stays in regular care until then.
               </p>
 
               {retentionError ? (
-                <div className="mt-5 rounded-[8px] border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3 text-left text-sm font-semibold text-[#92400E]">
+                <div className="mt-5 rounded-[10px] border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3 text-left text-sm font-semibold text-[#92400E]">
                   {retentionError}
                 </div>
               ) : null}
               <RetentionDebugDetails debug={retentionDebug} />
 
-              <div className="mt-5 rounded-[8px] border border-[#D7E0F5] bg-[#F8FAFF] p-4 text-left">
-                <div className="text-sm font-semibold text-[#313234]">Before you cancel</div>
-                <div className="mt-2 space-y-1.5 text-sm text-[#6A6D71]">
+              <div className="mt-5 rounded-[10px] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-soft)] p-4 text-left">
+                <div className="text-sm font-semibold text-[color:var(--ui-ink)]">Before you cancel</div>
+                <div className="mt-2 space-y-1.5 text-sm text-[color:var(--ui-text-2)]">
                   <div>Keep predictable monthly billing and the same trusted team.</div>
                   <div>Higher Memberships let you book more visits at the same time, and add Priority Visits, project time and premium support.</div>
                   <div>You can keep your current membership and continue scheduling visits online.</div>
@@ -1410,7 +1409,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                     setRetentionError("");
                     setRetentionDebug(null);
                   }}
-                  className="h-[46px] rounded-[8px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
+                  className="h-[46px] rounded-[10px] bg-[color:var(--ui-ink)] font-semibold text-white transition hover:bg-[color:var(--ui-ink-2)] disabled:opacity-60"
                 >
                   Keep my membership
                 </button>
@@ -1418,7 +1417,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                   type="button"
                   disabled={canceling}
                   onClick={() => handleCancel(false)}
-                  className="h-[46px] rounded-[8px] border border-[#D1D5DB] bg-white font-extrabold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
+                  className="h-[46px] rounded-[10px] border border-[color:var(--ui-line)] bg-white font-semibold text-[color:var(--ui-ink)] transition hover:bg-[color:var(--ui-bg-soft)] disabled:opacity-60"
                 >
                   {canceling ? "Canceling..." : "Cancel anyway"}
                 </button>
@@ -1438,11 +1437,11 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
           }}
         >
           <div
-            className="w-full max-w-lg rounded-[8px] bg-white p-6 shadow-[0_20px_100px_rgba(0,0,0,0.35)] sm:p-7"
+            className="w-full max-w-lg rounded-[10px] bg-white p-6 shadow-[0_20px_100px_rgba(0,0,0,0.35)] sm:p-7"
             onClick={(event) => event.stopPropagation()}
           >
-            <h3 className="mb-1 text-xl font-extrabold text-[#313234]">Change plan</h3>
-            <p className="mb-5 text-sm text-[#6A6D71]">
+            <h3 className="mb-1 text-xl font-semibold text-[color:var(--ui-ink)]">Change plan</h3>
+            <p className="mb-5 text-sm text-[color:var(--ui-text-2)]">
               Current: {formatPlanName(planChangeTarget.subscriptionType)},{" "}
               {planChangeTarget.billingCycle}
             </p>
@@ -1454,21 +1453,21 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                   key={p}
                   type="button"
                   onClick={() => setSelectedPlan(p)}
-                  className={`flex w-full items-center justify-between rounded-[8px] border px-4 py-3 text-left transition ${
+                  className={`flex w-full items-center justify-between rounded-[10px] border px-4 py-3 text-left transition ${
                     selectedPlan === p
-                      ? "border-[#306EEC] bg-[#EEF2FF]"
-                      : "border-[#D7E0F5] bg-white/70 hover:bg-white"
+                      ? "border-[#306EEC] bg-[color:var(--ui-bg-soft)]"
+                      : "border-[color:var(--ui-line)] bg-white/70 hover:bg-white"
                   }`}
                 >
                   <div>
-                    <div className="text-sm font-semibold text-[#313234]">
+                    <div className="text-sm font-semibold text-[color:var(--ui-ink)]">
                       {PLAN_DISPLAY_NAMES[p]}
                     </div>
-                    <div className="text-xs text-[#6A6D71]">{PLAN_INCLUDES[p][0]}</div>
+                    <div className="text-xs text-[color:var(--ui-text-2)]">{PLAN_INCLUDES[p][0]}</div>
                   </div>
                   <div className="ml-4 shrink-0 text-right">
-                    <div className="text-base font-semibold text-[#313234]">${PLAN_PRICES[p]}</div>
-                    <div className="text-xs text-[#6A6D71]">/mo</div>
+                    <div className="text-base font-semibold text-[color:var(--ui-ink)]">${PLAN_PRICES[p]}</div>
+                    <div className="text-xs text-[color:var(--ui-text-2)]">/mo</div>
                   </div>
                 </button>
               ))}
@@ -1481,10 +1480,10 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                   key={c}
                   type="button"
                   onClick={() => setSelectedCycle(c)}
-                  className={`flex-1 rounded-[8px] border py-2.5 text-sm font-semibold capitalize transition ${
+                  className={`flex-1 rounded-[10px] border py-2.5 text-sm font-semibold capitalize transition ${
                     selectedCycle === c
-                      ? "border-[#306EEC] bg-[#EEF2FF] text-[#306EEC]"
-                      : "border-[#D7E0F5] bg-white/70 text-[#313234] hover:bg-white"
+                      ? "border-[#306EEC] bg-[color:var(--ui-bg-soft)] text-[color:var(--ui-accent-ink)]"
+                      : "border-[color:var(--ui-line)] bg-white/70 text-[color:var(--ui-ink)] hover:bg-white"
                   }`}
                 >
                   {c}
@@ -1495,7 +1494,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
             {/* Change type note */}
             {planChangeType !== "same" ? (
               <div
-                className={`mb-5 rounded-[8px] border p-3 text-sm ${
+                className={`mb-5 rounded-[10px] border p-3 text-sm ${
                   planChangeType === "upgrade"
                     ? "border-[#86EFAC]/50 bg-[#ECFDF3] text-[#166534]"
                     : "border-[#BFDBFE] bg-[#EFF6FF] text-[#1D4ED8]"
@@ -1506,13 +1505,13 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                   : "Downgrade takes effect at your next billing date. Your current plan stays active until then."}
               </div>
             ) : (
-              <div className="mb-5 rounded-[8px] border border-[#D7E0F5] bg-[#F8FAFF] p-3 text-sm font-semibold text-[#313234]">
+              <div className="mb-5 rounded-[10px] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-soft)] p-3 text-sm font-semibold text-[color:var(--ui-ink)]">
                 You&apos;re already on this plan.
               </div>
             )}
 
             {error ? (
-              <div className="mb-4 rounded-[8px] border border-[#FCA5A5]/60 bg-[#FEF2F2] px-4 py-3 text-sm font-semibold text-[#B91C1C]">
+              <div className="mb-4 rounded-[10px] border border-[#FCA5A5]/60 bg-[#FEF2F2] px-4 py-3 text-sm font-semibold text-[#B91C1C]">
                 {error}
               </div>
             ) : null}
@@ -1522,7 +1521,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                 type="button"
                 disabled={planChanging}
                 onClick={() => setPlanChangeTarget(null)}
-                className="flex-1 rounded-[8px] border border-[#D1D5DB] bg-white py-3 font-semibold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
+                className="flex-1 rounded-[10px] border border-[color:var(--ui-line)] bg-white py-3 font-semibold text-[color:var(--ui-ink)] transition hover:bg-[color:var(--ui-bg-soft)] disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -1530,7 +1529,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                 type="button"
                 disabled={planChanging || planChangeType === "same"}
                 onClick={reviewPlanChange}
-                className="flex-1 rounded-[8px] bg-[#306EEC] py-3 font-semibold text-white transition hover:bg-[#2557C7] disabled:opacity-60"
+                className="flex-1 rounded-[10px] bg-[color:var(--ui-ink)] py-3 font-semibold text-white transition hover:bg-[color:var(--ui-ink-2)] disabled:opacity-60"
               >
                 {planChangeType === "upgrade"
                   ? "Review Upgrade"
@@ -1552,48 +1551,48 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
           }}
         >
           <div
-            className="w-full max-w-lg rounded-[8px] bg-white p-6 shadow-[0_20px_100px_rgba(0,0,0,0.35)] sm:p-7"
+            className="w-full max-w-lg rounded-[10px] bg-white p-6 shadow-[0_20px_100px_rgba(0,0,0,0.35)] sm:p-7"
             onClick={(event) => event.stopPropagation()}
           >
-            <h3 className="text-2xl font-extrabold text-[#313234]">
+            <h3 className="text-2xl font-semibold text-[color:var(--ui-ink)]">
               {planChangeType === "upgrade"
                 ? `You're upgrading from ${formatPlanName(planChangeCurrentPlan || "")} to ${formatPlanName(selectedPlan)}.`
                 : `You're scheduling a downgrade from ${formatPlanName(planChangeCurrentPlan || "")} to ${formatPlanName(selectedPlan)}.`}
             </h3>
 
-            <div className="mt-5 grid gap-3 rounded-[8px] border border-[#D7E0F5] bg-[#F8FAFF] p-4 text-sm text-[#313234] sm:grid-cols-2">
+            <div className="mt-5 grid gap-3 rounded-[10px] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-soft)] p-4 text-sm text-[color:var(--ui-ink)] sm:grid-cols-2">
               <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">Current plan</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--ui-text-2)]">Current plan</div>
                 <div className="mt-1 font-semibold">{formatPlanName(planChangeCurrentPlan || "")}</div>
-                <div className="text-[#6A6D71]">
+                <div className="text-[color:var(--ui-text-2)]">
                   ${planChangeCurrentPrice ?? 0}/month
                 </div>
               </div>
               <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">New plan</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--ui-text-2)]">New plan</div>
                 <div className="mt-1 font-semibold">{formatPlanName(selectedPlan)}</div>
-                <div className="text-[#6A6D71]">
+                <div className="text-[color:var(--ui-text-2)]">
                   ${planChangeNextPrice}/month
                 </div>
               </div>
               <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">Billing cycle</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--ui-text-2)]">Billing cycle</div>
                 <div className="mt-1 font-semibold capitalize">{selectedCycle}</div>
               </div>
               <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6A6D71]">Effective timing</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--ui-text-2)]">Effective timing</div>
                 <div className="mt-1 font-semibold">
                   {planChangeType === "upgrade"
                     ? "Starts immediately"
                     : "Starts on your next billing date"}
                 </div>
                 {planChangeType === "downgrade" && planChangeRenewalDate ? (
-                  <div className="text-[#6A6D71]">{planChangeRenewalDate}</div>
+                  <div className="text-[color:var(--ui-text-2)]">{planChangeRenewalDate}</div>
                 ) : null}
               </div>
             </div>
 
-            <p className="mt-4 text-sm leading-relaxed text-[#6A6D71]">
+            <p className="mt-4 text-sm leading-relaxed text-[color:var(--ui-text-2)]">
               {planChangeType === "upgrade"
                 ? "Stripe may charge a prorated amount today based on the time left in your billing period."
                 : "You'll keep your current plan until the end of this billing period."}
@@ -1604,7 +1603,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                 type="button"
                 disabled={planChanging}
                 onClick={() => setPlanChangeConfirmOpen(false)}
-                className="h-[46px] rounded-[8px] border border-[#D1D5DB] bg-white font-extrabold text-[#313234] transition hover:bg-[#F9FAFB] disabled:opacity-60"
+                className="h-[46px] rounded-[10px] border border-[color:var(--ui-line)] bg-white font-semibold text-[color:var(--ui-ink)] transition hover:bg-[color:var(--ui-bg-soft)] disabled:opacity-60"
               >
                 Go Back
               </button>
@@ -1612,7 +1611,7 @@ export function PlanSection({ hideCancellationUi = false }: PlanSectionProps = {
                 type="button"
                 disabled={planChanging}
                 onClick={handlePlanChange}
-                className="h-[46px] rounded-[8px] bg-[#306EEC] font-extrabold text-white transition hover:bg-[#2558c9] disabled:opacity-60"
+                className="h-[46px] rounded-[10px] bg-[color:var(--ui-ink)] font-semibold text-white transition hover:bg-[color:var(--ui-ink-2)] disabled:opacity-60"
               >
                 {planChanging
                   ? "Updating..."

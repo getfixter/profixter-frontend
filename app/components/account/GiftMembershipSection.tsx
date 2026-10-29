@@ -45,7 +45,7 @@ function Pill({ tone, children }: { tone: "active" | "queued"; children: React.R
   const styles =
     tone === "active"
       ? "bg-[#E4F0E9] text-[#2A6B47] border-[#BFDECB]"
-      : "bg-[#EEF2FF] text-[#306EEC] border-[#D7E0F5]";
+      : "bg-[color:var(--ui-bg-soft)] text-[color:var(--ui-accent-ink)] border-[color:var(--ui-line)]";
   return (
     <span
       className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${styles}`}
@@ -60,29 +60,29 @@ function ActiveGiftCard({ gift }: { gift: MyGift }) {
   const endingSoon = remaining !== null && remaining <= ENDING_SOON_DAYS;
 
   return (
-    <div className="rounded-[10px] border border-[#E0E6F5] bg-white p-5 sm:p-6">
+    <div className="rounded-[10px] border border-[color:var(--ui-line)] bg-white p-5 sm:p-6">
       <div className="flex flex-wrap items-center gap-2">
         <Pill tone="active">Gift membership</Pill>
         {endingSoon ? (
-          <span className="text-[12px] font-medium text-[#6A6D71]">
+          <span className="text-[12px] font-medium text-[color:var(--ui-text-2)]">
             {remaining === 0 ? "Ends today" : `${remaining} day${remaining === 1 ? "" : "s"} left`}
           </span>
         ) : null}
       </div>
 
-      <p className="mt-3 text-[22px] font-semibold leading-tight text-[#313234] sm:text-[26px]">
+      <p className="mt-3 text-[22px] font-semibold leading-tight text-[color:var(--ui-ink)] sm:text-[26px]">
         {planLabel(gift.plan)}
       </p>
 
       {gift.from ? (
-        <p className="mt-1 break-words text-[14px] text-[#6A6D71]">
-          Gifted by <span className="font-medium text-[#313234]">{gift.from}</span>
+        <p className="mt-1 break-words text-[14px] text-[color:var(--ui-text-2)]">
+          Gifted by <span className="font-medium text-[color:var(--ui-ink)]">{gift.from}</span>
         </p>
       ) : null}
 
-      <p className="mt-2 text-[14px] text-[#6A6D71]">
+      <p className="mt-2 text-[14px] text-[color:var(--ui-text-2)]">
         Active through{" "}
-        <span className="font-medium text-[#313234]">
+        <span className="font-medium text-[color:var(--ui-ink)]">
           {gift.activeThrough || formatGiftDate(gift.endAt)}
         </span>
       </p>
@@ -90,7 +90,7 @@ function ActiveGiftCard({ gift }: { gift: MyGift }) {
       <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
         <Link
           href="/book?visit=membership"
-          className="inline-flex min-h-[46px] flex-1 items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-semibold text-white transition hover:bg-[#2558C4]"
+          className="inline-flex min-h-[46px] flex-1 items-center justify-center rounded-[10px] bg-[color:var(--ui-ink)] px-6 text-[15px] font-semibold text-white transition hover:bg-[color:var(--ui-ink-2)]"
         >
           Book Fixter
         </Link>
@@ -103,14 +103,14 @@ function ActiveGiftCard({ gift }: { gift: MyGift }) {
            */
           <Link
             href="/membership/plans"
-            className="inline-flex min-h-[46px] flex-1 items-center justify-center rounded-[8px] border border-[#C5CBD8] bg-white px-6 text-[15px] font-semibold text-[#313234] transition hover:bg-[#F8FAFF]"
+            className="inline-flex min-h-[46px] flex-1 items-center justify-center rounded-[10px] border border-[color:var(--ui-line)] bg-white px-6 text-[15px] font-semibold text-[color:var(--ui-ink)] transition hover:bg-[color:var(--ui-bg-soft)]"
           >
             Continue membership
           </Link>
         ) : null}
       </div>
 
-      <p className="mt-4 border-t border-[#EEF2FF] pt-3 text-[12px] leading-relaxed text-[#6A6D71]">
+      <p className="mt-4 border-t border-[color:var(--ui-line)] pt-3 text-[12px] leading-relaxed text-[color:var(--ui-text-2)]">
         This membership was prepaid as a gift. There is nothing to pay and no card on file.
       </p>
     </div>
@@ -121,18 +121,18 @@ function QueuedGiftRow({ gift, index }: { gift: MyGift; index: number }) {
   return (
     <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3.5 sm:px-5">
       <div className="min-w-0">
-        <p className="text-[15px] font-medium text-[#313234]">
+        <p className="text-[15px] font-medium text-[color:var(--ui-ink)]">
           {planLabel(gift.plan)}
-          <span className="ml-2 text-[13px] font-normal text-[#6A6D71]">
+          <span className="ml-2 text-[13px] font-normal text-[color:var(--ui-text-2)]">
             &middot; {monthsLabel(gift.durationMonths)}
           </span>
         </p>
         {gift.from ? (
-          <p className="mt-0.5 break-words text-[12px] text-[#9CA3AF]">Gifted by {gift.from}</p>
+          <p className="mt-0.5 break-words text-[12px] text-[color:var(--ui-text-3)]">Gifted by {gift.from}</p>
         ) : null}
       </div>
       <div className="shrink-0 text-right">
-        <p className="text-[13px] text-[#6A6D71]">
+        <p className="text-[13px] text-[color:var(--ui-text-2)]">
           {index === 0 ? "Starts" : "Then"} {formatGiftDate(gift.startAt)}
         </p>
       </div>
@@ -210,13 +210,13 @@ export default function GiftMembershipSection({
       {gifts.active ? <ActiveGiftCard gift={gifts.active} /> : null}
 
       {gifts.queued.length ? (
-        <div className="rounded-[10px] border border-[#E0E6F5] bg-white">
-          <div className="flex items-center justify-between gap-3 border-b border-[#EEF2FF] px-4 py-3 sm:px-5">
-            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-[#6A6D71]">
+        <div className="rounded-[10px] border border-[color:var(--ui-line)] bg-white">
+          <div className="flex items-center justify-between gap-3 border-b border-[color:var(--ui-line)] px-4 py-3 sm:px-5">
+            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-[color:var(--ui-text-2)]">
               {gifts.active || hasPaidMembership ? "Coming next" : "Ready to start"}
             </h3>
             {gifts.queued.length > 1 ? (
-              <span className="text-[12px] text-[#9CA3AF]">
+              <span className="text-[12px] text-[color:var(--ui-text-3)]">
                 {gifts.queued.length} gifts queued
               </span>
             ) : null}
@@ -228,7 +228,7 @@ export default function GiftMembershipSection({
             ))}
           </ul>
           {!gifts.active && hasPaidMembership ? (
-            <p className="border-t border-[#EEF2FF] px-4 py-3 text-[12px] leading-relaxed text-[#6A6D71] sm:px-5">
+            <p className="border-t border-[color:var(--ui-line)] px-4 py-3 text-[12px] leading-relaxed text-[color:var(--ui-text-2)] sm:px-5">
               Your gift starts when your current membership ends, so none of the gifted time
               overlaps with what you are paying for.
             </p>

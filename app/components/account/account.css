@@ -1,0 +1,587 @@
+/* ==================================================================== */
+/* My Account (Website 3.0)                                              */
+/*                                                                       */
+/* Built only from the tokens in app/ui.css. The page sits under the     */
+/* shell <Header />, on the warm stone surface, with white cards on it:  */
+/* an app screen rather than a marketing page, so the rhythm is compact  */
+/* (one gap size between cards) and the type stops at ui-h2.             */
+/* ==================================================================== */
+
+.acct {
+  background: var(--ui-bg-soft);
+  min-height: 70vh;
+}
+
+.acct-main {
+  padding-top: var(--ui-s5);
+  padding-bottom: var(--ui-s12);
+}
+
+@media (min-width: 1024px) {
+  .acct-main {
+    padding-top: var(--ui-s8);
+  }
+}
+
+/* Main column and the aside. One column on phones, two from 1180px. */
+.acct-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ui-s4);
+}
+
+@media (min-width: 1180px) {
+  .acct-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: var(--ui-s6);
+    align-items: start;
+  }
+}
+
+.acct-stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ui-s4);
+  min-width: 0;
+}
+
+/* ---- the greeting --------------------------------------------------- */
+
+.acct-hello {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ui-s3) var(--ui-s6);
+  padding: var(--ui-s1) 0 var(--ui-s2);
+}
+
+.acct-hello__title {
+  margin: 0;
+  font-size: var(--ui-fs-h2);
+  font-weight: 600;
+  line-height: var(--ui-lh-head);
+  letter-spacing: var(--ui-track-head);
+  color: var(--ui-ink);
+}
+
+.acct-hello__meta {
+  margin: 4px 0 0;
+  font-size: var(--ui-fs-small);
+  color: var(--ui-text-3);
+  overflow-wrap: anywhere;
+}
+
+.acct-select {
+  width: 100%;
+  min-height: 44px;
+  border-radius: var(--ui-r-sm);
+  border: 1px solid var(--ui-line-2);
+  background: #fff;
+  padding: 0 12px;
+  font-size: 16px;
+  color: var(--ui-ink);
+}
+
+.acct-select:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 3px rgba(48, 110, 236, 0.16);
+}
+
+.acct-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: var(--ui-fs-micro);
+  font-weight: 500;
+  letter-spacing: var(--ui-track-micro);
+  text-transform: uppercase;
+  color: var(--ui-text-3);
+}
+
+/* ---- cards ------------------------------------------------------------ */
+
+.acct-card {
+  background: #fff;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-r-md);
+  padding: 18px;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .acct-card {
+    padding: 22px 24px;
+  }
+}
+
+.acct-card--flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+.acct-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+
+.acct-card__title {
+  margin: 0;
+  font-size: var(--ui-fs-h3);
+  font-weight: 600;
+  line-height: var(--ui-lh-head);
+  letter-spacing: -0.015em;
+  color: var(--ui-ink);
+}
+
+.acct-card__text {
+  margin: 6px 0 0;
+  max-width: 56ch;
+  font-size: var(--ui-fs-small);
+  line-height: 1.55;
+  color: var(--ui-text-2);
+}
+
+.acct-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-s2);
+  margin-top: var(--ui-s5);
+}
+
+@media (min-width: 640px) {
+  .acct-card__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+}
+
+.acct-section-title {
+  margin: var(--ui-s2) 0 0;
+  font-size: var(--ui-fs-micro);
+  font-weight: 500;
+  letter-spacing: var(--ui-track-micro);
+  text-transform: uppercase;
+  color: var(--ui-text-3);
+}
+
+/* ---- the free first visit: the one blue thing on the page ------------ */
+
+.acct-offer {
+  display: grid;
+  gap: var(--ui-s4);
+  border-color: transparent;
+  background: var(--ui-accent-soft);
+}
+
+@media (min-width: 768px) {
+  .acct-offer {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--ui-s6);
+  }
+}
+
+.acct-offer .acct-card__title {
+  font-size: var(--ui-fs-h3);
+}
+
+.acct-offer .acct-card__text {
+  color: var(--ui-text-2);
+}
+
+/* ---- ways to book: one row per way in, the fact that decides it ------ */
+
+.acct-ways {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.acct-ways > li + li {
+  border-top: 1px solid var(--ui-line);
+}
+
+.acct-way {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 2px 14px;
+  min-height: 64px;
+  padding: 14px 18px;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+@media (min-width: 640px) {
+  .acct-way {
+    padding: 14px 24px;
+  }
+}
+
+.acct-way:hover {
+  background: var(--ui-bg-soft);
+}
+
+.acct-way__name {
+  grid-column: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ui-ink);
+}
+
+.acct-way__desc {
+  grid-column: 1;
+  grid-row: 2;
+  font-size: var(--ui-fs-small);
+  color: var(--ui-text-3);
+}
+
+.acct-way__price {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-size: var(--ui-fs-small);
+  font-weight: 500;
+  color: var(--ui-text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.acct-way__go {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  color: var(--ui-text-3);
+  transition: transform var(--ui-dur-2) var(--ui-ease), color var(--ui-dur-2) var(--ui-ease);
+}
+
+.acct-way:hover .acct-way__go {
+  color: var(--ui-ink);
+  transform: translateX(3px);
+}
+
+/* ---- membership --------------------------------------------------------- */
+
+.acct-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: var(--ui-success);
+}
+
+.acct-status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.acct-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  margin: 6px 0 0;
+  font-size: var(--ui-fs-small);
+  color: var(--ui-text-3);
+}
+
+.acct-meta > span + span::before {
+  content: "\00b7";
+  margin-right: 8px;
+  color: var(--ui-line-2);
+}
+
+.acct-benefits {
+  margin-top: var(--ui-s4);
+}
+
+@media (min-width: 640px) {
+  .acct-benefits {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--ui-s6);
+  }
+}
+
+.acct-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-s3) var(--ui-s6);
+}
+
+.acct-next__when {
+  margin: 4px 0 0;
+  font-size: var(--ui-fs-h3);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ui-ink);
+}
+
+/* ---- quick member actions: four tiles ------------------------------- */
+
+.acct-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 768px) {
+  .acct-tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.acct-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  min-height: 76px;
+  padding: 14px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-r-md);
+  background: #fff;
+  text-align: left;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--ui-dur-2) var(--ui-ease), box-shadow var(--ui-dur-2) var(--ui-ease);
+}
+
+.acct-tile:hover {
+  border-color: var(--ui-line-2);
+  box-shadow: var(--ui-shadow-2);
+}
+
+.acct-tile b {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ui-ink);
+}
+
+.acct-tile span {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ui-text-3);
+}
+
+/* ---- settings list ------------------------------------------------- */
+
+.acct-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.acct-list > li + li {
+  border-top: 1px solid var(--ui-line);
+}
+
+.acct-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 18px;
+  text-align: left;
+  color: inherit;
+  text-decoration: none;
+  background: transparent;
+  transition: background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+@media (min-width: 640px) {
+  .acct-row {
+    padding: 10px 24px;
+  }
+}
+
+.acct-row:hover {
+  background: var(--ui-bg-soft);
+}
+
+.acct-row__label {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ui-ink);
+}
+
+.acct-row__hint {
+  display: block;
+  margin-top: 1px;
+  font-size: 13px;
+  color: var(--ui-text-3);
+  overflow-wrap: anywhere;
+}
+
+.acct-row__chev {
+  flex: none;
+  color: var(--ui-text-3);
+}
+
+.acct-row--danger .acct-row__label {
+  color: #b4342b;
+}
+
+/* ---- the back link on sub-pages ------------------------------------ */
+
+.acct-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: -6px 0 var(--ui-s2) -8px;
+  padding: 0 10px 0 6px;
+  border-radius: var(--ui-r-xs);
+  font-size: var(--ui-fs-small);
+  font-weight: 500;
+  color: var(--ui-text-2);
+  transition: color var(--ui-dur-1) var(--ui-ease), background-color var(--ui-dur-1) var(--ui-ease);
+}
+
+.acct-back:hover {
+  color: var(--ui-ink);
+  background: rgba(11, 22, 40, 0.04);
+}
+
+.acct-page-title {
+  margin: 0 0 var(--ui-s4);
+  font-size: var(--ui-fs-h2);
+  font-weight: 600;
+  line-height: var(--ui-lh-head);
+  letter-spacing: var(--ui-track-head);
+  color: var(--ui-ink);
+}
+
+/* ---- fields on the personal page ----------------------------------- */
+
+.acct-fields {
+  margin: var(--ui-s3) 0 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.acct-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--ui-line);
+}
+
+.acct-field:first-child {
+  border-top: 0;
+  padding-top: 4px;
+}
+
+.acct-field dt {
+  font-size: 13px;
+  color: var(--ui-text-3);
+}
+
+.acct-field dd {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ui-ink);
+  overflow-wrap: anywhere;
+}
+
+.acct-field__empty {
+  color: var(--ui-text-3) !important;
+  font-weight: 400 !important;
+}
+
+.acct-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.acct-check input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  accent-color: var(--ui-accent);
+}
+
+.acct-check input:disabled {
+  opacity: 0.4;
+}
+
+.acct-check__label {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ui-ink);
+}
+
+.acct-check__help {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ui-text-3);
+}
+
+.acct-note {
+  margin: var(--ui-s3) 0 0;
+  border-radius: var(--ui-r-sm);
+  background: #fbf3e6;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #7a4f14;
+}
+
+.acct-error {
+  margin: var(--ui-s2) 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #b4342b;
+}
+
+/* ---- loading ------------------------------------------------------- */
+
+.acct-skeleton {
+  height: 12px;
+  border-radius: 6px;
+  background: var(--ui-bg-sunk);
+  animation: acct-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes acct-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acct-skeleton {
+    animation: none;
+  }
+  .acct-way__go,
+  .acct-way:hover .acct-way__go {
+    transition: none;
+    transform: none;
+  }
+}
