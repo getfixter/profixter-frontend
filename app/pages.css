@@ -127,6 +127,90 @@
     padding: 0 0 8px;
   }
 
+  /* A long article section folded under its H2 (the text stays in the HTML). */
+  .pg-folds {
+    border-top: 1px solid var(--ui-line);
+  }
+  .pg-fold {
+    border-bottom: 1px solid var(--ui-line);
+  }
+  .pg-fold > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 60px;
+    padding: 16px 0;
+    list-style: none;
+    cursor: pointer;
+  }
+  .pg-fold > summary::-webkit-details-marker {
+    display: none;
+  }
+  .pg-fold > summary::after {
+    content: "";
+    flex: none;
+    width: 9px;
+    height: 9px;
+    margin-right: 4px;
+    border-right: 1.5px solid var(--ui-text-3);
+    border-bottom: 1.5px solid var(--ui-text-3);
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform var(--ui-dur-2) var(--ui-ease);
+  }
+  .pg-fold[open] > summary::after {
+    transform: translateY(2px) rotate(-135deg);
+  }
+  .pg-fold__title {
+    margin: 0;
+    font-size: var(--ui-fs-h3);
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.012em;
+    color: var(--ui-ink);
+  }
+  .pg-fold__body {
+    padding: 0 0 24px;
+    max-width: 68ch;
+  }
+
+  /* Long-form reading text. */
+  .pg-prose {
+    font-size: var(--ui-fs-body);
+    line-height: 1.7;
+    color: var(--ui-text-2);
+  }
+  .pg-prose > * + * {
+    margin-top: 14px;
+  }
+  .pg-prose a {
+    font-weight: 600;
+    color: var(--ui-accent-ink);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .pg-prose strong {
+    font-weight: 600;
+    color: var(--ui-ink);
+  }
+  .pg-prose ul,
+  .pg-prose ol {
+    margin-bottom: 0;
+    padding-left: 20px;
+  }
+  .pg-prose ul {
+    list-style: disc;
+  }
+  .pg-prose ol {
+    list-style: decimal;
+  }
+  .pg-prose li + li {
+    margin-top: 6px;
+  }
+  .pg-prose li::marker {
+    color: var(--ui-text-3);
+  }
+
   /* A grid of whole-card links. */
   .pg-cards {
     display: grid;

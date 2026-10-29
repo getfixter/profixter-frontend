@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/sections/Footer";
+import Reveal from "@/app/components/ui/Reveal";
 import PlanComparisonTable from "@/app/components/membership/PlanComparisonTable";
 import { plans } from "@/app/data/content";
 import { MEMBERSHIP_FAQS, membershipFaqJsonLd } from "@/app/data/membership-faq";
@@ -50,10 +51,7 @@ export const revalidate = 3600;
 const PUBLISHED = "2026-09-12";
 const UPDATED = "2026-10-08";
 
-const SHELL = "mx-auto w-full max-w-[880px] px-5 sm:px-8";
-const H2 = "mt-16 scroll-mt-24 text-[26px] font-bold leading-[1.15] tracking-[-0.025em] text-[#0B1628] sm:mt-20 sm:text-[32px]";
-const P = "mt-5 text-[16px] leading-[1.7] text-[#3F4854] sm:text-[17px]";
-const LINK = "font-semibold text-[#306EEC] underline underline-offset-2";
+const LINK = "font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2";
 
 /** When hiring per job is the better answer. Stated first, and meant. */
 const ONE_OFF_CASES = [
@@ -74,12 +72,12 @@ const MEMBERSHIP_CASES = [
 
 function Bullets({ items, tone = "blue" }: { items: React.ReactNode[]; tone?: "blue" | "grey" }) {
   return (
-    <ul className="mt-5 space-y-3">
+    <ul className="mt-3 space-y-2">
       {items.map((item, index) => (
-        <li key={index} className="flex gap-3 text-[16px] leading-[1.65] text-[#3F4854] sm:text-[17px]">
+        <li key={index} className="flex gap-2.5 text-[15px] leading-[1.55] text-[color:var(--ui-text-2)]">
           <span
             aria-hidden="true"
-            className={`mt-[10px] h-1.5 w-1.5 shrink-0 rounded-full ${tone === "blue" ? "bg-[#306EEC]" : "bg-[#94A3B8]"}`}
+            className={`mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full ${tone === "blue" ? "bg-[color:var(--ui-accent)]" : "bg-[color:var(--ui-line-2)]"}`}
           />
           <span>{item}</span>
         </li>
@@ -127,7 +125,7 @@ export default async function HandymanMembershipPage() {
   ];
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white">
+    <div className="min-h-screen overflow-x-clip bg-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script
         type="application/ld+json"
@@ -147,244 +145,263 @@ export default async function HandymanMembershipPage() {
       </div>
 
       <main>
-        <article className={`${SHELL} pb-10 pt-10 sm:pt-16`}>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">
-            Home maintenance · Long Island
-          </p>
-          <h1 className="mt-4 text-[34px] font-bold leading-[1.08] tracking-[-0.035em] text-[#0B1628] sm:text-[46px]">
-            What is a handyman membership?
-          </h1>
-          <p className="mt-3 text-[13px] font-semibold text-[#64748B]">
-            Updated <time dateTime={UPDATED}>October 8, 2026</time> · Profixter, Lindenhurst, NY
-          </p>
+        {/*
+          Progressive disclosure, nothing deleted. The definition, the facts and
+          the two "is it for me" lists are open; every longer section is a
+          closed <details> under its own H2, so the whole article is still in
+          the HTML for readers who want it and for anything that reads it.
+        */}
+        <article>
+          <section className="ui-section ui-section--tight">
+            <div className="ui-container grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:gap-16">
+              <div className="ui-rise">
+                <p className="ui-eyebrow ui-eyebrow--accent">Home maintenance · Long Island</p>
+                <h1 className="ui-display">What is a handyman membership?</h1>
+                <p className="ui-small mt-3">
+                  Updated <time dateTime={UPDATED}>October 8, 2026</time> · Profixter, Lindenhurst, NY
+                </p>
 
-          {/*
-            The definition, in one paragraph, at the top. This is the sentence
-            an assistant should be able to lift without reading the rest.
-          */}
-          <p className="mt-7 text-[18px] leading-[1.65] text-[#1F2937] sm:text-[20px]">
-            A handyman membership is a monthly subscription that gives a homeowner ongoing access to a handyman team
-            for small and medium repairs, installations and maintenance — instead of finding, vetting and hiring
-            someone separately for each job. The homeowner pays a recurring fee, and requests visits when the house
-            needs something.
-          </p>
+                {/*
+                  The definition, in one paragraph, at the top. This is the sentence
+                  an assistant should be able to lift without reading the rest.
+                */}
+                <p className="ui-lede !max-w-[60ch]">
+                  A handyman membership is a monthly subscription that gives a homeowner ongoing access to a handyman team
+                  for small and medium repairs, installations and maintenance — instead of finding, vetting and hiring
+                  someone separately for each job. The homeowner pays a recurring fee, and requests visits when the house
+                  needs something.
+                </p>
 
-          <p className={P}>
-            It is a different way of buying the same work. Traditional handyman service is priced per job or per hour,
-            and the relationship restarts every time. A membership prices access instead, and the relationship
-            continues. Neither is automatically better — which one fits depends almost entirely on how often your house
-            asks you for something. It is also not the same thing as a home warranty, which pays toward failed systems
-            and appliances, or a maintenance subscription that performs a fixed checklist;{" "}
-            <Link href="/guides/home-maintenance-plans-compared" className={LINK}>
-              the differences are here
-            </Link>
-            .
-          </p>
-
-          <section aria-labelledby="at-a-glance" className="mt-10 rounded-[12px] border border-[#DDE4EE] bg-[#F8FAFF] p-5 sm:p-7">
-            <h2 id="at-a-glance" className="text-[13px] font-bold uppercase tracking-[0.14em] text-[#0B1628]">
-              Profixter at a glance
-            </h2>
-            <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-[180px_1fr]">
-              {facts.map(([term, detail]) => (
-                <div key={term} className="contents">
-                  <dt className="text-[14px] font-semibold text-[#0B1628]">{term}</dt>
-                  <dd className="text-[15px] leading-[1.6] text-[#3F4854]">{detail}</dd>
+                <div className="pg-actions pg-actions--stack">
+                  <Link href="/membership/plans" className="ui-btn ui-btn--primary">
+                    See membership plans
+                  </Link>
+                  <Link href="/book/free" className="ui-btn ui-btn--secondary">
+                    Book a free first visit
+                  </Link>
                 </div>
-              ))}
-            </dl>
+
+                <details className="pg-more pg-more--plain mt-4">
+                  <summary>Membership vs per job, warranty or checklist</summary>
+                  <div className="pg-more__body pg-prose !text-[15px]">
+                    <p>
+                      It is a different way of buying the same work. Traditional handyman service is priced per job or per hour,
+                      and the relationship restarts every time. A membership prices access instead, and the relationship
+                      continues. Neither is automatically better — which one fits depends almost entirely on how often your house
+                      asks you for something. It is also not the same thing as a home warranty, which pays toward failed systems
+                      and appliances, or a maintenance subscription that performs a fixed checklist;{" "}
+                      <Link href="/guides/home-maintenance-plans-compared">the differences are here</Link>.
+                    </p>
+                  </div>
+                </details>
+              </div>
+
+              <section aria-labelledby="at-a-glance" className="ui-card ui-card--soft self-start ui-rise" style={{ animationDelay: "60ms" }}>
+                <h2 id="at-a-glance" className="ui-eyebrow !text-[color:var(--ui-ink)]">
+                  Profixter at a glance
+                </h2>
+                <dl className="mt-3 grid gap-3">
+                  {facts.map(([term, detail]) => (
+                    <div key={term}>
+                      <dt className="text-[13px] font-medium text-[color:var(--ui-text-3)]">{term}</dt>
+                      <dd className="mt-0.5 text-[14px] leading-[1.5] text-[color:var(--ui-ink)]">{detail}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            </div>
           </section>
 
-          <h2 className={H2}>When hiring per job is the better choice</h2>
-          <p className={P}>
-            A membership is a poor purchase for a household that genuinely needs one thing fixed. If any of these
-            describe you, hire per job:
-          </p>
-          <Bullets items={ONE_OFF_CASES} tone="grey" />
-          <p className={P}>
-            On Profixter&apos;s own prices, a Basic membership paid annually only costs less than ${oneTime.priceDollars}{" "}
-            One-Time Visits once you need about {Math.ceil((cheapest.price * 10) / oneTime.priceDollars)} visits a year.{" "}
-            <Link href="/guides/handyman-membership-vs-hiring-per-job" className={LINK}>
-              Run the numbers for your house
-            </Link>
-            .
-          </p>
+          <section className="ui-section ui-section--soft ui-section--tight">
+            <div className="ui-container grid gap-3 md:grid-cols-2 md:gap-4">
+              <Reveal className="ui-card">
+                <h2 className="ui-h3">When hiring per job is the better choice</h2>
+                <p className="ui-small mt-1.5">
+                  A membership is a poor purchase for a household that genuinely needs one thing fixed. If any of these
+                  describe you, hire per job:
+                </p>
+                <Bullets items={ONE_OFF_CASES} tone="grey" />
+                <p className="ui-small mt-4">
+                  On Profixter&apos;s own prices, a Basic membership paid annually only costs less than ${oneTime.priceDollars}{" "}
+                  One-Time Visits once you need about {Math.ceil((cheapest.price * 10) / oneTime.priceDollars)} visits a year.{" "}
+                  <Link href="/guides/handyman-membership-vs-hiring-per-job" className={LINK}>
+                    Run the numbers for your house
+                  </Link>
+                  .
+                </p>
+              </Reveal>
+              <Reveal className="ui-card" delay={60}>
+                <h2 className="ui-h3">When a membership makes more sense</h2>
+                <p className="ui-small mt-1.5">
+                  Membership is built for the opposite situation — a house with a running list rather than a single task:
+                </p>
+                <Bullets items={MEMBERSHIP_CASES} />
+                <p className="ui-small mt-4">
+                  The honest framing is that a membership converts an unpredictable, per-incident cost into a predictable
+                  recurring one, and converts a repeated search into a standing relationship. If neither of those is a problem
+                  you have, it is not worth paying for. Lists are the norm, not the exception: in Profixter&apos;s records,{" "}
+                  {MULTI_TASK_REQUEST_PHRASE}.
+                </p>
+              </Reveal>
+            </div>
+          </section>
 
-          <h2 className={H2}>When a membership makes more sense</h2>
-          <p className={P}>
-            Membership is built for the opposite situation — a house with a running list rather than a single task:
-          </p>
-          <Bullets items={MEMBERSHIP_CASES} />
-          <p className={P}>
-            The honest framing is that a membership converts an unpredictable, per-incident cost into a predictable
-            recurring one, and converts a repeated search into a standing relationship. If neither of those is a problem
-            you have, it is not worth paying for. Lists are the norm, not the exception: in Profixter&apos;s records,{" "}
-            {MULTI_TASK_REQUEST_PHRASE}.
-          </p>
+          <section className="ui-section ui-section--tight">
+            <div className="ui-container ui-container--narrow">
+              <div className="pg-folds">
+                <Fold title="How the Profixter membership works">
+                  <p>
+                    Profixter is a Long Island home-services company based in Lindenhurst, serving homeowners across Nassau and
+                    Suffolk Counties. Since {DATA_SINCE} it has completed more than {COMPLETED_VISITS_ROUNDED} visits for about{" "}
+                    {CUSTOMERS_ROUNDED} customers in {COMMUNITIES_PHRASE} (as of {DATA_AS_OF}). Its handyman
+                    offering is built around a membership rather than one-off dispatch, though a one-time visit is still
+                    available for people who want exactly one thing done.
+                  </p>
+                  <ul>
+                    {[
+                      `Each standard visit covers up to ${STANDARD_VISIT_MINUTES} minutes of work: repairs, installations, maintenance, drywall patches, caulking, paint touch-ups, doors, locks, shelves and fixtures.`,
+                      "There is no monthly visit allowance. Book as often as you need: your plan sets how many visits you can have booked at the same time. Basic lets you have one booked at a time; Plus, Premium and Elite let you have up to two. Once a visit is done, you can book the next one.",
+                      "A bigger job can be split across visits, and Elite includes a Full Day each month for longer work.",
+                      "The same team comes back, so the house does not have to be re-explained.",
+                      "Plans are month to month. There is no long-term contract, and a cancelled plan runs to the end of the billing period already paid for.",
+                      "Materials differ by tier: Basic covers labor only, while Plus and above include small supplies such as screws, anchors, caulk and sealant. Fixtures, appliances, special-order and project materials are quoted separately.",
+                    ].map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </Fold>
 
-          <h2 className={H2}>How the Profixter membership works</h2>
-          <p className={P}>
-            Profixter is a Long Island home-services company based in Lindenhurst, serving homeowners across Nassau and
-            Suffolk Counties. Since {DATA_SINCE} it has completed more than {COMPLETED_VISITS_ROUNDED} visits for about{" "}
-            {CUSTOMERS_ROUNDED} customers in {COMMUNITIES_PHRASE} (as of {DATA_AS_OF}). Its handyman
-            offering is built around a membership rather than one-off dispatch, though a one-time visit is still
-            available for people who want exactly one thing done.
-          </p>
-          <Bullets
-            items={[
-              `Each standard visit covers up to ${STANDARD_VISIT_MINUTES} minutes of work: repairs, installations, maintenance, drywall patches, caulking, paint touch-ups, doors, locks, shelves and fixtures.`,
-              "There is no monthly visit allowance. Book as often as you need: your plan sets how many visits you can have booked at the same time. Basic lets you have one booked at a time; Plus, Premium and Elite let you have up to two. Once a visit is done, you can book the next one.",
-              "A bigger job can be split across visits, and Elite includes a Full Day each month for longer work.",
-              "The same team comes back, so the house does not have to be re-explained.",
-              "Plans are month to month. There is no long-term contract, and a cancelled plan runs to the end of the billing period already paid for.",
-              "Materials differ by tier: Basic covers labor only, while Plus and above include small supplies such as screws, anchors, caulk and sealant. Fixtures, appliances, special-order and project materials are quoted separately.",
-            ]}
-          />
+                <Fold title="How booking works">
+                  <ul>
+                    {[
+                      "Members book online: choose the home, pick an available date and time, describe the jobs and add photos.",
+                      "Visits are scheduled from the dates and times available, and we aim for the soonest open slot.",
+                      "Premium includes one Priority Visit a month and Elite two, for things that can't wait for the next regular slot. Priority Visits are subject to availability.",
+                      "All scheduling is subject to availability. Rescheduling early lets the slot go to another member.",
+                    ].map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </Fold>
 
-          <h2 className={H2}>How booking works</h2>
-          <Bullets
-            items={[
-              "Members book online: choose the home, pick an available date and time, describe the jobs and add photos.",
-              "Visits are scheduled from the dates and times available, and we aim for the soonest open slot.",
-              "Premium includes one Priority Visit a month and Elite two, for things that can't wait for the next regular slot. Priority Visits are subject to availability.",
-              "All scheduling is subject to availability. Rescheduling early lets the slot go to another member.",
-            ]}
-          />
+                <Fold title="What a membership does not cover">
+                  <p>
+                    This is where memberships are most often oversold, so it is worth being exact. Membership is for
+                    handyman-scale work. These are not handyman visits and are not covered by a plan:
+                  </p>
+                  <ul>
+                    {NOT_HANDYMAN_WORK.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                  <p>
+                    Profixter still does larger work, but it runs through a separate estimate as a project:{" "}
+                    <Link href="/kitchen-bathroom">kitchen and bathroom renovation</Link> and{" "}
+                    <Link href="/projects">other larger projects</Link>. Elite members get 10% off those projects.
+                  </p>
+                </Fold>
+
+                <Fold title="One-Time Visit: when to choose it instead">
+                  <p>
+                    If you have one small job and nothing else pending, a membership is the wrong tool. A One-Time Visit is $
+                    {oneTime.priceDollars} for up to {oneTime.minutes} minutes on one small job from a set list — mounting a TV,
+                    replacing a light fixture or faucet, patching drywall, caulking, hanging shelves and similar — with no
+                    membership. A Full Day (${fullDay.priceDollars}, about {fullDay.hours} hours) suits one long list done in one
+                    go. <Link href="/book?visit=additional">Book a One-Time Visit</Link>.
+                  </p>
+                </Fold>
+
+                <Fold title="Where Profixter works">
+                  <p>
+                    Nassau and Suffolk Counties: of completed visits so far, {COUNTY_SPLIT_PHRASE}, from the South Shore
+                    towns around the Lindenhurst base to the North Shore.{" "}
+                    <Link href="/locations">See the towns we serve</Link>.
+                  </p>
+                </Fold>
+
+                <Fold title="How to join">
+                  <ol>
+                    <li>
+                      <strong>Start with a free first visit</strong> if you are a new customer: {STANDARD_VISIT_MINUTES}{" "}
+                      minutes, one per customer, no card required. <Link href="/book/free">Book it</Link>.
+                    </li>
+                    <li>
+                      <strong>Or choose a plan directly</strong>, monthly or annual.{" "}
+                      <Link href="/membership/plans">Compare plans</Link>.
+                    </li>
+                    <li>
+                      <strong>Book your first member visit</strong> online, with notes and photos.
+                    </li>
+                  </ol>
+                </Fold>
+              </div>
+            </div>
+          </section>
         </article>
 
-        <PlanComparisonTable title="The plans" />
+        <div className="bg-[color:var(--ui-bg-soft)]">
+          <PlanComparisonTable title="The plans" />
+        </div>
 
-        <article className={`${SHELL} pb-24`}>
-          <h2 className={H2}>What a membership does not cover</h2>
-          <p className={P}>
-            This is where memberships are most often oversold, so it is worth being exact. Membership is for
-            handyman-scale work. These are not handyman visits and are not covered by a plan:
-          </p>
-          <Bullets items={[...NOT_HANDYMAN_WORK]} tone="grey" />
-          <p className={P}>
-            Profixter still does larger work, but it runs through a separate estimate as a project:{" "}
-            <Link href="/kitchen-bathroom" className={LINK}>
-              kitchen and bathroom renovation
-            </Link>{" "}
-            and{" "}
-            <Link href="/projects" className={LINK}>
-              other larger projects
-            </Link>
-            . Elite members get 10% off those projects.
-          </p>
+        <section className="ui-section ui-section--tight">
+          <div className="ui-container ui-container--narrow">
+            <h2 className="ui-h2">Common questions</h2>
+            <div className="ui-faq mt-5">
+              {MEMBERSHIP_FAQS.map((faq) => (
+                <details key={faq.q}>
+                  <summary>{faq.q}</summary>
+                  <p className="ui-faq__a">{faq.a}</p>
+                </details>
+              ))}
+            </div>
 
-          <h2 className={H2}>One-Time Visit: when to choose it instead</h2>
-          <p className={P}>
-            If you have one small job and nothing else pending, a membership is the wrong tool. A One-Time Visit is $
-            {oneTime.priceDollars} for up to {oneTime.minutes} minutes on one small job from a set list — mounting a TV,
-            replacing a light fixture or faucet, patching drywall, caulking, hanging shelves and similar — with no
-            membership. A Full Day (${fullDay.priceDollars}, about {fullDay.hours} hours) suits one long list done in one
-            go.{" "}
-            <Link href="/book?visit=additional" className={LINK}>
-              Book a One-Time Visit
-            </Link>
-            .
-          </p>
+            <h2 className="ui-h3 mt-12">Related guides</h2>
+            <ul className="pg-list mt-3">
+              {[
+                ["/guides/handyman-for-small-jobs", "Getting small jobs done when they're too small for a handyman"],
+                ["/guides/handyman-membership-vs-hiring-per-job", "Membership or per job: the calculator"],
+                ["/guides/handyman-minimum-charges", "Handyman minimum charges explained"],
+                ["/guides/handyman-cost-long-island", "What a handyman costs on Long Island"],
+              ].map(([href, label]) => (
+                <li key={href}>
+                  <Link href={href}>{label}</Link>
+                </li>
+              ))}
+            </ul>
 
-          <h2 className={H2}>Where Profixter works</h2>
-          <p className={P}>
-            Nassau and Suffolk Counties: of completed visits so far, {COUNTY_SPLIT_PHRASE}, from the South Shore
-            towns around the Lindenhurst base to the North Shore.{" "}
-            <Link href="/locations" className={LINK}>
-              See the towns we serve
-            </Link>
-            .
-          </p>
-
-          <h2 className={H2}>How to join</h2>
-          <ol className="mt-5 space-y-3">
-            {[
-              <>
-                <strong className="font-semibold text-[#0B1628]">Start with a free first visit</strong> if you are a new
-                customer: {STANDARD_VISIT_MINUTES} minutes, one per customer, no card required.{" "}
-                <Link href="/book/free" className={LINK}>
-                  Book it
+            <div className="ui-card ui-card--dark mt-12 !p-6 sm:!p-8">
+              <h2 className="ui-h3 !text-white">Not sure which you need?</h2>
+              <p className="mt-2 max-w-[54ch] text-[15px] leading-[1.6] text-[color:var(--ui-on-dark-2)]">
+                If the list is small and ongoing, membership starts at ${cheapest.price} a month. If it is one job, book a
+                single visit. If you are planning a renovation, that is an estimate conversation instead. A real person
+                can tell you which in a couple of minutes.
+              </p>
+              <div className="pg-actions pg-actions--stack">
+                <Link href="/membership/plans" className="ui-btn ui-btn--light">
+                  See membership plans
                 </Link>
-                .
-              </>,
-              <>
-                <strong className="font-semibold text-[#0B1628]">Or choose a plan directly</strong>, monthly or annual.{" "}
-                <Link href="/membership/plans" className={LINK}>
-                  Compare plans
-                </Link>
-                .
-              </>,
-              <>
-                <strong className="font-semibold text-[#0B1628]">Book your first member visit</strong> online, with
-                notes and photos.
-              </>,
-            ].map((item, index) => (
-              <li key={index} className="flex gap-3 text-[16px] leading-[1.65] text-[#3F4854] sm:text-[17px]">
-                <span
-                  aria-hidden="true"
-                  className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EEF4FF] text-[13px] font-bold text-[#306EEC]"
-                >
-                  {index + 1}
-                </span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ol>
-
-          <h2 className={H2}>Common questions</h2>
-          <dl className="mt-6 divide-y divide-[#EEF2F7] border-t border-[#EEF2F7]">
-            {MEMBERSHIP_FAQS.map((faq) => (
-              <div key={faq.q} className="py-6">
-                <dt className="text-[17px] font-bold leading-[1.35] text-[#0B1628]">{faq.q}</dt>
-                <dd className="mt-2.5 text-[16px] leading-[1.7] text-[#3F4854]">{faq.a}</dd>
+                <a href={CUSTOMER_CARE.callHref} className="ui-btn ui-btn--outline-light">
+                  Call {CUSTOMER_CARE.phoneDisplay}
+                </a>
               </div>
-            ))}
-          </dl>
-
-          <h2 className={H2}>Related guides</h2>
-          <ul className="mt-5 grid gap-2 sm:grid-cols-2">
-            {[
-              ["/guides/handyman-for-small-jobs", "Getting small jobs done when they're too small for a handyman"],
-              ["/guides/handyman-membership-vs-hiring-per-job", "Membership or per job: the calculator"],
-              ["/guides/handyman-minimum-charges", "Handyman minimum charges explained"],
-              ["/guides/handyman-cost-long-island", "What a handyman costs on Long Island"],
-            ].map(([href, label]) => (
-              <li key={href}>
-                <Link href={href} className={LINK}>
-                  {label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-14 rounded-[12px] border border-[#DDE4EE] bg-[#F8FAFF] p-6 sm:p-8">
-            <h2 className="text-[22px] font-bold leading-[1.2] tracking-[-0.02em] text-[#0B1628] sm:text-[26px]">
-              Not sure which you need?
-            </h2>
-            <p className="mt-3 max-w-[54ch] text-[16px] leading-[1.65] text-[#3F4854]">
-              If the list is small and ongoing, membership starts at ${cheapest.price} a month. If it is one job, book a
-              single visit. If you are planning a renovation, that is an estimate conversation instead. A real person
-              can tell you which in a couple of minutes.
-            </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/membership/plans"
-                className="inline-flex min-h-[50px] items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-bold text-white transition-colors hover:bg-[#2558C9]"
-              >
-                See membership plans
-              </Link>
-              <a
-                href={CUSTOMER_CARE.callHref}
-                className="inline-flex min-h-[50px] items-center justify-center rounded-[8px] border border-[#CBD5E1] bg-white px-6 text-[15px] font-bold text-[#0B1628] transition-colors hover:bg-[#F1F5FB]"
-              >
-                Call {CUSTOMER_CARE.phoneDisplay}
-              </a>
             </div>
           </div>
-        </article>
+        </section>
       </main>
 
       <Footer />
     </div>
+  );
+}
+
+/** A long section, closed under its H2. The content is server-rendered either way. */
+function Fold({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <details className="pg-fold">
+      <summary>
+        <h2 className="pg-fold__title">{title}</h2>
+      </summary>
+      <div className="pg-fold__body pg-prose">{children}</div>
+    </details>
   );
 }
