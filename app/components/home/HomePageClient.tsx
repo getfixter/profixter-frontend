@@ -7,6 +7,7 @@ import HomeLanding from "@/app/components/home/HomeLanding";
 import RoleEntryGate from "@/app/components/auth/RoleEntryGate";
 import { useAuth } from "@/lib/useAuth";
 import { hasActiveMembership } from "@/lib/auth-routing";
+import "./home.css";
 
 /**
  * The homepage.
@@ -18,9 +19,12 @@ import { hasActiveMembership } from "@/lib/auth-routing";
  * It replaced a full-screen front door whose only button was "Get Started" to
  * /signup - a registration wall on the very first tap.
  *
- * A member keeps the home they already know (HomeMarketing, with its member
- * CTA), because an offer they cannot use is noise to them. RoleEntryGate still
- * sends staff to their workspace exactly as before.
+ * Website 3.0: the first screen now leads with the membership itself
+ * ("Your home. Your handyman. One membership."), and the booker sits just
+ * below; see HomeLanding. A member gets their own short home (HomeMarketing):
+ * a greeting and the places they actually go, because an offer they cannot use
+ * is noise to them. RoleEntryGate still sends staff to their workspace exactly
+ * as before.
  */
 export default function HomePageClient() {
   const { user, isAuthenticated } = useAuth();
