@@ -1,0 +1,810 @@
+/* ==================================================================== */
+/* Customer pages on the design system (Website 3.0)                     */
+/*                                                                       */
+/* Page-level layouts (pg-*) and the design-system skin for the older    */
+/* booking and plan components (plan-box, fv-*, pk-*). Appearance only:  */
+/* every class, attribute and behaviour those components rely on is left */
+/* as it was, so their tests and their logic do not change. Imported      */
+/* last from app/layout.tsx so it wins over globals.css and the legacy    */
+/* scale maps on equal specificity. Tokens and ui-* live in app/ui.css.   */
+/* ==================================================================== */
+
+/* -------------------------------------------------------------------- */
+/* Shared page parts                                                     */
+/* -------------------------------------------------------------------- */
+
+/* A page H1 block: eyebrow, title, one sentence. */
+.pg-intro {
+  max-width: 640px;
+}
+.pg-intro .ui-lede {
+  margin-top: 10px;
+}
+.pg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+@media (max-width: 479px) {
+  .pg-actions--stack > * {
+    flex: 1 1 100%;
+  }
+}
+
+/* A row of short facts separated by dots. */
+.pg-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--ui-fs-small);
+  color: var(--ui-text-3);
+}
+.pg-facts > li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+/* A dot before every item, so a wrapped line never starts with a stray separator. */
+.pg-facts > li::before {
+  content: "";
+  flex: none;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ui-line-2);
+}
+
+/* A closed "Details" disclosure that sits next to what it qualifies. */
+.pg-more {
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-r-md);
+  background: #fff;
+}
+.pg-more > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 12px 16px;
+  list-style: none;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ui-ink);
+}
+.pg-more > summary::-webkit-details-marker {
+  display: none;
+}
+.pg-more > summary::after {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-right: 1.5px solid var(--ui-text-3);
+  border-bottom: 1.5px solid var(--ui-text-3);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform var(--ui-dur-2) var(--ui-ease);
+}
+.pg-more[open] > summary::after {
+  transform: translateY(2px) rotate(-135deg);
+}
+.pg-more__body {
+  padding: 0 16px 16px;
+  font-size: var(--ui-fs-small);
+  line-height: 1.6;
+  color: var(--ui-text-2);
+}
+.pg-more__body > * + * {
+  margin-top: 8px;
+}
+.pg-more--plain {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.pg-more--plain > summary {
+  min-height: 44px;
+  padding: 8px 0;
+  font-size: var(--ui-fs-small);
+  color: var(--ui-accent-ink);
+  justify-content: flex-start;
+}
+.pg-more--plain > summary::after {
+  border-color: var(--ui-accent-ink);
+}
+.pg-more--plain .pg-more__body {
+  padding: 0 0 8px;
+}
+
+/* A grid of whole-card links. */
+.pg-cards {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 640px) {
+  .pg-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) {
+  .pg-cards--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .pg-cards--4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.pg-card__title {
+  margin: 0;
+  font-size: var(--ui-fs-h3);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.012em;
+  color: var(--ui-ink);
+}
+.pg-card__meta {
+  margin: 6px 0 0;
+  font-size: var(--ui-fs-small);
+  line-height: 1.5;
+  color: var(--ui-text-2);
+}
+.pg-card__price {
+  margin: 10px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ui-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A plain list of links, one per row, with hairlines. */
+.pg-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--ui-line);
+}
+.pg-list > li {
+  border-bottom: 1px solid var(--ui-line);
+}
+.pg-list a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ui-ink);
+  text-decoration: none;
+}
+.pg-list a::after {
+  content: "\2192";
+  color: var(--ui-text-3);
+  transition: transform var(--ui-dur-2) var(--ui-ease);
+}
+.pg-list a:hover::after {
+  transform: translateX(3px);
+  color: var(--ui-accent-ink);
+}
+.pg-list__note {
+  margin-left: auto;
+  font-size: var(--ui-fs-small);
+  color: var(--ui-text-3);
+}
+
+/* -------------------------------------------------------------------- */
+/* Membership plans page                                                 */
+/* -------------------------------------------------------------------- */
+
+.pg-plans__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+@media (min-width: 1024px) {
+  .pg-plans__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 560px);
+    gap: 64px;
+    align-items: start;
+  }
+  .pg-plans__intro {
+    position: sticky;
+    top: 112px;
+    padding-top: 24px;
+  }
+}
+.pg-plans__aside {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .pg-plans__aside {
+    display: block;
+    margin-top: 32px;
+  }
+}
+
+/* The comparison table, collapsible on phones. */
+.pg-compare > summary {
+  list-style: none;
+}
+.pg-compare > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* -------------------------------------------------------------------- */
+/* The one-box plan selector (PlansSection) in the design system          */
+/* -------------------------------------------------------------------- */
+
+:root[data-surface="site"] .plan-box {
+  max-width: 560px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-r-lg);
+  box-shadow: var(--ui-shadow-2);
+  padding: 16px;
+}
+@media (min-width: 720px) {
+  :root[data-surface="site"] .plan-box {
+    padding: 24px 28px;
+  }
+}
+:root[data-surface="site"] .plan-box__billing,
+:root[data-surface="site"] .plan-box__tabs {
+  border-radius: var(--ui-r-sm);
+  background: var(--ui-bg-soft);
+  box-shadow: inset 0 0 0 1px var(--ui-line);
+}
+:root[data-surface="site"] .plan-box__cycle,
+:root[data-surface="site"] .plan-box__pill {
+  border-radius: 7px;
+}
+:root[data-surface="site"] .plan-box__cycle {
+  min-height: 40px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ui-text-2);
+}
+:root[data-surface="site"] .plan-box__cycle.is-active {
+  color: var(--ui-ink);
+  box-shadow: var(--ui-shadow-1), 0 0 0 1px var(--ui-line);
+}
+:root[data-surface="site"] .plan-box__chip {
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent-ink);
+  font-weight: 600;
+  font-size: 11px;
+}
+:root[data-surface="site"] .plan-box__tab {
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ui-text-2);
+}
+:root[data-surface="site"] .plan-box__tab.is-active {
+  color: var(--ui-ink);
+}
+:root[data-surface="site"] .plan-box__pill {
+  box-shadow: var(--ui-shadow-1), 0 0 0 1px var(--ui-line);
+}
+:root[data-surface="site"] .plan-box__popular {
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent-ink);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+:root[data-surface="site"] .plan-box__figure {
+  font-size: clamp(46px, 12vw, 58px);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  color: var(--ui-ink);
+}
+:root[data-surface="site"] .plan-box__unit {
+  font-weight: 500;
+  color: var(--ui-text-3);
+}
+:root[data-surface="site"] .plan-box__terms {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--ui-text-2);
+}
+:root[data-surface="site"] .plan-box__terms-sub {
+  color: var(--ui-text-3);
+}
+:root[data-surface="site"] .plan-box__name {
+  font-size: 15px;
+  font-weight: 500;
+}
+:root[data-surface="site"] .plan-box__row.is-on .plan-box__name {
+  color: var(--ui-ink);
+}
+:root[data-surface="site"] .plan-box__row.is-off .plan-box__name {
+  font-weight: 400;
+  color: #9aa3b2;
+}
+:root[data-surface="site"] .plan-box__detail {
+  font-size: 13px;
+  color: var(--ui-text-3);
+}
+:root[data-surface="site"] .plan-box__row.is-on .plan-box__mark {
+  color: var(--ui-accent);
+}
+:root[data-surface="site"] .plan-box__dash {
+  color: var(--ui-line-2);
+}
+:root[data-surface="site"] .plan-box__cta {
+  min-height: 52px;
+  border-radius: var(--ui-r-sm);
+  background: var(--ui-ink);
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(11, 22, 40, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+:root[data-surface="site"] .plan-box__cta:hover:not(:disabled) {
+  background: var(--ui-ink-2);
+}
+:root[data-surface="site"] .plan-box__cta:disabled {
+  background: var(--ui-line-2);
+}
+:root[data-surface="site"] .plan-box__foot {
+  font-size: 13px;
+  color: var(--ui-text-3);
+}
+
+/* Under the box: loyalty and the free visit, as two quiet lines. */
+:root[data-surface="site"] .plan-after {
+  max-width: 560px;
+  margin-top: 16px;
+  gap: 0;
+  grid-template-columns: minmax(0, 1fr);
+  border-top: 1px solid var(--ui-line);
+}
+:root[data-surface="site"] .plan-after__card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 16px;
+  padding: 14px 0;
+  border: 0;
+  border-bottom: 1px solid var(--ui-line);
+  border-radius: 0;
+  background: transparent;
+}
+:root[data-surface="site"] .plan-after__label {
+  grid-column: 1;
+  font-size: var(--ui-fs-micro);
+  font-weight: 600;
+  color: var(--ui-text-3);
+}
+:root[data-surface="site"] .plan-after__body {
+  grid-column: 1;
+  margin: 0;
+  font-size: var(--ui-fs-small);
+  color: var(--ui-text-2);
+}
+:root[data-surface="site"] .plan-after__body b {
+  color: var(--ui-ink);
+  font-weight: 600;
+}
+:root[data-surface="site"] .plan-after__link {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  margin: 0;
+  font-size: var(--ui-fs-small);
+  font-weight: 600;
+  color: var(--ui-accent-ink);
+  white-space: nowrap;
+}
+
+/* The trust line under the selector. */
+.pg-trust {
+  max-width: 560px;
+  margin: 16px auto 0;
+  justify-content: center;
+  text-align: center;
+  font-size: 13px;
+}
+
+/* Plan picker on the Book tab (pk-*). */
+:root[data-surface="site"] .pk-row {
+  border-color: var(--ui-line);
+  border-radius: var(--ui-r-md);
+}
+:root[data-surface="site"] .pk-row--on {
+  border-color: var(--ui-ink);
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--ui-ink);
+}
+:root[data-surface="site"] .pk-dot {
+  border-color: var(--ui-line-2);
+  border-width: 1.5px;
+}
+:root[data-surface="site"] .pk-dot--on {
+  border-color: var(--ui-ink);
+}
+:root[data-surface="site"] .pk-dot--on::after {
+  background: var(--ui-ink);
+}
+
+/* -------------------------------------------------------------------- */
+/* Booking flows (.pg-flow): the fv-* booker and the $99 / Full Day forms */
+/* -------------------------------------------------------------------- */
+
+:root[data-surface="site"] .pg-flow .fv-card {
+  border-radius: var(--ui-r-lg);
+  border: 1px solid var(--ui-line);
+  background: #fff;
+  box-shadow: var(--ui-shadow-2);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+:root[data-surface="site"] .pg-flow .fv-step + .fv-step {
+  border-top-color: var(--ui-line);
+}
+:root[data-surface="site"] .pg-flow .fv-step-n {
+  background: var(--ui-bg-soft);
+  color: var(--ui-text-2);
+  box-shadow: inset 0 0 0 1px var(--ui-line);
+}
+:root[data-surface="site"] .pg-flow .fv-step-n--done {
+  background: var(--ui-ink);
+  color: #fff;
+  box-shadow: none;
+}
+:root[data-surface="site"] .pg-flow .fv-step-title {
+  font-size: var(--ui-fs-h3);
+  font-weight: 600;
+}
+:root[data-surface="site"] .pg-flow :is(.fv-input, .fv-field) {
+  border-color: var(--ui-line-2);
+  border-radius: var(--ui-r-sm);
+  background: #fff;
+}
+:root[data-surface="site"] .pg-flow :is(.fv-input:focus, .fv-field:focus-within) {
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 3px rgba(48, 110, 236, 0.14);
+}
+:root[data-surface="site"] .pg-flow .fv-chip {
+  min-height: 36px;
+  border-color: var(--ui-line-2);
+  font-weight: 500;
+  color: var(--ui-text-2);
+}
+:root[data-surface="site"] .pg-flow :is(.fv-photo-btn, .fv-mini-btn) {
+  border: 1px solid var(--ui-line-2);
+  border-radius: var(--ui-r-sm);
+  background: #fff;
+  color: var(--ui-ink);
+  font-weight: 600;
+}
+:root[data-surface="site"] .pg-flow :is(.fv-photo-btn, .fv-mini-btn):hover {
+  border-color: #b9c1cd;
+  background: #fbfbfa;
+}
+:root[data-surface="site"] .pg-flow .fv-day {
+  border-radius: var(--ui-r-sm);
+  font-weight: 500;
+}
+:root[data-surface="site"] .pg-flow .fv-day--open {
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent-ink);
+}
+:root[data-surface="site"] .pg-flow .fv-day--selected,
+:root[data-surface="site"] .pg-flow .fv-daypill--on {
+  background: var(--ui-ink);
+  color: #fff;
+  transform: none;
+  box-shadow: none;
+}
+:root[data-surface="site"] .pg-flow .fv-slot {
+  border-color: var(--ui-line-2);
+  border-radius: var(--ui-r-sm);
+  font-weight: 500;
+}
+:root[data-surface="site"] .pg-flow .fv-slot--selected {
+  border-color: var(--ui-ink);
+  background: var(--ui-ink);
+  color: #fff;
+  transform: none;
+  box-shadow: none;
+}
+:root[data-surface="site"] .pg-flow .fv-slot--selected:hover:not(:disabled) {
+  background: var(--ui-ink);
+}
+:root[data-surface="site"] .pg-flow :is(.fv-summary, .fv-sumrow) {
+  border-color: var(--ui-line);
+  border-radius: var(--ui-r-sm);
+  background: var(--ui-bg-soft);
+}
+:root[data-surface="site"] .pg-flow .fv-panel {
+  border-color: var(--ui-line);
+  border-radius: var(--ui-r-md);
+  background: var(--ui-bg-soft);
+}
+:root[data-surface="site"] .pg-flow .fv-notice {
+  border-radius: var(--ui-r-sm);
+}
+/* The CTA: blue on the free-visit booker (the one place the accent is a
+   button), navy everywhere else in a flow. */
+:root[data-surface="site"] .pg-flow :is(.fv-cta, .fv-cta--compact) {
+  min-height: 52px;
+  border-radius: var(--ui-r-sm);
+  background: var(--ui-ink);
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(11, 22, 40, 0.2);
+}
+:root[data-surface="site"] .pg-flow :is(.fv-cta, .fv-cta--compact):hover {
+  background: var(--ui-ink-2);
+  transform: none;
+}
+:root[data-surface="site"] .pg-flow--free :is(.fv-cta, .fv-cta--compact) {
+  background: var(--ui-accent);
+  box-shadow: 0 1px 2px rgba(36, 86, 196, 0.25);
+}
+:root[data-surface="site"] .pg-flow--free :is(.fv-cta, .fv-cta--compact):hover {
+  background: var(--ui-accent-ink);
+}
+:root[data-surface="site"] .pg-flow .fv-cta--ready {
+  animation: none;
+}
+:root[data-surface="site"] .pg-flow .fv-cta--quiet {
+  background: #fff;
+  color: var(--ui-ink);
+  border: 1px solid var(--ui-line-2);
+  box-shadow: none;
+}
+:root[data-surface="site"] .pg-flow .fv-cta--quiet:hover {
+  background: #fbfbfa;
+}
+:root[data-surface="site"] .pg-flow .fv-check {
+  background: var(--ui-ink);
+  box-shadow: none;
+}
+:root[data-surface="site"] .pg-flow .lx-eyebrow {
+  font-size: var(--ui-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--ui-track-micro);
+  color: var(--ui-text-3);
+}
+
+/* A booking page: header, visit tabs, then one centred column. */
+.pg-book {
+  min-height: 100vh;
+  background: var(--ui-bg-soft);
+  color: var(--ui-ink);
+}
+.pg-book__head {
+  padding-top: 20px;
+}
+@media (min-width: 768px) {
+  .pg-book__head {
+    padding-top: 32px;
+  }
+}
+.pg-book__title {
+  margin: 0;
+  font-size: clamp(26px, calc(1.6vw + 20px), 40px);
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  color: var(--ui-ink);
+  text-wrap: balance;
+}
+.pg-book__sub {
+  margin: 8px 0 0;
+  font-size: var(--ui-fs-body);
+  line-height: 1.5;
+  color: var(--ui-text-2);
+  max-width: 56ch;
+}
+
+/* The panels of the $99 and Full Day forms. */
+.pg-panel {
+  background: #fff;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-r-md);
+  padding: 16px;
+}
+@media (min-width: 640px) {
+  .pg-panel {
+    padding: 20px;
+  }
+}
+.pg-panel__title {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ui-ink);
+}
+.pg-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ui-ink);
+}
+.pg-hint {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ui-text-3);
+}
+.pg-input {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--ui-line-2);
+  border-radius: var(--ui-r-sm);
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ui-ink);
+  outline: none;
+  transition: border-color var(--ui-dur-2) var(--ui-ease), box-shadow var(--ui-dur-2) var(--ui-ease);
+}
+.pg-input::placeholder {
+  color: #8a94a6;
+}
+.pg-input:focus {
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 3px rgba(48, 110, 236, 0.14);
+}
+.pg-error {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #f3c4c4;
+  border-radius: var(--ui-r-sm);
+  background: #fdf3f3;
+  font-size: 14px;
+  font-weight: 500;
+  color: #a12626;
+}
+.pg-note {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #f0dfb5;
+  border-radius: var(--ui-r-sm);
+  background: #fdf8ec;
+  font-size: 14px;
+  color: #6f4e05;
+}
+.pg-rows {
+  display: grid;
+  margin: 0;
+  border-top: 1px solid var(--ui-line);
+}
+.pg-rows > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ui-line);
+  font-size: 14px;
+}
+.pg-rows dt {
+  color: var(--ui-text-3);
+}
+.pg-rows dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 500;
+  color: var(--ui-ink);
+}
+
+/* The month grid used by the $99 and Full Day forms. */
+.pg-cal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.pg-cal__month {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ui-ink);
+}
+.pg-cal__nav {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--ui-r-sm);
+  color: var(--ui-ink);
+  transition: background-color var(--ui-dur-2) var(--ui-ease);
+}
+.pg-cal__nav:hover:not(:disabled) {
+  background: var(--ui-bg-soft);
+}
+.pg-cal__nav:disabled {
+  color: var(--ui-line-2);
+}
+.pg-cal__wd {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin-bottom: 4px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ui-text-3);
+}
+.pg-cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.pg-cal__day {
+  display: grid;
+  place-items: center;
+  height: 42px;
+  border-radius: var(--ui-r-sm);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ui-line-2);
+  transition: background-color var(--ui-dur-2) var(--ui-ease), color var(--ui-dur-2) var(--ui-ease);
+}
+@media (min-width: 640px) {
+  .pg-cal__day {
+    height: 46px;
+  }
+}
+.pg-cal__day.is-open {
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent-ink);
+}
+@media (hover: hover) {
+  .pg-cal__day.is-open:hover {
+    background: #dfe8fb;
+  }
+}
+.pg-cal__day.is-selected {
+  background: var(--ui-ink);
+  color: #fff;
+}
+.pg-cal__day.is-muted:not(.is-open):not(.is-selected) {
+  visibility: hidden;
+}
+.pg-cal__day:disabled {
+  cursor: default;
+}
+
+/* Photo buttons in the $99 and Full Day forms. */
+.pg-photo-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.pg-photo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--ui-line-2);
+  border-radius: var(--ui-r-sm);
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ui-ink);
+  transition: border-color var(--ui-dur-2) var(--ui-ease), background-color var(--ui-dur-2) var(--ui-ease);
+}
+.pg-photo-btn:hover {
+  border-color: #b9c1cd;
+  background: #fbfbfa;
+}
+
+/* The visit-type tabs under the header on /book. */
+.pg-visit-nav {
+  background: #fff;
+  border-bottom: 1px solid var(--ui-line);
+}

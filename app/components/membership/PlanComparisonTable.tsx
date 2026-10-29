@@ -34,16 +34,13 @@ export default function PlanComparisonTable({
     <section
       id={id}
       aria-labelledby={`${id}-title`}
-      className={bare ? "my-8" : "px-4 py-10 sm:px-6 sm:py-12 lg:px-8"}
+      className={bare ? "my-6" : "ui-section ui-section--tight"}
     >
-      <div className={bare ? "" : "mx-auto max-w-[1180px]"}>
-        <Heading
-          id={`${id}-title`}
-          className="text-[24px] font-semibold leading-[1.15] tracking-[-0.025em] text-[#111111] sm:text-[30px]"
-        >
+      <div className={bare ? "" : "ui-container"}>
+        <Heading id={`${id}-title`} className={headingLevel === 2 ? "ui-h2" : "ui-h3"}>
           {title}
         </Heading>
-        <p className="mt-3 max-w-[68ch] text-[15px] leading-[1.6] text-[#6E6E73] sm:text-[16px]">{intro}</p>
+        {intro ? <p className="ui-body mt-3 max-w-[68ch]">{intro}</p> : null}
 
         {/*
           `relative` is load-bearing: the screen-reader-only labels in the cells
@@ -51,66 +48,73 @@ export default function PlanComparisonTable({
           escape this scroll box and widen the whole page on a phone (it
           rendered 459px wide at 390px, and taps landed in the wrong place).
         */}
-        <div className="relative mt-6 overflow-x-auto rounded-[12px] border border-[#E3E8F1] bg-white">
-          <table className="w-full min-w-[640px] border-collapse text-left text-[14px] sm:text-[15px]">
+        <div className="relative mt-5 overflow-x-auto rounded-[var(--ui-r-md)] border border-[color:var(--ui-line)] bg-white">
+          <table className="w-full min-w-[600px] border-collapse text-left text-[14px]">
             <caption className="sr-only">
               Profixter handyman membership plans: monthly and annual prices and what each plan includes
             </caption>
             <thead>
-              <tr className="border-b border-[#E3E8F1] bg-[#F8FAFF]">
-                <th scope="col" className="w-[30%] px-4 py-3 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#6E6E73]">
+              <tr className="border-b border-[color:var(--ui-line)]">
+                <th scope="col" className="w-[32%] px-4 py-3">
                   <span className="sr-only">Feature</span>
                 </th>
                 {plans.map((plan) => (
-                  <th key={plan.name} scope="col" className="px-4 py-3 text-[16px] font-semibold text-[#0B1628]">
+                  <th key={plan.name} scope="col" className="px-4 py-3 text-[15px] font-semibold text-[color:var(--ui-ink)]">
                     {plan.name}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-[#EEF2F7]">
-                <th scope="row" className="px-4 py-3 font-medium text-[#3F4854]">Monthly</th>
+              <tr className="border-b border-[color:var(--ui-line)]">
+                <th scope="row" className="px-4 py-3 font-medium text-[color:var(--ui-text-2)]">Monthly</th>
                 {plans.map((plan) => (
-                  <td key={plan.name} className="px-4 py-3 font-semibold tabular-nums text-[#0B1628]">
+                  <td key={plan.name} className="px-4 py-3 font-semibold tabular-nums text-[color:var(--ui-ink)]">
                     ${plan.price}
-                    <span className="font-normal text-[#6E6E73]">/mo</span>
+                    <span className="font-normal text-[color:var(--ui-text-3)]">/mo</span>
                   </td>
                 ))}
               </tr>
-              <tr className="border-b border-[#EEF2F7]">
-                <th scope="row" className="px-4 py-3 font-medium text-[#3F4854]">
-                  Annual <span className="font-normal text-[#6E6E73]">(12 months for the price of 10)</span>
+              <tr className="border-b border-[color:var(--ui-line)]">
+                <th scope="row" className="px-4 py-3 font-medium text-[color:var(--ui-text-2)]">
+                  Annual <span className="block text-[13px] font-normal text-[color:var(--ui-text-3)]">12 months for the price of 10</span>
                 </th>
                 {plans.map((plan) => (
-                  <td key={plan.name} className="px-4 py-3 tabular-nums text-[#0B1628]">
+                  <td key={plan.name} className="px-4 py-3 tabular-nums text-[color:var(--ui-ink)]">
                     ${annualPrice(plan).toLocaleString("en-US")}
-                    <span className="text-[#6E6E73]">/yr</span>
+                    <span className="text-[color:var(--ui-text-3)]">/yr</span>
                   </td>
                 ))}
               </tr>
               {BENEFIT_ROWS.map((row) => (
-                <tr key={row.id} className="border-b border-[#EEF2F7] last:border-b-0">
-                  <th scope="row" className="px-4 py-3 font-medium text-[#3F4854]">
+                <tr key={row.id} className="border-b border-[color:var(--ui-line)] last:border-b-0">
+                  <th scope="row" className="px-4 py-3 align-top font-medium text-[color:var(--ui-text-2)]">
                     {row.off}
                     {row.detail ? (
-                      <span className="mt-0.5 block text-[12.5px] font-normal leading-[1.45] text-[#8A8F98]">
+                      <span className="mt-0.5 block text-[13px] font-normal leading-[1.45] text-[color:var(--ui-text-3)]">
                         {row.detail}
                       </span>
                     ) : null}
                   </th>
                   {plans.map((plan) => {
                     const included = benefitIncluded(row, plan.name);
+                    const label = benefitLabel(row, plan.name);
+                    /* A plain check when the cell would only repeat the row name;
+                       the words only where they differ by plan ("Book 1 visit at
+                       a time", "2 Priority Visits / month"). */
+                    const repeats = label === row.off;
                     return (
                       <td key={plan.name} className="px-4 py-3 align-top">
                         {included ? (
-                          <span className="text-[#0B1628]">
-                            <span aria-hidden="true" className="mr-1.5 font-semibold text-[#306EEC]">✓</span>
-                            {benefitLabel(row, plan.name)}
+                          <span className="inline-flex items-start gap-1.5 text-[color:var(--ui-ink)]">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="mt-[3px] flex-none text-[color:var(--ui-accent)]">
+                              <path d="M5 12.5l4 4 10-10" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            {repeats ? <span className="sr-only">{label}</span> : <span>{label}</span>}
                           </span>
                         ) : (
-                          <span className="text-[#A0A6B0]">
-                            <span aria-hidden="true">—</span>
+                          <span className="text-[color:var(--ui-line-2)]">
+                            <span aria-hidden="true">&mdash;</span>
                             <span className="sr-only">Not included</span>
                           </span>
                         )}
@@ -122,7 +126,7 @@ export default function PlanComparisonTable({
             </tbody>
           </table>
         </div>
-        <p className="mt-3 max-w-[70ch] text-[13px] leading-[1.6] text-[#6E6E73]">
+        <p className="ui-small mt-3 max-w-[70ch]">
           Book as often as you need: your plan sets how many visits you can have booked at the same time.
           Scheduling is subject to availability. Fixtures, appliances and
           project materials are quoted separately.
