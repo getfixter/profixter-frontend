@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { getCustomerHomePath, hasActiveMembership } from "@/lib/auth-routing";
@@ -15,8 +15,6 @@ type NavItem = {
 
 const hiddenPathPrefixes = [
   "/admin",
-  // Shower Studio is a full-screen design app with its own controls along the bottom.
-  "/shower-studio",
   // The event kiosk is a full-screen booth display with exactly one action.
   "/event",
   // Document signing is a focused ceremony. The site nav is fixed to the bottom
@@ -137,8 +135,20 @@ export default function CustomerSiteMobileNav() {
   const isMember = hasActiveMembership(user);
   const items = buildItems({ homeHref: getCustomerHomePath(user), isMember });
   const hidden = hiddenPathPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  const shown = !hidden && isAuthenticated;
 
-  if (hidden || !isAuthenticated) return null;
+  /*
+   * Tells the page the bar is there (html.has-tabbar), so fixed things that
+   * share the bottom edge - the sticky CTA, the support chat button - can sit
+   * above it. See --pf-support-chat-bottom-mobile in app/ui-shell.css.
+   */
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("has-tabbar", shown);
+    return () => root.classList.remove("has-tabbar");
+  }, [shown]);
+
+  if (!shown) return null;
 
   return (
     <>

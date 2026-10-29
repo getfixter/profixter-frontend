@@ -52,7 +52,7 @@ export default function WorkStrip({ limit = 6 }: { limit?: number }) {
               <img
                 src={photo.thumbUrl}
                 srcSet={`${photo.thumbUrl} 480w, ${photo.imageUrl} 1280w`}
-                sizes="(min-width: 1024px) 280px, 62vw"
+                sizes="(min-width: 1024px) 190px, (min-width: 640px) 33vw, 50vw"
                 alt={photo.caption || photo.title || "Completed work by Profixter"}
                 loading={index < 2 ? "eager" : "lazy"}
                 decoding="async"

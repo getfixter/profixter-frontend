@@ -108,7 +108,6 @@ export const metadata: Metadata = {
     "handyman membership",
     "handyman subscription",
     "home maintenance membership",
-    "home support AI",
     "Nassau County handyman",
     "Suffolk County handyman",
     "home project estimates",
