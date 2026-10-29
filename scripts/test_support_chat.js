@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- a plain Node script, like the other scripts/test_*.js */
 /**
  * The support chat's non-React parts: where it may appear, the SSE parser,
  * error wording and link handling.
