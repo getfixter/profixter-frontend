@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Header from "@/app/components/sections/Header";
+import Footer from "@/app/components/sections/Footer";
 import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
@@ -32,41 +34,39 @@ export const metadata: Metadata = {
 
 export default function CommunicationConsentPage() {
   return (
-    <div className="min-h-screen px-4 py-9 sm:py-32 bg-[#020617] text-white">
+    <div className="min-h-screen bg-white text-[color:var(--ui-ink)]">
+      <div className="sticky top-0 z-50">
+        <Header />
+      </div>
       <div
-        className="max-w-5xl mx-auto rounded-[8px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(49,50,52,0.62) 0%, rgba(49,50,52,0.52) 55%, rgba(49,50,52,0.5) 100%), rgba(15,23,42,0.92)",
-          boxShadow: "0px 0px 90px 0px rgba(0,0,0,0.55)",
-        }}
+        className="ui-container ui-container--narrow pb-16 pt-8 sm:pb-20 sm:pt-12"
       >
-        <h1 className="text-3xl sm:text-4xl font-semibold mb-3 text-center tracking-tight">
+        <h1 className="ui-display mb-3 text-center">
           Communication Consent &amp; SMS Terms
         </h1>
 
-        <p className="text-sm sm:text-base text-white/65 text-center mb-8 leading-relaxed">
+        <p className="text-[15px] sm:text-base text-[color:var(--ui-text-2)] text-center mb-8 leading-relaxed">
           Company: <span className="font-semibold">Premium Island Homes Inc.</span> (DBA{" "}
           <span className="font-semibold">&quot;Profixter&quot;</span> and/or{" "}
           <span className="font-semibold">&quot;Mr. Fixter&quot;</span>) (“we”, “us”, “our”).
           <br />
           Effective Date: <span className="font-semibold">January 9, 2026</span>
           <br />
-          <span className="text-white/55">
+          <span className="text-[color:var(--ui-text-3)]">
             These terms explain how we contact you by phone, SMS, email, and automated systems. Please read carefully.
           </span>
         </p>
 
-        <div className="space-y-10 text-sm sm:text-base text-white/85 leading-relaxed">
+        <div className="space-y-10 text-[15px] sm:text-base text-[color:var(--ui-text-2)] leading-relaxed">
           {/* 1 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">1. Contact Information</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">1. Contact Information</h2>
             <p>If you have questions about privacy, consent, or communications, contact us:</p>
 
-            <div className="mt-4 rounded-[8px] bg-white/5 border border-white/10 p-5">
+            <div className="mt-4 rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
               <p>
                 Email:{" "}
-                <a className="text-[#93c5fd] underline underline-offset-2" href={PUBLIC_CONTACT_MAILTO}>
+                <a className="text-[color:var(--ui-accent-ink)] underline underline-offset-2" href={PUBLIC_CONTACT_MAILTO}>
                   {PUBLIC_CONTACT_EMAIL}
                 </a>
                 <br />
@@ -74,14 +74,14 @@ export default function CommunicationConsentPage() {
                 <br />
                 Customer service and HELP by phone: <span className="font-semibold">631-599-1363</span>
               </p>
-              <p className="mt-3 text-white/70">
+              <p className="mt-3 text-[color:var(--ui-text-2)]">
                 <span className="font-semibold">These two numbers are different on purpose.</span>{" "}
                 <span className="font-semibold">631-888-6340</span> is our carrier-registered messaging number and is the number
                 our text messages come from. <span className="font-semibold">631-599-1363</span> is our customer-service line,
                 where a person answers. Replying <span className="font-semibold">HELP</span> to a text reaches our automated help
                 reply; calling 631-599-1363 reaches our office.
               </p>
-              <p className="mt-3 text-white/70">
+              <p className="mt-3 text-[color:var(--ui-text-2)]">
                 We may also contact you from{" "}
                 <span className="font-semibold">other phone numbers</span> (including local numbers, toll-free numbers, or
                 additional carrier-registered messaging numbers) for routing, reliability, staffing, and deliverability.
@@ -91,7 +91,7 @@ export default function CommunicationConsentPage() {
 
           {/* 2 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">2. Your Consent to Contact You</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">2. Your Consent to Contact You</h2>
             <p>
               We treat service communications and marketing communications as two separate things, we ask for them separately,
               and both are optional. Creating an account asks for no text-message consent at all.
@@ -103,11 +103,11 @@ export default function CommunicationConsentPage() {
                 <span className="font-semibold">one-time verification code</span> that you request, through Twilio Verify. That
                 single code is the only text it sends; it does not subscribe you to anything. Continuing on that screen means you
                 agree to the{" "}
-                <Link href="/terms" className="text-[#93c5fd] underline underline-offset-2">
+                <Link href="/terms" className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                   Terms of Service
                 </Link>{" "}
                 and{" "}
-                <Link href="/privacy" className="text-[#93c5fd] underline underline-offset-2">
+                <Link href="/privacy" className="text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                   Privacy Policy
                 </Link>{" "}
                 and to receive that verification text. Msg &amp; data rates may apply.
@@ -149,7 +149,7 @@ export default function CommunicationConsentPage() {
 
           {/* 3 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">3. How We May Contact You (Channels &amp; Technology)</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">3. How We May Contact You (Channels &amp; Technology)</h2>
             <p>We may contact you using one or more of the following methods:</p>
             <ul className="list-disc list-inside space-y-2 mt-3">
               <li>
@@ -170,7 +170,7 @@ export default function CommunicationConsentPage() {
               </li>
             </ul>
 
-            <p className="mt-3 text-white/70">
+            <p className="mt-3 text-[color:var(--ui-text-2)]">
               Message frequency varies based on your activity (bookings, reminders, support requests, promotions you opted into) and
               operational needs. We do not guarantee delivery timing due to carrier, device, filtering, and network variability.
             </p>
@@ -178,11 +178,11 @@ export default function CommunicationConsentPage() {
 
           {/* 4 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">4. Message Categories (What You Might Receive)</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">4. Message Categories (What You Might Receive)</h2>
 
             <div className="space-y-4">
-              <div id="service-texts" className="scroll-mt-24 rounded-[8px] bg-white/5 border border-white/10 p-5">
-                <h3 className="text-lg font-semibold mb-2">4.1 Customer Care / Transactional</h3>
+              <div id="service-texts" className="scroll-mt-24 rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
+                <h3 className="text-[16px] font-semibold text-[color:var(--ui-ink)] mb-2">4.1 Customer Care / Transactional</h3>
                 <ul className="list-disc list-inside space-y-2">
                   <li>Appointment scheduling, confirmations, rescheduling, and arrival updates</li>
                   <li>Service status updates, follow-ups, and support conversations</li>
@@ -190,7 +190,7 @@ export default function CommunicationConsentPage() {
                   <li>Billing notices, receipts, and important account notices</li>
                   <li>Requests for photos/info to prepare for a visit</li>
                 </ul>
-                <p className="mt-3 text-white/70">
+                <p className="mt-3 text-[color:var(--ui-text-2)]">
                   Optional. Offered as the unchecked box &ldquo;Text me about my visits&rdquo; when you book, and in your account
                   settings. Message frequency varies. Message and data rates may apply. Reply STOP to opt out or HELP for help.
                   One-time sign-in verification codes are separate: they are sent only when you request one, through Twilio
@@ -198,13 +198,13 @@ export default function CommunicationConsentPage() {
                 </p>
               </div>
 
-              <div id="marketing" className="scroll-mt-24 rounded-[8px] bg-white/5 border border-white/10 p-5">
-                <h3 className="text-lg font-semibold mb-2">4.2 Marketing (Only If You Opt In)</h3>
+              <div id="marketing" className="scroll-mt-24 rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
+                <h3 className="text-[16px] font-semibold text-[color:var(--ui-ink)] mb-2">4.2 Marketing (Only If You Opt In)</h3>
                 <ul className="list-disc list-inside space-y-2">
                   <li>Promotions, discounts, seasonal offers, referral rewards, and special announcements</li>
                   <li>Limited-time campaigns (example: new service area, early-bird discounts)</li>
                 </ul>
-                <p className="mt-3 text-white/70">
+                <p className="mt-3 text-[color:var(--ui-text-2)]">
                   Offered only in your account settings, as the unchecked box &ldquo;Text me occasional ProFixter offers.&rdquo;
                   Marketing consent is optional and is not required to purchase services. If you opt out of marketing, you may still
                   receive necessary transactional messages.
@@ -215,10 +215,10 @@ export default function CommunicationConsentPage() {
 
           {/* 5 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">5. Opt-Out, HELP, and Preferences</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">5. Opt-Out, HELP, and Preferences</h2>
             <p>You control your messaging preferences. You can opt out anytime:</p>
 
-            <div className="mt-4 rounded-[8px] bg-white/5 border border-white/10 p-5">
+            <div className="mt-4 rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
               <ul className="list-disc list-inside space-y-2">
                 <li>
                   Reply <span className="font-semibold">STOP</span> to opt out of SMS messages (or{" "}
@@ -229,13 +229,13 @@ export default function CommunicationConsentPage() {
                 </li>
                 <li>
                   You can also contact us at <span className="font-semibold">631-599-1363</span> or{" "}
-                  <a className="text-[#93c5fd] underline underline-offset-2" href={PUBLIC_CONTACT_MAILTO}>
+                  <a className="text-[color:var(--ui-accent-ink)] underline underline-offset-2" href={PUBLIC_CONTACT_MAILTO}>
                     {PUBLIC_CONTACT_EMAIL}
                   </a>
                   .
                 </li>
               </ul>
-              <p className="mt-3 text-white/70">
+              <p className="mt-3 text-[color:var(--ui-text-2)]">
                 After you text STOP, you may receive a final confirmation message. STOP blocks every category of text message to
                 that handset — service and marketing alike — and we will not text you again unless you opt back in. We may still
                 send essential service-related messages by other methods (email/phone), which are not affected by your SMS
@@ -246,7 +246,7 @@ export default function CommunicationConsentPage() {
 
           {/* 6 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">6. Message &amp; Data Rates, Carrier Notes, Delivery</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">6. Message &amp; Data Rates, Carrier Notes, Delivery</h2>
             <ul className="list-disc list-inside space-y-2">
               <li>
                 Message and data rates may apply depending on your mobile plan and carrier.
@@ -265,7 +265,7 @@ export default function CommunicationConsentPage() {
 
           {/* 7 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">7. How We Collect Opt-In (Consent Records)</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">7. How We Collect Opt-In (Consent Records)</h2>
             <p>
               Account sign-up collects no SMS consent: it has no text-message checkboxes, and continuing accepts the Terms of
               Service and Privacy Policy and a one-time verification text the person requests, sent through Twilio Verify. Service
@@ -297,7 +297,7 @@ export default function CommunicationConsentPage() {
 
           {/* 8 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">8. Permitted Use of Your Contact Information</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">8. Permitted Use of Your Contact Information</h2>
             <p>
               We use your contact information to operate the Service, provide customer support, schedule visits, prevent fraud,
               provide receipts/updates, and-only if you opt in-send marketing.
@@ -306,8 +306,8 @@ export default function CommunicationConsentPage() {
 
           {/* 9 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">9. Data Sharing, Transfer Restrictions (SMS Specific)</h2>
-            <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">9. Data Sharing, Transfer Restrictions (SMS Specific)</h2>
+            <div className="rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
               <p className="font-semibold">
                 Mobile information and SMS consent will not be shared with third parties or affiliates for marketing or
                 promotional purposes.
@@ -322,7 +322,7 @@ export default function CommunicationConsentPage() {
 
           {/* 10 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">10. Data Protection Measures</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">10. Data Protection Measures</h2>
             <ul className="list-disc list-inside space-y-2">
               <li>We use reasonable administrative, technical, and organizational safeguards to protect personal information.</li>
               <li>No system is 100% secure; we cannot guarantee absolute security of transmitted or stored data.</li>
@@ -332,7 +332,7 @@ export default function CommunicationConsentPage() {
 
           {/* 11 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">11. Acceptable Use / No Abuse</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">11. Acceptable Use / No Abuse</h2>
             <ul className="list-disc list-inside space-y-2">
               <li>You agree not to use our messaging channels for harassment, threats, spam, or illegal activity.</li>
               <li>We may block numbers that abuse support channels or send malicious content.</li>
@@ -342,31 +342,32 @@ export default function CommunicationConsentPage() {
 
           {/* 12 */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">12. Changes to These SMS Terms</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">12. Changes to These SMS Terms</h2>
             <p>
               We may update these terms from time to time. The latest version posted on this page applies going forward. If changes
               are material, we may provide additional notice as required by law.
             </p>
           </section>
 
-          <p className="text-xs sm:text-sm text-white/55 mt-7 text-center">
+          <p className="text-[13px] sm:text-sm text-[color:var(--ui-text-3)] mt-7 text-center">
             Last Updated: October 28, 2026
           </p>
 
           {/* See the note on the privacy policy: neighbouring documents, not a CTA. */}
-          <nav aria-label="Related legal documents" className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs sm:text-sm text-white/55">
-            <Link href="/privacy" className="underline underline-offset-4 transition hover:text-white">
+          <nav aria-label="Related legal documents" className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[13px] sm:text-sm text-[color:var(--ui-text-3)]">
+            <Link href="/privacy" className="underline underline-offset-4 transition hover:text-[color:var(--ui-ink)]">
               Privacy Policy
             </Link>
-            <Link href="/terms" className="underline underline-offset-4 transition hover:text-white">
+            <Link href="/terms" className="underline underline-offset-4 transition hover:text-[color:var(--ui-ink)]">
               Terms of Service
             </Link>
-            <Link href="/sms-consent-example" className="underline underline-offset-4 transition hover:text-white">
+            <Link href="/sms-consent-example" className="underline underline-offset-4 transition hover:text-[color:var(--ui-ink)]">
               How we collect SMS consent
             </Link>
           </nav>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

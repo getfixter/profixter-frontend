@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Header from "@/app/components/sections/Header";
+import Footer from "@/app/components/sections/Footer";
 import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
@@ -32,20 +34,18 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen px-4 py-9 sm:py-32 bg-[#020617] text-white">
+    <div className="min-h-screen bg-white text-[color:var(--ui-ink)]">
+      <div className="sticky top-0 z-50">
+        <Header />
+      </div>
       <div
-        className="max-w-5xl mx-auto rounded-[8px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(49,50,52,0.62) 0%, rgba(49,50,52,0.52) 55%, rgba(49,50,52,0.5) 100%), rgba(15,23,42,0.92)",
-          boxShadow: "0px 0px 90px 0px rgba(0,0,0,0.55)",
-        }}
+        className="ui-container ui-container--narrow pb-16 pt-8 sm:pb-20 sm:pt-12"
       >
-        <h1 className="text-3xl sm:text-4xl font-semibold mb-3 text-center tracking-tight">
+        <h1 className="ui-display mb-3 text-center">
           Privacy Policy
         </h1>
 
-        <p className="text-sm sm:text-base text-white/65 text-center mb-8 leading-relaxed">
+        <p className="text-[15px] sm:text-base text-[color:var(--ui-text-2)] text-center mb-8 leading-relaxed">
           Effective Date: January 22, 2026 · Company:{" "}
           <span className="font-semibold">Premium Island Homes Inc.</span>, doing
           business as{" "}
@@ -54,8 +54,8 @@ export default function PrivacyPage() {
         </p>
 
         {/* IMPORTANT SMS NOTICE */}
-        <div className="mb-8 rounded-[8px] bg-white/5 border border-white/10 p-5">
-          <p className="text-sm sm:text-base text-white/85 leading-relaxed">
+        <div className="mb-8 rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
+          <p className="text-[15px] sm:text-base text-[color:var(--ui-text-2)] leading-relaxed">
             <span className="font-semibold">
               IMPORTANT NOTICE REGARDING TEXT MESSAGING DATA:
             </span>{" "}
@@ -69,9 +69,9 @@ export default function PrivacyPage() {
           </p>
         </div>
 
-        <div className="space-y-8 text-sm sm:text-base text-white/85 leading-relaxed">
+        <div className="space-y-8 text-[15px] sm:text-base text-[color:var(--ui-text-2)] leading-relaxed">
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">
               1. Information We Collect
             </h2>
             <ul className="list-disc list-inside space-y-2">
@@ -97,7 +97,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">
               2. How We Use Information
             </h2>
             <ul className="list-disc list-inside space-y-2">
@@ -117,7 +117,7 @@ export default function PrivacyPage() {
 
           {/* SMS COMPLIANCE SECTION */}
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">
               3. SMS Messaging &amp; Compliance
             </h2>
             <p>
@@ -176,7 +176,7 @@ export default function PrivacyPage() {
                 contact us at{" "}
                 <a
                   href={PUBLIC_CONTACT_MAILTO}
-                  className="text-[#93c5fd] underline underline-offset-2"
+                  className="text-[color:var(--ui-accent-ink)] underline underline-offset-2"
                 >
                   {PUBLIC_CONTACT_EMAIL}
                 </a>
@@ -193,7 +193,7 @@ export default function PrivacyPage() {
               </li>
             </ul>
 
-            <div className="mt-4 rounded-[8px] bg-white/5 border border-white/10 p-5">
+            <div className="mt-4 rounded-[8px] bg-[color:var(--ui-bg-soft)] border border-[color:var(--ui-line)] p-5">
               <p className="font-semibold">
                 Mobile information and SMS consent will not be shared with third
                 parties or affiliates for marketing or promotional purposes.
@@ -210,7 +210,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">
               4. Information Sharing
             </h2>
             <p>
@@ -243,7 +243,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-  <h2 className="text-xl sm:text-2xl font-semibold mb-3">5. Cookies</h2>
+  <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">5. Cookies</h2>
   <p>
     We may use cookies and similar technologies for basic site
     functionality, security, and to understand site usage. You can
@@ -258,7 +258,7 @@ export default function PrivacyPage() {
 </section>
 
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">
               6. Data Security
             </h2>
             <p>
@@ -269,7 +269,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">
               7. Your Choices
             </h2>
             <ul className="list-disc list-inside space-y-2">
@@ -286,7 +286,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">
               8. Third-Party Links
             </h2>
             <p>
@@ -297,7 +297,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">
               9. Changes to This Policy
             </h2>
             <p>
@@ -309,21 +309,21 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">10. Contact</h2>
+            <h2 className="ui-h3 mb-3 !text-[19px] sm:!text-[21px]">10. Contact</h2>
             <p>
               Phone: <span className="font-semibold">631-599-1363</span>
               <br />
               Email:{" "}
               <a
                 href={PUBLIC_CONTACT_MAILTO}
-                className="text-[#93c5fd] underline underline-offset-2"
+                className="text-[color:var(--ui-accent-ink)] underline underline-offset-2"
               >
                 {PUBLIC_CONTACT_EMAIL}
               </a>
             </p>
           </section>
 
-          <p className="text-xs sm:text-sm text-white/55 mt-7 text-center">
+          <p className="text-[13px] sm:text-sm text-[color:var(--ui-text-3)] mt-7 text-center">
             Last Updated: January 22, 2026
           </p>
 
@@ -337,19 +337,20 @@ export default function PrivacyPage() {
             * funnel. What a reader of this page actually wants next is the
             * neighbouring document, so that is what is here.
             */}
-          <nav aria-label="Related legal documents" className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs sm:text-sm text-white/55">
-            <Link href="/terms" className="underline underline-offset-4 transition hover:text-white">
+          <nav aria-label="Related legal documents" className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[13px] sm:text-sm text-[color:var(--ui-text-3)]">
+            <Link href="/terms" className="underline underline-offset-4 transition hover:text-[color:var(--ui-ink)]">
               Terms of Service
             </Link>
-            <Link href="/communication-consent" className="underline underline-offset-4 transition hover:text-white">
+            <Link href="/communication-consent" className="underline underline-offset-4 transition hover:text-[color:var(--ui-ink)]">
               Communication Consent &amp; SMS Terms
             </Link>
-            <Link href="/sms-consent-example" className="underline underline-offset-4 transition hover:text-white">
+            <Link href="/sms-consent-example" className="underline underline-offset-4 transition hover:text-[color:var(--ui-ink)]">
               How we collect SMS consent
             </Link>
           </nav>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
