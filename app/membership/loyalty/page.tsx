@@ -59,13 +59,13 @@ export default function LoyaltyBenefitsPage() {
       <main>
         {/* ── Opening ─────────────────────────────────────────── */}
         <section className="mx-auto w-full max-w-[1100px] px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-14 lg:px-8">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--ui-accent-ink)]">
             Included with every monthly membership
           </p>
-          <h1 className="mt-3 max-w-[16ch] text-[32px] font-semibold leading-[1.05] tracking-[-0.035em] text-[#0B1628] sm:text-[46px]">
+          <h1 className="ui-display mt-3 max-w-[16ch] text-inherit">
             Stay a member. Your benefits get better.
           </h1>
-          <p className="mt-4 max-w-[60ch] text-[16px] leading-7 text-[#4A5462] sm:text-[18px] sm:leading-8">
+          <p className="mt-4 max-w-[60ch] text-[16px] leading-7 text-[color:var(--ui-text-2)] sm:text-[18px] sm:leading-8">
             Loyalty Benefits are automatic. There is nothing to claim, no points to collect
             and nothing to keep track of. Keep your membership going and the rewards arrive
             on their own.
@@ -78,23 +78,23 @@ export default function LoyaltyBenefitsPage() {
             {MILESTONES.map((milestone) => (
               <div
                 key={milestone.months}
-                className="flex flex-col rounded-[10px] border border-[#E4E9F2] bg-white p-5 sm:p-6"
+                className="flex flex-col rounded-[10px] border border-[color:var(--ui-line)] bg-white p-5 sm:p-6"
               >
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[34px] font-semibold leading-none tracking-[-0.04em] text-[#306EEC]">
+                  <span className="text-[34px] font-semibold leading-none tracking-[-0.04em] text-[color:var(--ui-accent-ink)]">
                     {milestone.months}
                   </span>
-                  <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[#6E6E73]">
+                  <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[color:var(--ui-text-3)]">
                     months
                   </span>
                 </div>
-                <h2 className="mt-4 text-[19px] font-semibold leading-[1.25] tracking-[-0.015em] text-[#0B1628]">
+                <h2 className="mt-4 text-[19px] font-semibold leading-[1.25] tracking-[-0.015em] text-[color:var(--ui-ink)]">
                   {milestone.headline}
                 </h2>
-                <p className="mt-2 flex-1 text-[14.5px] leading-6 text-[#4A5462]">
+                <p className="mt-2 flex-1 text-[14.5px] leading-6 text-[color:var(--ui-text-2)]">
                   {milestone.detail}
                 </p>
-                <p className="mt-4 border-t border-[#EDF1F7] pt-3 text-[13px] leading-5 text-[#6E6E73]">
+                <p className="mt-4 border-t border-[color:var(--ui-line)] pt-3 text-[13px] leading-5 text-[color:var(--ui-text-3)]">
                   {milestone.elite}
                 </p>
               </div>
@@ -104,7 +104,7 @@ export default function LoyaltyBenefitsPage() {
 
         {/* ── What each plan gets ─────────────────────────────── */}
         <section className="mx-auto w-full max-w-[1100px] px-4 pb-12 sm:px-6 sm:pb-16 lg:px-8">
-          <h2 className="text-[24px] font-semibold leading-[1.15] tracking-[-0.025em] text-[#0B1628] sm:text-[30px]">
+          <h2 className="ui-h2 text-inherit">
             What your plan unlocks
           </h2>
 
@@ -113,20 +113,20 @@ export default function LoyaltyBenefitsPage() {
             never scroll sideways on a phone, and most Profixter traffic is a
             phone.
           */}
-          <div className="mt-5 overflow-x-auto rounded-[10px] border border-[#E4E9F2] bg-white">
+          <div className="mt-5 overflow-x-auto rounded-[10px] border border-[color:var(--ui-line)] bg-white">
             <table className="w-full min-w-[560px] border-collapse text-left">
               <thead>
-                <tr className="bg-[#F8FAFF]">
-                  <th className="border-b border-[#E4E9F2] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#6E6E73]">
+                <tr className="bg-[color:var(--ui-bg-soft)]">
+                  <th className="border-b border-[color:var(--ui-line)] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[color:var(--ui-text-3)]">
                     Your plan
                   </th>
-                  <th className="border-b border-[#E4E9F2] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#6E6E73]">
+                  <th className="border-b border-[color:var(--ui-line)] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[color:var(--ui-text-3)]">
                     3 months
                   </th>
-                  <th className="border-b border-[#E4E9F2] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#6E6E73]">
+                  <th className="border-b border-[color:var(--ui-line)] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[color:var(--ui-text-3)]">
                     6 months
                   </th>
-                  <th className="border-b border-[#E4E9F2] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#6E6E73]">
+                  <th className="border-b border-[color:var(--ui-line)] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[color:var(--ui-text-3)]">
                     12 months
                   </th>
                 </tr>
@@ -134,16 +134,16 @@ export default function LoyaltyBenefitsPage() {
               <tbody>
                 {LADDER.map((row) => (
                   <tr key={row.plan} className="last:border-b-0">
-                    <td className="border-b border-[#EDF1F7] px-4 py-3.5 text-[15px] font-semibold text-[#0B1628]">
+                    <td className="border-b border-[color:var(--ui-line)] px-4 py-3.5 text-[15px] font-semibold text-[color:var(--ui-ink)]">
                       {row.plan}
                     </td>
-                    <td className="border-b border-[#EDF1F7] px-4 py-3.5 text-[14.5px] text-[#4A5462]">
+                    <td className="border-b border-[color:var(--ui-line)] px-4 py-3.5 text-[14.5px] text-[color:var(--ui-text-2)]">
                       {row.three}
                     </td>
-                    <td className="border-b border-[#EDF1F7] px-4 py-3.5 text-[14.5px] text-[#4A5462]">
+                    <td className="border-b border-[color:var(--ui-line)] px-4 py-3.5 text-[14.5px] text-[color:var(--ui-text-2)]">
                       {row.six}
                     </td>
-                    <td className="border-b border-[#EDF1F7] px-4 py-3.5 text-[14.5px] font-semibold text-[#0B1628]">
+                    <td className="border-b border-[color:var(--ui-line)] px-4 py-3.5 text-[14.5px] font-semibold text-[color:var(--ui-ink)]">
                       {row.twelve}
                     </td>
                   </tr>
@@ -155,11 +155,11 @@ export default function LoyaltyBenefitsPage() {
 
         {/* ── Annual, framed honestly ─────────────────────────── */}
         <section className="mx-auto w-full max-w-[1100px] px-4 pb-12 sm:px-6 sm:pb-16 lg:px-8">
-          <div className="rounded-[10px] border border-[#E4E9F2] bg-[#F8FAFF] p-5 sm:p-7">
-            <h2 className="text-[20px] font-semibold leading-[1.2] tracking-[-0.02em] text-[#0B1628] sm:text-[24px]">
+          <div className="rounded-[10px] border border-[color:var(--ui-line)] bg-[color:var(--ui-bg-soft)] p-5 sm:p-7">
+            <h2 className="ui-h2 text-inherit">
               On an annual membership? Your loyalty savings are already built in.
             </h2>
-            <p className="mt-3 max-w-[62ch] text-[15px] leading-7 text-[#4A5462]">
+            <p className="mt-3 max-w-[62ch] text-[15px] leading-7 text-[color:var(--ui-text-2)]">
               Annual members pay for 10 months and get 12 — two months of membership, free,
               from the day you join. That is the same reward, taken up front instead of
               earned over the year, which is why annual memberships are not on the monthly
@@ -170,37 +170,37 @@ export default function LoyaltyBenefitsPage() {
 
         {/* ── The honest small print ──────────────────────────── */}
         <section className="mx-auto w-full max-w-[1100px] px-4 pb-16 sm:px-6 sm:pb-20 lg:px-8">
-          <h2 className="text-[18px] font-semibold tracking-[-0.015em] text-[#0B1628]">
+          <h2 className="text-[18px] font-semibold tracking-[-0.015em] text-[color:var(--ui-ink)]">
             The details, in plain words
           </h2>
-          <ul className="mt-4 max-w-[70ch] space-y-3 text-[14.5px] leading-6 text-[#4A5462]">
+          <ul className="mt-4 max-w-[70ch] space-y-3 text-[14.5px] leading-6 text-[color:var(--ui-text-2)]">
             <li>
-              <strong className="font-semibold text-[#0B1628]">You keep paying your own plan.</strong>{" "}
+              <strong className="font-semibold text-[color:var(--ui-ink)]">You keep paying your own plan.</strong>{" "}
               A complimentary upgrade does not change your membership or your price. We simply
               treat your home as being on the higher plan for the reward period, then it
               returns to normal.
             </li>
             <li>
-              <strong className="font-semibold text-[#0B1628]">Months count when your membership renews.</strong>{" "}
+              <strong className="font-semibold text-[color:var(--ui-ink)]">Months count when your membership renews.</strong>{" "}
               Each successful monthly renewal is one month of progress. A payment that fails
               and is sorted out later still counts once it goes through.
             </li>
             <li>
-              <strong className="font-semibold text-[#0B1628]">Your reward matches the plan you have been on.</strong>{" "}
+              <strong className="font-semibold text-[color:var(--ui-ink)]">Your reward matches the plan you have been on.</strong>{" "}
               If you change plans partway through, the reward follows the plan you actually
               held during those months.
             </li>
             <li>
-              <strong className="font-semibold text-[#0B1628]">Loyalty follows the property.</strong>{" "}
+              <strong className="font-semibold text-[color:var(--ui-ink)]">Loyalty follows the property.</strong>{" "}
               If you have more than one home with us, each membership builds its own progress.
             </li>
             <li>
-              <strong className="font-semibold text-[#0B1628]">A long break starts the count again.</strong>{" "}
+              <strong className="font-semibold text-[color:var(--ui-ink)]">A long break starts the count again.</strong>{" "}
               If your membership ends and you come back more than 45 days later, progress
               begins from that point. Rewards you have already unlocked are yours.
             </li>
             <li>
-              <strong className="font-semibold text-[#0B1628]">Gift months count.</strong>{" "}
+              <strong className="font-semibold text-[color:var(--ui-ink)]">Gift months count.</strong>{" "}
               If somebody gave you a Profixter membership and you carry on with your own,
               the months you were given count toward your progress.
             </li>
@@ -215,7 +215,7 @@ export default function LoyaltyBenefitsPage() {
             </Link>
             <Link
               href="/account?tab=plan"
-              className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] border border-[#D7DEE9] bg-white px-6 text-[15px] font-semibold text-[#0B1628] transition hover:bg-[#F8FAFF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]"
+              className="inline-flex min-h-[46px] items-center justify-center rounded-[8px] border border-[color:var(--ui-line)] bg-white px-6 text-[15px] font-semibold text-[color:var(--ui-ink)] transition hover:bg-[color:var(--ui-bg-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#306EEC]"
             >
               Check my progress
             </Link>

@@ -173,7 +173,7 @@ const SERVICES: Array<{
 ];
 
 const fieldClass =
-  "h-[46px] w-full rounded-[8px] border border-[#CBD5E1] bg-white px-4 text-[15px] text-[#0B1628] outline-none transition placeholder:text-[#94A3B8] focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/10";
+  "h-[46px] w-full rounded-[8px] border border-[color:var(--ui-line-2)] bg-white px-4 text-[15px] text-[color:var(--ui-ink)] outline-none transition placeholder:text-[color:var(--ui-text-3)] focus:border-[#306EEC] focus:ring-4 focus:ring-[#306EEC]/10";
 
 function projectTypeFromQuery(value: string | null): ProjectType {
   const normalized = String(value || "").toLowerCase();
@@ -332,17 +332,17 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
 
   if (status === "success") {
     return (
-      <div className="rounded-[8px] border border-[#B9E2C5] bg-[#F1FBF4] p-7 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-10">
+      <div className="rounded-[8px] border border-[#B9E2C5] bg-[#F1FBF4] p-7 shadow-[var(--ui-shadow-1)] sm:p-10">
         <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#DCFCE7] text-[#15803D]">
           <CheckIcon />
         </span>
-        <div className="mt-5 text-[11px] font-black uppercase tracking-[0.18em] text-[#15803D]">
+        <div className="mt-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#15803D]">
           Successfully submitted
         </div>
-        <h2 className="mt-2 text-[26px] font-black text-[#0B1628]">
+        <h2 className="ui-h2 mt-2 text-inherit">
           Request received
         </h2>
-        <p className="mt-3 max-w-[560px] text-[15px] leading-relaxed text-[#475569]">
+        <p className="mt-3 max-w-[560px] text-[15px] leading-relaxed text-[color:var(--ui-text-2)]">
           {message}
         </p>
         <div className="mt-7 flex flex-col gap-3 sm:flex-row">
@@ -354,7 +354,7 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
           </Link>
           <a
             href="tel:+16315991363"
-            className="inline-flex h-12 items-center justify-center rounded-[8px] border border-[#CBD5E1] bg-white px-6 text-[14px] font-bold text-[#0B1628]"
+            className="inline-flex h-12 items-center justify-center rounded-[8px] border border-[color:var(--ui-line-2)] bg-white px-6 text-[14px] font-bold text-[color:var(--ui-ink)]"
           >
             Call 631-599-1363
           </a>
@@ -366,23 +366,23 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
   return (
     <form
       onSubmit={submit}
-      className="rounded-[8px] border border-[#D7DEE9] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.12)] sm:p-8"
+      className="rounded-[8px] border border-[color:var(--ui-line)] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.12)] sm:p-8"
     >
       <div className="mb-6">
-        <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#306EEC]">
+        <div className="ui-eyebrow ui-eyebrow--accent !mb-0">
           Renovation estimate
         </div>
-        <h2 className="mt-2 text-[23px] font-black leading-tight text-[#0B1628] sm:text-[30px]">
+        <h2 className="ui-h2 mt-2 text-inherit">
           Tell us what you want built.
         </h2>
-        <p className="mt-2 text-[14px] leading-relaxed text-[#64748B]">
+        <p className="mt-2 text-[14px] leading-relaxed text-[color:var(--ui-text-3)]">
           Pick a project type, share the basics, and a real person will review the request.
         </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label>
-          <span className="mb-1.5 block text-[13px] font-bold text-[#334155]">Name *</span>
+          <span className="mb-1.5 block text-[13px] font-bold text-[color:var(--ui-text-2)]">Name *</span>
           <input
             value={form.name}
             onChange={(event) => update("name", event.target.value)}
@@ -391,7 +391,7 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
           />
         </label>
         <label>
-          <span className="mb-1.5 block text-[13px] font-bold text-[#334155]">Phone *</span>
+          <span className="mb-1.5 block text-[13px] font-bold text-[color:var(--ui-text-2)]">Phone *</span>
           <input
             value={form.phone}
             onChange={(event) => update("phone", event.target.value)}
@@ -401,7 +401,7 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
           />
         </label>
         <label>
-          <span className="mb-1.5 block text-[13px] font-bold text-[#334155]">Email *</span>
+          <span className="mb-1.5 block text-[13px] font-bold text-[color:var(--ui-text-2)]">Email *</span>
           <input
             value={form.email}
             onChange={(event) => update("email", event.target.value)}
@@ -411,7 +411,7 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
           />
         </label>
         <label>
-          <span className="mb-1.5 block text-[13px] font-bold text-[#334155]">
+          <span className="mb-1.5 block text-[13px] font-bold text-[color:var(--ui-text-2)]">
             Preferred contact *
           </span>
           <select
@@ -427,7 +427,7 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
       </div>
 
       <label className="mt-4 block">
-        <span className="mb-1.5 block text-[13px] font-bold text-[#334155]">
+        <span className="mb-1.5 block text-[13px] font-bold text-[color:var(--ui-text-2)]">
           Project address *
         </span>
         <input
@@ -440,7 +440,7 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
       </label>
 
       <fieldset className="mt-5">
-        <legend className="mb-2 block text-[13px] font-bold text-[#334155]">
+        <legend className="mb-2 block text-[13px] font-bold text-[color:var(--ui-text-2)]">
           Project type *
         </legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -451,10 +451,10 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
                 key={option.value}
                 type="button"
                 onClick={() => update("service", option.value)}
-                className={`min-h-[48px] rounded-[8px] border px-3 text-left text-[13px] font-extrabold transition ${
+                className={`min-h-[48px] rounded-[8px] border px-3 text-left text-[13px] font-semibold transition ${
                   active
                     ? "border-[#306EEC] bg-[#EEF4FF] text-[#1648A8] shadow-[0_10px_24px_rgba(48,110,236,0.16)]"
-                    : "border-[#D7DEE9] bg-[#F8FAFC] text-[#334155] hover:border-[#AFC3DF] hover:bg-white"
+                    : "border-[color:var(--ui-line)] bg-[#F8FAFC] text-[color:var(--ui-text-2)] hover:border-[#AFC3DF] hover:bg-white"
                 }`}
                 aria-pressed={active}
               >
@@ -466,7 +466,7 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
       </fieldset>
 
       <label className="mt-4 block">
-        <span className="mb-1.5 block text-[13px] font-bold text-[#334155]">
+        <span className="mb-1.5 block text-[13px] font-bold text-[color:var(--ui-text-2)]">
           Tell us about the project *
         </span>
         <textarea
@@ -479,8 +479,8 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label>
-          <span className="mb-1.5 block text-[13px] font-bold text-[#334155]">
-            Timeline <span className="font-normal text-[#94A3B8]">(optional)</span>
+          <span className="mb-1.5 block text-[13px] font-bold text-[color:var(--ui-text-2)]">
+            Timeline <span className="font-normal text-[color:var(--ui-text-3)]">(optional)</span>
           </span>
           <select
             value={form.timeline}
@@ -495,8 +495,8 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
           </select>
         </label>
         <label>
-          <span className="mb-1.5 block text-[13px] font-bold text-[#334155]">
-            Budget range <span className="font-normal text-[#94A3B8]">(optional)</span>
+          <span className="mb-1.5 block text-[13px] font-bold text-[color:var(--ui-text-2)]">
+            Budget range <span className="font-normal text-[color:var(--ui-text-3)]">(optional)</span>
           </span>
           <select
             value={form.budgetRange}
@@ -522,11 +522,11 @@ function EstimateForm({ requestedType }: { requestedType?: ProjectType }) {
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="mt-6 inline-flex h-[44px] w-full items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[14px] font-extrabold text-white shadow-[0_14px_36px_rgba(48,110,236,0.25)] transition hover:bg-[#2558C9] disabled:opacity-60 sm:h-[54px] sm:px-6 sm:text-[15px]"
+        className="mt-6 inline-flex h-[44px] w-full items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[14px] font-semibold text-white shadow-[0_14px_36px_rgba(48,110,236,0.25)] transition hover:bg-[#2558C9] disabled:opacity-60 sm:h-[54px] sm:px-6 sm:text-[15px]"
       >
         {status === "submitting" ? "Sending request..." : "Request Renovation Estimate"}
       </button>
-      <p className="mt-3 text-center text-[12px] leading-relaxed text-[#94A3B8]">
+      <p className="mt-3 text-center text-[12px] leading-relaxed text-[color:var(--ui-text-3)]">
         Renovation estimates are separate from One-Time Handyman Visits. No obligation. Licensed and insured.
       </p>
     </form>
@@ -549,7 +549,7 @@ function ServiceSection({
     <section
       id={service.id}
       className={`scroll-mt-[96px] py-8 sm:py-13 lg:py-12 ${
-        dark ? "bg-[#0B1628] text-white" : "bg-[#F6F8FC] text-[#0B1628]"
+        dark ? "bg-[#0B1628] text-white" : "bg-[color:var(--ui-bg-soft)] text-[color:var(--ui-ink)]"
       }`}
     >
       <div
@@ -574,8 +574,8 @@ function ServiceSection({
 
         <div>
           <div
-            className={`text-[11px] font-black uppercase tracking-[0.2em] ${
-              dark ? "text-[#93C5FD]" : "text-[#306EEC]"
+            className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${
+              dark ? "text-[#93C5FD]" : "text-[color:var(--ui-accent-ink)]"
             }`}
           >
             {service.eyebrow}
@@ -585,12 +585,12 @@ function ServiceSection({
            * hero H1, which read as six competing titles down the page instead
            * of one page with six sections.
            */}
-          <h2 className="mt-3 text-[23px] font-black leading-[1.05] tracking-[-0.03em] sm:mt-4 sm:text-[30px] sm:leading-[1.02] sm:tracking-[-0.035em] lg:text-[32px]">
+          <h2 className="ui-h2 mt-3 sm:mt-4 text-inherit">
             {service.title}
           </h2>
           <p
             className={`mt-4 text-[15px] leading-relaxed sm:mt-5 sm:text-[17px] ${
-              dark ? "text-white/70" : "text-[#475569]"
+              dark ? "text-white/70" : "text-[color:var(--ui-text-2)]"
             }`}
           >
             {service.description}
@@ -605,13 +605,13 @@ function ServiceSection({
                 >
                   <CheckIcon />
                 </span>
-                <span className={`text-[14px] font-semibold leading-6 ${dark ? "text-white/80" : "text-[#334155]"}`}>
+                <span className={`text-[14px] font-semibold leading-6 ${dark ? "text-white/80" : "text-[color:var(--ui-text-2)]"}`}>
                   {detail}
                 </span>
               </div>
             ))}
           </div>
-          <p className={`mt-4 text-[13px] leading-5 ${dark ? "text-white/50" : "text-[#64748B]"}`}>
+          <p className={`mt-4 text-[13px] leading-5 ${dark ? "text-white/50" : "text-[color:var(--ui-text-3)]"}`}>
             Members may receive project discounts. Eligible larger projects may include up to 12 months of Profixter Membership.
           </p>
           {/*
@@ -632,9 +632,9 @@ function ServiceSection({
               event.preventDefault();
               onRequestEstimate(estimateType);
             }}
-            className={`mt-6 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[8px] px-5 text-[14px] font-extrabold transition sm:mt-7 sm:min-h-[52px] sm:px-6 ${
+            className={`mt-6 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[8px] px-5 text-[14px] font-semibold transition sm:mt-7 sm:min-h-[52px] sm:px-6 ${
               dark
-                ? "bg-white text-[#0B1628] hover:bg-[#EAF1FF]"
+                ? "bg-white text-[color:var(--ui-ink)] hover:bg-[#EAF1FF]"
                 : "bg-[#0B1628] text-white hover:bg-[#17263D]"
             }`}
           >
@@ -692,7 +692,7 @@ function ProjectsContent() {
   }, []);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#F6F8FC]">
+    <div className="min-h-screen overflow-x-hidden bg-[color:var(--ui-bg-soft)]">
       <div className="sticky top-0 z-50">
         <Header />
       </div>
@@ -712,10 +712,10 @@ function ProjectsContent() {
           </div>
           <div className="relative mx-auto grid max-w-[1220px] gap-8 px-4 py-10 sm:px-6 sm:py-11 lg:grid-cols-[1fr_460px] lg:items-start lg:gap-8 lg:py-14">
             <div className="max-w-[820px]">
-              <div className="inline-flex items-center gap-2 rounded-[6px] border border-white/15 bg-white/[0.08] px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/80">
+              <div className="inline-flex items-center gap-2 rounded-[6px] border border-white/15 bg-white/[0.08] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">
                 General Contractor Long Island
               </div>
-              <h1 className="mt-4 text-[30px] font-black leading-[1.02] tracking-[-0.035em] sm:mt-5 sm:text-[40px] sm:leading-[0.98] sm:tracking-[-0.04em] lg:text-[44px]">
+              <h1 className="ui-display mt-4 sm:mt-5 text-inherit">
                 Renovation and home projects, handled by one team.
               </h1>
               <p className="mt-3.5 max-w-[640px] text-[14.5px] leading-relaxed text-white/75 sm:mt-4 sm:text-[16px]">
@@ -753,7 +753,7 @@ function ProjectsContent() {
                     event.preventDefault();
                     goToEstimate(requestedType);
                   }}
-                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[8px] bg-[#306EEC] px-6 text-[14px] font-extrabold text-white shadow-[0_16px_40px_rgba(48,110,236,0.32)] transition hover:bg-[#2558C9] sm:min-h-[52px] sm:px-5 sm:text-[15px] lg:hidden"
+                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[8px] bg-[#306EEC] px-6 text-[14px] font-semibold text-white shadow-[0_16px_40px_rgba(48,110,236,0.32)] transition hover:bg-[#2558C9] sm:min-h-[52px] sm:px-5 sm:text-[15px] lg:hidden"
                 >
                   Request Renovation Estimate
                   <ArrowIcon />
@@ -794,7 +794,7 @@ function ProjectsContent() {
                 ],
               ].map(([title, body]) => (
                 <div key={title} className="grid gap-0.5 py-3 sm:grid-cols-[190px_1fr] sm:gap-6 sm:py-3.5">
-                  <dt className="text-[13px] font-extrabold text-white">{title}</dt>
+                  <dt className="text-[13px] font-semibold text-white">{title}</dt>
                   <dd className="text-[13px] leading-relaxed text-white/65">{body}</dd>
                 </div>
               ))}
@@ -818,16 +818,16 @@ function ProjectsContent() {
           </div>
         </section>
 
-        <section className="border-b border-[#DDE4EE] bg-white py-8">
+        <section className="border-b border-[color:var(--ui-line)] bg-white py-8">
           <div className="mx-auto grid max-w-[1220px] gap-4 px-5 sm:grid-cols-3 sm:px-6">
             {[
               ["General Contractor", "A single team to plan, coordinate, and manage larger work."],
               ["Clear estimate path", "A practical scope conversation before you commit to a project."],
               ["Long Island focused", "Built for Nassau and Suffolk homeowners who want accountable local help."],
             ].map(([title, body]) => (
-              <div key={title} className="rounded-[6px] border-l-2 border-[#CBD5E1] bg-[#F8FAFC] px-4 py-3.5">
-                <div className="text-[14px] font-extrabold text-[#0B1628]">{title}</div>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-[#64748B]">{body}</p>
+              <div key={title} className="rounded-[6px] border-l-2 border-[color:var(--ui-line-2)] bg-[#F8FAFC] px-4 py-3.5">
+                <div className="text-[14px] font-semibold text-[color:var(--ui-ink)]">{title}</div>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-[color:var(--ui-text-3)]">{body}</p>
               </div>
             ))}
           </div>

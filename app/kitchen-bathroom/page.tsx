@@ -277,7 +277,7 @@ export default function KitchenBathroomPage() {
             className={`${SHELL} relative z-10 mt-auto pb-[calc(76px+env(safe-area-inset-bottom,0px))] pt-12 lg:pb-24 lg:pt-16`}
           >
             <Eyebrow tone="dark">The Hamptons &amp; Long Island</Eyebrow>
-            <h1 className="mt-5 max-w-[15ch] text-[40px] font-bold leading-[0.96] tracking-[-0.035em] text-white sm:text-[62px] lg:text-[78px] xl:text-[88px]">
+            <h1 className="ui-display mt-5 max-w-[15ch] text-white">
               Kitchen &amp; Bathroom Renovations
             </h1>
             <p className="mt-5 max-w-[52ch] text-[15px] leading-[1.55] text-white/78 sm:mt-7 sm:text-[19px] sm:leading-relaxed">
@@ -306,7 +306,7 @@ export default function KitchenBathroomPage() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <Eyebrow>Our work</Eyebrow>
-              <h2 className="mt-5 max-w-[16ch] text-[34px] font-bold leading-[1.02] tracking-[-0.03em] sm:text-[48px] lg:text-[58px]">
+              <h2 className="ui-h2 mt-5 max-w-[16ch] text-inherit">
                 Rooms we have actually built.
               </h2>
             </div>
@@ -327,7 +327,7 @@ export default function KitchenBathroomPage() {
             <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
               <div className="lg:col-span-5">
                 <Eyebrow>Kitchen renovation</Eyebrow>
-                <h2 className="mt-5 text-[34px] font-bold leading-[1.02] tracking-[-0.03em] sm:text-[46px] lg:text-[54px]">
+                <h2 className="ui-h2 mt-5 text-inherit">
                   Kitchen Renovations
                 </h2>
                 <p className="mt-6 max-w-[50ch] text-[16px] leading-relaxed text-[#4A5058] sm:text-[17px]">
@@ -368,7 +368,7 @@ export default function KitchenBathroomPage() {
 
               <div className="lg:col-span-5 lg:order-2">
                 <Eyebrow tone="dark">Bathroom renovation</Eyebrow>
-                <h2 className="mt-5 text-[34px] font-bold leading-[1.02] tracking-[-0.03em] sm:text-[46px] lg:text-[54px]">
+                <h2 className="ui-h2 mt-5 text-inherit">
                   Bathroom Renovations
                 </h2>
                 <p className="mt-6 max-w-[50ch] text-[16px] leading-relaxed text-white/70 sm:text-[17px]">
@@ -399,7 +399,7 @@ export default function KitchenBathroomPage() {
         <section id="what-we-handle" className={`${SHELL} ${SECTION}`}>
           <div className="max-w-[62ch]">
             <Eyebrow>What we handle</Eyebrow>
-            <h2 className="mt-5 text-[34px] font-bold leading-[1.02] tracking-[-0.03em] sm:text-[46px] lg:text-[54px]">
+            <h2 className="ui-h2 mt-5 text-inherit">
               The whole renovation, not a piece of it.
             </h2>
             <p className="mt-6 text-[16px] leading-relaxed text-[#5C6470] sm:text-[17px]">
@@ -414,7 +414,7 @@ export default function KitchenBathroomPage() {
                 <h3 className="text-[16px] font-bold tracking-[-0.01em] text-[#0C1117]">
                   {trade.title}
                 </h3>
-                <p className="mt-2 max-w-[40ch] text-[14px] leading-relaxed text-[#6B7280]">
+                <p className="mt-2 max-w-[40ch] text-[14px] leading-relaxed text-[color:var(--ui-text-3)]">
                   {trade.body}
                 </p>
               </li>
@@ -452,7 +452,7 @@ export default function KitchenBathroomPage() {
           <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-16">
             <div className="lg:col-span-7">
               <Eyebrow>Where we work</Eyebrow>
-              <h2 className="mt-5 max-w-[18ch] text-[34px] font-bold leading-[1.02] tracking-[-0.03em] sm:text-[46px] lg:text-[54px]">
+              <h2 className="ui-h2 mt-5 max-w-[18ch] text-inherit">
                 Long Island, out to the East End.
               </h2>
               <p className="mt-7 max-w-[62ch] text-[17px] leading-relaxed text-[#4A5058] sm:text-[19px]">
@@ -462,7 +462,7 @@ export default function KitchenBathroomPage() {
               <p className="mt-4 max-w-[62ch] text-[17px] leading-relaxed text-[#4A5058] sm:text-[19px]">
                 On the North Fork, {NORTH_FORK}.
               </p>
-              <p className="mt-7 max-w-[58ch] text-[15px] leading-relaxed text-[#6B7280]">
+              <p className="mt-7 max-w-[58ch] text-[15px] leading-relaxed text-[color:var(--ui-text-3)]">
                 Not sure whether your town is covered? Call and ask — it is a short
                 conversation.
               </p>
@@ -483,7 +483,7 @@ export default function KitchenBathroomPage() {
             <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
               <div className="lg:col-span-5">
                 <Eyebrow tone="dark">Start here</Eyebrow>
-                <h2 className="mt-5 max-w-[16ch] text-[34px] font-bold leading-[1.02] tracking-[-0.03em] sm:text-[46px] lg:text-[54px]">
+                <h2 className="ui-h2 mt-5 max-w-[16ch] text-inherit">
                   Thinking about renovating? Let&apos;s talk about your project.
                 </h2>
                 <p className="mt-6 max-w-[46ch] text-[16px] leading-relaxed text-white/65 sm:text-[17px]">

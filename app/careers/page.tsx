@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Header from "@/app/components/sections/Header";
+import Footer from "@/app/components/sections/Footer";
+import Reveal from "@/app/components/ui/Reveal";
 import { PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_MAILTO } from "@/lib/contact";
 import { absoluteUrl, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
@@ -30,147 +33,116 @@ export const metadata: Metadata = {
   },
 };
 
+const WHY = [
+  ["We’re building something real", "This isn’t a boring corporate job - we’re building a modern service brand with ambition, speed, and impact."],
+  ["Room to grow fast", "If you’re motivated, you can grow into leadership, management, and high-earning roles."],
+  ["We reward performance", "Strong performance is noticed - bonuses, raises, commissions, and real career progress."],
+  ["Modern, creative, and flexible", "We value initiative, creativity, independence, and problem-solving - not bureaucracy."],
+];
+
+const ROLES = [
+  "Sales & Customer Support",
+  "Marketing & Social Media",
+  "Operations & Scheduling",
+  "Administrative & Office Support",
+  "Business Development & Partnerships",
+  "Creative, Content & Brand Roles",
+];
+
+const CULTURE = [
+  "Fast-moving & ambitious",
+  "Respectful, honest, and direct",
+  "Focused on results - not excuses",
+  "Supportive, but performance-driven",
+  "We grow together",
+];
+
 export default function CareersPage() {
+  const applyHref = `${PUBLIC_CONTACT_MAILTO}?subject=Career%20Application%20-%20Profixter`;
   return (
-    <div className="min-h-screen px-4 py-9 sm:py-32 bg-[#020617] text-white">
-      <div
-        className="max-w-5xl mx-auto rounded-[8px] p-6 sm:p-10 lg:p-12 backdrop-blur-[10px]"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(49,50,52,0.62) 0%, rgba(49,50,52,0.52) 55%, rgba(49,50,52,0.5) 100%), rgba(15,23,42,0.92)",
-          boxShadow: "0px 0px 90px 0px rgba(0,0,0,0.55)",
-        }}
-      >
-        <h1 className="text-3xl sm:text-4xl font-semibold mb-3 text-center tracking-tight">
-          Careers at Profixter
-        </h1>
-
-        <p className="text-sm sm:text-base text-white/65 text-center mb-7 leading-relaxed">
-          Join <span className="font-semibold">Profixter</span> - a fast-growing home service company
-          changing how homeowners handle repairs, maintenance, and peace of mind.
-        </p>
-
-        <div className="space-y-10 text-sm sm:text-base text-white/85 leading-relaxed">
-          {/* WHY WORK WITH US */}
-          <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">
-              Why Work With Us
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
-                <p className="font-semibold">We’re building something real</p>
-                <p className="text-white/75 mt-1">
-                  This isn’t a boring corporate job - we’re building a modern service brand with ambition, speed, and impact.
-                </p>
-              </div>
-
-              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
-                <p className="font-semibold">Room to grow fast</p>
-                <p className="text-white/75 mt-1">
-                  If you’re motivated, you can grow into leadership, management, and high-earning roles.
-                </p>
-              </div>
-
-              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
-                <p className="font-semibold">We reward performance</p>
-                <p className="text-white/75 mt-1">
-                  Strong performance is noticed - bonuses, raises, commissions, and real career progress.
-                </p>
-              </div>
-
-              <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
-                <p className="font-semibold">Modern, creative, and flexible</p>
-                <p className="text-white/75 mt-1">
-                  We value initiative, creativity, independence, and problem-solving - not bureaucracy.
-                </p>
-              </div>
+    <div className="min-h-screen bg-white">
+      <div className="sticky top-0 z-50">
+        <Header />
+      </div>
+      <main>
+        <section className="ui-section ui-section--tight">
+          <div className="ui-container pg-intro ui-rise">
+            <p className="ui-eyebrow ui-eyebrow--accent">Careers</p>
+            <h1 className="ui-display">Careers at Profixter</h1>
+            <p className="ui-lede">
+              Join Profixter - a fast-growing home service company changing how homeowners handle repairs,
+              maintenance, and peace of mind.
+            </p>
+            <div className="pg-actions">
+              <a href={applyHref} className="ui-btn ui-btn--primary">
+                Apply by email
+              </a>
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* OFFICE ROLES */}
-          <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">
-              Office & Business Roles
-            </h2>
+        <section className="ui-section ui-section--soft ui-section--tight">
+          <div className="ui-container">
+            <h2 className="ui-h2">Why Work With Us</h2>
+            <div className="pg-cards pg-cards--4 mt-5">
+              {WHY.map(([title, body], index) => (
+                <Reveal key={title} delay={index * 50} className="ui-card">
+                  <h3 className="pg-card__title !text-[16px]">{title}</h3>
+                  <p className="pg-card__meta">{body}</p>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
 
-            <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
-              <p className="text-white/85">
-                We are hiring and partnering with talented people in areas like:
-              </p>
-
-              <ul className="list-disc list-inside space-y-2 mt-3 text-white/75">
-                <li>Sales & Customer Support</li>
-                <li>Marketing & Social Media</li>
-                <li>Operations & Scheduling</li>
-                <li>Administrative & Office Support</li>
-                <li>Business Development & Partnerships</li>
-                <li>Creative, Content & Brand Roles</li>
+        <section className="ui-section ui-section--tight">
+          <div className="ui-container grid gap-8 md:grid-cols-2 md:gap-14">
+            <Reveal>
+              <h2 className="ui-h3">Office &amp; Business Roles</h2>
+              <p className="ui-body mt-1.5">We are hiring and partnering with talented people in areas like:</p>
+              <ul className="ui-checks mt-3">
+                {ROLES.map((role) => (
+                  <li key={role} className="!text-[15px]">{role}</li>
+                ))}
               </ul>
-
-              <p className="text-white/70 mt-4">
+              <p className="ui-small mt-3">
                 If you’re driven, organized, creative, or great with people - we want to hear from you.
               </p>
-            </div>
-          </section>
-
-          {/* COMPANY CULTURE */}
-          <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">
-              Our Culture
-            </h2>
-
-            <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
-              <ul className="list-disc list-inside space-y-2 text-white/75">
-                <li>Fast-moving & ambitious</li>
-                <li>Respectful, honest, and direct</li>
-                <li>Focused on results - not excuses</li>
-                <li>Supportive, but performance-driven</li>
-                <li>We grow together</li>
+            </Reveal>
+            <Reveal delay={60}>
+              <h2 className="ui-h3">Our Culture</h2>
+              <ul className="ui-checks mt-3">
+                {CULTURE.map((item) => (
+                  <li key={item} className="!text-[15px]">{item}</li>
+                ))}
               </ul>
-            </div>
-          </section>
+            </Reveal>
+          </div>
+        </section>
 
-          {/* HOW TO APPLY */}
-          <section>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3">
-              How to Apply
-            </h2>
-
-            <div className="rounded-[8px] bg-white/5 border border-white/10 p-5">
-              <p className="text-white/85">
-                Send us an email with your{" "}
-                <span className="font-semibold">resume</span>, a short introduction,
-                and what role you’re interested in.
+        <section className="ui-section ui-section--tight ui-section--soft">
+          <div className="ui-container ui-container--narrow">
+            <div className="ui-card !p-6 sm:!p-8">
+              <h2 className="ui-h3">How to Apply</h2>
+              <p className="ui-body mt-2">
+                Send us an email with your <strong className="font-semibold text-[color:var(--ui-ink)]">resume</strong>, a
+                short introduction, and what role you’re interested in.
               </p>
-
-              <p className="mt-4 text-white/85">
+              <p className="ui-body mt-3">
                 Email:{" "}
-                <a
-                  href={`${PUBLIC_CONTACT_MAILTO}?subject=Career%20Application%20-%20Profixter`}
-                  className="text-[#93c5fd] underline underline-offset-2 hover:text-white transition"
-                >
+                <a href={applyHref} className="font-semibold text-[color:var(--ui-accent-ink)] underline underline-offset-2">
                   {PUBLIC_CONTACT_EMAIL}
                 </a>
               </p>
-
-              <p className="text-white/60 text-sm mt-2">
-                Tip: Tell us why you want to work with Profixter - we love motivated people.
-              </p>
+              <p className="ui-small mt-2">Tip: Tell us why you want to work with Profixter - we love motivated people.</p>
+              <Link href="/" className="ui-link mt-4">
+                Back to Home
+              </Link>
             </div>
-          </section>
-
-          {/* CTA */}
-          <div className="mt-8 text-center">
-            <Link
-              href="/"
-              className="inline-flex items-center justify-center rounded-[8px] border border-white/15 bg-white/5 px-5 py-3 text-sm sm:text-base text-[#93c5fd] hover:bg-white/10 transition"
-            >
-              Back to Home
-            </Link>
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
+      <Footer />
     </div>
   );
 }
