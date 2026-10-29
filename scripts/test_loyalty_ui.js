@@ -105,7 +105,7 @@ section("annual is never made to look like the worse deal");
 test("the plans page reframes for annual instead of staying silent", () => {
   assert.match(
     plansSection,
-    /billing === "annual"[\s\S]{0,400}already built in/,
+    /billing === "annual"[\s\S]{0,400}already built in/i,
     "an annual member sees their own framing, not a monthly-only promise"
   );
   assert.match(plansSection, /pay for 10 months and get 12|10 months and get 12/);
@@ -255,6 +255,7 @@ const modal = read("app", "components", "account", "ManagePlanModal.tsx");
 const modalVisible = withoutComments(modal);
 const booking = read("app", "components", "sections", "BookingSection.tsx");
 const home = read("app", "components", "sections", "HomeMarketing.tsx");
+const homeLanding = read("app", "components", "home", "HomeLanding.tsx");
 const overview = read("app", "components", "account", "AccountOverview.tsx");
 
 section("Manage Plan opens ProFixter first, and Stripe only on Continue");
@@ -407,23 +408,36 @@ test("booking reinforcement follows the address being booked against", () => {
 
 section("the light-touch surfaces stay light");
 
-test("the homepage mentions Loyalty once, with a link", () => {
-  const visible = withoutComments(home);
-  assert.match(visible, /Membership gets better the longer you stay/);
-  assert.match(visible, /\/membership\/loyalty/);
-  assert.equal(
-    (visible.match(/membership\/loyalty/g) || []).length,
-    1,
-    "exactly one Loyalty link on the homepage"
-  );
+/*
+ * Updated 2026-10-29 for Website 3.0. The member homepage ("Make Home something
+ * you look at", 36b37de) and the visitor homepage (HomeLanding) no longer carry
+ * a Loyalty line at all. What this protects is that the homepage stays light:
+ * never more than one Loyalty mention, and any mention links to the page.
+ */
+test("the homepage mentions Loyalty at most once, always with a link", () => {
+  for (const [name, source] of [["HomeMarketing", home], ["HomeLanding", homeLanding]]) {
+    const visible = withoutComments(source);
+    const links = (visible.match(/membership\/loyalty/g) || []).length;
+    assert.ok(links <= 1, `${name}: at most one Loyalty link on the homepage, found ${links}`);
+    const mentions = (visible.match(/Loyalty/g) || []).length;
+    if (mentions > 0) assert.equal(links, 1, `${name}: a Loyalty mention must link to /membership/loyalty`);
+  }
 });
 
-test("the plans page states Loyalty before the cards, not after", () => {
+/*
+ * Updated 2026-10-29: Loyalty moved BELOW the plan grid on purpose (see the
+ * "AFTER THE DECISION" comment in PlansSection) - a reason to stay should not
+ * sit in the middle of deciding what to buy. Still guarded: it is on the full
+ * plans page, once, after the selector, with a link to how it works.
+ */
+test("the plans page states Loyalty once, right after the plan selector", () => {
   const visible = withoutComments(plansSection);
+  const gridAt = visible.indexOf("CompactPlanComparison /> : renderPlanSelector()");
   const loyaltyAt = visible.indexOf("Loyalty Benefits");
-  const gridAt = visible.indexOf("CompactPlanComparison /> :");
-  assert.ok(loyaltyAt > 0 && gridAt > 0);
-  assert.ok(loyaltyAt < gridAt, "Loyalty must appear above the plan grid");
+  assert.ok(gridAt > 0, "the selector is still rendered");
+  assert.ok(loyaltyAt > gridAt, "Loyalty follows the plan selector");
+  assert.equal((visible.match(/>Loyalty Benefits</g) || []).length, 1, "stated once");
+  assert.match(visible.slice(loyaltyAt, loyaltyAt + 900), /href="\/membership\/loyalty"/, "with a link");
 });
 
 test("booking reinforcement is one compact row and never blocks the form", () => {
@@ -508,8 +522,20 @@ test("no standard membership visit is described as a monthly quantity", () => {
   }
 });
 
+/*
+ * Updated 2026-10-29: the plans page draws its cards from the benefit matrix in
+ * app/data/plan-benefits.ts (one row per benefit, "Book N at a time" with the
+ * detail "As often as you need."), so the pace wording is checked there, and
+ * PlansSection is checked to actually render that matrix.
+ */
 test("the plan cards carry the approved pace wording", () => {
-  for (const name of ["lib/stripe-links.ts", "app/data/content.ts", "PlansSection.tsx", "account/PlanSection.tsx"]) {
+  const benefits = withoutComments(read("app", "data", "plan-benefits.ts"));
+  assert.match(benefits, /Basic: "Book 1 visit at a time"/, "plan-benefits.ts: Basic");
+  assert.match(benefits, /Plus: "Book up to 2 visits at a time"/, "plan-benefits.ts: Plus");
+  assert.match(benefits, /Elite: "Book up to 2 visits at a time"/, "plan-benefits.ts: Elite is 2, not 3");
+  assert.match(benefits, /detail: "As often as you need\."/, "plan-benefits.ts: the pace half");
+  assert.match(withoutComments(plansSection), /BENEFIT_ROWS/, "PlansSection renders the benefit matrix");
+  for (const name of ["lib/stripe-links.ts", "app/data/content.ts", "account/PlanSection.tsx"]) {
     const visible = withoutComments(surfaces[name]);
     assert.match(visible, /Book 1 visit at a time, as often as you need/, `${name}: Basic`);
     assert.match(
