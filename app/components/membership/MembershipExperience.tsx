@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
@@ -17,6 +18,7 @@ import FAQSection from "@/app/components/sections/FAQSection";
 import YourFixter from "@/app/components/fixter/YourFixter";
 import Footer from "@/app/components/sections/Footer";
 import StickyMobileCTA from "@/app/components/StickyMobileCTA";
+import Reveal from "@/app/components/ui/Reveal";
 import { PlanSection } from "@/app/components/account/PlanSection";
 
 function CustomerPortalSection({
@@ -31,17 +33,13 @@ function CustomerPortalSection({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="bg-[#F6F8FC] px-4 py-10 sm:px-6 sm:py-10 lg:px-8">
-      <div className="mx-auto max-w-[1180px]">
+    <section id={id} className="ui-section ui-section--soft ui-section--tight">
+      <div className="ui-container">
         {(title || subtitle) && (
-          <div className="mb-5 sm:mb-6">
-            {title && (
-              <h2 className="text-[21px] font-black leading-tight text-[#0B1628] sm:text-[26px]">
-                {title}
-              </h2>
-            )}
+          <div className="ui-head">
+            {title && <h2 className="ui-h2">{title}</h2>}
             {subtitle && (
-              <p className="mt-1.5 max-w-[560px] text-[14px] leading-relaxed text-[#64748B] sm:text-[15px]">
+              <p className="ui-lede">
                 {subtitle}
               </p>
             )}
@@ -73,14 +71,14 @@ function AccountShortcuts() {
         <Link
           key={link.href}
           href={link.href}
-          className="rounded-[8px] border border-[#D7DEE9] bg-white p-5 transition hover:border-[#306EEC] hover:bg-[#F8FAFF]"
+          className="ui-card ui-card--link"
         >
           <div className="flex items-center justify-between gap-4">
             <div>
-              <div className="text-[15px] font-extrabold text-[#0B1628]">{link.title}</div>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-[#64748B]">{link.body}</p>
+              <div className="pg-card__title !text-[16px]">{link.title}</div>
+              <p className="pg-card__meta">{link.body}</p>
             </div>
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] border border-[#D9E4FF] bg-[#EEF5FF] text-[#306EEC]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center text-[color:var(--ui-text-3)]">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -101,35 +99,27 @@ function SubscribedCustomerFlow() {
         the one place booking happens rather than embedding a second entrance
         to it.
       */}
-      <section className="bg-white px-4 pb-6 pt-8 sm:px-6 sm:pt-12 lg:px-8">
-        <div className="mx-auto flex max-w-[1180px] flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="max-w-[560px]">
-            <h1 className="text-[26px] font-semibold leading-[1.08] tracking-[-0.035em] text-[#111111] sm:text-[32px]">
-              Your membership
-            </h1>
-            <p className="mt-3 text-[15px] leading-6 text-[#6E6E73] sm:text-[17px]">
+      <section className="ui-section ui-section--tight">
+        <div className="ui-container flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="pg-intro">
+            <h1 className="ui-display">Your membership</h1>
+            <p className="ui-lede">
               Your visits, your plan, and your Fixter. Ready when you need something done.
             </p>
           </div>
           <Link
             href="/book?visit=membership"
-            className="inline-flex min-h-[46px] w-full items-center justify-center rounded-[8px] bg-[#0B1628] px-5 text-[15px] font-semibold text-white transition hover:bg-[#172033] lg:w-auto"
+            className="ui-btn ui-btn--primary w-full lg:w-auto"
           >
             Book your next visit
           </Link>
         </div>
       </section>
 
-      <section className="bg-[#F6F8FC] px-4 pb-4 pt-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-[1180px]">
-          <Link
-            href="/membership/plans"
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-[8px] border border-[#D7DEE9] bg-white px-4 text-[13px] font-bold text-[#306EEC] transition hover:border-[#306EEC] hover:bg-[#F8FAFF]"
-          >
+      <section className="bg-[color:var(--ui-bg-soft)] pt-6">
+        <div className="ui-container">
+          <Link href="/membership/plans" className="ui-link">
             See plans
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
           </Link>
         </div>
       </section>
@@ -139,8 +129,8 @@ function SubscribedCustomerFlow() {
         get a visit, and this answers "and who is actually coming to my home".
         Constrained rather than full-bleed - it is a person, not a dashboard panel.
       */}
-      <section className="bg-[#F6F8FC] px-4 pb-6 pt-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-[1180px]">
+      <section className="bg-[color:var(--ui-bg-soft)] pb-6 pt-4">
+        <div className="ui-container">
           <YourFixter className="max-w-[560px]" />
         </div>
       </section>
@@ -182,48 +172,41 @@ function SubscribedCustomerFlow() {
  */
 function FreeVisitFlow() {
   return (
-    <>
-      <section className="bg-white px-4 pb-8 pt-10 sm:px-6 sm:pb-10 sm:pt-10">
-        <div className="mx-auto max-w-[820px] text-center">
-          <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">
-            Profixter
+    <div className="pg-flow bg-[color:var(--ui-bg-soft)]">
+      <section className="ui-container pt-8 sm:pt-12">
+        <div className="pg-intro">
+          <p className="ui-tag ui-tag--accent">
+            <span className="ui-tag__dot" aria-hidden="true" />
+            Free first visit
           </p>
-          <h1 className="mx-auto mt-3 max-w-[720px] text-[30px] font-semibold leading-[1.06] tracking-[-0.04em] text-[#111111] sm:text-[36px] lg:text-[43px]">
-            Your first visit is free.
-          </h1>
-          <p className="mx-auto mt-4 max-w-[560px] text-[15px] leading-6 text-[#6E6E73] sm:text-[17px] sm:leading-7">
-            Pick a day, tell us what needs doing, and our team will take care of it.
-            Nothing to pay, and no membership required.
-          </p>
-          <p className="mx-auto mt-5 max-w-[600px] text-[12px] leading-5 text-[#86868B] sm:text-[13px]">
-            90 minutes of handyman labor &middot; No card required &middot; One per customer &middot; Subject to availability
-          </p>
+          <h1 className="ui-display mt-3">Your first visit is free.</h1>
+          <p className="ui-lede">Pick a day and tell us what needs doing. Nothing to pay, no membership required.</p>
+          <ul className="pg-facts mt-3">
+            <li>90 minutes of handyman labor</li>
+            <li>No card required</li>
+            <li>One per customer</li>
+            <li>Subject to availability</li>
+          </ul>
         </div>
       </section>
 
       <BookingSection />
 
-      <section className="bg-[#F5F5F7] px-4 py-10 sm:px-6 sm:py-10">
-        <div className="mx-auto max-w-[680px] text-center">
-          <h2 className="text-[21px] font-semibold tracking-[-0.025em] text-[#111111] sm:text-[26px]">
-            After your visit
-          </h2>
-          <p className="mt-3 text-[14px] leading-6 text-[#6E6E73] sm:text-[15px]">
-            Most homes have more than one thing on the list. If you&rsquo;d like the same
-            team to keep handling it, membership is there when you&rsquo;re ready.
-            No obligation either way.
+      <section className="ui-section ui-section--tight bg-white">
+        <div className="ui-container ui-container--narrow text-center">
+          <h2 className="ui-h3">After your visit</h2>
+          <p className="ui-body mx-auto mt-2 max-w-[52ch]">
+            If you&rsquo;d like the same team to keep handling your list, membership is
+            there when you&rsquo;re ready. No obligation either way.
           </p>
-          <Link
-            href="/membership/plans"
-            className="mt-5 inline-flex text-[14px] font-semibold text-[#306EEC] hover:underline"
-          >
+          <Link href="/membership/plans" className="ui-link mt-2">
             See plans
           </Link>
         </div>
       </section>
 
       <Footer />
-    </>
+    </div>
   );
 }
 
@@ -236,18 +219,12 @@ const startingPrice = Math.min(...plans.map((plan) => plan.price));
 
 function PostFreeVisitFlow() {
   return (
-    <section className="bg-white px-4 pb-10 pt-10 sm:px-6 sm:pb-12 sm:pt-10">
-      <div className="mx-auto max-w-[720px] text-center">
-        <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">
-          Profixter
-        </p>
-        <h1 className="mx-auto mt-3 max-w-[620px] text-[26px] font-semibold leading-[1.08] tracking-[-0.035em] text-[#111111] sm:text-[34px]">
-          Your first visit is complete.
-        </h1>
-        <p className="mx-auto mt-4 max-w-[540px] text-[15px] leading-6 text-[#6E6E73] sm:text-[17px] sm:leading-7">
-          Keep the same team for the rest of your list with a Profixter membership.
-        </p>
-        <div className="mt-7 flex flex-col justify-center gap-3 min-[380px]:flex-row">
+    <section className="ui-section ui-section--tight">
+      <div className="ui-container pg-intro">
+        <p className="ui-eyebrow ui-eyebrow--accent">Profixter</p>
+        <h1 className="ui-display">Your first visit is complete.</h1>
+        <p className="ui-lede">Keep the same team for the rest of your list with a Profixter membership.</p>
+        <div className="pg-actions pg-actions--stack">
           <Link
             href="/membership/plans"
             onClick={() =>
@@ -255,14 +232,11 @@ function PostFreeVisitFlow() {
                 placement: "post_free_visit_state",
               })
             }
-            className="inline-flex min-h-12 items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]"
+            className="ui-btn ui-btn--primary"
           >
             Compare plans
           </Link>
-          <Link
-            href="/book?visit=additional"
-            className="inline-flex min-h-12 items-center justify-center rounded-[8px] border border-[#D2D2D7] bg-white px-5 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]"
-          >
+          <Link href="/book?visit=additional" className="ui-btn ui-btn--secondary">
             Book a One-Time Visit
           </Link>
         </div>
@@ -270,6 +244,14 @@ function PostFreeVisitFlow() {
     </section>
   );
 }
+
+/* Generic Profixter Library examples (public/images/booking-library), decorative. */
+const HERO_TILES = [
+  { src: "/images/booking-library/tv_mounting@2x.webp" },
+  { src: "/images/booking-library/light_fixture@2x.webp" },
+  { src: "/images/booking-library/faucet@2x.webp" },
+  { src: "/images/booking-library/shelves@2x.webp" },
+];
 
 function ProspectMembershipFlow({
   postFreeVisit = false,
@@ -282,9 +264,9 @@ function ProspectMembershipFlow({
   onAddHome?: () => void;
 } = {}) {
   const steps = [
-    ["Choose a plan", "Pick the level of home support that fits your needs."],
-    ["Book when needed", "Choose a date, add notes and photos, and request your visit."],
-    ["We handle the list", "Your Profixter team comes prepared and keeps your home moving."],
+    ["Choose a plan", "The level of home support that fits."],
+    ["Book when needed", "A date, notes and photos. That's the request."],
+    ["We handle the list", "Your team comes prepared, visit after visit."],
   ];
   const tasks = [
     "Small electrical work",
@@ -301,25 +283,41 @@ function ProspectMembershipFlow({
     <>
       {postFreeVisit && <PostFreeVisitFlow />}
 
-      <section className={`bg-white px-4 sm:px-6 ${postFreeVisit ? "pb-8 pt-2 sm:pb-11 sm:pt-4" : "pb-8 pt-8 sm:pb-11 sm:pt-11 lg:pb-20 lg:pt-20"}`}>
-        <div className="mx-auto max-w-[860px] text-center">
-          <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">Profixter Membership</p>
-          <h1 className="mx-auto mt-4 max-w-[820px] text-[32px] font-semibold leading-[1.05] tracking-[-0.04em] text-[#111111] sm:text-[40px] lg:text-[46px]">
-            One trusted team for the home list that never ends.
-          </h1>
-          <p className="mx-auto mt-5 max-w-[660px] text-[16px] leading-6 text-[#6E6E73] sm:text-[18px] sm:leading-7">
-            Book small repairs, maintenance, and installations when you need them, without searching for a new contractor every time.
-          </p>
-          <p className="mt-3 text-[13px] font-medium text-[#86868B]">Ongoing handyman care for Long Island homes.</p>
+      <section className={`ui-section ${postFreeVisit ? "ui-section--flush-top" : "ui-section--tight"}`}>
+        <div className="ui-container grid items-center gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-16">
+          <div>
+          <div className="pg-intro ui-rise">
+            <p className="ui-eyebrow ui-eyebrow--accent">Profixter Membership</p>
+            {postFreeVisit ? (
+              <h2 className="ui-h2">One trusted team for the home list that never ends.</h2>
+            ) : (
+              <h1 className="ui-display">One trusted team for the home list that never ends.</h1>
+            )}
+            <p className="ui-lede">
+              Small repairs, maintenance and installations when you need them, without
+              searching for a new contractor every time.
+            </p>
+            <div className="pg-actions pg-actions--stack">
+              <Link href="/membership/plans" className="ui-btn ui-btn--primary ui-btn--lg">
+                See plans &amp; prices
+              </Link>
+              <a href="#how-it-works" className="ui-btn ui-btn--secondary ui-btn--lg">
+                How it works
+              </a>
+            </div>
+          </div>
 
           {showFreeVisitOffer ? (
-            <div className="mx-auto mt-7 max-w-[520px] rounded-[8px] border border-[#E5E5EA] bg-[#F5F5F7] px-5 py-5">
-              <p className="text-[19px] font-semibold tracking-[-0.02em] text-[#111111] sm:text-[19px]">
-                {onAddHome ? "Your first visit may be free." : "Your first visit is free."}
-              </p>
-              <p className="mt-1.5 text-[13px] leading-5 text-[#6E6E73] sm:text-[14px]">
-                90-minute first visit · No card required · One per customer
-              </p>
+            <div
+              className="ui-card mt-6 flex max-w-[640px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ui-rise"
+              style={{ animationDelay: "60ms" }}
+            >
+              <div>
+                <p className="text-[16px] font-semibold text-[color:var(--ui-ink)]">
+                  {onAddHome ? "Your first visit may be free." : "Your first visit is free."}
+                </p>
+                <p className="ui-small mt-0.5">90-minute first visit · No card required · One per customer</p>
+              </div>
               {onAddHome ? (
                 <button
                   type="button"
@@ -327,7 +325,7 @@ function ProspectMembershipFlow({
                     trackEvent("free_visit_cta_clicked", { placement: "membership_hero_add_home" });
                     onAddHome();
                   }}
-                  className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9] sm:w-auto"
+                  className="ui-btn ui-btn--accent shrink-0"
                 >
                   Add your home to check availability
                 </button>
@@ -335,128 +333,86 @@ function ProspectMembershipFlow({
                 <Link
                   href="/book/free"
                   onClick={() => trackEvent("free_visit_cta_clicked", { placement: "membership_hero" })}
-                  className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9] sm:w-auto"
+                  className="ui-btn ui-btn--accent shrink-0"
                 >
                   Book Your First Visit Free
                 </Link>
               )}
             </div>
           ) : null}
+          </div>
 
-          <div className="mt-6 flex flex-col justify-center gap-3 min-[380px]:flex-row">
-            <a href="#plans" className="inline-flex min-h-12 items-center justify-center rounded-[8px] border border-[#D2D2D7] bg-white px-5 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]">
-              See plans
-            </a>
-            <a href="#how-it-works" className="inline-flex min-h-12 items-center justify-center rounded-[8px] border border-[#D2D2D7] bg-white px-5 text-[15px] font-semibold text-[#1D1D1F] transition hover:bg-[#F5F5F7]">
-              How it works
-            </a>
+          {/* Wide screens: the kind of job a visit is for, in four pictures. */}
+          <div className="hidden grid-cols-2 gap-3 lg:grid ui-rise" style={{ animationDelay: "120ms" }} aria-hidden="true">
+            {HERO_TILES.map((tile, index) => (
+              <div key={tile.src} className={`ui-media aspect-square ${index % 2 ? "translate-y-6" : ""}`}>
+                <Image src={tile.src} alt="" fill sizes="(min-width: 1024px) 260px, 0px" className="object-cover" />
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <section id="how-it-works" className="scroll-mt-[100px] bg-[#F5F5F7] px-4 py-8 sm:px-6 sm:py-11">
-        <div className="mx-auto max-w-[1040px]">
-          <div className="text-center">
-            <h2 className="text-[26px] font-semibold tracking-[-0.025em] text-[#111111] sm:text-[32px]">How membership works</h2>
-          </div>
-          <div className="mt-7 grid gap-3 md:grid-cols-3">
+      <section id="how-it-works" className="ui-section ui-section--soft scroll-mt-[90px]">
+        <div className="ui-container">
+          <Reveal className="ui-head">
+            <h2 className="ui-h2">How membership works</h2>
+          </Reveal>
+          <ol className="pg-cards pg-cards--3 m-0 list-none p-0">
             {steps.map(([title, body], index) => (
-              <article key={title} className="rounded-[8px] border border-[#E5E5EA] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEF4FF] text-[13px] font-bold text-[#306EEC]">{index + 1}</span>
-                <h3 className="mt-4 text-[18px] font-semibold text-[#111111]">{title}</h3>
-                <p className="mt-1.5 text-[14px] leading-5 text-[#6E6E73]">{body}</p>
-              </article>
+              <Reveal as="li" key={title} delay={index * 60} className="ui-card">
+                <span className="ui-num text-[13px] font-semibold text-[color:var(--ui-accent-ink)]">0{index + 1}</span>
+                <h3 className="pg-card__title mt-2">{title}</h3>
+                <p className="pg-card__meta">{body}</p>
+              </Reveal>
             ))}
-          </div>
+          </ol>
         </div>
       </section>
 
-      <section className="bg-white px-4 py-8 sm:px-6 sm:py-11">
-        <div className="mx-auto max-w-[920px]">
-          <div className="text-center">
-            <h2 className="text-[26px] font-semibold tracking-[-0.025em] text-[#111111] sm:text-[32px]">Built for everyday home tasks</h2>
-          </div>
-          <ul className="mt-7 grid grid-cols-1 gap-x-8 gap-y-3 min-[360px]:grid-cols-2 lg:grid-cols-4">
-            {tasks.map((task) => (
-              <li key={task} className="flex items-start gap-2.5 text-[14px] leading-5 text-[#1D1D1F]">
-                <svg className="mt-0.5 shrink-0 text-[#306EEC]" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4 4 10-10" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                {task}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-7 text-center text-[13px] leading-5 text-[#6E6E73]">
-            Larger renovations and multi-day work are handled through Project Estimates. <Link href="/services" className="font-semibold text-[#306EEC] hover:underline">View all services</Link>
-          </p>
-        </div>
-      </section>
+      <section className="ui-section">
+        <div className="ui-container">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
+            <Reveal>
+              <h2 className="ui-h2">Built for everyday home tasks</h2>
+              <ul className="ui-checks mt-5 sm:grid-cols-2">
+                {tasks.map((task) => (
+                  <li key={task} className="!text-[15px]">{task}</li>
+                ))}
+              </ul>
+              <p className="ui-small mt-5">
+                Larger renovations and multi-day work are handled through Project Estimates.{" "}
+                <Link href="/services" className="font-semibold text-[color:var(--ui-accent-ink)] hover:underline">
+                  View all services
+                </Link>
+              </p>
+            </Reveal>
 
-      {/*
-        Above the comparison, not below it.
-
-        Placed after the prices this landed three quarters of the way down a
-        long page - the exact problem it was added to fix. Here the reader has
-        just been told what a membership is and is about to be shown what it
-        costs, which is early enough to be seen and late enough to make sense.
-
-        PlansSection carries its own one-line gift prompt at its foot; that
-        stays, as the quiet reminder after the decision rather than a second
-        pitch.
-      */}
-      {/*
-        A price, not a pricing page.
-
-        This carried the whole four-plan grid, so a visitor compared Basic
-        through Elite here and then pressed "Compare plans" to be shown the same
-        four plans again. Comparing is the plans page's entire job; this page
-        only has to answer "what does it cost to start" and get out of the way.
-
-        The gift card that sat directly above it is gone too. Somebody reading
-        the membership page is shopping for their own house; Gift keeps its own
-        page and its footer entry.
-      */}
-      <section id="plans" className="scroll-mt-[90px] bg-white px-4 pb-9 pt-8 sm:px-6 sm:pb-12 sm:pt-11">
-        <div className="mx-auto max-w-[680px] text-center">
-          <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#306EEC]">
-            Membership
-          </p>
-          <h2 className="mt-3 text-[26px] font-semibold tracking-[-0.03em] text-[#111111] sm:text-[32px]">
-            From ${startingPrice} a month.
-          </h2>
-          <p className="mx-auto mt-3 max-w-[46ch] text-[15px] leading-6 text-[#6E6E73] sm:text-[16px]">
-            Four levels, depending on how much your home has going on. Month to month,
-            or pay for ten months and get twelve.
-          </p>
-          <Link
-            href="/membership/plans"
-            className="mt-6 inline-flex min-h-12 items-center justify-center rounded-[8px] bg-[#306EEC] px-6 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]"
-          >
-            Compare plans
-          </Link>
-          <p className="mt-4 text-[13.5px] text-[#6E6E73]">
-            Not sure it covers your list?{" "}
-            <Link href="/recent-work" className="font-semibold text-[#306EEC] underline-offset-4 hover:underline">
-              See what we do
-            </Link>
-          </p>
-        </div>
-      </section>
-
-      {/*
-        The FAQ moved to /membership/plans.
-
-        This page had six hand-written questions while the plans page rendered a
-        separate canonical twelve - nineteen answers across one purchase
-        journey, maintained apart and already disagreeing about materials. The
-        canonical set in app/data/membership-faq.ts now renders in exactly one
-        place: the surface where an unanswered question stops a purchase.
-      */}
-      <section className="bg-[#F5F5F7] px-4 py-9 text-center sm:px-6 sm:py-13">
-        <div className="mx-auto max-w-[680px]">
-          <h2 className="text-[26px] font-semibold tracking-[-0.03em] text-[#111111] sm:text-[34px]">Ready to make home care easier?</h2>
-          <p className="mt-3 text-[15px] leading-6 text-[#6E6E73]">Choose your membership and book your first visit when you&rsquo;re ready.</p>
-          <Link href="/membership/plans" className="mt-6 inline-flex min-h-12 items-center justify-center rounded-[8px] bg-[#306EEC] px-5 text-[15px] font-semibold text-white transition hover:bg-[#2558C9]">Compare plans</Link>
-          <div className="mt-4">
-            <Link href="/book?visit=additional" className="text-[14px] font-semibold text-[#306EEC] hover:underline">Need only one visit? Book an Extra Visit</Link>
+            {/*
+              A price, not a pricing page. Comparing is the plans page's entire
+              job; this only answers "what does it cost to start". The FAQ lives
+              on /membership/plans, where an unanswered question stops a purchase.
+            */}
+            <Reveal delay={60} className="ui-card ui-card--soft self-start !p-6 sm:!p-8" as="div">
+              <div id="plans" className="scroll-mt-[90px]">
+                <p className="ui-eyebrow">Membership</p>
+                <p className="ui-h2 ui-num">From ${startingPrice} a month.</p>
+                <p className="ui-body mt-2">
+                  Four levels. Month to month, or pay for ten months and get twelve.
+                </p>
+                <div className="pg-actions">
+                  <Link href="/membership/plans" className="ui-btn ui-btn--primary">
+                    Compare plans
+                  </Link>
+                </div>
+                <p className="ui-small mt-4">
+                  Need only one visit?{" "}
+                  <Link href="/book?visit=additional" className="font-semibold text-[color:var(--ui-accent-ink)] hover:underline">
+                    Book a One-Time Visit
+                  </Link>
+                </p>
+              </div>
+            </Reveal>
           </div>
         </div>
       </section>
@@ -527,7 +483,7 @@ export default function MembershipExperience() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen overflow-x-clip bg-white">
       <div className="sticky top-0 z-50">
         <Header />
       </div>
@@ -571,6 +527,9 @@ export default function MembershipExperience() {
           <ProspectMembershipFlow showFreeVisitOffer />
         )}
       </main>
+
+      {/* Every branch but the two that bring their own footer. */}
+      {!isSubscribed && introState !== "eligible" && !(isAuthenticated && introState === "loading") && <Footer />}
 
       {!isSubscribed && introState !== "eligible" && <StickyMobileCTA />}
       {homeSheet}
