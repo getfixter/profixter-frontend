@@ -21,6 +21,7 @@
  * - the confirmation receipt shows Stripe's subtotal, discount, tax and total
  * - no sideways scrolling and no console errors at 320, 375, 390 and 1440
  */
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- a plain Node script, like the other scripts/test_*.js
 const { chromium } = require("playwright");
 
 const BASE = process.argv[2] || "http://localhost:3000";
@@ -163,12 +164,18 @@ const text = (page, sel) => page.locator(sel).first().innerText();
       const planErr = await page.locator("#plan-error").count();
       check("an empty form reports name, email and plan, and sends nothing",
         firstErr && emailErr && planErr && sessions.length === 0);
-      check("focus moves to the first problem", await page.evaluate(() => document.activeElement?.id === "firstName"));
+      check("focus moves to the first problem", await page
+        .waitForFunction(() => document.activeElement?.id === "firstName", null, { timeout: 2000 })
+        .then(() => true, () => false));
 
       // Add another contact, then remove it.
       await page.getByRole("button", { name: /Add another contact/ }).click();
+      // Focus moves on the next animation frame, once the field exists.
+      const phoneFocused = await page
+        .waitForFunction(() => document.activeElement?.id === "phone", null, { timeout: 2000 })
+        .then(() => true, () => false);
       check("Add another contact reveals the mobile field, focused",
-        (await page.locator("#phone").isVisible()) && (await page.evaluate(() => document.activeElement?.id === "phone")));
+        (await page.locator("#phone").isVisible()) && phoneFocused);
       await page.fill("#phone", "631555");
       await page.getByRole("button", { name: "Remove mobile number" }).click();
       check("Remove hides the field again", (await page.locator("#phone").count()) === 0);

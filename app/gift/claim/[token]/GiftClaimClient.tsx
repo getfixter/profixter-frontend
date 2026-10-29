@@ -237,6 +237,9 @@ export default function GiftClaimClient({ token }: { token: string }) {
     try {
       const result = await claimGift(token, addressId);
       setPhase({ kind: "claimed", result: result.gift });
+      // The claim button sits far down a long page; the short result screen
+      // that replaces it would otherwise open on the footer.
+      window.scrollTo({ top: 0 });
     } catch (error) {
       const giftError = error instanceof GiftError ? error : null;
       // A wrong account, an already-claimed gift or a dead link are not

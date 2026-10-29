@@ -34,7 +34,6 @@ const service = read("lib", "gift-service.ts");
 const callout = read("app", "components", "gift", "GiftCallout.tsx");
 const architecture = read("lib", "site-architecture.ts");
 const homeMarketing = read("app", "components", "sections", "HomeMarketing.tsx");
-const plansSection = read("app", "components", "sections", "PlansSection.tsx");
 
 let passed = 0;
 const failures = [];
