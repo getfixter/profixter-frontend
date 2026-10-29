@@ -1,33 +1,19 @@
-import React from 'react';
+import React from "react";
 
+/**
+ * The design-system card (ui-card in app/ui.css).
+ *
+ *   default  white with a hairline border
+ *   raised   white with a soft shadow, no border
+ *   soft     warm stone, no border
+ *   dark     navy
+ */
 type CardProps = React.HTMLAttributes<HTMLDivElement> & {
-  variant?: 'light' | 'dark' | 'glass';
-  rounded?: 'md' | 'lg' | 'xl';
-  shadow?: 'none' | 'sm' | 'lg';
+  variant?: "default" | "raised" | "soft" | "dark";
 };
 
-const roundedMap = { md: 'rounded-[6px]', lg: 'rounded-[8px]', xl: 'rounded-[8px]' } as const;
-const shadowMap = {
-  none: 'shadow-none',
-  sm: 'shadow-sm',
-  lg: 'shadow-[0_10px_80px_rgba(0,0,0,0.25)]'
-} as const;
-const variantMap = {
-  light: 'bg-[#EEF2FF] border border-[#C5CBD8]',
-  dark: 'bg-[#3A3C3E] border border-[#4A4C4E]',
-  glass: 'bg-[#313234]/30 backdrop-blur-[8px]'
-} as const;
-
-export function Card({
-  variant = 'light',
-  rounded = 'lg',
-  shadow = 'sm',
-  className = '',
-  ...props
-}: CardProps) {
-  return (
-    <div className={[variantMap[variant], roundedMap[rounded], shadowMap[shadow], className].join(' ')} {...props} />
-  );
+export function Card({ variant = "default", className = "", ...props }: CardProps) {
+  return <div className={["ui-card", variant !== "default" ? `ui-card--${variant}` : "", className].filter(Boolean).join(" ")} {...props} />;
 }
 
 export default Card;
