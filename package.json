@@ -37,6 +37,7 @@
     "test:desktop-scale": "node scripts/test_desktop_scale.js",
     "test:admin-access-ui": "node scripts/test_admin_access_ui.js",
     "test:attribution-ui": "node scripts/test_attribution_ui.js",
+    "test:support-chat": "node scripts/test_support_chat.js",
     "build:desktop-scale": "node scripts/build_desktop_scale.js"
   },
   "engines": {
