@@ -34,6 +34,12 @@ export const CORE_PRODUCTS = [
   },
 ] as const;
 
+/*
+ * RETIRED from navigation (Website 3.0). Profixter AI is no longer linked from
+ * the header, the footer or the homepage, and its page is being retired
+ * separately. The constant stays only because lib/seo.ts and app/about still
+ * import it; delete it together with those references when the page goes.
+ */
 export const HOME_SUPPORT_AI = {
   id: "home-support-ai",
   label: "Profixter AI",
@@ -82,78 +88,87 @@ export const COMPANY_LINKS = [
   { label: "Event Page", href: "/event" },
 ] as const;
 
+/*
+ * The ways to book, named the way a visitor would say them, each pointing at
+ * the page that actually takes the booking. One-Time and Full Day are tabs of
+ * /book selected by ?visit= (see VisitTypeNav.resolveVisitType); they are not
+ * routes of their own.
+ */
+export const BOOKING_LINKS = {
+  memberships: { label: "Memberships", href: "/membership/plans" },
+  freeVisit: { label: "Free Visit", href: "/book/free" },
+  oneTime: { label: "One-Time Visit", href: "/book?visit=additional" },
+  fullDay: { label: "Full Day", href: "/book?visit=full-day" },
+  gift: { label: "Gift", href: "/gift" },
+} as const;
+
+/** The About & Information page: everything a visitor rarely needs, in one place. */
+export const INFO_PAGE = { label: "About & Information", href: "/info" } as const;
+
 /**
- * Public navigation. Membership leads because it is the business; the one-time
- * visit is a fallback, not a peer product. Home Support AI is intentionally not
- * a top-level item - it competes with the primary conversion journey and is
- * reachable from the footer.
+ * Public navigation (signed out), Website 3.0.
  *
- * Book sits in the middle because it is a service destination rather than a
- * marketing page. It was missing here for a long time, from back when /book was
- * treated as somewhere you arrived from a call to action rather than somewhere
- * you navigate to. The phone has had a Book tab in the bottom bar throughout,
- * so a visitor on a desktop was the only customer on the site with no ordinary
- * way to reach it.
+ * Membership leads because it is the business. The free first visit is not a
+ * link here because it is the header's one button ("Book free visit"), and
+ * two entries for the same action is one decision too many. One-Time and Full
+ * Day go straight to their own tab of /book. Gift is back in the primary nav:
+ * it is a real product and visitors could not find it in the footer.
  *
- * Bare /book on purpose. The page resolves its own default from customer state,
- * so pinning a ?visit= here would override a decision that belongs to Book.
+ * Projects, About, guides and the rest moved to the About & Information page
+ * (/info), which the menu and the footer both link to.
  */
 export const MAIN_NAV_LINKS = [
-  /*
-   * "Plans", straight to the prices. This was "Membership" -> /membership, a
-   * teaser page with one more "Compare plans" link to click before a visitor
-   * could see what anything cost. The explainer still exists at /membership
-   * and /handyman-membership for anyone who wants the long version.
-   */
-  { label: "Plans", href: "/membership/plans" },
-  /*
-   * "What we do" rather than "Our work" - or "What we fix", which this was.
-   *
-   * The gallery's job is to answer "can they handle MY thing" - it is the
-   * membership's inclusions, shown rather than listed. "Our work" framed the
-   * same photographs as a portfolio, and sitting beside Projects it read as
-   * that page's sibling: renovations.
-   *
-   * "What we fix" was narrower than the work. Half of what these people do
-   * arrives unbroken: a fan to hang, a dishwasher to swap, a handrail nobody
-   * ever put in. A visitor with an installation to book should not have to
-   * decide whether it counts as fixing before they click.
-   */
-  { label: "What we do", href: "/recent-work" },
-  /*
-   * No separate "Book": for a visitor without an account the header's one
-   * button is "Book free visit", which opens the booker itself. Two entries
-   * for the same action was one decision too many.
-   */
-  { label: "Projects", href: "/projects" },
-  { label: "About Us", href: "/about" },
-  /*
-   * Gift and How it works both left this list.
-   *
-   * Gift is a real product but a secondary one, bought for somebody else; it
-   * keeps its footer entry and its page. How it works is an anchor on the
-   * homepage, not a destination, and the hero already links to it - a nav item
-   * that scrolls the page you are already on is a wasted slot.
-   *
-   * Five is also what the header can actually hold: at 1024px seven items wrap
-   * their labels onto two lines.
-   */
+  BOOKING_LINKS.memberships,
+  { label: "One-Time", href: BOOKING_LINKS.oneTime.href },
+  { label: "Full Day", href: BOOKING_LINKS.fullDay.href },
+  { label: "Gift", href: "/gift" },
 ] as const;
 
+/*
+ * The footer, in four short groups rather than a sitemap. Everything that left
+ * it is one click away on /info.
+ */
 export const FOOTER_PRODUCT_LINKS = [
-  ...CORE_PRODUCTS.map((product) => ({
-    label: product.shortTitle,
-    href: product.href,
-  })),
+  BOOKING_LINKS.memberships,
   /*
    * The explainer, linked from every page. Membership is the part of the
-   * business that needs defining before it can be chosen, and a footer link is
-   * how somebody who is still working out what the product is reaches the page
-   * that says so.
+   * business that needs defining before it can be chosen.
    */
-  { label: "What is a handyman membership?", href: "/handyman-membership" },
+  { label: "How membership works", href: "/handyman-membership" },
+  { label: "Free first visit", href: BOOKING_LINKS.freeVisit.href },
+  BOOKING_LINKS.oneTime,
+  BOOKING_LINKS.fullDay,
   { label: "Gift a Membership", href: "/gift" },
-  { label: HOME_SUPPORT_AI.shortTitle, href: HOME_SUPPORT_AI.href },
+] as const;
+
+/*
+ * The three search hubs and the guides. Every landing page under them is still
+ * in the sitemap and linked from its hub, so nothing is dropped from the site.
+ */
+export const FOOTER_SEO_LINKS = [
+  { label: "Services", href: "/services" },
+  { label: "Locations", href: "/locations" },
+  { label: "Homeowner guides", href: "/guides" },
+  { label: "What we do", href: "/recent-work" },
+  { label: "Renovations", href: "/renovations" },
+] as const;
+
+export const FOOTER_COMPANY_LINKS = [
+  { label: "About us", href: "/about" },
+  INFO_PAGE,
+  { label: "Careers", href: "/careers" },
+] as const;
+
+/*
+ * Legal. Communication Consent and SMS Consent are disclosures a customer and
+ * an A2P carrier reviewer must reach in one click from any page; see the notes
+ * on COMPANY_LINKS above. They stay in every footer, compact or not.
+ */
+export const FOOTER_LEGAL_LINKS = [
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Terms of Service", href: "/terms" },
+  { label: "Communication Consent", href: "/communication-consent" },
+  { label: "SMS Consent", href: "/sms-consent-example" },
 ] as const;
 
 export const PROJECT_SERVICE_LINKS = [
@@ -163,33 +178,4 @@ export const PROJECT_SERVICE_LINKS = [
   { label: "Siding", href: "/renovations/siding" },
   { label: "Full Home Renovation", href: "/renovations/full-home-renovation" },
   { label: "New Home Construction", href: "/renovations/new-home-construction" },
-] as const;
-
-/*
- * The three hubs, not a sample of their children.
- *
- * This column used to mix hub pages with an arbitrary handful of individual
- * landing pages (TV Mounting, Drywall Repair, Bathroom Remodeling, Roofing),
- * which read as product navigation but was really search plumbing, and which
- * put Roofing two rows below Projects as though they were different things.
- * Every one of those pages still exists, is still in the sitemap, and is still
- * linked from the hub above it, so nothing has been dropped from the site.
- */
-export const FOOTER_SEO_LINKS = [
-  { label: "Services", href: "/services" },
-  { label: "Renovations", href: "/renovations" },
-  { label: "Locations", href: "/locations" },
-  /*
-   * The persistent route to the gallery, named the same way the header names
-   * it. The header entry and the homepage band both reach it too, but those
-   * are on pages a visitor may have already scrolled past; the footer is on
-   * every page and does not move.
-   */
-  { label: "What we do", href: "/recent-work" },
-  /*
-   * The homeowner guides: problem-first answers (small jobs, minimum charges,
-   * costs, seasonal upkeep). One hub link, not a list of articles - the guides
-   * link to each other and to the membership in context.
-   */
-  { label: "Homeowner guides", href: "/guides" },
 ] as const;
