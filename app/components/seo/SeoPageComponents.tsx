@@ -301,8 +301,8 @@ export function DetailPage({
             body: "Request a renovation estimate so scope, photos, timeline, and the right next step can be reviewed.",
           },
           {
-            title: "Useful before hiring",
-            body: "Use Profixter AI to review quotes, agreements, photos, and project questions as practical homeowner guidance.",
+            title: "Smaller fixes along the way",
+            body: "A focused small task may fit Book Handyman. Larger layout or finish work belongs in the renovation estimate path.",
           },
           {
             title: "Membership connection",
